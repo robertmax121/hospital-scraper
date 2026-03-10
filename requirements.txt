@@ -1,0 +1,5 @@
+aiohttp==3.9.3
+supabase==2.4.0
+python-dotenv==1.0.0
+greenlet==3.0.3
+playwright==1.44.0
