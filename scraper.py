@@ -29,11 +29,12 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime
 from typing import Optional
 
+os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.FileHandler(f"logs/scrape_{datetime.now().strftime('%Y%m%d_%H%M')}.log"),
+        logging.FileHandler(f"logs/run_{datetime.now().strftime('%Y%m%d')}.log"),
         logging.StreamHandler(),
     ],
 )
