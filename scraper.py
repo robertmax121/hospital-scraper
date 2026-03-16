@@ -816,11 +816,11 @@ async def run_usajobs(session) -> list[Job]:
 ##############################################################################
 PHENOM_ORGS = {
     # CommonSpirit moved to iCIMS — see ICIMS_ORGS
+    # Baylor Scott & White moved to Playwright — session-based Phenom
     "Baptist Health":        "https://jobs.baptisthealthcareers.com",
     "Corewell Health":       "https://careers.corewellhealth.org",
     "Munson Healthcare":     "https://careers.munsonhealthcare.org",
     "Bryan Health":          "https://careers.bryanhealth.com",
-    "Baylor Scott & White":  "https://jobs.bswhealth.com",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
@@ -1324,6 +1324,8 @@ async def run_playwright_scrapers() -> list[Job]:
         ("Ascension Health",     "https://ascension.org/careers"),
         # Infor CloudSuite — session-based, requires browser
         ("CHRISTUS Health",      "https://careers.christushealth.org/job-search"),
+        # Phenom — session-based, requires browser
+        ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results"),
         # Phenom-powered sites (JS-rendered, no public REST API)
         ("CommonSpirit Health",  "https://www.commonspirit.careers"),
         ("Baptist Health",       "https://jobs.baptisthealthcareers.com"),
