@@ -134,7 +134,7 @@ def req(session, method, url, **kwargs):
 WORKDAY_TENANTS = {
     "Kaiser Permanente":         ("kaiserpermanente",   "5",  "KP_External_Careers"),
     "Providence Health":         ("providence",         "5",  "Providence_External"),
-    "Baylor Scott & White":      ("bswhealth",          "1",  "BSWHealth"),
+    # Baylor Scott & White moved to Phenom — see PHENOM_ORGS
     "Banner Health":             ("bannerhealth",       "5",  "Banner_Health"),
     "Northwell Health":          ("northwell",          "5",  "Northwell_External"),
     "Intermountain Health":      ("intermountain",      "1",  "Careers"),
@@ -819,6 +819,7 @@ PHENOM_ORGS = {
     "Corewell Health":       "https://careers.corewellhealth.org",
     "Munson Healthcare":     "https://careers.munsonhealthcare.org",
     "Bryan Health":          "https://careers.bryanhealth.com",
+    "Baylor Scott & White":  "https://jobs.bswhealth.com",
 }
 
 async def run_phenom(session) -> list[Job]:
