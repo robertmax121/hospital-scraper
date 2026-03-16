@@ -1099,42 +1099,62 @@ INFOR_ORGS = {
         "https://css-faithregional-prd.inforcloudsuite.com/hcm/Jobs/page/JobsHomePage",
         "100",
     ),
-    "CHRISTUS Health": (
-        "css-christushealth-prd",
-        "https://css-christushealth-prd.inforcloudsuite.com/hcm/Jobs/page/JobsHomePage",
-        "CH00",
-    ),
 }
 
 async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     org_id, base_url, hr_org = org_data
     jobs = []
 
-    # Infor CloudSuite HCM — try OData v1 endpoint first, then legacy
+    # Infor CloudSuite HCM — Lawson CandidateSelfService JSON API
+    # This is the older Lawson HCM pattern used by CHRISTUS, Faith Regional, etc.
+    base = f"https://{org_id}.inforcloudsuite.com"
+    
+    # Try multiple endpoint patterns
     endpoints = [
-        f"https://{org_id}.inforcloudsuite.com/hcm/v1/Jobs",
-        f"https://{org_id}.inforcloudsuite.com/hcm/Jobs/page/JobsSearchPage",
+        # Newer OData v1
+        (f"{base}/hcm/v1/Jobs", {
+            "csk.JobBoard": "EXTERNAL",
+            "csk.HROrganization": hr_org,
+            "$format": "json",
+            "$top": 100,
+        }),
+        # Lawson CandidateSelfService with JSON output
+        (f"{base}/hcm/CandidateSelfService/controller.servlet", {
+            "context.session.key.HROrganization": hr_org,
+            "context.session.key.JobBoard": "EXTERNAL",
+            "context.dataarea": "hcm",
+            "dataarea": "lmghr",
+            "JobPost": "1",
+            "format": "json",
+        }),
+        # Alternative OData path
+        (f"{base}/hcm/Jobs/page/JobsSearchPage", {
+            "csk.JobBoard": "EXTERNAL",
+            "csk.HROrganization": hr_org,
+            "$format": "json",
+            "$top": 100,
+        }),
     ]
 
     data = None
-    for json_api in endpoints:
+    working_url = None
+    for json_api, params in endpoints:
         try:
             async with req(session, "get",
                 json_api,
-                params={
-                    "csk.JobBoard": "EXTERNAL",
-                    "csk.HROrganization": hr_org,
-                    "$format": "json",
-                    "$top": 100,
-                    "csk.Culture": "en-US",
-                },
+                params=params,
                 headers={**HEADERS, "Accept": "application/json"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)
             ) as r:
                 if r.status == 200:
-                    data = await r.json(content_type=None)
-                    if data:
+                    ct = r.headers.get("content-type", "")
+                    if "json" in ct:
+                        data = await r.json(content_type=None)
+                        working_url = json_api
                         break
+                    else:
+                        # Got HTML back — this endpoint doesn't return JSON
+                        continue
                 else:
                     logger.info(f"Infor {system}: HTTP {r.status} at {json_api}")
         except Exception as e:
@@ -1142,11 +1162,12 @@ async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tu
             continue
 
     if not data:
-        logger.info(f"Infor {system}: no data returned from any endpoint")
+        logger.info(f"Infor {system}: no JSON endpoint found — may need Playwright")
         return []
 
+    logger.info(f"Infor {system}: using {working_url}")
     try:
-        listings = data.get("value", data.get("d", {}).get("results", []))
+        listings = data.get("value", data.get("d", {}).get("results", data.get("jobs", [])))
         for j in listings:
             city  = j.get("City", "")
             state = j.get("State", "") or j.get("StateProvince", "")
@@ -1198,6 +1219,8 @@ async def run_playwright_scrapers() -> list[Job]:
         ("Mass General Brigham", "https://www.massgeneralbrigham.org/en/careers/search-jobs"),
         ("HCA Healthcare",       "https://careers.hcahealthcare.com/jobs"),
         ("Ascension Health",     "https://ascension.org/careers"),
+        # Infor CloudSuite — session-based, requires browser
+        ("CHRISTUS Health",      "https://careers.christushealth.org/job-search"),
         # Phenom-powered sites (JS-rendered, no public REST API)
         ("CommonSpirit Health",  "https://www.commonspirit.careers"),
         ("Baptist Health",       "https://jobs.baptisthealthcareers.com"),
