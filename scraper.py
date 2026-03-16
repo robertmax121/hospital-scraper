@@ -866,13 +866,17 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     break
                 data = await r.json(content_type=None)
 
-            listings = (
+            # Phenom career sites return various structures including Elasticsearch hits
+            raw = (
                 data.get("jobs") or
                 data.get("requisitions") or
                 data.get("results") or
-                data.get("data", {}).get("jobs") or
+                (data.get("hits") or {}).get("hits") or
+                (data.get("data") or {}).get("jobs") if isinstance(data.get("data"), dict) else None or
+                data.get("data") if isinstance(data.get("data"), list) else None or
                 []
             )
+            listings = [j for j in (raw or []) if isinstance(j, dict)]
             if not listings:
                 break
 
