@@ -1110,56 +1110,31 @@ async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tu
     org_id, base_url, hr_org = org_data
     jobs = []
 
-    # Infor CloudSuite HCM — Lawson CandidateSelfService JSON API
-    # This is the older Lawson HCM pattern used by CHRISTUS, Faith Regional, etc.
-    base = f"https://{org_id}.inforcloudsuite.com"
-    
-    # Try multiple endpoint patterns
+    # Infor CloudSuite HCM — try OData v1 endpoint first, then legacy
     endpoints = [
-        # Newer OData v1
-        (f"{base}/hcm/v1/Jobs", {
-            "csk.JobBoard": "EXTERNAL",
-            "csk.HROrganization": hr_org,
-            "$format": "json",
-            "$top": 100,
-        }),
-        # Lawson CandidateSelfService with JSON output
-        (f"{base}/hcm/CandidateSelfService/controller.servlet", {
-            "context.session.key.HROrganization": hr_org,
-            "context.session.key.JobBoard": "EXTERNAL",
-            "context.dataarea": "hcm",
-            "dataarea": "lmghr",
-            "JobPost": "1",
-            "format": "json",
-        }),
-        # Alternative OData path
-        (f"{base}/hcm/Jobs/page/JobsSearchPage", {
-            "csk.JobBoard": "EXTERNAL",
-            "csk.HROrganization": hr_org,
-            "$format": "json",
-            "$top": 100,
-        }),
+        f"https://{org_id}.inforcloudsuite.com/hcm/v1/Jobs",
+        f"https://{org_id}.inforcloudsuite.com/hcm/Jobs/page/JobsSearchPage",
     ]
 
     data = None
-    working_url = None
-    for json_api, params in endpoints:
+    for json_api in endpoints:
         try:
             async with req(session, "get",
                 json_api,
-                params=params,
+                params={
+                    "csk.JobBoard": "EXTERNAL",
+                    "csk.HROrganization": hr_org,
+                    "$format": "json",
+                    "$top": 100,
+                    "csk.Culture": "en-US",
+                },
                 headers={**HEADERS, "Accept": "application/json"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)
             ) as r:
                 if r.status == 200:
-                    ct = r.headers.get("content-type", "")
-                    if "json" in ct:
-                        data = await r.json(content_type=None)
-                        working_url = json_api
+                    data = await r.json(content_type=None)
+                    if data:
                         break
-                    else:
-                        # Got HTML back — this endpoint doesn't return JSON
-                        continue
                 else:
                     logger.info(f"Infor {system}: HTTP {r.status} at {json_api}")
         except Exception as e:
@@ -1167,12 +1142,11 @@ async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tu
             continue
 
     if not data:
-        logger.info(f"Infor {system}: no JSON endpoint found — may need Playwright")
+        logger.info(f"Infor {system}: no data returned from any endpoint")
         return []
 
-    logger.info(f"Infor {system}: using {working_url}")
     try:
-        listings = data.get("value", data.get("d", {}).get("results", data.get("jobs", [])))
+        listings = data.get("value", data.get("d", {}).get("results", []))
         for j in listings:
             city  = j.get("City", "")
             state = j.get("State", "") or j.get("StateProvince", "")
