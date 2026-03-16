@@ -29,8 +29,13 @@ logger = logging.getLogger(__name__)
 # ── Proxy rotation ─────────────────────────────────────────────────────────
 class ProxyRotator:
     def __init__(self):
-        raw = os.environ.get("PROXY_LIST", "")
-        self.proxies = [p.strip() for p in raw.split(",") if p.strip()]
+        proxy_file = os.environ.get("PROXY_FILE", "proxies.txt")
+        if os.path.exists(proxy_file):
+            with open(proxy_file) as f:
+                self.proxies = [line.strip().rstrip(",") for line in f if line.strip().rstrip(",")]
+        else:
+            raw = os.environ.get("PROXY_LIST", "")
+            self.proxies = [p.strip().rstrip(",") for p in re.split(r"[,\n]+", raw) if p.strip().rstrip(",")]
         self._i = 0
         if self.proxies:
             logger.info(f"  Proxies loaded: {len(self.proxies)} available")
