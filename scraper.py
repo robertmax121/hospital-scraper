@@ -456,7 +456,7 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
                     "in_iframe": "1",
                     "p_startrow": offset,
                 },
-                headers={**HEADERS, "Accept": "application/json, text/html"}, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+                headers={**HEADERS, "Accept": "application/json, text/html"}, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
                     logger.info(f"iCIMS {system}: HTTP {r.status}")
                     break
@@ -823,8 +823,105 @@ PHENOM_ORGS = {
     "Baylor Scott & White":  "https://jobs.bswhealth.com",
 }
 
+async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
+    jobs = []
+    endpoints = [
+        f"{base_url}/api/jobs",
+        f"{base_url}/api/search/jobs",
+        f"{base_url}/search/jobs",
+        f"{base_url}/en/search-results",
+    ]
+    api_url = None
+    for ep in endpoints:
+        try:
+            async with session.get(
+                ep,
+                params={"start": 0, "num": 1},
+                headers={**HEADERS, "Accept": "application/json"},
+                proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=15)
+            ) as r:
+                if r.status == 200:
+                    ct = r.headers.get("content-type", "")
+                    if "json" in ct:
+                        api_url = ep
+                        break
+        except:
+            continue
+
+    if not api_url:
+        logger.info(f"Phenom {system}: no API endpoint found")
+        return []
+
+    logger.info(f"Phenom {system}: using {api_url}")
+    offset = 0
+    while True:
+        try:
+            async with session.get(
+                api_url,
+                params={"start": offset, "num": 20, "size": 20, "from": offset},
+                headers={**HEADERS, "Accept": "application/json"},
+                proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=25)
+            ) as r:
+                if r.status != 200:
+                    break
+                data = await r.json(content_type=None)
+
+            listings = (
+                data.get("jobs") or
+                data.get("requisitions") or
+                data.get("results") or
+                data.get("data", {}).get("jobs") or
+                []
+            )
+            if not listings:
+                break
+
+            for j in listings:
+                loc = j.get("city", "") or j.get("location", "") or j.get("locations", "")
+                if isinstance(loc, list):
+                    loc = ", ".join(loc)
+                city = j.get("city", "")
+                state = j.get("state", "") or j.get("stateCode", "")
+                title = j.get("title", "") or j.get("jobTitle", "")
+                job_id = str(j.get("id", "") or j.get("jobId", "") or j.get("requisitionId", ""))
+                url = j.get("applyUrl", "") or j.get("jobUrl", "") or f"{base_url}/job/{job_id}"
+                if title and job_id:
+                    jobs.append(Job(
+                        title=title,
+                        hospital_system=system,
+                        hospital_name=j.get("facility", system) or system,
+                        city=city, state=state,
+                        location=loc or f"{city}, {state}",
+                        specialty=j.get("category", "") or j.get("jobCategory", ""),
+                        job_type=j.get("employmentType", "") or j.get("jobType", ""),
+                        url=url,
+                        job_id=job_id,
+                        posted_date=str(j.get("postedDate", "") or j.get("datePosted", ""))[:10],
+                        description=strip_html(str(j.get("description", "") or j.get("shortDescription", ""))),
+                        ats_platform="Phenom",
+                    ))
+
+            total = data.get("total", data.get("count", len(listings)))
+            offset += 20
+            if offset >= total or len(listings) < 20:
+                break
+            await jitter()
+        except Exception as e:
+            logger.info(f"Phenom {system}: {e}")
+            break
+
+    logger.info(f"  Phenom {system}: {len(jobs)} jobs")
+    return jobs
+
 async def run_phenom(session) -> list[Job]:
-    return []  # Handled by Playwright — see CUSTOM_SITES in run_playwright_scrapers()
+    logger.info(f"Phenom: scraping {len(PHENOM_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_phenom(session, s, u) for s, u in PHENOM_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Phenom total: {len(jobs):,} jobs")
+    return jobs
 
 
 
