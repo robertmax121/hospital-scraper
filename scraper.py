@@ -420,6 +420,7 @@ async def run_taleo(session) -> list[Job]:
 ICIMS_ORGS = {
     # Format: "System": "full.career.domain"
     # Domains verified from each org's public career page
+    "CommonSpirit Health":    "careers-commonspirit.icims.com",
     "Ascension Health":       "jobs.ascension.org",
     "Advocate Aurora Health": "jobs.advocateaurorahealth.org",
     "AdventHealth":           "jobs.adventhealth.com",
@@ -814,7 +815,7 @@ async def run_usajobs(session) -> list[Job]:
 #  These orgs are scraped via Playwright (see CUSTOM_SITES below).
 ##############################################################################
 PHENOM_ORGS = {
-    "CommonSpirit Health":   "https://www.commonspirit.careers",
+    # CommonSpirit moved to iCIMS — see ICIMS_ORGS
     "Baptist Health":        "https://jobs.baptisthealthcareers.com",
     "Corewell Health":       "https://careers.corewellhealth.org",
     "Munson Healthcare":     "https://careers.munsonhealthcare.org",
@@ -1403,6 +1404,7 @@ async def run_all() -> list[dict]:
             run_selectminds(proxy_session),
             run_recruitingcom(proxy_session),
             run_infor(proxy_session),
+            run_phenom(proxy_session),
             return_exceptions=True,
         )
 
