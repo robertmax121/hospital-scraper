@@ -569,6 +569,14 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
 # Normalize system keys to lowercase
 SYSTEM_LOCATION_DEFAULTS = {k.lower(): v for k, v in SYSTEM_LOCATION_DEFAULTS.items()}
 
+# Systems where we ALWAYS override city/state regardless of what the ATS returns.
+# Use sparingly — only when the ATS consistently returns wrong/campus-name data
+# and every job is definitively in one location.
+FORCE_LOCATION_OVERRIDE: dict[str, tuple[str, str]] = {
+    "memorial hermann": ("Houston", "TX"),
+}
+FORCE_LOCATION_OVERRIDE = {k.lower(): v for k, v in FORCE_LOCATION_OVERRIDE.items()}
+
 
 def parse_city_state(loc_str: str) -> tuple[str, str]:
     """
@@ -2109,6 +2117,11 @@ async def run_all() -> list[dict]:
 
         city  = (d.get("city")  or "").strip().strip(",").strip()
         state = (d.get("state") or "").strip().upper()
+
+        # Force override — always wins regardless of scraped data
+        _sys_key = (d.get("hospital_system") or "").strip().lower()
+        if _sys_key in FORCE_LOCATION_OVERRIDE:
+            city, state = FORCE_LOCATION_OVERRIDE[_sys_key]
 
         # Keep only the 2-char state code if state is noisy (e.g. "TX, United States" or "United States")
         COUNTRY_JUNK = {"united states", "us", "usa", "canada", "united kingdom", "uk"}
