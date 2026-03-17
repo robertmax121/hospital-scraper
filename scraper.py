@@ -1507,18 +1507,28 @@ async def run_playwright_scrapers() -> list[Job]:
                             if "json" in ct:
                                 d = await response.json()
                                 if isinstance(d, dict):
-                                    for key in ("jobs", "jobPostings", "results", "requisitions",
-                                                "postings", "data", "items", "hits"):
-                                        val = d.get(key)
-                                        if isinstance(val, list) and val:
-                                            captured.extend(val)
-                                            break
+                                    # Handle Elasticsearch nested hits: {"hits": {"hits": [...], "total": N}}
+                                    if isinstance(d.get("hits"), dict) and isinstance(d["hits"].get("hits"), list):
+                                        raw_hits = d["hits"]["hits"]
+                                        # Unwrap _source if present (ES pattern)
+                                        unwrapped = [h.get("_source", h) for h in raw_hits if isinstance(h, dict)]
+                                        captured.extend(unwrapped)
                                     else:
-                                        # Maybe the dict itself is a wrapper
-                                        if d.get("total") and isinstance(d.get("jobs"), list):
-                                            captured.extend(d["jobs"])
+                                        for key in ("jobs", "jobPostings", "results", "requisitions",
+                                                    "postings", "data", "items", "hits"):
+                                            val = d.get(key)
+                                            if isinstance(val, list) and val:
+                                                # Unwrap _source if ES-style hits
+                                                unwrapped = [j.get("_source", j) if isinstance(j, dict) and "_source" in j else j for j in val]
+                                                captured.extend(unwrapped)
+                                                break
+                                        else:
+                                            if d.get("total") and isinstance(d.get("jobs"), list):
+                                                captured.extend(d["jobs"])
                                 elif isinstance(d, list) and d:
-                                    captured.extend(d)
+                                    # Unwrap _source if ES-style hits
+                                    unwrapped = [j.get("_source", j) if isinstance(j, dict) and "_source" in j else j for j in d]
+                                    captured.extend(unwrapped)
                         except: pass
                 page.on("response", capture)
 
@@ -1546,13 +1556,26 @@ async def run_playwright_scrapers() -> list[Job]:
                     await page.evaluate("window.scrollBy(0, 600)")
                     await asyncio.sleep(0.8)
 
+                # Debug: log first raw job for CHRISTUS to inspect field names
+                if system_name == "CHRISTUS Health" and captured:
+                    sample = {k: v for k, v in list(captured[0].items())[:20]}
+                    logger.info(f"CHRISTUS sample job fields: {sample}")
+
                 for j in captured:
                     if not isinstance(j, dict):
                         continue
                     title = j.get("title", j.get("jobTitle", j.get("name", j.get("positionTitle", ""))))
-                    loc   = j.get("location", j.get("city", j.get("locationsText", j.get("primaryLocation", ""))))
+                    # Try many possible location field names; CHRISTUS uses various structures
+                    loc = (j.get("location") or j.get("city") or j.get("locationsText") or
+                           j.get("primaryLocation") or j.get("address") or
+                           j.get("locationName") or j.get("jobLocation") or "")
                     if isinstance(loc, dict):
-                        loc = f"{loc.get('city','')}, {loc.get('stateCode', loc.get('state',''))}"
+                        # Handle many possible dict shapes from different ATS platforms
+                        loc_city  = (loc.get("city") or loc.get("cityName") or loc.get("municipality") or
+                                     loc.get("addressLocality") or loc.get("name") or "")
+                        loc_state = (loc.get("stateCode") or loc.get("state") or loc.get("region") or
+                                     loc.get("countrySubdivisionCode") or loc.get("addressRegion") or "")
+                        loc = f"{loc_city}, {loc_state}" if loc_city or loc_state else ""
                     elif isinstance(loc, list):
                         loc = ", ".join(str(x) for x in loc[:2])
                     _parts = [p.strip() for p in str(loc).split(",")]
