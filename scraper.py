@@ -479,10 +479,19 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
 
                 # Parse job listings from HTML
                 # URL pattern: /job/{city}/{title-slug}/35300/{job-id}
+                # Match absolute URLs like:
+                # https://www.commonspirit.careers/job/redding/mammography-technologist/35300/79814467488
                 job_matches = re.findall(
-                    r'href="(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
+                    r'href="(?:https?://[^"]*)?(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
                     html
                 )
+                # Fallback: try extracting from full absolute URLs
+                if not job_matches:
+                    abs_matches = re.findall(
+                        r'href="https?://[^"]+(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
+                        html
+                    )
+                    job_matches = abs_matches
 
                 if not job_matches:
                     break
