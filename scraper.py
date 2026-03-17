@@ -1404,20 +1404,18 @@ async def run_playwright_scrapers() -> list[Job]:
                 await page.goto(url, wait_until="networkidle", timeout=45000)
                 await asyncio.sleep(random.uniform(2, 4))
 
-                # BSW Health (Phenom) requires clicking Search to trigger job load
+                # BSW Health (Phenom) — click the search submit button to trigger job API call
                 if "bswhealth.com" in url:
                     try:
-                        # Try clicking the search button
-                        btn = await page.query_selector("button[type='submit'], button.search-button, [data-ph-id='search-button'], button:has-text('Search')")
+                        # Wait for the search button to be ready, then click it
+                        await page.wait_for_selector("[data-ph-at-id='globalsearch-button']", timeout=10000)
+                        btn = await page.query_selector("[data-ph-at-id='globalsearch-button']")
                         if btn:
                             await btn.click()
-                            await asyncio.sleep(3)
+                            await asyncio.sleep(5)  # Wait for API response
+                            logger.info("BSW: clicked search button")
                         else:
-                            # Fallback: press Enter in the search box
-                            inp = await page.query_selector("input[type='text'], input[placeholder*='search'], input[placeholder*='Search'], input[name='keywords']")
-                            if inp:
-                                await inp.press("Enter")
-                                await asyncio.sleep(3)
+                            logger.info("BSW: search button not found")
                     except Exception as e:
                         logger.info(f"BSW search trigger: {e}")
 
