@@ -250,6 +250,70 @@ CAREER_SITE_FALLBACKS = [
     "External_Careers",
 ]
 
+
+def parse_city_state(loc_str: str) -> tuple[str, str]:
+    """
+    Extract (city, state) from a location string robustly.
+    Handles:
+      - "City, ST"
+      - "City, ST, United States"
+      - "ST, City"  (CHRISTUS-style reversed)
+      - Full state names from SmartRecruiters ("Chicago, Illinois")
+      - Single-segment strings ("Remote")
+    Returns 2-char state code where possible.
+    """
+    STATE_ABBR = {
+        "alabama":"AL","alaska":"AK","arizona":"AZ","arkansas":"AR","california":"CA",
+        "colorado":"CO","connecticut":"CT","delaware":"DE","florida":"FL","georgia":"GA",
+        "hawaii":"HI","idaho":"ID","illinois":"IL","indiana":"IN","iowa":"IA",
+        "kansas":"KS","kentucky":"KY","louisiana":"LA","maine":"ME","maryland":"MD",
+        "massachusetts":"MA","michigan":"MI","minnesota":"MN","mississippi":"MS",
+        "missouri":"MO","montana":"MT","nebraska":"NE","nevada":"NV","new hampshire":"NH",
+        "new jersey":"NJ","new mexico":"NM","new york":"NY","north carolina":"NC",
+        "north dakota":"ND","ohio":"OH","oklahoma":"OK","oregon":"OR","pennsylvania":"PA",
+        "rhode island":"RI","south carolina":"SC","south dakota":"SD","tennessee":"TN",
+        "texas":"TX","utah":"UT","vermont":"VT","virginia":"VA","washington":"WA",
+        "west virginia":"WV","wisconsin":"WI","wyoming":"WY","district of columbia":"DC",
+        "puerto rico":"PR","guam":"GU","virgin islands":"VI",
+    }
+    JUNK = {"united states","us","usa","canada","remote","united kingdom","uk",""}
+    if not loc_str:
+        return "", ""
+    parts = [p.strip() for p in str(loc_str).split(",")]
+    # Strip trailing zip codes from each part (e.g. "TX  75039" → "TX", "Irving TX 75039" → "Irving TX")
+    import re as _re
+    parts = [_re.sub(r'\s+\d{5}(-\d{4})?$', '', p).strip() for p in parts]
+    # Remove segments that are purely numeric (zip-only segments)
+    parts = [p for p in parts if not p.isdigit()]
+    # Mark remote explicitly before stripping junk
+    is_remote = any(p.lower() == "remote" for p in parts)
+    parts = [p for p in parts if p.lower() not in JUNK]
+    if not parts:
+        return ("Remote", "") if is_remote else ("", "")
+
+    # Find 2-char alpha state code anywhere in parts
+    state = next((p for p in parts if len(p) == 2 and p.isalpha()), "")
+
+    # If no 2-char code, check for full state name
+    if not state:
+        for p in parts:
+            abbr = STATE_ABBR.get(p.lower(), "")
+            if abbr:
+                state = abbr
+                break
+
+    # Determine city: if first part IS the state code → reversed format
+    if parts and len(parts[0]) == 2 and parts[0].isalpha() and parts[0].upper() == state:
+        city = parts[1] if len(parts) > 1 else ""
+    else:
+        # Remove state/country parts to get city
+        city = next((p for p in parts
+                     if p != state
+                     and p.lower() not in JUNK
+                     and not STATE_ABBR.get(p.lower(), "")), parts[0])
+
+    return city.strip(), state.upper() if state else ""
+
 async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_data: tuple) -> list[Job]:
     tenant, wd_num, primary_site = tenant_data
     jobs = []
@@ -292,13 +356,13 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
             if not listings: break
             for j in listings:
                 loc = j.get("locationsText", "")
-                parts = [p.strip() for p in loc.split(",")]
+                _city, _state = parse_city_state(loc)
                 jobs.append(Job(
                     title=j.get("title", ""),
                     hospital_system=system,
-                    hospital_name=loc or system,
-                    city=parts[0] if parts else "",
-                    state=parts[1] if len(parts) > 1 else "",
+                    hospital_name=system,
+                    city=_city,
+                    state=_state,
                     location=loc,
                     specialty=(j.get("categories") or [{}])[0].get("name", ""),
                     job_type=j.get("timeType", ""),
@@ -379,7 +443,12 @@ async def scrape_taleo(session: aiohttp.ClientSession, system: str, org: str) ->
             reqs = data.get("requisitionList", [])
             if not reqs: break
             for j in reqs:
-                city, state = j.get("city", ""), j.get("state", "")
+                _tcity = j.get("city", "")
+                _tstate = j.get("state", "")
+                # Taleo state can be full name ("Texas") — normalize to 2-char
+                _, state = parse_city_state(f"{_tcity}, {_tstate}")
+                city  = _tcity
+                state = state or _tstate
                 jobs.append(Job(
                     title=j.get("title", ""),
                     hospital_system=system,
@@ -444,10 +513,16 @@ TALENTBREW_ORGS = {
 }
 
 async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_url: str, rpp: int = 100) -> list[Job]:
-    """Scrape a TalentBrew career site via their paginated results endpoint."""
+    """Scrape a TalentBrew career site via their paginated results endpoint.
+    Includes robust retry logic with exponential backoff + proxy rotation for
+    connection drops (the CommonSpirit server intermittently drops the TCP
+    connection mid-session, typically around page 14 of 48).
+    """
     jobs = []
     page = 1
     results_url = base_url.rstrip("/") + "/results"
+    MAX_RETRIES = 6          # max retries per page before giving up on that page
+    BASE_BACKOFF = 2.0       # seconds — doubles each retry
 
     while True:
         params = {
@@ -474,20 +549,23 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
             "ResultsType": "0",
             "fc": "", "fl": "", "fcf": "", "afc": "", "afl": "", "afcf": "",
         }
-        try:
-            async with req(session, "get", results_url, params=params,
-                           headers={**HEADERS, "X-Requested-With": "XMLHttpRequest",
-                                    "Accept": "text/html,*/*"},
-                           proxy=proxies.get(),
-                           timeout=aiohttp.ClientTimeout(total=60)) as r:
-                if r.status != 200:
-                    logger.info(f"TalentBrew {system}: HTTP {r.status} on page {page}")
-                    break
-                html = await r.text()
 
-                # Parse job listings from HTML
-                # URL pattern: /job/{city}/{title-slug}/35300/{job-id}
-                # Response is JSON: {"filters":"...","results":"<html>","hasJobs":true}
+        attempt = 0
+        page_succeeded = False
+
+        while attempt <= MAX_RETRIES:
+            try:
+                async with req(session, "get", results_url, params=params,
+                               headers={**HEADERS, "X-Requested-With": "XMLHttpRequest",
+                                        "Accept": "text/html,*/*"},
+                               proxy=proxies.get(),
+                               timeout=aiohttp.ClientTimeout(total=90)) as r:
+                    if r.status != 200:
+                        logger.info(f"TalentBrew {system}: HTTP {r.status} on page {page}")
+                        return jobs  # non-retryable HTTP error — stop
+                    html = await r.text()
+
+                # Parse response — JSON envelope wrapping HTML fragment
                 try:
                     data = json.loads(html)
                     results_html = data.get("results", "")
@@ -497,19 +575,18 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     has_jobs = True
 
                 if not has_jobs or not results_html:
-                    logger.info(f"TalentBrew {system}: hasJobs={has_jobs}, empty results on page {page}")
-                    break
+                    logger.info(f"TalentBrew {system}: hasJobs={has_jobs}, empty on page {page} — done")
+                    return jobs
 
-                # Extract job URLs from results HTML fragment
-                # Pattern: /job/{city}/{title-slug}/35300/{job-id}
+                # Extract job URLs — pattern: /job/{city}/{title-slug}/35300/{job-id}
                 job_matches = re.findall(
                     r'href="(?:https?://[^"]*)?(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
                     results_html
                 )
 
                 if not job_matches:
-                    logger.info(f"TalentBrew {system}: no job links found on page {page}. Results snippet: {results_html[:200]!r}")
-                    break
+                    logger.info(f"TalentBrew {system}: no job links on page {page} — done")
+                    return jobs
 
                 seen = set()
                 for url_path, city, title_slug, job_id in job_matches:
@@ -520,7 +597,7 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     title = title_slug.replace("-", " ").title()
                     city_name = city.replace("-", " ").title()
 
-                    # Try to extract actual title from nearby heading in results HTML
+                    # Extract actual title from adjacent heading in HTML
                     title_match = re.search(
                         rf'href="[^"]*{re.escape(job_id)}"[^>]*>\s*([^<]+)<',
                         results_html
@@ -545,22 +622,34 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     ))
 
                 logger.info(f"TalentBrew {system}: page {page} → {len(seen)} jobs (total so far: {len(jobs)})")
+                page_succeeded = True
 
-                # If we got fewer than requested, we're on the last page
                 if len(seen) < rpp:
-                    break
-                page += 1
-                await jitter()
+                    return jobs  # last page — we're done
+                break  # success — move to next page
 
-        except Exception as e:
-            err_str = str(e)
-            logger.info(f"TalentBrew {system}: {e}")
-            # Retry on incomplete payload — server dropped connection mid-response
-            if "payload" in err_str.lower() or "incomplete" in err_str.lower() or "connection" in err_str.lower():
-                logger.info(f"TalentBrew {system}: retrying page {page} after connection drop...")
-                await asyncio.sleep(3)
-                continue  # retry same page
-            break
+            except Exception as e:
+                err_str = str(e).lower()
+                attempt += 1
+                # Retryable: any TCP/SSL connection failure, timeout, or incomplete read
+                is_retryable = any(kw in err_str for kw in [
+                    "connect", "timeout", "payload", "incomplete",
+                    "reset", "broken pipe", "eof", "ssl", "timed out"
+                ])
+                if is_retryable and attempt <= MAX_RETRIES:
+                    backoff = BASE_BACKOFF * (2 ** (attempt - 1))  # 2, 4, 8, 16, 32, 64s
+                    logger.info(f"TalentBrew {system}: page {page} connection error ({e}) — retry {attempt}/{MAX_RETRIES} in {backoff:.0f}s (new proxy)")
+                    await asyncio.sleep(backoff)
+                    # proxies.get() will automatically rotate to next proxy on next call
+                else:
+                    logger.info(f"TalentBrew {system}: page {page} failed after {attempt} attempts — {e}")
+                    return jobs  # give up on this system
+
+        if not page_succeeded:
+            return jobs
+
+        page += 1
+        await jitter()
 
     return jobs
 
@@ -611,14 +700,13 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
                         break
                     for j in listings:
                         loc = j.get("joblocation", "") or j.get("location", "")
-                        parts = [p.strip() for p in str(loc).split(",")]
+                        _city, _state = parse_city_state(str(loc))
                         jid = str(j.get("jobid", j.get("id", "")))
                         jobs.append(Job(
                             title=j.get("jobtitle", j.get("title", "")),
                             hospital_system=system,
                             hospital_name=j.get("jobcompany", system),
-                            city=parts[0] if parts else "",
-                            state=parts[-1] if len(parts) > 1 else "",
+                            city=_city, state=_state,
                             location=str(loc),
                             specialty=j.get("jobcategory", ""),
                             job_type=j.get("jobtype", ""),
@@ -648,12 +736,12 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
                                 found_json = page_data.get("jobs", [])
                                 for j in found_json:
                                     loc = j.get("location", "")
-                                    parts = [p.strip() for p in loc.split(",")]
+                                    _city, _state = parse_city_state(loc)
                                     jid = str(j.get("id", ""))
                                     jobs.append(Job(
                                         title=j.get("title", ""),
                                         hospital_system=system, hospital_name=system,
-                                        city=parts[0] if parts else "", state=parts[-1] if len(parts)>1 else "",
+                                        city=_city, state=_state,
                                         location=loc, specialty="", job_type="",
                                         url=f"https://{domain}/jobs/{jid}/job",
                                         job_id=jid, posted_date="", description="",
@@ -662,10 +750,10 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
                             except: pass
                         break
                     for jid, title, loc in found:
-                        parts = [p.strip() for p in loc.split(",")]
+                        _city, _state = parse_city_state(loc)
                         jobs.append(Job(
                             title=title, hospital_system=system, hospital_name=system,
-                            city=parts[0] if parts else "", state=parts[-1] if len(parts)>1 else "",
+                            city=_city, state=_state,
                             location=loc, specialty="", job_type="",
                             url=f"https://{domain}/jobs/{jid}/job",
                             job_id=jid, posted_date="", description="", ats_platform="iCIMS",
@@ -732,13 +820,13 @@ async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: st
         jobs = []
         for j in data.get("jobs", []):
             loc = j.get("location", {}).get("name", "")
-            parts = [p.strip() for p in loc.split(",")]
+            _city, _state = parse_city_state(loc)
             jobs.append(Job(
                 title=j.get("title", ""),
                 hospital_system=system,
                 hospital_name=system,
-                city=parts[0] if parts else "",
-                state=parts[-1] if len(parts) > 1 else "",
+                city=_city,
+                state=_state,
                 location=loc,
                 specialty=next((d["name"] for d in j.get("departments", []) if d.get("name")), ""),
                 job_type="Full-time",
@@ -798,9 +886,11 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
             listings = data.get("content", [])
             if not listings: break
             for j in listings:
-                loc   = j.get("location", {})
-                city  = loc.get("city", "")
-                state = loc.get("region", "")
+                loc_d  = j.get("location", {})
+                city   = loc_d.get("city", "")
+                # region is often a full state name ("Illinois") — normalize it
+                _, _state = parse_city_state(f"{city}, {loc_d.get('region','')}")
+                state  = _state or loc_d.get("region", "")
                 jobs.append(Job(
                     title=j.get("name", ""),
                     hospital_system=system,
@@ -858,13 +948,13 @@ async def scrape_lever(session: aiohttp.ClientSession, system: str, org: str) ->
         jobs = []
         for j in (listings if isinstance(listings, list) else []):
             loc = j.get("categories", {}).get("location", "")
-            parts = [p.strip() for p in loc.split(",")]
+            _city, _state = parse_city_state(loc)
             jobs.append(Job(
                 title=j.get("text", ""),
                 hospital_system=system,
                 hospital_name=system,
-                city=parts[0] if parts else "",
-                state=parts[-1] if len(parts) > 1 else "",
+                city=_city,
+                state=_state,
                 location=loc,
                 specialty=j.get("categories", {}).get("department", ""),
                 job_type=j.get("categories", {}).get("commitment", ""),
@@ -1029,8 +1119,12 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 loc = j.get("city", "") or j.get("location", "") or j.get("locations", "")
                 if isinstance(loc, list):
                     loc = ", ".join(loc)
-                city = j.get("city", "")
-                state = j.get("state", "") or j.get("stateCode", "")
+                _raw_city  = j.get("city", "")
+                _raw_state = j.get("state", "") or j.get("stateCode", "")
+                # Run through parse_city_state to normalize full state names → abbreviations
+                city, state = parse_city_state(f"{_raw_city}, {_raw_state}") if (_raw_city or _raw_state) else (_raw_city, _raw_state)
+                city  = city  or _raw_city
+                state = state or _raw_state
                 title = j.get("title", "") or j.get("jobTitle", "")
                 job_id = str(j.get("id", "") or j.get("jobId", "") or j.get("requisitionId", ""))
                 url = j.get("applyUrl", "") or j.get("jobUrl", "") or f"{base_url}/job/{job_id}"
@@ -1138,12 +1232,12 @@ async def scrape_adp(session: aiohttp.ClientSession, system: str, cid: str) -> l
                 loc_obj = j.get("location") or j.get("primaryLocation") or {}
                 if isinstance(loc_obj, str):
                     loc = loc_obj
-                    parts = [p.strip() for p in loc.split(",")]
-                    city = parts[0] if parts else ""
-                    state = parts[-1] if len(parts) > 1 else ""
+                    city, state = parse_city_state(loc)
                 else:
                     city  = loc_obj.get("city", "")
-                    state = loc_obj.get("stateCode", "") or loc_obj.get("countrySubdivisionCode", "")
+                    raw_st = loc_obj.get("stateCode", "") or loc_obj.get("countrySubdivisionCode", "")
+                    _, state = parse_city_state(f"{city}, {raw_st}")
+                    state = state or raw_st
                     loc   = f"{city}, {state}"
                 title  = j.get("jobTitle", j.get("title", ""))
                 job_id = str(j.get("requisitionId", j.get("id", j.get("jobPostingId", ""))))
@@ -1224,13 +1318,12 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
 
             for j in listings:
                 loc = j.get("location", "")
-                parts = [p.strip() for p in loc.split(",")]
+                _city, _state = parse_city_state(loc)
                 jobs.append(Job(
                     title=j.get("title", ""),
                     hospital_system=system,
                     hospital_name=j.get("department", system),
-                    city=parts[0] if parts else "",
-                    state=parts[-1] if len(parts) > 1 else "",
+                    city=_city, state=_state,
                     location=loc,
                     specialty=j.get("category", ""),
                     job_type=j.get("employment_type", ""),
@@ -1298,13 +1391,12 @@ async def scrape_recruitingcom(session: aiohttp.ClientSession, system: str, org:
 
             for j in listings:
                 loc = j.get("location", "") or j.get("city", "")
-                parts = [p.strip() for p in str(loc).split(",")]
+                _city, _state = parse_city_state(str(loc))
                 jobs.append(Job(
                     title=j.get("title", ""),
                     hospital_system=system,
                     hospital_name=system,
-                    city=parts[0] if parts else "",
-                    state=parts[-1] if len(parts) > 1 else "",
+                    city=_city, state=_state,
                     location=str(loc),
                     specialty=j.get("department", "") or j.get("category", ""),
                     job_type=j.get("employment_type", "") or j.get("type", ""),
@@ -1417,8 +1509,11 @@ async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tu
     try:
         listings = data.get("value", data.get("d", {}).get("results", data.get("jobs", [])))
         for j in listings:
-            city  = j.get("City", "")
-            state = j.get("State", "") or j.get("StateProvince", "")
+            _icity = j.get("City", "")
+            _istate = j.get("State", "") or j.get("StateProvince", "")
+            _, state = parse_city_state(f"{_icity}, {_istate}")
+            city  = _icity
+            state = state or _istate
             jobs.append(Job(
                 title=j.get("JobTitle", j.get("Title", "")),
                 hospital_system=system,
@@ -1578,19 +1673,7 @@ async def run_playwright_scrapers() -> list[Job]:
                         loc = f"{loc_city}, {loc_state}" if loc_city or loc_state else ""
                     elif isinstance(loc, list):
                         loc = ", ".join(str(x) for x in loc[:2])
-                    _parts = [p.strip() for p in str(loc).split(",")]
-                    # Find the 2-char state code among all parts
-                    _state = next((p for p in _parts if len(p) == 2 and p.isalpha()), "")
-                    # If first part IS the state code, location is "ST, City" format (e.g. CHRISTUS)
-                    # In that case city is the second part; otherwise city is the first part
-                    if _parts and len(_parts[0]) == 2 and _parts[0].isalpha():
-                        _city = _parts[1] if len(_parts) > 1 else ""
-                    else:
-                        # Normal "City, ST" or "City, ST, Country" format
-                        _city = _parts[0] if _parts else ""
-                    if not _state and len(_parts) > 1:
-                        _cand = _parts[1].strip()
-                        _state = _cand[:2] if len(_cand) >= 2 and _cand[:2].isalpha() else ""
+                    _city, _state = parse_city_state(str(loc))
                     job_id = str(j.get("id", j.get("jobId", j.get("requisitionId", j.get("externalId", "")))))
                     if not job_id:
                         job_id = f"{system_name}_{title}_{loc}"[:80]
@@ -1719,15 +1802,12 @@ async def run_all() -> list[dict]:
                 loc_parts = [p.strip() for p in raw_loc.split(",")]
                 state = next((p for p in loc_parts if len(p) == 2 and p.isalpha()), "")
 
-        # Blank city if it matches hospital name or system (Workday often puts hospital name in city)
-        # Exact match, or city is clearly a hospital-name fragment (contains org keywords)
+        # Blank city only if it is an exact match for the hospital/system name
+        # (Workday previously put loc string as hospital_name — now fixed upstream)
         hosp_name   = (d.get("hospital_name")   or "").strip().lower()
         hosp_system = (d.get("hospital_system") or "").strip().lower()
         city_lower  = city.lower()
-        HOSP_KEYWORDS = {"health", "hospital", "medical", "clinic", "care", "system", "medicine", "centre", "center"}
-        city_is_org = any(kw in city_lower for kw in HOSP_KEYWORDS)
-        if (city_lower == hosp_name or city_lower == hosp_system
-                or (city_is_org and (city_lower in hosp_name or hosp_name in city_lower))):
+        if city_lower and (city_lower == hosp_name or city_lower == hosp_system):
             city = ""
 
         # Build canonical location: "City, ST" — blank if both missing
