@@ -1659,11 +1659,55 @@ async def run_all() -> list[dict]:
             all_jobs.extend(r)
 
     seen, unique = set(), []
+
+    def normalize_job(j: Job) -> dict:
+        """Standardize location fields before writing to Supabase.
+        - city/state cleaned and trimmed
+        - If city matches hospital_name (or hospital_system), blank the city
+        - location always built as 'City, ST' from clean city + state
+        """
+        d = asdict(j)
+
+        city  = (d.get("city")  or "").strip().strip(",").strip()
+        state = (d.get("state") or "").strip().upper()
+
+        # Keep only the last 2-char segment if state is noisy (e.g. "TX, United States" -> "TX")
+        if state and len(state) > 2:
+            parts = [p.strip() for p in state.split(",")]
+            # Take first 2-char segment
+            state = next((p for p in parts if len(p) == 2 and p.isalpha()), parts[0][:2])
+
+        # Blank city if it matches hospital name or system (Workday often puts hospital name in city)
+        # Exact match, or city is clearly a hospital-name fragment (contains org keywords)
+        hosp_name   = (d.get("hospital_name")   or "").strip().lower()
+        hosp_system = (d.get("hospital_system") or "").strip().lower()
+        city_lower  = city.lower()
+        HOSP_KEYWORDS = {"health", "hospital", "medical", "clinic", "care", "system", "medicine", "centre", "center"}
+        city_is_org = any(kw in city_lower for kw in HOSP_KEYWORDS)
+        if (city_lower == hosp_name or city_lower == hosp_system
+                or (city_is_org and (city_lower in hosp_name or hosp_name in city_lower))):
+            city = ""
+
+        # Build canonical location: "City, ST" — blank if both missing
+        if city and state:
+            location = f"{city}, {state}"
+        elif state:
+            location = state
+        elif city:
+            location = city
+        else:
+            location = ""
+
+        d["city"]     = city
+        d["state"]    = state
+        d["location"] = location
+        return d
+
     for job in all_jobs:
         key = f"{job.ats_platform}::{job.hospital_system}::{job.job_id}"
         if key not in seen and job.job_id and job.title:
             seen.add(key)
-            unique.append(asdict(job))
+            unique.append(normalize_job(job))
 
     elapsed = (datetime.now() - start).seconds
     logger.info("=" * 55)
