@@ -1579,19 +1579,27 @@ async def run_playwright_scrapers() -> list[Job]:
                     elif isinstance(loc, list):
                         loc = ", ".join(str(x) for x in loc[:2])
                     _parts = [p.strip() for p in str(loc).split(",")]
-                    # Robust state extraction: find first 2-char alpha code (handles "City, ST, United States")
-                    _city  = _parts[0] if _parts else ""
+                    # Find the 2-char state code among all parts
                     _state = next((p for p in _parts if len(p) == 2 and p.isalpha()), "")
+                    # If first part IS the state code, location is "ST, City" format (e.g. CHRISTUS)
+                    # In that case city is the second part; otherwise city is the first part
+                    if _parts and len(_parts[0]) == 2 and _parts[0].isalpha():
+                        _city = _parts[1] if len(_parts) > 1 else ""
+                    else:
+                        # Normal "City, ST" or "City, ST, Country" format
+                        _city = _parts[0] if _parts else ""
                     if not _state and len(_parts) > 1:
                         _cand = _parts[1].strip()
                         _state = _cand[:2] if len(_cand) >= 2 and _cand[:2].isalpha() else ""
                     job_id = str(j.get("id", j.get("jobId", j.get("requisitionId", j.get("externalId", "")))))
                     if not job_id:
                         job_id = f"{system_name}_{title}_{loc}"[:80]
+                    # hospital_name: prefer bu (CHRISTUS business unit) > facility > department > system
+                    _hosp_name = (j.get("bu") or j.get("facility") or j.get("department") or system_name)
                     if title:
                         jobs.append(Job(
                             title=str(title), hospital_system=system_name,
-                            hospital_name=j.get("facility", j.get("department", system_name)),
+                            hospital_name=_hosp_name,
                             city=_city,
                             state=_state,
                             location=str(loc), specialty=j.get("category", j.get("jobCategory", "")),
