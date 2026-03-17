@@ -251,6 +251,325 @@ CAREER_SITE_FALLBACKS = [
 ]
 
 
+##############################################################################
+#  LOCATION LOOKUP TABLES
+#  Two-tier fallback applied in normalize_job() when city/state is blank
+#  or unparseable from the ATS response.
+#
+#  Tier 1 — FACILITY_LOCATION_MAP: specific hospital/campus name → (city, state)
+#  Tier 2 — SYSTEM_LOCATION_DEFAULTS: hospital system → (city, state)
+#            Used when the specific facility isn't in Tier 1.
+##############################################################################
+
+FACILITY_LOCATION_MAP: dict[str, tuple[str, str]] = {
+    # ── Memorial Hermann ──────────────────────────────────────────────────
+    "memorial hermann texas medical center": ("Houston", "TX"),
+    "memorial hermann memorial city medical center": ("Houston", "TX"),
+    "memorial hermann greater heights hospital": ("Houston", "TX"),
+    "memorial hermann southwest hospital": ("Houston", "TX"),
+    "memorial hermann southeast hospital": ("Houston", "TX"),
+    "memorial hermann sugar land hospital": ("Sugar Land", "TX"),
+    "memorial hermann pearland hospital": ("Pearland", "TX"),
+    "memorial hermann katy hospital": ("Katy", "TX"),
+    "memorial hermann northeast hospital": ("Humble", "TX"),
+    "memorial hermann the woodlands medical center": ("The Woodlands", "TX"),
+    "memorial hermann rehabilitation hospital - katy": ("Katy", "TX"),
+    "memorial hermann surgical hospital": ("Houston", "TX"),
+    "tirr memorial hermann": ("Houston", "TX"),
+    "memorial hermann medical group": ("Houston", "TX"),
+    "memorial hermann": ("Houston", "TX"),
+    # ── CHRISTUS Health ───────────────────────────────────────────────────
+    "christus system office": ("Irving", "TX"),
+    "christus ministry system office": ("Irving", "TX"),
+    "christus health ark-la-tex": ("Texarkana", "TX"),
+    "christus spohn health system": ("Corpus Christi", "TX"),
+    "christus spohn hospital corpus christi - shoreline": ("Corpus Christi", "TX"),
+    "christus spohn hospital corpus christi - south": ("Corpus Christi", "TX"),
+    "christus spohn hospital alice": ("Alice", "TX"),
+    "christus spohn hospital beeville": ("Beeville", "TX"),
+    "christus spohn hospital kleberg": ("Kingsville", "TX"),
+    "christus spohn hospital kenedy": ("Kenedy", "TX"),
+    "christus good shepherd health system": ("Longview", "TX"),
+    "christus good shepherd medical center - longview": ("Longview", "TX"),
+    "christus good shepherd medical center - marshall": ("Marshall", "TX"),
+    "christus mother frances hospital - tyler": ("Tyler", "TX"),
+    "christus mother frances hospital - jacksonville": ("Jacksonville", "TX"),
+    "christus mother frances hospital - winnsboro": ("Winnsboro", "TX"),
+    "christus mother frances hospital - sulphur springs": ("Sulphur Springs", "TX"),
+    "christus southeast texas health system": ("Beaumont", "TX"),
+    "christus southeast texas - st. elizabeth": ("Beaumont", "TX"),
+    "christus southeast texas - jasper memorial": ("Jasper", "TX"),
+    "christus santa rosa health system": ("San Antonio", "TX"),
+    "christus santa rosa hospital - medical center": ("San Antonio", "TX"),
+    "christus santa rosa hospital - alamo heights": ("San Antonio", "TX"),
+    "christus santa rosa hospital - new braunfels": ("New Braunfels", "TX"),
+    "christus santa rosa hospital - westover hills": ("San Antonio", "TX"),
+    "christus santa rosa hospital - kyle": ("Kyle", "TX"),
+    "christus trinity mother frances": ("Tyler", "TX"),
+    "christus muguerza": ("Monterrey", "TX"),
+    "christus health shreveport-bossier": ("Shreveport", "LA"),
+    "christus health shreveport": ("Shreveport", "LA"),
+    "christus schumpert health system": ("Shreveport", "LA"),
+    "christus dubuis hospital": ("Houston", "TX"),
+    "christus st. vincent regional medical center": ("Santa Fe", "NM"),
+    "christus st. vincent": ("Santa Fe", "NM"),
+    "christus highlands medical center": ("Sulphur Springs", "TX"),
+    "christus continuing care": ("Irving", "TX"),
+    "christus children's": ("San Antonio", "TX"),
+    "christus children's hospital": ("San Antonio", "TX"),
+    # ── Houston Methodist ─────────────────────────────────────────────────
+    "houston methodist hospital": ("Houston", "TX"),
+    "houston methodist san jacinto hospital": ("Baytown", "TX"),
+    "houston methodist west hospital": ("Houston", "TX"),
+    "houston methodist willowbrook hospital": ("Houston", "TX"),
+    "houston methodist sugar land hospital": ("Sugar Land", "TX"),
+    "houston methodist st. john hospital": ("Nassau Bay", "TX"),
+    "houston methodist clear lake hospital": ("Nassau Bay", "TX"),
+    "houston methodist baytown hospital": ("Baytown", "TX"),
+    "houston methodist the woodlands hospital": ("The Woodlands", "TX"),
+    # ── Baylor Scott & White ──────────────────────────────────────────────
+    "baylor university medical center": ("Dallas", "TX"),
+    "baylor scott & white medical center - temple": ("Temple", "TX"),
+    "baylor scott & white medical center - waco": ("Waco", "TX"),
+    "baylor scott & white medical center - round rock": ("Round Rock", "TX"),
+    "baylor scott & white medical center - mckinney": ("McKinney", "TX"),
+    "baylor scott & white medical center - plano": ("Plano", "TX"),
+    "baylor scott & white all saints medical center": ("Fort Worth", "TX"),
+    "baylor scott & white medical center - irving": ("Irving", "TX"),
+    "baylor scott & white medical center - hillcrest": ("Waco", "TX"),
+    # ── Cleveland Clinic ──────────────────────────────────────────────────
+    "cleveland clinic main campus": ("Cleveland", "OH"),
+    "cleveland clinic akron general": ("Akron", "OH"),
+    "cleveland clinic florida": ("Weston", "FL"),
+    "cleveland clinic abu dhabi": ("Abu Dhabi", "AE"),
+    "cleveland clinic london": ("London", ""),
+    "cleveland clinic avon hospital": ("Avon", "OH"),
+    "cleveland clinic marymount hospital": ("Garfield Heights", "OH"),
+    "cleveland clinic hillcrest hospital": ("Mayfield Heights", "OH"),
+    "cleveland clinic fairview hospital": ("Cleveland", "OH"),
+    "cleveland clinic medina hospital": ("Medina", "OH"),
+    "cleveland clinic union hospital": ("Dover", "OH"),
+    # ── Mayo Clinic ───────────────────────────────────────────────────────
+    "mayo clinic - rochester": ("Rochester", "MN"),
+    "mayo clinic rochester": ("Rochester", "MN"),
+    "mayo clinic - phoenix": ("Phoenix", "AZ"),
+    "mayo clinic - scottsdale": ("Scottsdale", "AZ"),
+    "mayo clinic - jacksonville": ("Jacksonville", "FL"),
+    "mayo clinic florida": ("Jacksonville", "FL"),
+    "mayo clinic arizona": ("Phoenix", "AZ"),
+    "mayo clinic health system": ("Rochester", "MN"),
+    # ── HCA Healthcare ────────────────────────────────────────────────────
+    "hca houston healthcare": ("Houston", "TX"),
+    "hca florida": ("Nashville", "TN"),
+    "las vegas": ("Las Vegas", "NV"),
+    # ── Parkland Health ───────────────────────────────────────────────────
+    "parkland memorial hospital": ("Dallas", "TX"),
+    "parkland health": ("Dallas", "TX"),
+    # ── UT Southwestern ───────────────────────────────────────────────────
+    "ut southwestern medical center": ("Dallas", "TX"),
+    "university of texas southwestern medical center": ("Dallas", "TX"),
+    # ── Montefiore ────────────────────────────────────────────────────────
+    "montefiore medical center": ("Bronx", "NY"),
+    "montefiore einstein": ("Bronx", "NY"),
+    "montefiore nyack": ("Nyack", "NY"),
+    "montefiore new rochelle": ("New Rochelle", "NY"),
+    "montefiore mount vernon": ("Mount Vernon", "NY"),
+    # ── NewYork-Presbyterian ──────────────────────────────────────────────
+    "newyork-presbyterian hospital": ("New York", "NY"),
+    "newyork-presbyterian/weill cornell": ("New York", "NY"),
+    "newyork-presbyterian/columbia": ("New York", "NY"),
+    "newyork-presbyterian brooklyn methodist": ("Brooklyn", "NY"),
+    "newyork-presbyterian queens": ("Flushing", "NY"),
+    "newyork-presbyterian lower manhattan": ("New York", "NY"),
+    "newyork-presbyterian hudson valley": ("Cortlandt Manor", "NY"),
+    # ── Thomas Jefferson / Jefferson Health ───────────────────────────────
+    "thomas jefferson university hospital": ("Philadelphia", "PA"),
+    "jefferson hospital": ("Philadelphia", "PA"),
+    "jefferson cherry hill hospital": ("Cherry Hill", "NJ"),
+    "jefferson stratford hospital": ("Stratford", "NJ"),
+    "jefferson abington hospital": ("Abington", "PA"),
+    "jefferson torresdale hospital": ("Philadelphia", "PA"),
+    # ── Mass General Brigham ──────────────────────────────────────────────
+    "massachusetts general hospital": ("Boston", "MA"),
+    "brigham and women's hospital": ("Boston", "MA"),
+    "newton-wellesley hospital": ("Newton", "MA"),
+    "north shore medical center": ("Salem", "MA"),
+    "mclean hospital": ("Belmont", "MA"),
+    "spaulding rehabilitation": ("Boston", "MA"),
+    "martha's vineyard hospital": ("Oak Bluffs", "MA"),
+    "nantucket cottage hospital": ("Nantucket", "MA"),
+    "faulkner hospital": ("Boston", "MA"),
+    # ── Vanderbilt Health ─────────────────────────────────────────────────
+    "vanderbilt university medical center": ("Nashville", "TN"),
+    "vanderbilt wilson county hospital": ("Lebanon", "TN"),
+    "vanderbilt health one hundred oaks": ("Nashville", "TN"),
+    # ── Ochsner Health ────────────────────────────────────────────────────
+    "ochsner medical center": ("New Orleans", "LA"),
+    "ochsner medical center - west bank": ("Gretna", "LA"),
+    "ochsner medical center - kenner": ("Kenner", "LA"),
+    "ochsner medical center - north shore": ("Slidell", "LA"),
+    "ochsner medical center - baton rouge": ("Baton Rouge", "LA"),
+    "ochsner lafayette general": ("Lafayette", "LA"),
+    "ochsner medical center - shreveport": ("Shreveport", "LA"),
+    # ── UNC Health ────────────────────────────────────────────────────────
+    "unc hospitals": ("Chapel Hill", "NC"),
+    "unc rex healthcare": ("Raleigh", "NC"),
+    "unc nash health care": ("Rocky Mount", "NC"),
+    "unc lenoir health care": ("Kinston", "NC"),
+    "chatham hospital": ("Siler City", "NC"),
+    "caldwell memorial hospital": ("Lenoir", "NC"),
+    # ── Intermountain Healthcare ──────────────────────────────────────────
+    "intermountain medical center": ("Murray", "UT"),
+    "primary children's hospital": ("Salt Lake City", "UT"),
+    "ldsh hospital": ("Salt Lake City", "UT"),
+    "lds hospital": ("Salt Lake City", "UT"),
+    "intermountain health": ("Salt Lake City", "UT"),
+    # ── Additional single-city systems ────────────────────────────────────
+    "university of texas medical branch": ("Galveston", "TX"),
+    "utmb health": ("Galveston", "TX"),
+    "harris health system": ("Houston", "TX"),
+    "ben taub hospital": ("Houston", "TX"),
+    "lww": ("Houston", "TX"),
+}
+
+# Normalize all keys to lowercase for matching
+FACILITY_LOCATION_MAP = {k.lower(): v for k, v in FACILITY_LOCATION_MAP.items()}
+
+# System-level fallback — used when facility lookup fails
+# Multi-state systems use primary HQ market as default
+SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
+    # Workday tenants
+    "kaiser permanente":          ("Oakland",          "CA"),
+    "providence health":          ("Renton",           "WA"),
+    "banner health":              ("Phoenix",           "AZ"),
+    "northwell health":           ("New Hyde Park",     "NY"),
+    "intermountain health":       ("Salt Lake City",    "UT"),
+    "intermountain healthcare":   ("Salt Lake City",    "UT"),
+    "uc health (colorado)":       ("Aurora",            "CO"),
+    "novant health":              ("Winston-Salem",     "NC"),
+    "prisma health":              ("Greenville",        "SC"),
+    "geisinger":                  ("Danville",          "PA"),
+    "sanford health":             ("Sioux Falls",       "SD"),
+    "ssm health":                 ("St. Louis",         "MO"),
+    "mercy health":               ("Chesterfield",      "MO"),
+    "carilion clinic":            ("Roanoke",           "VA"),
+    "davita":                     ("Denver",            "CO"),
+    "henry ford health":          ("Detroit",           "MI"),
+    "houston methodist":          ("Houston",           "TX"),
+    "indiana university health":  ("Indianapolis",      "IN"),
+    "inova health":               ("Falls Church",      "VA"),
+    "newyork-presbyterian":       ("New York",          "NY"),
+    "ochsner health":             ("New Orleans",       "LA"),
+    "parkland health":            ("Dallas",            "TX"),
+    "piedmont healthcare":        ("Atlanta",           "GA"),
+    "rwjbarnabas health":         ("West Orange",       "NJ"),
+    "sharp healthcare":           ("San Diego",         "CA"),
+    "sutter health":              ("Sacramento",        "CA"),
+    "unc health":                 ("Chapel Hill",       "NC"),
+    "unitypoint health":          ("West Des Moines",   "IA"),
+    "ut southwestern medical":    ("Dallas",            "TX"),
+    "vcu health":                 ("Richmond",          "VA"),
+    "wakemed":                    ("Raleigh",           "NC"),
+    "wellstar health":            ("Marietta",          "GA"),
+    "memorial hermann":           ("Houston",           "TX"),
+    "ohiohealth":                 ("Columbus",          "OH"),
+    "wellspan health":            ("York",              "PA"),
+    "hackensack meridian":        ("Edison",            "NJ"),
+    "mainehealth":                ("Portland",          "ME"),
+    "mclaren health care":        ("Grand Blanc",       "MI"),
+    "osf healthcare":             ("Peoria",            "IL"),
+    "tufts medicine":             ("Boston",            "MA"),
+    "virtua health":              ("Marlton",           "NJ"),
+    "adventist health":           ("Roseville",         "CA"),
+    "dignity health":             ("San Francisco",     "CA"),
+    "bon secours":                ("Richmond",          "VA"),
+    "essentia health":            ("Duluth",            "MN"),
+    "fairview health":            ("Minneapolis",       "MN"),
+    "bestcare health":            ("Bend",              "OR"),
+    "bronson healthcare":         ("Kalamazoo",         "MI"),
+    "albany med health system":   ("Albany",            "NY"),
+    "allina health":              ("Minneapolis",       "MN"),
+    "avera":                      ("Sioux Falls",       "SD"),
+    "bjc healthcare":             ("St. Louis",         "MO"),
+    "baptist health":             ("Louisville",        "KY"),
+    "cape fear valley health":    ("Fayetteville",      "NC"),
+    "capital health":             ("Pennington",        "NJ"),
+    "endeavor health":            ("Evanston",          "IL"),
+    "freeman health":             ("Joplin",            "MO"),
+    "great river health":         ("West Burlington",   "IA"),
+    "hshs":                       ("Springfield",       "IL"),
+    "halifax health":             ("Daytona Beach",     "FL"),
+    "healogics":                  ("Jacksonville",      "FL"),
+    "houston healthcare":         ("Warner Robins",     "GA"),
+    "jefferson health":           ("Philadelphia",      "PA"),
+    "john muir health":           ("Walnut Creek",      "CA"),
+    "logan health":               ("Kalispell",         "MT"),
+    "mainegeneral health":        ("Augusta",           "ME"),
+    "mary washington healthcare": ("Fredericksburg",    "VA"),
+    "mass general brigham":       ("Boston",            "MA"),
+    "memorial health system":     ("Savannah",          "GA"),
+    "methodist health system":    ("Dallas",            "TX"),
+    "methodist le bonheur":       ("Memphis",           "TN"),
+    "montefiore":                 ("Bronx",             "NY"),
+    "monument health":            ("Rapid City",        "SD"),
+    "multicare":                  ("Tacoma",            "WA"),
+    "northeast georgia medical center": ("Gainesville", "GA"),
+    "phelps health":              ("Rolla",             "MO"),
+    "riverside health":           ("Newport News",      "VA"),
+    "sih":                        ("Carbondale",        "IL"),
+    "saint francis health system":("Tulsa",             "OK"),
+    "tidelands health":           ("Murrells Inlet",    "SC"),
+    "uhs":                        ("King of Prussia",   "PA"),
+    "umass memorial health":      ("Worcester",         "MA"),
+    "university of rochester medicine": ("Rochester",   "NY"),
+    "uofl health":                ("Louisville",        "KY"),
+    "vanderbilt health":          ("Nashville",         "TN"),
+    "sentara healthcare":         ("Norfolk",           "VA"),
+    "advocate health":            ("Charlotte",         "NC"),
+    "west tennessee healthcare":  ("Jackson",           "TN"),
+    "bozeman health":             ("Bozeman",           "MT"),
+    "broadlawns medical center":  ("Des Moines",        "IA"),
+    "hendricks regional health":  ("Danville",          "IN"),
+    "harrison health":            ("Bremerton",         "WA"),
+    "jupiter medical center":     ("Jupiter",           "FL"),
+    "kaweah health":              ("Visalia",           "CA"),
+    "lawrence memorial hospital": ("Lawrence",          "KS"),
+    "owensboro health":           ("Owensboro",         "KY"),
+    "salinas valley health":      ("Salinas",           "CA"),
+    "samaritan health":           ("Watertown",         "NY"),
+    "sarah bush lincoln health":  ("Mattoon",           "IL"),
+    "saint francis medical center":("Cape Girardeau",   "MO"),
+    "silver cross hospital":      ("New Lenox",         "IL"),
+    "stormont vail health":       ("Topeka",            "KS"),
+    "sturdy memorial hospital":   ("Attleboro",         "MA"),
+    # SmartRecruiters
+    "davita":                     ("Denver",            "CO"),
+    "northwestern medicine":      ("Chicago",           "IL"),
+    "healthpartners":             ("St. Paul",          "MN"),
+    "envision healthcare":        ("Nashville",         "TN"),
+    "amerihealth caritas":        ("Philadelphia",      "PA"),
+    "chenmed":                    ("Miami",             "FL"),
+    "alignment healthcare":       ("Orange",            "CA"),
+    "kindred healthcare":         ("Louisville",        "KY"),
+    "acadia healthcare":          ("Franklin",          "TN"),
+    "surgery partners":           ("Nashville",         "TN"),
+    # Playwright
+    "mayo clinic":                ("Rochester",         "MN"),
+    "christus health":            ("Irving",            "TX"),
+    "baylor scott & white":       ("Dallas",            "TX"),
+    "hca healthcare":             ("Nashville",         "TN"),
+    "cleveland clinic":           ("Cleveland",         "OH"),
+    "mymichigan health":          ("Midland",           "MI"),
+    # CommonSpirit (TalentBrew — no state from URL)
+    "commonspirit health":        ("Chicago",           "IL"),
+    # Greenhouse
+    "davita":                     ("Denver",            "CO"),
+}
+
+# Normalize system keys to lowercase
+SYSTEM_LOCATION_DEFAULTS = {k.lower(): v for k, v in SYSTEM_LOCATION_DEFAULTS.items()}
+
+
 def parse_city_state(loc_str: str) -> tuple[str, str]:
     """
     Extract (city, state) from a location string robustly.
@@ -1809,6 +2128,16 @@ async def run_all() -> list[dict]:
         city_lower  = city.lower()
         if city_lower and (city_lower == hosp_name or city_lower == hosp_system):
             city = ""
+
+        # Location lookup fallback — fires when city or state still missing
+        if not city or not state:
+            lookup = FACILITY_LOCATION_MAP.get(hosp_name) or SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
+            if lookup:
+                fallback_city, fallback_state = lookup
+                if not city:
+                    city = fallback_city
+                if not state:
+                    state = fallback_state
 
         # Build canonical location: "City, ST" — blank if both missing
         if city and state:
