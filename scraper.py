@@ -494,6 +494,8 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     job_matches = abs_matches
 
                 if not job_matches:
+                    # Debug: show first 500 chars to diagnose response structure
+                    logger.info(f"TalentBrew {system}: no matches in response. First 500 chars: {html[:500]!r}")
                     break
 
                 seen = set()
