@@ -1555,7 +1555,13 @@ async def run_playwright_scrapers() -> list[Job]:
                         loc = f"{loc.get('city','')}, {loc.get('stateCode', loc.get('state',''))}"
                     elif isinstance(loc, list):
                         loc = ", ".join(str(x) for x in loc[:2])
-                    parts = [p.strip() for p in str(loc).split(",")]
+                    _parts = [p.strip() for p in str(loc).split(",")]
+                    # Robust state extraction: find first 2-char alpha code (handles "City, ST, United States")
+                    _city  = _parts[0] if _parts else ""
+                    _state = next((p for p in _parts if len(p) == 2 and p.isalpha()), "")
+                    if not _state and len(_parts) > 1:
+                        _cand = _parts[1].strip()
+                        _state = _cand[:2] if len(_cand) >= 2 and _cand[:2].isalpha() else ""
                     job_id = str(j.get("id", j.get("jobId", j.get("requisitionId", j.get("externalId", "")))))
                     if not job_id:
                         job_id = f"{system_name}_{title}_{loc}"[:80]
@@ -1563,8 +1569,8 @@ async def run_playwright_scrapers() -> list[Job]:
                         jobs.append(Job(
                             title=str(title), hospital_system=system_name,
                             hospital_name=j.get("facility", j.get("department", system_name)),
-                            city=parts[0] if parts else "",
-                            state=parts[-1] if len(parts) > 1 else "",
+                            city=_city,
+                            state=_state,
                             location=str(loc), specialty=j.get("category", j.get("jobCategory", "")),
                             job_type=j.get("employmentType", j.get("jobType", "")),
                             url=str(j.get("url", j.get("applyUrl", j.get("canonicalPositionUrl", url)))),
@@ -1671,11 +1677,16 @@ async def run_all() -> list[dict]:
         city  = (d.get("city")  or "").strip().strip(",").strip()
         state = (d.get("state") or "").strip().upper()
 
-        # Keep only the last 2-char segment if state is noisy (e.g. "TX, United States" -> "TX")
-        if state and len(state) > 2:
+        # Keep only the 2-char state code if state is noisy (e.g. "TX, United States" or "United States")
+        COUNTRY_JUNK = {"united states", "us", "usa", "canada", "united kingdom", "uk"}
+        if state and (len(state) > 2 or state.lower() in COUNTRY_JUNK):
             parts = [p.strip() for p in state.split(",")]
-            # Take first 2-char segment
-            state = next((p for p in parts if len(p) == 2 and p.isalpha()), parts[0][:2])
+            state = next((p for p in parts if len(p) == 2 and p.isalpha()), "")
+            if not state:
+                # Try pulling state from raw location string instead
+                raw_loc = (d.get("location") or "").upper()
+                loc_parts = [p.strip() for p in raw_loc.split(",")]
+                state = next((p for p in loc_parts if len(p) == 2 and p.isalpha()), "")
 
         # Blank city if it matches hospital name or system (Workday often puts hospital name in city)
         # Exact match, or city is clearly a hospital-name fragment (contains org keywords)
