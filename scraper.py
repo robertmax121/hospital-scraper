@@ -479,7 +479,7 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                            headers={**HEADERS, "X-Requested-With": "XMLHttpRequest",
                                     "Accept": "text/html,*/*"},
                            proxy=proxies.get(),
-                           timeout=aiohttp.ClientTimeout(total=30)) as r:
+                           timeout=aiohttp.ClientTimeout(total=60)) as r:
                 if r.status != 200:
                     logger.info(f"TalentBrew {system}: HTTP {r.status} on page {page}")
                     break
@@ -553,7 +553,13 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                 await jitter()
 
         except Exception as e:
+            err_str = str(e)
             logger.info(f"TalentBrew {system}: {e}")
+            # Retry on incomplete payload — server dropped connection mid-response
+            if "payload" in err_str.lower() or "incomplete" in err_str.lower() or "connection" in err_str.lower():
+                logger.info(f"TalentBrew {system}: retrying page {page} after connection drop...")
+                await asyncio.sleep(3)
+                continue  # retry same page
             break
 
     return jobs
