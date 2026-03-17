@@ -454,14 +454,22 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
             "ActiveFacetID": "0",
             "CurrentPage": str(page),
             "RecordsPerPage": str(rpp),
+            "TotalContentResults": "",
             "Distance": "50",
             "RadiusUnitType": "0",
             "Keywords": "",
             "Location": "",
             "ShowRadius": "False",
             "IsPagination": "True" if page > 1 else "False",
+            "CustomFacetName": "",
+            "FacetTerm": "",
+            "FacetType": "0",
+            "SearchResultsModuleName": "Section 6 - Search Results List",
+            "SearchFiltersModuleName": "Section 6 - Search Filters",
             "SortCriteria": "0",
             "SortDirection": "0",
+            "PostalCode": "",
+            "TotalContentPages": "0",
             "SearchType": "5",
             "ResultsType": "0",
             "fc": "", "fl": "", "fcf": "", "afc": "", "afl": "", "afcf": "",
@@ -479,23 +487,28 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
 
                 # Parse job listings from HTML
                 # URL pattern: /job/{city}/{title-slug}/35300/{job-id}
-                # Match absolute URLs like:
-                # https://www.commonspirit.careers/job/redding/mammography-technologist/35300/79814467488
+                # Response is JSON: {"filters":"...","results":"<html>","hasJobs":true}
+                try:
+                    data = json.loads(html)
+                    results_html = data.get("results", "")
+                    has_jobs = data.get("hasJobs", False)
+                except Exception:
+                    results_html = html
+                    has_jobs = True
+
+                if not has_jobs or not results_html:
+                    logger.info(f"TalentBrew {system}: hasJobs={has_jobs}, empty results on page {page}")
+                    break
+
+                # Extract job URLs from results HTML fragment
+                # Pattern: /job/{city}/{title-slug}/35300/{job-id}
                 job_matches = re.findall(
                     r'href="(?:https?://[^"]*)?(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
-                    html
+                    results_html
                 )
-                # Fallback: try extracting from full absolute URLs
-                if not job_matches:
-                    abs_matches = re.findall(
-                        r'href="https?://[^"]+(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
-                        html
-                    )
-                    job_matches = abs_matches
 
                 if not job_matches:
-                    # Debug: show first 500 chars to diagnose response structure
-                    logger.info(f"TalentBrew {system}: no matches in response. First 500 chars: {html[:500]!r}")
+                    logger.info(f"TalentBrew {system}: no job links found on page {page}. Results snippet: {results_html[:200]!r}")
                     break
 
                 seen = set()
@@ -504,41 +517,25 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                         continue
                     seen.add(job_id)
 
-                    # Extract category — appears in <span> before the job link
                     title = title_slug.replace("-", " ").title()
+                    city_name = city.replace("-", " ").title()
 
-                    # Try to get actual title from aria-label or heading near the link
+                    # Try to extract actual title from nearby heading in results HTML
                     title_match = re.search(
-                        rf'href="{re.escape(url_path)}"[^>]*>\s*<[^>]+>([^<]+)<',
-                        html
+                        rf'href="[^"]*{re.escape(job_id)}"[^>]*>\s*([^<]+)<',
+                        results_html
                     )
                     if title_match:
                         title = title_match.group(1).strip()
-
-                    # Extract category (appears in <li> with class containing category)
-                    cat_match = re.search(
-                        rf'({re.escape(url_path)}).*?<li[^>]*>([^<]+)</li>',
-                        html, re.DOTALL
-                    )
-                    category = cat_match.group(2).strip() if cat_match else ""
-
-                    city_name = city.replace("-", " ").title()
-
-                    # Try to extract state from full location text near this job
-                    state = ""
-                    loc_match = re.search(
-                        rf'{re.escape(url_path)}.*?([A-Z]{{2}})',
-                        html[:html.find(url_path) + 500] if url_path in html else ""
-                    )
 
                     jobs.append(Job(
                         title=title,
                         hospital_system=system,
                         hospital_name=system,
                         city=city_name,
-                        state=state,
+                        state="",
                         location=city_name,
-                        specialty=category,
+                        specialty="",
                         job_type="",
                         url=f"https://www.commonspirit.careers{url_path}",
                         job_id=job_id,
