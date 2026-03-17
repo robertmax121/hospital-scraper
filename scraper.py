@@ -1316,38 +1316,14 @@ async def run_playwright_scrapers() -> list[Job]:
     jobs = []
 
     CUSTOM_SITES = [
-        # Original high-volume systems
+        # PRODUCING JOBS — keep these
         ("Mayo Clinic",          "https://jobs.mayoclinic.org/search-jobs"),
-        ("Cleveland Clinic",     "https://jobs.clevelandclinic.org/search/"),
-        ("Mass General Brigham", "https://www.massgeneralbrigham.org/en/careers/search-jobs"),
-        ("HCA Healthcare",       "https://careers.hcahealthcare.com/jobs"),
-        ("Ascension Health",     "https://ascension.org/careers"),
-        # Infor CloudSuite — session-based, requires browser
         ("CHRISTUS Health",      "https://careers.christushealth.org/job-search"),
-        # Phenom — session-based, requires browser
         ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results"),
-        # Phenom-powered sites (JS-rendered, no public REST API)
-        ("CommonSpirit Health",  "https://www.commonspirit.careers"),
-        ("Baptist Health",       "https://jobs.baptisthealthcareers.com"),
-        ("Corewell Health",      "https://careers.corewellhealth.org"),
-        ("Munson Healthcare",    "https://careers.munsonhealthcare.org"),
-        ("Bryan Health",         "https://careers.bryanhealth.com"),
-        # SF-backed major health systems (custom career portals)
-        ("Cleveland Clinic",     "https://jobs.clevelandclinic.org/search/"),  # also SF
-        ("NYU Langone Health",   "https://jobs.nyulangone.org/search/"),
-        ("Duke Health",          "https://careers.dukehealth.org/jobs"),
-        ("Johns Hopkins",        "https://jobs.hopkinsmedicine.org/search-jobs/"),
-        ("Cedars-Sinai",         "https://jobs.cedars-sinai.edu/search/"),
-        ("Penn Medicine",        "https://careers.pennmedicine.org/search-jobs"),
-        # From URL list
-        ("McLaren Health Care",  "https://careers.mclaren.org/jobs/search/3767858"),
         ("MyMichigan Health",    "https://careers.mymichigan.org/jobs"),
-        ("U of Michigan Health", "https://careers.umich.edu/search-jobs"),
-        ("Aspirus Health",       "https://careers.aspirus.org/job-search/"),
-        ("White River Health",   "https://whiteriverhealth.org/online-job-board"),
-        ("SARH Care",            "https://sarhcare.org/careers/"),
-        ("W Regional Medical",   "https://www.wregional.com/main/open-positions"),
-        ("AMMC Nursing",         "https://www.myammc.org/joblistings/category/nursing_positions"),
+        # WORTH KEEPING — large systems that may need selector tuning
+        ("HCA Healthcare",       "https://careers.hcahealthcare.com/jobs"),
+        ("Cleveland Clinic",     "https://jobs.clevelandclinic.org/search/"),
     ]
 
     # Deduplicate by system name (Cleveland Clinic listed twice above)
@@ -1401,18 +1377,20 @@ async def run_playwright_scrapers() -> list[Job]:
                         except: pass
                 page.on("response", capture)
 
-                await page.goto(url, wait_until="networkidle", timeout=45000)
+                # BSW needs domcontentloaded to avoid hanging on networkidle
+                bsw_site = "bswhealth.com" in url
+                _wait = "domcontentloaded" if bsw_site else "networkidle"
+                await page.goto(url, wait_until=_wait, timeout=30000)
                 await asyncio.sleep(random.uniform(2, 4))
 
                 # BSW Health (Phenom) — click the search submit button to trigger job API call
-                if "bswhealth.com" in url:
+                if bsw_site:
                     try:
-                        # Wait for the search button to be ready, then click it
                         await page.wait_for_selector("[data-ph-at-id='globalsearch-button']", timeout=10000)
                         btn = await page.query_selector("[data-ph-at-id='globalsearch-button']")
                         if btn:
                             await btn.click()
-                            await asyncio.sleep(5)  # Wait for API response
+                            await asyncio.sleep(8)  # Wait for API response
                             logger.info("BSW: clicked search button")
                         else:
                             logger.info("BSW: search button not found")
