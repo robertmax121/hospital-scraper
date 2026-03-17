@@ -174,7 +174,6 @@ WORKDAY_TENANTS = {
     "Tufts Medicine":            ("tuftsmedicine",      "1",  "TuftsMedicine_External"),
     "Virtua Health":             ("virtua",             "1",  "Virtua_Careers"),
     "Adventist Health":          ("adventisthealth",    "1",  "Adventist_Health"),
-    "CommonSpirit Health":       ("commonspirit",       "1",  "CommonSpirit_Health_External"),
     "Dignity Health":            ("dignityhealth",      "1",  "DignityHealth_External"),
     "Bon Secours":               ("bonsecours",         "1",  "BonSecours_External"),
     "Essentia Health":           ("essentiahealth",     "1",  "Essentia_Health_External"),
@@ -221,6 +220,8 @@ WORKDAY_TENANTS = {
     "University of Rochester Medicine":      ("rochester",                "5",  "UR_Staff"),
     "UofL Health":                           ("uoflhealth",               "1",  "UofLHealthCareers"),
     "Vanderbilt Health":                     ("vumc",                     "1",  "vumccareers"),
+    "Sentara Healthcare":                    ("sentara",                  "1",  "SCS"),
+    "Advocate Health":                       ("advocatehealth",           "1",  "careers"),
     "West Tennessee Healthcare":             ("wth",                      "501","WTH"),
     "Bozeman Health":                        ("bozemanhealth",            "1",  "BozemanHealthCareers"),
     "Broadlawns Medical Center":             ("broadlawns",               "501","Broadlawns_Careers"),
@@ -418,25 +419,153 @@ async def run_taleo(session) -> list[Job]:
 #  org_data = full domain of the career portal (no protocol)
 # ══════════════════════════════════════════════════════════════════════════
 ICIMS_ORGS = {
-    # Format: "System": "full.career.domain"
-    # Domains verified from each org's public career page
-    "CommonSpirit Health":    "careers-commonspirit.icims.com",
-    "Ascension Health":       "jobs.ascension.org",
-    "Advocate Aurora Health": "jobs.advocateaurorahealth.org",
-    "AdventHealth":           "jobs.adventhealth.com",
-    "Sentara Healthcare":     "careers.sentara.com",
+    # Format: "System": "subdomain.icims.com"
+    # All domains verified to use .icims.com subdomain format for JSON API access
+    # REMOVED (wrong platform): UPMC (Taleo), Sentara (Workday), Advocate Aurora (Workday),
+    #   Northwestern Medicine (SmartRecruiters), HealthPartners (SmartRecruiters)
     "MedStar Health":         "careers.medstarhealth.org",
-    "Texas Health Resources": "jobs.texashealth.org",
-    "UPMC":                   "careers.upmc.com",
-    "Cone Health":            "careers.conehealth.com",
-    "HealthPartners":         "careers.healthpartners.com",
-    "Northwestern Medicine":  "careers.nm.org",
-    "Loma Linda University":  "jobs.lomalindahealth.org",
-    "Kettering Health":       "careers.ketteringhealth.org",
-    "Monument Health":        "jobs.monument.health",
-    "Owensboro Health":       "careers.owensborohealth.org",
-    "Stormont Vail":          "careers.stormontvail.org",
+    "Kettering Health":       "careers-ketteringhealth.icims.com",
+    "AdventHealth":           "careers-adventhealth.icims.com",
+    "Ascension Health":       "careers-ascension.icims.com",
+    "Loma Linda University":  "careers-lluh.icims.com",
+    "Texas Health Resources": "careers-texashealth.icims.com",
+    "Cone Health":            "careers-conehealth.icims.com",
+    "Monument Health":        "careers-monument.icims.com",
+    "Owensboro Health":       "careers-owensborohealth.icims.com",
+    "Stormont Vail":          "careers-stormontvail.icims.com",
 }
+
+
+# ── TALENTBREW ─────────────────────────────────────────────────────────────────
+# TalentBrew career sites — HTML results endpoint, paginated
+TALENTBREW_ORGS = {
+    # Format: "System": ("base_url", records_per_page)
+    "CommonSpirit Health": ("https://www.commonspirit.careers/search-jobs", 100),
+}
+
+async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_url: str, rpp: int = 100) -> list[Job]:
+    """Scrape a TalentBrew career site via their paginated results endpoint."""
+    jobs = []
+    page = 1
+    results_url = base_url.rstrip("/") + "/results"
+
+    while True:
+        params = {
+            "ActiveFacetID": "0",
+            "CurrentPage": str(page),
+            "RecordsPerPage": str(rpp),
+            "Distance": "50",
+            "RadiusUnitType": "0",
+            "Keywords": "",
+            "Location": "",
+            "ShowRadius": "False",
+            "IsPagination": "True" if page > 1 else "False",
+            "SortCriteria": "0",
+            "SortDirection": "0",
+            "SearchType": "5",
+            "ResultsType": "0",
+            "fc": "", "fl": "", "fcf": "", "afc": "", "afl": "", "afcf": "",
+        }
+        try:
+            async with req(session, "get", results_url, params=params,
+                           headers={**HEADERS, "X-Requested-With": "XMLHttpRequest",
+                                    "Accept": "text/html,*/*"},
+                           proxy=proxies.get(),
+                           timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"TalentBrew {system}: HTTP {r.status} on page {page}")
+                    break
+                html = await r.text()
+
+                # Parse job listings from HTML
+                # URL pattern: /job/{city}/{title-slug}/35300/{job-id}
+                job_matches = re.findall(
+                    r'href="(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
+                    html
+                )
+
+                if not job_matches:
+                    break
+
+                seen = set()
+                for url_path, city, title_slug, job_id in job_matches:
+                    if job_id in seen:
+                        continue
+                    seen.add(job_id)
+
+                    # Extract category — appears in <span> before the job link
+                    title = title_slug.replace("-", " ").title()
+
+                    # Try to get actual title from aria-label or heading near the link
+                    title_match = re.search(
+                        rf'href="{re.escape(url_path)}"[^>]*>\s*<[^>]+>([^<]+)<',
+                        html
+                    )
+                    if title_match:
+                        title = title_match.group(1).strip()
+
+                    # Extract category (appears in <li> with class containing category)
+                    cat_match = re.search(
+                        rf'({re.escape(url_path)}).*?<li[^>]*>([^<]+)</li>',
+                        html, re.DOTALL
+                    )
+                    category = cat_match.group(2).strip() if cat_match else ""
+
+                    city_name = city.replace("-", " ").title()
+
+                    # Try to extract state from full location text near this job
+                    state = ""
+                    loc_match = re.search(
+                        rf'{re.escape(url_path)}.*?([A-Z]{{2}})',
+                        html[:html.find(url_path) + 500] if url_path in html else ""
+                    )
+
+                    jobs.append(Job(
+                        title=title,
+                        hospital_system=system,
+                        hospital_name=system,
+                        city=city_name,
+                        state=state,
+                        location=city_name,
+                        specialty=category,
+                        job_type="",
+                        url=f"https://www.commonspirit.careers{url_path}",
+                        job_id=job_id,
+                        posted_date="",
+                        description="",
+                        ats_platform="TalentBrew",
+                    ))
+
+                logger.info(f"TalentBrew {system}: page {page} → {len(seen)} jobs (total so far: {len(jobs)})")
+
+                # If we got fewer than requested, we're on the last page
+                if len(seen) < rpp:
+                    break
+                page += 1
+                await jitter()
+
+        except Exception as e:
+            logger.info(f"TalentBrew {system}: {e}")
+            break
+
+    return jobs
+
+
+async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
+    logger.info(f"TalentBrew: scraping {len(TALENTBREW_ORGS)} systems...")
+    tasks = [scrape_talentbrew(session, sys, url, rpp) for sys, (url, rpp) in TALENTBREW_ORGS.items()]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    all_jobs = []
+    total = 0
+    for (sys, _), result in zip(TALENTBREW_ORGS.items(), results):
+        if isinstance(result, Exception):
+            logger.info(f"  TalentBrew {sys}: ERROR {result}")
+        else:
+            logger.info(f"  TalentBrew {sys}: {len(result)} jobs")
+            total += len(result)
+            all_jobs.extend(result)
+    logger.info(f"  TalentBrew total: {total} jobs")
+    return all_jobs
 
 async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str) -> list[Job]:
     jobs = []
@@ -627,6 +756,8 @@ async def run_greenhouse(session) -> list[Job]:
 SMARTRECRUITERS_ORGS = {
     # IDs = company slug from jobs.smartrecruiters.com/{slug}
     "DaVita":               "DaVita",
+    "Northwestern Medicine": "northwesternmedicine",
+    "HealthPartners":       "HealthPartners1",
     "Envision Healthcare":  "EnvisionHealthcare",
     "AmeriHealth Caritas":  "AmeriHealthCaritas",
     "ChenMed":              "ChenMed",
@@ -1355,7 +1486,7 @@ async def run_playwright_scrapers() -> list[Job]:
                         "api/jobs", "search-jobs", "careers/search", "job-search",
                         "jobpostings", "/jobs?", "requisitions", "positions",
                         "api/search", "job_search", "jobsearch", "joblist",
-                        "/search/", "apply/v2",
+                        "/search/", "apply/v2", "talentbrew", "tb_ajax",
                     ]):
                         try:
                             ct = response.headers.get("content-type", "")
@@ -1502,6 +1633,7 @@ async def run_all() -> list[dict]:
             run_recruitingcom(proxy_session),
             run_infor(proxy_session),
             run_phenom(proxy_session),
+            run_talentbrew(proxy_session),
             return_exceptions=True,
         )
 
