@@ -846,7 +846,6 @@ ICIMS_ORGS = {
     #   Northwestern Medicine (SmartRecruiters), HealthPartners (SmartRecruiters)
     "MedStar Health":         "careers.medstarhealth.org",
     "Kettering Health":       "careers-ketteringhealth.icims.com",
-    "Ascension Health":       "careers-ascension.icims.com",
     "Loma Linda University":  "careers-lluh.icims.com",
     "Texas Health Resources": "careers-texashealth.icims.com",
     "Cone Health":            "careers-conehealth.icims.com",
@@ -1138,10 +1137,98 @@ async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
     logger.info(f"  TalentBrew total: {total} jobs")
     return all_jobs
 
+async def _scrape_icims_modern(session: aiohttp.ClientSession, system: str, domain: str) -> list[Job]:
+    """Handles newer iCIMS portals that use JavaScript-rendered search pages.
+    Fetches the search results page and extracts job data from embedded JSON
+    or structured HTML attributes."""
+    import json as _json
+    jobs = []
+    base_url = f"https://{domain}"
+    # Modern iCIMS search URL — pr=1 triggers paginated results
+    url = f"{base_url}/jobs/search"
+    page = 1
+    while True:
+        try:
+            async with req(session, "get", url,
+                params={"ss": "1", "pr": str(page), "searchCategory": "", "searchLocation": "", "searchKeyword": ""},
+                headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
+                proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"iCIMS modern {system}: HTTP {r.status}")
+                    break
+                text = await r.text()
+
+            # Pattern 1: JSON blob embedded in page
+            m = re.search(r'icims\.data\s*=\s*(\{.*?"jobs"\s*:\s*\[.*?\].*?\});', text, re.DOTALL)
+            if not m:
+                m = re.search(r'window\.__ICIMS_DATA__\s*=\s*(\{.*?\});', text, re.DOTALL)
+            if m:
+                try:
+                    data = _json.loads(m.group(1))
+                    raw = data.get("jobs", data.get("searchResults", []))
+                    if not raw:
+                        break
+                    for j in raw:
+                        loc = j.get("joblocation", j.get("location", ""))
+                        _city, _state = parse_city_state(str(loc))
+                        jid = str(j.get("jobid", j.get("id", "")))
+                        jobs.append(Job(
+                            title=j.get("jobtitle", j.get("title", "")),
+                            hospital_system=system, hospital_name=j.get("jobcompany", system),
+                            city=_city, state=_state, location=str(loc),
+                            specialty=j.get("jobcategory", ""), job_type=j.get("jobtype", ""),
+                            url=j.get("detailUrl", f"{base_url}/jobs/{jid}/job"),
+                            job_id=jid,
+                            posted_date=str(j.get("postdate", ""))[:10],
+                            description=strip_html(j.get("jobdescription", "")),
+                            ats_platform="iCIMS",
+                        ))
+                    if len(raw) < 25:
+                        break
+                    page += 1
+                    await jitter()
+                    continue
+                except Exception as e:
+                    logger.info(f"iCIMS modern {system}: JSON parse error {e}")
+
+            # Pattern 2: HTML data attributes
+            found = re.findall(
+                r'data-id="(\d+)"[^>]*data-title="([^"]+)"[^>]*data-location="([^"]*)"',
+                text
+            )
+            if found:
+                for jid, title, loc in found:
+                    _city, _state = parse_city_state(loc)
+                    jobs.append(Job(
+                        title=title, hospital_system=system, hospital_name=system,
+                        city=_city, state=_state, location=loc,
+                        specialty="", job_type="",
+                        url=f"{base_url}/jobs/{jid}/job",
+                        job_id=jid, posted_date="", description="", ats_platform="iCIMS",
+                    ))
+                # HTML results are not paginated — check for next page link
+                if 'class="iCIMS_Pager"' in text and f'pr={page+1}' in text:
+                    page += 1
+                    await jitter()
+                    continue
+            break
+        except Exception as e:
+            logger.info(f"iCIMS modern {system}: {e}")
+            break
+    logger.info(f"iCIMS modern {system}: {len(jobs)} jobs")
+    return jobs
+
+
 async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str) -> list[Job]:
     jobs = []
-    # iCIMS JSON API — returns structured job data when mode=json
-    url = f"https://{domain}/jobs/search"
+    base_url = f"https://{domain}"
+
+    # iCIMS has two JSON API patterns depending on portal version:
+    # 1. Classic: /jobs/search?mode=json&ss=1&p_startrow=N  (older portals)
+    # 2. Modern:  /jobs/search?ss=1&pr=1&searchCategory=&searchLocation=&searchKeyword=  (newer, returns HTML with embedded JSON)
+    # Try classic JSON first, fall through to HTML parsing if it fails.
+
+    url = f"{base_url}/jobs/search"
     offset = 0
     while True:
         try:
@@ -1157,6 +1244,11 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
                     "p_startrow": offset,
                 },
                 headers={**HEADERS, "Accept": "application/json, text/html"}, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status == 404:
+                    # Classic JSON API not available — try modern HTML+embedded JSON endpoint
+                    logger.info(f"iCIMS {system}: classic API 404, trying modern endpoint")
+                    jobs = await _scrape_icims_modern(session, system, domain)
+                    return jobs
                 if r.status != 200:
                     logger.info(f"iCIMS {system}: HTTP {r.status}")
                     break
@@ -1524,6 +1616,7 @@ PHENOM_ORGS = {
     "Corewell Health":       "https://careers.corewellhealth.org",
     "Munson Healthcare":     "https://careers.munsonhealthcare.org",
     "Bryan Health":          "https://careers.bryanhealth.com",
+    "Ascension Health":       "https://jobs.ascension.org",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
