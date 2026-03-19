@@ -1642,10 +1642,11 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     api_url = None
     for ep in endpoints:
         try:
-            # CDN API uses from/size; site APIs use start/num — send all
+            is_cdn = "api.phenompeople.com" in ep
+            probe_params = {"from": 0, "size": 1} if is_cdn else {"start": 0, "num": 1, "from": 0, "size": 1}
             async with session.get(
                 ep,
-                params={"start": 0, "num": 1, "from": 0, "size": 1, "language": "en_US"},
+                params=probe_params,
                 headers={**HEADERS, "Accept": "application/json"},
                 proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=15)
             ) as r:
@@ -1665,9 +1666,11 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     offset = 0
     while True:
         try:
+            is_cdn = "api.phenompeople.com" in api_url
+            fetch_params = {"from": offset, "size": 50} if is_cdn else {"start": offset, "num": 50, "size": 50, "from": offset}
             async with session.get(
                 api_url,
-                params={"start": offset, "num": 50, "size": 50, "from": offset, "language": "en_US"},
+                params=fetch_params,
                 headers={**HEADERS, "Accept": "application/json"},
                 proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=25)
             ) as r:
@@ -1682,20 +1685,35 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 logger.info(f"Phenom {system}: response keys={top_keys}")
 
             # --- Unwrap hits / jobs list ---
-            # Priority: standard "jobs", then ES-style "hits.hits", then "results", then "data"
-            hits_list = (data.get("hits") or {}).get("hits") or []
-            raw = (
-                data.get("jobs") or
-                data.get("requisitions") or
-                data.get("results") or
-                hits_list or
-                (data.get("data", {}) or {}).get("jobs", []) if isinstance(data.get("data"), dict) else [] or
-                data.get("data") if isinstance(data.get("data"), list) else [] or
-                []
-            )
-            listings = [j for j in (raw or []) if isinstance(j, dict)]
+            # Phenom sites return various structures — check each key in priority order.
+            # Previous ternary chain had Python precedence bugs; this is explicit and safe.
+            def _extract_listings(d):
+                # Standard keys
+                for key in ("jobs", "requisitions", "results", "entries"):
+                    v = d.get(key)
+                    if isinstance(v, list) and v:
+                        return v
+                # Elasticsearch hits.hits
+                hits = d.get("hits")
+                if isinstance(hits, dict):
+                    inner = hits.get("hits")
+                    if isinstance(inner, list) and inner:
+                        return inner
+                # data.jobs (nested dict)
+                data_val = d.get("data")
+                if isinstance(data_val, dict):
+                    sub = data_val.get("jobs") or data_val.get("entries") or data_val.get("results")
+                    if isinstance(sub, list) and sub:
+                        return sub
+                # data is itself the list
+                if isinstance(data_val, list) and data_val:
+                    return data_val
+                return []
+
+            raw = _extract_listings(data)
+            listings = [j for j in raw if isinstance(j, dict)]
             if not listings:
-                logger.info(f"Phenom {system}: no listings in response at offset {offset}")
+                logger.info(f"Phenom {system}: no listings in response at offset {offset} (keys={list(data.keys())[:8]})")
                 break
 
             for j in listings:
@@ -1731,11 +1749,19 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                         ats_platform="Phenom",
                     ))
 
-            total = data.get("total", data.get("count", data.get("hits", {}).get("total", {}).get("value", len(listings))))
+            # Various total count field names across Phenom implementations
+            total = (
+                data.get("total") or
+                data.get("count") or
+                data.get("total_entries") or
+                data.get("totalCount") or
+                (data.get("hits", {}) or {}).get("total", {}).get("value") or
+                len(listings)
+            )
             if isinstance(total, dict):  # ES total: {"value": N, "relation": "eq"}
                 total = total.get("value", len(listings))
             offset += 50
-            if offset >= total or len(listings) < 50:
+            if offset >= int(total) or len(listings) < 50:
                 break
             await jitter()
         except Exception as e:
