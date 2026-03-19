@@ -238,6 +238,7 @@ WORKDAY_TENANTS = {
     "Silver Cross Hospital":                 ("silvercross",              "5",  "SilverCrossCareers"),
     "Stormont Vail Health":                  ("stormontvail",             "1",  "en-US"),
     "Sturdy Memorial Hospital":              ("sturdymemorial",           "5",  "Sturdy"),
+    "AdventHealth":                          ("adventhealth",             "12", "AH_External_Career_Site"),
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -845,7 +846,6 @@ ICIMS_ORGS = {
     #   Northwestern Medicine (SmartRecruiters), HealthPartners (SmartRecruiters)
     "MedStar Health":         "careers.medstarhealth.org",
     "Kettering Health":       "careers-ketteringhealth.icims.com",
-    "AdventHealth":           "careers-adventhealth.icims.com",
     "Ascension Health":       "careers-ascension.icims.com",
     "Loma Linda University":  "careers-lluh.icims.com",
     "Texas Health Resources": "careers-texashealth.icims.com",
