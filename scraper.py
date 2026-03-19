@@ -1609,6 +1609,13 @@ async def run_usajobs(session) -> list[Job]:
 #  Phenom renders jobs via JS — no public REST API accessible without auth.
 #  These orgs are scraped via Playwright (see CUSTOM_SITES below).
 ##############################################################################
+# Phenom org codes from CDN URLs (cdn.phenompeople.com/CareerConnectResources/{ORG_CODE}/...)
+# Used to build the direct Phenom backend API URL as first probe attempt.
+PHENOM_ORG_CODES = {
+    "Ascension Health":  "AHEAHUUS",   # confirmed from cdn.phenompeople.com/CareerConnectResources/AHEAHUUS/
+    "Corewell Health":   "SPHEUS",      # confirmed from cdn.phenompeople.com/CareerConnectResources/SPHEUS/
+}
+
 PHENOM_ORGS = {
     # CommonSpirit moved to iCIMS — see ICIMS_ORGS
     # Baylor Scott & White moved to Playwright — session-based Phenom
@@ -1616,12 +1623,17 @@ PHENOM_ORGS = {
     "Corewell Health":       "https://careers.corewellhealth.org",
     "Munson Healthcare":     "https://careers.munsonhealthcare.org",
     "Bryan Health":          "https://careers.bryanhealth.com",
-    "Ascension Health":       "https://jobs.ascension.org",
+    "Ascension Health":      "https://jobs.ascension.org",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs = []
-    endpoints = [
+    # Build endpoint list — prepend direct Phenom People backend if org code known
+    org_code = PHENOM_ORG_CODES.get(system, "")
+    endpoints = []
+    if org_code:
+        endpoints.append(f"https://api.phenompeople.com/CareerConnectResources/{org_code}/jobs/search?language=en_US")
+    endpoints += [
         f"{base_url}/api/jobs",
         f"{base_url}/api/search/jobs",
         f"{base_url}/search/jobs",
@@ -1630,9 +1642,10 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     api_url = None
     for ep in endpoints:
         try:
+            # CDN API uses from/size; site APIs use start/num — send all
             async with session.get(
                 ep,
-                params={"start": 0, "num": 1},
+                params={"start": 0, "num": 1, "from": 0, "size": 1, "language": "en_US"},
                 headers={**HEADERS, "Accept": "application/json"},
                 proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=15)
             ) as r:
@@ -1654,7 +1667,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         try:
             async with session.get(
                 api_url,
-                params={"start": offset, "num": 20, "size": 20, "from": offset},
+                params={"start": offset, "num": 50, "size": 50, "from": offset, "language": "en_US"},
                 headers={**HEADERS, "Accept": "application/json"},
                 proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=25)
             ) as r:
@@ -1662,52 +1675,67 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     break
                 data = await r.json(content_type=None)
 
-            # Phenom career sites return various structures including Elasticsearch hits
+            # Phenom career sites return various structures. Log the raw shape on first page
+            # to diagnose extraction issues.
+            if offset == 0:
+                top_keys = list(data.keys())[:8]
+                logger.info(f"Phenom {system}: response keys={top_keys}")
+
+            # --- Unwrap hits / jobs list ---
+            # Priority: standard "jobs", then ES-style "hits.hits", then "results", then "data"
+            hits_list = (data.get("hits") or {}).get("hits") or []
             raw = (
                 data.get("jobs") or
                 data.get("requisitions") or
                 data.get("results") or
-                (data.get("hits") or {}).get("hits") or
-                (data.get("data") or {}).get("jobs") if isinstance(data.get("data"), dict) else None or
-                data.get("data") if isinstance(data.get("data"), list) else None or
+                hits_list or
+                (data.get("data", {}) or {}).get("jobs", []) if isinstance(data.get("data"), dict) else [] or
+                data.get("data") if isinstance(data.get("data"), list) else [] or
                 []
             )
             listings = [j for j in (raw or []) if isinstance(j, dict)]
             if not listings:
+                logger.info(f"Phenom {system}: no listings in response at offset {offset}")
                 break
 
             for j in listings:
-                loc = j.get("city", "") or j.get("location", "") or j.get("locations", "")
+                # Elasticsearch wraps the real document under _source
+                doc = j.get("_source", j)
+                loc = doc.get("city", "") or doc.get("location", "") or doc.get("locations", "")
                 if isinstance(loc, list):
-                    loc = ", ".join(loc)
-                _raw_city  = j.get("city", "")
-                _raw_state = j.get("state", "") or j.get("stateCode", "")
-                # Run through parse_city_state to normalize full state names → abbreviations
+                    loc = ", ".join(str(x) for x in loc)
+                _raw_city  = doc.get("city", "")
+                _raw_state = doc.get("state", "") or doc.get("stateCode", "")
                 city, state = parse_city_state(f"{_raw_city}, {_raw_state}") if (_raw_city or _raw_state) else (_raw_city, _raw_state)
                 city  = city  or _raw_city
                 state = state or _raw_state
-                title = j.get("title", "") or j.get("jobTitle", "")
-                job_id = str(j.get("id", "") or j.get("jobId", "") or j.get("requisitionId", ""))
-                url = j.get("applyUrl", "") or j.get("jobUrl", "") or f"{base_url}/job/{job_id}"
+                title = doc.get("title", "") or doc.get("jobTitle", "") or doc.get("name", "")
+                job_id = str(
+                    doc.get("id", "") or doc.get("jobId", "") or doc.get("requisitionId", "") or
+                    j.get("_id", "")  # ES outer doc id as fallback
+                )
+                url = doc.get("applyUrl", "") or doc.get("jobUrl", "") or doc.get("url", "") or f"{base_url}/job/{job_id}"
                 if title and job_id:
                     jobs.append(Job(
                         title=title,
                         hospital_system=system,
-                        hospital_name=j.get("facility", system) or system,
+                        hospital_name=doc.get("facility", "") or doc.get("company", "") or system,
                         city=city, state=state,
                         location=loc or f"{city}, {state}",
-                        specialty=j.get("category", "") or j.get("jobCategory", ""),
-                        job_type=j.get("employmentType", "") or j.get("jobType", ""),
+                        specialty=doc.get("category", "") or doc.get("jobCategory", "") or doc.get("department", ""),
+                        job_type=doc.get("employmentType", "") or doc.get("jobType", "") or doc.get("type", ""),
                         url=url,
                         job_id=job_id,
-                        posted_date=str(j.get("postedDate", "") or j.get("datePosted", ""))[:10],
-                        description=strip_html(str(j.get("description", "") or j.get("shortDescription", ""))),
+                        posted_date=str(doc.get("postedDate", "") or doc.get("datePosted", "") or doc.get("postDate", ""))[:10],
+                        description=strip_html(str(doc.get("description", "") or doc.get("shortDescription", ""))),
                         ats_platform="Phenom",
                     ))
 
-            total = data.get("total", data.get("count", len(listings)))
-            offset += 20
-            if offset >= total or len(listings) < 20:
+            total = data.get("total", data.get("count", data.get("hits", {}).get("total", {}).get("value", len(listings))))
+            if isinstance(total, dict):  # ES total: {"value": N, "relation": "eq"}
+                total = total.get("value", len(listings))
+            offset += 50
+            if offset >= total or len(listings) < 50:
                 break
             await jitter()
         except Exception as e:
