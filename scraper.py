@@ -561,7 +561,7 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "cleveland clinic":           ("Cleveland",         "OH"),
     "mymichigan health":          ("Midland",           "MI"),
     # CommonSpirit (TalentBrew — no state from URL)
-    "commonspirit health":        ("Chicago",           "IL"),
+    "commonspirit health":        ("Chicago",           "IL"),  # last resort for cities not in COMMONSPIRIT_CITY_STATE
     # Greenhouse
     "davita":                     ("Denver",            "CO"),
 }
@@ -573,7 +573,31 @@ SYSTEM_LOCATION_DEFAULTS = {k.lower(): v for k, v in SYSTEM_LOCATION_DEFAULTS.it
 # Use sparingly — only when the ATS consistently returns wrong/campus-name data
 # and every job is definitively in one location.
 FORCE_LOCATION_OVERRIDE: dict[str, tuple[str, str]] = {
-    "memorial hermann": ("Houston", "TX"),
+    # Systems where ALL jobs are in one metro — always override ATS data
+    "memorial hermann":                    ("Houston",      "TX"),
+    "methodist health system":             ("Dallas",       "TX"),
+    "methodist le bonheur":                ("Memphis",      "TN"),
+    "northeast georgia medical center":    ("Gainesville",  "GA"),
+    "cape fear valley health":             ("Fayetteville", "NC"),
+    "broadlawns medical center":           ("Des Moines",   "IA"),
+    "jupiter medical center":              ("Jupiter",      "FL"),
+    "phelps health":                       ("Rolla",        "MO"),
+    "sturdy memorial hospital":            ("Attleboro",    "MA"),
+    "freeman health":                      ("Joplin",       "MO"),
+    "sih":                                 ("Carbondale",   "IL"),
+    "harrison health":                     ("Bremerton",    "WA"),
+    "kaweah health":                       ("Visalia",      "CA"),
+    "silver cross hospital":               ("New Lenox",    "IL"),
+    "tidelands health":                    ("Murrells Inlet","SC"),
+    "salinas valley health":               ("Salinas",      "CA"),
+    "bozeman health":                      ("Bozeman",      "MT"),
+    "logan health":                        ("Kalispell",    "MT"),
+    "great river health":                  ("West Burlington","IA"),
+    "halifax health":                      ("Daytona Beach","FL"),
+    "mary washington healthcare":          ("Fredericksburg","VA"),
+    "saint francis health system":         ("Tulsa",        "OK"),
+    "saint francis medical center":        ("Cape Girardeau","MO"),
+    "lawrence memorial hospital":          ("Lawrence",     "KS"),
 }
 FORCE_LOCATION_OVERRIDE = {k.lower(): v for k, v in FORCE_LOCATION_OVERRIDE.items()}
 
@@ -839,6 +863,121 @@ TALENTBREW_ORGS = {
     "CommonSpirit Health": ("https://www.commonspirit.careers/search-jobs", 100),
 }
 
+
+##############################################################################
+#  COMMONSPIRIT HEALTH — city slug → state lookup
+#  CommonSpirit operates in 21 states. The TalentBrew URL contains city but
+#  no state. This map resolves the city slug to a state code.
+#  Source: CommonSpirit facility directory (commonspirit.org/locations)
+##############################################################################
+COMMONSPIRIT_CITY_STATE: dict[str, str] = {
+    # Arizona
+    "phoenix": "AZ", "chandler": "AZ", "mesa": "AZ", "tempe": "AZ",
+    "scottsdale": "AZ", "flagstaff": "AZ", "prescott": "AZ",
+    "prescott-valley": "AZ", "sun-city": "AZ", "casa-grande": "AZ",
+    "globe": "AZ", "show-low": "AZ", "sierra-vista": "AZ",
+    "bullhead-city": "AZ", "lake-havasu-city": "AZ", "kingman": "AZ",
+    "parker": "AZ", "wickenburg": "AZ", "yuma": "AZ", "nogales": "AZ",
+    "tucson": "AZ", "laveen": "AZ", "gilbert": "AZ", "peoria": "AZ",
+    "surprise": "AZ", "glendale": "AZ", "goodyear": "AZ",
+    # California
+    "bakersfield": "CA", "fresno": "CA", "stockton": "CA",
+    "modesto": "CA", "sacramento": "CA", "santa-rosa": "CA",
+    "san-jose": "CA", "san-francisco": "CA", "oakland": "CA",
+    "redding": "CA", "eureka": "CA", "gilroy": "CA", "hollister": "CA",
+    "morgan-hill": "CA", "merced": "CA", "turlock": "CA",
+    "los-gatos": "CA", "santa-cruz": "CA", "watsonville": "CA",
+    "monterey": "CA", "san-luis-obispo": "CA", "santa-barbara": "CA",
+    "ventura": "CA", "oxnard": "CA", "long-beach": "CA",
+    "los-angeles": "CA", "burlingame": "CA", "daly-city": "CA",
+    "hayward": "CA", "fremont": "CA", "san-leandro": "CA",
+    "castro-valley": "CA", "livermore": "CA", "pleasanton": "CA",
+    "walnut-creek": "CA", "concord": "CA", "antioch": "CA",
+    "pittsburg": "CA", "vallejo": "CA", "napa": "CA", "petaluma": "CA",
+    "santa-monica": "CA", "torrance": "CA", "garden-grove": "CA",
+    "anaheim": "CA", "corona": "CA", "riverside": "CA",
+    "san-bernardino": "CA", "fontana": "CA", "ontario": "CA",
+    "rancho-cucamonga": "CA", "palm-springs": "CA", "visalia": "CA",
+    "porterville": "CA", "hanford": "CA", "tulare": "CA",
+    "woodland": "CA", "chico": "CA", "marysville": "CA",
+    # Colorado
+    "colorado-springs": "CO", "pueblo": "CO", "denver": "CO",
+    "canon-city": "CO", "woodland-park": "CO", "aurora": "CO",
+    "colorado-city": "CO",
+    # Illinois
+    "chicago": "IL", "joliet": "IL", "aurora": "IL", "bolingbrook": "IL",
+    "romeoville": "IL", "channahon": "IL", "waukegan": "IL", "elgin": "IL",
+    "urbana": "IL", "champaign": "IL", "danville": "IL", "kankakee": "IL",
+    "pontiac": "IL", "springfield": "IL", "decatur": "IL",
+    "peoria": "IL", "bloomington": "IL", "rockford": "IL",
+    "ottawa": "IL", "streator": "IL", "peru": "IL",
+    # Indiana
+    "hammond": "IN", "munster": "IN", "dyer": "IN", "valparaiso": "IN",
+    "crown-point": "IN", "merrillville": "IN", "michigan-city": "IN",
+    "la-porte": "IN", "hobart": "IN", "portage": "IN",
+    "east-chicago": "IN", "gary": "IN",
+    # Iowa
+    "iowa-city": "IA", "cedar-rapids": "IA", "davenport": "IA",
+    "dubuque": "IA", "waterloo": "IA",
+    # Kansas
+    "wichita": "KS", "chanute": "KS", "pittsburg": "KS",
+    # Kentucky
+    "lexington": "KY", "corbin": "KY",
+    # Minnesota
+    "saint-paul": "MN", "st-paul": "MN", "crookston": "MN",
+    "minneapolis": "MN",
+    # Montana
+    "missoula": "MT", "helena": "MT", "great-falls": "MT",
+    "butte": "MT", "billings": "MT", "kalispell": "MT",
+    "bozeman": "MT", "miles-city": "MT", "glendive": "MT",
+    "havre": "MT", "polson": "MT",
+    # Nebraska
+    "omaha": "NE", "lincoln": "NE", "hastings": "NE", "kearney": "NE",
+    "norfolk": "NE", "mccook": "NE", "alliance": "NE",
+    "papillion": "NE", "bellevue": "NE", "grand-island": "NE",
+    "north-platte": "NE", "columbus": "NE", "fremont": "NE",
+    "york": "NE", "beatrice": "NE",
+    # Nevada
+    "las-vegas": "NV", "henderson": "NV", "north-las-vegas": "NV",
+    "reno": "NV",
+    # North Dakota
+    "bismarck": "ND", "fargo": "ND", "grand-forks": "ND",
+    "minot": "ND", "jamestown": "ND", "devils-lake": "ND",
+    "dickinson": "ND", "williston": "ND",
+    # Oregon
+    "portland": "OR", "eugene": "OR", "bend": "OR", "salem": "OR",
+    "corvallis": "OR", "grants-pass": "OR", "medford": "OR",
+    "roseburg": "OR", "coos-bay": "OR", "north-bend": "OR",
+    "ashland": "OR", "klamath-falls": "OR", "la-grande": "OR",
+    "pendleton": "OR", "the-dalles": "OR", "hood-river": "OR",
+    # South Dakota
+    "sioux-falls": "SD", "aberdeen": "SD", "huron": "SD",
+    "watertown": "SD", "mitchell": "SD", "pierre": "SD",
+    "yankton": "SD", "vermillion": "SD", "rapid-city": "SD",
+    # Tennessee
+    "memphis": "TN",
+    # Texas
+    "houston": "TX", "san-antonio": "TX", "corpus-christi": "TX",
+    "victoria": "TX", "laredo": "TX", "waco": "TX",
+    # Washington
+    "yakima": "WA", "kennewick": "WA", "spokane": "WA",
+    "richland": "WA", "walla-walla": "WA", "colville": "WA",
+    "omak": "WA", "bridgeport": "WA", "brewster": "WA",
+    "prosser": "WA", "sunnyside": "WA", "grandview": "WA",
+    "othello": "WA", "pasco": "WA", "moses-lake": "WA",
+    "wenatchee": "WA", "ellensburg": "WA",
+    # Wisconsin
+    "la-crosse": "WA", "neillsville": "WI", "monroe": "WI",
+    "sparta": "WI", "onalaska": "WI",
+    # Arkansas
+    "harrison": "AR",
+}
+# Also accept the title-cased city name (from .replace("-"," ").title())
+_cs_extra = {}
+for k, v in COMMONSPIRIT_CITY_STATE.items():
+    _cs_extra[k.replace("-", " ").title().lower()] = v
+COMMONSPIRIT_CITY_STATE.update(_cs_extra)
+
 async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_url: str, rpp: int = 100) -> list[Job]:
     """Scrape a TalentBrew career site via their paginated results endpoint.
     Includes robust retry logic with exponential backoff + proxy rotation for
@@ -923,6 +1062,8 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
 
                     title = title_slug.replace("-", " ").title()
                     city_name = city.replace("-", " ").title()
+                    # Resolve state from city slug using CommonSpirit location map
+                    city_state = COMMONSPIRIT_CITY_STATE.get(city.lower(), "") or                                  COMMONSPIRIT_CITY_STATE.get(city_name.lower(), "")
 
                     # Extract actual title from adjacent heading in HTML
                     title_match = re.search(
@@ -937,8 +1078,8 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                         hospital_system=system,
                         hospital_name=system,
                         city=city_name,
-                        state="",
-                        location=city_name,
+                        state=city_state,
+                        location=f"{city_name}, {city_state}" if city_state else city_name,
                         specialty="",
                         job_type="",
                         url=f"https://www.commonspirit.careers{url_path}",
