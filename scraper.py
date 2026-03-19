@@ -987,8 +987,8 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
     jobs = []
     page = 1
     results_url = base_url.rstrip("/") + "/results"
-    MAX_RETRIES = 6          # max retries per page before giving up on that page
-    BASE_BACKOFF = 2.0       # seconds — doubles each retry
+    MAX_RETRIES = 10         # max retries per page before giving up on that page
+    BASE_BACKOFF = 3.0       # seconds — doubles each retry
 
     while True:
         params = {
@@ -1027,8 +1027,8 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                                proxy=proxies.get(),
                                timeout=aiohttp.ClientTimeout(total=90)) as r:
                     if r.status != 200:
-                        logger.info(f"TalentBrew {system}: HTTP {r.status} on page {page}")
-                        return jobs  # non-retryable HTTP error — stop
+                        logger.info(f"TalentBrew {system}: HTTP {r.status} on page {page}, retry {attempt}/{MAX_RETRIES}")
+                        raise Exception(f"HTTP {r.status}")  # trigger retry logic
                     html = await r.text()
 
                 # Parse response — JSON envelope wrapping HTML fragment
@@ -1110,7 +1110,7 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     await asyncio.sleep(backoff)
                     # proxies.get() will automatically rotate to next proxy on next call
                 else:
-                    logger.info(f"TalentBrew {system}: page {page} failed after {attempt} attempts — {e}")
+                    logger.info(f"TalentBrew {system}: page {page} failed after {MAX_RETRIES} retries — stopping at {len(jobs)} jobs")
                     return jobs  # give up on this system
 
         if not page_succeeded:
@@ -2029,7 +2029,6 @@ async def run_playwright_scrapers() -> list[Job]:
         ("CHRISTUS Health",      "https://careers.christushealth.org/job-search"),
         ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results"),
         ("MyMichigan Health",    "https://careers.mymichigan.org/jobs"),
-        ("AdventHealth",         "https://jobs.adventhealth.com/job-search-results/"),
         # WORTH KEEPING — large systems that may need selector tuning
         ("HCA Healthcare",       "https://careers.hcahealthcare.com/jobs"),
         ("Cleveland Clinic",     "https://jobs.clevelandclinic.org/search/"),
