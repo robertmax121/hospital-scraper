@@ -2029,6 +2029,7 @@ async def run_playwright_scrapers() -> list[Job]:
         ("CHRISTUS Health",      "https://careers.christushealth.org/job-search"),
         ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results"),
         ("MyMichigan Health",    "https://careers.mymichigan.org/jobs"),
+        ("AdventHealth",         "https://jobs.adventhealth.com/job-search-results/"),
         # WORTH KEEPING — large systems that may need selector tuning
         ("HCA Healthcare",       "https://careers.hcahealthcare.com/jobs"),
         ("Cleveland Clinic",     "https://jobs.clevelandclinic.org/search/"),
@@ -2064,6 +2065,7 @@ async def run_playwright_scrapers() -> list[Job]:
                         "jobpostings", "/jobs?", "requisitions", "positions",
                         "api/search", "job_search", "jobsearch", "joblist",
                         "/search/", "apply/v2", "talentbrew", "tb_ajax",
+                        "findly", "job-search-results/results",
                     ]):
                         try:
                             ct = response.headers.get("content-type", "")
@@ -2097,7 +2099,8 @@ async def run_playwright_scrapers() -> list[Job]:
 
                 # BSW needs domcontentloaded to avoid hanging on networkidle
                 bsw_site = "bswhealth.com" in url
-                _wait = "domcontentloaded" if bsw_site else "networkidle"
+                advent_site = "adventhealth.com" in url
+                _wait = "domcontentloaded" if (bsw_site or advent_site) else "networkidle"
                 await page.goto(url, wait_until=_wait, timeout=30000)
                 await asyncio.sleep(random.uniform(2, 4))
 
@@ -2114,6 +2117,110 @@ async def run_playwright_scrapers() -> list[Job]:
                             logger.info("BSW: search button not found")
                     except Exception as e:
                         logger.info(f"BSW search trigger: {e}")
+
+                # AdventHealth (Findly) — click Search jobs button then paginate through results
+                if advent_site:
+                    try:
+                        # Click the Search jobs button to trigger initial API call
+                        btn = await page.query_selector("a[href='#'][class*='search'], button[class*='search'], a:has-text('Search jobs'), button:has-text('Search jobs')")
+                        if not btn:
+                            # Try injecting a direct fetch of the results API (Findly pattern)
+                            logger.info("AdventHealth: trying direct results API fetch")
+                        else:
+                            await btn.click()
+                            await asyncio.sleep(5)
+                            logger.info("AdventHealth: clicked search button")
+
+                        # Findly paginates via results endpoint — fetch all pages directly
+                        base_results = "https://jobs.adventhealth.com/job-search-results/results"
+                        page_num = 1
+                        rpp = 100
+                        while True:
+                            try:
+                                resp = await page.evaluate(f"""async () => {{
+                                    const params = new URLSearchParams({{
+                                        ActiveFacetID: '0',
+                                        CurrentPage: '{page_num}',
+                                        RecordsPerPage: '{rpp}',
+                                        TotalContentResults: '',
+                                        Distance: '50',
+                                        RadiusUnitType: '0',
+                                        Keywords: '',
+                                        Location: '',
+                                        ShowRadius: 'False',
+                                        IsPagination: '{str(page_num > 1).lower()}',
+                                        SortCriteria: '0',
+                                        SortDirection: '0',
+                                        SearchType: '5',
+                                        ResultsType: '0',
+                                        fc: '', fl: '', fcf: '', afc: '', afl: '', afcf: ''
+                                    }});
+                                    const r = await fetch('{base_results}?' + params.toString(), {{
+                                        headers: {{'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json, text/javascript, */*'}}
+                                    }});
+                                    return await r.text();
+                                }}""")
+                                import json as _json
+                                try:
+                                    data = _json.loads(resp)
+                                except:
+                                    logger.info(f"AdventHealth page {page_num}: non-JSON response")
+                                    break
+                                has_jobs = data.get("hasJobs", True)
+                                results_html = data.get("results", "")
+                                if not has_jobs or not results_html:
+                                    logger.info(f"AdventHealth: no more jobs at page {page_num}")
+                                    break
+                                # Parse job cards from results HTML
+                                import re as _re
+                                job_links = _re.findall(
+                                    r'href="(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
+                                    results_html
+                                )
+                                title_matches = dict(_re.findall(
+                                    r'data-job-id="(\d+)"[^>]*>\s*<[^>]+>([^<]+)<',
+                                    results_html
+                                ))
+                                seen_ids = set()
+                                page_count = 0
+                                for url_path, city_slug, title_slug, job_id in job_links:
+                                    if job_id in seen_ids:
+                                        continue
+                                    seen_ids.add(job_id)
+                                    page_count += 1
+                                    city_name = city_slug.replace("-", " ").title()
+                                    city_state = COMMONSPIRIT_CITY_STATE.get(city_slug.lower(), "") or                                                  COMMONSPIRIT_CITY_STATE.get(city_name.lower(), "")
+                                    title = title_slug.replace("-", " ").title()
+                                    # Try to get the real title from HTML
+                                    title_m = _re.search(
+                                        rf'href="[^"]*{_re.escape(job_id)}"[^>]*>\s*([^<]+)<',
+                                        results_html
+                                    )
+                                    if title_m:
+                                        title = title_m.group(1).strip()
+                                    jobs.append(Job(
+                                        title=title,
+                                        hospital_system=system_name,
+                                        hospital_name=system_name,
+                                        city=city_name,
+                                        state=city_state,
+                                        location=f"{city_name}, {city_state}" if city_state else city_name,
+                                        specialty="", job_type="",
+                                        url=f"https://jobs.adventhealth.com{url_path}",
+                                        job_id=job_id,
+                                        posted_date="", description="",
+                                        ats_platform="Findly",
+                                    ))
+                                logger.info(f"AdventHealth: page {page_num} → {page_count} jobs (total: {len([j for j in jobs if j.hospital_system == system_name])})")
+                                if page_count < rpp:
+                                    break
+                                page_num += 1
+                                await asyncio.sleep(random.uniform(1, 2))
+                            except Exception as e:
+                                logger.info(f"AdventHealth pagination error: {e}")
+                                break
+                    except Exception as e:
+                        logger.info(f"AdventHealth search trigger: {e}")
 
                 for _ in range(4):
                     await page.evaluate("window.scrollBy(0, 600)")
