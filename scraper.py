@@ -1632,7 +1632,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     org_code = PHENOM_ORG_CODES.get(system, "")
     endpoints = []
     if org_code:
-        endpoints.append(f"https://api.phenompeople.com/CareerConnectResources/{org_code}/jobs/search?language=en_US")
+        endpoints.append(f"https://api.phenompeople.com/CareerConnectResources/{org_code}/jobs/search")
     endpoints += [
         f"{base_url}/api/jobs",
         f"{base_url}/api/search/jobs",
@@ -1643,19 +1643,33 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     for ep in endpoints:
         try:
             is_cdn = "api.phenompeople.com" in ep
-            probe_params = {"from": 0, "size": 1} if is_cdn else {"start": 0, "num": 1, "from": 0, "size": 1}
+            probe_params = {"from": 0, "size": 1, "language": "en_US"} if is_cdn else {"start": 0, "num": 1, "from": 0, "size": 1, "language": "en_US"}
+            probe_headers = {
+                **HEADERS,
+                "Accept": "application/json",
+                "Origin": base_url,
+                "Referer": f"{base_url}/us/en/search-results",
+            }
             async with session.get(
                 ep,
                 params=probe_params,
-                headers={**HEADERS, "Accept": "application/json"},
+                headers=probe_headers,
                 proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=15)
             ) as r:
                 if r.status == 200:
                     ct = r.headers.get("content-type", "")
                     if "json" in ct:
+                        try:
+                            probe_data = await r.json(content_type=None)
+                            if probe_data.get("errorCode") or probe_data.get("error"):
+                                logger.info(f"Phenom {system}: {ep} → error: {probe_data.get('errorMsg', probe_data.get('error', ''))[:80]}")
+                                continue
+                        except Exception:
+                            pass
                         api_url = ep
                         break
-        except:
+        except Exception as probe_err:
+            logger.info(f"Phenom {system}: probe {ep} → {probe_err}")
             continue
 
     if not api_url:
@@ -1667,11 +1681,17 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     while True:
         try:
             is_cdn = "api.phenompeople.com" in api_url
-            fetch_params = {"from": offset, "size": 50} if is_cdn else {"start": offset, "num": 50, "size": 50, "from": offset}
+            fetch_params = {"from": offset, "size": 50, "language": "en_US"} if is_cdn else {"start": offset, "num": 50, "size": 50, "from": offset, "language": "en_US"}
+            fetch_headers = {
+                **HEADERS,
+                "Accept": "application/json",
+                "Origin": base_url,
+                "Referer": f"{base_url}/us/en/search-results",
+            }
             async with session.get(
                 api_url,
                 params=fetch_params,
-                headers={**HEADERS, "Accept": "application/json"},
+                headers=fetch_headers,
                 proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=25)
             ) as r:
                 if r.status != 200:
@@ -1713,7 +1733,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
             raw = _extract_listings(data)
             listings = [j for j in raw if isinstance(j, dict)]
             if not listings:
-                logger.info(f"Phenom {system}: no listings in response at offset {offset} (keys={list(data.keys())[:8]})")
+                logger.info(f"Phenom {system}: no listings at offset {offset} — keys={list(data.keys())[:8]}, data_val={str(data.get('data', ''))[:150]}")
                 break
 
             for j in listings:
