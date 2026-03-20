@@ -1640,57 +1640,80 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         f"{base_url}/en/search-results",
     ]
     api_url = None
+    use_post = False  # track whether the working endpoint needs POST
+    probe_headers = {
+        **HEADERS,
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Origin": base_url,
+        "Referer": f"{base_url}/us/en/search-results",
+    }
+
     for ep in endpoints:
-        try:
-            is_cdn = "api.phenompeople.com" in ep
-            probe_params = {"from": 0, "size": 1, "language": "en_US"} if is_cdn else {"start": 0, "num": 1, "from": 0, "size": 1, "language": "en_US"}
-            probe_headers = {
-                **HEADERS,
-                "Accept": "application/json",
-                "Origin": base_url,
-                "Referer": f"{base_url}/us/en/search-results",
-            }
-            async with session.get(
-                ep,
-                params=probe_params,
-                headers=probe_headers,
-                proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=15)
-            ) as r:
-                if r.status == 200:
-                    ct = r.headers.get("content-type", "")
-                    if "json" in ct:
-                        try:
-                            probe_data = await r.json(content_type=None)
-                            if probe_data.get("errorCode") or probe_data.get("error"):
-                                logger.info(f"Phenom {system}: {ep} → error: {probe_data.get('errorMsg', probe_data.get('error', ''))[:80]}")
-                                continue
-                        except Exception:
-                            pass
-                        api_url = ep
-                        break
-        except Exception as probe_err:
-            logger.info(f"Phenom {system}: probe {ep} → {probe_err}")
-            continue
+        is_cdn = "api.phenompeople.com" in ep
+
+        # Try POST first (modern Phenom portals), then GET fallback
+        for method in ("post", "get"):
+            try:
+                if method == "post":
+                    post_body = {"from": 0, "size": 1, "language": "en_US",
+                                 "query": "", "location": ""}
+                    req_kwargs = {"json": post_body}
+                else:
+                    get_params = {"from": 0, "size": 1, "language": "en_US"} if is_cdn else {"start": 0, "num": 1, "from": 0, "size": 1, "language": "en_US"}
+                    req_kwargs = {"params": get_params}
+
+                async with getattr(session, method)(
+                    ep,
+                    **req_kwargs,
+                    headers=probe_headers,
+                    proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=15)
+                ) as r:
+                    if r.status == 200:
+                        ct = r.headers.get("content-type", "")
+                        if "json" in ct:
+                            try:
+                                probe_data = await r.json(content_type=None)
+                                if probe_data.get("errorCode") or probe_data.get("error"):
+                                    logger.info(f"Phenom {system}: {ep} [{method}] → errorCode={probe_data.get('errorCode')} msg={str(probe_data.get('errorMsg',''))[:60]}")
+                                    continue  # try next method
+                            except Exception:
+                                pass
+                            api_url = ep
+                            use_post = (method == "post")
+                            break
+            except Exception as probe_err:
+                logger.info(f"Phenom {system}: probe {ep} [{method}] → {probe_err}")
+                continue
+        if api_url:
+            break
 
     if not api_url:
         logger.info(f"Phenom {system}: no API endpoint found")
         return []
 
-    logger.info(f"Phenom {system}: using {api_url}")
+    logger.info(f"Phenom {system}: using {api_url} [{'POST' if use_post else 'GET'}]")
     offset = 0
+    fetch_headers = {
+        **HEADERS,
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Origin": base_url,
+        "Referer": f"{base_url}/us/en/search-results",
+    }
     while True:
         try:
             is_cdn = "api.phenompeople.com" in api_url
-            fetch_params = {"from": offset, "size": 50, "language": "en_US"} if is_cdn else {"start": offset, "num": 50, "size": 50, "from": offset, "language": "en_US"}
-            fetch_headers = {
-                **HEADERS,
-                "Accept": "application/json",
-                "Origin": base_url,
-                "Referer": f"{base_url}/us/en/search-results",
-            }
-            async with session.get(
+            if use_post:
+                fetch_kwargs = {"json": {"from": offset, "size": 50, "language": "en_US", "query": "", "location": ""}}
+                http_method = session.post
+            else:
+                fetch_params = {"from": offset, "size": 50, "language": "en_US"} if is_cdn else {"start": offset, "num": 50, "size": 50, "from": offset, "language": "en_US"}
+                fetch_kwargs = {"params": fetch_params}
+                http_method = session.get
+            async with http_method(
                 api_url,
-                params=fetch_params,
+                **fetch_kwargs,
                 headers=fetch_headers,
                 proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=25)
             ) as r:
