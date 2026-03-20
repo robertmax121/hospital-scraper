@@ -2231,48 +2231,83 @@ async def scrape_phenom_session_hybrid(system: str, base_url: str) -> list[Job]:
         await ctx.add_init_script("Object.defineProperty(navigator,'webdriver',{get:()=>false})")
         page = await ctx.new_page()
 
-        # Intercept outgoing requests to find the jobs API call
-        async def on_request(request):
-            url = request.url.lower()
+        # Intercept responses to find the jobs API JSON call
+        async def on_response(response):
             if captured_request_info:
                 return  # already captured
-            if any(x in url for x in ["api/search/jobs", "api/jobs", "/jobs/search", "phenompeople.com"]):
-                try:
-                    hdrs = await request.all_headers()
-                    captured_request_info["url"] = request.url
-                    captured_request_info["method"] = request.method
-                    captured_request_info["headers"] = hdrs
-                    captured_request_info["post_data"] = request.post_data
-                    logger.info(f"Phenom {system} [hybrid]: intercepted {request.method} {request.url}")
-                except Exception as e:
-                    logger.info(f"Phenom {system} [hybrid]: request intercept error: {e}")
+            url = response.url.lower()
+            # Only look at actual API calls — exclude static assets
+            if any(url.endswith(ext) for ext in [".js", ".css", ".jpg", ".png", ".svg", ".woff", ".woff2", ".ttf", ".ico", ".gif", ".webp"]):
+                return
+            # Must look like a job search API endpoint
+            api_patterns = ["api/search/jobs", "api/jobs", "/jobs/search", "search/jobs",
+                            "careers/search", "job-search", "/requisitions", "/positions"]
+            if not any(x in url for x in api_patterns):
+                return
+            try:
+                ct = response.headers.get("content-type", "")
+                if "json" not in ct:
+                    return
+                data = await response.json()
+                # Verify it looks like job data (not an error or empty response)
+                if not isinstance(data, dict):
+                    return
+                if data.get("errorCode") or data.get("error"):
+                    return
+                # Check it has something that looks like jobs
+                has_jobs = any(data.get(k) for k in ["jobs", "entries", "results", "requisitions", "total"])
+                if not has_jobs:
+                    return
+                # Capture the request that produced this response
+                req = response.request
+                hdrs = await req.all_headers()
+                captured_request_info["url"] = req.url
+                captured_request_info["method"] = req.method
+                captured_request_info["headers"] = hdrs
+                captured_request_info["post_data"] = req.post_data
+                logger.info(f"Phenom {system} [hybrid]: captured {req.method} {req.url}")
+            except Exception as e:
+                logger.info(f"Phenom {system} [hybrid]: response intercept error: {e}")
 
-        page.on("request", on_request)
+        page.on("response", on_response)
 
         try:
-            # Navigate to the search results page — this triggers the first API call
-            search_url = f"{base_url}/us/en/search-results"
-            await page.goto(search_url, wait_until="networkidle", timeout=35000)
-            await asyncio.sleep(3)
-
-            # If no request intercepted, try triggering a search
-            if not captured_request_info:
-                # Try clicking a search button
-                for selector in [
-                    "[data-ph-at-id='globalsearch-button']",
-                    "button[type='submit']",
-                    "input[type='submit']",
-                    "[class*='search-button']",
-                    "[class*='searchButton']",
-                ]:
-                    try:
-                        btn = await page.query_selector(selector)
-                        if btn:
-                            await btn.click()
-                            await asyncio.sleep(5)
-                            break
-                    except Exception:
-                        continue
+            # Try multiple entry points to trigger the job search API call
+            search_urls = [
+                f"{base_url}/us/en/search-results",
+                f"{base_url}/en/search-results",
+                f"{base_url}/jobs",
+                f"{base_url}/search-jobs",
+            ]
+            for search_url in search_urls:
+                if captured_request_info:
+                    break
+                try:
+                    await page.goto(search_url, wait_until="networkidle", timeout=35000)
+                    await asyncio.sleep(4)
+                    if captured_request_info:
+                        break
+                    # Try clicking a search button to trigger the API call
+                    for selector in [
+                        "[data-ph-at-id='globalsearch-button']",
+                        "button[data-ph-at-id='search-button']",
+                        "button[type='submit']",
+                        "[class*='search-submit']",
+                        "[class*='searchButton']",
+                        "[aria-label*='search' i]",
+                    ]:
+                        try:
+                            btn = await page.query_selector(selector)
+                            if btn:
+                                await btn.click()
+                                await asyncio.sleep(6)
+                                if captured_request_info:
+                                    break
+                        except Exception:
+                            continue
+                except Exception as nav_err:
+                    logger.info(f"Phenom {system} [hybrid]: nav to {search_url} → {nav_err}")
+                    continue
 
         except Exception as e:
             logger.info(f"Phenom {system} [hybrid]: page load error: {e}")
