@@ -1619,11 +1619,10 @@ PHENOM_ORG_CODES = {
 PHENOM_ORGS = {
     # CommonSpirit moved to iCIMS — see ICIMS_ORGS
     # Baylor Scott & White moved to Playwright — session-based Phenom
+    # Corewell Health + Ascension Health moved to hybrid Playwright+aiohttp — see PHENOM_SESSION_ORGS
     "Baptist Health":        "https://jobs.baptisthealthcareers.com",
-    "Corewell Health":       "https://careers.corewellhealth.org",
     "Munson Healthcare":     "https://careers.munsonhealthcare.org",
     "Bryan Health":          "https://careers.bryanhealth.com",
-    "Ascension Health":      "https://jobs.ascension.org",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
@@ -2203,6 +2202,242 @@ async def run_infor(session) -> list[Job]:
     return jobs
 
 
+async def scrape_phenom_session_hybrid(system: str, base_url: str) -> list[Job]:
+    """
+    Hybrid Phenom scraper: uses Playwright to load the career page and intercept
+    the real XHR search request (capturing cookies + auth headers), then paginates
+    all jobs via aiohttp using those captured credentials.
+    """
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        logger.warning("Playwright not installed — skipping Phenom session hybrid")
+        return []
+
+    jobs = []
+    captured_request_info = {}  # will store {url, headers, method, post_data}
+
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(headless=True, args=[
+            "--no-sandbox", "--disable-setuid-sandbox",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-dev-shm-usage",
+        ])
+        ctx = await browser.new_context(
+            viewport={"width": 1440, "height": 900},
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
+            locale="en-US",
+        )
+        await ctx.add_init_script("Object.defineProperty(navigator,'webdriver',{get:()=>false})")
+        page = await ctx.new_page()
+
+        # Intercept outgoing requests to find the jobs API call
+        async def on_request(request):
+            url = request.url.lower()
+            if captured_request_info:
+                return  # already captured
+            if any(x in url for x in ["api/search/jobs", "api/jobs", "/jobs/search", "phenompeople.com"]):
+                try:
+                    hdrs = await request.all_headers()
+                    captured_request_info["url"] = request.url
+                    captured_request_info["method"] = request.method
+                    captured_request_info["headers"] = hdrs
+                    captured_request_info["post_data"] = request.post_data
+                    logger.info(f"Phenom {system} [hybrid]: intercepted {request.method} {request.url}")
+                except Exception as e:
+                    logger.info(f"Phenom {system} [hybrid]: request intercept error: {e}")
+
+        page.on("request", on_request)
+
+        try:
+            # Navigate to the search results page — this triggers the first API call
+            search_url = f"{base_url}/us/en/search-results"
+            await page.goto(search_url, wait_until="networkidle", timeout=35000)
+            await asyncio.sleep(3)
+
+            # If no request intercepted, try triggering a search
+            if not captured_request_info:
+                # Try clicking a search button
+                for selector in [
+                    "[data-ph-at-id='globalsearch-button']",
+                    "button[type='submit']",
+                    "input[type='submit']",
+                    "[class*='search-button']",
+                    "[class*='searchButton']",
+                ]:
+                    try:
+                        btn = await page.query_selector(selector)
+                        if btn:
+                            await btn.click()
+                            await asyncio.sleep(5)
+                            break
+                    except Exception:
+                        continue
+
+        except Exception as e:
+            logger.info(f"Phenom {system} [hybrid]: page load error: {e}")
+
+        await ctx.close()
+        await browser.close()
+
+    if not captured_request_info:
+        logger.info(f"Phenom {system} [hybrid]: could not intercept API request — no jobs")
+        return []
+
+    # Now paginate using aiohttp with the real headers from the browser session
+    api_url = captured_request_info["url"]
+    method = captured_request_info["method"].upper()
+    raw_headers = captured_request_info.get("headers", {})
+
+    # Build clean headers — keep auth/session cookies, drop transfer-encoding etc.
+    skip_headers = {"content-length", "transfer-encoding", "connection", "host", "accept-encoding"}
+    session_headers = {k: v for k, v in raw_headers.items() if k.lower() not in skip_headers}
+
+    # Parse captured post body (if POST)
+    import json as _json
+    use_post = (method == "POST")
+    captured_body = {}
+    if use_post and captured_request_info.get("post_data"):
+        try:
+            captured_body = _json.loads(captured_request_info["post_data"])
+        except Exception:
+            pass
+
+    logger.info(f"Phenom {system} [hybrid]: paginating via {'POST' if use_post else 'GET'} {api_url}")
+
+    def _extract_listings(d):
+        for key in ("jobs", "requisitions", "results", "entries"):
+            v = d.get(key)
+            if isinstance(v, list) and v:
+                return v
+        hits = d.get("hits")
+        if isinstance(hits, dict):
+            inner = hits.get("hits")
+            if isinstance(inner, list) and inner:
+                return inner
+        data_val = d.get("data")
+        if isinstance(data_val, dict):
+            sub = data_val.get("jobs") or data_val.get("entries") or data_val.get("results")
+            if isinstance(sub, list) and sub:
+                return sub
+        if isinstance(data_val, list) and data_val:
+            return data_val
+        return []
+
+    connector = aiohttp.TCPConnector(limit=5, ssl=False)
+    async with aiohttp.ClientSession(connector=connector) as session:
+        offset = 0
+        page_size = 50
+        while True:
+            try:
+                if use_post:
+                    body = {**captured_body, "from": offset, "size": page_size,
+                            "language": "en_US", "query": "", "location": ""}
+                    # Strip the size param from the URL query string if present
+                    async with session.post(
+                        api_url.split("?")[0],
+                        json=body,
+                        headers=session_headers,
+                        timeout=aiohttp.ClientTimeout(total=30),
+                    ) as r:
+                        if r.status != 200:
+                            logger.info(f"Phenom {system} [hybrid]: HTTP {r.status} at offset {offset}")
+                            break
+                        data = await r.json(content_type=None)
+                else:
+                    params = {"from": offset, "size": page_size, "language": "en_US"}
+                    async with session.get(
+                        api_url.split("?")[0],
+                        params=params,
+                        headers=session_headers,
+                        timeout=aiohttp.ClientTimeout(total=30),
+                    ) as r:
+                        if r.status != 200:
+                            logger.info(f"Phenom {system} [hybrid]: HTTP {r.status} at offset {offset}")
+                            break
+                        data = await r.json(content_type=None)
+
+                if data.get("errorCode") or data.get("error"):
+                    logger.info(f"Phenom {system} [hybrid]: API error at offset {offset} — {data.get('errorMsg', data.get('error', ''))[:80]}")
+                    break
+
+                if offset == 0:
+                    logger.info(f"Phenom {system} [hybrid]: response keys={list(data.keys())[:8]}")
+
+                raw = _extract_listings(data)
+                listings = [j for j in raw if isinstance(j, dict)]
+                if not listings:
+                    logger.info(f"Phenom {system} [hybrid]: no listings at offset {offset}")
+                    break
+
+                for j in listings:
+                    doc = j.get("_source", j)
+                    _raw_city  = doc.get("city", "")
+                    _raw_state = doc.get("state", "") or doc.get("stateCode", "")
+                    city, state = parse_city_state(f"{_raw_city}, {_raw_state}") if (_raw_city or _raw_state) else (_raw_city, _raw_state)
+                    city  = city  or _raw_city
+                    state = state or _raw_state
+                    loc   = doc.get("location", "") or doc.get("locationsText", "") or f"{city}, {state}"
+                    if isinstance(loc, list):
+                        loc = ", ".join(str(x) for x in loc)
+                    title  = doc.get("title", "") or doc.get("jobTitle", "") or doc.get("name", "")
+                    job_id = str(doc.get("id", "") or doc.get("jobId", "") or doc.get("requisitionId", "") or j.get("_id", ""))
+                    url    = doc.get("applyUrl", "") or doc.get("jobUrl", "") or doc.get("url", "") or f"{base_url}/job/{job_id}"
+                    if title and job_id:
+                        jobs.append(Job(
+                            title=title,
+                            hospital_system=system,
+                            hospital_name=doc.get("facility", "") or doc.get("company", "") or system,
+                            city=city, state=state,
+                            location=loc,
+                            specialty=doc.get("category", "") or doc.get("jobCategory", "") or doc.get("department", ""),
+                            job_type=doc.get("employmentType", "") or doc.get("jobType", "") or doc.get("type", ""),
+                            url=url,
+                            job_id=job_id,
+                            posted_date=str(doc.get("postedDate", "") or doc.get("datePosted", "") or doc.get("postDate", ""))[:10],
+                            description=strip_html(str(doc.get("description", "") or doc.get("shortDescription", ""))),
+                            ats_platform="Phenom",
+                        ))
+
+                total = (
+                    data.get("total") or data.get("count") or data.get("total_entries") or
+                    data.get("totalCount") or
+                    (data.get("hits", {}) or {}).get("total", {}).get("value") or
+                    len(listings)
+                )
+                if isinstance(total, dict):
+                    total = total.get("value", len(listings))
+
+                logger.info(f"Phenom {system} [hybrid]: offset {offset} → {len(listings)} jobs (total reported: {total})")
+                offset += page_size
+                if offset >= int(total) or len(listings) < page_size:
+                    break
+                await asyncio.sleep(random.uniform(0.5, 1.5))
+
+            except Exception as e:
+                logger.info(f"Phenom {system} [hybrid]: {e}")
+                break
+
+    logger.info(f"  Phenom {system} [hybrid]: {len(jobs)} jobs")
+    return jobs
+
+
+# Systems that need session-based auth via the hybrid Playwright+aiohttp approach
+PHENOM_SESSION_ORGS = {
+    "Corewell Health":  "https://careers.corewellhealth.org",
+    "Ascension Health": "https://jobs.ascension.org",
+}
+
+
+async def run_phenom_session_hybrid() -> list[Job]:
+    """Run all session-based Phenom scrapers sequentially (Playwright must be serial)."""
+    all_jobs = []
+    for system, base_url in PHENOM_SESSION_ORGS.items():
+        result = await scrape_phenom_session_hybrid(system, base_url)
+        all_jobs.extend(result)
+    return all_jobs
+
+
 async def run_playwright_scrapers() -> list[Job]:
     try:
         from playwright.async_api import async_playwright
@@ -2536,6 +2771,9 @@ async def run_all() -> list[dict]:
         )
 
     pw_jobs = await run_playwright_scrapers()
+    # Run session-based Phenom scrapers (Corewell + Ascension) using hybrid approach
+    phenom_session_jobs = await run_phenom_session_hybrid()
+    pw_jobs.extend(phenom_session_jobs)
 
     all_jobs: list[Job] = pw_jobs[:]
     for r in ats_results:
