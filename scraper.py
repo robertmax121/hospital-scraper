@@ -2822,6 +2822,82 @@ async def run_lifepoint(session) -> list[Job]:
     return jobs
 
 
+
+UKG_ORGS = {
+    "Astria": ("https://prd01-hcm01.prd.mykronos.com", "6110092")
+}
+
+async def scrape_ukg_jobs(session, org_name, base_url, company_id):
+    """Scrape jobs from UKG (formerly Kronos) platforms"""
+    jobs = []
+    offset = 1
+    size = 50
+    
+    try:
+        while True:
+            api_url = f"{base_url}/ta/rest/ui/recruitment/companies/%7C{company_id}/job-requisitions"
+            params = {
+                'offset': offset,
+                'size': size,
+                'sort': 'desc',
+                'ein_id': '',
+                'lang': 'en-US'
+            }
+            
+            async with session.get(api_url, params=params) as response:
+                if response.status != 200:
+                    break
+                    
+                data = await response.json()
+                job_requisitions = data.get('job_requisitions', [])
+                
+                if not job_requisitions:
+                    break
+                
+                for job in job_requisitions:
+                    location = job.get('location', {})
+                    city = location.get('city', '')
+                    state = location.get('state', '')
+                    location_str = f"{city}, {state}" if city and state else city or state or 'Not specified'
+                    
+                    # Build salary info
+                    salary_info = ''
+                    base_pay_from = job.get('base_pay_from')
+                    base_pay_to = job.get('base_pay_to')
+                    base_pay_freq = job.get('base_pay_frequency', '').lower()
+                    
+                    if base_pay_from or base_pay_to:
+                        if base_pay_from and base_pay_to:
+                            salary_info = f"${base_pay_from:,.2f} - ${base_pay_to:,.2f}"
+                        elif base_pay_from:
+                            salary_info = f"${base_pay_from:,.2f}+"
+                        elif base_pay_to:
+                            salary_info = f"Up to ${base_pay_to:,.2f}"
+                        
+                        if base_pay_freq and base_pay_freq != 'year':
+                            salary_info += f" per {base_pay_freq}"
+                    
+                    job_data = {
+                        'title': job.get('job_title', ''),
+                        'location': location_str,
+                        'department': ', '.join(job.get('job_categories', [])),
+                        'employment_type': job.get('employee_type', {}).get('name', ''),
+                        'salary': salary_info,
+                        'job_url': f"{base_url}/ta/{company_id}.careers?rnd=QBR&rid={job.get('id')}",
+                        'org_name': org_name
+                    }
+                    jobs.append(job_data)
+                
+                offset += len(job_requisitions)
+                
+                if len(job_requisitions) < size:
+                    break
+                    
+    except Exception as e:
+        print(f"Error scraping {org_name}: {e}")
+    
+    return jobs
+
 async def run_playwright_scrapers() -> list[Job]:
     try:
         from playwright.async_api import async_playwright
