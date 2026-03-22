@@ -2264,41 +2264,59 @@ UKG_ORGS = {
 async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     base_url, guid = org_data
     jobs = []
-    # UKG Pro public API: /JobBoard/{guid}/api/apply/v2/jobs
-    api = f"{base_url}/JobBoard/{guid}/api/apply/v2/jobs"
-    page = 1
+    # Confirmed endpoint from network intercept on Deaconess
+    api = f"{base_url}/JobBoard/{guid}/JobBoardView/LoadSearchResults"
+    offset = 0
+    limit = 25
     while True:
         try:
-            params = {"page": page, "pageSize": 25, "phrases": "", "sort": "postedDateDesc"}
-            async with req(session, "get", api, params=params,
-                headers={**HEADERS, "Accept": "application/json"},
+            payload = {
+                "opportunitySearch": {
+                    "Top": limit,
+                    "Skip": offset,
+                    "QueryString": "",
+                    "OrderBy": [{"Value": "postedDateDesc", "PropertyName": "PostedDate", "Ascending": False}],
+                    "Filters": [],
+                },
+                "deviceType": "desktop",
+                "recommendationSettings": {},
+            }
+            async with req(session, "post", api,
+                json=payload,
+                headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
+                    logger.info(f"UKG {system}: HTTP {r.status}")
                     break
                 data = await r.json(content_type=None)
-            items = data.get("jobs", [])
+            # Response: {"opportunities": [...], "total": N}
+            items = data.get("opportunities", data.get("Opportunities", []))
             if not items:
                 break
             for j in items:
-                loc_city = j.get("city", "")
-                loc_state = j.get("state", "")
+                city  = j.get("city",  j.get("City",  ""))
+                state = j.get("state", j.get("State", ""))
+                if not city and not state:
+                    loc_raw = j.get("location", j.get("Location", j.get("formattedLocation", "")))
+                    city, state = parse_city_state(str(loc_raw))
                 jobs.append(Job(
-                    title=j.get("title", ""),
+                    title=j.get("title", j.get("Title", "")),
                     hospital_system=system,
-                    hospital_name=j.get("company", {}).get("name", system),
-                    city=loc_city, state=loc_state,
-                    location=f"{loc_city}, {loc_state}".strip(", "),
-                    specialty=j.get("category", {}).get("name", ""),
-                    job_type=j.get("employmentType", ""),
-                    url=f"{base_url}/JobBoard/{guid}/?detail={j.get('jobId','')}",
-                    job_id=str(j.get("jobId", "")),
-                    posted_date=str(j.get("postedDate", ""))[:10],
-                    description=strip_html(j.get("shortDesc", "")),
+                    hospital_name=j.get("company", {}).get("name", system) if isinstance(j.get("company"), dict) else system,
+                    city=city, state=state,
+                    location=f"{city}, {state}".strip(", "),
+                    specialty=j.get("jobCategory", j.get("category", "")),
+                    job_type=j.get("employmentType", j.get("workHours", "")),
+                    url=f"{base_url}/JobBoard/{guid}/?detail={j.get('opportunityId', j.get('id', ''))}",
+                    job_id=str(j.get("opportunityId", j.get("id", j.get("jobId", "")))),
+                    posted_date=str(j.get("postedDate", j.get("PostedDate", "")))[:10],
+                    description=strip_html(j.get("shortDescription", j.get("description", ""))),
                     ats_platform="UKG",
                 ))
-            if page * 25 >= data.get("total", 0):
+            total = data.get("total", data.get("Total", data.get("totalCount", 0)))
+            offset += limit
+            if offset >= total:
                 break
-            page += 1
             await jitter()
         except Exception as e:
             logger.info(f"UKG {system}: {e}")
@@ -2322,45 +2340,54 @@ async def run_ukg(session) -> list[Job]:
 #  Format: ("base_url",)  — base includes full path up to /sites/{site}
 ##############################################################################
 ORACLE_ORGS = {
-    # Format: "System": "https://{oracle-subdomain}.oraclecloud.com"
-    # API always at: {base}/hcmRestApi/resources/latest/recruitingCEJobRequisitions
-    # Subdomains confirmed from network requests; UI URLs stripped down to base
-    "Jackson Hospital":          "https://ejid.fa.us6.oraclecloud.com",
-    "Erlanger Health System":    "https://elar.fa.us2.oraclecloud.com",
-    "EvergreenHealth":           "https://erym.fa.us6.oraclecloud.com",
-    "Valley Health (NV)":        "https://fa-eveq-saasfaprod1.fa.ocs.oraclecloud.com",
-    "Mount Nittany Health":      "https://mnh-ibosjb.fa.ocs.oraclecloud.com",
-    "Trinity Health (Oregon)":   "https://ertr.fa.us2.oraclecloud.com",
-    "Memorial Hospital":         "https://wearememorial-ibrkjb.fa.ocs.oraclecloud.com",
-    "Cape Cod Healthcare":       "https://ecvz.fa.us2.oraclecloud.com",
-    "Flagler Health":            "https://erou.fa.us2.oraclecloud.com",
-    "Eastern Connecticut Health":"https://eglz.fa.us2.oraclecloud.com",
-    "Guthrie Health":            "https://elfw.fa.us2.oraclecloud.com",   # confirmed from network
-    "Valley Children's":         "https://epyz.fa.us2.oraclecloud.com",
-    "Southwest Health":          "https://fa-exgl-saasfaprod1.fa.ocs.oraclecloud.com",
-    "HealthPartners":            "https://fa-etnv-saasfaprod1.fa.ocs.oraclecloud.com",
-    "United Regional":           "https://erqh.fa.us2.oraclecloud.com",
-    "Unknown (fa-eyip)":         "https://fa-eyip-saasfaprod1.fa.ocs.oraclecloud.com",
+    # Format: "System": ("https://{oracle-subdomain}.oraclecloud.com", "siteNumber")
+    # siteNumber extracted from original career site URLs (/sites/{siteNumber})
+    # API: GET {base}/hcmRestApi/resources/latest/recruitingCEJobRequisitions
+    #      with finder=findReqs;siteNumber={siteNumber},limit=N,offset=N
+    "Jackson Hospital":          ("https://ejid.fa.us6.oraclecloud.com",                      "CX_1001"),
+    "Erlanger Health System":    ("https://elar.fa.us2.oraclecloud.com",                      "CX_1"),
+    "EvergreenHealth":           ("https://erym.fa.us6.oraclecloud.com",                      "CX_1"),
+    "Valley Health (NV)":        ("https://fa-eveq-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),
+    "Mount Nittany Health":      ("https://mnh-ibosjb.fa.ocs.oraclecloud.com",               "MountNittanyHealthCareers"),
+    "Trinity Health (Oregon)":   ("https://ertr.fa.us2.oraclecloud.com",                      "CX_3001"),
+    "Memorial Hospital":         ("https://wearememorial-ibrkjb.fa.ocs.oraclecloud.com",      "Careers"),
+    "Cape Cod Healthcare":       ("https://ecvz.fa.us2.oraclecloud.com",                      "CX_1"),
+    "Flagler Health":            ("https://erou.fa.us2.oraclecloud.com",                      "CX_1"),
+    "Eastern Connecticut Health":("https://eglz.fa.us2.oraclecloud.com",                      "CX"),
+    "Guthrie Health":            ("https://elfw.fa.us2.oraclecloud.com",                      "CX_1001"),  # confirmed
+    "Valley Children's":         ("https://epyz.fa.us2.oraclecloud.com",                      "CX_1"),
+    "Southwest Health":          ("https://fa-exgl-saasfaprod1.fa.ocs.oraclecloud.com",       "JoinOurTeam"),
+    "HealthPartners":            ("https://fa-etnv-saasfaprod1.fa.ocs.oraclecloud.com",       "healthpartners"),
+    "United Regional":           ("https://erqh.fa.us2.oraclecloud.com",                      "CX_1001"),
+    "Unknown (fa-eyip)":         ("https://fa-eyip-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_4001"),
 }
 
-async def scrape_oracle(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
+async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    base_url, site_number = org_data
     jobs = []
-    # Confirmed API pattern for all Oracle HCM sites (cloud and custom-domain fronted):
-    # GET {base}/hcmRestApi/resources/latest/recruitingCEJobRequisitions
+    # Confirmed from Guthrie network intercept: uses finder query syntax
+    # GET /hcmRestApi/resources/latest/recruitingCEJobRequisitions
+    #     ?finder=findReqs;siteNumber={site},limit={n},offset={n},sortBy=POSTING_DATES_DESC
     api = f"{base_url}/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
     offset = 0
     limit = 25
     while True:
         try:
+            finder = (
+                f"findReqs;siteNumber={site_number}"
+                f",limit={limit}"
+                f",offset={offset}"
+                f",sortBy=POSTING_DATES_DESC"
+            )
             params = {
-                "limit": limit,
-                "offset": offset,
-                "expand": "requisitionList.secondaryLocations",
-                "fields": "Id,Title,PrimaryLocation,PostedDate,WorkHours,JobFunction",
                 "onlyData": "true",
+                "finder": finder,
+                "expand": "requisitionList.workLocation,requisitionList.secondaryLocations",
             }
             async with req(session, "get", api, params=params,
-                headers={**HEADERS, "Accept": "application/json"},
+                headers={**HEADERS,
+                         "Accept": "application/vnd.oracle.adf.resourcecollection+json",
+                         "REST-Framework-Version": "4"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
                     logger.info(f"Oracle {system}: HTTP {r.status}")
@@ -2370,23 +2397,23 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, base_url: s
             if not items:
                 break
             for j in items:
-                loc = j.get("PrimaryLocation", "")
+                loc = j.get("PrimaryLocation", j.get("primaryLocation", ""))
                 if isinstance(loc, dict):
                     loc = loc.get("Name", loc.get("name", ""))
                 _city, _state = parse_city_state(str(loc))
-                func = j.get("JobFunction", "")
+                func = j.get("JobFunction", j.get("jobFunction", ""))
                 if isinstance(func, dict):
-                    func = func.get("Name", "")
+                    func = func.get("Name", func.get("name", ""))
                 jobs.append(Job(
-                    title=j.get("Title", ""),
+                    title=j.get("Title", j.get("title", "")),
                     hospital_system=system,
                     hospital_name=system,
                     city=_city, state=_state, location=str(loc),
                     specialty=str(func),
-                    job_type=j.get("WorkHours", ""),
-                    url=f"{base_url}/hcmUI/CandidateExperience/en/sites/CX_1/jobs/{j.get('Id','')}",
-                    job_id=str(j.get("Id", j.get("RequisitionNumber", ""))),
-                    posted_date=str(j.get("PostedDate", ""))[:10],
+                    job_type=j.get("WorkHours", j.get("workHours", "")),
+                    url=f"{base_url}/hcmUI/CandidateExperience/en/sites/{site_number}/jobs/{j.get('Id', j.get('id', ''))}",
+                    job_id=str(j.get("Id", j.get("id", j.get("RequisitionNumber", "")))),
+                    posted_date=str(j.get("PostedDate", j.get("postedDate", "")))[:10],
                     description="",
                     ats_platform="Oracle HCM",
                 ))
@@ -2402,11 +2429,9 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, base_url: s
     return jobs
 
 async def run_oracle(session) -> list[Job]:
-    # Skip CSOD entries (different platform, handled later)
-    orgs = {k: v for k, v in ORACLE_ORGS.items() if "csod.com" not in v}
-    logger.info(f"Oracle HCM: scraping {len(orgs)} systems...")
+    logger.info(f"Oracle HCM: scraping {len(ORACLE_ORGS)} systems...")
     results = await asyncio.gather(
-        *[scrape_oracle(session, s, o) for s, o in orgs.items()],
+        *[scrape_oracle(session, s, o) for s, o in ORACLE_ORGS.items()],
         return_exceptions=True
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
@@ -2450,21 +2475,23 @@ HEALTHCARESOURCE_ORGS = {
 
 async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, tenant: str) -> list[Job]:
     jobs = []
-    # Confirmed endpoint: /JobseekerSearchAPI/{tenant}/api/Search?size=N&from=N
+    # Confirmed URL base: /JobseekerSearchAPI/{tenant}/api/Search
+    # 405 on GET means it requires POST with JSON body
     api = f"https://pm.healthcaresource.com/JobseekerSearchAPI/{tenant}/api/Search"
     offset = 0
     size = 25
     while True:
         try:
-            params = {"size": size, "from": offset}
-            async with req(session, "get", api, params=params,
-                headers={**HEADERS, "Accept": "application/json"},
+            payload = {"size": size, "from": offset, "query": {"match_all": {}}}
+            async with req(session, "post", api,
+                json=payload,
+                headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
                     logger.info(f"HealthcareSource {system}: HTTP {r.status}")
                     break
                 data = await r.json(content_type=None)
-            # Response shape: {"hits": {"hits": [...], "total": {"value": N}}}
+            # Elasticsearch-style response: {"hits": {"hits": [...], "total": {"value": N}}}
             hits = data.get("hits", {})
             items = hits.get("hits", [])
             if not items:
@@ -2523,19 +2550,22 @@ TENET_BRANDS = {
 
 async def scrape_tenet(session: aiohttp.ClientSession, system: str, brand: str) -> list[Job]:
     jobs = []
+    # Must use POST — the URL-encoded JSON filter exceeds aiohttp's 8190-byte header limit as GET params
     api = "https://jobs.tenethealth.com/search-jobs/results"
     offset = 0
     while True:
         try:
-            params = {
+            payload = {
                 "orgIds": "30315",
-                "ascf": f'[{{"key":"custom_fields.CustomBrand","value":"{brand}"}}]',
-                "from": offset, "num": 25, "format": "json",
+                "ascf": [{"key": "custom_fields.CustomBrand", "value": brand}],
+                "from": offset, "num": 25,
             }
-            async with req(session, "get", api, params=params,
-                headers={**HEADERS, "Accept": "application/json"},
+            async with req(session, "post", api,
+                json=payload,
+                headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
+                    logger.info(f"Tenet {system}: HTTP {r.status}")
                     break
                 data = await r.json(content_type=None)
             items = data.get("eagerLoadRefineSearch", {}).get("data", {}).get("jobs", [])
@@ -2592,40 +2622,57 @@ TRINITY_ORGS = {
 
 async def scrape_trinity(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs = []
-    api = f"{base_url}/search-results"
-    page = 1
+    # Jibe platform: POST to /search-jobs with JSON body, not GET /search-results
+    api = f"{base_url}/search-jobs"
+    offset = 0
+    limit = 25
     while True:
         try:
-            params = {"m": "3", "pg": page, "pgcnt": 25}
-            async with req(session, "get", api, params=params,
-                headers={**HEADERS, "Accept": "application/json"},
+            payload = {
+                "offset": offset,
+                "limit": limit,
+                "searchText": "",
+                "location": "",
+                "locationRadius": 25,
+            }
+            async with req(session, "post", api,
+                json=payload,
+                headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
+                    logger.info(f"Trinity {system}: HTTP {r.status}")
                     break
                 data = await r.json(content_type=None)
-            items = data.get("jobs", [])
+            # Jibe response: {"requisitionList": [...], "totalJobsCount": N}
+            # or {"jobs": [...], "total": N} depending on version
+            items = (data.get("requisitionList") or
+                     data.get("jobs") or
+                     data.get("results") or [])
             if not items:
+                logger.info(f"Trinity {system}: empty response keys={list(data.keys())[:6]}")
                 break
             for j in items:
-                loc = j.get("location", j.get("jobLocation", ""))
-                _city, _state = parse_city_state(loc)
+                loc = j.get("primaryLocation", j.get("location", j.get("jobLocation", "")))
+                if isinstance(loc, dict):
+                    loc = loc.get("name", loc.get("Name", ""))
+                _city, _state = parse_city_state(str(loc))
                 jobs.append(Job(
-                    title=j.get("title", ""),
+                    title=j.get("title", j.get("Title", "")),
                     hospital_system="Trinity Health",
                     hospital_name=system,
-                    city=_city, state=_state, location=loc,
-                    specialty=j.get("category", ""),
-                    job_type=j.get("type", ""),
-                    url=j.get("applyUrl", f"{base_url}/jobs/{j.get('jobId','')}"),
-                    job_id=str(j.get("jobId", j.get("id", ""))),
-                    posted_date=str(j.get("postedDate", ""))[:10],
+                    city=_city, state=_state, location=str(loc),
+                    specialty=j.get("category", j.get("jobFunction", "")),
+                    job_type=j.get("workHours", j.get("type", "")),
+                    url=j.get("applyUrl", j.get("detailUrl", f"{base_url}/jobs/{j.get('id','')}")),
+                    job_id=str(j.get("id", j.get("jobId", j.get("Id", "")))),
+                    posted_date=str(j.get("postedDate", j.get("PostedDate", "")))[:10],
                     description="",
                     ats_platform="Jibe",
                 ))
-            total = data.get("totalJobsCount", data.get("total", 0))
-            if page * 25 >= total:
+            total = (data.get("totalJobsCount") or data.get("total") or data.get("count") or 0)
+            offset += limit
+            if offset >= total:
                 break
-            page += 1
             await jitter()
         except Exception as e:
             logger.info(f"Trinity {system}: {e}")
