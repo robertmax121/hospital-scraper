@@ -239,6 +239,14 @@ WORKDAY_TENANTS = {
     "Stormont Vail Health":                  ("stormontvail",             "1",  "en-US"),
     "Sturdy Memorial Hospital":              ("sturdymemorial",           "5",  "Sturdy"),
     "AdventHealth":                          ("adventhealth",             "12", "AH_External_Career_Site"),
+    # ── From URL spreadsheet ──
+    "WVU Medicine":                           ("wvumedicine",              "1",  "WVUH"),
+    "Pullman Regional Hospital":              ("pullmanregionalhospital",  "1",  "Careers"),
+    "Enloe Health":                           ("enloe",                    "12", "EnloeHealth"),
+    "Banner Health (confirmed)":              ("bannerhealth",             "108","Careers"),
+    "Monument Health":                        ("monumenthealth",           "1",  "Goldcareers"),
+    "Saint Luke's Health System":             ("saintlukes",               "1",  "saintlukeshealthcareers"),
+    "University of Washington Medicine":      ("wd5",                      "5",  "UWHires"),
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -852,6 +860,20 @@ ICIMS_ORGS = {
     "Monument Health":        "careers-monument.icims.com",
     "Owensboro Health":       "careers-owensborohealth.icims.com",
     "Stormont Vail":          "careers-stormontvail.icims.com",
+    # ── From URL spreadsheet ──
+    "Appalachian Regional Healthcare":  "careers-arh.icims.com",
+    "Prime Healthcare":                 "careers-primehealthcare.icims.com",
+    "Midland Health":                   "hospital-midlandhealth.icims.com",
+    "Covenant Health":                  "careers-covenanthealth.icims.com",
+    "Providence Health & Services":     "careers-hub-phs.icims.com",
+    "Tri-City Medical Center":          "careers-tricitymed.icims.com",
+    "Emory Healthcare":                 "ehccareers-emory.icims.com",
+    "St. Luke's Health System":         "careers-slhs.icims.com",
+    "Methodist Hospitals":              "careers-methodisthospitals.icims.com",
+    "Central Maine Healthcare":         "careers-centralmainehealthcare-ph.icims.com",
+    "Tuality Healthcare":               "careers-tuality.icims.com",
+    "Legacy Health":                    "careers-lhs.icims.com",
+    "OHSU":                             "careersat-ohsu.icims.com",
 }
 
 
@@ -1617,9 +1639,8 @@ PHENOM_ORG_CODES = {
 }
 
 PHENOM_ORGS = {
-    # CommonSpirit moved to iCIMS — see ICIMS_ORGS
+    # CommonSpirit moved to TalentBrew — see run_talentbrew
     # Baylor Scott & White moved to Playwright — session-based Phenom
-    # Corewell Health + Ascension Health moved to hybrid Playwright+aiohttp — see PHENOM_SESSION_ORGS
     "Baptist Health":        "https://jobs.baptisthealthcareers.com",
     "Munson Healthcare":     "https://careers.munsonhealthcare.org",
     "Bryan Health":          "https://careers.bryanhealth.com",
@@ -2091,19 +2112,26 @@ async def run_recruitingcom(session) -> list[Job]:
 #  Public job board with REST API
 ##############################################################################
 INFOR_ORGS = {
-    "Faith Regional Health": (
-        "css-faithregional-prd",
-        "https://css-faithregional-prd.inforcloudsuite.com/hcm/Jobs/page/JobsHomePage",
-        "100",
-    ),
+    # Format: "System": ("css-subdomain", "hr_org")
+    "Faith Regional Health":       ("css-faithregional-prd",             "100"),
+    "CAMC":                        ("css-camc-prd",                      "CAMC"),
+    "Ballad Health":               ("css-balladhealth-prd",              "1"),
+    "PH Healthcare":               ("css-phhealthcare-prd",              "1"),
+    "Carson Tahoe Health":         ("css-carsontahoehs-prd",             "1"),
+    "Middlesex Health":            ("css-middlesex-prd",                 "1"),
+    "Bay Health":                  ("css-bayhealth-prd",                 "1"),
+    "BayCare Health System":       ("css-baycarehs-prd",                 "1"),
+    "Lakeland Regional Health":    ("css-lakelandrmc-prd",               "LRH"),
+    "Tift Regional Health":        ("css-tiftregional-prd",              "1"),
+    "Eastern Maine Health":        ("css-emh-prd",                       "1"),
+    "Maury Regional Health":       ("css-mauryregionalhos-prd",          "MR"),
 }
 
 async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
-    org_id, base_url, hr_org = org_data
+    org_id, hr_org = org_data
     jobs = []
 
     # Infor CloudSuite HCM — Lawson CandidateSelfService JSON API
-    # This is the older Lawson HCM pattern used by CHRISTUS, Faith Regional, etc.
     base = f"https://{org_id}.inforcloudsuite.com"
     
     # Try multiple endpoint patterns
@@ -2202,275 +2230,549 @@ async def run_infor(session) -> list[Job]:
     return jobs
 
 
-async def scrape_phenom_session_hybrid(system: str, base_url: str) -> list[Job]:
-    """
-    Hybrid Phenom scraper: uses Playwright to load the career page and intercept
-    the real XHR search request (capturing cookies + auth headers), then paginates
-    all jobs via aiohttp using those captured credentials.
-    """
-    try:
-        from playwright.async_api import async_playwright
-    except ImportError:
-        logger.warning("Playwright not installed — skipping Phenom session hybrid")
-        return []
 
+##############################################################################
+#  UKG PRO / ULTIPRO — GUID-based job board API
+#  Format: ("base_url", "guid")
+##############################################################################
+UKG_ORGS = {
+    "Catawba Valley Medical":       ("https://cchsconnect.rec.pro.ukg.net/COL1053CCHD",  "c6df4630-7da9-4627-af22-819e939d86fa"),
+    "Augusta University Health":    ("https://recruiting.ultipro.com/AUG1000AUG",        "02a29cd6-e7aa-4501-96be-6336647e3184"),
+    "Cape Regional Health":         ("https://crhukg.rec.pro.ukg.net/CHE1503CHPE",       "09584b08-b32f-4882-8c7b-223bbd8e3851"),
+    "Northwest Medical Center":     ("https://nwmedicalctr.rec.pro.ukg.net/NOR1080NWMC", "f22ba272-5440-48f3-9f0f-84f6f384d461"),
+    "Guadalupe Regional Medical":   ("https://grmedcenter.rec.pro.ukg.net/GUA1500GDRM",  "42079bd4-4198-48a9-b64a-26c8b01496d6"),
+    "Quorum Health":                ("https://recruiting2.ultipro.com/QHC1000QHCS",      "c304f8f7-4638-4bc5-8567-18580345a749"),
+    "Granite Hills Medical":        ("https://recruiting.ultipro.com/GRE1050GNHP",       "2b67ecb4-00fb-4863-931a-7bf0ebcb493a"),
+    "Medical Associates":           ("https://recruiting.ultipro.com/MEA1004MEVM",       "d561e1d3-aa5e-4c1b-bcf5-5319c6abdcac"),
+    "Excela Health":                ("https://recruiting.ultipro.com/EXC1005EXCEH",      "a00363e2-39d4-4408-a790-fbd62f4846d8"),
+    "Heritage Health":              ("https://recruiting.ultipro.com/HER1004HERIT",      "68189271-8c8d-4634-bb50-bd2edf375278"),
+    "Alliant Health":               ("https://recruiting.ultipro.com/ALL1034ABHC",       "ad28382f-2fcd-4cbb-bb18-24dd71b05bce"),
+    "Erie County Medical Center":   ("https://ecmc462.rec.pro.ukg.net/ERI1003ECMC",      "4d1858fb-5b2a-499b-a320-4f1f4e5bcb06"),
+    "Wyoming County Community":     ("https://recruiting.ultipro.com/WYC1000WHMC",       "5e6bf310-55e9-45dd-8252-85e4c670f433"),
+    "Deaconess Health":             ("https://deaconess.rec.pro.ukg.net/DEA1005DEAC",    "a1f943e7-8d4d-4348-bf5e-4664f78d3abb"),
+    "North Mississippi Medical":    ("https://recruiting.ultipro.com/NOR1041NAHO",       "84528182-2cf7-4f42-b7ca-dbb54c6f1c10"),
+    "Kern Medical":                 ("https://recruiting.ultipro.com/KER1002KERN",       "e74fb506-5af0-e4c1-999e-64d5e8414cb0"),
+    "Grinnell Regional Medical":    ("https://recruiting.ultipro.com/GRI1004GHSC",       "f5d979ef-386f-4469-8178-a3801183d063"),
+    "Columbia Regional Medical":    ("https://recruiting.ultipro.com/COL1042CRME",       "5ac3f35f-7e01-49ff-ad53-0acc27b4cee7"),
+    "Crisp Regional Health":        ("https://recruiting.ultipro.com/CRI1005CRISP",      "c74342f0-7984-4858-8545-16e720353c82"),
+    "South Georgia Health":         ("https://sghsukg.rec.pro.ukg.net/SOU1076SOUG",      "2de20fad-cb3f-4525-87cd-7bd1d3c2a720"),
+    "Murray-Calloway County":       ("https://murray.rec.pro.ukg.net/MUR1004MCCH",       "78a4032f-cda1-471d-86f1-9e64991ed7d2"),
+    "TJ Regional Health":           ("https://tjregional.rec.pro.ukg.net/TJS1500TJSC",   "a4b9e606-5dc1-4c8c-ba68-83fd41e97ade"),
+    "Lakewood Health":              ("https://recruiting2.ultipro.com/SKY1006LAKES",     "9dcd58e9-9155-4226-9b21-f476fcd1d29b"),
+}
+
+async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    base_url, guid = org_data
     jobs = []
-    captured_request_info = {}  # will store {url, headers, method, post_data}
-
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch(headless=True, args=[
-            "--no-sandbox", "--disable-setuid-sandbox",
-            "--disable-blink-features=AutomationControlled",
-            "--disable-dev-shm-usage",
-        ])
-        ctx = await browser.new_context(
-            viewport={"width": 1440, "height": 900},
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
-            locale="en-US",
-        )
-        await ctx.add_init_script("Object.defineProperty(navigator,'webdriver',{get:()=>false})")
-        page = await ctx.new_page()
-
-        # Intercept responses to find the jobs API JSON call
-        async def on_response(response):
-            if captured_request_info:
-                return  # already captured
-            url = response.url.lower()
-            # Only look at actual API calls — exclude static assets
-            if any(url.endswith(ext) for ext in [".js", ".css", ".jpg", ".png", ".svg", ".woff", ".woff2", ".ttf", ".ico", ".gif", ".webp"]):
-                return
-            # Must look like a job search API endpoint
-            api_patterns = ["api/search/jobs", "api/jobs", "/jobs/search", "search/jobs",
-                            "careers/search", "job-search", "/requisitions", "/positions"]
-            if not any(x in url for x in api_patterns):
-                return
-            try:
-                ct = response.headers.get("content-type", "")
-                if "json" not in ct:
-                    return
-                data = await response.json()
-                # Verify it looks like job data (not an error or empty response)
-                if not isinstance(data, dict):
-                    return
-                if data.get("errorCode") or data.get("error"):
-                    return
-                # Check it has something that looks like jobs
-                has_jobs = any(data.get(k) for k in ["jobs", "entries", "results", "requisitions", "total"])
-                if not has_jobs:
-                    return
-                # Capture the request that produced this response
-                req = response.request
-                hdrs = await req.all_headers()
-                captured_request_info["url"] = req.url
-                captured_request_info["method"] = req.method
-                captured_request_info["headers"] = hdrs
-                captured_request_info["post_data"] = req.post_data
-                logger.info(f"Phenom {system} [hybrid]: captured {req.method} {req.url}")
-            except Exception as e:
-                logger.info(f"Phenom {system} [hybrid]: response intercept error: {e}")
-
-        page.on("response", on_response)
-
+    # UKG Pro public API: /JobBoard/{guid}/api/apply/v2/jobs
+    api = f"{base_url}/JobBoard/{guid}/api/apply/v2/jobs"
+    page = 1
+    while True:
         try:
-            # Try multiple entry points to trigger the job search API call
-            search_urls = [
-                f"{base_url}/us/en/search-results",
-                f"{base_url}/en/search-results",
-                f"{base_url}/jobs",
-                f"{base_url}/search-jobs",
-            ]
-            for search_url in search_urls:
-                if captured_request_info:
+            params = {"page": page, "pageSize": 25, "phrases": "", "sort": "postedDateDesc"}
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "application/json"},
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                if r.status != 200:
                     break
-                try:
-                    await page.goto(search_url, wait_until="networkidle", timeout=35000)
-                    await asyncio.sleep(4)
-                    if captured_request_info:
-                        break
-                    # Try clicking a search button to trigger the API call
-                    for selector in [
-                        "[data-ph-at-id='globalsearch-button']",
-                        "button[data-ph-at-id='search-button']",
-                        "button[type='submit']",
-                        "[class*='search-submit']",
-                        "[class*='searchButton']",
-                        "[aria-label*='search' i]",
-                    ]:
-                        try:
-                            btn = await page.query_selector(selector)
-                            if btn:
-                                await btn.click()
-                                await asyncio.sleep(6)
-                                if captured_request_info:
-                                    break
-                        except Exception:
-                            continue
-                except Exception as nav_err:
-                    logger.info(f"Phenom {system} [hybrid]: nav to {search_url} → {nav_err}")
-                    continue
-
-        except Exception as e:
-            logger.info(f"Phenom {system} [hybrid]: page load error: {e}")
-
-        await ctx.close()
-        await browser.close()
-
-    if not captured_request_info:
-        logger.info(f"Phenom {system} [hybrid]: could not intercept API request — no jobs")
-        return []
-
-    # Now paginate using aiohttp with the real headers from the browser session
-    api_url = captured_request_info["url"]
-    method = captured_request_info["method"].upper()
-    raw_headers = captured_request_info.get("headers", {})
-
-    # Build clean headers — keep auth/session cookies, drop transfer-encoding etc.
-    skip_headers = {"content-length", "transfer-encoding", "connection", "host", "accept-encoding"}
-    session_headers = {k: v for k, v in raw_headers.items() if k.lower() not in skip_headers}
-
-    # Parse captured post body (if POST)
-    import json as _json
-    use_post = (method == "POST")
-    captured_body = {}
-    if use_post and captured_request_info.get("post_data"):
-        try:
-            captured_body = _json.loads(captured_request_info["post_data"])
-        except Exception:
-            pass
-
-    logger.info(f"Phenom {system} [hybrid]: paginating via {'POST' if use_post else 'GET'} {api_url}")
-
-    def _extract_listings(d):
-        for key in ("jobs", "requisitions", "results", "entries"):
-            v = d.get(key)
-            if isinstance(v, list) and v:
-                return v
-        hits = d.get("hits")
-        if isinstance(hits, dict):
-            inner = hits.get("hits")
-            if isinstance(inner, list) and inner:
-                return inner
-        data_val = d.get("data")
-        if isinstance(data_val, dict):
-            sub = data_val.get("jobs") or data_val.get("entries") or data_val.get("results")
-            if isinstance(sub, list) and sub:
-                return sub
-        if isinstance(data_val, list) and data_val:
-            return data_val
-        return []
-
-    connector = aiohttp.TCPConnector(limit=5, ssl=False)
-    async with aiohttp.ClientSession(connector=connector) as session:
-        offset = 0
-        page_size = 50
-        while True:
-            try:
-                if use_post:
-                    body = {**captured_body, "from": offset, "size": page_size,
-                            "language": "en_US", "query": "", "location": ""}
-                    # Strip the size param from the URL query string if present
-                    async with session.post(
-                        api_url.split("?")[0],
-                        json=body,
-                        headers=session_headers,
-                        timeout=aiohttp.ClientTimeout(total=30),
-                    ) as r:
-                        if r.status != 200:
-                            logger.info(f"Phenom {system} [hybrid]: HTTP {r.status} at offset {offset}")
-                            break
-                        data = await r.json(content_type=None)
-                else:
-                    params = {"from": offset, "size": page_size, "language": "en_US"}
-                    async with session.get(
-                        api_url.split("?")[0],
-                        params=params,
-                        headers=session_headers,
-                        timeout=aiohttp.ClientTimeout(total=30),
-                    ) as r:
-                        if r.status != 200:
-                            logger.info(f"Phenom {system} [hybrid]: HTTP {r.status} at offset {offset}")
-                            break
-                        data = await r.json(content_type=None)
-
-                if data.get("errorCode") or data.get("error"):
-                    logger.info(f"Phenom {system} [hybrid]: API error at offset {offset} — {data.get('errorMsg', data.get('error', ''))[:80]}")
-                    break
-
-                if offset == 0:
-                    logger.info(f"Phenom {system} [hybrid]: response keys={list(data.keys())[:8]}")
-
-                raw = _extract_listings(data)
-                listings = [j for j in raw if isinstance(j, dict)]
-                if not listings:
-                    logger.info(f"Phenom {system} [hybrid]: no listings at offset {offset}")
-                    break
-
-                for j in listings:
-                    doc = j.get("_source", j)
-                    _raw_city  = doc.get("city", "")
-                    _raw_state = doc.get("state", "") or doc.get("stateCode", "")
-                    city, state = parse_city_state(f"{_raw_city}, {_raw_state}") if (_raw_city or _raw_state) else (_raw_city, _raw_state)
-                    city  = city  or _raw_city
-                    state = state or _raw_state
-                    loc   = doc.get("location", "") or doc.get("locationsText", "") or f"{city}, {state}"
-                    if isinstance(loc, list):
-                        loc = ", ".join(str(x) for x in loc)
-                    title  = doc.get("title", "") or doc.get("jobTitle", "") or doc.get("name", "")
-                    job_id = str(doc.get("id", "") or doc.get("jobId", "") or doc.get("requisitionId", "") or j.get("_id", ""))
-                    url    = doc.get("applyUrl", "") or doc.get("jobUrl", "") or doc.get("url", "") or f"{base_url}/job/{job_id}"
-                    if title and job_id:
-                        jobs.append(Job(
-                            title=title,
-                            hospital_system=system,
-                            hospital_name=doc.get("facility", "") or doc.get("company", "") or system,
-                            city=city, state=state,
-                            location=loc,
-                            specialty=doc.get("category", "") or doc.get("jobCategory", "") or doc.get("department", ""),
-                            job_type=doc.get("employmentType", "") or doc.get("jobType", "") or doc.get("type", ""),
-                            url=url,
-                            job_id=job_id,
-                            posted_date=str(doc.get("postedDate", "") or doc.get("datePosted", "") or doc.get("postDate", ""))[:10],
-                            description=strip_html(str(doc.get("description", "") or doc.get("shortDescription", ""))),
-                            ats_platform="Phenom",
-                        ))
-
-                total = (
-                    data.get("total") or data.get("count") or data.get("total_entries") or
-                    data.get("totalCount") or
-                    (data.get("hits", {}) or {}).get("total", {}).get("value") or
-                    len(listings)
-                )
-                if isinstance(total, dict):
-                    total = total.get("value", len(listings))
-
-                logger.info(f"Phenom {system} [hybrid]: offset {offset} → {len(listings)} jobs (total reported: {total})")
-                offset += page_size
-                if offset >= int(total) or len(listings) < page_size:
-                    break
-                await asyncio.sleep(random.uniform(0.5, 1.5))
-
-            except Exception as e:
-                logger.info(f"Phenom {system} [hybrid]: {e}")
+                data = await r.json(content_type=None)
+            items = data.get("jobs", [])
+            if not items:
                 break
+            for j in items:
+                loc_city = j.get("city", "")
+                loc_state = j.get("state", "")
+                jobs.append(Job(
+                    title=j.get("title", ""),
+                    hospital_system=system,
+                    hospital_name=j.get("company", {}).get("name", system),
+                    city=loc_city, state=loc_state,
+                    location=f"{loc_city}, {loc_state}".strip(", "),
+                    specialty=j.get("category", {}).get("name", ""),
+                    job_type=j.get("employmentType", ""),
+                    url=f"{base_url}/JobBoard/{guid}/?detail={j.get('jobId','')}",
+                    job_id=str(j.get("jobId", "")),
+                    posted_date=str(j.get("postedDate", ""))[:10],
+                    description=strip_html(j.get("shortDesc", "")),
+                    ats_platform="UKG",
+                ))
+            if page * 25 >= data.get("total", 0):
+                break
+            page += 1
+            await jitter()
+        except Exception as e:
+            logger.info(f"UKG {system}: {e}")
+            break
+    logger.info(f"  UKG {system}: {len(jobs)} jobs")
+    return jobs
 
-    logger.info(f"  Phenom {system} [hybrid]: {len(jobs)} jobs")
+async def run_ukg(session) -> list[Job]:
+    logger.info(f"UKG: scraping {len(UKG_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_ukg(session, s, o) for s, o in UKG_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  UKG total: {len(jobs):,} jobs")
     return jobs
 
 
-# Systems that need session-based auth via the hybrid Playwright+aiohttp approach
-PHENOM_SESSION_ORGS = {
-    "Corewell Health":  "https://careers.corewellhealth.org",
-    "Ascension Health": "https://jobs.ascension.org",
+##############################################################################
+#  ORACLE HCM CLOUD — REST search endpoint
+#  Format: ("base_url",)  — base includes full path up to /sites/{site}
+##############################################################################
+ORACLE_ORGS = {
+    # Format: "System": "https://{oracle-subdomain}.oraclecloud.com"
+    # API always at: {base}/hcmRestApi/resources/latest/recruitingCEJobRequisitions
+    # Subdomains confirmed from network requests; UI URLs stripped down to base
+    "Jackson Hospital":          "https://ejid.fa.us6.oraclecloud.com",
+    "Erlanger Health System":    "https://elar.fa.us2.oraclecloud.com",
+    "EvergreenHealth":           "https://erym.fa.us6.oraclecloud.com",
+    "Valley Health (NV)":        "https://fa-eveq-saasfaprod1.fa.ocs.oraclecloud.com",
+    "Mount Nittany Health":      "https://mnh-ibosjb.fa.ocs.oraclecloud.com",
+    "Trinity Health (Oregon)":   "https://ertr.fa.us2.oraclecloud.com",
+    "Memorial Hospital":         "https://wearememorial-ibrkjb.fa.ocs.oraclecloud.com",
+    "Cape Cod Healthcare":       "https://ecvz.fa.us2.oraclecloud.com",
+    "Flagler Health":            "https://erou.fa.us2.oraclecloud.com",
+    "Eastern Connecticut Health":"https://eglz.fa.us2.oraclecloud.com",
+    "Guthrie Health":            "https://elfw.fa.us2.oraclecloud.com",   # confirmed from network
+    "Valley Children's":         "https://epyz.fa.us2.oraclecloud.com",
+    "Southwest Health":          "https://fa-exgl-saasfaprod1.fa.ocs.oraclecloud.com",
+    "HealthPartners":            "https://fa-etnv-saasfaprod1.fa.ocs.oraclecloud.com",
+    "United Regional":           "https://erqh.fa.us2.oraclecloud.com",
+    "Unknown (fa-eyip)":         "https://fa-eyip-saasfaprod1.fa.ocs.oraclecloud.com",
 }
 
+async def scrape_oracle(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
+    jobs = []
+    # Confirmed API pattern for all Oracle HCM sites (cloud and custom-domain fronted):
+    # GET {base}/hcmRestApi/resources/latest/recruitingCEJobRequisitions
+    api = f"{base_url}/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
+    offset = 0
+    limit = 25
+    while True:
+        try:
+            params = {
+                "limit": limit,
+                "offset": offset,
+                "expand": "requisitionList.secondaryLocations",
+                "fields": "Id,Title,PrimaryLocation,PostedDate,WorkHours,JobFunction",
+                "onlyData": "true",
+            }
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "application/json"},
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                if r.status != 200:
+                    logger.info(f"Oracle {system}: HTTP {r.status}")
+                    break
+                data = await r.json(content_type=None)
+            items = data.get("items", [])
+            if not items:
+                break
+            for j in items:
+                loc = j.get("PrimaryLocation", "")
+                if isinstance(loc, dict):
+                    loc = loc.get("Name", loc.get("name", ""))
+                _city, _state = parse_city_state(str(loc))
+                func = j.get("JobFunction", "")
+                if isinstance(func, dict):
+                    func = func.get("Name", "")
+                jobs.append(Job(
+                    title=j.get("Title", ""),
+                    hospital_system=system,
+                    hospital_name=system,
+                    city=_city, state=_state, location=str(loc),
+                    specialty=str(func),
+                    job_type=j.get("WorkHours", ""),
+                    url=f"{base_url}/hcmUI/CandidateExperience/en/sites/CX_1/jobs/{j.get('Id','')}",
+                    job_id=str(j.get("Id", j.get("RequisitionNumber", ""))),
+                    posted_date=str(j.get("PostedDate", ""))[:10],
+                    description="",
+                    ats_platform="Oracle HCM",
+                ))
+            total = data.get("totalResults", data.get("count", 0))
+            offset += limit
+            if offset >= total:
+                break
+            await jitter()
+        except Exception as e:
+            logger.info(f"Oracle {system}: {e}")
+            break
+    logger.info(f"  Oracle {system}: {len(jobs)} jobs")
+    return jobs
 
-async def run_phenom_session_hybrid() -> list[Job]:
-    """Run all session-based Phenom scrapers sequentially (Playwright must be serial)."""
-    all_jobs = []
-    for system, base_url in PHENOM_SESSION_ORGS.items():
-        result = await scrape_phenom_session_hybrid(system, base_url)
-        all_jobs.extend(result)
-    return all_jobs
+async def run_oracle(session) -> list[Job]:
+    # Skip CSOD entries (different platform, handled later)
+    orgs = {k: v for k, v in ORACLE_ORGS.items() if "csod.com" not in v}
+    logger.info(f"Oracle HCM: scraping {len(orgs)} systems...")
+    results = await asyncio.gather(
+        *[scrape_oracle(session, s, o) for s, o in orgs.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Oracle HCM total: {len(jobs):,} jobs")
+    return jobs
+
+
+##############################################################################
+#  HEALTHCARESOURCE PM — hospital-specific tenant API
+#  Format: ("tenant_slug",)
+##############################################################################
+HEALTHCARESOURCE_ORGS = {
+    "Central Valley Medical":   "centralvalleymedicalcenter",
+    "RMCM":                     "rmcm",
+    "CRMC Health":              "crmchealth",
+    "AnMed Health":             "anmed",
+    "CaroMont Health":          "caromont",
+    "Randolph Health":          "randolph",
+    "Scotland Health":          "scotland",
+    "Carteret Health Care":     "carteret",
+    "Stillwater Medical":       "stillwater",
+    "Crouse Health":            "crouse",
+    "York Hospital":            "yorkhospital",
+    "Lake Regional Health":     "lakeregional",
+    "Liberty Hospital":         "liberty",
+    "Forrest Health":           "forresthealth",
+    "MRHC":                     "mrhc",
+    "Brattleboro Memorial":     "bch",
+    "Waterbury Hospital":       "waterbury",
+    "ECHN":                     "echn",
+    "Archbold Medical":         "archbold",
+    "Kootenai Health":          "kootenai",
+    "Community Memorial":       "comhs",
+    "Union Hospital":           "unionhospital",
+    "Hays Medical Center":      "haysmed",
+    "CHC Healthcare":           "chc",
+    "Lawrence General":         "lawrence",
+    "Holyoke Health":           "Holyokehealth",
+    "Sarasota Memorial":        "smh",
+}
+
+async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, tenant: str) -> list[Job]:
+    jobs = []
+    # Confirmed endpoint: /JobseekerSearchAPI/{tenant}/api/Search?size=N&from=N
+    api = f"https://pm.healthcaresource.com/JobseekerSearchAPI/{tenant}/api/Search"
+    offset = 0
+    size = 25
+    while True:
+        try:
+            params = {"size": size, "from": offset}
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "application/json"},
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                if r.status != 200:
+                    logger.info(f"HealthcareSource {system}: HTTP {r.status}")
+                    break
+                data = await r.json(content_type=None)
+            # Response shape: {"hits": {"hits": [...], "total": {"value": N}}}
+            hits = data.get("hits", {})
+            items = hits.get("hits", [])
+            if not items:
+                break
+            for j in items:
+                src = j.get("_source", j)
+                city  = src.get("city",  src.get("City",  ""))
+                state = src.get("state", src.get("State", ""))
+                job_id = str(src.get("requisitionId", src.get("jobId", src.get("id", j.get("_id", "")))))
+                jobs.append(Job(
+                    title=src.get("title", src.get("jobTitle", "")),
+                    hospital_system=system,
+                    hospital_name=src.get("facilityName", src.get("facility", system)),
+                    city=city, state=state,
+                    location=f"{city}, {state}".strip(", "),
+                    specialty=src.get("category", src.get("jobCategory", "")),
+                    job_type=src.get("employmentType", src.get("jobType", "")),
+                    url=f"https://pm.healthcaresource.com/cs/{tenant}/#/job/{job_id}",
+                    job_id=job_id,
+                    posted_date=str(src.get("postedDate", src.get("datePosted", "")))[:10],
+                    description="",
+                    ats_platform="HealthcareSource",
+                ))
+            total = hits.get("total", {}).get("value", 0) if isinstance(hits.get("total"), dict) else hits.get("total", 0)
+            offset += size
+            if offset >= total:
+                break
+            await jitter()
+        except Exception as e:
+            logger.info(f"HealthcareSource {system}: {e}")
+            break
+    logger.info(f"  HealthcareSource {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_healthcaresource(session) -> list[Job]:
+    logger.info(f"HealthcareSource: scraping {len(HEALTHCARESOURCE_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_healthcaresource(session, s, o) for s, o in HEALTHCARESOURCE_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  HealthcareSource total: {len(jobs):,} jobs")
+    return jobs
+
+
+##############################################################################
+#  TENET HEALTH — custom career site with JSON search API
+##############################################################################
+TENET_BRANDS = {
+    "Baptist Health System (TX)":   "Baptist Health System",
+    "Valley Baptist Health System": "Valley Baptist Health System",
+    "The hospitals of Providence":  "The hospitals of Providence",
+    "Pittsburgh-area facilities":   "Pittsburgh",
+    "Detroit Medical Center":       "Detroit Medical Center",
+}
+
+async def scrape_tenet(session: aiohttp.ClientSession, system: str, brand: str) -> list[Job]:
+    jobs = []
+    api = "https://jobs.tenethealth.com/search-jobs/results"
+    offset = 0
+    while True:
+        try:
+            params = {
+                "orgIds": "30315",
+                "ascf": f'[{{"key":"custom_fields.CustomBrand","value":"{brand}"}}]',
+                "from": offset, "num": 25, "format": "json",
+            }
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "application/json"},
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                if r.status != 200:
+                    break
+                data = await r.json(content_type=None)
+            items = data.get("eagerLoadRefineSearch", {}).get("data", {}).get("jobs", [])
+            if not items:
+                break
+            for j in items:
+                loc = j.get("jobLocation", j.get("Location", ""))
+                _city, _state = parse_city_state(loc)
+                jobs.append(Job(
+                    title=j.get("title", ""),
+                    hospital_system="Tenet Health",
+                    hospital_name=system,
+                    city=_city, state=_state, location=loc,
+                    specialty=j.get("industry", ""),
+                    job_type=j.get("jobType", ""),
+                    url=f"https://jobs.tenethealth.com/{j.get('canonicalPositionUrl','')}",
+                    job_id=str(j.get("jobId", "")),
+                    posted_date=str(j.get("postedDate", ""))[:10],
+                    description="",
+                    ats_platform="Tenet",
+                ))
+            total = data.get("eagerLoadRefineSearch", {}).get("data", {}).get("totalJobsCount", 0)
+            offset += 25
+            if offset >= total:
+                break
+            await jitter()
+        except Exception as e:
+            logger.info(f"Tenet {system}: {e}")
+            break
+    logger.info(f"  Tenet {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_tenet(session) -> list[Job]:
+    logger.info(f"Tenet: scraping {len(TENET_BRANDS)} brands...")
+    results = await asyncio.gather(
+        *[scrape_tenet(session, s, b) for s, b in TENET_BRANDS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Tenet total: {len(jobs):,} jobs")
+    return jobs
+
+
+##############################################################################
+#  TRINITY HEALTH — Jibe-based career portal with JSON search API
+##############################################################################
+TRINITY_ORGS = {
+    "St. Peter's Health Partners":  "https://jobs.trinity-health.org/stpetershealthpartners",
+    "Loyola Medicine":              "https://jobs.trinity-health.org/loyolamedicine",
+    "Saint Alphonsus":              "https://jobs.trinity-health.org/saintalphonsus",
+    "MercyOne":                     "https://jobs.trinity-health.org/mercyone",
+    "Holy Cross Health":            "https://jobs.trinity-health.org/holycrosshealth",
+}
+
+async def scrape_trinity(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
+    jobs = []
+    api = f"{base_url}/search-results"
+    page = 1
+    while True:
+        try:
+            params = {"m": "3", "pg": page, "pgcnt": 25}
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "application/json"},
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                if r.status != 200:
+                    break
+                data = await r.json(content_type=None)
+            items = data.get("jobs", [])
+            if not items:
+                break
+            for j in items:
+                loc = j.get("location", j.get("jobLocation", ""))
+                _city, _state = parse_city_state(loc)
+                jobs.append(Job(
+                    title=j.get("title", ""),
+                    hospital_system="Trinity Health",
+                    hospital_name=system,
+                    city=_city, state=_state, location=loc,
+                    specialty=j.get("category", ""),
+                    job_type=j.get("type", ""),
+                    url=j.get("applyUrl", f"{base_url}/jobs/{j.get('jobId','')}"),
+                    job_id=str(j.get("jobId", j.get("id", ""))),
+                    posted_date=str(j.get("postedDate", ""))[:10],
+                    description="",
+                    ats_platform="Jibe",
+                ))
+            total = data.get("totalJobsCount", data.get("total", 0))
+            if page * 25 >= total:
+                break
+            page += 1
+            await jitter()
+        except Exception as e:
+            logger.info(f"Trinity {system}: {e}")
+            break
+    logger.info(f"  Trinity {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_trinity(session) -> list[Job]:
+    logger.info(f"Trinity Health: scraping {len(TRINITY_ORGS)} orgs...")
+    results = await asyncio.gather(
+        *[scrape_trinity(session, s, u) for s, u in TRINITY_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Trinity total: {len(jobs):,} jobs")
+    return jobs
+
+
+##############################################################################
+#  UHS INC — custom career site, brand-filtered
+##############################################################################
+UHS_BRANDS = {
+    "South Texas Health System":       "south-texas-health-system",
+    "Texoma Medical Center":           "texoma-medical-center",
+    "Aiken Regional Medical":          "aiken-regional-medical-centers",
+    "St. Mary's Regional Medical":     "st-marys-regional-medical-center",
+    "Northern Nevada Health System":   "the-northern-nevada-health-system",
+    "Valley Health System (NV)":       "the-valley-health-system",
+    "Southwest Healthcare":            "southwest-healthcare",
+    "Wellington Regional Medical":     "wellington-regional-medical-center",
+}
+
+async def scrape_uhs(session: aiohttp.ClientSession, system: str, brand: str) -> list[Job]:
+    jobs = []
+    api = f"https://jobs.uhsinc.com/{brand}/jobs-data"
+    page = 1
+    while True:
+        try:
+            params = {"page": page, "pageSize": 25}
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "application/json"},
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                if r.status != 200:
+                    break
+                data = await r.json(content_type=None)
+            items = data.get("jobs", data.get("results", []))
+            if not items:
+                break
+            for j in items:
+                loc = j.get("location", j.get("jobLocation", ""))
+                _city, _state = parse_city_state(loc)
+                jobs.append(Job(
+                    title=j.get("title", ""),
+                    hospital_system="UHS",
+                    hospital_name=system,
+                    city=_city, state=_state, location=loc,
+                    specialty=j.get("category", ""),
+                    job_type=j.get("employmentType", ""),
+                    url=f"https://jobs.uhsinc.com/{brand}/jobs/{j.get('id','')}",
+                    job_id=str(j.get("id", j.get("jobId", ""))),
+                    posted_date=str(j.get("postedDate", ""))[:10],
+                    description="",
+                    ats_platform="UHS",
+                ))
+            total = data.get("total", data.get("totalCount", 0))
+            if page * 25 >= total:
+                break
+            page += 1
+            await jitter()
+        except Exception as e:
+            logger.info(f"UHS {system}: {e}")
+            break
+    logger.info(f"  UHS {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_uhs(session) -> list[Job]:
+    logger.info(f"UHS: scraping {len(UHS_BRANDS)} brands...")
+    results = await asyncio.gather(
+        *[scrape_uhs(session, s, b) for s, b in UHS_BRANDS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  UHS total: {len(jobs):,} jobs")
+    return jobs
+
+
+##############################################################################
+#  LIFEPOINT HEALTH — brand-filtered subdomain job listings
+##############################################################################
+LIFEPOINT_BRANDS = {
+    "Raleigh General Hospital":     "raleigh-general-hospital",
+    "Trios Health":                 "trios-health",
+    "Sovah Health":                 "sovah-health",
+}
+
+async def scrape_lifepoint(session: aiohttp.ClientSession, system: str, brand: str) -> list[Job]:
+    jobs = []
+    api = f"https://jobs.lifepointhealth.net/{brand}/jobs-data"
+    page = 1
+    while True:
+        try:
+            params = {"page": page, "pageSize": 25}
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "application/json"},
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                if r.status != 200:
+                    break
+                data = await r.json(content_type=None)
+            items = data.get("jobs", data.get("results", []))
+            if not items:
+                break
+            for j in items:
+                loc = j.get("location", j.get("jobLocation", ""))
+                _city, _state = parse_city_state(loc)
+                jobs.append(Job(
+                    title=j.get("title", ""),
+                    hospital_system="LifePoint Health",
+                    hospital_name=system,
+                    city=_city, state=_state, location=loc,
+                    specialty=j.get("category", ""),
+                    job_type=j.get("employmentType", ""),
+                    url=f"https://jobs.lifepointhealth.net/{brand}/jobs/{j.get('id','')}",
+                    job_id=str(j.get("id", j.get("jobId", ""))),
+                    posted_date=str(j.get("postedDate", ""))[:10],
+                    description="",
+                    ats_platform="LifePoint",
+                ))
+            total = data.get("total", data.get("totalCount", 0))
+            if page * 25 >= total:
+                break
+            page += 1
+            await jitter()
+        except Exception as e:
+            logger.info(f"LifePoint {system}: {e}")
+            break
+    logger.info(f"  LifePoint {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_lifepoint(session) -> list[Job]:
+    logger.info(f"LifePoint: scraping {len(LIFEPOINT_BRANDS)} brands...")
+    results = await asyncio.gather(
+        *[scrape_lifepoint(session, s, b) for s, b in LIFEPOINT_BRANDS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  LifePoint total: {len(jobs):,} jobs")
+    return jobs
 
 
 async def run_playwright_scrapers() -> list[Job]:
@@ -2802,13 +3104,18 @@ async def run_all() -> list[dict]:
             run_infor(proxy_session),
             run_phenom(proxy_session),
             run_talentbrew(proxy_session),
+            # ── New platforms from URL spreadsheet ──
+            run_ukg(proxy_session),
+            run_oracle(proxy_session),
+            run_healthcaresource(proxy_session),
+            run_tenet(proxy_session),
+            run_trinity(proxy_session),
+            run_uhs(proxy_session),
+            run_lifepoint(proxy_session),
             return_exceptions=True,
         )
 
     pw_jobs = await run_playwright_scrapers()
-    # Run session-based Phenom scrapers (Corewell + Ascension) using hybrid approach
-    phenom_session_jobs = await run_phenom_session_hybrid()
-    pw_jobs.extend(phenom_session_jobs)
 
     all_jobs: list[Job] = pw_jobs[:]
     for r in ats_results:
