@@ -3046,7 +3046,7 @@ PHENOM_DOM_SITES = [
 PHENOM_MAX_PAGES = {
     "Baylor Scott & White": 200,
     "HCA Healthcare":       200,
-    "Ascension Health":     150,   # ~1,200 jobs at ~8/page
+    "Ascension Health":     50,    # ~400 jobs at ~8/page
 }
 
 async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
