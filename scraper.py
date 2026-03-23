@@ -3037,14 +3037,27 @@ async def run_applicantpro(session) -> list[Job]:
 #  per tenant and per page state.
 # ══════════════════════════════════════════════════════════════════════════
 PHENOM_DOM_SITES = [
-    ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results"),
+    # BSW: append sortBy=postedDate to escape the "Most Relevant" 50-result cap
+    ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results?sortBy=postedDate&descending=true"),
+    # HCA: standard search-results page
     ("HCA Healthcare",       "https://careers.hcahealthcare.com/us/en/search-results"),
     ("Ascension Health",     "https://jobs.ascension.org/us/en/search-results"),
 ]
 
 async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
-    jobs    = []
-    domain  = base_url.split("/")[2]
+    """
+    DOM-based scraper for Phenom People career sites.
+    Handles BSW, HCA, and Ascension — all on Phenom but with slight
+    rendering differences per tenant.
+    """
+    jobs   = []
+    domain = base_url.split("/")[2]
+
+    # HCA uses a different job URL pattern — /us/en/job/{id}/{slug}
+    # but the anchor hrefs may not contain '/job/' on the search results page.
+    # We handle this by also scanning for Phenom data attributes directly.
+    is_hca = "hcahealthcare.com" in domain
+
     try:
         ctx = await browser.new_context(
             viewport={"width": 1440, "height": 900},
@@ -3059,22 +3072,47 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
         page = await ctx.new_page()
 
         await page.goto(base_url, wait_until="domcontentloaded", timeout=45000)
-        await asyncio.sleep(4)
+        # HCA needs a longer initial hydration wait
+        await asyncio.sleep(6 if is_hca else 4)
         await page.evaluate("window.scrollBy(0, 400)")
-        await asyncio.sleep(1)
+        await asyncio.sleep(1.5)
 
         page_num  = 0
-        max_pages = 300
+        max_pages = 500
         seen_ids  = set()
 
+        # Job link selector — Phenom standard + HCA fallbacks
+        JOB_LINK_SELECTORS = [
+            "a[href*='/job/']",                        # BSW, Ascension
+            "a[data-ph-at-job-title-link-text]",       # Phenom data attribute (HCA)
+            "[data-ph-at-id='job-title-link']",        # alternate Phenom attr
+            "a[href*='/jobs/']",                       # some Phenom tenants
+        ]
+
         while page_num < max_pages:
-            try:
-                await page.wait_for_selector("a[href*='/job/']", timeout=12000)
-            except Exception:
+            # Wait for ANY job link variant to appear
+            found_sel = None
+            for sel in JOB_LINK_SELECTORS:
+                try:
+                    await page.wait_for_selector(sel, timeout=12000)
+                    found_sel = sel
+                    break
+                except Exception:
+                    continue
+
+            if not found_sel:
                 logger.info(f"  [{system_name}] no job links on page {page_num+1}, stopping")
                 break
 
-            anchors = await page.query_selector_all("a[href*='/job/']")
+            # Collect all matching anchors across all selector variants
+            anchors = []
+            for sel in JOB_LINK_SELECTORS:
+                try:
+                    els = await page.query_selector_all(sel)
+                    anchors.extend(els)
+                except Exception:
+                    continue
+
             if not anchors:
                 break
 
@@ -3082,17 +3120,27 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
             for anchor in anchors:
                 try:
                     href = await anchor.get_attribute("href") or ""
-                    m = re.search(r"/job/(\d+)/", href)
+
+                    # Extract numeric job ID — Phenom always embeds it in the path
+                    m = re.search(r"/job[s]?/(\d+)", href)
                     if not m:
-                        continue
-                    job_id = m.group(1)
+                        # Try data attribute as fallback (HCA)
+                        job_id = await anchor.get_attribute("data-ph-at-job-id") or ""
+                        if not job_id:
+                            continue
+                    else:
+                        job_id = m.group(1)
+
                     if job_id in seen_ids:
                         continue
                     seen_ids.add(job_id)
 
-                    job_url = f"https://{domain}{href}" if href.startswith("/") else href
+                    if href:
+                        job_url = f"https://{domain}{href}" if href.startswith("/") else href
+                    else:
+                        job_url = f"https://{domain}/us/en/job/{job_id}/"
 
-                    # Title
+                    # ── Title ─────────────────────────────────────────────
                     title = await anchor.get_attribute("data-ph-at-job-title-text") or ""
                     if not title:
                         t_el = await anchor.query_selector(
@@ -3105,7 +3153,7 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
                     if not title:
                         continue
 
-                    # Location
+                    # ── Location ──────────────────────────────────────────
                     loc_el = await anchor.query_selector(
                         "[data-ph-at-job-location-text], "
                         "[class*='location'], [class*='Location'], "
@@ -3115,14 +3163,14 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
                     loc = re.sub(r"^\s*[\u2605\u2022\uf041\uf3c5]\s*", "", loc).strip()
                     _city, _state = parse_city_state(loc)
 
-                    # Category
+                    # ── Category ──────────────────────────────────────────
                     cat_el = await anchor.query_selector(
                         "[class*='category'], [class*='Category'], "
                         "[class*='department'], [class*='Department']"
                     )
                     category = (await cat_el.inner_text()).strip() if cat_el else ""
 
-                    # Job type
+                    # ── Job type ──────────────────────────────────────────
                     type_el = await anchor.query_selector(
                         "[class*='job-type'], [class*='jobType'], "
                         "[class*='employment'], [class*='Employment']"
@@ -3145,7 +3193,7 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
             logger.info(f"  [{system_name}] page {page_num+1}: {page_jobs} new jobs (running total {len(jobs)})")
             page_num += 1
 
-            # Next page button
+            # ── Next page button ──────────────────────────────────────────
             next_btn = None
             for next_sel in [
                 "[data-ph-at-pagination-next-btn]",
@@ -3174,9 +3222,10 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
             try:
                 await next_btn.scroll_into_view_if_needed()
                 await next_btn.click()
-                await asyncio.sleep(2.5)
-                await page.wait_for_load_state("domcontentloaded", timeout=15000)
-                await asyncio.sleep(1.5)
+                # Ascension and HCA can be slow — 30s timeout
+                await asyncio.sleep(3)
+                await page.wait_for_load_state("domcontentloaded", timeout=30000)
+                await asyncio.sleep(2)
             except Exception as e:
                 logger.info(f"  [{system_name}] pagination click failed: {e}")
                 break
