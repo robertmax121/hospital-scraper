@@ -3048,7 +3048,7 @@ async def run_playwright_scrapers() -> list[Job]:
         ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
         # LARGE SYSTEMS — Phenom via Playwright (proxy-free)
         ("HCA Healthcare",                "https://careers.hcahealthcare.com/us/en/search-results"),
-        ("Ascension Health",              "https://careers.ascension.org/us/en/search-results"),
+        ("Ascension Health",              "https://jobs.ascension.org/us/en/search-results"),
         ("Cleveland Clinic",              "https://jobs.clevelandclinic.org/search/"),
         # HCA AFFILIATES
         ("Methodist Healthcare",          "https://www.joinmethodist.com/search/jobs"),
@@ -3097,6 +3097,19 @@ async def run_playwright_scrapers() -> list[Job]:
                             ct = response.headers.get("content-type", "")
                             if "json" in ct:
                                 d = await response.json()
+                                # DEBUG: log response structure for BSW and HCA
+                                if _sn in ("Baylor Scott & White", "HCA Healthcare", "Ascension Health", "LifePoint Health"):
+                                    if isinstance(d, dict):
+                                        logger.info(f"  [DEBUG {_sn}] keys={list(d.keys())[:8]} url={response.url[:80]}")
+                                        # Show nested structure
+                                        for k, v in list(d.items())[:3]:
+                                            if isinstance(v, (dict, list)):
+                                                inner_keys = list(v.keys())[:5] if isinstance(v, dict) else f"list[{len(v)}]"
+                                                logger.info(f"  [DEBUG {_sn}]   {k} → {inner_keys}")
+                                    elif isinstance(d, list):
+                                        logger.info(f"  [DEBUG {_sn}] list[{len(d)}] url={response.url[:80]}")
+                                        if d:
+                                            logger.info(f"  [DEBUG {_sn}]   first item keys={list(d[0].keys())[:8] if isinstance(d[0], dict) else type(d[0])}")
                                 if isinstance(d, dict):
                                     # Handle Elasticsearch nested hits: {"hits": {"hits": [...], "total": N}}
                                     if isinstance(d.get("hits"), dict) and isinstance(d["hits"].get("hits"), list):
