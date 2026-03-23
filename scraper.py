@@ -1641,9 +1641,12 @@ PHENOM_ORG_CODES = {
 PHENOM_ORGS = {
     # CommonSpirit moved to TalentBrew — see run_talentbrew
     # Baylor Scott & White moved to Playwright — session-based Phenom
-    "Baptist Health":        "https://jobs.baptisthealthcareers.com",
-    "Munson Healthcare":     "https://careers.munsonhealthcare.org",
-    "Bryan Health":          "https://careers.bryanhealth.com",
+    "Baptist Health":              "https://jobs.baptisthealthcareers.com",
+    "Munson Healthcare":           "https://careers.munsonhealthcare.org",
+    "Bryan Health":                "https://careers.bryanhealth.com",
+    "PeaceHealth":                 "https://careers.peacehealth.org",
+    "Roper St. Francis Healthcare":"https://careers.rsfh.com",
+    "ScionHealth":                 "https://jobs.scionhealth.com",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
@@ -2115,6 +2118,7 @@ INFOR_ORGS = {
     # Format: "System": ("css-subdomain", "hr_org")
     "Faith Regional Health":       ("css-faithregional-prd",             "100"),
     "CAMC":                        ("css-camc-prd",                      "CAMC"),
+    "Vandalia Health":             ("css-camc-prd",                      "CAMC"),   # Vandalia rebranded from CAMC — same system
     "Ballad Health":               ("css-balladhealth-prd",              "1"),
     "PH Healthcare":               ("css-phhealthcare-prd",              "1"),
     "Carson Tahoe Health":         ("css-carsontahoehs-prd",             "1"),
@@ -2125,6 +2129,8 @@ INFOR_ORGS = {
     "Tift Regional Health":        ("css-tiftregional-prd",              "1"),
     "Eastern Maine Health":        ("css-emh-prd",                       "1"),
     "Maury Regional Health":       ("css-mauryregionalhos-prd",          "MR"),
+    "Skagit Regional Health":      ("css-mnc4u622l854lnnt-prd",          "1"),
+    "DHR Health":                  ("css-pf7dmpe5vb7ydcw4-prd",          "1"),
 }
 
 async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
@@ -2365,30 +2371,25 @@ ORACLE_ORGS = {
 async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     base_url, site_number = org_data
     jobs = []
-    # Confirmed from Guthrie network intercept: uses finder query syntax
-    # GET /hcmRestApi/resources/latest/recruitingCEJobRequisitions
-    #     ?finder=findReqs;siteNumber={site},limit={n},offset={n},sortBy=POSTING_DATES_DESC
+    # Confirmed from Guthrie network intercept.
+    # IMPORTANT: offset/limit are top-level params, NOT inside the finder string.
+    # onlyData=true strips pagination metadata → totalResults=0 → never paginates.
     api = f"{base_url}/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
     offset = 0
-    limit = 25
+    limit  = 25
     while True:
         try:
-            finder = (
-                f"findReqs;siteNumber={site_number}"
-                f",limit={limit}"
-                f",offset={offset}"
-                f",sortBy=POSTING_DATES_DESC"
-            )
             params = {
-                "onlyData": "true",
-                "finder": finder,
-                "expand": "requisitionList.workLocation,requisitionList.secondaryLocations",
+                "finder":  f"findReqs;siteNumber={site_number},sortBy=POSTING_DATES_DESC",
+                "expand":  "requisitionList.workLocation,requisitionList.secondaryLocations",
+                "limit":   limit,
+                "offset":  offset,
             }
             async with req(session, "get", api, params=params,
                 headers={**HEADERS,
                          "Accept": "application/vnd.oracle.adf.resourcecollection+json",
                          "REST-Framework-Version": "4"},
-                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
                     logger.info(f"Oracle {system}: HTTP {r.status}")
                     break
@@ -2417,9 +2418,15 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                     description="",
                     ats_platform="Oracle HCM",
                 ))
-            total = data.get("totalResults", data.get("count", 0))
+            # Use hasMore if present; fall back to totalResults; fall back to item count < limit
+            has_more    = data.get("hasMore", None)
+            total       = data.get("totalResults", data.get("count", 0))
             offset += limit
-            if offset >= total:
+            if has_more is False:
+                break
+            if has_more is None and total and offset >= total:
+                break
+            if has_more is None and not total and len(items) < limit:
                 break
             await jitter()
         except Exception as e:
@@ -2475,32 +2482,53 @@ HEALTHCARESOURCE_ORGS = {
 
 async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, tenant: str) -> list[Job]:
     jobs = []
-    # Confirmed URL base: /JobseekerSearchAPI/{tenant}/api/Search
-    # 405 on GET means it requires POST with JSON body
-    api = f"https://pm.healthcaresource.com/JobseekerSearchAPI/{tenant}/api/Search"
+    # Try GET first (simpler), then POST if that fails.
+    # Endpoint confirmed: /JobseekerSearchAPI/{tenant}/api/Search
+    api    = f"https://pm.healthcaresource.com/JobseekerSearchAPI/{tenant}/api/Search"
     offset = 0
-    size = 25
+    size   = 25
+    # Determine method — try GET with query params first
+    method = "get"
     while True:
         try:
-            payload = {"size": size, "from": offset, "query": {"match_all": {}}}
-            async with req(session, "post", api,
-                json=payload,
-                headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
-                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
-                if r.status != 200:
-                    logger.info(f"HealthcareSource {system}: HTTP {r.status}")
-                    break
-                data = await r.json(content_type=None)
-            # Elasticsearch-style response: {"hits": {"hits": [...], "total": {"value": N}}}
-            hits = data.get("hits", {})
+            if method == "get":
+                async with req(session, "get", api,
+                    params={"size": size, "from": offset},
+                    headers={**HEADERS, "Accept": "application/json"},
+                    ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                    status = r.status
+                    if status == 405:
+                        method = "post"   # Switch to POST and retry
+                        logger.info(f"HealthcareSource {system}: GET 405, switching to POST")
+                        break
+                    if status != 200:
+                        logger.info(f"HealthcareSource {system}: HTTP {status}")
+                        return jobs
+                    data = await r.json(content_type=None)
+            else:
+                # Minimal POST body — avoid Elasticsearch syntax that causes 500
+                async with req(session, "post", api,
+                    json={"size": size, "from": offset},
+                    headers={**HEADERS, "Accept": "application/json",
+                             "Content-Type": "application/json"},
+                    ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                    status = r.status
+                    if status != 200:
+                        logger.info(f"HealthcareSource {system}: HTTP {status}")
+                        return jobs
+                    data = await r.json(content_type=None)
+
+            # Response shape: {"hits": {"hits": [...], "total": N or {"value": N}}}
+            hits  = data.get("hits", {})
             items = hits.get("hits", [])
             if not items:
                 break
             for j in items:
-                src = j.get("_source", j)
-                city  = src.get("city",  src.get("City",  ""))
-                state = src.get("state", src.get("State", ""))
-                job_id = str(src.get("requisitionId", src.get("jobId", src.get("id", j.get("_id", "")))))
+                src    = j.get("_source", j)
+                city   = src.get("city",  src.get("City",  ""))
+                state  = src.get("state", src.get("State", ""))
+                job_id = str(src.get("requisitionId", src.get("jobId",
+                             src.get("id", j.get("_id", "")))))
                 jobs.append(Job(
                     title=src.get("title", src.get("jobTitle", "")),
                     hospital_system=system,
@@ -2515,14 +2543,67 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
                     description="",
                     ats_platform="HealthcareSource",
                 ))
-            total = hits.get("total", {}).get("value", 0) if isinstance(hits.get("total"), dict) else hits.get("total", 0)
+            total = (hits.get("total", {}).get("value", 0)
+                     if isinstance(hits.get("total"), dict)
+                     else hits.get("total", 0))
             offset += size
-            if offset >= total:
+            if offset >= total or len(items) < size:
                 break
             await jitter()
         except Exception as e:
             logger.info(f"HealthcareSource {system}: {e}")
             break
+
+    # If we switched method mid-loop, restart with POST
+    if method == "post" and not jobs:
+        offset = 0
+        method = "post_active"   # prevent infinite loop
+        while True:
+            try:
+                async with req(session, "post", api,
+                    json={"size": size, "from": offset},
+                    headers={**HEADERS, "Accept": "application/json",
+                             "Content-Type": "application/json"},
+                    ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                    if r.status != 200:
+                        logger.info(f"HealthcareSource {system}: POST HTTP {r.status}")
+                        break
+                    data = await r.json(content_type=None)
+                hits  = data.get("hits", {})
+                items = hits.get("hits", [])
+                if not items:
+                    break
+                for j in items:
+                    src    = j.get("_source", j)
+                    city   = src.get("city",  src.get("City",  ""))
+                    state  = src.get("state", src.get("State", ""))
+                    job_id = str(src.get("requisitionId", src.get("jobId",
+                                 src.get("id", j.get("_id", "")))))
+                    jobs.append(Job(
+                        title=src.get("title", src.get("jobTitle", "")),
+                        hospital_system=system,
+                        hospital_name=src.get("facilityName", src.get("facility", system)),
+                        city=city, state=state,
+                        location=f"{city}, {state}".strip(", "),
+                        specialty=src.get("category", src.get("jobCategory", "")),
+                        job_type=src.get("employmentType", src.get("jobType", "")),
+                        url=f"https://pm.healthcaresource.com/cs/{tenant}/#/job/{job_id}",
+                        job_id=job_id,
+                        posted_date=str(src.get("postedDate", src.get("datePosted", "")))[:10],
+                        description="",
+                        ats_platform="HealthcareSource",
+                    ))
+                total = (hits.get("total", {}).get("value", 0)
+                         if isinstance(hits.get("total"), dict)
+                         else hits.get("total", 0))
+                offset += size
+                if offset >= total or len(items) < size:
+                    break
+                await jitter()
+            except Exception as e:
+                logger.info(f"HealthcareSource {system}: {e}")
+                break
+
     logger.info(f"  HealthcareSource {system}: {len(jobs)} jobs")
     return jobs
 
@@ -2622,37 +2703,43 @@ TRINITY_ORGS = {
 
 async def scrape_trinity(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs = []
-    # Jibe platform: POST to /search-jobs with JSON body, not GET /search-results
-    api = f"{base_url}/search-jobs"
-    offset = 0
-    limit = 25
+    # Trinity/Jibe career portals use GET /search-results?m=3&pg=N&pgcnt=N
+    # The ?m=3 parameter appears to be required (sort mode).
+    # Add Accept: application/json to request JSON response instead of HTML.
+    api  = f"{base_url}/search-results"
+    page = 1
     while True:
         try:
-            payload = {
-                "offset": offset,
-                "limit": limit,
-                "searchText": "",
-                "location": "",
-                "locationRadius": 25,
-            }
-            async with req(session, "post", api,
-                json=payload,
-                headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
+            params = {"m": "3", "pg": page, "pgcnt": 25}
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "application/json, text/javascript, */*"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
                     logger.info(f"Trinity {system}: HTTP {r.status}")
                     break
-                data = await r.json(content_type=None)
-            # Jibe response: {"requisitionList": [...], "totalJobsCount": N}
-            # or {"jobs": [...], "total": N} depending on version
-            items = (data.get("requisitionList") or
-                     data.get("jobs") or
+                ct = r.headers.get("content-type", "")
+                if "json" not in ct:
+                    # Some Jibe sites return HTML — check for JSON in body anyway
+                    text = await r.text()
+                    try:
+                        import json as _json
+                        data = _json.loads(text)
+                    except Exception:
+                        logger.info(f"Trinity {system}: non-JSON response (HTML page)")
+                        break
+                else:
+                    data = await r.json(content_type=None)
+
+            # Jibe response keys vary by version
+            items = (data.get("jobs") or
+                     data.get("requisitionList") or
                      data.get("results") or [])
             if not items:
-                logger.info(f"Trinity {system}: empty response keys={list(data.keys())[:6]}")
+                logger.info(f"Trinity {system}: empty — keys={list(data.keys())[:8]}")
                 break
             for j in items:
-                loc = j.get("primaryLocation", j.get("location", j.get("jobLocation", "")))
+                loc = j.get("location", j.get("primaryLocation",
+                            j.get("jobLocation", "")))
                 if isinstance(loc, dict):
                     loc = loc.get("name", loc.get("Name", ""))
                 _city, _state = parse_city_state(str(loc))
@@ -2662,17 +2749,20 @@ async def scrape_trinity(session: aiohttp.ClientSession, system: str, base_url: 
                     hospital_name=system,
                     city=_city, state=_state, location=str(loc),
                     specialty=j.get("category", j.get("jobFunction", "")),
-                    job_type=j.get("workHours", j.get("type", "")),
-                    url=j.get("applyUrl", j.get("detailUrl", f"{base_url}/jobs/{j.get('id','')}")),
+                    job_type=j.get("type", j.get("workHours", "")),
+                    url=j.get("applyUrl", j.get("detailUrl",
+                              f"{base_url}/jobs/{j.get('id', j.get('jobId', ''))}")),
                     job_id=str(j.get("id", j.get("jobId", j.get("Id", "")))),
                     posted_date=str(j.get("postedDate", j.get("PostedDate", "")))[:10],
                     description="",
                     ats_platform="Jibe",
                 ))
-            total = (data.get("totalJobsCount") or data.get("total") or data.get("count") or 0)
-            offset += limit
-            if offset >= total:
+            total = (data.get("totalJobsCount") or
+                     data.get("total") or
+                     data.get("count") or 0)
+            if page * 25 >= total or len(items) < 25:
                 break
+            page += 1
             await jitter()
         except Exception as e:
             logger.info(f"Trinity {system}: {e}")
@@ -2822,82 +2912,6 @@ async def run_lifepoint(session) -> list[Job]:
     return jobs
 
 
-
-UKG_ORGS = {
-    "Astria": ("https://prd01-hcm01.prd.mykronos.com", "6110092")
-}
-
-async def scrape_ukg_jobs(session, org_name, base_url, company_id):
-    """Scrape jobs from UKG (formerly Kronos) platforms"""
-    jobs = []
-    offset = 1
-    size = 50
-    
-    try:
-        while True:
-            api_url = f"{base_url}/ta/rest/ui/recruitment/companies/%7C{company_id}/job-requisitions"
-            params = {
-                'offset': offset,
-                'size': size,
-                'sort': 'desc',
-                'ein_id': '',
-                'lang': 'en-US'
-            }
-            
-            async with session.get(api_url, params=params) as response:
-                if response.status != 200:
-                    break
-                    
-                data = await response.json()
-                job_requisitions = data.get('job_requisitions', [])
-                
-                if not job_requisitions:
-                    break
-                
-                for job in job_requisitions:
-                    location = job.get('location', {})
-                    city = location.get('city', '')
-                    state = location.get('state', '')
-                    location_str = f"{city}, {state}" if city and state else city or state or 'Not specified'
-                    
-                    # Build salary info
-                    salary_info = ''
-                    base_pay_from = job.get('base_pay_from')
-                    base_pay_to = job.get('base_pay_to')
-                    base_pay_freq = job.get('base_pay_frequency', '').lower()
-                    
-                    if base_pay_from or base_pay_to:
-                        if base_pay_from and base_pay_to:
-                            salary_info = f"${base_pay_from:,.2f} - ${base_pay_to:,.2f}"
-                        elif base_pay_from:
-                            salary_info = f"${base_pay_from:,.2f}+"
-                        elif base_pay_to:
-                            salary_info = f"Up to ${base_pay_to:,.2f}"
-                        
-                        if base_pay_freq and base_pay_freq != 'year':
-                            salary_info += f" per {base_pay_freq}"
-                    
-                    job_data = {
-                        'title': job.get('job_title', ''),
-                        'location': location_str,
-                        'department': ', '.join(job.get('job_categories', [])),
-                        'employment_type': job.get('employee_type', {}).get('name', ''),
-                        'salary': salary_info,
-                        'job_url': f"{base_url}/ta/{company_id}.careers?rnd=QBR&rid={job.get('id')}",
-                        'org_name': org_name
-                    }
-                    jobs.append(job_data)
-                
-                offset += len(job_requisitions)
-                
-                if len(job_requisitions) < size:
-                    break
-                    
-    except Exception as e:
-        print(f"Error scraping {org_name}: {e}")
-    
-    return jobs
-
 async def run_playwright_scrapers() -> list[Job]:
     try:
         from playwright.async_api import async_playwright
@@ -2910,13 +2924,18 @@ async def run_playwright_scrapers() -> list[Job]:
 
     CUSTOM_SITES = [
         # PRODUCING JOBS — keep these
-        ("Mayo Clinic",          "https://jobs.mayoclinic.org/search-jobs"),
-        ("CHRISTUS Health",      "https://careers.christushealth.org/job-search"),
-        ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results"),
-        ("MyMichigan Health",    "https://careers.mymichigan.org/jobs"),
+        ("Mayo Clinic",                   "https://jobs.mayoclinic.org/search-jobs"),
+        ("CHRISTUS Health",               "https://careers.christushealth.org/job-search"),
+        ("Baylor Scott & White",          "https://jobs.bswhealth.com/us/en/search-results"),
+        ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
         # WORTH KEEPING — large systems that may need selector tuning
-        ("HCA Healthcare",       "https://careers.hcahealthcare.com/jobs"),
-        ("Cleveland Clinic",     "https://jobs.clevelandclinic.org/search/"),
+        ("HCA Healthcare",                "https://careers.hcahealthcare.com/jobs"),
+        ("Cleveland Clinic",              "https://jobs.clevelandclinic.org/search/"),
+        # HCA AFFILIATES
+        ("Methodist Healthcare",          "https://www.joinmethodist.com/search/jobs"),
+        # CUSTOM ATS
+        ("MUSC Health",                   "https://musc.career-pages.com/jobs/search"),
+        ("University of Vermont Health",  "https://www.uvmhealthnetworkcareers.org/jobs/"),
     ]
 
     # Deduplicate by system name (Cleveland Clinic listed twice above)
@@ -2950,6 +2969,7 @@ async def run_playwright_scrapers() -> list[Job]:
                         "api/search", "job_search", "jobsearch", "joblist",
                         "/search/", "apply/v2", "talentbrew", "tb_ajax",
                         "findly", "job-search-results/results",
+                        "career-pages.com", "uvmhealthnetwork", "widgets",
                     ]):
                         try:
                             ct = response.headers.get("content-type", "")
@@ -3208,11 +3228,14 @@ async def run_all() -> list[dict]:
     start = datetime.now()
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
-    proxy_connector = aiohttp.TCPConnector(limit=30, ssl=False)
+    proxy_connector  = aiohttp.TCPConnector(limit=30, ssl=False)
     direct_connector = aiohttp.TCPConnector(limit=30)
 
-    async with aiohttp.ClientSession(connector=proxy_connector, headers=HEADERS) as proxy_session, \
-               aiohttp.ClientSession(connector=direct_connector, headers=HEADERS) as direct_session:
+    # max_line_size raised to 64 KB — Tenet's Set-Cookie headers exceed the 8 KB default
+    async with aiohttp.ClientSession(connector=proxy_connector,  headers=HEADERS,
+                                      max_line_size=65536, max_field_size=65536) as proxy_session, \
+               aiohttp.ClientSession(connector=direct_connector, headers=HEADERS,
+                                      max_line_size=65536, max_field_size=65536) as direct_session:
         ats_results = await asyncio.gather(
             run_workday(proxy_session),
             run_taleo(direct_session),       # direct — no ssl=False
