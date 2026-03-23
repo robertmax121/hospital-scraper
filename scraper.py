@@ -3037,9 +3037,8 @@ async def run_applicantpro(session) -> list[Job]:
 #  per tenant and per page state.
 # ══════════════════════════════════════════════════════════════════════════
 PHENOM_DOM_SITES = [
-    # BSW: append sortBy=postedDate to escape the "Most Relevant" 50-result cap
-    ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results?sortBy=postedDate&descending=true"),
-    # HCA: standard search-results page
+    # BSW: plain search-results — sortBy param broke pagination, removed
+    ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results"),
     ("HCA Healthcare",       "https://careers.hcahealthcare.com/us/en/search-results"),
     ("Ascension Health",     "https://jobs.ascension.org/us/en/search-results"),
 ]
@@ -3052,10 +3051,6 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
     """
     jobs   = []
     domain = base_url.split("/")[2]
-
-    # HCA uses a different job URL pattern — /us/en/job/{id}/{slug}
-    # but the anchor hrefs may not contain '/job/' on the search results page.
-    # We handle this by also scanning for Phenom data attributes directly.
     is_hca = "hcahealthcare.com" in domain
 
     try:
@@ -3101,6 +3096,18 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
                     continue
 
             if not found_sel:
+                # HCA debug: log all anchor hrefs to see what URL patterns exist
+                if is_hca and page_num == 0:
+                    try:
+                        all_anchors = await page.query_selector_all("a[href]")
+                        sample_hrefs = []
+                        for a in all_anchors[:30]:
+                            h = await a.get_attribute("href") or ""
+                            if h and h not in sample_hrefs:
+                                sample_hrefs.append(h)
+                        logger.info(f"  [HCA debug] sample hrefs: {sample_hrefs[:20]}")
+                    except Exception:
+                        pass
                 logger.info(f"  [{system_name}] no job links on page {page_num+1}, stopping")
                 break
 
@@ -3220,12 +3227,34 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
                 break
 
             try:
+                # Capture one current job href to detect when page actually changes
+                first_href_before = ""
+                try:
+                    cur = await page.query_selector("a[href*='/job/']")
+                    if cur:
+                        first_href_before = await cur.get_attribute("href") or ""
+                except Exception:
+                    pass
+
                 await next_btn.scroll_into_view_if_needed()
                 await next_btn.click()
-                # Ascension and HCA can be slow — 30s timeout
-                await asyncio.sleep(3)
-                await page.wait_for_load_state("domcontentloaded", timeout=30000)
-                await asyncio.sleep(2)
+
+                # Wait for page content to visibly change — up to 30s
+                # Strategy: poll until first job href differs from before OR 30s pass
+                waited = 0
+                while waited < 30:
+                    await asyncio.sleep(2)
+                    waited += 2
+                    try:
+                        cur = await page.query_selector("a[href*='/job/']")
+                        if cur:
+                            new_href = await cur.get_attribute("href") or ""
+                            if new_href and new_href != first_href_before:
+                                break  # Content has changed — new page loaded
+                    except Exception:
+                        pass
+                await asyncio.sleep(1)  # Brief settle
+
             except Exception as e:
                 logger.info(f"  [{system_name}] pagination click failed: {e}")
                 break
