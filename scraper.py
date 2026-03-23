@@ -3037,11 +3037,17 @@ async def run_applicantpro(session) -> list[Job]:
 #  per tenant and per page state.
 # ══════════════════════════════════════════════════════════════════════════
 PHENOM_DOM_SITES = [
-    # BSW: plain search-results — sortBy param broke pagination, removed
     ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results"),
     ("HCA Healthcare",       "https://careers.hcahealthcare.com/us/en/search-results"),
     ("Ascension Health",     "https://jobs.ascension.org/us/en/search-results"),
 ]
+
+# Per-site page cap — prevents runaway loops
+PHENOM_MAX_PAGES = {
+    "Baylor Scott & White": 200,
+    "HCA Healthcare":       200,
+    "Ascension Health":     150,   # ~1,200 jobs at ~8/page
+}
 
 async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
     """
@@ -3054,26 +3060,43 @@ async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
     is_hca = "hcahealthcare.com" in domain
 
     try:
-        ctx = await browser.new_context(
+        # HCA is Cloudflare-protected — use residential proxy + extra stealth
+        proxy_str = proxies.get() if is_hca else None
+        ctx_kwargs = dict(
             viewport={"width": 1440, "height": 900},
             user_agent=(
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/122.0.0.0 Safari/537.36"
+                "Chrome/124.0.0.0 Safari/537.36"
             ),
             locale="en-US",
+            extra_http_headers={
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": '"Windows"',
+            },
         )
-        await ctx.add_init_script("Object.defineProperty(navigator,'webdriver',{get:()=>false})")
+        if proxy_str:
+            ctx_kwargs["proxy"] = {"server": proxy_str}
+
+        ctx = await browser.new_context(**ctx_kwargs)
+        await ctx.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => false});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-US','en']});
+            window.chrome = {runtime: {}};
+        """)
         page = await ctx.new_page()
 
         await page.goto(base_url, wait_until="domcontentloaded", timeout=45000)
-        # HCA needs a longer initial hydration wait
-        await asyncio.sleep(6 if is_hca else 4)
+        await asyncio.sleep(8 if is_hca else 4)
         await page.evaluate("window.scrollBy(0, 400)")
         await asyncio.sleep(1.5)
 
         page_num  = 0
-        max_pages = 500
+        max_pages = PHENOM_MAX_PAGES.get(system_name, 200)
         seen_ids  = set()
 
         # Job link selector — Phenom standard + HCA fallbacks
