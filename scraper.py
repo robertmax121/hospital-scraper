@@ -246,7 +246,7 @@ WORKDAY_TENANTS = {
     "Banner Health (confirmed)":              ("bannerhealth",             "108","Careers"),
     "Monument Health":                        ("monumenthealth",           "1",  "Goldcareers"),
     "Saint Luke's Health System":             ("saintlukes",               "1",  "saintlukeshealthcareers"),
-    "University of Washington Medicine":      ("wd5",                      "5",  "UWHires"),
+    "University of Washington Medicine":      ("uw",                       "5",  "UWHires"),
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -683,18 +683,30 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     wd_nums = [wd_num] + [n for n in ["5","1","3","10"] if n != wd_num]
 
     working_url = None
-    for wdn in wd_nums:
-        for sn in site_names:
-            url = f"https://{tenant}.wd{wdn}.myworkdayjobs.com/wday/cxs/{tenant}/{sn}/jobs"
-            try:
-                async with req(session, "post", url,
-                    json={"limit": 1, "offset": 0, "searchText": "", "locations": [], "categories": []},
-                    headers={**HEADERS, "Content-Type": "application/json"}, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=10)) as r:
-                    if r.status == 200:
-                        working_url = url
-                        break
-            except:
-                continue
+    # Try both myworkdayjobs.com (standard) and myworkdaysite.com (used by some universities)
+    domains = ["myworkdayjobs.com", "myworkdaysite.com"]
+    for domain in domains:
+        for wdn in wd_nums:
+            for sn in site_names:
+                if domain == "myworkdaysite.com":
+                    # myworkdaysite uses different URL pattern
+                    url = f"https://{domain}/recruiting/{tenant}/{sn}"
+                    # Convert to API endpoint
+                    api_url = f"https://{domain}/wday/cxs/{tenant}/{sn}/jobs"
+                else:
+                    url = f"https://{tenant}.wd{wdn}.{domain}/wday/cxs/{tenant}/{sn}/jobs"
+                    api_url = url
+                try:
+                    async with req(session, "post", api_url,
+                        json={"limit": 1, "offset": 0, "searchText": "", "locations": [], "categories": []},
+                        headers={**HEADERS, "Content-Type": "application/json"}, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=10)) as r:
+                        if r.status == 200:
+                            working_url = api_url
+                            break
+                except:
+                    continue
+            if working_url:
+                break
         if working_url:
             break
 
@@ -1636,17 +1648,23 @@ async def run_usajobs(session) -> list[Job]:
 PHENOM_ORG_CODES = {
     "Ascension Health":  "AHEAHUUS",   # confirmed from cdn.phenompeople.com/CareerConnectResources/AHEAHUUS/
     "Corewell Health":   "SPHEUS",      # confirmed from cdn.phenompeople.com/CareerConnectResources/SPHEUS/
+    "Temple Health":     "TUHTUHUS",   # confirmed from widgets intercept refNum
 }
 
 PHENOM_ORGS = {
     # CommonSpirit moved to TalentBrew — see run_talentbrew
     # Baylor Scott & White moved to Playwright — session-based Phenom
-    "Baptist Health":              "https://jobs.baptisthealthcareers.com",
-    "Munson Healthcare":           "https://careers.munsonhealthcare.org",
-    "Bryan Health":                "https://careers.bryanhealth.com",
-    "PeaceHealth":                 "https://careers.peacehealth.org",
-    "Roper St. Francis Healthcare":"https://careers.rsfh.com",
-    "ScionHealth":                 "https://jobs.scionhealth.com",
+    "Baptist Health":               "https://jobs.baptisthealthcareers.com",
+    "Munson Healthcare":            "https://careers.munsonhealthcare.org",
+    "Bryan Health":                 "https://careers.bryanhealth.com",
+    "PeaceHealth":                  "https://careers.peacehealth.org",
+    "Roper St. Francis Healthcare": "https://careers.rsfh.com",
+    "ScionHealth":                  "https://jobs.scionhealth.com",
+    "Temple Health":                "https://careers.templehealth.org",
+    "Atrium Health":                "https://careers.atriumhealth.org",
+    "ECU Health":                   "https://careers.ecuhealth.org",
+    "Penn Medicine":                "https://careers.pennmedicine.org",
+    "UPMC":                         "https://careers.upmc.com",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
@@ -2912,6 +2930,157 @@ async def run_lifepoint(session) -> list[Job]:
     return jobs
 
 
+##############################################################################
+#  KRONOS (Legacy Workforce Ready) — mykronos.com career portal
+#  Format: "System": ("subdomain", "company_id")
+#  API: GET /ta/rest/ui/recruitment/companies/|{id}/job-requisitions
+##############################################################################
+KRONOS_ORGS = {
+    "Astria Health":    ("prd01-hcm01.prd", "6110092"),
+    "ArnotHealth":      ("prd01-hcm01.npr", "6012355"),
+    "Ridgeview":        ("prd01-hcm01.prd", "6104389"),
+}
+
+async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    subdomain, company_id = org_data
+    jobs  = []
+    base  = f"https://{subdomain}.mykronos.com"
+    api   = f"{base}/ta/rest/ui/recruitment/companies/%7C{company_id}/job-requisitions"
+    offset = 1
+    size   = 20
+    while True:
+        try:
+            params = {"offset": offset, "size": size, "sort": "desc",
+                      "ein_id": "", "lang": "en-US", "_": int(time.time()*1000)}
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "application/json"},
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+                if r.status != 200:
+                    logger.info(f"Kronos {system}: HTTP {r.status}")
+                    break
+                data = await r.json(content_type=None)
+            items = data if isinstance(data, list) else data.get("requisitions", data.get("jobs", []))
+            if not items:
+                break
+            for j in items:
+                loc  = j.get("location", {})
+                city  = loc.get("city", "")
+                state = loc.get("state", "")
+                cats  = j.get("job_categories", [])
+                jobs.append(Job(
+                    title=j.get("job_title", ""),
+                    hospital_system=system,
+                    hospital_name=system,
+                    city=city, state=state,
+                    location=f"{city}, {state}".strip(", "),
+                    specialty=cats[0] if cats else "",
+                    job_type=j.get("base_pay_frequency", ""),
+                    url=f"{base}/ta/{company_id}.careers?CareersSearch=&lang=en-US",
+                    job_id=str(j.get("id", "")),
+                    posted_date="",
+                    description="",
+                    ats_platform="Kronos",
+                ))
+            offset += size
+            if len(items) < size:
+                break
+            await jitter()
+        except Exception as e:
+            logger.info(f"Kronos {system}: {e}")
+            break
+    logger.info(f"  Kronos {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_kronos(session) -> list[Job]:
+    logger.info(f"Kronos: scraping {len(KRONOS_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_kronos(session, s, o) for s, o in KRONOS_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Kronos total: {len(jobs):,} jobs")
+    return jobs
+
+
+##############################################################################
+#  APPLICANTPRO — applicantpro.com career portal
+#  API: GET https://{subdomain}.applicantpro.com/core/jobs/{site_id}
+#  Returns JSON array of job objects
+##############################################################################
+APPLICANTPRO_ORGS = {
+    "Cayuga Health":        ("cayugahealthsystem", "17888"),
+    "Cascade Medical":      ("cascademedicalcenter", ""),
+    "Jefferson Healthcare": ("jeffersonhealthcare", ""),
+}
+
+async def scrape_applicantpro(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    subdomain, site_id = org_data
+    jobs = []
+    # If site_id known, use direct endpoint; otherwise fetch from /jobs to get site_id
+    if not site_id:
+        # Try to find site_id from the jobs listing page
+        try:
+            async with req(session, "get",
+                f"https://{subdomain}.applicantpro.com/jobs/",
+                headers=HEADERS, ssl=False, proxy=proxies.get(),
+                timeout=aiohttp.ClientTimeout(total=20)) as r:
+                if r.status == 200:
+                    text = await r.text()
+                    m = re.search(r'/core/jobs/(\d+)', text)
+                    if m:
+                        site_id = m.group(1)
+        except Exception as e:
+            logger.info(f"ApplicantPro {system}: site_id discovery failed: {e}")
+            return []
+
+    if not site_id:
+        logger.info(f"ApplicantPro {system}: could not determine site_id")
+        return []
+
+    try:
+        api = f"https://{subdomain}.applicantpro.com/core/jobs/{site_id}"
+        async with req(session, "get", api,
+            headers={**HEADERS, "Accept": "application/json"},
+            ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+            if r.status != 200:
+                logger.info(f"ApplicantPro {system}: HTTP {r.status}")
+                return []
+            data = await r.json(content_type=None)
+        items = data if isinstance(data, list) else data.get("jobs", [])
+        for j in items:
+            city  = j.get("city", "")
+            state = j.get("abbreviation", j.get("state", ""))
+            jobs.append(Job(
+                title=j.get("title", ""),
+                hospital_system=system,
+                hospital_name=j.get("subdomain", system),
+                city=city, state=state,
+                location=f"{city}, {state}".strip(", "),
+                specialty=j.get("classification", j.get("jobCategory", "")),
+                job_type=j.get("employmentType", ""),
+                url=f"https://{subdomain}.applicantpro.com/jobs/{j.get('id', '')}.html",
+                job_id=str(j.get("id", "")),
+                posted_date=str(j.get("startDateRef", ""))[:10],
+                description="",
+                ats_platform="ApplicantPro",
+            ))
+    except Exception as e:
+        logger.info(f"ApplicantPro {system}: {e}")
+
+    logger.info(f"  ApplicantPro {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_applicantpro(session) -> list[Job]:
+    logger.info(f"ApplicantPro: scraping {len(APPLICANTPRO_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_applicantpro(session, s, o) for s, o in APPLICANTPRO_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  ApplicantPro total: {len(jobs):,} jobs")
+    return jobs
+
+
 async def run_playwright_scrapers() -> list[Job]:
     try:
         from playwright.async_api import async_playwright
@@ -3258,6 +3427,8 @@ async def run_all() -> list[dict]:
             run_trinity(proxy_session),
             run_uhs(proxy_session),
             run_lifepoint(proxy_session),
+            run_kronos(proxy_session),
+            run_applicantpro(proxy_session),
             return_exceptions=True,
         )
 
