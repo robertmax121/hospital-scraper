@@ -2870,64 +2870,13 @@ async def run_uhs(session) -> list[Job]:
 ##############################################################################
 #  LIFEPOINT HEALTH — brand-filtered subdomain job listings
 ##############################################################################
-LIFEPOINT_BRANDS = {
-    "Raleigh General Hospital":     "raleigh-general-hospital",
-    "Trios Health":                 "trios-health",
-    "Sovah Health":                 "sovah-health",
-}
-
-async def scrape_lifepoint(session: aiohttp.ClientSession, system: str, brand: str) -> list[Job]:
-    jobs = []
-    api = f"https://jobs.lifepointhealth.net/{brand}/jobs-data"
-    page = 1
-    while True:
-        try:
-            params = {"page": page, "pageSize": 25}
-            async with req(session, "get", api, params=params,
-                headers={**HEADERS, "Accept": "application/json"},
-                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
-                if r.status != 200:
-                    break
-                data = await r.json(content_type=None)
-            items = data.get("jobs", data.get("results", []))
-            if not items:
-                break
-            for j in items:
-                loc = j.get("location", j.get("jobLocation", ""))
-                _city, _state = parse_city_state(loc)
-                jobs.append(Job(
-                    title=j.get("title", ""),
-                    hospital_system="LifePoint Health",
-                    hospital_name=system,
-                    city=_city, state=_state, location=loc,
-                    specialty=j.get("category", ""),
-                    job_type=j.get("employmentType", ""),
-                    url=f"https://jobs.lifepointhealth.net/{brand}/jobs/{j.get('id','')}",
-                    job_id=str(j.get("id", j.get("jobId", ""))),
-                    posted_date=str(j.get("postedDate", ""))[:10],
-                    description="",
-                    ats_platform="LifePoint",
-                ))
-            total = data.get("total", data.get("totalCount", 0))
-            if page * 25 >= total:
-                break
-            page += 1
-            await jitter()
-        except Exception as e:
-            logger.info(f"LifePoint {system}: {e}")
-            break
-    logger.info(f"  LifePoint {system}: {len(jobs)} jobs")
-    return jobs
-
+##############################################################################
+#  LIFEPOINT HEALTH — moved to Playwright (site rebuilt on WordPress 2025)
+#  Old /brand/jobs-data API is dead. Now scraped via run_playwright_scrapers.
+##############################################################################
 async def run_lifepoint(session) -> list[Job]:
-    logger.info(f"LifePoint: scraping {len(LIFEPOINT_BRANDS)} brands...")
-    results = await asyncio.gather(
-        *[scrape_lifepoint(session, s, b) for s, b in LIFEPOINT_BRANDS.items()],
-        return_exceptions=True
-    )
-    jobs = [j for r in results if isinstance(r, list) for j in r]
-    logger.info(f"  LifePoint total: {len(jobs):,} jobs")
-    return jobs
+    # LifePoint is now handled by Playwright — this stub keeps run_all() intact
+    return []
 
 
 ##############################################################################
@@ -3097,11 +3046,14 @@ async def run_playwright_scrapers() -> list[Job]:
         ("CHRISTUS Health",               "https://careers.christushealth.org/job-search"),
         ("Baylor Scott & White",          "https://jobs.bswhealth.com/us/en/search-results"),
         ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
-        # WORTH KEEPING — large systems that may need selector tuning
-        ("HCA Healthcare",                "https://careers.hcahealthcare.com/jobs"),
+        # LARGE SYSTEMS — Phenom via Playwright (proxy-free)
+        ("HCA Healthcare",                "https://careers.hcahealthcare.com/us/en/search-results"),
+        ("Ascension Health",              "https://careers.ascension.org/us/en/search-results"),
         ("Cleveland Clinic",              "https://jobs.clevelandclinic.org/search/"),
         # HCA AFFILIATES
         ("Methodist Healthcare",          "https://www.joinmethodist.com/search/jobs"),
+        # LIFEPOINT — rebuilt on WordPress 2025
+        ("LifePoint Health",              "https://jobs.lifepointhealth.net/jobs/"),
         # CUSTOM ATS
         ("MUSC Health",                   "https://musc.career-pages.com/jobs/search"),
         ("University of Vermont Health",  "https://www.uvmhealthnetworkcareers.org/jobs/"),
@@ -3139,6 +3091,7 @@ async def run_playwright_scrapers() -> list[Job]:
                         "/search/", "apply/v2", "talentbrew", "tb_ajax",
                         "findly", "job-search-results/results",
                         "career-pages.com", "uvmhealthnetwork", "widgets",
+                        "wp-json", "lifepointhealth.net/jobs",
                     ]):
                         try:
                             ct = response.headers.get("content-type", "")
@@ -3148,21 +3101,29 @@ async def run_playwright_scrapers() -> list[Job]:
                                     # Handle Elasticsearch nested hits: {"hits": {"hits": [...], "total": N}}
                                     if isinstance(d.get("hits"), dict) and isinstance(d["hits"].get("hits"), list):
                                         raw_hits = d["hits"]["hits"]
-                                        # Unwrap _source if present (ES pattern)
                                         unwrapped = [h.get("_source", h) for h in raw_hits if isinstance(h, dict)]
                                         captured.extend(unwrapped)
                                     else:
+                                        # Handle Phenom widgets nested response:
+                                        # {"data": {"jobs": [...], "count": N}, "reqData": {...}}
+                                        # or {"data": {"requisitions": [...]}}
+                                        data_val = d.get("data")
+                                        if isinstance(data_val, dict):
+                                            for inner_key in ("jobs", "requisitions", "results", "postings", "items"):
+                                                inner = data_val.get(inner_key)
+                                                if isinstance(inner, list) and inner:
+                                                    captured.extend(inner)
+                                                    break
                                         for key in ("jobs", "jobPostings", "results", "requisitions",
-                                                    "postings", "data", "items", "hits"):
+                                                    "postings", "items", "hits"):
                                             val = d.get(key)
                                             if isinstance(val, list) and val:
-                                                # Unwrap _source if ES-style hits
                                                 unwrapped = [j.get("_source", j) if isinstance(j, dict) and "_source" in j else j for j in val]
                                                 captured.extend(unwrapped)
                                                 break
-                                        else:
-                                            if d.get("total") and isinstance(d.get("jobs"), list):
-                                                captured.extend(d["jobs"])
+                                        # data is a flat list
+                                        if isinstance(data_val, list) and data_val:
+                                            captured.extend(data_val)
                                 elif isinstance(d, list) and d:
                                     # Unwrap _source if ES-style hits
                                     unwrapped = [j.get("_source", j) if isinstance(j, dict) and "_source" in j else j for j in d]
