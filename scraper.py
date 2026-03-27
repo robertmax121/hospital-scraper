@@ -134,8 +134,8 @@ def req(session, method, url, **kwargs):
 WORKDAY_TENANTS = {
     "Kaiser Permanente":         ("kaiserpermanente",   "5",  "KP_External_Careers"),
     "Providence Health":         ("providence",         "5",  "Providence_External"),
-    # Baylor Scott & White moved to Phenom — see PHENOM_ORGS
-    "Banner Health":             ("bannerhealth",       "5",  "Banner_Health"),
+    "Baylor Scott & White":      ("bswhealth",          "1",  "BSWHealth"),
+    "Banner Health":             ("bannerhealth",       "108","Careers"),
     "Northwell Health":          ("northwell",          "5",  "Northwell_External"),
     "Intermountain Health":      ("intermountain",      "1",  "Careers"),
     "UC Health (Colorado)":      ("uchealth",           "1",  "UCHealth_External"),
@@ -174,79 +174,72 @@ WORKDAY_TENANTS = {
     "Tufts Medicine":            ("tuftsmedicine",      "1",  "TuftsMedicine_External"),
     "Virtua Health":             ("virtua",             "1",  "Virtua_Careers"),
     "Adventist Health":          ("adventisthealth",    "1",  "Adventist_Health"),
+    "CommonSpirit Health":       ("commonspirit",       "1",  "CommonSpirit_Health_External"),
     "Dignity Health":            ("dignityhealth",      "1",  "DignityHealth_External"),
     "Bon Secours":               ("bonsecours",         "1",  "BonSecours_External"),
     "Essentia Health":           ("essentiahealth",     "1",  "Essentia_Health_External"),
     "Fairview Health":           ("fairview",           "1",  "Fairview_Health_External"),
     # ── Confirmed from direct URL verification ──
-    "BestCare Health":           ("bestcare",           "1",  "bestcare"),
-    "Bronson Healthcare":        ("bronsonhg",          "1",  "newhires"),
-    # ── Added from hospital spreadsheet ──
-    "Albany Med Health System":              ("albanymed",                "5",  "Albany_Med"),
-    "Allina Health":                         ("allina",                   "5",  "en-US"),
-    "Avera":                                 ("avera",                    "5",  "en-US"),
-    "BJC HealthCare":                        ("saintlukes",               "1",  "en-US"),
-    "Baptist Health":                        ("bhs",                      "1",  "careers"),
-    "Cape Fear Valley Health":               ("capefearvalley",           "1",  "CFV"),
-    "Capital Health":                        ("capitalhealth",            "1",  "CapitalHealthCareers"),
-    "Endeavor Health":                       ("nshs",                     "1",  "ns-eeh"),
-    "Freeman Health":                        ("freemanhealth",            "1",  "jointeamfreeman"),
-    "Great River Health":                    ("greatriverhealth",         "5",  "External"),
-    "HSHS":                                  ("hshs",                     "1",  "hshscareers"),
-    "Halifax Health":                        ("halifaxhealth",            "12", "HalifaxHealth"),
-    "Healogics":                             ("healogics",                "5",  "healogics"),
-    "Houston Healthcare":                    ("hhc",                      "5",  "en-US"),
-    "Intermountain Healthcare":              ("imh",                      "108","IntermountainCareers"),
-    "Jefferson Health":                      ("jeffersonhealth",          "5",  "ThomasJeffersonExternal"),
-    "John Muir Health":                      ("jmh",                      "5",  "JohnMuirHealthCareers"),
-    "Logan Health":                          ("loganhealth",              "1",  "Logan_Careers"),
-    "MaineGeneral Health":                   ("mainegeneral",             "5",  "MaineGeneralCareers"),
-    "Mary Washington Healthcare":            ("marywashingtonhealthcare", "5",  "en-US"),
-    "Mass General Brigham":                  ("massgeneralbrigham",       "1",  "MGBExternal"),
-    "Memorial Health System":                ("memorialhealthcare",       "1",  "MHS_Careers"),
-    "Methodist Health System":               ("methodisthealthsystem",    "1",  "MHS_Careers"),
-    "Methodist Le Bonheur":                  ("methodisthealth",          "5",  "MLH"),
-    "Montefiore":                            ("montefiore",               "12", "MMC"),
-    "Monument Health":                       ("monumenthealth",           "1",  "en-US"),
-    "MultiCare":                             ("multicare",                "1",  "multicare"),
-    "Northeast Georgia Medical Center":      ("nghs",                     "1",  "External"),
-    "Phelps Health":                         ("phelpshealth",             "5",  "Phelps"),
-    "Riverside Health":                      ("rivhs",                    "1",  "Non-ProviderRHS"),
-    "SIH":                                   ("sih",                      "5",  "SIH_External"),
-    "Saint Francis Health System":           ("saintfrancis",             "1",  "External"),
-    "Tidelands Health":                      ("tidelandshealth",          "12", "Tidelands"),
-    "UHS":                                   ("nyuhs",                    "12", "nyuhscareers1"),
-    "UMass Memorial Health":                 ("ummh",                     "1",  "Careers"),
-    "University of Rochester Medicine":      ("rochester",                "5",  "UR_Staff"),
-    "UofL Health":                           ("uoflhealth",               "1",  "UofLHealthCareers"),
-    "Vanderbilt Health":                     ("vumc",                     "1",  "vumccareers"),
-    "Sentara Healthcare":                    ("sentara",                  "1",  "SCS"),
-    "Advocate Health":                       ("advocatehealth",           "1",  "careers"),
-    "West Tennessee Healthcare":             ("wth",                      "501","WTH"),
-    "Bozeman Health":                        ("bozemanhealth",            "1",  "BozemanHealthCareers"),
-    "Broadlawns Medical Center":             ("broadlawns",               "501","Broadlawns_Careers"),
-    "Hendricks Regional Health":             ("hendricks",                "1",  "Hendricks_External_Career_Site"),
-    "Harrison Health":                       ("hrhs",                     "1",  "Careers"),
-    "Jupiter Medical Center":                ("jupitermed",               "1",  "External"),
-    "Kaweah Health":                         ("kaweahhealth",             "1",  "Careers"),
-    "Lawrence Memorial Hospital":            ("lmh",                      "1",  "LMHjobs"),
-    "Owensboro Health":                      ("owensborohealth",          "1",  "owensborohealth"),
-    "Salinas Valley Health":                 ("salinasvalleyhealth",      "5",  "SalinasValleyHealth"),
-    "Samaritan Health":                      ("samaritanhealth",          "12", "shsny"),
-    "Sarah Bush Lincoln Health":             ("sarahbush",                "1",  "en-US"),
-    "Saint Francis Medical Center":          ("sfmc",                     "1",  "SFHS"),
-    "Silver Cross Hospital":                 ("silvercross",              "5",  "SilverCrossCareers"),
-    "Stormont Vail Health":                  ("stormontvail",             "1",  "en-US"),
-    "Sturdy Memorial Hospital":              ("sturdymemorial",           "5",  "Sturdy"),
-    "AdventHealth":                          ("adventhealth",             "12", "AH_External_Career_Site"),
-    # ── From URL spreadsheet ──
-    "WVU Medicine":                           ("wvumedicine",              "1",  "WVUH"),
-    "Pullman Regional Hospital":              ("pullmanregionalhospital",  "1",  "Careers"),
-    "Enloe Health":                           ("enloe",                    "12", "EnloeHealth"),
-    "Banner Health (confirmed)":              ("bannerhealth",             "108","Careers"),
-    "Monument Health":                        ("monumenthealth",           "1",  "Goldcareers"),
-    "Saint Luke's Health System":             ("saintlukes",               "1",  "saintlukeshealthcareers"),
-    "University of Washington Medicine":      ("uw",                       "5",  "UWHires"),
+    "BestCare Health":           ("bestcare",              "1",  "bestcare"),
+    "Bronson Healthcare":        ("bronsonhg",             "1",  "newhires"),
+    # ── Added from scraper1.xlsx confirmed URLs ──
+    "Albany Med":                ("albanymed",             "5",  "Albany_Med"),
+    "Allina Health":             ("allina",                "5",  "External"),
+    "Avera Health":              ("avera",                 "5",  "avera-careers"),
+    "Billings Clinic":           ("bhs",                   "1",  "careers"),
+    "Bozeman Health":            ("bozemanhealth",         "1",  "BozemanHealthCareers"),
+    "Broadlawns Medical Center": ("broadlawns",            "501","Broadlawns_Careers"),
+    "Cape Fear Valley Health":   ("capefearvalley",        "1",  "CFV"),
+    "Capital Health":            ("capitalhealth",         "1",  "CapitalHealthCareers"),
+    "Enloe Health":              ("enloe",                 "12", "EnloeHealth"),
+    "Freeman Health System":     ("freemanhealth",         "1",  "jointeamfreeman"),
+    "Great River Health":        ("greatriverhealth",      "5",  "External"),
+    "Halifax Health":            ("halifaxhealth",         "12", "HalifaxHealth"),
+    "Healogics":                 ("healogics",             "5",  "healogics"),
+    "Hendricks Regional Health": ("hendricks",             "1",  "Hendricks_External_Career_Site"),
+    "Hartford HealthCare":       ("hhc",                   "5",  "HHC"),
+    "HRHS":                      ("hrhs",                  "1",  "Careers"),
+    "HSHS Hospitals":            ("hshs",                  "1",  "hshscareers"),
+    "Intermountain Health (IMH)":("imh",                   "108","IntermountainCareers"),
+    "Jefferson Health":          ("jeffersonhealth",       "5",  "ThomasJeffersonExternal"),
+    "John Muir Health":          ("jmh",                   "5",  "JohnMuirHealthCareers"),
+    "Jupiter Medical Center":    ("jupitermed",            "1",  "External"),
+    "Kaweah Health":             ("kaweahhealth",          "1",  "Careers"),
+    "LMH Health":                ("lmh",                   "1",  "LMHjobs"),
+    "Logan Health":              ("loganhealth",           "1",  "Logan_Careers"),
+    "Maine General Health":      ("mainegeneral",          "5",  "MaineGeneralCareers"),
+    "Mary Washington Healthcare":("marywashingtonhealthcare","5","Externalcareers"),
+    "Mass General Brigham":      ("massgeneralbrigham",    "1",  "MGBExternal"),
+    "Memorial Healthcare System":("memorialhealthcare",    "1",  "MHS_Careers"),
+    "Methodist Le Bonheur":      ("methodisthealth",       "5",  "MLH"),
+    "Methodist Health System TX":("methodisthealthsystem", "1",  "MHS_Careers"),
+    "Montefiore Health":         ("montefiore",            "12", "MMC"),
+    "Monument Health":           ("monumenthealth",        "1",  "Goldcareers"),
+    "MultiCare Health":          ("multicare",             "1",  "multicare"),
+    "Northeast Georgia Health":  ("nghs",                  "1",  "External"),
+    "North Shore Health System": ("nshs",                  "1",  "ns-eeh"),
+    "NYU Langone Health":        ("nyuhs",                 "12", "nyuhscareers1"),
+    "Owensboro Health":          ("owensborohealth",       "1",  "owensborohealth"),
+    "Phelps Health":             ("phelpshealth",          "5",  "Phelps"),
+    "Pullman Regional Hospital": ("pullmanregionalhospital","1", "Careers"),
+    "Riverside Health System":   ("rivhs",                 "1",  "Non-ProviderRHS"),
+    "University of Rochester":   ("rochester",             "5",  "UR_Staff"),
+    "Saint Francis Health":      ("saintfrancis",          "1",  "External"),
+    "Saint Luke's Health System":("saintlukes",            "1",  "saintlukeshealthcareers"),
+    "Salinas Valley Health":     ("salinasvalleyhealth",   "5",  "SalinasValleyHealth"),
+    "Samaritan Health NY":       ("samaritanhealth",       "12", "shsny"),
+    "Sarah Bush Lincoln Health": ("sarahbush",             "1",  "SarahBush"),
+    "St. Francis Medical Center":("sfmc",                  "1",  "SFHS"),
+    "Southern Illinois Health":  ("sih",                   "5",  "SIH_External"),
+    "Silver Cross Hospital":     ("silvercross",           "5",  "SilverCrossCareers"),
+    "Stormont Vail Health":      ("stormontvail",          "1",  "SVH"),
+    "Sturdy Memorial Hospital":  ("sturdymemorial",        "5",  "Sturdy"),
+    "Tidelands Health":          ("tidelandshealth",       "12", "Tidelands"),
+    "UMass Memorial Health":     ("ummh",                  "1",  "Careers"),
+    "UofL Health":               ("uoflhealth",            "1",  "UofLHealthCareers"),
+    "Vanderbilt (VUMC)":         ("vumc",                  "1",  "vumccareers"),
+    "Wheaton Franciscan / WTH":  ("wth",                   "501","WTH"),
+    "WVU Medicine":              ("wvumedicine",           "1",  "WVUH"),
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -3030,266 +3023,6 @@ async def run_applicantpro(session) -> list[Job]:
     return jobs
 
 
-# ══════════════════════════════════════════════════════════════════════════
-#  PHENOM DOM SCRAPER  (BSW / HCA / Ascension)
-#  Reads rendered job cards directly from the DOM + paginates via Next button.
-#  More reliable than intercepting /widgets API whose response key varies
-#  per tenant and per page state.
-# ══════════════════════════════════════════════════════════════════════════
-PHENOM_DOM_SITES = [
-    ("Baylor Scott & White", "https://jobs.bswhealth.com/us/en/search-results"),
-    ("HCA Healthcare",       "https://careers.hcahealthcare.com/us/en/search-results"),
-    ("Ascension Health",     "https://jobs.ascension.org/us/en/search-results"),
-]
-
-# Per-site page cap — prevents runaway loops
-PHENOM_MAX_PAGES = {
-    "Baylor Scott & White": 200,
-    "HCA Healthcare":       200,
-    "Ascension Health":     50,    # ~400 jobs at ~8/page
-}
-
-async def scrape_phenom_dom(browser, system_name: str, base_url: str) -> list:
-    """
-    DOM-based scraper for Phenom People career sites.
-    Handles BSW, HCA, and Ascension — all on Phenom but with slight
-    rendering differences per tenant.
-    """
-    jobs   = []
-    domain = base_url.split("/")[2]
-    is_hca = "hcahealthcare.com" in domain
-
-    try:
-        # HCA is Cloudflare-protected — use residential proxy + extra stealth
-        proxy_str = proxies.get() if is_hca else None
-        ctx_kwargs = dict(
-            viewport={"width": 1440, "height": 900},
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/124.0.0.0 Safari/537.36"
-            ),
-            locale="en-US",
-            extra_http_headers={
-                "Accept-Language": "en-US,en;q=0.9",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": '"Windows"',
-            },
-        )
-        if proxy_str:
-            ctx_kwargs["proxy"] = {"server": proxy_str}
-
-        ctx = await browser.new_context(**ctx_kwargs)
-        await ctx.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', {get: () => false});
-            Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
-            Object.defineProperty(navigator, 'languages', {get: () => ['en-US','en']});
-            window.chrome = {runtime: {}};
-        """)
-        page = await ctx.new_page()
-
-        await page.goto(base_url, wait_until="domcontentloaded", timeout=45000)
-        await asyncio.sleep(8 if is_hca else 4)
-        await page.evaluate("window.scrollBy(0, 400)")
-        await asyncio.sleep(1.5)
-
-        page_num  = 0
-        max_pages = PHENOM_MAX_PAGES.get(system_name, 200)
-        seen_ids  = set()
-
-        # Job link selector — Phenom standard + HCA fallbacks
-        JOB_LINK_SELECTORS = [
-            "a[href*='/job/']",                        # BSW, Ascension
-            "a[data-ph-at-job-title-link-text]",       # Phenom data attribute (HCA)
-            "[data-ph-at-id='job-title-link']",        # alternate Phenom attr
-            "a[href*='/jobs/']",                       # some Phenom tenants
-        ]
-
-        while page_num < max_pages:
-            # Wait for ANY job link variant to appear
-            found_sel = None
-            for sel in JOB_LINK_SELECTORS:
-                try:
-                    await page.wait_for_selector(sel, timeout=12000)
-                    found_sel = sel
-                    break
-                except Exception:
-                    continue
-
-            if not found_sel:
-                # HCA debug: log all anchor hrefs to see what URL patterns exist
-                if is_hca and page_num == 0:
-                    try:
-                        all_anchors = await page.query_selector_all("a[href]")
-                        sample_hrefs = []
-                        for a in all_anchors[:30]:
-                            h = await a.get_attribute("href") or ""
-                            if h and h not in sample_hrefs:
-                                sample_hrefs.append(h)
-                        logger.info(f"  [HCA debug] sample hrefs: {sample_hrefs[:20]}")
-                    except Exception:
-                        pass
-                logger.info(f"  [{system_name}] no job links on page {page_num+1}, stopping")
-                break
-
-            # Collect all matching anchors across all selector variants
-            anchors = []
-            for sel in JOB_LINK_SELECTORS:
-                try:
-                    els = await page.query_selector_all(sel)
-                    anchors.extend(els)
-                except Exception:
-                    continue
-
-            if not anchors:
-                break
-
-            page_jobs = 0
-            for anchor in anchors:
-                try:
-                    href = await anchor.get_attribute("href") or ""
-
-                    # Extract numeric job ID — Phenom always embeds it in the path
-                    m = re.search(r"/job[s]?/(\d+)", href)
-                    if not m:
-                        # Try data attribute as fallback (HCA)
-                        job_id = await anchor.get_attribute("data-ph-at-job-id") or ""
-                        if not job_id:
-                            continue
-                    else:
-                        job_id = m.group(1)
-
-                    if job_id in seen_ids:
-                        continue
-                    seen_ids.add(job_id)
-
-                    if href:
-                        job_url = f"https://{domain}{href}" if href.startswith("/") else href
-                    else:
-                        job_url = f"https://{domain}/us/en/job/{job_id}/"
-
-                    # ── Title ─────────────────────────────────────────────
-                    title = await anchor.get_attribute("data-ph-at-job-title-text") or ""
-                    if not title:
-                        t_el = await anchor.query_selector(
-                            "[data-ph-at-job-title-text], h2, h3, h4, "
-                            "[class*='title'], [class*='Title']"
-                        )
-                        title = (await t_el.inner_text()).strip() if t_el else ""
-                    if not title:
-                        title = (await anchor.inner_text()).strip().split("\n")[0]
-                    if not title:
-                        continue
-
-                    # ── Location ──────────────────────────────────────────
-                    loc_el = await anchor.query_selector(
-                        "[data-ph-at-job-location-text], "
-                        "[class*='location'], [class*='Location'], "
-                        "[class*='city'], [class*='address']"
-                    )
-                    loc = (await loc_el.inner_text()).strip() if loc_el else ""
-                    loc = re.sub(r"^\s*[\u2605\u2022\uf041\uf3c5]\s*", "", loc).strip()
-                    _city, _state = parse_city_state(loc)
-
-                    # ── Category ──────────────────────────────────────────
-                    cat_el = await anchor.query_selector(
-                        "[class*='category'], [class*='Category'], "
-                        "[class*='department'], [class*='Department']"
-                    )
-                    category = (await cat_el.inner_text()).strip() if cat_el else ""
-
-                    # ── Job type ──────────────────────────────────────────
-                    type_el = await anchor.query_selector(
-                        "[class*='job-type'], [class*='jobType'], "
-                        "[class*='employment'], [class*='Employment']"
-                    )
-                    job_type = (await type_el.inner_text()).strip() if type_el else ""
-
-                    jobs.append(Job(
-                        title=title, hospital_system=system_name,
-                        hospital_name=system_name,
-                        city=_city, state=_state, location=loc,
-                        specialty=category, job_type=job_type,
-                        url=job_url, job_id=job_id,
-                        posted_date="", description="",
-                        ats_platform="Phenom",
-                    ))
-                    page_jobs += 1
-                except Exception:
-                    continue
-
-            logger.info(f"  [{system_name}] page {page_num+1}: {page_jobs} new jobs (running total {len(jobs)})")
-            page_num += 1
-
-            # ── Next page button ──────────────────────────────────────────
-            next_btn = None
-            for next_sel in [
-                "[data-ph-at-pagination-next-btn]",
-                "[aria-label='Next page']",
-                "[aria-label='next page']",
-                "button[class*='next']:not([disabled])",
-                "a[class*='next']:not([disabled])",
-                "[class*='pagination-next']:not([disabled])",
-                "[class*='nextPage']:not([disabled])",
-            ]:
-                try:
-                    el = await page.query_selector(next_sel)
-                    if el:
-                        disabled      = await el.get_attribute("disabled")
-                        aria_disabled = await el.get_attribute("aria-disabled")
-                        if disabled is None and aria_disabled != "true":
-                            next_btn = el
-                            break
-                except Exception:
-                    continue
-
-            if not next_btn:
-                logger.info(f"  [{system_name}] no next button — done at page {page_num}")
-                break
-
-            try:
-                # Capture one current job href to detect when page actually changes
-                first_href_before = ""
-                try:
-                    cur = await page.query_selector("a[href*='/job/']")
-                    if cur:
-                        first_href_before = await cur.get_attribute("href") or ""
-                except Exception:
-                    pass
-
-                await next_btn.scroll_into_view_if_needed()
-                await next_btn.click()
-
-                # Wait for page content to visibly change — up to 30s
-                # Strategy: poll until first job href differs from before OR 30s pass
-                waited = 0
-                while waited < 30:
-                    await asyncio.sleep(2)
-                    waited += 2
-                    try:
-                        cur = await page.query_selector("a[href*='/job/']")
-                        if cur:
-                            new_href = await cur.get_attribute("href") or ""
-                            if new_href and new_href != first_href_before:
-                                break  # Content has changed — new page loaded
-                    except Exception:
-                        pass
-                await asyncio.sleep(1)  # Brief settle
-
-            except Exception as e:
-                logger.info(f"  [{system_name}] pagination click failed: {e}")
-                break
-
-        await ctx.close()
-    except Exception as e:
-        logger.error(f"Phenom DOM {system_name}: {e}")
-
-    logger.info(f"  {system_name}: {len(jobs)} jobs")
-    return jobs
-
-
 async def run_playwright_scrapers() -> list[Job]:
     try:
         from playwright.async_api import async_playwright
@@ -3304,8 +3037,11 @@ async def run_playwright_scrapers() -> list[Job]:
         # PRODUCING JOBS — keep these
         ("Mayo Clinic",                   "https://jobs.mayoclinic.org/search-jobs"),
         ("CHRISTUS Health",               "https://careers.christushealth.org/job-search"),
+        ("Baylor Scott & White",          "https://jobs.bswhealth.com/us/en/search-results"),
         ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
-        # BSW, HCA, Ascension → moved to scrape_phenom_dom() below
+        # LARGE SYSTEMS — Phenom via Playwright (proxy-free)
+        ("HCA Healthcare",                "https://careers.hcahealthcare.com/us/en/search-results"),
+        ("Ascension Health",              "https://jobs.ascension.org/us/en/search-results"),
         ("Cleveland Clinic",              "https://jobs.clevelandclinic.org/search/"),
         # HCA AFFILIATES
         ("Methodist Healthcare",          "https://www.joinmethodist.com/search/jobs"),
@@ -3316,7 +3052,7 @@ async def run_playwright_scrapers() -> list[Job]:
         ("University of Vermont Health",  "https://www.uvmhealthnetworkcareers.org/jobs/"),
     ]
 
-    # Deduplicate by system name
+    # Deduplicate by system name (Cleveland Clinic listed twice above)
     seen_systems = set()
     CUSTOM_SITES = [(name, url) for name, url in CUSTOM_SITES
                     if name not in seen_systems and not seen_systems.add(name)]
@@ -3327,12 +3063,6 @@ async def run_playwright_scrapers() -> list[Job]:
             "--disable-blink-features=AutomationControlled",
             "--disable-dev-shm-usage",
         ])
-
-        # ── Dedicated Phenom DOM scrapers (BSW, HCA, Ascension) ──────────
-        for _name, _url in PHENOM_DOM_SITES:
-            _phenom_jobs = await scrape_phenom_dom(browser, _name, _url)
-            jobs.extend(_phenom_jobs)
-            await asyncio.sleep(random.uniform(3, 5))
 
         for system_name, url in CUSTOM_SITES:
             try:
@@ -3360,6 +3090,19 @@ async def run_playwright_scrapers() -> list[Job]:
                             ct = response.headers.get("content-type", "")
                             if "json" in ct:
                                 d = await response.json()
+                                # DEBUG: log response structure for BSW and HCA
+                                if _sn in ("Baylor Scott & White", "HCA Healthcare", "Ascension Health", "LifePoint Health"):
+                                    if isinstance(d, dict):
+                                        logger.info(f"  [DEBUG {_sn}] keys={list(d.keys())[:8]} url={response.url[:80]}")
+                                        # Show nested structure
+                                        for k, v in list(d.items())[:3]:
+                                            if isinstance(v, (dict, list)):
+                                                inner_keys = list(v.keys())[:5] if isinstance(v, dict) else f"list[{len(v)}]"
+                                                logger.info(f"  [DEBUG {_sn}]   {k} → {inner_keys}")
+                                    elif isinstance(d, list):
+                                        logger.info(f"  [DEBUG {_sn}] list[{len(d)}] url={response.url[:80]}")
+                                        if d:
+                                            logger.info(f"  [DEBUG {_sn}]   first item keys={list(d[0].keys())[:8] if isinstance(d[0], dict) else type(d[0])}")
                                 if isinstance(d, dict):
                                     # Handle Elasticsearch nested hits: {"hits": {"hits": [...], "total": N}}
                                     if isinstance(d.get("hits"), dict) and isinstance(d["hits"].get("hits"), list):
@@ -3394,10 +3137,26 @@ async def run_playwright_scrapers() -> list[Job]:
                         except: pass
                 page.on("response", capture)
 
+                # BSW needs domcontentloaded to avoid hanging on networkidle
+                bsw_site = "bswhealth.com" in url
                 advent_site = "adventhealth.com" in url
-                _wait = "domcontentloaded" if advent_site else "networkidle"
+                _wait = "domcontentloaded" if (bsw_site or advent_site) else "networkidle"
                 await page.goto(url, wait_until=_wait, timeout=30000)
                 await asyncio.sleep(random.uniform(2, 4))
+
+                # BSW Health (Phenom) — click the search submit button to trigger job API call
+                if bsw_site:
+                    try:
+                        await page.wait_for_selector("[data-ph-at-id='globalsearch-button']", timeout=10000)
+                        btn = await page.query_selector("[data-ph-at-id='globalsearch-button']")
+                        if btn:
+                            await btn.click()
+                            await asyncio.sleep(8)  # Wait for API response
+                            logger.info("BSW: clicked search button")
+                        else:
+                            logger.info("BSW: search button not found")
+                    except Exception as e:
+                        logger.info(f"BSW search trigger: {e}")
 
                 # AdventHealth (Findly) — click Search jobs button then paginate through results
                 if advent_site:
