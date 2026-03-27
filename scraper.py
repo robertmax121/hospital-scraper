@@ -180,66 +180,66 @@ WORKDAY_TENANTS = {
     "Essentia Health":           ("essentiahealth",     "1",  "Essentia_Health_External"),
     "Fairview Health":           ("fairview",           "1",  "Fairview_Health_External"),
     # ── Confirmed from direct URL verification ──
-    "BestCare Health":           ("bestcare",              "1",  "bestcare"),
-    "Bronson Healthcare":        ("bronsonhg",             "1",  "newhires"),
+    "BestCare Health":           ("bestcare", "1", "bestcare"),
+    "Bronson Healthcare":        ("bronsonhg", "1", "newhires"),
     # ── Added from scraper1.xlsx confirmed URLs ──
-    "Albany Med":                ("albanymed",             "5",  "Albany_Med"),
-    "Allina Health":             ("allina",                "5",  "External"),
-    "Avera Health":              ("avera",                 "5",  "avera-careers"),
-    "Billings Clinic":           ("bhs",                   "1",  "careers"),
-    "Bozeman Health":            ("bozemanhealth",         "1",  "BozemanHealthCareers"),
+    "Albany Med":                ("albanymed", "5", "Albany_Med"),
+    "Allina Health":             ("allina", "5", "External"),
+    "Avera Health":              ("avera", "5", "avera-careers"),
+    "Billings Clinic":           ("bhs", "1", "careers"),
+    "Bozeman Health":            ("bozemanhealth", "1", "BozemanHealthCareers"),
     "Broadlawns Medical Center": ("broadlawns",            "501","Broadlawns_Careers"),
-    "Cape Fear Valley Health":   ("capefearvalley",        "1",  "CFV"),
-    "Capital Health":            ("capitalhealth",         "1",  "CapitalHealthCareers"),
-    "Enloe Health":              ("enloe",                 "12", "EnloeHealth"),
-    "Freeman Health System":     ("freemanhealth",         "1",  "jointeamfreeman"),
-    "Great River Health":        ("greatriverhealth",      "5",  "External"),
-    "Halifax Health":            ("halifaxhealth",         "12", "HalifaxHealth"),
-    "Healogics":                 ("healogics",             "5",  "healogics"),
-    "Hendricks Regional Health": ("hendricks",             "1",  "Hendricks_External_Career_Site"),
-    "Hartford HealthCare":       ("hhc",                   "5",  "HHC"),
-    "HRHS":                      ("hrhs",                  "1",  "Careers"),
-    "HSHS Hospitals":            ("hshs",                  "1",  "hshscareers"),
+    "Cape Fear Valley Health":   ("capefearvalley", "1", "CFV"),
+    "Capital Health":            ("capitalhealth", "1", "CapitalHealthCareers"),
+    "Enloe Health":              ("enloe", "12", "EnloeHealth"),
+    "Freeman Health System":     ("freemanhealth", "1", "jointeamfreeman"),
+    "Great River Health":        ("greatriverhealth", "5", "External"),
+    "Halifax Health":            ("halifaxhealth", "12", "HalifaxHealth"),
+    "Healogics":                 ("healogics", "5", "healogics"),
+    "Hendricks Regional Health": ("hendricks", "1", "Hendricks_External_Career_Site"),
+    "Hartford HealthCare":       ("hhc", "5", "HHC"),
+    "HRHS":                      ("hrhs", "1", "Careers"),
+    "HSHS Hospitals":            ("hshs", "1", "hshscareers"),
     "Intermountain Health (IMH)":("imh",                   "108","IntermountainCareers"),
-    "Jefferson Health":          ("jeffersonhealth",       "5",  "ThomasJeffersonExternal"),
-    "John Muir Health":          ("jmh",                   "5",  "JohnMuirHealthCareers"),
-    "Jupiter Medical Center":    ("jupitermed",            "1",  "External"),
-    "Kaweah Health":             ("kaweahhealth",          "1",  "Careers"),
-    "LMH Health":                ("lmh",                   "1",  "LMHjobs"),
-    "Logan Health":              ("loganhealth",           "1",  "Logan_Careers"),
-    "Maine General Health":      ("mainegeneral",          "5",  "MaineGeneralCareers"),
+    "Jefferson Health":          ("jeffersonhealth", "5", "ThomasJeffersonExternal"),
+    "John Muir Health":          ("jmh", "5", "JohnMuirHealthCareers"),
+    "Jupiter Medical Center":    ("jupitermed", "1", "External"),
+    "Kaweah Health":             ("kaweahhealth", "1", "Careers"),
+    "LMH Health":                ("lmh", "1", "LMHjobs"),
+    "Logan Health":              ("loganhealth", "1", "Logan_Careers"),
+    "Maine General Health":      ("mainegeneral", "5", "MaineGeneralCareers"),
     "Mary Washington Healthcare":("marywashingtonhealthcare","5","Externalcareers"),
-    "Mass General Brigham":      ("massgeneralbrigham",    "1",  "MGBExternal"),
-    "Memorial Healthcare System":("memorialhealthcare",    "1",  "MHS_Careers"),
-    "Methodist Le Bonheur":      ("methodisthealth",       "5",  "MLH"),
-    "Methodist Health System TX":("methodisthealthsystem", "1",  "MHS_Careers"),
-    "Montefiore Health":         ("montefiore",            "12", "MMC"),
-    "Monument Health":           ("monumenthealth",        "1",  "Goldcareers"),
-    "MultiCare Health":          ("multicare",             "1",  "multicare"),
-    "Northeast Georgia Health":  ("nghs",                  "1",  "External"),
-    "North Shore Health System": ("nshs",                  "1",  "ns-eeh"),
-    "NYU Langone Health":        ("nyuhs",                 "12", "nyuhscareers1"),
-    "Owensboro Health":          ("owensborohealth",       "1",  "owensborohealth"),
-    "Phelps Health":             ("phelpshealth",          "5",  "Phelps"),
+    "Mass General Brigham":      ("massgeneralbrigham", "1", "MGBExternal"),
+    "Memorial Healthcare System":("memorialhealthcare", "1", "MHS_Careers"),
+    "Methodist Le Bonheur":      ("methodisthealth", "5", "MLH"),
+    "Methodist Health System TX":("methodisthealthsystem", "1", "MHS_Careers"),
+    "Montefiore Health":         ("montefiore", "12", "MMC"),
+    "Monument Health":           ("monumenthealth", "1", "Goldcareers"),
+    "MultiCare Health":          ("multicare", "1", "multicare"),
+    "Northeast Georgia Health":  ("nghs", "1", "External"),
+    "North Shore Health System": ("nshs", "1", "ns-eeh"),
+    "NYU Langone Health":        ("nyuhs", "12", "nyuhscareers1"),
+    "Owensboro Health":          ("owensborohealth", "1", "owensborohealth"),
+    "Phelps Health":             ("phelpshealth", "5", "Phelps"),
     "Pullman Regional Hospital": ("pullmanregionalhospital","1", "Careers"),
-    "Riverside Health System":   ("rivhs",                 "1",  "Non-ProviderRHS"),
-    "University of Rochester":   ("rochester",             "5",  "UR_Staff"),
-    "Saint Francis Health":      ("saintfrancis",          "1",  "External"),
-    "Saint Luke's Health System":("saintlukes",            "1",  "saintlukeshealthcareers"),
-    "Salinas Valley Health":     ("salinasvalleyhealth",   "5",  "SalinasValleyHealth"),
-    "Samaritan Health NY":       ("samaritanhealth",       "12", "shsny"),
-    "Sarah Bush Lincoln Health": ("sarahbush",             "1",  "SarahBush"),
-    "St. Francis Medical Center":("sfmc",                  "1",  "SFHS"),
-    "Southern Illinois Health":  ("sih",                   "5",  "SIH_External"),
-    "Silver Cross Hospital":     ("silvercross",           "5",  "SilverCrossCareers"),
-    "Stormont Vail Health":      ("stormontvail",          "1",  "SVH"),
-    "Sturdy Memorial Hospital":  ("sturdymemorial",        "5",  "Sturdy"),
-    "Tidelands Health":          ("tidelandshealth",       "12", "Tidelands"),
-    "UMass Memorial Health":     ("ummh",                  "1",  "Careers"),
-    "UofL Health":               ("uoflhealth",            "1",  "UofLHealthCareers"),
-    "Vanderbilt (VUMC)":         ("vumc",                  "1",  "vumccareers"),
+    "Riverside Health System":   ("rivhs", "1", "Non-ProviderRHS"),
+    "University of Rochester":   ("rochester", "5", "UR_Staff"),
+    "Saint Francis Health":      ("saintfrancis", "1", "External"),
+    "Saint Luke's Health System":("saintlukes", "1", "saintlukeshealthcareers"),
+    "Salinas Valley Health":     ("salinasvalleyhealth", "5", "SalinasValleyHealth"),
+    "Samaritan Health NY":       ("samaritanhealth", "12", "shsny"),
+    "Sarah Bush Lincoln Health": ("sarahbush", "1", "SarahBush"),
+    "St. Francis Medical Center":("sfmc", "1", "SFHS"),
+    "Southern Illinois Health":  ("sih", "5", "SIH_External"),
+    "Silver Cross Hospital":     ("silvercross", "5", "SilverCrossCareers"),
+    "Stormont Vail Health":      ("stormontvail", "1", "SVH"),
+    "Sturdy Memorial Hospital":  ("sturdymemorial", "5", "Sturdy"),
+    "Tidelands Health":          ("tidelandshealth", "12", "Tidelands"),
+    "UMass Memorial Health":     ("ummh", "1", "Careers"),
+    "UofL Health":               ("uoflhealth", "1", "UofLHealthCareers"),
+    "Vanderbilt (VUMC)":         ("vumc", "1", "vumccareers"),
     "Wheaton Franciscan / WTH":  ("wth",                   "501","WTH"),
-    "WVU Medicine":              ("wvumedicine",           "1",  "WVUH"),
+    "WVU Medicine":              ("wvumedicine", "1", "WVUH"),
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -671,43 +671,9 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     tenant, wd_num, primary_site = tenant_data
     jobs = []
 
-    # Try primary site name first, then fallbacks, across multiple wd numbers
-    site_names = [primary_site] + [s for s in CAREER_SITE_FALLBACKS if s != primary_site]
-    wd_nums = [wd_num] + [n for n in ["5","1","3","10"] if n != wd_num]
-
-    working_url = None
-    # Try both myworkdayjobs.com (standard) and myworkdaysite.com (used by some universities)
-    domains = ["myworkdayjobs.com", "myworkdaysite.com"]
-    for domain in domains:
-        for wdn in wd_nums:
-            for sn in site_names:
-                if domain == "myworkdaysite.com":
-                    # myworkdaysite uses different URL pattern
-                    url = f"https://{domain}/recruiting/{tenant}/{sn}"
-                    # Convert to API endpoint
-                    api_url = f"https://{domain}/wday/cxs/{tenant}/{sn}/jobs"
-                else:
-                    url = f"https://{tenant}.wd{wdn}.{domain}/wday/cxs/{tenant}/{sn}/jobs"
-                    api_url = url
-                try:
-                    async with req(session, "post", api_url,
-                        json={"limit": 1, "offset": 0, "searchText": "", "locations": [], "categories": []},
-                        headers={**HEADERS, "Content-Type": "application/json"}, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=10)) as r:
-                        if r.status == 200:
-                            working_url = api_url
-                            break
-                except:
-                    continue
-            if working_url:
-                break
-        if working_url:
-            break
-
-    if not working_url:
-        logger.info(f"Workday {system}: no working URL found for tenant '{tenant}'")
-        return []
-
-    logger.info(f"Workday {system}: found at {working_url}")
+    # Use the confirmed URL directly — no probe loop
+    working_url = f"https://{tenant}.wd{wd_num}.myworkdayjobs.com/wday/cxs/{tenant}/{primary_site}/jobs"
+    logger.info(f"Workday {system}: using {working_url}")
     offset = 0
     while True:
         try:
