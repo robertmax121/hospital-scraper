@@ -134,7 +134,6 @@ def req(session, method, url, **kwargs):
 WORKDAY_TENANTS = {
     "Kaiser Permanente":         ("kaiserpermanente",   "5",  "KP_External_Careers"),
     "Providence Health":         ("providence",         "5",  "Providence_External"),
-    "Baylor Scott & White":      ("bswhealth",          "1",  "BSWHealth"),
     "Banner Health":             ("bannerhealth",       "108","Careers"),
     "Northwell Health":          ("northwell",          "5",  "Northwell_External"),
     "Intermountain Health":      ("intermountain",      "1",  "Careers"),
@@ -3051,6 +3050,7 @@ async def run_playwright_scrapers() -> list[Job]:
                         "findly", "job-search-results/results",
                         "career-pages.com", "uvmhealthnetwork", "widgets",
                         "wp-json", "lifepointhealth.net/jobs",
+                        "phenompeople", "bswhealth",
                     ]):
                         try:
                             ct = response.headers.get("content-type", "")
