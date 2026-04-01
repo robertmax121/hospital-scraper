@@ -3323,11 +3323,24 @@ async def run_playwright_scrapers() -> list[Job]:
     return jobs
 
 
+
 # ══════════════════════════════════════════════════════════════════════════
 #  HCA HEALTHCARE — Talemetry JSON API
-#  Clean REST endpoint — no Playwright, no Cloudflare issues
-#  16,500+ jobs paginated at 25/page
+#  16,500+ jobs — direct REST endpoint, no Playwright needed
 # ══════════════════════════════════════════════════════════════════════════
+HCA_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Referer": "https://careers.hcahealthcare.com/search/jobs",
+    "X-Requested-With": "XMLHttpRequest",
+    "Origin": "https://careers.hcahealthcare.com",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+}
+
 async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
     jobs = []
     base = "https://careers.hcahealthcare.com"
@@ -3338,7 +3351,7 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
         async with session.get(
             url,
             params={"q": "", "ns_from_search": "1", "per_page": 25, "page": 1},
-            headers={**HEADERS, "Referer": "https://careers.hcahealthcare.com/search/jobs"},
+            headers=HCA_HEADERS,
             timeout=aiohttp.ClientTimeout(total=30),
         ) as r:
             if r.status != 200:
@@ -3382,7 +3395,7 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
                 session.get(
                     url,
                     params={"q": "", "ns_from_search": "1", "per_page": per, "page": pg},
-                    headers={**HEADERS, "Referer": "https://careers.hcahealthcare.com/search/jobs"},
+                    headers=HCA_HEADERS,
                     timeout=aiohttp.ClientTimeout(total=30),
                 )
                 for pg in batch_pages
@@ -3410,65 +3423,68 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  COMMUNITY HEALTH SYSTEMS (CHS) — WordPress WPJobBoard AJAX
-#  Infinite scroll uses wp_job_grid action, offset-based pagination
-#  ~4,000-6,000 jobs across 13 states
+#  COMMUNITY HEALTH SYSTEMS (CHS) — WordPress WPJobBoard
+#  Infinite scroll, offset-based pagination, ~4,000-6,000 jobs
 # ══════════════════════════════════════════════════════════════════════════
 async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
     jobs = []
     LIMIT  = 60
     offset = 0
 
-    ajax_url   = "https://www.careershealthcare.com/wp-admin/admin-ajax.php"
-    direct_url = "https://www.careershealthcare.com/wp_job_grid"
+    CHS_HEADERS = {
+        **HEADERS,
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": "https://www.careershealthcare.com/job/",
+        "Origin": "https://www.careershealthcare.com",
+    }
 
     logger.info("CHS: starting WPJobBoard scrape...")
 
-    # Probe to find working endpoint
+    # Try endpoints in order — _directory=120 is the page ID from DevTools
+    probes = [
+        ("get",  "https://www.careershealthcare.com/wp_job_grid",
+         {"limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 120}),
+        ("post", "https://www.careershealthcare.com/wp-admin/admin-ajax.php",
+         {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 120}),
+        ("get",  "https://www.careershealthcare.com/wp-admin/admin-ajax.php",
+         {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 120}),
+        ("get",  "https://www.careershealthcare.com/job/",
+         {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 120}),
+        ("post", "https://www.careershealthcare.com/wp-admin/admin-ajax.php",
+         {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 1}),
+    ]
+
     endpoint = None
-    for probe_url, method, kwargs in [
-        (ajax_url,   "post", {"data":   {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 1}}),
-        (direct_url, "get",  {"params": {"limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 1}}),
-        (ajax_url,   "get",  {"params": {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 1}}),
-    ]:
+    for method, probe_url, base_params in probes:
         try:
             fn = getattr(session, method)
-            async with fn(
-                probe_url, **kwargs,
-                headers={**HEADERS, "X-Requested-With": "XMLHttpRequest",
-                         "Referer": "https://www.careershealthcare.com/job/"},
-                timeout=aiohttp.ClientTimeout(total=20),
-            ) as r:
+            kw = {"params" if method == "get" else "data": base_params}
+            async with fn(probe_url, **kw, headers=CHS_HEADERS,
+                          timeout=aiohttp.ClientTimeout(total=20)) as r:
+                logger.info(f"  CHS probe {probe_url} [{method.upper()}]: HTTP {r.status}")
                 if r.status == 200:
                     text = await r.text()
+                    logger.info(f"  CHS probe response preview: {text[:200]}")
                     if text.strip().startswith("{") or text.strip().startswith("["):
-                        endpoint = (probe_url, method, kwargs)
+                        endpoint = (method, probe_url, base_params)
                         logger.info(f"  CHS: endpoint confirmed → {probe_url} [{method.upper()}]")
                         break
         except Exception as ex:
-            logger.debug(f"CHS probe {probe_url}: {ex}")
+            logger.info(f"  CHS probe {probe_url}: {ex}")
 
     if not endpoint:
         logger.warning("CHS: could not find working endpoint — skipping")
         return []
 
-    probe_url, method, base_kwargs = endpoint
+    method, probe_url, base_params = endpoint
 
     while True:
-        kw = {}
-        if method == "post":
-            kw["data"]   = {**base_kwargs["data"],   "offset": offset}
-        else:
-            kw["params"] = {**base_kwargs["params"], "offset": offset}
-
+        params = {**base_params, "offset": offset}
+        kw = {"params" if method == "get" else "data": params}
         try:
             fn = getattr(session, method)
-            async with fn(
-                probe_url, **kw,
-                headers={**HEADERS, "X-Requested-With": "XMLHttpRequest",
-                         "Referer": "https://www.careershealthcare.com/job/"},
-                timeout=aiohttp.ClientTimeout(total=30),
-            ) as r:
+            async with fn(probe_url, **kw, headers=CHS_HEADERS,
+                          timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
                     logger.warning(f"CHS offset {offset}: HTTP {r.status}")
                     break
@@ -3478,7 +3494,6 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
                 try:
                     data = json.loads(text)
                 except json.JSONDecodeError:
-                    logger.debug(f"CHS: non-JSON at offset {offset}")
                     break
 
                 entries = data if isinstance(data, list) else (
@@ -3504,19 +3519,13 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
                             city  = city  or parts[0]
                             state = state or parts[-1].strip().upper()[:2]
                     jobs.append(Job(
-                        title          = title,
-                        hospital_system= "Community Health Systems",
-                        hospital_name  = hosp,
-                        city           = city,
-                        state          = state,
-                        location       = f"{city}, {state}" if city and state else loc,
-                        specialty      = "",
-                        job_type       = jtype,
-                        url            = jurl,
-                        job_id         = jid,
-                        posted_date    = j.get("job_date") or j.get("date") or "",
-                        description    = strip_html(j.get("job_description") or j.get("description") or ""),
-                        ats_platform   = "WPJobBoard",
+                        title=title, hospital_system="Community Health Systems",
+                        hospital_name=hosp, city=city, state=state,
+                        location=f"{city}, {state}" if city and state else loc,
+                        specialty="", job_type=jtype, url=jurl, job_id=jid,
+                        posted_date=j.get("job_date") or j.get("date") or "",
+                        description=strip_html(j.get("job_description") or j.get("description") or ""),
+                        ats_platform="WPJobBoard",
                     ))
 
                 logger.info(f"  CHS offset {offset}: {len(entries)} jobs (total: {len(jobs)})")
@@ -3531,7 +3540,6 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
 
     logger.info(f"  CHS: {len(jobs):,} total jobs")
     return jobs
-
 
 # ══════════════════════════════════════════════════════════════════════════
 #  MASTER RUNNER
