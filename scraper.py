@@ -851,7 +851,9 @@ ICIMS_ORGS = {
 # TalentBrew career sites — HTML results endpoint, paginated
 TALENTBREW_ORGS = {
     # Format: "System": ("base_url", records_per_page)
-    "CommonSpirit Health": ("https://www.commonspirit.careers/search-jobs", 100),
+    "CommonSpirit Health":      ("https://www.commonspirit.careers/search-jobs", 100),
+    # Methodist Healthcare (HCA San Antonio) — same Talemetry JSON platform as HCA
+    "Methodist Healthcare": ("https://www.joinmethodist.com/search/jobs", 25),
 }
 
 
@@ -3325,8 +3327,204 @@ async def run_playwright_scrapers() -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+#  CORNERSTONE ON DEMAND (CSOD)
+#  JPS Health Network (Fort Worth, TX)
+# ══════════════════════════════════════════════════════════════════════════
+CSOD_ORGS = {
+    "JPS Health Network": ("https://jpshealthnet.csod.com", "4"),
+}
+
+async def scrape_csod(session: aiohttp.ClientSession, system: str, base: str, site_id: str) -> list[Job]:
+    jobs = []
+    api_url = f"{base}/ux/ats/careersite/{site_id}/jobs"
+    offset = 0
+    try:
+        while True:
+            async with session.get(
+                api_url,
+                params={"skip": offset, "take": 50, "lang": "en-US"},
+                headers={**HEADERS, "Accept": "application/json"},
+                timeout=aiohttp.ClientTimeout(total=20),
+            ) as r:
+                if r.status != 200:
+                    logger.info(f"CSOD {system}: HTTP {r.status}")
+                    break
+                data = await r.json(content_type=None)
+                items = data if isinstance(data, list) else (
+                    data.get("data") or data.get("jobs") or data.get("results") or []
+                )
+                if not items:
+                    break
+                for j in items:
+                    title = j.get("title") or j.get("Title") or ""
+                    city  = j.get("city") or j.get("City") or ""
+                    state = j.get("state") or j.get("State") or "TX"
+                    jid   = str(j.get("jobId") or j.get("id") or j.get("Id") or "")
+                    jurl  = j.get("url") or f"{base}/ux/ats/careersite/{site_id}/jobs/{jid}"
+                    if not title or not jid:
+                        continue
+                    jobs.append(Job(
+                        title=title, hospital_system=system, hospital_name=system,
+                        city=city, state=state,
+                        location=f"{city}, {state}".strip(", "),
+                        specialty="", job_type=j.get("employmentType") or "",
+                        url=jurl, job_id=jid,
+                        posted_date=j.get("postedDate") or "",
+                        description="", ats_platform="CSOD",
+                    ))
+                if len(items) < 50:
+                    break
+                offset += 50
+                await jitter()
+    except Exception as e:
+        logger.info(f"CSOD {system}: {e}")
+    logger.info(f"  CSOD {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_csod(session) -> list[Job]:
+    logger.info(f"CSOD: scraping {len(CSOD_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_csod(session, s, b, i) for s, (b, i) in CSOD_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  CSOD total: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  PAYCOM — Small Texas hospitals
+# ══════════════════════════════════════════════════════════════════════════
+PAYCOM_ORGS = {
+    "Connally Memorial Medical Center": "772E59A3981B29A14463EC6C3223083C",
+}
+
+async def scrape_paycom(session: aiohttp.ClientSession, system: str, client_key: str) -> list[Job]:
+    jobs = []
+    base_url = f"https://www.paycomonline.net/v4/ats/web.php/jobs?clientkey={client_key}"
+    try:
+        async with session.get(
+            "https://www.paycomonline.net/v4/ats/web.php/jobs",
+            params={"clientkey": client_key},
+            headers={**HEADERS, "Accept": "text/html,*/*"},
+            timeout=aiohttp.ClientTimeout(total=20),
+        ) as r:
+            if r.status != 200:
+                logger.info(f"Paycom {system}: HTTP {r.status}")
+                return []
+            text = await r.text()
+        # Paycom embeds job data in JSON within the page
+        import json as _j
+        m = re.search(r'var\s+jobs\s*=\s*(\[.*?\]);', text, re.DOTALL)  # noqa
+        if not m:
+            m = re.search(r'"jobs"\s*:\s*(\[.*?\])', text, re.DOTALL)  # noqa
+        if m:
+            try:
+                items = _j.loads(m.group(1))
+                for j in items:
+                    title = j.get("title") or j.get("jobTitle") or ""
+                    city  = j.get("city") or ""
+                    state = j.get("state") or "TX"
+                    jid   = str(j.get("id") or j.get("jobId") or "")
+                    if not title:
+                        continue
+                    jobs.append(Job(
+                        title=title, hospital_system=system, hospital_name=system,
+                        city=city, state=state,
+                        location=f"{city}, {state}".strip(", "),
+                        specialty="", job_type="",
+                        url=base_url, job_id=jid or title[:60],
+                        posted_date="", description="", ats_platform="Paycom",
+                    ))
+            except Exception as ex:
+                logger.info(f"Paycom {system}: parse error {ex}")
+    except Exception as e:
+        logger.info(f"Paycom {system}: {e}")
+    logger.info(f"  Paycom {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_paycom(session) -> list[Job]:
+    logger.info(f"Paycom: scraping {len(PAYCOM_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_paycom(session, s, k) for s, k in PAYCOM_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Paycom total: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  PAYCOR — Titus Regional Medical Center (TX)
+# ══════════════════════════════════════════════════════════════════════════
+PAYCOR_ORGS = {
+    "Titus Regional Medical Center": "8a7883d0655a8a10016567ff244174f7",
+}
+
+async def scrape_paycor(session: aiohttp.ClientSession, system: str, client_id: str) -> list[Job]:
+    jobs = []
+    try:
+        async with session.get(
+            "https://recruitingbypaycor.com/career/CareerHome.action",
+            params={"clientId": client_id},
+            headers={**HEADERS, "Accept": "text/html,*/*"},
+            timeout=aiohttp.ClientTimeout(total=20),
+        ) as r:
+            if r.status != 200:
+                logger.info(f"Paycor {system}: HTTP {r.status}")
+                return []
+            text = await r.text()
+        # Try JSON endpoint
+        import json as _j
+        async with session.get(
+            "https://recruitingbypaycor.com/career/CareerJobSearch.action",
+            params={"clientId": client_id, "start": 0, "num": 200},
+            headers={**HEADERS, "Accept": "application/json"},
+            timeout=aiohttp.ClientTimeout(total=20),
+        ) as r2:
+            if r2.status == 200:
+                try:
+                    data = await r2.json(content_type=None)
+                    items = data if isinstance(data, list) else (
+                        data.get("jobs") or data.get("results") or data.get("data") or []
+                    )
+                    for j in items:
+                        title = j.get("title") or j.get("jobTitle") or ""
+                        city  = j.get("city") or j.get("location") or ""
+                        state = j.get("state") or "TX"
+                        jid   = str(j.get("id") or j.get("jobId") or "")
+                        if not title:
+                            continue
+                        jobs.append(Job(
+                            title=title, hospital_system=system, hospital_name=system,
+                            city=city, state=state,
+                            location=f"{city}, {state}".strip(", "),
+                            specialty="", job_type="",
+                            url=f"https://recruitingbypaycor.com/career/CareerHome.action?clientId={client_id}",
+                            job_id=jid or title[:60],
+                            posted_date="", description="", ats_platform="Paycor",
+                        ))
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.info(f"Paycor {system}: {e}")
+    logger.info(f"  Paycor {system}: {len(jobs)} jobs")
+    return jobs
+
+async def run_paycor(session) -> list[Job]:
+    logger.info(f"Paycor: scraping {len(PAYCOR_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_paycor(session, s, c) for s, c in PAYCOR_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Paycor total: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
 #  HCA HEALTHCARE — Talemetry JSON API
-#  16,500+ jobs — direct REST endpoint, no Playwright needed
+#  16,500+ jobs — direct REST endpoint
 # ══════════════════════════════════════════════════════════════════════════
 HCA_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -3424,7 +3622,6 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
 
 # ══════════════════════════════════════════════════════════════════════════
 #  COMMUNITY HEALTH SYSTEMS (CHS) — WordPress WPJobBoard
-#  Infinite scroll, offset-based pagination, ~4,000-6,000 jobs
 # ══════════════════════════════════════════════════════════════════════════
 async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
     jobs = []
@@ -3440,15 +3637,12 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
 
     logger.info("CHS: starting WPJobBoard scrape...")
 
-    # Try endpoints in order — _directory=120 is the page ID from DevTools
     probes = [
         ("get",  "https://www.careershealthcare.com/wp_job_grid",
          {"limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 120}),
         ("post", "https://www.careershealthcare.com/wp-admin/admin-ajax.php",
          {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 120}),
         ("get",  "https://www.careershealthcare.com/wp-admin/admin-ajax.php",
-         {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 120}),
-        ("get",  "https://www.careershealthcare.com/job/",
          {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 120}),
         ("post", "https://www.careershealthcare.com/wp-admin/admin-ajax.php",
          {"action": "wp_job_grid", "limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 1}),
@@ -3467,7 +3661,7 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
                     logger.info(f"  CHS probe response preview: {text[:200]}")
                     if text.strip().startswith("{") or text.strip().startswith("["):
                         endpoint = (method, probe_url, base_params)
-                        logger.info(f"  CHS: endpoint confirmed → {probe_url} [{method.upper()}]")
+                        logger.info(f"  CHS: endpoint confirmed")
                         break
         except Exception as ex:
             logger.info(f"  CHS probe {probe_url}: {ex}")
@@ -3477,7 +3671,6 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
         return []
 
     method, probe_url, base_params = endpoint
-
     while True:
         params = {**base_params, "offset": offset}
         kw = {"params" if method == "get" else "data": params}
@@ -3486,22 +3679,20 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
             async with fn(probe_url, **kw, headers=CHS_HEADERS,
                           timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
-                    logger.warning(f"CHS offset {offset}: HTTP {r.status}")
                     break
                 text = await r.text()
                 if not text.strip():
                     break
                 try:
-                    data = json.loads(text)
-                except json.JSONDecodeError:
+                    import json as _j
+                    data = _j.loads(text)
+                except:
                     break
-
                 entries = data if isinstance(data, list) else (
                     data.get("jobs") or data.get("data") or []
                 )
                 if not entries:
                     break
-
                 for j in entries:
                     title = j.get("job_title") or j.get("title") or ""
                     city  = j.get("job_city")  or j.get("city")  or ""
@@ -3527,13 +3718,11 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
                         description=strip_html(j.get("job_description") or j.get("description") or ""),
                         ats_platform="WPJobBoard",
                     ))
-
                 logger.info(f"  CHS offset {offset}: {len(entries)} jobs (total: {len(jobs)})")
                 if len(entries) < LIMIT:
                     break
                 offset += LIMIT
                 await jitter()
-
         except Exception as e:
             logger.error(f"CHS offset {offset}: {e}")
             break
@@ -3580,6 +3769,9 @@ async def run_all() -> list[dict]:
             run_lifepoint(proxy_session),
             run_kronos(proxy_session),
             run_applicantpro(proxy_session),
+            run_csod(proxy_session),
+            run_paycom(proxy_session),
+            run_paycor(proxy_session),
             run_hca(proxy_session),
             run_chs(proxy_session),
             return_exceptions=True,
