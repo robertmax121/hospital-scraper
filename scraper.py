@@ -86,6 +86,88 @@ async def jitter(): await asyncio.sleep(random.uniform(0.8, 2.5))
 def strip_html(s): return re.sub(r"<[^>]+>", "", s or "")[:500]
 
 
+# ── Hospital Location Database (Supabase) ──────────────────────────────
+# Loaded once at startup from the `hospitals` table (5,426 CMS-verified records).
+# Provides verified (city, state) for any hospital in the US.
+HOSPITAL_DB: dict[str, tuple[str, str]] = {}
+
+async def load_hospital_db():
+    """Fetch all hospitals from Supabase into an in-memory lookup dict."""
+    global HOSPITAL_DB
+    url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    key = os.environ.get("SUPABASE_KEY", "")
+    if not url or not key:
+        logger.warning("Hospital DB: SUPABASE_URL/KEY not set — lookup disabled")
+        return
+
+    api = f"{url}/rest/v1/hospitals"
+    headers = {"apikey": key, "Authorization": f"Bearer {key}"}
+
+    all_records = []
+    offset = 0
+    try:
+        async with aiohttp.ClientSession() as sess:
+            while True:
+                async with sess.get(api, headers=headers, params={
+                    "select": "hospital_name,hospital_system,city,state",
+                    "limit": "5000",
+                    "offset": str(offset),
+                }, timeout=aiohttp.ClientTimeout(total=30)) as r:
+                    if r.status != 200:
+                        logger.warning(f"Hospital DB: HTTP {r.status}")
+                        break
+                    batch = await r.json()
+                    if not batch:
+                        break
+                    all_records.extend(batch)
+                    if len(batch) < 5000:
+                        break
+                    offset += 5000
+    except Exception as e:
+        logger.warning(f"Hospital DB: failed to load — {e}")
+        return
+
+    for h in all_records:
+        name = (h.get("hospital_name") or "").strip().lower()
+        system = (h.get("hospital_system") or "").strip().lower()
+        state = (h.get("state") or "").strip().upper()
+        city = (h.get("city") or "").strip()
+        if not name or not city or not state:
+            continue
+        if name not in HOSPITAL_DB:
+            HOSPITAL_DB[name] = (city, state)
+        HOSPITAL_DB[f"{name}|{state}"] = (city, state)
+        if system and system not in HOSPITAL_DB:
+            HOSPITAL_DB[f"system:{system}"] = (city, state)
+
+    logger.info(f"Hospital DB: loaded {len(all_records)} hospitals -> {len(HOSPITAL_DB)} lookup keys")
+
+
+def lookup_hospital_location(hospital_name: str, hospital_system: str = "", state_hint: str = "") -> tuple[str, str]:
+    """Look up (city, state) from the hospitals database."""
+    if not HOSPITAL_DB:
+        return ("", "")
+    name = (hospital_name or "").strip().lower()
+    if state_hint and name:
+        key = f"{name}|{state_hint.upper()}"
+        if key in HOSPITAL_DB:
+            return HOSPITAL_DB[key]
+    if name and name in HOSPITAL_DB:
+        return HOSPITAL_DB[name]
+    if name and len(name) > 10:
+        for db_key, loc in HOSPITAL_DB.items():
+            if "|" in db_key or db_key.startswith("system:"):
+                continue
+            if len(db_key) > 8 and (db_key in name or name in db_key):
+                return loc
+    sys_key = (hospital_system or "").strip().lower()
+    if sys_key:
+        sys_lookup = HOSPITAL_DB.get(f"system:{sys_key}")
+        if sys_lookup:
+            return sys_lookup
+    return ("", "")
+
+
 
 class _FallbackResponse:
     """Wrapper so we can use 'async with' syntax with fallback logic."""
@@ -3735,6 +3817,10 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 async def run_all() -> list[dict]:
     start = datetime.now()
+
+    # Load hospital location database from Supabase (5,426 verified records)
+    await load_hospital_db()
+
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     proxy_connector  = aiohttp.TCPConnector(limit=30, ssl=False)
@@ -3861,7 +3947,23 @@ async def run_all() -> list[dict]:
 
         # Location lookup fallback — fires when city or state still missing
         if not city or not state:
-            lookup = FACILITY_LOCATION_MAP.get(hosp_name) or SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
+            # Tier 1: Manual facility map (hand-verified edge cases)
+            lookup = FACILITY_LOCATION_MAP.get(hosp_name)
+
+            # Tier 2: Hospital DB — 5,426 CMS government-verified records
+            if not lookup:
+                db_result = lookup_hospital_location(
+                    d.get("hospital_name", ""),
+                    d.get("hospital_system", ""),
+                    state,
+                )
+                if db_result != ("", ""):
+                    lookup = db_result
+
+            # Tier 3: System-level defaults (HQ fallback for multi-state systems)
+            if not lookup:
+                lookup = SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
+
             if lookup:
                 fallback_city, fallback_state = lookup
                 if not city:
