@@ -86,88 +86,6 @@ async def jitter(): await asyncio.sleep(random.uniform(0.8, 2.5))
 def strip_html(s): return re.sub(r"<[^>]+>", "", s or "")[:500]
 
 
-# ── Hospital Location Database (Supabase) ──────────────────────────────
-# Loaded once at startup from the `hospitals` table (5,426 CMS-verified records).
-# Provides verified (city, state) for any hospital in the US.
-HOSPITAL_DB: dict[str, tuple[str, str]] = {}
-
-async def load_hospital_db():
-    """Fetch all hospitals from Supabase into an in-memory lookup dict."""
-    global HOSPITAL_DB
-    url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    key = os.environ.get("SUPABASE_KEY", "")
-    if not url or not key:
-        logger.warning("Hospital DB: SUPABASE_URL/KEY not set — lookup disabled")
-        return
-
-    api = f"{url}/rest/v1/hospitals"
-    headers = {"apikey": key, "Authorization": f"Bearer {key}"}
-
-    all_records = []
-    offset = 0
-    try:
-        async with aiohttp.ClientSession() as sess:
-            while True:
-                async with sess.get(api, headers=headers, params={
-                    "select": "hospital_name,hospital_system,city,state",
-                    "limit": "5000",
-                    "offset": str(offset),
-                }, timeout=aiohttp.ClientTimeout(total=30)) as r:
-                    if r.status != 200:
-                        logger.warning(f"Hospital DB: HTTP {r.status}")
-                        break
-                    batch = await r.json()
-                    if not batch:
-                        break
-                    all_records.extend(batch)
-                    if len(batch) < 5000:
-                        break
-                    offset += 5000
-    except Exception as e:
-        logger.warning(f"Hospital DB: failed to load — {e}")
-        return
-
-    for h in all_records:
-        name = (h.get("hospital_name") or "").strip().lower()
-        system = (h.get("hospital_system") or "").strip().lower()
-        state = (h.get("state") or "").strip().upper()
-        city = (h.get("city") or "").strip()
-        if not name or not city or not state:
-            continue
-        if name not in HOSPITAL_DB:
-            HOSPITAL_DB[name] = (city, state)
-        HOSPITAL_DB[f"{name}|{state}"] = (city, state)
-        if system and system not in HOSPITAL_DB:
-            HOSPITAL_DB[f"system:{system}"] = (city, state)
-
-    logger.info(f"Hospital DB: loaded {len(all_records)} hospitals -> {len(HOSPITAL_DB)} lookup keys")
-
-
-def lookup_hospital_location(hospital_name: str, hospital_system: str = "", state_hint: str = "") -> tuple[str, str]:
-    """Look up (city, state) from the hospitals database."""
-    if not HOSPITAL_DB:
-        return ("", "")
-    name = (hospital_name or "").strip().lower()
-    if state_hint and name:
-        key = f"{name}|{state_hint.upper()}"
-        if key in HOSPITAL_DB:
-            return HOSPITAL_DB[key]
-    if name and name in HOSPITAL_DB:
-        return HOSPITAL_DB[name]
-    if name and len(name) > 10:
-        for db_key, loc in HOSPITAL_DB.items():
-            if "|" in db_key or db_key.startswith("system:"):
-                continue
-            if len(db_key) > 8 and (db_key in name or name in db_key):
-                return loc
-    sys_key = (hospital_system or "").strip().lower()
-    if sys_key:
-        sys_lookup = HOSPITAL_DB.get(f"system:{sys_key}")
-        if sys_lookup:
-            return sys_lookup
-    return ("", "")
-
-
 
 class _FallbackResponse:
     """Wrapper so we can use 'async with' syntax with fallback logic."""
@@ -321,6 +239,8 @@ WORKDAY_TENANTS = {
     "Vanderbilt (VUMC)":         ("vumc", "1", "vumccareers"),
     "Wheaton Franciscan / WTH":  ("wth",                   "501","WTH"),
     "WVU Medicine":              ("wvumedicine", "1", "WVUH"),
+    # ── Added from scraper1.xlsx expansion ──
+    "UW Medicine":               ("uw", "5", "UWHires"),
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -819,6 +739,11 @@ TALEO_ORGS = {
     "Encompass Health":            "encompasshealth",
     "National Healthcare Corp":    "nhccare",
     "TeamHealth":                  "teamhealth",
+    # ── Added from scraper1.xlsx expansion (confirmed live DNS) ──
+    "Erlanger Health System":      "erlanger",
+    "Tampa General Hospital":      "tgh",
+    "Cape Cod Healthcare":         "capecodhc",
+    "Hennepin Healthcare":         "hcmc",
 }
 
 async def scrape_taleo(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -1505,6 +1430,8 @@ SMARTRECRUITERS_ORGS = {
     "Acadia Healthcare":    "AcadiaHealthcare",
     "Surgery Partners":     "SurgeryPartners",
     # IORA Health removed — acquired by One Medical (Amazon)
+    # ── Added from scraper1.xlsx expansion ──
+    "University of Maryland Medical System": "UniversityOfMarylandMedicalSystem",
 }
 
 async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -1707,6 +1634,20 @@ PHENOM_ORGS = {
     "ECU Health":                   "https://careers.ecuhealth.org",
     "Penn Medicine":                "https://careers.pennmedicine.org",
     "UPMC":                         "https://careers.upmc.com",
+    # ── Added from scraper1.xlsx expansion ──
+    "Bon Secours Mercy":            "https://careers.bsmhealth.org",
+    "Hoag Health":                  "https://careers.hhsys.org",
+    "Spartanburg Regional":         "https://careers.spartanburgregional.com",
+    "Duke Health":                  "https://careers.dukehealth.org",
+    "Cone Health":                  "https://careers.conehealth.com",
+    "Hartford HealthCare":          "https://www.hhccareers.org",
+    "Baptist Health (FL)":          "https://careers.baptisthealth.net",
+    "Jackson Health System":        "https://jobs.jacksonhealth.org",
+    "Children's Healthcare ATL":    "https://careers.choa.org",
+    "Franciscan Health":            "https://jobs.franciscanhealth.org",
+    "CentraCare":                   "https://jobs.centracare.com",
+    "Children's Minnesota":         "https://careers.childrensmn.org",
+    "St. Charles Health":           "https://careers.stcharleshealthcare.org",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
@@ -1921,6 +1862,16 @@ ADP_ORGS = {
     "ADP Health System 1": "152f13f3-9efa-4e16-9a69-bb7500136904",
     "ADP Health System 2": "542f7b59-1156-4a17-a729-f8cd9337acf6",
     "ADP Health System 3": "af93ba9c-e8c7-4a6f-ade3-711614110405",
+    # ── Added from scraper1.xlsx expansion ──
+    "ADP Health System 4":  "77e754a7-66ab-427f-ae54-31edee4e9bf6",
+    "ADP Health System 5":  "86be0242-2e9b-4a21-9dac-6ef6b31fbbee",
+    "ADP Health System 6":  "171c7aca-96cb-44e7-95db-7545554c14e8",
+    "ADP Health System 7":  "c155faa0-8c71-47b0-bbaa-2b7939324014",
+    "ADP Health System 8":  "a074e043-a14e-4f2d-8cf7-bee3e0a7ac61",
+    "ADP Health System 9":  "1a214979-2739-4245-a1d1-38dc8531018f",
+    "ADP Health System 10": "5ffc5741-7db3-4aa8-a16a-e19abed9677e",
+    "ADP Health System 11": "58af5ddf-316e-4ac8-bc2f-471750cda3c7",
+    "ADP Health System 12": "bb661c48-7edc-400c-adfb-40f8f7743374",
 }
 
 async def scrape_adp(session: aiohttp.ClientSession, system: str, cid: str) -> list[Job]:
@@ -2930,6 +2881,9 @@ KRONOS_ORGS = {
     "Astria Health":    ("prd01-hcm01.prd", "6110092"),
     "ArnotHealth":      ("prd01-hcm01.npr", "6012355"),
     "Ridgeview":        ("prd01-hcm01.prd", "6104389"),
+    # ── Added from scraper1.xlsx expansion ──
+    "Kronos Hospital 2": ("prd01-hcm01.prd", "6059921"),
+    "Kronos Hospital 3": ("prd01-hcm01.prd", "6142380"),
 }
 
 async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
@@ -3414,6 +3368,8 @@ async def run_playwright_scrapers() -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 CSOD_ORGS = {
     "JPS Health Network": ("https://jpshealthnet.csod.com", "4"),
+    # ── Added from scraper1.xlsx expansion ──
+    "Singing River Health System": ("https://singingriverhealthsystem.csod.com", "1"),
 }
 
 async def scrape_csod(session: aiohttp.ClientSession, system: str, base: str, site_id: str) -> list[Job]:
@@ -3479,6 +3435,12 @@ async def run_csod(session) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 PAYCOM_ORGS = {
     "Connally Memorial Medical Center": "772E59A3981B29A14463EC6C3223083C",
+    # ── Added from scraper1.xlsx expansion ──
+    "Paycom Hospital 2": "4863CB61AD1B2555F37E9E5884626947",
+    "Paycom Hospital 3": "C48961799EBD231096CE8423D325C34C",
+    "Paycom Hospital 4": "0FD7E535C5AC57A6144B389ACAA1998B",
+    "Paycom Hospital 5": "8236C138F02B1587E10CAE245C2E6EE6",
+    "Paycom Hospital 6": "BA896DB60A5046DD23CC67AB5801923F",
 }
 
 async def scrape_paycom(session: aiohttp.ClientSession, system: str, client_key: str) -> list[Job]:
@@ -3541,6 +3503,8 @@ async def run_paycom(session) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 PAYCOR_ORGS = {
     "Titus Regional Medical Center": "8a7883d0655a8a10016567ff244174f7",
+    # ── Added from scraper1.xlsx expansion ──
+    "Paycor Hospital 2": "8a7883d07725ca8701773c07f64d08fa",
 }
 
 async def scrape_paycor(session: aiohttp.ClientSession, system: str, client_id: str) -> list[Job]:
@@ -3817,10 +3781,6 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 async def run_all() -> list[dict]:
     start = datetime.now()
-
-    # Load hospital location database from Supabase (5,426 verified records)
-    await load_hospital_db()
-
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     proxy_connector  = aiohttp.TCPConnector(limit=30, ssl=False)
@@ -3947,23 +3907,7 @@ async def run_all() -> list[dict]:
 
         # Location lookup fallback — fires when city or state still missing
         if not city or not state:
-            # Tier 1: Manual facility map (hand-verified edge cases)
-            lookup = FACILITY_LOCATION_MAP.get(hosp_name)
-
-            # Tier 2: Hospital DB — 5,426 CMS government-verified records
-            if not lookup:
-                db_result = lookup_hospital_location(
-                    d.get("hospital_name", ""),
-                    d.get("hospital_system", ""),
-                    state,
-                )
-                if db_result != ("", ""):
-                    lookup = db_result
-
-            # Tier 3: System-level defaults (HQ fallback for multi-state systems)
-            if not lookup:
-                lookup = SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
-
+            lookup = FACILITY_LOCATION_MAP.get(hosp_name) or SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
             if lookup:
                 fallback_city, fallback_state = lookup
                 if not city:
