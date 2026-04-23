@@ -143,7 +143,7 @@ WORKDAY_TENANTS = {
     "Geisinger":                 ("geisinger",          "1",  "Geisinger_External"),
     "Sanford Health":            ("sanfordhealth",      "5",  "Sanford_Health"),
     "SSM Health":                ("ssmhealth",          "1",  "SSM_Health_External"),
-    "Mercy Health":              ("mercy",              "5",  "External"),
+    "Mercy Health":               ("mercy",              "5",  "External"),
     "Carilion Clinic":           ("carilion",           "1",  "Carilion_External"),
     "DaVita":                    ("davita",             "1",  "DaVita_External"),
     "Henry Ford Health":         ("henryford",          "1",  "Henry_Ford_External"),
@@ -174,7 +174,7 @@ WORKDAY_TENANTS = {
     "Virtua Health":             ("virtua",             "1",  "Virtua_Careers"),
     "Adventist Health":          ("adventisthealth",    "1",  "Adventist_Health"),
     "CommonSpirit Health":       ("commonspirit",       "1",  "CommonSpirit_Health_External"),
-    "Dignity Health":            ("dignityhealth",      "1",  "DignityHealth_External"),
+    "Dignity Health":             ("dignityhealth",      "1",  "DignityHealth_External"),
     "Bon Secours":               ("bonsecours",         "1",  "BonSecours_External"),
     "Essentia Health":           ("essentiahealth",     "1",  "Essentia_Health_External"),
     "Fairview Health":           ("fairview",           "1",  "Fairview_Health_External"),
@@ -1651,8 +1651,72 @@ PHENOM_ORGS = {
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
+    """Scrape a Phenom People career site.
+
+    Three-phase probe strategy:
+      Phase 0 — Establish session cookies by visiting career page
+      Phase 1 — Try direct REST API endpoints (works for legacy Phenom like Bryan Health)
+      Phase 2 — Try /widgets endpoint with search payloads (modern Phenom with JWT)
+      Phase 3 — Fetch all jobs from whichever endpoint worked
+
+    Key fix: Probe now rejects endpoints returning data=null, which was causing
+    all non-Bryan Phenom orgs to silently return 0 jobs.
+    """
     jobs = []
-    # Build endpoint list — prepend direct Phenom People backend if org code known
+
+    # ── Probe helper ──────────────────────────────────────────────────────
+    def _probe_has_job_data(data: dict) -> bool:
+        """Does this response actually contain extractable job listings?"""
+        # Reject explicit null data (modern Phenom without auth)
+        if "data" in data and data["data"] is None:
+            return False
+        # Reject non-zero errorCode (0 is valid/success, don't treat as error)
+        ec = data.get("errorCode")
+        if ec is not None and ec != 0 and ec != "0" and ec != "":
+            return False
+        if data.get("error"):
+            return False
+        # Check known job-list keys
+        for key in ("jobs", "requisitions", "results", "entries", "jobPostings", "items"):
+            val = data.get(key)
+            if isinstance(val, list) and val:
+                return True
+        # Check nested: data.jobs, data.entries, etc.
+        data_val = data.get("data")
+        if isinstance(data_val, dict):
+            for key in ("jobs", "entries", "results", "requisitions"):
+                if isinstance(data_val.get(key), list) and data_val[key]:
+                    return True
+        if isinstance(data_val, list) and data_val:
+            return True
+        # Elasticsearch hits.hits
+        hits = data.get("hits")
+        if isinstance(hits, dict) and isinstance(hits.get("hits"), list) and hits["hits"]:
+            return True
+        # Bryan Health style: total_entries > 0
+        if data.get("total_entries", 0) > 0:
+            return True
+        # Widget style: totalHits > 0 with data list
+        if data.get("totalHits", 0) > 0:
+            return True
+        return False
+
+    # ── Phase 0: Establish session cookies ────────────────────────────────
+    for cookie_url in [f"{base_url}/us/en/search-results", base_url]:
+        try:
+            async with session.get(
+                cookie_url,
+                headers={**HEADERS, "Accept": "text/html"},
+                proxy=proxies.get(), ssl=False,
+                timeout=aiohttp.ClientTimeout(total=15),
+                allow_redirects=True,
+            ) as r:
+                if r.status == 200:
+                    break
+        except Exception:
+            continue
+
+    # ── Phase 1: Probe direct API endpoints ───────────────────────────────
     org_code = PHENOM_ORG_CODES.get(system, "")
     endpoints = []
     if org_code:
@@ -1663,8 +1727,11 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         f"{base_url}/search/jobs",
         f"{base_url}/en/search-results",
     ]
+
     api_url = None
-    use_post = False  # track whether the working endpoint needs POST
+    use_post = False
+    widget_payload_template = None   # set only if widgets endpoint works
+    widget_response_key = None       # nested key to unwrap in widget response
     probe_headers = {
         **HEADERS,
         "Accept": "application/json",
@@ -1675,48 +1742,134 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
 
     for ep in endpoints:
         is_cdn = "api.phenompeople.com" in ep
-
-        # Try POST first (modern Phenom portals), then GET fallback
         for method in ("post", "get"):
             try:
                 if method == "post":
-                    post_body = {"from": 0, "size": 1, "language": "en_US",
-                                 "query": "", "location": ""}
-                    req_kwargs = {"json": post_body}
+                    req_kwargs = {"json": {"from": 0, "size": 10, "language": "en_US",
+                                           "query": "", "location": ""}}
                 else:
-                    get_params = {"from": 0, "size": 1, "language": "en_US"} if is_cdn else {"start": 0, "num": 1, "from": 0, "size": 1, "language": "en_US"}
-                    req_kwargs = {"params": get_params}
+                    params = (
+                        {"from": 0, "size": 10, "language": "en_US"}
+                        if is_cdn
+                        else {"start": 0, "num": 10, "from": 0, "size": 10, "language": "en_US"}
+                    )
+                    req_kwargs = {"params": params}
 
                 async with getattr(session, method)(
-                    ep,
-                    **req_kwargs,
+                    ep, **req_kwargs,
                     headers=probe_headers,
-                    proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=15)
+                    proxy=proxies.get(), ssl=False,
+                    timeout=aiohttp.ClientTimeout(total=15),
                 ) as r:
-                    if r.status == 200:
-                        ct = r.headers.get("content-type", "")
-                        if "json" in ct:
-                            try:
-                                probe_data = await r.json(content_type=None)
-                                if probe_data.get("errorCode") or probe_data.get("error"):
-                                    logger.info(f"Phenom {system}: {ep} [{method}] → errorCode={probe_data.get('errorCode')} msg={str(probe_data.get('errorMsg',''))[:60]}")
-                                    continue  # try next method
-                            except Exception:
-                                pass
+                    if r.status == 200 and "json" in r.headers.get("content-type", ""):
+                        probe_data = await r.json(content_type=None)
+                        if _probe_has_job_data(probe_data):
                             api_url = ep
                             use_post = (method == "post")
                             break
-            except Exception as probe_err:
-                logger.info(f"Phenom {system}: probe {ep} [{method}] → {probe_err}")
-                continue
+                        else:
+                            logger.info(f"Phenom {system}: {ep} [{method}] → no job data (keys={list(probe_data.keys())[:6]})")
+            except Exception as e:
+                logger.info(f"Phenom {system}: probe {ep} [{method}] → {e}")
         if api_url:
             break
+
+    # ── Phase 2: Widgets endpoint fallback ────────────────────────────────
+    if not api_url:
+        widgets_url = f"{base_url}/widgets"
+        widget_payloads = [
+            # refineSearch — most common on newer Phenom sites
+            {
+                "lang": "en_us",
+                "deviceType": "desktop",
+                "country": "us",
+                "pageName": "search-results",
+                "ddoKey": "refineSearch",
+                "sortBy": "",
+                "from": 0,
+                "size": 10,
+                "query": "",
+                "locations": [],
+                "postedDateRange": "",
+                "searchType": "search",
+            },
+            # latestJobs — recommendation-style endpoint
+            {
+                "lang": "en_us",
+                "deviceType": "desktop",
+                "country": "us",
+                "pageName": "search-results",
+                "ddoKey": "latestJobs",
+                "from": 0,
+                "size": 10,
+                "sortBy": "",
+            },
+            # jobSearch — older widget format
+            {
+                "lang": "en_us",
+                "deviceType": "desktop",
+                "ddoKey": "jobSearch",
+                "from": 0,
+                "size": 10,
+                "query": "",
+            },
+        ]
+
+        for payload in widget_payloads:
+            ddo_key = payload.get("ddoKey", "unknown")
+            try:
+                async with session.post(
+                    widgets_url,
+                    json=payload,
+                    headers={
+                        **HEADERS,
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                        "Origin": base_url,
+                        "Referer": f"{base_url}/us/en/search-results",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    proxy=proxies.get(), ssl=False,
+                    timeout=aiohttp.ClientTimeout(total=20),
+                ) as r:
+                    if r.status != 200 or "json" not in r.headers.get("content-type", ""):
+                        continue
+                    probe_data = await r.json(content_type=None)
+
+                logger.info(f"Phenom {system}: widgets/{ddo_key} → keys={list(probe_data.keys())[:8]}")
+
+                # Check top level
+                if _probe_has_job_data(probe_data):
+                    api_url = widgets_url
+                    use_post = True
+                    widget_payload_template = payload.copy()
+                    logger.info(f"Phenom {system}: widgets/{ddo_key} has job data!")
+                    break
+
+                # Check nested under ddoKey name (widgets batch responses)
+                for nested_key in (ddo_key, "refineSearch", "latestJobs", "jobSearch"):
+                    nested = probe_data.get(nested_key)
+                    if isinstance(nested, dict) and _probe_has_job_data(nested):
+                        api_url = widgets_url
+                        use_post = True
+                        widget_payload_template = payload.copy()
+                        widget_response_key = nested_key
+                        logger.info(f"Phenom {system}: widgets/{nested_key} has nested job data!")
+                        break
+                if api_url:
+                    break
+
+            except Exception as e:
+                logger.info(f"Phenom {system}: widgets/{ddo_key} probe error: {e}")
 
     if not api_url:
         logger.info(f"Phenom {system}: no API endpoint found")
         return []
 
-    logger.info(f"Phenom {system}: using {api_url} [{'POST' if use_post else 'GET'}]")
+    # ── Phase 3: Fetch all jobs ───────────────────────────────────────────
+    is_widgets = widget_payload_template is not None
+    logger.info(f"Phenom {system}: using {api_url} [{'POST' if use_post else 'GET'}]{' (widgets)' if is_widgets else ''}")
+
     offset = 0
     fetch_headers = {
         **HEADERS,
@@ -1725,54 +1878,65 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         "Origin": base_url,
         "Referer": f"{base_url}/us/en/search-results",
     }
+    if is_widgets:
+        fetch_headers["X-Requested-With"] = "XMLHttpRequest"
+
     while True:
         try:
             is_cdn = "api.phenompeople.com" in api_url
-            if use_post:
-                fetch_kwargs = {"json": {"from": offset, "size": 50, "language": "en_US", "query": "", "location": ""}}
+
+            if is_widgets:
+                payload = widget_payload_template.copy()
+                payload["from"] = offset
+                payload["size"] = 50
+                fetch_kwargs = {"json": payload}
+                http_method = session.post
+            elif use_post:
+                fetch_kwargs = {"json": {"from": offset, "size": 50, "language": "en_US",
+                                         "query": "", "location": ""}}
                 http_method = session.post
             else:
-                fetch_params = {"from": offset, "size": 50, "language": "en_US"} if is_cdn else {"start": offset, "num": 50, "size": 50, "from": offset, "language": "en_US"}
+                fetch_params = (
+                    {"from": offset, "size": 50, "language": "en_US"}
+                    if is_cdn
+                    else {"start": offset, "num": 50, "size": 50, "from": offset, "language": "en_US"}
+                )
                 fetch_kwargs = {"params": fetch_params}
                 http_method = session.get
+
             async with http_method(
-                api_url,
-                **fetch_kwargs,
+                api_url, **fetch_kwargs,
                 headers=fetch_headers,
-                proxy=proxies.get(), ssl=False, timeout=aiohttp.ClientTimeout(total=25)
+                proxy=proxies.get(), ssl=False,
+                timeout=aiohttp.ClientTimeout(total=25),
             ) as r:
                 if r.status != 200:
                     break
                 data = await r.json(content_type=None)
 
-            # Phenom career sites return various structures. Log the raw shape on first page
-            # to diagnose extraction issues.
-            if offset == 0:
-                top_keys = list(data.keys())[:8]
-                logger.info(f"Phenom {system}: response keys={top_keys}")
+            # Unwrap nested widget response if needed
+            if widget_response_key and isinstance(data.get(widget_response_key), dict):
+                data = data[widget_response_key]
 
-            # --- Unwrap hits / jobs list ---
-            # Phenom sites return various structures — check each key in priority order.
-            # Previous ternary chain had Python precedence bugs; this is explicit and safe.
+            if offset == 0:
+                logger.info(f"Phenom {system}: response keys={list(data.keys())[:8]}")
+
+            # --- Extract listings ---
             def _extract_listings(d):
-                # Standard keys
                 for key in ("jobs", "requisitions", "results", "entries"):
                     v = d.get(key)
                     if isinstance(v, list) and v:
                         return v
-                # Elasticsearch hits.hits
                 hits = d.get("hits")
                 if isinstance(hits, dict):
                     inner = hits.get("hits")
                     if isinstance(inner, list) and inner:
                         return inner
-                # data.jobs (nested dict)
                 data_val = d.get("data")
                 if isinstance(data_val, dict):
                     sub = data_val.get("jobs") or data_val.get("entries") or data_val.get("results")
                     if isinstance(sub, list) and sub:
                         return sub
-                # data is itself the list
                 if isinstance(data_val, list) and data_val:
                     return data_val
                 return []
@@ -1780,26 +1944,33 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
             raw = _extract_listings(data)
             listings = [j for j in raw if isinstance(j, dict)]
             if not listings:
-                logger.info(f"Phenom {system}: no listings at offset {offset} — keys={list(data.keys())[:8]}, data_val={str(data.get('data', ''))[:150]}")
+                if offset == 0:
+                    logger.info(f"Phenom {system}: no listings at offset {offset} — keys={list(data.keys())[:8]}, data_val={str(data.get('data', ''))[:150]}")
                 break
 
             for j in listings:
-                # Elasticsearch wraps the real document under _source
                 doc = j.get("_source", j)
                 loc = doc.get("city", "") or doc.get("location", "") or doc.get("locations", "")
                 if isinstance(loc, list):
                     loc = ", ".join(str(x) for x in loc)
                 _raw_city  = doc.get("city", "")
                 _raw_state = doc.get("state", "") or doc.get("stateCode", "")
-                city, state = parse_city_state(f"{_raw_city}, {_raw_state}") if (_raw_city or _raw_state) else (_raw_city, _raw_state)
+                city, state = (
+                    parse_city_state(f"{_raw_city}, {_raw_state}")
+                    if (_raw_city or _raw_state)
+                    else (_raw_city, _raw_state)
+                )
                 city  = city  or _raw_city
                 state = state or _raw_state
                 title = doc.get("title", "") or doc.get("jobTitle", "") or doc.get("name", "")
                 job_id = str(
-                    doc.get("id", "") or doc.get("jobId", "") or doc.get("requisitionId", "") or
-                    j.get("_id", "")  # ES outer doc id as fallback
+                    doc.get("id", "") or doc.get("jobId", "") or
+                    doc.get("requisitionId", "") or j.get("_id", "")
                 )
-                url = doc.get("applyUrl", "") or doc.get("jobUrl", "") or doc.get("url", "") or f"{base_url}/job/{job_id}"
+                url = (
+                    doc.get("applyUrl", "") or doc.get("jobUrl", "") or
+                    doc.get("url", "") or f"{base_url}/job/{job_id}"
+                )
                 if title and job_id:
                     jobs.append(Job(
                         title=title,
@@ -1807,25 +1978,33 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                         hospital_name=doc.get("facility", "") or doc.get("company", "") or system,
                         city=city, state=state,
                         location=loc or f"{city}, {state}",
-                        specialty=doc.get("category", "") or doc.get("jobCategory", "") or doc.get("department", ""),
-                        job_type=doc.get("employmentType", "") or doc.get("jobType", "") or doc.get("type", ""),
+                        specialty=(
+                            doc.get("category", "") or doc.get("jobCategory", "") or
+                            doc.get("department", "")
+                        ),
+                        job_type=(
+                            doc.get("employmentType", "") or doc.get("jobType", "") or
+                            doc.get("type", "")
+                        ),
                         url=url,
                         job_id=job_id,
-                        posted_date=str(doc.get("postedDate", "") or doc.get("datePosted", "") or doc.get("postDate", ""))[:10],
-                        description=strip_html(str(doc.get("description", "") or doc.get("shortDescription", ""))),
+                        posted_date=str(
+                            doc.get("postedDate", "") or doc.get("datePosted", "") or
+                            doc.get("postDate", "")
+                        )[:10],
+                        description=strip_html(str(
+                            doc.get("description", "") or doc.get("shortDescription", "")
+                        )),
                         ats_platform="Phenom",
                     ))
 
-            # Various total count field names across Phenom implementations
             total = (
-                data.get("total") or
-                data.get("count") or
-                data.get("total_entries") or
-                data.get("totalCount") or
+                data.get("total") or data.get("count") or data.get("total_entries") or
+                data.get("totalCount") or data.get("totalHits") or
                 (data.get("hits", {}) or {}).get("total", {}).get("value") or
                 len(listings)
             )
-            if isinstance(total, dict):  # ES total: {"value": N, "relation": "eq"}
+            if isinstance(total, dict):
                 total = total.get("value", len(listings))
             offset += 50
             if offset >= int(total) or len(listings) < 50:
@@ -3775,6 +3954,7 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
 
     logger.info(f"  CHS: {len(jobs):,} total jobs")
     return jobs
+
 
 # ══════════════════════════════════════════════════════════════════════════
 #  MASTER RUNNER
