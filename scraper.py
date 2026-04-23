@@ -1928,6 +1928,10 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     if isinstance(v, list) and v:
                         return v
                 hits = d.get("hits")
+                # Phenom widgets modern shape: `hits` is a direct list, with `totalHits` as sibling
+                if isinstance(hits, list) and hits:
+                    return hits
+                # Phenom legacy / ES-style: {"hits": {"hits": [...]}}
                 if isinstance(hits, dict):
                     inner = hits.get("hits")
                     if isinstance(inner, list) and inner:
