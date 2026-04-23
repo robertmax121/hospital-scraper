@@ -861,6 +861,9 @@ TALENTBREW_ORGS = {
     "CommonSpirit Health":      ("https://www.commonspirit.careers/search-jobs", 100),
     # Methodist Healthcare (HCA San Antonio) — same Talemetry JSON platform as HCA
     "Methodist Healthcare": ("https://www.joinmethodist.com/search/jobs", 25),
+    # ScionHealth — confirmed TalentBrew (company 40922, tbcdn.talentbrew.com)
+    # 61 long-term acute care + 15 community hospitals across 26 states
+    "ScionHealth":              ("https://jobs.scionhealth.com/search-jobs", 25),
 }
 
 
