@@ -832,7 +832,7 @@ ICIMS_ORGS = {
     "MedStar Health":         "careers.medstarhealth.org",
     "Kettering Health":       "careers-ketteringhealth.icims.com",
     "Loma Linda University":  "careers-lluh.icims.com",
-    "Texas Health Resources": "careers-texashealth.icims.com",
+    # "Texas Health Resources" moved to FINDLY_CWS_ORGS — uses Findly/m-cloud.io, not iCIMS
     "Cone Health":            "careers-conehealth.icims.com",
     "Monument Health":        "careers-monument.icims.com",
     "Owensboro Health":       "careers-owensborohealth.icims.com",
@@ -1334,6 +1334,129 @@ async def run_icims(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  iCIMS: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  FINDLY CWS (Careers Widget Service) — jobsapi-internal.m-cloud.io
+#
+#  Findly is a career-site aggregator that fronts ATS backends (most commonly
+#  Taleo) with a clean JSON API. Sites typically have URLs like jobs.{hospital}.org
+#  and embed a cws_opts JavaScript config with the org ID.
+#
+#  Endpoint (confirmed from Texas Health HAR capture, 2026-04):
+#    GET https://jobsapi-internal.m-cloud.io/api/job?callback=CWS.jobs.jobCallback
+#        &Organization={org_id}&facet[]=ats_portalid:{portal_id}
+#        &Limit=100&offset={offset}&sortfield=open_date&sortorder=descending
+#
+#  Response is JSONP-wrapped: CWS.jobs.jobCallback({ totalHits, queryResult:[...] });
+#  Each queryResult item has: id, title, primary_city, primary_state, open_date,
+#  description, url, primary_category, brand, shift, job_type, etc.
+#
+#  No auth required, no cookies, no proxies needed — clean public API.
+#  API accepts Limit up to 100 (faster than the website's default of 10).
+#
+#  Format: "System": (org_id, portal_id)
+# ══════════════════════════════════════════════════════════════════════════
+FINDLY_CWS_ORGS = {
+    # Confirmed from HAR capture of jobs.texashealth.org
+    "Texas Health Resources": ("2277", "TexasHealth-Taleo-External"),
+    # Add more orgs here as they're discovered. Discovery process:
+    #   1. Visit jobs.{hospital}.org/listjobs/ (or similar careers page)
+    #   2. View source → find cws_opts JavaScript var
+    #   3. Read "org" value and the ats_portalid facet used in their API calls
+}
+
+
+async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    """Scrape a Findly CWS career portal. Clean JSONP API, paginated."""
+    import re as _re
+    org_id, portal_id = org_data
+    jobs: list[Job] = []
+    offset = 1  # Findly uses 1-indexed offset
+    limit = 100  # API max; website uses 10 but the endpoint accepts up to 100
+    base_api = "https://jobsapi-internal.m-cloud.io/api/job"
+
+    while True:
+        params = {
+            "callback": "CWS.jobs.jobCallback",
+            "sortfield": "open_date",
+            "sortorder": "descending",
+            "facet[]": f"ats_portalid:{portal_id}",
+            "Limit": str(limit),
+            "Organization": org_id,
+            "offset": str(offset),
+            "useBooleanKeywordSearch": "true",
+        }
+        try:
+            async with req(session, "get", base_api, params=params,
+                headers={**HEADERS, "Accept": "*/*", "Referer": f"https://jobsapi-internal.m-cloud.io/"},
+                ssl=False, proxy=proxies.get(),
+                timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"Findly {system}: HTTP {r.status} at offset {offset}")
+                    break
+                body = await r.text()
+        except Exception as e:
+            logger.info(f"Findly {system}: {e}")
+            break
+
+        # Strip JSONP wrapper: CWS.jobs.jobCallback({...});
+        m = _re.match(r'[^(]*\((.*)\);?\s*$', body, _re.DOTALL)
+        inner = m.group(1) if m else body
+        try:
+            data = json.loads(inner)
+        except Exception as e:
+            logger.info(f"Findly {system}: JSON parse error: {e}")
+            break
+
+        items = data.get("queryResult", []) or []
+        total = data.get("totalHits", 0)
+
+        if not items:
+            break
+
+        for j in items:
+            title = j.get("title", "") or ""
+            city = j.get("primary_city", "") or ""
+            state = j.get("primary_state", "") or ""
+            ref = j.get("ref", "") or str(j.get("id", ""))
+            url = j.get("url") or j.get("seo_url") or ""
+            open_date = j.get("open_date", "") or ""
+            brand = j.get("brand", "") or system  # e.g., "Texas Health HEB"
+            jobs.append(Job(
+                title=title,
+                hospital_system=system,
+                hospital_name=brand if brand else system,
+                city=city,
+                state=state,
+                location=f"{city}, {state}".strip(", "),
+                specialty=j.get("primary_category", "") or j.get("parent_category", ""),
+                job_type=j.get("job_type", "") or j.get("employment_type", ""),
+                url=url,
+                job_id=ref,
+                posted_date=str(open_date)[:10] if open_date else "",
+                description=strip_html(j.get("description", "") or ""),
+                ats_platform="Findly",
+            ))
+
+        offset += limit
+        if offset > total:
+            break
+        await jitter()
+
+    logger.info(f"  Findly {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def run_findly(session) -> list[Job]:
+    logger.info(f"Findly: scraping {len(FINDLY_CWS_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_findly(session, s, o) for s, o in FINDLY_CWS_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Findly total: {len(jobs):,} jobs")
     return jobs
 
 
@@ -3988,6 +4111,7 @@ async def run_all() -> list[dict]:
             run_workday(proxy_session),
             run_taleo(direct_session),       # direct — no ssl=False
             run_icims(proxy_session),
+            run_findly(proxy_session),   # NEW: Findly CWS / jobsapi-internal.m-cloud.io (Texas Health + future orgs)
             run_greenhouse(proxy_session),
             run_smartrecruiters(proxy_session),
             run_lever(proxy_session),
