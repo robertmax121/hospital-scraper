@@ -196,7 +196,7 @@ WORKDAY_TENANTS = {
     "Halifax Health":            ("halifaxhealth", "12", "HalifaxHealth"),
     "Healogics":                 ("healogics", "5", "healogics"),
     "Hendricks Regional Health": ("hendricks", "1", "Hendricks_External_Career_Site"),
-    "Hartford HealthCare":       ("hhc", "5", "HHC"),
+    "Houston Healthcare":        ("hhc", "5", "HHC"),  # Corrected from "Hartford HealthCare" — tenant 'hhc' is Houston Healthcare (GA); Hartford uses Phenom scraper below
     "HRHS":                      ("hrhs", "1", "Careers"),
     "HSHS Hospitals":            ("hshs", "1", "hshscareers"),
     "Intermountain Health (IMH)":("imh",                   "108","IntermountainCareers"),
@@ -216,7 +216,7 @@ WORKDAY_TENANTS = {
     "Monument Health":           ("monumenthealth", "1", "Goldcareers"),
     "MultiCare Health":          ("multicare", "1", "multicare"),
     "Northeast Georgia Health":  ("nghs", "1", "External"),
-    "North Shore Health System": ("nshs", "1", "ns-eeh"),
+    "Endeavor Health":           ("nshs", "1", "ns-eeh"),  # Renamed: NorthShore + Edward-Elmhurst merged into Endeavor Health (2024). Old key was "North Shore Health System".
     "NYU Langone Health":        ("nyuhs", "12", "nyuhscareers1"),
     "Owensboro Health":          ("owensborohealth", "1", "owensborohealth"),
     "Phelps Health":             ("phelpshealth", "5", "Phelps"),
@@ -237,7 +237,7 @@ WORKDAY_TENANTS = {
     "UMass Memorial Health":     ("ummh", "1", "Careers"),
     "UofL Health":               ("uoflhealth", "1", "UofLHealthCareers"),
     "Vanderbilt (VUMC)":         ("vumc", "1", "vumccareers"),
-    "Wheaton Franciscan / WTH":  ("wth",                   "501","WTH"),
+    "West Tennessee Healthcare": ("wth",                   "501","WTH"),  # Corrected: Wheaton Franciscan ceased to exist in 2016 (acquired by Ascension); tenant 'wth' is West Tennessee Healthcare in Jackson, TN
     "WVU Medicine":              ("wvumedicine", "1", "WVUH"),
     # ── Added from scraper1.xlsx expansion ──
     "UW Medicine":               ("uw", "5", "UWHires"),
