@@ -1693,12 +1693,17 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         hits = data.get("hits")
         if isinstance(hits, dict) and isinstance(hits.get("hits"), list) and hits["hits"]:
             return True
+        # Phenom widgets direct hits list (modern shape, sibling of totalHits)
+        if isinstance(hits, list) and hits and isinstance(hits[0], dict):
+            return True
         # Bryan Health style: total_entries > 0
         if data.get("total_entries", 0) > 0:
             return True
-        # Widget style: totalHits > 0 with data list
-        if data.get("totalHits", 0) > 0:
-            return True
+        # NOTE: we do NOT accept bare totalHits > 0 — Phenom's `refineSearch`
+        # widget returns totalHits populated with aggregation counts but
+        # WITHOUT actual job listings. Only `latestJobs` and `jobSearch` return
+        # real data. Requiring an actual list above ensures we skip refineSearch
+        # and try the next payload.
         return False
 
     # ── Phase 0: Establish session cookies ────────────────────────────────
@@ -1778,7 +1783,31 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     if not api_url:
         widgets_url = f"{base_url}/widgets"
         widget_payloads = [
-            # refineSearch — most common on newer Phenom sites
+            # latestJobs — the widget that actually returns job listings.
+            # Tried first because refineSearch (below) only returns aggregation
+            # counts, not actual jobs. Jackson Health works via this endpoint.
+            {
+                "lang": "en_us",
+                "deviceType": "desktop",
+                "country": "us",
+                "pageName": "search-results",
+                "ddoKey": "latestJobs",
+                "from": 0,
+                "size": 10,
+                "sortBy": "",
+            },
+            # jobSearch — older widget format, also returns real listings
+            {
+                "lang": "en_us",
+                "deviceType": "desktop",
+                "ddoKey": "jobSearch",
+                "from": 0,
+                "size": 10,
+                "query": "",
+            },
+            # refineSearch — faceted-search endpoint. Only returns counts &
+            # aggregations, NOT job listings. Kept as last resort in case some
+            # Phenom variant does return hits here.
             {
                 "lang": "en_us",
                 "deviceType": "desktop",
@@ -1792,26 +1821,6 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 "locations": [],
                 "postedDateRange": "",
                 "searchType": "search",
-            },
-            # latestJobs — recommendation-style endpoint
-            {
-                "lang": "en_us",
-                "deviceType": "desktop",
-                "country": "us",
-                "pageName": "search-results",
-                "ddoKey": "latestJobs",
-                "from": 0,
-                "size": 10,
-                "sortBy": "",
-            },
-            # jobSearch — older widget format
-            {
-                "lang": "en_us",
-                "deviceType": "desktop",
-                "ddoKey": "jobSearch",
-                "from": 0,
-                "size": 10,
-                "query": "",
             },
         ]
 
