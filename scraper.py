@@ -1959,7 +1959,8 @@ PHENOM_ORGS = {
     "Roper St. Francis Healthcare": "https://careers.rsfh.com",
     "ScionHealth":                  "https://jobs.scionhealth.com",
     "Temple Health":                "https://careers.templehealth.org",
-    "Atrium Health":                "https://careers.atriumhealth.org",
+    # Atrium Health is on Coveo (not Phenom) — handled by run_atrium() below.
+    # "Atrium Health":              "https://careers.atriumhealth.org",
     "ECU Health":                   "https://careers.ecuhealth.org",
     "Penn Medicine":                "https://careers.pennmedicine.org",
     "UPMC":                         "https://careers.upmc.com",
@@ -2011,9 +2012,11 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
             if isinstance(val, list) and val:
                 return True
         # Check nested: data.jobs, data.entries, etc.
+        # `recommendedJobs` is the recommendationJobsBrowsingHistory payload key
+        # confirmed via Duke HAR — must be in this list or the probe rejects valid data.
         data_val = data.get("data")
         if isinstance(data_val, dict):
-            for key in ("jobs", "entries", "results", "requisitions"):
+            for key in ("jobs", "entries", "results", "requisitions", "recommendedJobs"):
                 if isinstance(data_val.get(key), list) and data_val[key]:
                     return True
         if isinstance(data_val, list) and data_val:
@@ -4447,6 +4450,147 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+#  Atrium Health  —  Coveo-backed careers site, HTML pagination
+# ══════════════════════════════════════════════════════════════════════════
+# Atrium uses careers.atriumhealth.org with Coveo Search rendering job results
+# directly into HTML on each page (25 jobs per page, ~119 pages total ≈ 2,975
+# listings). Cloudflare-protected — needs residential proxy + browser headers.
+#
+# Pagination URL pattern (from sitestats tracker in HAR):
+#   https://careers.atriumhealth.org/search/jobs?page=N&q=&location=
+ATRIUM_BASE = "https://careers.atriumhealth.org"
+
+# Pre-compiled parser: each result is a div.ihrecord.CoveoResult with id="R…",
+# wrapping a CoveoResultLink anchor (title + href to /jobs/{ID}-{slug}) and a
+# page-description div carrying location text ("City, ST, United States").
+_ATRIUM_RESULT_RE = re.compile(
+    r'<div class="ihrecord CoveoResult"[^>]*id="R(\d+)"[^>]*>'
+    r'(?:[\s\S]{0,2500}?)<a class="CoveoResultLink" href="(https://careers\.atriumhealth\.org/jobs/[^"]+)">'
+    r'([^<]+)</a>'
+    r'(?:[\s\S]{0,1200}?)<div class="page-description">([\s\S]{0,500}?)</div>',
+    re.IGNORECASE,
+)
+
+
+def _parse_atrium_html(html: str, page: int) -> tuple[list[Job], int]:
+    """Parse one Atrium results page. Returns (jobs, max_page_seen).
+    max_page_seen is the largest page number referenced in pagination links —
+    used to know when to stop iterating."""
+    out: list[Job] = []
+    for r_id, href, title, desc in _ATRIUM_RESULT_RE.findall(html):
+        title = re.sub(r'&amp;', '&', title).strip()
+        if not title or not r_id:
+            continue
+        # Location text looks like:  "                    Charlotte,
+        #                                NC,
+        #                                United States"
+        loc_clean = re.sub(r'\s+', ' ', desc).strip().rstrip(',').strip()
+        # Strip ", United States" suffix
+        loc_clean = re.sub(r',?\s*United States\s*$', '', loc_clean, flags=re.IGNORECASE).strip()
+        # Pull state from "City, ST"
+        m = re.search(r',\s*([A-Z]{2})\s*,?\s*$', loc_clean)
+        state = m.group(1) if m else ""
+        city = loc_clean.rsplit(",", 1)[0].strip() if state else loc_clean
+        out.append(Job(
+            title=title,
+            hospital_system="Atrium Health",
+            hospital_name="Atrium Health",
+            city=city, state=state,
+            location=f"{city}, {state}" if state else city,
+            specialty="",
+            job_type="",
+            url=href,
+            job_id=str(r_id),
+            posted_date="",
+            description="",
+            ats_platform="Coveo",
+        ))
+    # Detect max page index referenced in pagination links
+    page_nums = re.findall(r'href="[^"]*page=(\d+)[^"]*"', html)
+    max_page = max((int(p) for p in page_nums), default=page)
+    return out, max_page
+
+
+async def scrape_atrium_page(session: aiohttp.ClientSession, page: int) -> tuple[list[Job], int, bool]:
+    """Fetch one page. Returns (jobs, max_page_seen, ok)."""
+    url = f"{ATRIUM_BASE}/search/jobs?page={page}&q=&location="
+    headers = {
+        "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Referer":         f"{ATRIUM_BASE}/search/jobs",
+        "Sec-Fetch-Dest":  "document",
+        "Sec-Fetch-Mode":  "navigate",
+        "Sec-Fetch-Site":  "same-origin",
+        "Upgrade-Insecure-Requests": "1",
+    }
+    for attempt in range(3):
+        try:
+            async with session.get(
+                url, headers=headers,
+                proxy=proxies.get(), ssl=False,
+                timeout=aiohttp.ClientTimeout(total=30),
+                allow_redirects=True,
+            ) as r:
+                if r.status != 200:
+                    logger.info(f"Atrium page {page}: HTTP {r.status} (attempt {attempt+1})")
+                    await asyncio.sleep(1.5)
+                    continue
+                html = await r.text(errors="replace")
+                if "<html" not in html.lower() or len(html) < 5000:
+                    logger.info(f"Atrium page {page}: short response {len(html)}b (attempt {attempt+1})")
+                    await asyncio.sleep(1.5)
+                    continue
+            jobs, max_page = _parse_atrium_html(html, page)
+            return jobs, max_page, True
+        except Exception as e:
+            logger.info(f"Atrium page {page}: {e} (attempt {attempt+1})")
+            await asyncio.sleep(1.5)
+    return [], page, False
+
+
+async def run_atrium(session: aiohttp.ClientSession) -> list[Job]:
+    logger.info("Atrium Health: starting Coveo HTML scrape...")
+    all_jobs: list[Job] = []
+
+    # Page 1 sets the upper bound from pagination links
+    p1_jobs, max_page, ok = await scrape_atrium_page(session, 1)
+    if not ok:
+        logger.warning("Atrium Health: page 1 failed — aborting (likely IP-blocked)")
+        return []
+    all_jobs.extend(p1_jobs)
+    page_cap = min(max_page, 200)   # safety cap; HAR showed ~119 pages
+    logger.info(f"  Atrium: page 1 → {len(p1_jobs)} jobs, will sweep through page {page_cap}")
+
+    # Pages 2..N sequentially (Atrium 403s easily on parallel hammering)
+    consecutive_zero = 0
+    for page in range(2, page_cap + 1):
+        jobs, _, ok = await scrape_atrium_page(session, page)
+        if not ok:
+            consecutive_zero += 1
+            if consecutive_zero >= 3: break
+            continue
+        if not jobs:
+            consecutive_zero += 1
+            if consecutive_zero >= 5: break
+        else:
+            consecutive_zero = 0
+        all_jobs.extend(jobs)
+        if page % 25 == 0:
+            logger.info(f"  Atrium: through page {page}, {len(all_jobs):,} jobs so far")
+        await asyncio.sleep(0.5)
+
+    # Dedupe within run on job_id
+    seen, uniq = set(), []
+    for j in all_jobs:
+        if j.job_id in seen: continue
+        seen.add(j.job_id); uniq.append(j)
+    logger.info(f"  Atrium Health: {len(uniq):,} jobs")
+    return uniq
+
+
+# ══════════════════════════════════════════════════════════════════════════
 #  TRAVEL JOBS  —  separate product, separate Supabase table (travel_jobs)
 # ══════════════════════════════════════════════════════════════════════════
 # Travel nursing jobs live in their own bucket. They're scraped from staffing
@@ -4556,7 +4700,9 @@ async def scrape_vivian_page(session: aiohttp.ClientSession,
         "Origin":       "https://www.vivian.com",
     }
     try:
-        async with req(session, "POST", url, json=body, headers=headers,
+        # Note: `req()` does getattr(session, method) — aiohttp's method names
+        # are lowercase ("post"), not uppercase, or it raises AttributeError.
+        async with req(session, "post", url, json=body, headers=headers,
                        timeout=aiohttp.ClientTimeout(total=30)) as r:
             if r.status != 200:
                 logger.info(f"Vivian {employment_type} page {page}: HTTP {r.status}")
@@ -4819,6 +4965,7 @@ async def run_all() -> list[dict]:
             run_paycor(proxy_session),
             run_hca(direct_session),    # HCA Healthcare — HTML scrape, direct (no proxy) for 1.75MB pages
             run_chs(proxy_session),
+            run_atrium(proxy_session),  # Atrium Health — Coveo HTML pagination via residential proxy
             return_exceptions=True,
         )
 
