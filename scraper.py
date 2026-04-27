@@ -4151,12 +4151,27 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
 
     # Optional: stealth patches that defeat headless detection (navigator.webdriver,
     # missing chrome.runtime, plugins shim, etc.). HARD-recommended for HCA.
+    #
+    # playwright-stealth has TWO incompatible APIs depending on version:
+    #   1.x — `from playwright_stealth import stealth_async`  (function, deprecated)
+    #   2.x — `from playwright_stealth import Stealth`        (class with .apply_stealth_async)
+    # `>=1.0.6` in requirements.txt pulls 2.x by default. Detect which is present
+    # and wrap the 2.x class API in a function with the same shape as 1.x.
+    stealth_async = None
     try:
-        from playwright_stealth import stealth_async
+        # 2.x API first — current PyPI default
+        from playwright_stealth import Stealth as _StealthCls
+        _stealth_obj = _StealthCls()
+        async def stealth_async(page):  # noqa: F811
+            await _stealth_obj.apply_stealth_async(page)
+        logger.info("HCA Healthcare: playwright-stealth 2.x detected (Stealth class API)")
     except ImportError:
-        logger.warning("HCA Healthcare: playwright-stealth NOT installed — bot detection likely. "
-                       "Add 'playwright-stealth' to requirements.txt for the next run.")
-        stealth_async = None
+        try:
+            from playwright_stealth import stealth_async  # noqa: F401
+            logger.info("HCA Healthcare: playwright-stealth 1.x detected (stealth_async function API)")
+        except ImportError:
+            logger.warning("HCA Healthcare: playwright-stealth NOT installed — bot detection likely. "
+                           "Add 'playwright-stealth' to requirements.txt for the next run.")
 
     logger.info("HCA Healthcare: launching Chromium for Cloudflare-protected scrape...")
     all_jobs: list[Job] = []
