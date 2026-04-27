@@ -254,6 +254,7 @@ CAREER_SITE_FALLBACKS = [
 ]
 
 
+
 ##############################################################################
 #  LOCATION LOOKUP TABLES
 #  Two-tier fallback applied in normalize_job() when city/state is blank
@@ -486,7 +487,7 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "adventist health":           ("Roseville",         "CA"),
     "dignity health":             ("San Francisco",     "CA"),
     "bon secours":                ("Richmond",          "VA"),
-    "essentia health":            ("Duluth",            "MN"),
+    "essentia health":             ("Duluth",            "MN"),
     "fairview health":            ("Minneapolis",       "MN"),
     "bestcare health":            ("Bend",              "OR"),
     "bronson healthcare":         ("Kalamazoo",         "MI"),
@@ -533,7 +534,7 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "bozeman health":             ("Bozeman",           "MT"),
     "broadlawns medical center":  ("Des Moines",        "IA"),
     "hendricks regional health":  ("Danville",          "IN"),
-    "harrison health":            ("Bremerton",         "WA"),
+    "harrison health":             ("Bremerton",         "WA"),
     "jupiter medical center":     ("Jupiter",           "FL"),
     "kaweah health":              ("Visalia",           "CA"),
     "lawrence memorial hospital": ("Lawrence",          "KS"),
@@ -567,6 +568,8 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "commonspirit health":        ("Chicago",           "IL"),  # last resort for cities not in COMMONSPIRIT_CITY_STATE
     # Greenhouse
     "davita":                     ("Denver",            "CO"),
+    # AdventHealth — Findly Google CTS (added 2026-04-24)
+    "adventhealth":               ("Altamonte Springs", "FL"),
 }
 
 # Normalize system keys to lowercase
@@ -667,6 +670,7 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
                      and not STATE_ABBR.get(p.lower(), "")), parts[0])
 
     return city.strip(), state.upper() if state else ""
+
 
 async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_data: tuple) -> list[Job]:
     tenant, wd_num, primary_site = tenant_data
@@ -867,6 +871,7 @@ TALENTBREW_ORGS = {
 }
 
 
+
 ##############################################################################
 #  COMMONSPIRIT HEALTH — city slug → state lookup
 #  CommonSpirit operates in 21 states. The TalentBrew URL contains city but
@@ -980,6 +985,7 @@ _cs_extra = {}
 for k, v in COMMONSPIRIT_CITY_STATE.items():
     _cs_extra[k.replace("-", " ").title().lower()] = v
 COMMONSPIRIT_CITY_STATE.update(_cs_extra)
+
 
 async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_url: str, rpp: int = 100) -> list[Job]:
     """Scrape a TalentBrew career site via their paginated results endpoint.
@@ -1236,7 +1242,7 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
     offset = 0
     while True:
         try:
-            async with req(session, "get", 
+            async with req(session, "get",
                 url,
                 params={
                     "ss": "1",
@@ -1464,6 +1470,184 @@ async def run_findly(session) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+#  FINDLY GOOGLE CTS — jobsapi-google.m-cloud.io  (NEW — added 2026-04-24)
+#
+#  Findly's newer backend, built on Google Cloud Talent Solution. Different
+#  endpoint, identifier format, and response shape from legacy Findly CWS.
+#  AdventHealth runs on this backend; other large systems (Corewell, Baptist
+#  South FL candidates, etc.) are likely candidates — check the careers page
+#  Network tab for calls to jobsapi-google.m-cloud.io.
+#
+#  Endpoint (confirmed from jobs.adventhealth.com HAR capture, 2026-04-24):
+#    GET https://jobsapi-google.m-cloud.io/api/job/search
+#        ?callback=CWS.jobs.jobCallback
+#        &companyName=companies/{uuid}                      ← Google CTS identifier
+#        &customAttributeFilter=(ats_portalid="X" OR ats_portalid="Y")
+#        &pageSize=100&offset={n}
+#        &orderBy=posting_publish_time desc
+#
+#  Response is JSONP-wrapped with totalHits, nextPageToken, searchResults[]:
+#    {
+#      "totalHits": 4559,
+#      "nextPageToken": "...",
+#      "searchResults": [
+#         { "job": { "title", "ref", "id", "primary_city", "primary_state",
+#                    "primary_zip", "primary_country", "description",
+#                    "company_name", "primary_category", "ats_portalid", ...}}
+#      ]
+#    }
+#
+#  No auth, cookies, or proxies required — clean public JSON.
+#
+#  Discovery path for new orgs:
+#    1. Visit /job-search-results/ (or similar) on the careers domain
+#    2. Open DevTools Network, filter for "jobsapi-google"
+#    3. From any /api/job/search request, extract:
+#         - companyName UUID (e.g. companies/657741e2-...)
+#         - ats_portalid values from the customAttributeFilter
+#         - the base careers site URL for constructing apply URLs
+#
+#  Format: "System": (company_uuid, [portal_id, ...], "https://jobs.{domain}")
+# ══════════════════════════════════════════════════════════════════════════
+FINDLY_GOOGLE_ORGS = {
+    "AdventHealth": (
+        "657741e2-bfab-4de3-a2e1-660a06974a62",
+        ["AdventHealth-Workday-Mulesoft", "Manual Postings"],
+        "https://jobs.adventhealth.com",
+    ),
+}
+
+
+async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    """Scrape a Findly CWS career portal on the Google CTS backend.
+    Differs from scrape_findly in endpoint, identifier format, and response shape.
+    """
+    import re as _re
+    company_uuid, portal_ids, base_site = org_data
+    jobs: list[Job] = []
+
+    # Build ats_portalid filter — quoted OR chain across all portals
+    filter_str = " OR ".join(f'ats_portalid="{p}"' for p in portal_ids)
+    attr_filter = f"({filter_str})"
+
+    api = "https://jobsapi-google.m-cloud.io/api/job/search"
+    page_size = 100
+    offset = 0
+    next_page_token: Optional[str] = None
+
+    # Google CTS allows offset-based pagination up to ~5000; beyond that (rare for a
+    # single system), we fall through to pageToken-based pagination.
+    pages_fetched = 0
+    while True:
+        params = {
+            "callback": "CWS.jobs.jobCallback",
+            "pageSize": str(page_size),
+            "companyName": f"companies/{company_uuid}",
+            "customAttributeFilter": attr_filter,
+            "orderBy": "posting_publish_time desc",
+        }
+        if next_page_token:
+            params["pageToken"] = next_page_token
+        else:
+            params["offset"] = str(offset)
+
+        try:
+            async with req(session, "get", api, params=params,
+                headers={**HEADERS, "Accept": "*/*",
+                         "Referer": f"{base_site}/job-search-results/"},
+                ssl=False, proxy=proxies.get(),
+                timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"FindlyGoogle {system}: HTTP {r.status} at offset {offset}")
+                    break
+                body = await r.text()
+        except Exception as e:
+            logger.info(f"FindlyGoogle {system}: {e}")
+            break
+
+        # Strip JSONP wrapper: CWS.jobs.jobCallback({...});
+        m = _re.match(r'[^(]*\((.*)\);?\s*$', body, _re.DOTALL)
+        inner = m.group(1) if m else body
+        try:
+            data = json.loads(inner)
+        except Exception as e:
+            logger.info(f"FindlyGoogle {system}: JSON parse error: {e}")
+            break
+
+        results = data.get("searchResults", []) or []
+        total = data.get("totalHits", 0)
+
+        if pages_fetched == 0:
+            logger.info(f"FindlyGoogle {system}: totalHits={total}")
+
+        if not results:
+            break
+
+        for r_item in results:
+            j = r_item.get("job", {}) or {}
+            if not isinstance(j, dict):
+                continue
+            title = j.get("title", "") or ""
+            city = j.get("primary_city", "") or ""
+            state = j.get("primary_state", "") or ""
+            ref = j.get("ref", "") or str(j.get("id", "") or "")
+            brand = j.get("company_name", "") or system
+            category = j.get("primary_category", "") or ""
+            description = j.get("description", "") or ""
+            posted_raw = j.get("posting_publish_time", "") or j.get("open_date", "") or ""
+            posted = str(posted_raw)[:10] if posted_raw else ""
+            # Findly's standard apply URL pattern is /job/{ref}/
+            url = f"{base_site}/job/{ref}/" if ref else base_site
+
+            jobs.append(Job(
+                title=title,
+                hospital_system=system,
+                hospital_name=brand if brand else system,
+                city=city,
+                state=state,
+                location=f"{city}, {state}".strip(", "),
+                specialty=category,
+                job_type=j.get("job_type", "") or j.get("employment_type", ""),
+                url=url,
+                job_id=str(j.get("id", "") or ref),
+                posted_date=posted,
+                description=strip_html(description),
+                ats_platform="Findly-Google",
+            ))
+
+        pages_fetched += 1
+        next_page_token = data.get("nextPageToken")
+        offset += page_size
+
+        # Stop conditions:
+        #  - fewer results than page_size → last page
+        #  - offset ≥ totalHits with no pageToken → done
+        #  - safety cap to prevent infinite loop
+        if len(results) < page_size:
+            break
+        if not next_page_token and offset >= total:
+            break
+        if offset > 20000:
+            logger.info(f"FindlyGoogle {system}: hit safety cap at offset {offset}")
+            break
+        await jitter()
+
+    logger.info(f"  FindlyGoogle {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def run_findly_google(session) -> list[Job]:
+    logger.info(f"FindlyGoogle: scraping {len(FINDLY_GOOGLE_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_findly_google(session, s, o) for s, o in FINDLY_GOOGLE_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  FindlyGoogle total: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
 #  MAJOR HEALTH SYSTEM CAREER PORTALS (formerly "SuccessFactors")
 #  These orgs use custom career portals — scraped via Playwright
 #  They are added to CUSTOM_SITES in run_playwright_scrapers()
@@ -1497,7 +1681,7 @@ GREENHOUSE_ORGS = {
 
 async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
     try:
-        async with req(session, "get", 
+        async with req(session, "get",
             f"https://boards-api.greenhouse.io/v1/boards/{org}/jobs?content=true",
             headers=HEADERS, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
             if r.status != 200:
@@ -1564,7 +1748,7 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
     jobs, offset = [], 0
     while True:
         try:
-            async with req(session, "get", 
+            async with req(session, "get",
                 f"https://api.smartrecruiters.com/v1/companies/{org}/postings",
                 params={"limit": 100, "offset": offset},
                 headers=HEADERS, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
@@ -1627,7 +1811,7 @@ LEVER_ORGS = {
 
 async def scrape_lever(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
     try:
-        async with req(session, "get", 
+        async with req(session, "get",
             f"https://api.lever.co/v0/postings/{org}?mode=json",
             headers=HEADERS, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
             if r.status != 200:
@@ -2203,7 +2387,7 @@ async def scrape_adp(session: aiohttp.ClientSession, system: str, cid: str) -> l
     offset = 0
     while True:
         try:
-            async with req(session, "get", 
+            async with req(session, "get",
                 json_url,
                 params={
                     "cid": cid,
@@ -2303,14 +2487,14 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
     page = 1
     while True:
         try:
-            async with req(session, "get", 
+            async with req(session, "get",
                 api_url,
                 params={"page": page, "per_page": 25, "keywords": ""},
                 headers={**HEADERS, "X-Requested-With": "XMLHttpRequest"}, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)
             ) as r:
                 if r.status != 200:
                     # Try alternate endpoint
-                    async with req(session, "get", 
+                    async with req(session, "get",
                         f"{base}/jobs/search",
                         params={"page": page, "per_page": 25},
                         headers=HEADERS, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)
@@ -2380,7 +2564,7 @@ async def scrape_recruitingcom(session: aiohttp.ClientSession, system: str, org:
     page = 1
     while True:
         try:
-            async with req(session, "get", 
+            async with req(session, "get",
                 api_url,
                 params={"page": page, "per_page": 50},
                 headers={
@@ -2468,7 +2652,7 @@ async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tu
 
     # Infor CloudSuite HCM — Lawson CandidateSelfService JSON API
     base = f"https://{org_id}.inforcloudsuite.com"
-    
+
     # Try multiple endpoint patterns
     endpoints = [
         # Newer OData v1
@@ -3461,8 +3645,7 @@ async def run_playwright_scrapers() -> list[Job]:
 
                 # BSW needs domcontentloaded to avoid hanging on networkidle
                 bsw_site = "bswhealth.com" in url
-                advent_site = "adventhealth.com" in url
-                _wait = "domcontentloaded" if (bsw_site or advent_site) else "networkidle"
+                _wait = "domcontentloaded" if bsw_site else "networkidle"
                 await page.goto(url, wait_until=_wait, timeout=30000)
                 await asyncio.sleep(random.uniform(2, 4))
 
@@ -3479,110 +3662,6 @@ async def run_playwright_scrapers() -> list[Job]:
                             logger.info("BSW: search button not found")
                     except Exception as e:
                         logger.info(f"BSW search trigger: {e}")
-
-                # AdventHealth (Findly) — click Search jobs button then paginate through results
-                if advent_site:
-                    try:
-                        # Click the Search jobs button to trigger initial API call
-                        btn = await page.query_selector("a[href='#'][class*='search'], button[class*='search'], a:has-text('Search jobs'), button:has-text('Search jobs')")
-                        if not btn:
-                            # Try injecting a direct fetch of the results API (Findly pattern)
-                            logger.info("AdventHealth: trying direct results API fetch")
-                        else:
-                            await btn.click()
-                            await asyncio.sleep(5)
-                            logger.info("AdventHealth: clicked search button")
-
-                        # Findly paginates via results endpoint — fetch all pages directly
-                        base_results = "https://jobs.adventhealth.com/job-search-results/results"
-                        page_num = 1
-                        rpp = 100
-                        while True:
-                            try:
-                                resp = await page.evaluate(f"""async () => {{
-                                    const params = new URLSearchParams({{
-                                        ActiveFacetID: '0',
-                                        CurrentPage: '{page_num}',
-                                        RecordsPerPage: '{rpp}',
-                                        TotalContentResults: '',
-                                        Distance: '50',
-                                        RadiusUnitType: '0',
-                                        Keywords: '',
-                                        Location: '',
-                                        ShowRadius: 'False',
-                                        IsPagination: '{str(page_num > 1).lower()}',
-                                        SortCriteria: '0',
-                                        SortDirection: '0',
-                                        SearchType: '5',
-                                        ResultsType: '0',
-                                        fc: '', fl: '', fcf: '', afc: '', afl: '', afcf: ''
-                                    }});
-                                    const r = await fetch('{base_results}?' + params.toString(), {{
-                                        headers: {{'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json, text/javascript, */*'}}
-                                    }});
-                                    return await r.text();
-                                }}""")
-                                import json as _json
-                                try:
-                                    data = _json.loads(resp)
-                                except:
-                                    logger.info(f"AdventHealth page {page_num}: non-JSON response")
-                                    break
-                                has_jobs = data.get("hasJobs", True)
-                                results_html = data.get("results", "")
-                                if not has_jobs or not results_html:
-                                    logger.info(f"AdventHealth: no more jobs at page {page_num}")
-                                    break
-                                # Parse job cards from results HTML
-                                import re as _re
-                                job_links = _re.findall(
-                                    r'href="(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
-                                    results_html
-                                )
-                                title_matches = dict(_re.findall(
-                                    r'data-job-id="(\d+)"[^>]*>\s*<[^>]+>([^<]+)<',
-                                    results_html
-                                ))
-                                seen_ids = set()
-                                page_count = 0
-                                for url_path, city_slug, title_slug, job_id in job_links:
-                                    if job_id in seen_ids:
-                                        continue
-                                    seen_ids.add(job_id)
-                                    page_count += 1
-                                    city_name = city_slug.replace("-", " ").title()
-                                    city_state = COMMONSPIRIT_CITY_STATE.get(city_slug.lower(), "") or                                                  COMMONSPIRIT_CITY_STATE.get(city_name.lower(), "")
-                                    title = title_slug.replace("-", " ").title()
-                                    # Try to get the real title from HTML
-                                    title_m = _re.search(
-                                        rf'href="[^"]*{_re.escape(job_id)}"[^>]*>\s*([^<]+)<',
-                                        results_html
-                                    )
-                                    if title_m:
-                                        title = title_m.group(1).strip()
-                                    jobs.append(Job(
-                                        title=title,
-                                        hospital_system=system_name,
-                                        hospital_name=system_name,
-                                        city=city_name,
-                                        state=city_state,
-                                        location=f"{city_name}, {city_state}" if city_state else city_name,
-                                        specialty="", job_type="",
-                                        url=f"https://jobs.adventhealth.com{url_path}",
-                                        job_id=job_id,
-                                        posted_date="", description="",
-                                        ats_platform="Findly",
-                                    ))
-                                logger.info(f"AdventHealth: page {page_num} → {page_count} jobs (total: {len([j for j in jobs if j.hospital_system == system_name])})")
-                                if page_count < rpp:
-                                    break
-                                page_num += 1
-                                await asyncio.sleep(random.uniform(1, 2))
-                            except Exception as e:
-                                logger.info(f"AdventHealth pagination error: {e}")
-                                break
-                    except Exception as e:
-                        logger.info(f"AdventHealth search trigger: {e}")
 
                 for _ in range(4):
                     await page.evaluate("window.scrollBy(0, 600)")
@@ -4114,7 +4193,8 @@ async def run_all() -> list[dict]:
             run_workday(proxy_session),
             run_taleo(direct_session),       # direct — no ssl=False
             run_icims(proxy_session),
-            run_findly(proxy_session),   # NEW: Findly CWS / jobsapi-internal.m-cloud.io (Texas Health + future orgs)
+            run_findly(proxy_session),           # Findly CWS legacy (Texas Health)
+            run_findly_google(proxy_session),    # Findly CWS Google CTS (AdventHealth) — NEW 2026-04-24
             run_greenhouse(proxy_session),
             run_smartrecruiters(proxy_session),
             run_lever(proxy_session),
