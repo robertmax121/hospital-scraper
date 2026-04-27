@@ -3568,7 +3568,7 @@ async def run_playwright_scrapers() -> list[Job]:
         ("Baylor Scott & White",          "https://jobs.bswhealth.com/us/en/search-results"),
         ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
         # LARGE SYSTEMS — Phenom via Playwright (proxy-free)
-        ("HCA Healthcare",                "https://careers.hcahealthcare.com/us/en/search-results"),
+        # NOTE: HCA Healthcare is handled by dedicated run_hca() — do NOT add here
         ("Ascension Health",              "https://jobs.ascension.org/us/en/search-results"),
         ("Cleveland Clinic",              "https://jobs.clevelandclinic.org/search/"),
         # HCA AFFILIATES
@@ -3976,25 +3976,30 @@ async def run_paycor(session) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  HCA HEALTHCARE — Talemetry HTML scrape (rebuilt 2026-04-27)
+#  HCA HEALTHCARE — Talemetry HTML scrape via Playwright (revised 2026-04-27)
 #
-#  Old /search/jobs.json endpoint returns 403 from Railway IPs (CDN block) and
-#  is gone from the public site anyway — the new Talemetry frontend renders
-#  jobs server-side into the search results HTML. ~16,067 jobs across 643
-#  pages of 25 jobs each.
+#  HCA's career site is fronted by Cloudflare with a JS challenge.
+#  Every aiohttp attempt — proxy or direct — gets HTTP 403:
+#    - April 27 first run (proxy_session, /search/jobs.json):  403
+#    - April 27 second run (direct_session, /search/jobs/in):  403
+#  Cloudflare requires JS execution to set cf_clearance. Playwright is the
+#  only viable path.
 #
-#  Endpoint (confirmed from careers.hcahealthcare.com HAR, 2026-04-27):
-#    GET https://careers.hcahealthcare.com/search/jobs/in
-#        ?ns_from_search=1&ns_radius=40.2336&page=N
-#  Response: full HTML page (~1.75 MB). Each job card matches:
+#  Strategy: open Chromium → navigate page 1 → wait for Cloudflare interstitial
+#  to clear (signalled by 'neu-link' appearing in DOM) → use page.evaluate() to
+#  fire batches of 8 parallel fetch() calls inside the same browser. The
+#  cf_clearance cookie is sent automatically with every request.
+#
+#  ~16,067 jobs across 643 pages of 25 jobs each. Expected runtime: 5-8 min.
+#
+#  HTML structure (each card):
 #    <a class="neu-link" href="https://careers.hcahealthcare.com/jobs/{id}-{slug}">{title}</a>
 #    <div class="neu-text--caption">{hospital_name}</div>
 #    <div class="neu-text--caption neu-margin--bottom-10">{City}, {ST}, United States</div>
 #    ...>work</i> {Full-time|PRN/Per Diem|...}
 #  Total parsed from "Showing 1-25 of N results" on page 1.
-#
-#  Direct connection (no proxy) — 1.75 MB pages truncate on residential proxies.
 # ══════════════════════════════════════════════════════════════════════════
+# HCA_HEADERS retained as fallback for any future direct-aiohttp attempt
 HCA_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -4086,65 +4091,146 @@ async def _fetch_hca_page(session: aiohttp.ClientSession, page: int) -> str:
 
 
 async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
-    """HCA Healthcare — HTML scrape of careers.hcahealthcare.com (Talemetry).
-    Fetches page 1 to learn the total, then fans out the rest in batches of 8.
+    """HCA Healthcare — Playwright scrape of careers.hcahealthcare.com (Talemetry).
+
+    Cloudflare blocks every aiohttp attempt, proxy or direct, with a JS challenge.
+    The only viable path is a real browser:
+      1. Navigate page 1 with Chromium → Cloudflare runs its challenge, sets cf_clearance
+      2. Parse the page-1 HTML to learn total job count
+      3. For pages 2..N, use page.evaluate() to fire 8 parallel fetch() calls inside
+         the browser — the cleared cf_clearance cookie is sent automatically
+      4. Parse each fetched HTML body with the same regex used for page 1
+
+    This keeps the run_all() gather signature compatible (still takes session arg,
+    even though it doesn't use it — Playwright manages its own browser).
     """
-    logger.info("HCA Healthcare: starting Talemetry HTML scrape...")
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        logger.warning("HCA Healthcare: Playwright not installed — skipping")
+        return []
+
+    logger.info("HCA Healthcare: launching Chromium for Cloudflare-protected scrape...")
     all_jobs: list[Job] = []
 
-    # Page 1: gives us the total count and the first 25 jobs
-    html1 = await _fetch_hca_page(session, 1)
-    if not html1:
-        logger.warning("HCA Healthcare: page 1 failed — aborting")
-        return []
-    page1_jobs, total = _parse_hca_html(html1)
-    all_jobs.extend(page1_jobs)
-
-    if total == 0:
-        # Total didn't parse — fall back to "fetch until empty"
-        logger.info(f"HCA: total not detected, page 1 had {len(page1_jobs)} jobs — fetching sequentially until empty")
-        page = 2
-        while True:
-            html = await _fetch_hca_page(session, page)
-            if not html: break
-            pj, _ = _parse_hca_html(html)
-            if not pj: break
-            all_jobs.extend(pj)
-            page += 1
-            await asyncio.sleep(0.5)
-        logger.info(f"  HCA Healthcare: {len(all_jobs):,} jobs")
-        return all_jobs
-
-    pages = (total + 24) // 25
-    logger.info(f"  HCA: {total:,} jobs across {pages} pages, page 1 had {len(page1_jobs)}")
-
-    # Concurrent batched fetch for pages 2..pages
-    BATCH = 8       # 8 in flight — 1.75MB pages × 8 = ~14MB peak per batch
-    PAUSE = 1.5     # seconds between batches
-    for batch_start in range(2, pages + 1, BATCH):
-        batch_pages = list(range(batch_start, min(batch_start + BATCH, pages + 1)))
-        results = await asyncio.gather(
-            *[_fetch_hca_page(session, p) for p in batch_pages],
-            return_exceptions=True,
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox", "--disable-setuid-sandbox",
+                "--disable-blink-features=AutomationControlled",
+                "--disable-dev-shm-usage",
+            ],
         )
-        for p, html in zip(batch_pages, results):
-            if isinstance(html, Exception) or not html:
-                continue
-            pj, _ = _parse_hca_html(html)
-            all_jobs.extend(pj)
-        if batch_start % 80 == 2:  # every 10 batches log progress
-            logger.info(f"  HCA: ...page {min(batch_start + BATCH - 1, pages)}/{pages}, {len(all_jobs):,} jobs so far")
-        await asyncio.sleep(PAUSE)
+        try:
+            ctx = await browser.new_context(
+                viewport={"width": 1440, "height": 900},
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                locale="en-US",
+            )
+            await ctx.add_init_script(
+                "Object.defineProperty(navigator,'webdriver',{get:()=>false})"
+            )
+            page = await ctx.new_page()
+
+            # ── Page 1: navigate, wait for Cloudflare challenge to clear ──
+            url1 = "https://careers.hcahealthcare.com/search/jobs/in?ns_from_search=1&ns_radius=40.2336&page=1"
+            try:
+                await page.goto(url1, wait_until="domcontentloaded", timeout=90000)
+            except Exception as e:
+                logger.warning(f"HCA Healthcare: page 1 navigation failed ({e}) — aborting")
+                await browser.close()
+                return []
+
+            # Wait through Cloudflare interstitial. Job-card class 'neu-link' is the
+            # signal that we're on the real results page, not the challenge page.
+            cleared = False
+            for attempt in range(20):
+                content = await page.content()
+                if "neu-link" in content and "Showing" in content:
+                    cleared = True
+                    break
+                if any(s in content for s in (
+                    "Just a moment", "Checking your browser",
+                    "challenges.cloudflare.com", "cf-browser-verification",
+                )):
+                    await asyncio.sleep(2)
+                    continue
+                await asyncio.sleep(1.5)
+
+            if not cleared:
+                logger.warning("HCA Healthcare: Cloudflare challenge did not clear after 35s — aborting")
+                await browser.close()
+                return []
+
+            html1 = await page.content()
+            page1_jobs, total = _parse_hca_html(html1)
+            all_jobs.extend(page1_jobs)
+
+            if total == 0 or not page1_jobs:
+                logger.warning(f"HCA Healthcare: page 1 cleared but parser found 0 jobs (total={total})")
+                await browser.close()
+                return []
+
+            pages = (total + 24) // 25
+            logger.info(f"  HCA: {total:,} jobs across {pages} pages, page 1: {len(page1_jobs)}")
+
+            # ── Pages 2..N via in-page parallel fetch() ──
+            # Cookies (incl. cf_clearance) ride along automatically.
+            BATCH = 8
+            PAUSE = 0.6  # gentle pacing between batches
+            for batch_start in range(2, pages + 1, BATCH):
+                batch_pages = list(range(batch_start, min(batch_start + BATCH, pages + 1)))
+                try:
+                    htmls = await page.evaluate(
+                        """async (pageNums) => {
+                            const fetchOne = async (p) => {
+                                try {
+                                    const r = await fetch(
+                                        '/search/jobs/in?ns_from_search=1&ns_radius=40.2336&page=' + p,
+                                        { credentials: 'include',
+                                          headers: { 'Accept': 'text/html,application/xhtml+xml' } }
+                                    );
+                                    if (!r.ok) return '';
+                                    return await r.text();
+                                } catch (e) { return ''; }
+                            };
+                            return await Promise.all(pageNums.map(fetchOne));
+                        }""",
+                        batch_pages,
+                    )
+                    for p, html in zip(batch_pages, htmls):
+                        if not html or len(html) < 10000:
+                            continue
+                        pj, _ = _parse_hca_html(html)
+                        all_jobs.extend(pj)
+                except Exception as e:
+                    logger.info(f"HCA: batch starting at page {batch_start} failed: {e}")
+
+                # Periodic progress log every 10 batches
+                if (batch_start - 2) % (BATCH * 10) == 0:
+                    logger.info(
+                        f"  HCA: ...through page {min(batch_start + BATCH - 1, pages)}/{pages}, "
+                        f"{len(all_jobs):,} jobs so far"
+                    )
+                await asyncio.sleep(PAUSE)
+
+        finally:
+            try: await browser.close()
+            except Exception: pass
 
     # Dedupe within HCA in case same job_id appeared on overlapping pages
     seen = set()
-    unique_jobs = []
+    unique_jobs: list[Job] = []
     for j in all_jobs:
-        if j.job_id in seen: continue
+        if j.job_id in seen:
+            continue
         seen.add(j.job_id)
         unique_jobs.append(j)
 
-    logger.info(f"  HCA Healthcare: {len(unique_jobs):,} jobs ({len(all_jobs)-len(unique_jobs)} dupes removed)")
+    dupes = len(all_jobs) - len(unique_jobs)
+    logger.info(f"  HCA Healthcare: {len(unique_jobs):,} jobs"
+                + (f" ({dupes} dupes removed)" if dupes else ""))
     return unique_jobs
 
 
