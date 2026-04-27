@@ -2202,13 +2202,31 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 for nested_key in (ddo_key, "recommendationJobsBrowsingHistory",
                                     "refineSearch", "latestJobs", "jobSearch"):
                     nested = probe_data.get(nested_key)
-                    if isinstance(nested, dict) and _probe_has_job_data(nested):
-                        api_url = widgets_url
-                        use_post = True
-                        widget_payload_template = payload.copy()
-                        widget_response_key = nested_key
-                        logger.info(f"Phenom {system}: widgets/{nested_key} has nested job data!")
-                        break
+                    if isinstance(nested, dict):
+                        if _probe_has_job_data(nested):
+                            api_url = widgets_url
+                            use_post = True
+                            widget_payload_template = payload.copy()
+                            widget_response_key = nested_key
+                            logger.info(f"Phenom {system}: widgets/{nested_key} has nested job data!")
+                            break
+                        # Diagnostic — log inner shape when nested key matches but no job data.
+                        # This surfaces whether the API requires auth (data:null) or returns
+                        # an empty result (data.recommendedJobs:[]) or has a different schema.
+                        if nested_key == ddo_key:
+                            inner_keys = list(nested.keys())[:8]
+                            data_val = nested.get("data")
+                            data_shape = (
+                                "null" if data_val is None
+                                else f"dict(keys={list(data_val.keys())[:8]})" if isinstance(data_val, dict)
+                                else f"list(len={len(data_val)})" if isinstance(data_val, list)
+                                else type(data_val).__name__
+                            )
+                            hits_v = nested.get("hits")
+                            total_v = nested.get("totalHits") or nested.get("total")
+                            err = nested.get("errorCode") or nested.get("errorMsg")
+                            logger.info(f"Phenom {system}: {ddo_key} inner: keys={inner_keys}, "
+                                        f"data={data_shape}, hits={hits_v}, total={total_v}, err={err}")
                 if api_url:
                     break
 
