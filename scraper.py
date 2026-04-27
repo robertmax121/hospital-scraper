@@ -4101,8 +4101,9 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
          the browser — the cleared cf_clearance cookie is sent automatically
       4. Parse each fetched HTML body with the same regex used for page 1
 
-    This keeps the run_all() gather signature compatible (still takes session arg,
-    even though it doesn't use it — Playwright manages its own browser).
+    Anti-bot: launches Chromium through a Webshare residential proxy (Railway
+    datacenter IPs are flagged by Cloudflare). Applies playwright-stealth if
+    available — install with `pip install playwright-stealth` in requirements.txt.
     """
     try:
         from playwright.async_api import async_playwright
@@ -4110,11 +4111,38 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
         logger.warning("HCA Healthcare: Playwright not installed — skipping")
         return []
 
+    # Optional: stealth patches that defeat headless detection (navigator.webdriver,
+    # missing chrome.runtime, plugins shim, etc.). HARD-recommended for HCA.
+    try:
+        from playwright_stealth import stealth_async
+    except ImportError:
+        logger.warning("HCA Healthcare: playwright-stealth NOT installed — bot detection likely. "
+                       "Add 'playwright-stealth' to requirements.txt for the next run.")
+        stealth_async = None
+
     logger.info("HCA Healthcare: launching Chromium for Cloudflare-protected scrape...")
     all_jobs: list[Job] = []
 
+    # Pull a residential proxy from the rotator and parse into Playwright's format.
+    # Webshare URLs come from ProxyRotator.get() as "http://user:pass@host:port".
+    pw_proxy = None
+    proxy_url = proxies.get()
+    if proxy_url:
+        m = re.match(r"https?://([^:]+):([^@]+)@([^:]+):(\d+)", proxy_url)
+        if m:
+            pw_proxy = {
+                "server":   f"http://{m.group(3)}:{m.group(4)}",
+                "username": m.group(1),
+                "password": m.group(2),
+            }
+            logger.info(f"HCA Healthcare: using residential proxy {m.group(3)}:{m.group(4)}")
+        else:
+            logger.info(f"HCA Healthcare: proxy URL didn't parse, going direct: {proxy_url[:60]}")
+    else:
+        logger.info("HCA Healthcare: no proxy configured, going direct (likely to fail Cloudflare)")
+
     async with async_playwright() as pw:
-        browser = await pw.chromium.launch(
+        launch_kwargs = dict(
             headless=True,
             args=[
                 "--no-sandbox", "--disable-setuid-sandbox",
@@ -4122,16 +4150,28 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
                 "--disable-dev-shm-usage",
             ],
         )
+        if pw_proxy:
+            launch_kwargs["proxy"] = pw_proxy
+        browser = await pw.chromium.launch(**launch_kwargs)
         try:
             ctx = await browser.new_context(
                 viewport={"width": 1440, "height": 900},
                 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 locale="en-US",
+                timezone_id="America/New_York",
             )
             await ctx.add_init_script(
-                "Object.defineProperty(navigator,'webdriver',{get:()=>false})"
+                "Object.defineProperty(navigator,'webdriver',{get:()=>false});"
+                "window.chrome = window.chrome || {runtime: {}};"
+                "Object.defineProperty(navigator,'plugins',{get:()=>[1,2,3,4,5]});"
+                "Object.defineProperty(navigator,'languages',{get:()=>['en-US','en']});"
             )
             page = await ctx.new_page()
+            if stealth_async:
+                try:
+                    await stealth_async(page)
+                except Exception as _e:
+                    logger.info(f"HCA: stealth_async failed (continuing): {_e}")
 
             # ── Page 1: navigate, wait for Cloudflare challenge to clear ──
             url1 = "https://careers.hcahealthcare.com/search/jobs/in?ns_from_search=1&ns_radius=40.2336&page=1"
