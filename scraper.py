@@ -733,21 +733,20 @@ async def run_workday(session) -> list[Job]:
 # Removed DNS-dead orgs: hcahealthcare, tenethealth, lifepointhealth, chscare,
 #   christushealth, selectmedical, shrinershospitals, nhccare, teamhealth, encompasshealth
 # Adding orgs with confirmed *.taleo.net DNS resolution:
-TALEO_ORGS = {
-    "HCA Healthcare":              "hcahealthcare",
-    "Tenet Health":                "tenethealth",
-    "LifePoint Health":            "lifepointhealth",
-    "Community Health Systems":    "chscare",
-    "Select Medical":              "selectmedical",
-    "Shriners Hospitals":          "shrinershospitals",
-    "Encompass Health":            "encompasshealth",
-    "National Healthcare Corp":    "nhccare",
-    "TeamHealth":                  "teamhealth",
-    # ── Added from scraper1.xlsx expansion (confirmed live DNS) ──
-    "Erlanger Health System":      "erlanger",
-    "Tampa General Hospital":      "tgh",
-    "Cape Cod Healthcare":         "capecodhc",
-    "Hennepin Healthcare":         "hcmc",
+TALEO_ORGS: dict[str, str] = {
+    # ─────────────────────────────────────────────────────────────────────────
+    # All Taleo healthcare tenants are dead as of April 2026.
+    #
+    # April 27 run results:
+    #   DNS-dead (Cannot connect to host):
+    #     hcahealthcare, tenethealth, lifepointhealth, chscare, selectmedical,
+    #     shrinershospitals, encompasshealth, nhccare, teamhealth
+    #   HTTP 404 (host alive, API removed):
+    #     erlanger, tgh, capecodhc, hcmc
+    #
+    # Kept the dict empty (rather than removing) so future Taleo additions can
+    # be tested. Run is short-circuited in run_all() — no gather call wasted.
+    # ─────────────────────────────────────────────────────────────────────────
 }
 
 async def scrape_taleo(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -812,6 +811,8 @@ async def scrape_taleo(session: aiohttp.ClientSession, system: str, org: str) ->
     return jobs
 
 async def run_taleo(session) -> list[Job]:
+    if not TALEO_ORGS:
+        return []
     logger.info(f"Taleo: scraping {len(TALEO_ORGS)} systems...")
     results = await asyncio.gather(
         *[scrape_taleo(session, s, o) for s, o in TALEO_ORGS.items()],
@@ -1521,6 +1522,11 @@ FINDLY_GOOGLE_ORGS = {
 async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     """Scrape a Findly CWS career portal on the Google CTS backend.
     Differs from scrape_findly in endpoint, identifier format, and response shape.
+
+    Routed through DIRECT session (no proxy) — the API is public and the
+    response payload (~95KB JSON) is large enough that residential proxies
+    routinely truncate it mid-body with "Response payload is not completed".
+    Same treatment as Texas Health legacy Findly.
     """
     import re as _re
     company_uuid, portal_ids, base_site = org_data
@@ -1551,18 +1557,29 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
         else:
             params["offset"] = str(offset)
 
-        try:
-            async with req(session, "get", api, params=params,
-                headers={**HEADERS, "Accept": "*/*",
-                         "Referer": f"{base_site}/job-search-results/"},
-                ssl=False, proxy=proxies.get(),
-                timeout=aiohttp.ClientTimeout(total=30)) as r:
-                if r.status != 200:
-                    logger.info(f"FindlyGoogle {system}: HTTP {r.status} at offset {offset}")
-                    break
-                body = await r.text()
-        except Exception as e:
-            logger.info(f"FindlyGoogle {system}: {e}")
+        # Retry-with-backoff: residential connectivity to m-cloud.io occasionally
+        # truncates large JSON payloads. Three tries with exponential backoff.
+        body = None
+        for attempt in range(3):
+            try:
+                async with session.get(
+                    api, params=params,
+                    headers={**HEADERS, "Accept": "*/*",
+                             "Referer": f"{base_site}/job-search-results/"},
+                    timeout=aiohttp.ClientTimeout(total=60)
+                ) as r:
+                    if r.status != 200:
+                        logger.info(f"FindlyGoogle {system}: HTTP {r.status} at offset {offset}")
+                        body = None
+                        break
+                    body = await r.text()
+                    break  # success — exit retry loop
+            except Exception as e:
+                wait = 2 ** attempt
+                logger.info(f"FindlyGoogle {system}: offset {offset} attempt {attempt+1}/3 ({e}) — retry in {wait}s")
+                await asyncio.sleep(wait)
+        if body is None:
+            logger.info(f"FindlyGoogle {system}: failed after 3 attempts at offset {offset} — stopping at {len(jobs)} jobs")
             break
 
         # Strip JSONP wrapper: CWS.jobs.jobCallback({...});
@@ -1571,7 +1588,7 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
         try:
             data = json.loads(inner)
         except Exception as e:
-            logger.info(f"FindlyGoogle {system}: JSON parse error: {e}")
+            logger.info(f"FindlyGoogle {system}: JSON parse error: {e} (body len={len(body)})")
             break
 
         results = data.get("searchResults", []) or []
@@ -1667,16 +1684,18 @@ async def run_successfactors(session) -> list[Job]:
 #  GREENHOUSE — Public API (no proxy needed, very reliable)
 # ══════════════════════════════════════════════════════════════════════════
 GREENHOUSE_ORGS = {
-    "One Medical":                 "onemedical",
-    "Carbon Health":               "carbonhealth",
-    "Included Health":             "includedhealth",
-    "Osmind":                      "osmind",
-    "Alto Pharmacy":               "alto",
-    "Brightspring Health":         "brightspringhealth",
-    "Aveanna Healthcare":          "aveanna",
-    "BrightSpring":                "brightspring",
-    "Pediatrix Medical Group":     "pediatrix",
-    "RadNet":                      "radnet",
+    "One Medical":                 "onemedical",   # ✅ ~269 jobs (April 2026)
+    # ── Removed 2026-04-27: all returned HTTP 404 in production ──
+    # "Carbon Health":             "carbonhealth",        # 404
+    # "Included Health":           "includedhealth",      # 404
+    # "Osmind":                    "osmind",              # 404
+    # "Alto Pharmacy":             "alto",                # 404
+    # "Brightspring Health":       "brightspringhealth",  # 404
+    # "Aveanna Healthcare":        "aveanna",             # 404
+    # "BrightSpring":              "brightspring",        # 404
+    # "Pediatrix Medical Group":   "pediatrix",           # 404
+    # "RadNet":                    "radnet",              # 404
+    # Re-add only after confirming via curl https://boards-api.greenhouse.io/v1/boards/{slug}/jobs
 }
 
 async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -2682,6 +2701,7 @@ async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tu
 
     data = None
     working_url = None
+    last_status = None
     for json_api, params in endpoints:
         try:
             async with req(session, "get",
@@ -2690,6 +2710,7 @@ async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tu
                 headers={**HEADERS, "Accept": "application/json"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)
             ) as r:
+                last_status = r.status
                 if r.status == 200:
                     ct = r.headers.get("content-type", "")
                     if "json" in ct:
@@ -2699,14 +2720,16 @@ async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tu
                     else:
                         # Got HTML back — this endpoint doesn't return JSON
                         continue
-                else:
-                    logger.info(f"Infor {system}: HTTP {r.status} at {json_api}")
-        except Exception as e:
-            logger.info(f"Infor {system}: {e}")
+                # Don't log intermediate failures — final state logged below
+        except Exception:
+            # Suppress per-endpoint exceptions; final summary line below
             continue
 
     if not data:
-        logger.info(f"Infor {system}: no JSON endpoint found — may need Playwright")
+        # Single line per org instead of 3+ — Infor as a platform is not currently
+        # producing data, so until we get a working endpoint pattern from a HAR,
+        # this is the cleanest way to keep run logs readable.
+        logger.info(f"Infor {system}: no JSON endpoint (last={last_status})")
         return []
 
     logger.info(f"Infor {system}: using {working_url}")
@@ -3596,19 +3619,6 @@ async def run_playwright_scrapers() -> list[Job]:
                             ct = response.headers.get("content-type", "")
                             if "json" in ct:
                                 d = await response.json()
-                                # DEBUG: log response structure for BSW and HCA
-                                if _sn in ("Baylor Scott & White", "HCA Healthcare", "Ascension Health", "LifePoint Health"):
-                                    if isinstance(d, dict):
-                                        logger.info(f"  [DEBUG {_sn}] keys={list(d.keys())[:8]} url={response.url[:80]}")
-                                        # Show nested structure
-                                        for k, v in list(d.items())[:3]:
-                                            if isinstance(v, (dict, list)):
-                                                inner_keys = list(v.keys())[:5] if isinstance(v, dict) else f"list[{len(v)}]"
-                                                logger.info(f"  [DEBUG {_sn}]   {k} → {inner_keys}")
-                                    elif isinstance(d, list):
-                                        logger.info(f"  [DEBUG {_sn}] list[{len(d)}] url={response.url[:80]}")
-                                        if d:
-                                            logger.info(f"  [DEBUG {_sn}]   first item keys={list(d[0].keys())[:8] if isinstance(d[0], dict) else type(d[0])}")
                                 if isinstance(d, dict):
                                     # Handle Elasticsearch nested hits: {"hits": {"hits": [...], "total": N}}
                                     if isinstance(d.get("hits"), dict) and isinstance(d["hits"].get("hits"), list):
@@ -3643,11 +3653,16 @@ async def run_playwright_scrapers() -> list[Job]:
                         except: pass
                 page.on("response", capture)
 
-                # BSW needs domcontentloaded to avoid hanging on networkidle
-                bsw_site = "bswhealth.com" in url
-                _wait = "domcontentloaded" if bsw_site else "networkidle"
-                await page.goto(url, wait_until=_wait, timeout=30000)
+                # Wait strategy: networkidle is the gold-standard but heavy sites
+                # (BSW Phenom, Mayo Clinic) hang waiting for tracking pixels and
+                # never go idle within 30s. domcontentloaded lets us proceed once
+                # the HTML is parsed, and our scroll + sleep loop handles JS hydration.
+                slow_sites = ("bswhealth.com", "jobs.mayoclinic.org")
+                _wait = "domcontentloaded" if any(s in url for s in slow_sites) else "networkidle"
+                await page.goto(url, wait_until=_wait, timeout=60000)
                 await asyncio.sleep(random.uniform(2, 4))
+
+                bsw_site = "bswhealth.com" in url
 
                 # BSW Health (Phenom) — click the search submit button to trigger job API call
                 if bsw_site:
@@ -3666,11 +3681,6 @@ async def run_playwright_scrapers() -> list[Job]:
                 for _ in range(4):
                     await page.evaluate("window.scrollBy(0, 600)")
                     await asyncio.sleep(0.8)
-
-                # Debug: log first raw job for CHRISTUS to inspect field names
-                if system_name == "CHRISTUS Health" and captured:
-                    sample = {k: v for k, v in list(captured[0].items())[:20]}
-                    logger.info(f"CHRISTUS sample job fields: {sample}")
 
                 for j in captured:
                     if not isinstance(j, dict):
@@ -3966,101 +3976,176 @@ async def run_paycor(session) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  HCA HEALTHCARE — Talemetry JSON API
-#  16,500+ jobs — direct REST endpoint
+#  HCA HEALTHCARE — Talemetry HTML scrape (rebuilt 2026-04-27)
+#
+#  Old /search/jobs.json endpoint returns 403 from Railway IPs (CDN block) and
+#  is gone from the public site anyway — the new Talemetry frontend renders
+#  jobs server-side into the search results HTML. ~16,067 jobs across 643
+#  pages of 25 jobs each.
+#
+#  Endpoint (confirmed from careers.hcahealthcare.com HAR, 2026-04-27):
+#    GET https://careers.hcahealthcare.com/search/jobs/in
+#        ?ns_from_search=1&ns_radius=40.2336&page=N
+#  Response: full HTML page (~1.75 MB). Each job card matches:
+#    <a class="neu-link" href="https://careers.hcahealthcare.com/jobs/{id}-{slug}">{title}</a>
+#    <div class="neu-text--caption">{hospital_name}</div>
+#    <div class="neu-text--caption neu-margin--bottom-10">{City}, {ST}, United States</div>
+#    ...>work</i> {Full-time|PRN/Per Diem|...}
+#  Total parsed from "Showing 1-25 of N results" on page 1.
+#
+#  Direct connection (no proxy) — 1.75 MB pages truncate on residential proxies.
 # ══════════════════════════════════════════════════════════════════════════
 HCA_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/javascript, */*; q=0.01",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
-    "Referer": "https://careers.hcahealthcare.com/search/jobs",
-    "X-Requested-With": "XMLHttpRequest",
-    "Origin": "https://careers.hcahealthcare.com",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
+    "Upgrade-Insecure-Requests": "1",
 }
 
-async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
-    jobs = []
-    base = "https://careers.hcahealthcare.com"
-    url  = f"{base}/search/jobs.json"
+# Card-level regex patterns (compiled once for speed across 643 pages × 25 jobs)
+_HCA_CARD_RE  = re.compile(
+    r'<a class="neu-link" href="https://careers\.hcahealthcare\.com/jobs/(\d+)-([^"]+)">([^<]+)</a>'
+)
+_HCA_HOSP_RE  = re.compile(r'<div class="neu-text--caption">([^<]+)</div>')
+_HCA_LOC_RE   = re.compile(r'<div class="neu-text--caption neu-margin--bottom-10">(.*?)</div>', re.DOTALL)
+_HCA_TYPE_RE  = re.compile(r'>work</i>\s*([^<&]+)')
+_HCA_TOTAL_RE = re.compile(r'Showing\s*</span>\s*1-<span[^>]*>[^<]*</span>\s*(\d+)\s*of\s*(\d+)', re.IGNORECASE)
 
-    logger.info("HCA Healthcare: starting Talemetry scrape...")
-    try:
-        async with session.get(
-            url,
-            params={"q": "", "ns_from_search": "1", "per_page": 25, "page": 1},
-            headers=HCA_HEADERS,
-            timeout=aiohttp.ClientTimeout(total=30),
-        ) as r:
-            if r.status != 200:
-                logger.warning(f"HCA: HTTP {r.status} on first page")
-                return []
-            data = await r.json(content_type=None)
 
-        total = data.get("total_entries", 0)
-        per   = data.get("per_page", 25)
-        pages = (total + per - 1) // per
-        logger.info(f"  HCA: {total:,} jobs across {pages} pages")
+def _parse_hca_html(html: str) -> tuple[list[Job], int]:
+    """Parse one HCA search-results HTML page. Returns (jobs, total_jobs_from_header)."""
+    jobs: list[Job] = []
+    total = 0
 
-        def parse_hca_entry(e):
-            loc   = e.get("location") or {}
-            city  = loc.get("locality") or ""
-            state = loc.get("region_abbr") or ""
-            slug  = e.get("permalink") or str(e.get("id", ""))
-            return Job(
-                title          = e.get("title", ""),
-                hospital_system= "HCA Healthcare",
-                hospital_name  = loc.get("name") or "HCA Healthcare",
-                city           = city,
-                state          = state,
-                location       = f"{city}, {state}" if city and state else city or state,
-                specialty      = "",
-                job_type       = "",
-                url            = f"{base}/jobs/{slug}",
-                job_id         = str(e.get("talemetry_job_id") or e.get("id", "")),
-                posted_date    = "",
-                description    = "",
-                ats_platform   = "Talemetry",
-            )
+    # Total count — present on every page in the "Showing 1-25 of N results" label
+    tm = _HCA_TOTAL_RE.search(html)
+    if tm:
+        total = int(tm.group(2))
 
-        for e in data.get("entries", []):
-            jobs.append(parse_hca_entry(e))
+    # Find each card by its anchor, then walk a fixed window of surrounding HTML
+    for m in _HCA_CARD_RE.finditer(html):
+        job_id, slug, title = m.group(1), m.group(2), m.group(3).strip()
+        before = html[max(0, m.start() - 1500):m.start()]
+        after  = html[m.end():m.end() + 2500]
 
-        BATCH = 10
-        for batch_start in range(2, pages + 1, BATCH):
-            batch_pages = range(batch_start, min(batch_start + BATCH, pages + 1))
-            tasks = [
-                session.get(
-                    url,
-                    params={"q": "", "ns_from_search": "1", "per_page": per, "page": pg},
-                    headers=HCA_HEADERS,
-                    timeout=aiohttp.ClientTimeout(total=30),
-                )
-                for pg in batch_pages
-            ]
-            responses = await asyncio.gather(*tasks, return_exceptions=True)
-            for resp in responses:
-                if isinstance(resp, Exception):
+        hosp_m = _HCA_HOSP_RE.search(after)
+        hospital_name = hosp_m.group(1).strip() if hosp_m else "HCA Healthcare"
+
+        loc_m = _HCA_LOC_RE.search(after)
+        if loc_m:
+            loc_raw = re.sub(r'<[^>]+>', '', loc_m.group(1))
+            loc_raw = re.sub(r'\s+', ' ', loc_raw).strip().rstrip(',').strip()
+        else:
+            loc_raw = ''
+        parts = [p.strip() for p in loc_raw.split(',')]
+        city  = parts[0] if len(parts) >= 1 else ''
+        state = parts[1] if len(parts) >= 2 else ''
+
+        jt_m = _HCA_TYPE_RE.search(after)
+        job_type = jt_m.group(1).strip().rstrip('&').rstrip() if jt_m else ''
+
+        jobs.append(Job(
+            title=title,
+            hospital_system="HCA Healthcare",
+            hospital_name=hospital_name,
+            city=city, state=state,
+            location=f"{city}, {state}" if city and state else city or state,
+            specialty="", job_type=job_type,
+            url=f"https://careers.hcahealthcare.com/jobs/{job_id}-{slug}",
+            job_id=str(job_id),
+            posted_date="",
+            description="",
+            ats_platform="Talemetry",
+        ))
+
+    return jobs, total
+
+
+async def _fetch_hca_page(session: aiohttp.ClientSession, page: int) -> str:
+    """Fetch one HCA results page with retries. Returns HTML body or '' on failure."""
+    url = "https://careers.hcahealthcare.com/search/jobs/in"
+    params = {"ns_from_search": "1", "ns_radius": "40.2336", "page": str(page)}
+    for attempt in range(3):
+        try:
+            async with session.get(
+                url, params=params, headers=HCA_HEADERS,
+                timeout=aiohttp.ClientTimeout(total=60)
+            ) as r:
+                if r.status != 200:
+                    if attempt == 2:
+                        logger.info(f"HCA: page {page} HTTP {r.status} after 3 attempts")
+                    await asyncio.sleep(2 ** attempt)
                     continue
-                try:
-                    async with resp as r:
-                        if r.status != 200:
-                            continue
-                        d = await r.json(content_type=None)
-                        for e in d.get("entries", []):
-                            jobs.append(parse_hca_entry(e))
-                except Exception as ex:
-                    logger.debug(f"HCA page error: {ex}")
-            await asyncio.sleep(random.uniform(1.0, 2.5))
+                return await r.text()
+        except Exception as e:
+            if attempt == 2:
+                logger.info(f"HCA: page {page} failed after 3 attempts ({e})")
+            await asyncio.sleep(2 ** attempt)
+    return ""
 
-    except Exception as e:
-        logger.error(f"HCA Healthcare: {e}")
 
-    logger.info(f"  HCA Healthcare: {len(jobs):,} jobs")
-    return jobs
+async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
+    """HCA Healthcare — HTML scrape of careers.hcahealthcare.com (Talemetry).
+    Fetches page 1 to learn the total, then fans out the rest in batches of 8.
+    """
+    logger.info("HCA Healthcare: starting Talemetry HTML scrape...")
+    all_jobs: list[Job] = []
+
+    # Page 1: gives us the total count and the first 25 jobs
+    html1 = await _fetch_hca_page(session, 1)
+    if not html1:
+        logger.warning("HCA Healthcare: page 1 failed — aborting")
+        return []
+    page1_jobs, total = _parse_hca_html(html1)
+    all_jobs.extend(page1_jobs)
+
+    if total == 0:
+        # Total didn't parse — fall back to "fetch until empty"
+        logger.info(f"HCA: total not detected, page 1 had {len(page1_jobs)} jobs — fetching sequentially until empty")
+        page = 2
+        while True:
+            html = await _fetch_hca_page(session, page)
+            if not html: break
+            pj, _ = _parse_hca_html(html)
+            if not pj: break
+            all_jobs.extend(pj)
+            page += 1
+            await asyncio.sleep(0.5)
+        logger.info(f"  HCA Healthcare: {len(all_jobs):,} jobs")
+        return all_jobs
+
+    pages = (total + 24) // 25
+    logger.info(f"  HCA: {total:,} jobs across {pages} pages, page 1 had {len(page1_jobs)}")
+
+    # Concurrent batched fetch for pages 2..pages
+    BATCH = 8       # 8 in flight — 1.75MB pages × 8 = ~14MB peak per batch
+    PAUSE = 1.5     # seconds between batches
+    for batch_start in range(2, pages + 1, BATCH):
+        batch_pages = list(range(batch_start, min(batch_start + BATCH, pages + 1)))
+        results = await asyncio.gather(
+            *[_fetch_hca_page(session, p) for p in batch_pages],
+            return_exceptions=True,
+        )
+        for p, html in zip(batch_pages, results):
+            if isinstance(html, Exception) or not html:
+                continue
+            pj, _ = _parse_hca_html(html)
+            all_jobs.extend(pj)
+        if batch_start % 80 == 2:  # every 10 batches log progress
+            logger.info(f"  HCA: ...page {min(batch_start + BATCH - 1, pages)}/{pages}, {len(all_jobs):,} jobs so far")
+        await asyncio.sleep(PAUSE)
+
+    # Dedupe within HCA in case same job_id appeared on overlapping pages
+    seen = set()
+    unique_jobs = []
+    for j in all_jobs:
+        if j.job_id in seen: continue
+        seen.add(j.job_id)
+        unique_jobs.append(j)
+
+    logger.info(f"  HCA Healthcare: {len(unique_jobs):,} jobs ({len(all_jobs)-len(unique_jobs)} dupes removed)")
+    return unique_jobs
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -4194,7 +4279,7 @@ async def run_all() -> list[dict]:
             run_taleo(direct_session),       # direct — no ssl=False
             run_icims(proxy_session),
             run_findly(proxy_session),           # Findly CWS legacy (Texas Health)
-            run_findly_google(proxy_session),    # Findly CWS Google CTS (AdventHealth) — NEW 2026-04-24
+            run_findly_google(direct_session),   # Findly CWS Google CTS (AdventHealth) — direct (no proxy) for large JSON payloads
             run_greenhouse(proxy_session),
             run_smartrecruiters(proxy_session),
             run_lever(proxy_session),
@@ -4218,7 +4303,7 @@ async def run_all() -> list[dict]:
             run_csod(proxy_session),
             run_paycom(proxy_session),
             run_paycor(proxy_session),
-            run_hca(proxy_session),
+            run_hca(direct_session),    # HCA Healthcare — HTML scrape, direct (no proxy) for 1.75MB pages
             run_chs(proxy_session),
             return_exceptions=True,
         )
