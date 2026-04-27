@@ -2111,45 +2111,54 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     # ── Phase 2: Widgets endpoint fallback ────────────────────────────────
     if not api_url:
         widgets_url = f"{base_url}/widgets"
+        # refNum is the org code Phenom uses internally. Most modern Phenom
+        # widgets endpoints REQUIRE refNum in the request body. We derive it
+        # from PHENOM_ORG_CODES if present, fall back to org_code.
+        ref_num = (PHENOM_ORG_CODES.get(system) or org_code or "").upper()
+
         widget_payloads = [
-            # latestJobs — the widget that actually returns job listings.
-            # Tried first because refineSearch (below) only returns aggregation
-            # counts, not actual jobs. Jackson Health works via this endpoint.
+            # latestJobs — returns recent listings on landing/search pages.
+            # Confirmed to return real data on Jackson Health, Spartanburg, etc.
             {
-                "lang": "en_us",
-                "deviceType": "desktop",
-                "country": "us",
+                "lang": "en_us", "deviceType": "desktop", "country": "us",
                 "pageName": "search-results",
+                "refNum": ref_num,
                 "ddoKey": "latestJobs",
-                "from": 0,
-                "size": 10,
-                "sortBy": "",
+                "from": 0, "size": 50, "sortBy": "",
             },
-            # jobSearch — older widget format, also returns real listings
+            # jobSearch — older widget format
             {
-                "lang": "en_us",
-                "deviceType": "desktop",
+                "lang": "en_us", "deviceType": "desktop",
+                "refNum": ref_num,
                 "ddoKey": "jobSearch",
-                "from": 0,
-                "size": 10,
-                "query": "",
+                "from": 0, "size": 50, "query": "",
             },
-            # refineSearch — faceted-search endpoint. Only returns counts &
-            # aggregations, NOT job listings. Kept as last resort in case some
-            # Phenom variant does return hits here.
+            # recommendationJobsBrowsingHistory — undocumented but confirmed
+            # via HAR analysis (Duke Health) to return full job objects with
+            # title, reqId, cityState, postedDate, multi_category, etc.
+            # Use this when latestJobs/jobSearch/refineSearch yield no data
+            # (modern Phenom orgs like Duke, UPMC, Atrium, Hartford that gate
+            # the standard search endpoints behind auth).
             {
-                "lang": "en_us",
-                "deviceType": "desktop",
-                "country": "us",
+                "keywords": None, "categories": None, "jobsViewed": None,
+                "jobsApplied": None, "locations": None, "types": [],
+                "userProfile": None, "landingPages": None, "department": "",
+                "recoSize": 200,                # try to pull as many as Phenom allows
+                "lang": "en_us", "deviceType": "desktop", "country": "us",
                 "pageName": "search-results",
+                "refNum": ref_num,
+                "siteType": "external", "pageId": "page3",
+                "ddoKey": "recommendationJobsBrowsingHistory",
+            },
+            # refineSearch — faceted aggregation endpoint. Sometimes returns
+            # hits on certain Phenom variants. Last in chain.
+            {
+                "lang": "en_us", "deviceType": "desktop", "country": "us",
+                "pageName": "search-results",
+                "refNum": ref_num,
                 "ddoKey": "refineSearch",
-                "sortBy": "",
-                "from": 0,
-                "size": 10,
-                "query": "",
-                "locations": [],
-                "postedDateRange": "",
-                "searchType": "search",
+                "sortBy": "", "from": 0, "size": 50, "query": "",
+                "locations": [], "postedDateRange": "", "searchType": "search",
             },
         ]
 
@@ -2184,8 +2193,11 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     logger.info(f"Phenom {system}: widgets/{ddo_key} has job data!")
                     break
 
-                # Check nested under ddoKey name (widgets batch responses)
-                for nested_key in (ddo_key, "refineSearch", "latestJobs", "jobSearch"):
+                # Check nested under ddoKey name (widgets batch responses).
+                # `recommendationJobsBrowsingHistory` wraps jobs at .data.recommendedJobs
+                # so we also need the unwrap to drill that deep.
+                for nested_key in (ddo_key, "recommendationJobsBrowsingHistory",
+                                    "refineSearch", "latestJobs", "jobSearch"):
                     nested = probe_data.get(nested_key)
                     if isinstance(nested, dict) and _probe_has_job_data(nested):
                         api_url = widgets_url
@@ -2261,7 +2273,8 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
 
             # --- Extract listings ---
             def _extract_listings(d):
-                for key in ("jobs", "requisitions", "results", "entries"):
+                for key in ("jobs", "requisitions", "results", "entries",
+                            "recommendedJobs"):
                     v = d.get(key)
                     if isinstance(v, list) and v:
                         return v
@@ -2276,7 +2289,9 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                         return inner
                 data_val = d.get("data")
                 if isinstance(data_val, dict):
-                    sub = data_val.get("jobs") or data_val.get("entries") or data_val.get("results")
+                    # recommendationJobsBrowsingHistory: jobs are at .data.recommendedJobs
+                    sub = (data_val.get("jobs") or data_val.get("entries") or
+                            data_val.get("results") or data_val.get("recommendedJobs"))
                     if isinstance(sub, list) and sub:
                         return sub
                 if isinstance(data_val, list) and data_val:
@@ -2292,11 +2307,24 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
 
             for j in listings:
                 doc = j.get("_source", j)
-                loc = doc.get("city", "") or doc.get("location", "") or doc.get("locations", "")
-                if isinstance(loc, list):
-                    loc = ", ".join(str(x) for x in loc)
+                # Location: prefer explicit city/state, then cityState (combined string
+                # that recommendationJobsBrowsingHistory returns, e.g. "Durham, North Carolina"),
+                # then multi_location (array).
                 _raw_city  = doc.get("city", "")
                 _raw_state = doc.get("state", "") or doc.get("stateCode", "")
+                city_state = doc.get("cityState", "")
+                multi_loc = doc.get("multi_location") or doc.get("locations") or []
+                if isinstance(multi_loc, list) and multi_loc:
+                    loc = ", ".join(str(x) for x in multi_loc)
+                elif city_state:
+                    loc = city_state
+                else:
+                    loc = doc.get("location", "") or _raw_city
+                if not (_raw_city or _raw_state) and city_state:
+                    parts = [p.strip() for p in city_state.split(",")]
+                    if len(parts) >= 2:
+                        _raw_city = parts[0]
+                        _raw_state = parts[-1]
                 city, state = (
                     parse_city_state(f"{_raw_city}, {_raw_state}")
                     if (_raw_city or _raw_state)
@@ -2305,13 +2333,22 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 city  = city  or _raw_city
                 state = state or _raw_state
                 title = doc.get("title", "") or doc.get("jobTitle", "") or doc.get("name", "")
+                # reqId is what recommendationJobsBrowsingHistory uses
                 job_id = str(
                     doc.get("id", "") or doc.get("jobId", "") or
-                    doc.get("requisitionId", "") or j.get("_id", "")
+                    doc.get("requisitionId", "") or doc.get("reqId", "") or
+                    j.get("_id", "")
                 )
                 url = (
                     doc.get("applyUrl", "") or doc.get("jobUrl", "") or
                     doc.get("url", "") or f"{base_url}/job/{job_id}"
+                )
+                # multi_category is an array on recommendationJobsBrowsingHistory
+                multi_cat = doc.get("multi_category") or []
+                specialty_val = (
+                    (multi_cat[0] if isinstance(multi_cat, list) and multi_cat else "") or
+                    doc.get("category", "") or doc.get("jobCategory", "") or
+                    doc.get("department", "")
                 )
                 if title and job_id:
                     jobs.append(Job(
@@ -2320,10 +2357,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                         hospital_name=doc.get("facility", "") or doc.get("company", "") or system,
                         city=city, state=state,
                         location=loc or f"{city}, {state}",
-                        specialty=(
-                            doc.get("category", "") or doc.get("jobCategory", "") or
-                            doc.get("department", "")
-                        ),
+                        specialty=specialty_val,
                         job_type=(
                             doc.get("employmentType", "") or doc.get("jobType", "") or
                             doc.get("type", "")
@@ -2335,7 +2369,8 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                             doc.get("postDate", "")
                         )[:10],
                         description=strip_html(str(
-                            doc.get("description", "") or doc.get("shortDescription", "")
+                            doc.get("description", "") or doc.get("shortDescription", "") or
+                            doc.get("descriptionTeaser", "")
                         )),
                         ats_platform="Phenom",
                     ))
@@ -4482,112 +4517,176 @@ def _classify_travel_specialty(title: str | None, raw_specialty: str | None) -> 
 
 
 # ── Vivian Health ─────────────────────────────────────────────────────────
-VIVIAN_API_BASE = "https://www.vivian.com/api/v3/jobs"
-VIVIAN_PAGE_SIZE = 50
-VIVIAN_MAX_PAGES = 200      # 10K listings cap per profession
-VIVIAN_PROFESSIONS = ["nurse", "allied", "therapy"]   # broad sweeps
+# Vivian's frontend hits Algolia DIRECTLY (the /api/self/* path is gated by
+# session auth — the public Algolia search-only key is what unauthenticated
+# browsers use). App ID and key extracted from the browser HAR; the API key
+# is search-only, safe to embed.
+VIVIAN_ALGOLIA_APP_ID  = "Q86HQHHJLB"
+VIVIAN_ALGOLIA_API_KEY = "1e4ad038ed6e776a28e406a06e749aa5"
+VIVIAN_ALGOLIA_HOST    = f"https://{VIVIAN_ALGOLIA_APP_ID.lower()}-dsn.algolia.net"
+VIVIAN_INDEX           = "searchable-jobs-prod"
+VIVIAN_HITS_PER_PAGE   = 250          # Algolia hard cap
+VIVIAN_MAX_PAGES       = 100          # 25,000 per employmentType
+VIVIAN_EMPLOYMENT_TYPES = ["Travel", "Permanent", "Local Contract", "Per Diem / PRN"]
 
-async def scrape_vivian_page(session: aiohttp.ClientSession, profession: str, page: int) -> tuple[list[TravelJob], bool]:
-    """Fetch one Vivian page. Returns (jobs, has_more)."""
-    params = {
-        "profession":   profession,
-        "page":         str(page),
-        "page_size":    str(VIVIAN_PAGE_SIZE),
-        "is_w2":        "false",
+import urllib.parse as _vivian_urllib_parse  # used inside scrape_vivian_page
+
+async def scrape_vivian_page(session: aiohttp.ClientSession,
+                              employment_type: str, page: int) -> tuple[list[TravelJob], int, bool]:
+    """Fetch one Vivian page from Algolia. Returns (jobs, total, has_more)."""
+    inner_params = _vivian_urllib_parse.urlencode({
+        "hitsPerPage":  VIVIAN_HITS_PER_PAGE,
+        "page":         page,
+        "filters":      'origin:"platform" OR origin:"vms" OR origin:"scraped"',
+        "facetFilters": json.dumps([[f"employmentType:{employment_type}"]]),
+    })
+    body = {
+        "requests": [{
+            "indexName": VIVIAN_INDEX,
+            "params":    inner_params,
+        }]
     }
-    qs = "&".join(f"{k}={v}" for k, v in params.items())
-    url = f"{VIVIAN_API_BASE}/?{qs}"
+    url = (f"{VIVIAN_ALGOLIA_HOST}/1/indexes/*/queries"
+           f"?x-algolia-api-key={VIVIAN_ALGOLIA_API_KEY}"
+           f"&x-algolia-application-id={VIVIAN_ALGOLIA_APP_ID}")
     headers = {
-        "Accept":     "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Referer":    "https://www.vivian.com/",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent":   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Referer":      "https://www.vivian.com/",
+        "Origin":       "https://www.vivian.com",
     }
     try:
-        async with req(session, "GET", url, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as r:
+        async with req(session, "POST", url, json=body, headers=headers,
+                       timeout=aiohttp.ClientTimeout(total=30)) as r:
             if r.status != 200:
-                logger.info(f"Vivian {profession} page {page}: HTTP {r.status}")
-                return [], False
+                logger.info(f"Vivian {employment_type} page {page}: HTTP {r.status}")
+                return [], 0, False
             data = await r.json(content_type=None)
     except Exception as e:
-        logger.info(f"Vivian {profession} page {page}: {e}")
-        return [], False
+        logger.info(f"Vivian {employment_type} page {page}: {e}")
+        return [], 0, False
 
-    # Vivian's response shape varies by API version. Defensively look for the list.
-    items = (data.get("results") or data.get("data") or data.get("jobs") or
-             (data if isinstance(data, list) else []))
-    if not isinstance(items, list):
-        logger.info(f"Vivian {profession} page {page}: unexpected shape, keys={list(data.keys())[:8]}")
-        return [], False
+    results = data.get("results") or []
+    if not results or not isinstance(results, list):
+        if page == 0:
+            logger.info(f"Vivian {employment_type}: unexpected shape, keys={list(data.keys())[:8]}")
+        return [], 0, False
+    first = results[0] if isinstance(results[0], dict) else {}
+    hits = first.get("hits") or []
+    total = first.get("nbHits") or 0
+    n_pages = first.get("nbPages") or 0
 
     out: list[TravelJob] = []
-    for j in items:
+    for j in hits:
         try:
-            jid = str(j.get("id") or j.get("uuid") or j.get("slug") or "")
+            jid = str(j.get("objectID") or "")
             if not jid: continue
-            title = j.get("title") or j.get("position_title") or ""
-            agency = (j.get("agency") or {}).get("name") if isinstance(j.get("agency"), dict) else j.get("agency_name")
-            agency = agency or j.get("employer_name") or "Vivian Listing"
-            wp_num = _coerce_money(j.get("weekly_pay_max") or j.get("weekly_pay") or j.get("weekly_gross_pay"))
-            wp_min = _coerce_money(j.get("weekly_pay_min"))
-            if wp_num and wp_min and wp_min != wp_num:
-                wp_display = f"${wp_min:,.0f} - ${wp_num:,.0f}/wk"
-            elif wp_num:
-                wp_display = f"${wp_num:,.0f}/wk"
+            # Title — Vivian doesn't expose `title`; nested under `titles.{simple|verbose|gpt}`
+            titles = j.get("titles") or {}
+            if isinstance(titles, dict):
+                title = (titles.get("simple") or titles.get("verbose") or
+                         titles.get("gpt") or titles.get("seo") or "")
             else:
-                wp_display = j.get("weekly_pay_display") or None
-            duration = j.get("duration_weeks") or j.get("contract_weeks") or j.get("assignment_length_weeks")
-            try: duration = int(duration) if duration else None
-            except: duration = None
-            hpw = j.get("hours_per_week") or j.get("weekly_hours")
-            try: hpw = int(hpw) if hpw else None
-            except: hpw = None
-            city = j.get("city") or (j.get("location") or {}).get("city") if isinstance(j.get("location"), dict) else j.get("city")
-            state = (j.get("state_code") or j.get("state") or
-                     ((j.get("location") or {}).get("state_code") if isinstance(j.get("location"), dict) else None))
-            specialty_raw = j.get("specialty") or j.get("specialty_name")
+                title = str(titles or "")
+            agency = j.get("employerName") or j.get("agencyName") or "Vivian Listing"
+
+            # Pay — `pay` is a nested dict with display.full + min/max + period
+            pay = j.get("pay") or {}
+            pay_min = pay.get("minRate")
+            pay_max = pay.get("maxRate")
+            pay_period = pay.get("period", "")  # "week", "hour", "year"
+            pay_display_obj = pay.get("display") or {}
+            pay_display = pay_display_obj.get("full") if isinstance(pay_display_obj, dict) else None
+
+            wp_num = wp_display = hourly_num = None
+            if pay_period == "week":
+                wp_num = float(pay_max) if pay_max else (float(pay_min) if pay_min else None)
+                wp_display = pay_display
+            elif pay_period == "hour":
+                hourly_num = float(pay_max) if pay_max else (float(pay_min) if pay_min else None)
+                wp_display = pay_display  # display still useful even when hourly
+            else:
+                wp_display = pay_display
+
+            # Contract length — string like "12 weeks"; pull the leading int
+            cl = j.get("contractLengthWeeks")
+            duration = None
+            if isinstance(cl, (int, float)):
+                duration = int(cl)
+            elif isinstance(cl, str):
+                m = re.match(r"(\d+)", cl)
+                if m: duration = int(m.group(1))
+
+            # Shift
+            shift_val = j.get("shift")
+            if isinstance(shift_val, list): shift_val = ", ".join(str(s) for s in shift_val)
+
+            # Location — `location` is an array: [display, stateCode, stateName, "Compact States"]
+            loc_arr = j.get("location") or []
+            loc_display = j.get("locationDisplay") or (
+                loc_arr[0] if isinstance(loc_arr, list) and loc_arr else "")
+            state_code = ""
+            if isinstance(loc_arr, list) and len(loc_arr) > 1:
+                cand = loc_arr[1]
+                if isinstance(cand, str) and len(cand) == 2 and cand.isalpha():
+                    state_code = cand.upper()
+            # Parse city from "Pittsburgh, Pennsylvania"
+            city = ""
+            if loc_display and "," in loc_display:
+                city = loc_display.split(",", 1)[0].strip()
+
+            # Specialty
+            specialty_raw = None
+            sn = j.get("specialtyNames")
+            if isinstance(sn, list) and sn: specialty_raw = sn[0]
+            elif isinstance(sn, str): specialty_raw = sn
             specialty = _classify_travel_specialty(title, specialty_raw)
-            slug = j.get("slug") or jid
-            url_field = j.get("url") or f"https://www.vivian.com/job/{slug}/"
+
+            slug = j.get("jobDetailsSlug") or jid
+            url_field = f"https://www.vivian.com/job/{slug}/"
+
             out.append(TravelJob(
                 agency_name=agency,
                 agency_job_id=f"vivian:{jid}",
                 title=title,
                 specialty=specialty,
-                city=city, state=state,
-                location=f"{city}, {state}" if (city and state) else (state or city),
+                city=city, state=state_code,
+                location=loc_display,
                 weekly_pay_numeric=wp_num,
                 weekly_pay_display=wp_display,
-                hourly_rate_numeric=_coerce_money(j.get("hourly_rate") or j.get("base_pay_hourly")),
-                housing_stipend=_coerce_money(j.get("housing_stipend") or j.get("non_taxable_housing")),
+                hourly_rate_numeric=hourly_num,
+                housing_stipend=None,    # Vivian doesn't expose stipend separately in this index
                 contract_weeks=duration,
-                hours_per_week=hpw,
-                shift=j.get("shift") or j.get("shift_type"),
-                start_date=j.get("starts_at") or j.get("start_date"),
-                hospital_facility=j.get("facility_name") or j.get("hospital_name"),
-                description=strip_html(j.get("description") or j.get("summary")),
+                hours_per_week=None,
+                shift=shift_val,
+                start_date=j.get("startDateDisplay") or j.get("startMonth"),
+                hospital_facility=j.get("facilityName"),
+                description=strip_html(j.get("description") or j.get("searchDescription") or ""),
                 url=url_field,
-                posted_date=j.get("created_at") or j.get("posted_at"),
+                posted_date=j.get("createdAtDisplay"),
             ))
         except Exception as e:
             logger.info(f"Vivian parse error: {e}")
             continue
-    has_more = len(items) >= VIVIAN_PAGE_SIZE
-    return out, has_more
+    has_more = (page + 1) < n_pages and len(hits) >= VIVIAN_HITS_PER_PAGE
+    return out, total, has_more
 
 
 async def run_vivian(session: aiohttp.ClientSession) -> list[TravelJob]:
     logger.info("Vivian Health: starting scrape (travel jobs)")
     all_jobs: list[TravelJob] = []
-    for profession in VIVIAN_PROFESSIONS:
-        for page in range(1, VIVIAN_MAX_PAGES + 1):
-            jobs, has_more = await scrape_vivian_page(session, profession, page)
+    for employment_type in VIVIAN_EMPLOYMENT_TYPES:
+        for page in range(0, VIVIAN_MAX_PAGES):
+            jobs, total, has_more = await scrape_vivian_page(session, employment_type, page)
             all_jobs.extend(jobs)
+            if page == 0:
+                logger.info(f"  Vivian {employment_type}: total={total:,}, page 0: {len(jobs)} jobs")
             if not has_more or not jobs:
-                logger.info(f"  Vivian {profession}: stopped at page {page} ({len(jobs)} on this page)")
+                logger.info(f"  Vivian {employment_type}: stopped at page {page+1} ({len(all_jobs):,} so far)")
                 break
-            await asyncio.sleep(0.4)
+            await asyncio.sleep(0.3)
         else:
-            logger.info(f"  Vivian {profession}: hit page cap {VIVIAN_MAX_PAGES}")
+            logger.info(f"  Vivian {employment_type}: hit page cap {VIVIAN_MAX_PAGES}")
     # Dedupe within Vivian on agency_job_id
     seen, uniq = set(), []
     for j in all_jobs:
@@ -4852,25 +4951,37 @@ async def run_all() -> list[dict]:
 
 
 def scrape() -> list[dict]:
+    """Public entry point — scrapes hospital jobs AND travel jobs.
+
+    Returns the hospital-jobs list (the caller's existing pipeline pushes it
+    to Supabase `hospital_jobs`).  Travel jobs are written DIRECTLY to the
+    `travel_jobs` Supabase table here — this avoids requiring any change to
+    the existing Railway runner script. The travel scrape is wrapped in
+    try/except so it can never break the hospital-jobs nightly run.
+    """
     os.makedirs("logs", exist_ok=True)
-    return asyncio.run(run_all())
+    hospital_jobs = asyncio.run(run_all())
+
+    # ── Travel jobs side-flow (separate table, self-contained) ────────────
+    try:
+        logger.info("[ TRAVEL ] Starting travel-jobs scrape (separate flow)...")
+        travel_rows = asyncio.run(run_all_travel())
+        # Save JSON dump for diagnostics + Railway log archival
+        try:
+            with open("travel_jobs_latest.json", "w") as f:
+                json.dump(travel_rows, f, indent=2)
+        except Exception as _je:
+            logger.info(f"Travel: JSON dump failed (non-fatal): {_je}")
+        # Direct upsert to Supabase if env vars present
+        _upsert_travel_jobs_to_supabase(travel_rows)
+    except Exception as e:
+        logger.warning(f"Travel jobs scrape failed (non-fatal): {e}")
+
+    return hospital_jobs
 
 
 if __name__ == "__main__":
-    # ── Hospital jobs (existing flow, unchanged) ──────────────────────────
     jobs = scrape()
     with open("jobs_latest.json", "w") as f:
         json.dump(jobs, f, indent=2)
     print(f"Saved {len(jobs):,} jobs to jobs_latest.json")
-
-    # ── Travel jobs (new flow — separate table, separate JSON, optional
-    #    direct upsert to Supabase if SUPABASE_URL/SUPABASE_KEY are present) ──
-    try:
-        travel_rows = scrape_travel()
-        with open("travel_jobs_latest.json", "w") as f:
-            json.dump(travel_rows, f, indent=2)
-        print(f"Saved {len(travel_rows):,} travel jobs to travel_jobs_latest.json")
-        _upsert_travel_jobs_to_supabase(travel_rows)
-    except Exception as e:
-        # Travel scraping must never break the hospital-jobs nightly run
-        print(f"Travel jobs scrape failed (non-fatal): {e}")
