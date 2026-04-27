@@ -4158,6 +4158,32 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
                     continue
                 await asyncio.sleep(1.5)
 
+            # ── HCA diagnostic block ──────────────────────────────────────────
+            # Always emit a few lines so we can decode failure mode from logs.
+            try:
+                cookies = await ctx.cookies()
+                cookie_names = sorted({c.get("name", "") for c in cookies})
+                cf_clearance_present = any(c.get("name") == "cf_clearance" for c in cookies)
+                final_url = page.url
+                title = await page.title()
+                body_size = len(content)
+                MARKERS = (
+                    "neu-link", "just_a_moment", "Just a moment",
+                    "Checking your browser", "challenges.cloudflare.com",
+                    "cf-browser-verification", "turnstile", "captcha",
+                    "Verify you are human", "Access denied",
+                )
+                marker_hits = {m: (m.lower() in content.lower()) for m in MARKERS}
+                logger.info(f"HCA diag: cleared={cleared} url={final_url}")
+                logger.info(f"HCA diag: title={title!r} body_size={body_size}")
+                logger.info(f"HCA diag: cf_clearance={cf_clearance_present} cookies={cookie_names[:25]}")
+                logger.info(f"HCA diag: markers={marker_hits}")
+                if not cleared:
+                    snippet = re.sub(r"\s+", " ", content[:1500])
+                    logger.info(f"HCA diag: html_first_1500={snippet}")
+            except Exception as _diag_e:
+                logger.info(f"HCA diag: failed to capture diagnostics: {_diag_e}")
+
             if not cleared:
                 logger.warning("HCA Healthcare: Cloudflare challenge did not clear after 35s — aborting")
                 await browser.close()
@@ -4346,6 +4372,269 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+#  TRAVEL JOBS  —  separate product, separate Supabase table (travel_jobs)
+# ══════════════════════════════════════════════════════════════════════════
+# Travel nursing jobs live in their own bucket. They're scraped from staffing
+# agencies (Vivian Health is the largest aggregator; it republishes Aya, AMN,
+# Trusted, and many smaller agencies). Schema mirrors hospital_jobs but
+# `hospital_system` becomes `agency_name` and wages are weekly contract rates
+# rather than salary ranges.
+#
+# Output: writes `travel_jobs_latest.json` AND, if SUPABASE_URL/_KEY are set
+# in env, upserts directly to the `travel_jobs` table (keyed on
+# `(agency_name, agency_job_id)`).
+
+@dataclass
+class TravelJob:
+    agency_name:        str
+    agency_job_id:      str
+    title:              str
+    specialty:          str | None      = None
+    city:               str | None      = None
+    state:              str | None      = None
+    location:           str | None      = None
+    weekly_pay_numeric: float | None    = None
+    weekly_pay_display: str | None      = None
+    hourly_rate_numeric: float | None   = None
+    housing_stipend:    float | None    = None
+    contract_weeks:     int | None      = None
+    hours_per_week:     int | None      = None
+    shift:              str | None      = None
+    start_date:         str | None      = None
+    hospital_facility:  str | None      = None
+    description:        str | None      = None
+    url:                str | None      = None
+    posted_date:        str | None      = None
+
+
+def _coerce_money(v) -> float | None:
+    """Turn things like '$2,400' or 2400.0 or '2400' into a float; else None."""
+    if v is None: return None
+    if isinstance(v, (int, float)): return float(v)
+    s = str(v).strip().replace("$", "").replace(",", "").replace("/wk", "").replace("/week", "")
+    s = re.sub(r"[^\d\.]", "", s)
+    try: return float(s) if s else None
+    except: return None
+
+
+def _classify_travel_specialty(title: str | None, raw_specialty: str | None) -> str | None:
+    """Normalize travel-job specialty using the same SPECIALTY_MAP keywords used
+    for hospital jobs (fall back to whatever the agency provided)."""
+    if raw_specialty:
+        return raw_specialty
+    if not title:
+        return None
+    # Reuse SPECIALTY_MAP (defined inside run_all). Inline a lightweight lookup here.
+    t = f" {title.lower()} "
+    for spec, kws in (
+        ("ICU / Critical Care", ["icu","intensive care","critical care","picu","nicu","cvicu"]),
+        ("Emergency / Trauma", ["emergency","trauma","er rn","ed rn"]),
+        ("Labor & Delivery",   ["labor","delivery","l&d","ldrp","postpartum","mother baby"]),
+        ("Med / Surg",         ["med surg","medsurg","telemetry","tele rn"]),
+        ("Operating Room / Surgery", ["operating room"," or rn","perioperative","pacu","pre-op","post-op"]),
+        ("Cardiac / Cardiovascular", ["cardiac","cath lab","cvor"]),
+        ("Oncology",           ["oncology","chemo","infusion"]),
+        ("Pediatrics",         ["pediatric","peds"]),
+    ):
+        for kw in kws:
+            if kw in t: return spec
+    return None
+
+
+# ── Vivian Health ─────────────────────────────────────────────────────────
+VIVIAN_API_BASE = "https://www.vivian.com/api/v3/jobs"
+VIVIAN_PAGE_SIZE = 50
+VIVIAN_MAX_PAGES = 200      # 10K listings cap per profession
+VIVIAN_PROFESSIONS = ["nurse", "allied", "therapy"]   # broad sweeps
+
+async def scrape_vivian_page(session: aiohttp.ClientSession, profession: str, page: int) -> tuple[list[TravelJob], bool]:
+    """Fetch one Vivian page. Returns (jobs, has_more)."""
+    params = {
+        "profession":   profession,
+        "page":         str(page),
+        "page_size":    str(VIVIAN_PAGE_SIZE),
+        "is_w2":        "false",
+    }
+    qs = "&".join(f"{k}={v}" for k, v in params.items())
+    url = f"{VIVIAN_API_BASE}/?{qs}"
+    headers = {
+        "Accept":     "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Referer":    "https://www.vivian.com/",
+    }
+    try:
+        async with req(session, "GET", url, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as r:
+            if r.status != 200:
+                logger.info(f"Vivian {profession} page {page}: HTTP {r.status}")
+                return [], False
+            data = await r.json(content_type=None)
+    except Exception as e:
+        logger.info(f"Vivian {profession} page {page}: {e}")
+        return [], False
+
+    # Vivian's response shape varies by API version. Defensively look for the list.
+    items = (data.get("results") or data.get("data") or data.get("jobs") or
+             (data if isinstance(data, list) else []))
+    if not isinstance(items, list):
+        logger.info(f"Vivian {profession} page {page}: unexpected shape, keys={list(data.keys())[:8]}")
+        return [], False
+
+    out: list[TravelJob] = []
+    for j in items:
+        try:
+            jid = str(j.get("id") or j.get("uuid") or j.get("slug") or "")
+            if not jid: continue
+            title = j.get("title") or j.get("position_title") or ""
+            agency = (j.get("agency") or {}).get("name") if isinstance(j.get("agency"), dict) else j.get("agency_name")
+            agency = agency or j.get("employer_name") or "Vivian Listing"
+            wp_num = _coerce_money(j.get("weekly_pay_max") or j.get("weekly_pay") or j.get("weekly_gross_pay"))
+            wp_min = _coerce_money(j.get("weekly_pay_min"))
+            if wp_num and wp_min and wp_min != wp_num:
+                wp_display = f"${wp_min:,.0f} - ${wp_num:,.0f}/wk"
+            elif wp_num:
+                wp_display = f"${wp_num:,.0f}/wk"
+            else:
+                wp_display = j.get("weekly_pay_display") or None
+            duration = j.get("duration_weeks") or j.get("contract_weeks") or j.get("assignment_length_weeks")
+            try: duration = int(duration) if duration else None
+            except: duration = None
+            hpw = j.get("hours_per_week") or j.get("weekly_hours")
+            try: hpw = int(hpw) if hpw else None
+            except: hpw = None
+            city = j.get("city") or (j.get("location") or {}).get("city") if isinstance(j.get("location"), dict) else j.get("city")
+            state = (j.get("state_code") or j.get("state") or
+                     ((j.get("location") or {}).get("state_code") if isinstance(j.get("location"), dict) else None))
+            specialty_raw = j.get("specialty") or j.get("specialty_name")
+            specialty = _classify_travel_specialty(title, specialty_raw)
+            slug = j.get("slug") or jid
+            url_field = j.get("url") or f"https://www.vivian.com/job/{slug}/"
+            out.append(TravelJob(
+                agency_name=agency,
+                agency_job_id=f"vivian:{jid}",
+                title=title,
+                specialty=specialty,
+                city=city, state=state,
+                location=f"{city}, {state}" if (city and state) else (state or city),
+                weekly_pay_numeric=wp_num,
+                weekly_pay_display=wp_display,
+                hourly_rate_numeric=_coerce_money(j.get("hourly_rate") or j.get("base_pay_hourly")),
+                housing_stipend=_coerce_money(j.get("housing_stipend") or j.get("non_taxable_housing")),
+                contract_weeks=duration,
+                hours_per_week=hpw,
+                shift=j.get("shift") or j.get("shift_type"),
+                start_date=j.get("starts_at") or j.get("start_date"),
+                hospital_facility=j.get("facility_name") or j.get("hospital_name"),
+                description=strip_html(j.get("description") or j.get("summary")),
+                url=url_field,
+                posted_date=j.get("created_at") or j.get("posted_at"),
+            ))
+        except Exception as e:
+            logger.info(f"Vivian parse error: {e}")
+            continue
+    has_more = len(items) >= VIVIAN_PAGE_SIZE
+    return out, has_more
+
+
+async def run_vivian(session: aiohttp.ClientSession) -> list[TravelJob]:
+    logger.info("Vivian Health: starting scrape (travel jobs)")
+    all_jobs: list[TravelJob] = []
+    for profession in VIVIAN_PROFESSIONS:
+        for page in range(1, VIVIAN_MAX_PAGES + 1):
+            jobs, has_more = await scrape_vivian_page(session, profession, page)
+            all_jobs.extend(jobs)
+            if not has_more or not jobs:
+                logger.info(f"  Vivian {profession}: stopped at page {page} ({len(jobs)} on this page)")
+                break
+            await asyncio.sleep(0.4)
+        else:
+            logger.info(f"  Vivian {profession}: hit page cap {VIVIAN_MAX_PAGES}")
+    # Dedupe within Vivian on agency_job_id
+    seen, uniq = set(), []
+    for j in all_jobs:
+        if j.agency_job_id in seen: continue
+        seen.add(j.agency_job_id); uniq.append(j)
+    logger.info(f"Vivian Health: {len(uniq):,} unique travel listings")
+    return uniq
+
+
+# ── Travel jobs runner + Supabase upsert ──────────────────────────────────
+async def run_all_travel() -> list[dict]:
+    start = datetime.now()
+    proxy_connector = aiohttp.TCPConnector(limit=20, ssl=False)
+    direct_connector = aiohttp.TCPConnector(limit=20)
+    async with aiohttp.ClientSession(connector=proxy_connector, headers=HEADERS,
+                                      max_line_size=65536, max_field_size=65536) as proxy_session, \
+               aiohttp.ClientSession(connector=direct_connector, headers=HEADERS,
+                                      max_line_size=65536, max_field_size=65536) as direct_session:
+        results = await asyncio.gather(
+            run_vivian(direct_session),    # Vivian doesn't need proxy; Cloudflare on their end is mild
+            return_exceptions=True,
+        )
+    all_travel: list[TravelJob] = []
+    for r in results:
+        if isinstance(r, list):
+            all_travel.extend(r)
+    # Convert to dicts (with derived `is_active=True` and `scraped_at`)
+    rows = []
+    for j in all_travel:
+        d = asdict(j)
+        d["is_active"] = True
+        rows.append(d)
+    elapsed = (datetime.now() - start).seconds
+    logger.info("=" * 55)
+    logger.info(f"  TRAVEL JOBS:        {len(rows):,}")
+    logger.info(f"  AGENCIES:           {len({r['agency_name'] for r in rows if r.get('agency_name')})}")
+    logger.info(f"  RUNTIME (travel):   {elapsed}s")
+    logger.info("=" * 55)
+    return rows
+
+
+def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
+    """Upsert travel rows into Supabase. Returns count upserted, or 0 on failure
+    or if env vars are missing. Falls back to JSON dump in either case."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    if not sb_url or not sb_key:
+        logger.info("Travel upsert: SUPABASE_URL/SUPABASE_KEY not set — JSON dump only")
+        return 0
+    if not rows:
+        logger.info("Travel upsert: no rows to send")
+        return 0
+    import urllib.request as _urlreq, urllib.error as _urlerr
+    url = f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?on_conflict=agency_name,agency_job_id"
+    headers = {
+        "apikey":        sb_key,
+        "Authorization": f"Bearer {sb_key}",
+        "Content-Type":  "application/json",
+        "Prefer":        "resolution=merge-duplicates,return=minimal",
+    }
+    BATCH = 500
+    sent = 0
+    for i in range(0, len(rows), BATCH):
+        chunk = rows[i:i + BATCH]
+        body = json.dumps(chunk).encode()
+        rq = _urlreq.Request(url, data=body, headers=headers, method="POST")
+        try:
+            with _urlreq.urlopen(rq, timeout=60) as resp:
+                _ = resp.read()
+            sent += len(chunk)
+        except _urlerr.HTTPError as e:
+            err_body = e.read().decode()[:500]
+            logger.warning(f"Travel upsert batch {i}: HTTP {e.code} — {err_body}")
+            break
+        except Exception as e:
+            logger.warning(f"Travel upsert batch {i}: {e}")
+            break
+    logger.info(f"Travel upsert: {sent}/{len(rows)} rows sent to Supabase")
+    return sent
+
+
+def scrape_travel() -> list[dict]:
+    os.makedirs("logs", exist_ok=True)
+    return asyncio.run(run_all_travel())
+
+
+# ══════════════════════════════════════════════════════════════════════════
 #  MASTER RUNNER
 # ══════════════════════════════════════════════════════════════════════════
 async def run_all() -> list[dict]:
@@ -4528,7 +4817,20 @@ def scrape() -> list[dict]:
 
 
 if __name__ == "__main__":
+    # ── Hospital jobs (existing flow, unchanged) ──────────────────────────
     jobs = scrape()
     with open("jobs_latest.json", "w") as f:
         json.dump(jobs, f, indent=2)
     print(f"Saved {len(jobs):,} jobs to jobs_latest.json")
+
+    # ── Travel jobs (new flow — separate table, separate JSON, optional
+    #    direct upsert to Supabase if SUPABASE_URL/SUPABASE_KEY are present) ──
+    try:
+        travel_rows = scrape_travel()
+        with open("travel_jobs_latest.json", "w") as f:
+            json.dump(travel_rows, f, indent=2)
+        print(f"Saved {len(travel_rows):,} travel jobs to travel_jobs_latest.json")
+        _upsert_travel_jobs_to_supabase(travel_rows)
+    except Exception as e:
+        # Travel scraping must never break the hospital-jobs nightly run
+        print(f"Travel jobs scrape failed (non-fatal): {e}")
