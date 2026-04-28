@@ -4161,35 +4161,47 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
     datacenter IPs are flagged by Cloudflare). Applies playwright-stealth if
     available — install with `pip install playwright-stealth` in requirements.txt.
     """
+    # Try Patchright FIRST — drop-in Playwright fork engineered specifically
+    # to defeat Cloudflare/CF Turnstile/DataDome detection. Patches a number
+    # of automation fingerprints that even playwright-stealth misses.
+    #   pip install patchright
+    # If patchright isn't installed, fall back to playwright + stealth.
+    async_playwright = None
+    using_patchright = False
     try:
-        from playwright.async_api import async_playwright
+        from patchright.async_api import async_playwright as _patchright_pw
+        async_playwright = _patchright_pw
+        using_patchright = True
+        logger.info("HCA Healthcare: Patchright detected — using anti-detection fork")
     except ImportError:
-        logger.warning("HCA Healthcare: Playwright not installed — skipping")
-        return []
+        try:
+            from playwright.async_api import async_playwright as _playwright_pw
+            async_playwright = _playwright_pw
+            logger.info("HCA Healthcare: using vanilla Playwright (consider installing patchright for HCA)")
+        except ImportError:
+            logger.warning("HCA Healthcare: neither patchright nor playwright installed — skipping")
+            return []
 
-    # Optional: stealth patches that defeat headless detection (navigator.webdriver,
-    # missing chrome.runtime, plugins shim, etc.). HARD-recommended for HCA.
+    # Stealth — applied if available; less critical when using Patchright since
+    # Patchright already bundles the same patches (and more).
     #
     # playwright-stealth has TWO incompatible APIs depending on version:
     #   1.x — `from playwright_stealth import stealth_async`  (function, deprecated)
     #   2.x — `from playwright_stealth import Stealth`        (class with .apply_stealth_async)
-    # `>=1.0.6` in requirements.txt pulls 2.x by default. Detect which is present
-    # and wrap the 2.x class API in a function with the same shape as 1.x.
     stealth_async = None
-    try:
-        # 2.x API first — current PyPI default
-        from playwright_stealth import Stealth as _StealthCls
-        _stealth_obj = _StealthCls()
-        async def stealth_async(page):  # noqa: F811
-            await _stealth_obj.apply_stealth_async(page)
-        logger.info("HCA Healthcare: playwright-stealth 2.x detected (Stealth class API)")
-    except ImportError:
+    if not using_patchright:    # don't double-patch if Patchright already covers it
         try:
-            from playwright_stealth import stealth_async  # noqa: F401
-            logger.info("HCA Healthcare: playwright-stealth 1.x detected (stealth_async function API)")
+            from playwright_stealth import Stealth as _StealthCls
+            _stealth_obj = _StealthCls()
+            async def stealth_async(page):  # noqa: F811
+                await _stealth_obj.apply_stealth_async(page)
+            logger.info("HCA Healthcare: playwright-stealth 2.x detected (Stealth class API)")
         except ImportError:
-            logger.warning("HCA Healthcare: playwright-stealth NOT installed — bot detection likely. "
-                           "Add 'playwright-stealth' to requirements.txt for the next run.")
+            try:
+                from playwright_stealth import stealth_async  # noqa: F401
+                logger.info("HCA Healthcare: playwright-stealth 1.x detected (stealth_async function API)")
+            except ImportError:
+                logger.warning("HCA Healthcare: playwright-stealth NOT installed — bot detection likely.")
 
     logger.info("HCA Healthcare: launching Chromium for Cloudflare-protected scrape...")
     all_jobs: list[Job] = []
@@ -4544,75 +4556,133 @@ def _parse_atrium_html(html: str, page: int) -> tuple[list[Job], int]:
     return out, max_page
 
 
-async def scrape_atrium_page(session: aiohttp.ClientSession, page: int) -> tuple[list[Job], int, bool]:
-    """Fetch one page. Returns (jobs, max_page_seen, ok)."""
-    url = f"{ATRIUM_BASE}/search/jobs?page={page}&q=&location="
-    headers = {
-        "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Referer":         f"{ATRIUM_BASE}/search/jobs",
-        "Sec-Fetch-Dest":  "document",
-        "Sec-Fetch-Mode":  "navigate",
-        "Sec-Fetch-Site":  "same-origin",
-        "Upgrade-Insecure-Requests": "1",
-    }
-    for attempt in range(3):
-        try:
-            async with session.get(
-                url, headers=headers,
-                proxy=proxies.get(), ssl=False,
-                timeout=aiohttp.ClientTimeout(total=30),
-                allow_redirects=True,
-            ) as r:
-                if r.status != 200:
-                    logger.info(f"Atrium page {page}: HTTP {r.status} (attempt {attempt+1})")
-                    await asyncio.sleep(1.5)
-                    continue
-                html = await r.text(errors="replace")
-                if "<html" not in html.lower() or len(html) < 5000:
-                    logger.info(f"Atrium page {page}: short response {len(html)}b (attempt {attempt+1})")
-                    await asyncio.sleep(1.5)
-                    continue
-            jobs, max_page = _parse_atrium_html(html, page)
-            return jobs, max_page, True
-        except Exception as e:
-            logger.info(f"Atrium page {page}: {e} (attempt {attempt+1})")
-            await asyncio.sleep(1.5)
-    return [], page, False
-
-
 async def run_atrium(session: aiohttp.ClientSession) -> list[Job]:
-    logger.info("Atrium Health: starting Coveo HTML scrape...")
+    """Atrium uses Cloudflare-fronted Coveo HTML. aiohttp + Webshare residential
+    consistently 403s. Browser-based Patchright/Playwright path mirrors HCA:
+       1. Launch Chromium through residential proxy
+       2. Navigate page 1 (Cloudflare clears, sets cf_clearance)
+       3. Use page.evaluate() with parallel fetch() to grab pages 2..N inside
+          the cleared session (cookies ride along)
+       4. Parse each HTML body with the existing _parse_atrium_html regex
+    """
+    # Try Patchright first, fall back to Playwright
+    async_playwright = None
+    using_patchright = False
+    try:
+        from patchright.async_api import async_playwright as _pw
+        async_playwright = _pw; using_patchright = True
+        logger.info("Atrium Health: Patchright detected — using anti-detection fork")
+    except ImportError:
+        try:
+            from playwright.async_api import async_playwright as _pw
+            async_playwright = _pw
+            logger.info("Atrium Health: using vanilla Playwright")
+        except ImportError:
+            logger.warning("Atrium Health: neither patchright nor playwright installed — skipping")
+            return []
+
+    # Residential proxy (Atrium WAF flags datacenter IPs, same as HCA)
+    pw_proxy = None
+    proxy_url = proxies.get()
+    if proxy_url:
+        m = re.match(r"https?://([^:]+):([^@]+)@([^:]+):(\d+)", proxy_url)
+        if m:
+            pw_proxy = {"server": f"http://{m.group(3)}:{m.group(4)}",
+                        "username": m.group(1), "password": m.group(2)}
+            logger.info(f"Atrium Health: using residential proxy {m.group(3)}:{m.group(4)}")
+
+    logger.info("Atrium Health: launching Chromium for Coveo HTML scrape...")
     all_jobs: list[Job] = []
 
-    # Page 1 sets the upper bound from pagination links
-    p1_jobs, max_page, ok = await scrape_atrium_page(session, 1)
-    if not ok:
-        logger.warning("Atrium Health: page 1 failed — aborting (likely IP-blocked)")
-        return []
-    all_jobs.extend(p1_jobs)
-    page_cap = min(max_page, 200)   # safety cap; HAR showed ~119 pages
-    logger.info(f"  Atrium: page 1 → {len(p1_jobs)} jobs, will sweep through page {page_cap}")
+    async with async_playwright() as pw:
+        launch_kwargs = dict(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox",
+                  "--disable-blink-features=AutomationControlled",
+                  "--disable-dev-shm-usage"],
+        )
+        if pw_proxy: launch_kwargs["proxy"] = pw_proxy
+        browser = await pw.chromium.launch(**launch_kwargs)
+        try:
+            ctx = await browser.new_context(
+                viewport={"width": 1440, "height": 900},
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                locale="en-US", timezone_id="America/New_York",
+            )
+            await ctx.add_init_script(
+                "Object.defineProperty(navigator,'webdriver',{get:()=>false});"
+                "window.chrome = window.chrome || {runtime: {}};"
+            )
+            page = await ctx.new_page()
 
-    # Pages 2..N sequentially (Atrium 403s easily on parallel hammering)
-    consecutive_zero = 0
-    for page in range(2, page_cap + 1):
-        jobs, _, ok = await scrape_atrium_page(session, page)
-        if not ok:
-            consecutive_zero += 1
-            if consecutive_zero >= 3: break
-            continue
-        if not jobs:
-            consecutive_zero += 1
-            if consecutive_zero >= 5: break
-        else:
-            consecutive_zero = 0
-        all_jobs.extend(jobs)
-        if page % 25 == 0:
-            logger.info(f"  Atrium: through page {page}, {len(all_jobs):,} jobs so far")
-        await asyncio.sleep(0.5)
+            # Page 1
+            page1_url = f"{ATRIUM_BASE}/search/jobs?page=1&q=&location="
+            try:
+                await page.goto(page1_url, wait_until="domcontentloaded", timeout=60000)
+            except Exception as e:
+                logger.warning(f"Atrium: page 1 navigation failed ({e})")
+                await browser.close(); return []
+
+            # Wait for the page to fully render (Coveo hydrates client-side after the
+            # raw HTML loads). The CoveoResultLink class signals jobs are present.
+            cleared = False
+            for _ in range(15):
+                content = await page.content()
+                if "CoveoResultLink" in content:
+                    cleared = True; break
+                if "Just a moment" in content or "Cloudflare" in content:
+                    await asyncio.sleep(2)
+                else:
+                    await asyncio.sleep(1)
+
+            if not cleared:
+                logger.warning("Atrium Health: page 1 did not render Coveo results — Cloudflare blocked or page changed")
+                await browser.close(); return []
+
+            html1 = await page.content()
+            p1_jobs, max_page = _parse_atrium_html(html1, 1)
+            all_jobs.extend(p1_jobs)
+            page_cap = min(max_page, 200)
+            logger.info(f"  Atrium: page 1 → {len(p1_jobs)} jobs, sweeping through page {page_cap}")
+
+            # Pages 2..N via in-page parallel fetch() — cleared session cookies
+            # ride along automatically with credentials:'include'.
+            BATCH = 6   # Atrium more sensitive to parallelism than HCA
+            for batch_start in range(2, page_cap + 1, BATCH):
+                batch_pages = list(range(batch_start, min(batch_start + BATCH, page_cap + 1)))
+                try:
+                    htmls = await page.evaluate(
+                        """async (pageNums) => {
+                            const fetchOne = async (p) => {
+                                try {
+                                    const r = await fetch(
+                                        '/search/jobs?page=' + p + '&q=&location=',
+                                        { credentials: 'include',
+                                          headers: { 'Accept': 'text/html,application/xhtml+xml' } }
+                                    );
+                                    if (!r.ok) return '';
+                                    return await r.text();
+                                } catch (e) { return ''; }
+                            };
+                            return await Promise.all(pageNums.map(fetchOne));
+                        }""",
+                        batch_pages,
+                    )
+                    for p, html in zip(batch_pages, htmls):
+                        if not html or len(html) < 5000: continue
+                        pj, _ = _parse_atrium_html(html, p)
+                        all_jobs.extend(pj)
+                except Exception as e:
+                    logger.info(f"Atrium: batch starting page {batch_start} failed: {e}")
+
+                if (batch_start - 2) % (BATCH * 5) == 0:
+                    logger.info(f"  Atrium: through page {min(batch_start + BATCH - 1, page_cap)}/{page_cap}, "
+                                f"{len(all_jobs):,} jobs so far")
+                await asyncio.sleep(0.4)
+
+        finally:
+            try: await browser.close()
+            except Exception: pass
 
     # Dedupe within run on job_id
     seen, uniq = set(), []
