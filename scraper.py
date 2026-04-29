@@ -2415,6 +2415,148 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     logger.info(f"  Phenom {system}: {len(jobs)} jobs")
     return jobs
 
+#
+# ── Baylor Scott & White (BSW) — dedicated Phenom refineSearch handler ──────
+# Verified Apr 29 2026: refineSearch endpoint returns the full 1,935-job inventory
+# when called with the correct payload shape (page14-ds, siteType=external, plus
+# the full-required field set). Replaces the old Playwright handler which only
+# captured ~58 jobs from the first-page render.
+#
+# Endpoint:    POST https://jobs.bswhealth.com/widgets
+# Payload:    { "ddoKey":"refineSearch", "pageId":"page14-ds",
+#              "siteType":"external", "from":N, "size":100, ... }
+# Response:   { "refineSearch": { "totalHits": N, "data": { "jobs": [...] } } }
+#
+# Each job exposes: jobId, jobSeqNo, title, companyName, workLocation, city,
+# state (full name), country, postalCode, category, multi_category_array, type,
+# postedDate, dateCreated, applyUrl, externalApply, jobShift,
+# location (e.g. "Waxahachie, Texas, United States"), descriptionTeaser.
+async def run_bsw(session) -> list[Job]:
+    logger.info("BSW: scraping Baylor Scott & White via Phenom refineSearch...")
+    base_url   = "https://jobs.bswhealth.com"
+    widgets    = f"{base_url}/widgets"
+    page_size  = 100
+    out: list[Job] = []
+    headers = {
+        **HEADERS,
+        "Accept":           "application/json",
+        "Content-Type":     "application/json",
+        "Origin":           base_url,
+        "Referer":          f"{base_url}/us/en/search-results",
+        "X-Requested-With": "XMLHttpRequest",
+    }
+
+    def _payload(offset: int) -> dict:
+        return {
+            "lang": "en_us", "deviceType": "desktop", "country": "us",
+            "pageName": "search-results", "ddoKey": "refineSearch",
+            "sortBy": "", "subsearch": "", "from": offset, "irs": False,
+            "jobs": True, "counts": True,
+            "all_fields": ["category", "jobFunction", "JobLevel0Code",
+                           "state", "city", "type", "jobShift"],
+            "size": page_size, "clearAll": False, "jdsource": "facets",
+            "isSliderEnable": False, "pageId": "page14-ds",
+            "siteType": "external", "keywords": "", "global": True,
+            "selected_fields": {}, "locationData": {},
+        }
+
+    total_hits = None
+    offset = 0
+    pages_fetched = 0
+    consecutive_empty = 0
+    while True:
+        try:
+            async with session.post(
+                widgets, json=_payload(offset),
+                headers=headers, ssl=False,
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as r:
+                if r.status != 200:
+                    logger.info(f"BSW: HTTP {r.status} at offset={offset}")
+                    break
+                data = await r.json(content_type=None)
+        except Exception as e:
+            logger.info(f"BSW: exception at offset={offset}: {e}")
+            break
+
+        inner = data.get("refineSearch") or {}
+        if total_hits is None:
+            total_hits = inner.get("totalHits") or 0
+            logger.info(f"BSW: totalHits={total_hits}")
+        listings = (inner.get("data") or {}).get("jobs") or []
+        if not listings:
+            consecutive_empty += 1
+            if consecutive_empty >= 2:
+                break
+            offset += page_size
+            await jitter()
+            continue
+        consecutive_empty = 0
+
+        for j in listings:
+            try:
+                job_seq   = j.get("jobSeqNo") or j.get("jobId") or ""
+                if not job_seq:
+                    continue
+                title     = j.get("title", "")
+                if not title:
+                    continue
+                # state arrives as full name ("Texas") — convert to 2-letter code.
+                full_loc  = j.get("location") or j.get("cityStateCountry") or ""
+                _city, _state = parse_city_state(full_loc) if full_loc else ("", "")
+                city  = _city  or j.get("city") or ""
+                state = _state or ""
+                if not state and j.get("state"):
+                    # Fall back: pass "<state>" through parse_city_state for name → abbr
+                    _, state = parse_city_state(j["state"])
+                # Apply URL: prefer the BSW careers-site detail page over the
+                # Taleo apply URL, so users land on a real job description page
+                # we can also link to from analytics.
+                apply_url = j.get("applyUrl") or ""
+                detail_url = f"{base_url}/us/en/job/{j.get('jobId') or ''}"
+                # employmentType: 'Full Time' → 'Full-time' (canonical UI form)
+                jt = (j.get("type") or "").strip()
+                if jt.lower() == "full time": jt = "Full-time"
+                elif jt.lower() == "part time": jt = "Part-time"
+                # Specialty: prefer the first multi_category_array entry
+                multi_cat = j.get("multi_category_array") or []
+                category_val = ""
+                if isinstance(multi_cat, list) and multi_cat and isinstance(multi_cat[0], dict):
+                    category_val = multi_cat[0].get("category") or ""
+                if not category_val:
+                    category_val = j.get("category") or ""
+
+                out.append(Job(
+                    title=title,
+                    hospital_system="Baylor Scott & White",
+                    hospital_name=j.get("workLocation") or "Baylor Scott & White",
+                    city=city, state=state,
+                    location=j.get("cityStateCountry") or full_loc,
+                    specialty=category_val,
+                    job_type=jt,
+                    url=detail_url if j.get("jobId") else apply_url,
+                    job_id=str(job_seq),
+                    posted_date=str(j.get("postedDate") or j.get("dateCreated") or "")[:10],
+                    description=strip_html(str(j.get("descriptionTeaser") or "")),
+                    ats_platform="Phenom",
+                ))
+            except Exception as e:
+                logger.info(f"BSW: row parse error: {e}")
+                continue
+
+        pages_fetched += 1
+        offset += page_size
+        if total_hits and offset >= total_hits:
+            break
+        # Safety cap: ~30 pages × 100 = 3,000 jobs; well above the 1,935 inventory
+        if pages_fetched >= 30:
+            break
+        await jitter()
+
+    logger.info(f"  BSW: {len(out):,} jobs (totalHits={total_hits})")
+    return out
+
+
 async def run_phenom(session) -> list[Job]:
     logger.info(f"Phenom: scraping {len(PHENOM_ORGS)} systems...")
     results = await asyncio.gather(
@@ -3621,7 +3763,11 @@ async def run_playwright_scrapers() -> list[Job]:
         # PRODUCING JOBS — keep these
         ("Mayo Clinic",                   "https://jobs.mayoclinic.org/search-jobs"),
         ("CHRISTUS Health",               "https://careers.christushealth.org/job-search"),
-        ("Baylor Scott & White",          "https://jobs.bswhealth.com/us/en/search-results"),
+        # Baylor Scott & White — moved to dedicated run_bsw() handler (Apr 29 2026)
+        # using Phenom refineSearch endpoint. The Playwright route only captured
+        # ~58 jobs from the first-page render; the new handler returns the full
+        # 1,935-job inventory via paginated /widgets calls.
+        # ("Baylor Scott & White",          "https://jobs.bswhealth.com/us/en/search-results"),
         ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
         # LARGE SYSTEMS — Phenom via Playwright (proxy-free)
         # NOTE: HCA Healthcare is handled by dedicated run_hca() — do NOT add here
@@ -5052,6 +5198,7 @@ async def run_all() -> list[dict]:
             run_recruitingcom(proxy_session),
             run_infor(proxy_session),
             run_phenom(proxy_session),
+            run_bsw(direct_session),         # Baylor Scott & White — Phenom refineSearch direct API (Apr 29 2026)
             run_talentbrew(proxy_session),
             # ── New platforms from URL spreadsheet ──
             run_ukg(proxy_session),
