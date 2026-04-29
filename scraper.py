@@ -869,6 +869,14 @@ TALENTBREW_ORGS = {
     # ScionHealth — confirmed TalentBrew (company 40922, tbcdn.talentbrew.com)
     # 61 long-term acute care + 15 community hospitals across 26 states
     "ScionHealth":              ("https://jobs.scionhealth.com/search-jobs", 25),
+    # Kaiser Permanente — confirmed TalentBrew via HAR Apr 29 2026.
+    # Uses session-based flow: GET landing → POST SetSearchRequestGeoLocation
+    # → GET /search-jobs/results. Direct API call returns hasContent:false
+    # without proper proxy + cookies, so this entry depends on proxy session
+    # init handled inside scrape_talentbrew.
+    "Kaiser Permanente":        ("https://www.kaiserpermanentejobs.org/search-jobs", 100),
+    # NewYork-Presbyterian — same TalentBrew session pattern as Kaiser.
+    "NewYork-Presbyterian":     ("https://careers.nyp.org/search-jobs", 100),
 }
 
 
@@ -993,12 +1001,37 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
     Includes robust retry logic with exponential backoff + proxy rotation for
     connection drops (the CommonSpirit server intermittently drops the TCP
     connection mid-session, typically around page 14 of 48).
+
+    Some TalentBrew tenants (Kaiser, NYP) require a session warmup before the
+    /results endpoint returns content. We do a no-op landing GET + the
+    SetSearchRequestGeoLocation POST upfront — harmless for tenants that
+    don't need it (CommonSpirit, Methodist, ScionHealth).
     """
     jobs = []
     page = 1
     results_url = base_url.rstrip("/") + "/results"
     MAX_RETRIES = 10         # max retries per page before giving up on that page
     BASE_BACKOFF = 3.0       # seconds — doubles each retry
+
+    # ── Session warmup — required by Kaiser / NYP (Apr 29 2026 HAR pattern) ──
+    try:
+        async with req(session, "get", base_url,
+                       headers={**HEADERS, "Accept": "text/html,*/*"},
+                       proxy=proxies.get(), ssl=False,
+                       timeout=aiohttp.ClientTimeout(total=20)) as r0:
+            await r0.read()  # consume body to fully establish session
+        async with req(session, "post",
+                       base_url.rstrip("/") + "/SetSearchRequestGeoLocation?lat=null&lon=null",
+                       data=b"",
+                       headers={**HEADERS,
+                                "X-Requested-With": "XMLHttpRequest",
+                                "Accept": "application/json",
+                                "Content-Length": "0"},
+                       proxy=proxies.get(), ssl=False,
+                       timeout=aiohttp.ClientTimeout(total=15)) as r0:
+            await r0.read()
+    except Exception as e:
+        logger.info(f"TalentBrew {system}: warmup failed (non-fatal): {e}")
 
     while True:
         params = {
@@ -2111,15 +2144,86 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         if api_url:
             break
 
+    # ── Phase 1.5: HTML metadata discovery (BSW pattern, Apr 29 2026) ─────
+    # Modern Phenom orgs (Duke, UPMC, Hartford, BSW, Bon Secours, Hoag, etc.)
+    # require the full canonical refineSearch payload with the org-specific
+    # pageId embedded in the body. The pageId is unique per careers site
+    # (page3 for Duke, page5 for Hartford, page12 for Bon Secours, etc.) and
+    # is exposed as JSON in the search-results HTML. Fetching it once gives
+    # us the right pageId without hardcoding a per-org table.
+    discovered_page_id = None
+    discovered_ref_num = None
+    discovered_site_type = "external"
+    if not api_url:
+        # Different Phenom orgs use different URL paths for the search-results
+        # page. Try common variants in order. First successful 200 wins.
+        html_probe_urls = [
+            f"{base_url}/us/en/search-results",
+            f"{base_url}/search-results",
+            f"{base_url}/jobs/search",
+            f"{base_url}/careers/search",
+            base_url,                          # corporate landing — last resort
+        ]
+        for probe_url in html_probe_urls:
+            try:
+                async with session.get(
+                    probe_url,
+                    headers={**HEADERS,
+                        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                       "Chrome/130.0.0.0 Safari/537.36"),
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    },
+                    proxy=proxies.get(), ssl=False,
+                    timeout=aiohttp.ClientTimeout(total=15),
+                ) as r:
+                    if r.status != 200:
+                        continue
+                    html = await r.text()
+                    mp = re.search(r'"pageId"\s*:\s*"([^"]+)"', html)
+                    mr = re.search(r'"refNum"\s*:\s*"([^"]+)"', html)
+                    ms = re.search(r'"siteType"\s*:\s*"([^"]+)"', html)
+                    if mp:
+                        discovered_page_id = mp.group(1)
+                        if mr: discovered_ref_num = mr.group(1)
+                        if ms: discovered_site_type = ms.group(1)
+                        break
+            except Exception as e:
+                logger.info(f"Phenom {system}: HTML probe {probe_url} error: {e}")
+
+    if discovered_page_id:
+        logger.info(f"Phenom {system}: discovered pageId={discovered_page_id} "
+                    f"refNum={discovered_ref_num} siteType={discovered_site_type}")
+
     # ── Phase 2: Widgets endpoint fallback ────────────────────────────────
     if not api_url:
         widgets_url = f"{base_url}/widgets"
-        # refNum is the org code Phenom uses internally. Most modern Phenom
-        # widgets endpoints REQUIRE refNum in the request body. We derive it
-        # from PHENOM_ORG_CODES if present, fall back to org_code.
-        ref_num = (PHENOM_ORG_CODES.get(system) or org_code or "").upper()
+        # refNum is the org code Phenom uses internally. Prefer the value
+        # discovered from HTML (most accurate), then PHENOM_ORG_CODES table,
+        # then the CDN-derived org_code.
+        ref_num = (discovered_ref_num or PHENOM_ORG_CODES.get(system) or org_code or "").upper()
 
         widget_payloads = [
+            # ── refineSearch (canonical, BSW pattern Apr 29 2026) ────────────
+            # Only included when the HTML probe discovered a pageId. This is
+            # the working payload shape verified live against BSW (1,935 jobs)
+            # and Duke (854 jobs). Returns hits=0 with the wrong pageId, so
+            # we ONLY include this when discovered_page_id is set.
+            *([{
+                "lang": "en_us", "deviceType": "desktop", "country": "us",
+                "pageName": "search-results",
+                "ddoKey": "refineSearch",
+                "sortBy": "", "subsearch": "", "from": 0, "irs": False,
+                "jobs": True, "counts": True,
+                "all_fields": ["category", "jobFunction", "JobLevel0Code",
+                               "state", "city", "type", "jobShift"],
+                "size": 50, "clearAll": False, "jdsource": "facets",
+                "isSliderEnable": False,
+                "pageId": discovered_page_id,
+                "siteType": discovered_site_type,
+                "keywords": "", "global": True,
+                "selected_fields": {}, "locationData": {},
+            }] if discovered_page_id else []),
             # latestJobs — returns recent listings on landing/search pages.
             # Confirmed to return real data on Jackson Health, Spartanburg, etc.
             {
