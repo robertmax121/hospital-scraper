@@ -1014,6 +1014,19 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
     BASE_BACKOFF = 3.0       # seconds — doubles each retry
 
     # ── Session warmup — required by Kaiser / NYP (Apr 29 2026 HAR pattern) ──
+    # Sending null/empty geo causes their /results endpoint to respond with
+    # `hasContent:false` and a 61-byte shell. The fix (verified live against
+    # Kaiser 2026-04-29) is to POST the full location object with a real
+    # lat/lon. Chicago coords are a generic safe default — every TalentBrew
+    # tenant we've tested replies with full results once a valid location is set.
+    _warmup_body = json.dumps({
+        "IsInitialRequest": False, "k": None, "kt": 0,
+        "l": "Chicago, IL", "lt": 4,
+        "lp": "6252001-4896861-4888671-4887398",
+        "ac": None, "alp": None, "alt": 0, "r": None, "p": None,
+        "lat": 41.8781, "lon": -87.6298,
+        "orgIds": None, "shouldRefocusElement": False,
+    }).encode("utf-8")
     try:
         async with req(session, "get", base_url,
                        headers={**HEADERS, "Accept": "text/html,*/*"},
@@ -1021,12 +1034,15 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                        timeout=aiohttp.ClientTimeout(total=20)) as r0:
             await r0.read()  # consume body to fully establish session
         async with req(session, "post",
-                       base_url.rstrip("/") + "/SetSearchRequestGeoLocation?lat=null&lon=null",
-                       data=b"",
+                       base_url.rstrip("/") + "/SetSearchRequestGeoLocation",
+                       data=_warmup_body,
                        headers={**HEADERS,
                                 "X-Requested-With": "XMLHttpRequest",
                                 "Accept": "application/json",
-                                "Content-Length": "0"},
+                                "Content-Type": "application/json",
+                                "Origin": base_url.rstrip("/").rsplit("/", 1)[0]
+                                          if "/" in base_url else base_url,
+                                "Referer": base_url},
                        proxy=proxies.get(), ssl=False,
                        timeout=aiohttp.ClientTimeout(total=15)) as r0:
             await r0.read()
@@ -4517,17 +4533,23 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
 
             # Wait through Cloudflare interstitial. Job-card class 'neu-link' is the
             # signal that we're on the real results page, not the challenge page.
+            # Bumped from 30s → 75s because Patchright's Cloudflare bypass sometimes
+            # needs the full Turnstile challenge to grade out, which can take 45-60s
+            # on residential proxy IPs that haven't been seen before.
+            logger.info(f"HCA Healthcare: waiting for Cloudflare to clear "
+                        f"(patchright={using_patchright}, max 75s)...")
             cleared = False
-            for attempt in range(20):
+            for attempt in range(50):
                 content = await page.content()
                 if "neu-link" in content and "Showing" in content:
                     cleared = True
+                    logger.info(f"HCA Healthcare: Cloudflare cleared after {attempt*1.5:.0f}s")
                     break
                 if any(s in content for s in (
                     "Just a moment", "Checking your browser",
                     "challenges.cloudflare.com", "cf-browser-verification",
                 )):
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(1.5)
                     continue
                 await asyncio.sleep(1.5)
 
@@ -4558,7 +4580,7 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
                 logger.info(f"HCA diag: failed to capture diagnostics: {_diag_e}")
 
             if not cleared:
-                logger.warning("HCA Healthcare: Cloudflare challenge did not clear after 35s — aborting")
+                logger.warning("HCA Healthcare: Cloudflare challenge did not clear after 75s — aborting")
                 await browser.close()
                 return []
 
@@ -4646,11 +4668,18 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
         "X-Requested-With": "XMLHttpRequest",
         "Referer": "https://www.careershealthcare.com/job/",
         "Origin": "https://www.careershealthcare.com",
+        "Accept": "application/json, text/javascript, */*; q=0.01",
     }
 
     logger.info("CHS: starting WPJobBoard scrape...")
 
+    # Primary endpoint discovered via HAR Apr 29 2026:
+    # api.careershealthcare.com/job/wp_job_grid returns {"payload":[<html>,...]}
+    # Each payload entry is a self-contained HTML job card.
     probes = [
+        ("get",  "https://api.careershealthcare.com/job/wp_job_grid",
+         {"limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 1}),
+        # Legacy fallbacks
         ("get",  "https://www.careershealthcare.com/wp_job_grid",
          {"limit": LIMIT, "order-by": "title", "offset": 0, "_directory": 120}),
         ("post", "https://www.careershealthcare.com/wp-admin/admin-ajax.php",
@@ -4701,9 +4730,57 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
                     data = _j.loads(text)
                 except:
                     break
-                entries = data if isinstance(data, list) else (
-                    data.get("jobs") or data.get("data") or []
-                )
+                # Two response shapes possible:
+                #   1. New: {"payload":[<html_card>, ...], "meta":{...}}  (api subdomain)
+                #   2. Legacy: list of {job_title, job_city, ...} or {jobs:[...]}
+                entries = []
+                payload_html = None
+                if isinstance(data, dict) and isinstance(data.get("payload"), list):
+                    payload_html = data["payload"]
+                else:
+                    entries = data if isinstance(data, list) else (
+                        data.get("jobs") or data.get("data") or []
+                    )
+
+                # Shape 1 — parse HTML cards (api.careershealthcare.com)
+                if payload_html is not None:
+                    if not payload_html:
+                        break
+                    parsed_count = 0
+                    for card in payload_html:
+                        if not isinstance(card, str):
+                            continue
+                        m_id    = re.search(r'data-id="(\d+)"', card)
+                        m_hosp  = re.search(r'<h3>([^<]+)</h3>', card)
+                        m_loc   = re.search(r'<h5 class="job-location">([^<]+)</h5>', card)
+                        m_title = re.search(r'<h5 class="job-title">\s*<a [^>]*href="([^"]+)"[^>]*>([^<]+)</a>', card)
+                        m_shift = re.search(r'<h6 class="job-shift">\s*([^<]+?)\s*</h6>', card)
+                        if not (m_id and m_title): continue
+                        jid = m_id.group(1)
+                        jurl = m_title.group(1).strip()
+                        title_t = re.sub(r'\s+', ' ', m_title.group(2)).strip()
+                        hosp = (m_hosp.group(1).strip() if m_hosp else "Community Health Systems").replace("&#039;", "'").replace("&amp;", "&")
+                        loc_str = m_loc.group(1).strip() if m_loc else ""
+                        city, state = parse_city_state(loc_str)
+                        jtype = (m_shift.group(1).strip() if m_shift else "")
+                        jobs.append(Job(
+                            title=title_t, hospital_system="Community Health Systems",
+                            hospital_name=hosp, city=city, state=state,
+                            location=loc_str or f"{city}, {state}".strip(", "),
+                            specialty="", job_type=jtype, url=jurl, job_id=jid,
+                            posted_date="",
+                            description="",
+                            ats_platform="WPJobBoard",
+                        ))
+                        parsed_count += 1
+                    logger.info(f"  CHS offset {offset}: {parsed_count} jobs (total: {len(jobs)})")
+                    if parsed_count < LIMIT:
+                        break
+                    offset += LIMIT
+                    await jitter()
+                    continue
+
+                # Shape 2 — legacy object-list response
                 if not entries:
                     break
                 for j in entries:
