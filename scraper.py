@@ -5272,6 +5272,154 @@ async def run_vivian(session: aiohttp.ClientSession) -> list[TravelJob]:
     return uniq
 
 
+# ── Aya Healthcare ────────────────────────────────────────────────────────
+# Aya runs a clean public JSON API (api.ayahealthcare.com) that returns the
+# same listings as their /healthcare-jobs/ page. No auth, no cookies, no
+# CSRF. Cloudflare in front issues a __cf_bm soft cookie but doesn't
+# challenge straight requests with a real UA + Origin header.
+#
+# Total travel inventory observed: ~7,900 jobs across all professions.
+# Pagination is offset/limit; API accepts limit=250 (verified). 32 pages
+# × 250 = full catalog in ~30 sec.
+#
+# employmentTypeCodes mapping from response.employmentTypeCount:
+#   1 Permanent · 2 TravelOrContract · 3 PerDiem · 5/6 LocumTenens
+# We pull code 2 (Travel) here. Permanent/PerDiem are deliberately skipped
+# — those belong on the hospital side, not the travel page.
+AYA_API_BASE = "https://api.ayahealthcare.com/AyaHealthcareWeb/job/search"
+AYA_PAGE_SIZE = 250
+AYA_MAX_PAGES = 50            # ceiling — current inventory needs ~32
+
+async def scrape_aya_page(session: aiohttp.ClientSession, offset: int) -> tuple[list[TravelJob], int]:
+    """Fetch one Aya page. Returns (jobs, total_count)."""
+    params = {
+        "employmentTypeCodes": "2",
+        "includeRelatedSpecialties": "true",
+        "useCityLatLong": "true",
+        "limit":  str(AYA_PAGE_SIZE),
+        "offset": str(offset),
+    }
+    headers = {
+        "Origin":     "https://www.ayahealthcare.com",
+        "Referer":    "https://www.ayahealthcare.com/healthcare-jobs/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Accept":     "application/json, text/plain, */*",
+    }
+    try:
+        async with session.get(AYA_API_BASE, params=params, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as r:
+            if r.status != 200:
+                logger.info(f"Aya: HTTP {r.status} at offset {offset}")
+                return [], 0
+            data = await r.json()
+    except Exception as e:
+        logger.info(f"Aya: page error at offset {offset}: {e}")
+        return [], 0
+
+    items = data.get("items") or []
+    total = int(data.get("count") or 0)
+    out: list[TravelJob] = []
+    for j in items:
+        try:
+            jid = j.get("jobID")
+            if jid is None: continue
+            # Pay: prefer weeklyPayLow/High; fall back to regularPayLow/High;
+            # then to alternatePayLow/High; then parse payRate.value.
+            wp_low  = _coerce_money(j.get("weeklyPayLow"))  or _coerce_money(j.get("regularPayLow"))  or _coerce_money(j.get("alternatePayLow"))
+            wp_high = _coerce_money(j.get("weeklyPayHigh")) or _coerce_money(j.get("regularPayHigh")) or _coerce_money(j.get("alternatePayHigh"))
+            pay_display = None
+            pr = j.get("payRate") or {}
+            if isinstance(pr, dict) and pr.get("value"):
+                pay_display = str(pr["value"]).strip()
+            elif wp_low and wp_high:
+                pay_display = f"${wp_low:,.0f}–${wp_high:,.0f}/wk"
+            elif wp_low:
+                pay_display = f"${wp_low:,.0f}/wk"
+
+            city = (j.get("city") or "").strip() or None
+            st   = (j.get("stateAbbrev") or "").strip() or None
+            location = ", ".join(p for p in (city, st) if p) or None
+
+            prof = (j.get("professionText") or "").strip()
+            expert = (j.get("expertiseText") or "").strip()
+            # Aya's profession/expertise often duplicate for non-RN roles
+            # (e.g. Perfusionist - Perfusionist). Dedup case-insensitively.
+            if prof and expert and prof.lower() == expert.lower():
+                title = prof
+            else:
+                title = " - ".join(p for p in (prof, expert) if p) or "Travel Contract"
+
+            # contract_weeks: `duration` is in weeks per Aya's UI
+            cw = j.get("duration")
+            try: cw = int(cw) if cw is not None else None
+            except: cw = None
+
+            # hours_per_week: shifts (per week) × hours (per shift)
+            hpw = None
+            try:
+                shifts = j.get("shifts")
+                hours  = j.get("hours")
+                if shifts is not None and hours is not None:
+                    hpw = int(round(float(shifts) * float(hours)))
+            except: pass
+
+            shift_text = j.get("shiftText") or j.get("longShift") or None
+            start_disp = j.get("startDateDisplay") or j.get("startDate")
+
+            out.append(TravelJob(
+                agency_name        = "Aya Healthcare",
+                agency_job_id      = str(jid),
+                title              = title,
+                specialty          = _classify_travel_specialty(title, expert) or expert or None,
+                city               = city,
+                state              = st,
+                location           = location,
+                weekly_pay_numeric = wp_low,           # match Vivian convention: low end is the sortable number
+                weekly_pay_display = pay_display,
+                hourly_rate_numeric= None,
+                housing_stipend    = None,
+                contract_weeks     = cw,
+                hours_per_week     = hpw,
+                shift              = shift_text,
+                start_date         = start_disp,
+                hospital_facility  = (j.get("facilityName") or "").strip() or None,
+                description        = None,
+                url                = f"https://www.ayahealthcare.com/travel-nursing-job/{jid}",
+                posted_date        = j.get("posted") or j.get("enteredTime"),
+            ))
+        except Exception as e:
+            logger.info(f"Aya parse error: {e}")
+            continue
+    return out, total
+
+
+async def run_aya(session: aiohttp.ClientSession) -> list[TravelJob]:
+    logger.info("Aya Healthcare: starting scrape (travel jobs)")
+    all_jobs: list[TravelJob] = []
+    total = 0
+    for page in range(0, AYA_MAX_PAGES):
+        offset = page * AYA_PAGE_SIZE
+        jobs, total = await scrape_aya_page(session, offset)
+        if page == 0:
+            logger.info(f"  Aya Healthcare: total={total:,}, page 0: {len(jobs)} jobs")
+        if not jobs:
+            logger.info(f"  Aya Healthcare: stopped at page {page+1} ({len(all_jobs):,} so far)")
+            break
+        all_jobs.extend(jobs)
+        if (page + 1) * AYA_PAGE_SIZE >= total:
+            logger.info(f"  Aya Healthcare: reached total at page {page+1} ({len(all_jobs):,} jobs)")
+            break
+        await asyncio.sleep(0.25)         # well under the 2000/30s rate limit
+    else:
+        logger.info(f"  Aya Healthcare: hit page cap {AYA_MAX_PAGES}")
+    # Dedupe within Aya on agency_job_id
+    seen, uniq = set(), []
+    for j in all_jobs:
+        if j.agency_job_id in seen: continue
+        seen.add(j.agency_job_id); uniq.append(j)
+    logger.info(f"Aya Healthcare: {len(uniq):,} unique travel listings")
+    return uniq
+
+
 # ── Travel jobs runner + Supabase upsert ──────────────────────────────────
 async def run_all_travel() -> list[dict]:
     start = datetime.now()
@@ -5283,6 +5431,7 @@ async def run_all_travel() -> list[dict]:
                                       max_line_size=65536, max_field_size=65536) as direct_session:
         results = await asyncio.gather(
             run_vivian(direct_session),    # Vivian doesn't need proxy; Cloudflare on their end is mild
+            run_aya(direct_session),       # Aya — clean public JSON, no proxy needed
             return_exceptions=True,
         )
     all_travel: list[TravelJob] = []
