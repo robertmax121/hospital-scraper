@@ -12,7 +12,7 @@ import re
 import time
 import os
 from dataclasses import dataclass, asdict, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 os.makedirs("logs", exist_ok=True)
@@ -5157,6 +5157,13 @@ async def scrape_vivian_page(session: aiohttp.ClientSession,
         try:
             jid = str(j.get("objectID") or "")
             if not jid: continue
+            # Vivian's Algolia index sometimes returns several objectIDs for
+            # the same underlying job, distinguished by a 32-char hex hash on
+            # a stable parent ID (e.g. "scraped::9069_2413897-fbc9...").
+            # Strip the hash so the (agency_name, agency_job_id) UNIQUE
+            # constraint dedupes these phantom variants — otherwise we
+            # accumulate hundreds of rows for one real job.
+            stable_jid = re.sub(r"-[a-f0-9]{32}$", "", jid)
             # Title — Vivian doesn't expose `title`; nested under `titles.{simple|verbose|gpt}`
             titles = j.get("titles") or {}
             if isinstance(titles, dict):
@@ -5219,11 +5226,13 @@ async def scrape_vivian_page(session: aiohttp.ClientSession,
             specialty = _classify_travel_specialty(title, specialty_raw)
 
             slug = j.get("jobDetailsSlug") or jid
-            url_field = f"https://www.vivian.com/job/{slug}/"
+            # Vivian serves canonical job pages at /jobs/<slug>/ (plural).
+            # The /job/<slug>/ form they used previously now 404s.
+            url_field = f"https://www.vivian.com/jobs/{slug}/"
 
             out.append(TravelJob(
                 agency_name=agency,
-                agency_job_id=f"vivian:{jid}",
+                agency_job_id=f"vivian:{stable_jid}",
                 title=title,
                 specialty=specialty,
                 city=city, state=state_code,
@@ -5438,11 +5447,16 @@ async def run_all_travel() -> list[dict]:
     for r in results:
         if isinstance(r, list):
             all_travel.extend(r)
-    # Convert to dicts (with derived `is_active=True` and `scraped_at`)
+    # Convert to dicts. We stamp scraped_at to the current run's start time on
+    # every row so that the PostgREST upsert refreshes it on conflict — that
+    # gives us a reliable "last seen" signal for the post-upsert deactivation
+    # pass below.
+    run_started_at_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     rows = []
     for j in all_travel:
         d = asdict(j)
         d["is_active"] = True
+        d["scraped_at"] = run_started_at_iso
         rows.append(d)
     elapsed = (datetime.now() - start).seconds
     logger.info("=" * 55)
@@ -5455,7 +5469,12 @@ async def run_all_travel() -> list[dict]:
 
 def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     """Upsert travel rows into Supabase. Returns count upserted, or 0 on failure
-    or if env vars are missing. Falls back to JSON dump in either case."""
+    or if env vars are missing. Falls back to JSON dump in either case.
+
+    After a successful upsert, performs a deactivation pass: any row whose
+    url matches a domain we scraped this run AND whose scraped_at is older
+    than this run's start gets is_active=false. That keeps the table from
+    growing unboundedly with listings the source has removed."""
     sb_url = os.environ.get("SUPABASE_URL", "")
     sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     if not sb_url or not sb_key:
@@ -5490,6 +5509,59 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
             logger.warning(f"Travel upsert batch {i}: {e}")
             break
     logger.info(f"Travel upsert: {sent}/{len(rows)} rows sent to Supabase")
+
+    # ── Deactivation pass ──────────────────────────────────────────────
+    # Per-domain: if we sent at least DEACT_MIN rows whose url contains the
+    # domain, mark every row from that domain whose scraped_at predates this
+    # run as is_active=false. The minimum threshold protects against a
+    # partial scraper outage wiping the table.
+    DEACT_MIN = 100
+    if sent == 0:
+        return sent
+    run_started_iso = min(
+        (r.get("scraped_at") for r in rows if r.get("scraped_at")),
+        default=None,
+    )
+    if not run_started_iso:
+        logger.info("Travel deactivate: no scraped_at on rows; skipping")
+        return sent
+    domain_counts: dict[str, int] = {}
+    for r in rows:
+        u = (r.get("url") or "").lower()
+        for d in ("vivian.com", "ayahealthcare.com"):
+            if d in u:
+                domain_counts[d] = domain_counts.get(d, 0) + 1
+                break
+    patch_headers = {
+        "apikey":        sb_key,
+        "Authorization": f"Bearer {sb_key}",
+        "Content-Type":  "application/json",
+        "Prefer":        "return=minimal,count=exact",
+    }
+    for domain, n in domain_counts.items():
+        if n < DEACT_MIN:
+            logger.info(f"Travel deactivate {domain}: only {n} fresh rows — skipping (min {DEACT_MIN})")
+            continue
+        # PostgREST PATCH: filter is_active=true & scraped_at<run_started & url matches domain
+        from urllib.parse import quote as _q
+        like_pattern = _q(f"*{domain}*")
+        purl = (
+            f"{sb_url.rstrip('/')}/rest/v1/travel_jobs"
+            f"?is_active=eq.true"
+            f"&scraped_at=lt.{_q(run_started_iso)}"
+            f"&url=ilike.{like_pattern}"
+        )
+        body = json.dumps({"is_active": False}).encode()
+        rq = _urlreq.Request(purl, data=body, headers=patch_headers, method="PATCH")
+        try:
+            with _urlreq.urlopen(rq, timeout=120) as resp:
+                cr = resp.headers.get("Content-Range", "")
+                deactivated = cr.split("/")[-1] if "/" in cr else "?"
+            logger.info(f"Travel deactivate {domain}: {deactivated} rows (scraped_at < {run_started_iso})")
+        except _urlerr.HTTPError as e:
+            logger.warning(f"Travel deactivate {domain}: HTTP {e.code} — {e.read().decode()[:300]}")
+        except Exception as e:
+            logger.warning(f"Travel deactivate {domain}: {e}")
     return sent
 
 
