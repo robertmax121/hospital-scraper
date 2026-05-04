@@ -5225,9 +5225,15 @@ async def scrape_vivian_page(session: aiohttp.ClientSession,
             elif isinstance(sn, str): specialty_raw = sn
             specialty = _classify_travel_specialty(title, specialty_raw)
 
-            slug = j.get("jobDetailsSlug") or jid
             # Vivian serves canonical job pages at /jobs/<slug>/ (plural).
-            # The /job/<slug>/ form they used previously now 404s.
+            # When jobDetailsSlug is missing, falling back to the raw
+            # objectID produced URLs like /jobs/platform::jp-57754308/
+            # which always 404 — so skip the row instead of shipping a
+            # broken Apply link. (~65% of historical inserts were this
+            # case; sampling showed 77% of those URLs returned 404.)
+            slug = j.get("jobDetailsSlug")
+            if not slug or "::" in slug:
+                continue
             url_field = f"https://www.vivian.com/jobs/{slug}/"
 
             out.append(TravelJob(
