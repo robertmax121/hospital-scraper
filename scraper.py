@@ -241,6 +241,9 @@ WORKDAY_TENANTS = {
     "WVU Medicine":              ("wvumedicine", "1", "WVUH"),
     # ── Added from scraper1.xlsx expansion ──
     "UW Medicine":               ("uw", "5", "UWHires"),
+    # ── Added 2026-05-06: acute-care expansion (verified via careers-page HTML) ──
+    "Trinity Health":            ("trinityhealth", "1", "Jobs"),
+    "Cleveland Clinic":          ("ccf",           "1", "ClevelandClinicCareers"),
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -856,6 +859,13 @@ ICIMS_ORGS = {
     "Tuality Healthcare":               "careers-tuality.icims.com",
     "Legacy Health":                    "careers-lhs.icims.com",
     "OHSU":                             "careersat-ohsu.icims.com",
+    # ── Added 2026-05-06: acute-care expansion ──
+    # Ascension's public site (jobs.ascension.org) is a Phenom skin, but apply
+    # links resolve to ascensionjobs1-ascension.icims.com — same shape as the
+    # other careers-* iCIMS portals. ~140 hospitals.
+    "Ascension Health":                 "ascensionjobs1-ascension.icims.com",
+    # MyMichigan: small (~6 hospitals) but fills the empty MI coverage hole.
+    "MyMichigan Health":                "careers-mymichigan.icims.com",
 }
 
 
@@ -877,6 +887,10 @@ TALENTBREW_ORGS = {
     "Kaiser Permanente":        ("https://www.kaiserpermanentejobs.org/search-jobs", 100),
     # NewYork-Presbyterian — same TalentBrew session pattern as Kaiser.
     "NewYork-Presbyterian":     ("https://careers.nyp.org/search-jobs", 100),
+    # Mayo Clinic — TalentBrew company id 33647 + Eightfold AI overlay.
+    # Search results page mirrors CommonSpirit's HTML pattern; rpp=100.
+    # Added 2026-05-06.
+    "Mayo Clinic":              ("https://jobs.mayoclinic.org/search-jobs", 100),
 }
 
 
