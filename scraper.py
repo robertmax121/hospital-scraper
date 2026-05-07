@@ -866,6 +866,11 @@ ICIMS_ORGS = {
     "Ascension Health":                 "ascensionjobs1-ascension.icims.com",
     # MyMichigan: small (~6 hospitals) but fills the empty MI coverage hole.
     "MyMichigan Health":                "careers-mymichigan.icims.com",
+    # ── Added 2026-05-06: Home Health / Hospice expansion ──
+    # Amedisys: ~530 home-health and hospice locations across the US.
+    # Apply links resolve to careersen-amedisys.icims.com (verified via careers
+    # page HTML). Same iCIMS pattern as Cone Health etc.
+    "Amedisys":                         "careersen-amedisys.icims.com",
 }
 
 
@@ -5531,11 +5536,19 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     logger.info(f"Travel upsert: {sent}/{len(rows)} rows sent to Supabase")
 
     # ── Deactivation pass ──────────────────────────────────────────────
-    # Per-domain: if we sent at least DEACT_MIN rows whose url contains the
-    # domain, mark every row from that domain whose scraped_at predates this
-    # run as is_active=false. The minimum threshold protects against a
-    # partial scraper outage wiping the table.
-    DEACT_MIN = 100
+    # Mark every still-active row whose scraped_at predates this run as
+    # is_active=false. We do NOT scope by url anymore — the previous
+    # `url ILIKE '%vivian.com%'` pattern is a sequential substring scan
+    # that hit Supabase's 8s statement timeout (HTTP 500, error 57014).
+    # Dropping the URL filter lets the existing `idx_travel_jobs_active`
+    # partial index drive the query in ~3s, well under timeout.
+    #
+    # Safety: every known travel scraper (Vivian, Aya) must have produced
+    # at least DEACT_MIN rows this run. If any expected scraper came up
+    # short — typical of a partial outage — skip deactivation entirely so
+    # we don't wipe its rows along with the genuinely stale ones.
+    KNOWN_DOMAINS = ("vivian.com", "ayahealthcare.com")
+    DEACT_MIN     = 100
     if sent == 0:
         return sent
     run_started_iso = min(
@@ -5545,43 +5558,46 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     if not run_started_iso:
         logger.info("Travel deactivate: no scraped_at on rows; skipping")
         return sent
-    domain_counts: dict[str, int] = {}
+    domain_counts: dict[str, int] = {d: 0 for d in KNOWN_DOMAINS}
     for r in rows:
         u = (r.get("url") or "").lower()
-        for d in ("vivian.com", "ayahealthcare.com"):
+        for d in KNOWN_DOMAINS:
             if d in u:
-                domain_counts[d] = domain_counts.get(d, 0) + 1
+                domain_counts[d] += 1
                 break
+    short = [d for d, n in domain_counts.items() if n < DEACT_MIN]
+    if short:
+        logger.info(
+            f"Travel deactivate: skipping — {short} below DEACT_MIN={DEACT_MIN} "
+            f"(counts={domain_counts})"
+        )
+        return sent
+    from urllib.parse import quote as _q
+    purl = (
+        f"{sb_url.rstrip('/')}/rest/v1/travel_jobs"
+        f"?is_active=eq.true"
+        f"&scraped_at=lt.{_q(run_started_iso)}"
+    )
+    body = json.dumps({"is_active": False}).encode()
     patch_headers = {
         "apikey":        sb_key,
         "Authorization": f"Bearer {sb_key}",
         "Content-Type":  "application/json",
         "Prefer":        "return=minimal,count=exact",
     }
-    for domain, n in domain_counts.items():
-        if n < DEACT_MIN:
-            logger.info(f"Travel deactivate {domain}: only {n} fresh rows — skipping (min {DEACT_MIN})")
-            continue
-        # PostgREST PATCH: filter is_active=true & scraped_at<run_started & url matches domain
-        from urllib.parse import quote as _q
-        like_pattern = _q(f"*{domain}*")
-        purl = (
-            f"{sb_url.rstrip('/')}/rest/v1/travel_jobs"
-            f"?is_active=eq.true"
-            f"&scraped_at=lt.{_q(run_started_iso)}"
-            f"&url=ilike.{like_pattern}"
+    rq = _urlreq.Request(purl, data=body, headers=patch_headers, method="PATCH")
+    try:
+        with _urlreq.urlopen(rq, timeout=120) as resp:
+            cr = resp.headers.get("Content-Range", "")
+            deactivated = cr.split("/")[-1] if "/" in cr else "?"
+        logger.info(
+            f"Travel deactivate: {deactivated} rows (scraped_at < {run_started_iso}, "
+            f"counts={domain_counts})"
         )
-        body = json.dumps({"is_active": False}).encode()
-        rq = _urlreq.Request(purl, data=body, headers=patch_headers, method="PATCH")
-        try:
-            with _urlreq.urlopen(rq, timeout=120) as resp:
-                cr = resp.headers.get("Content-Range", "")
-                deactivated = cr.split("/")[-1] if "/" in cr else "?"
-            logger.info(f"Travel deactivate {domain}: {deactivated} rows (scraped_at < {run_started_iso})")
-        except _urlerr.HTTPError as e:
-            logger.warning(f"Travel deactivate {domain}: HTTP {e.code} — {e.read().decode()[:300]}")
-        except Exception as e:
-            logger.warning(f"Travel deactivate {domain}: {e}")
+    except _urlerr.HTTPError as e:
+        logger.warning(f"Travel deactivate: HTTP {e.code} — {e.read().decode()[:300]}")
+    except Exception as e:
+        logger.warning(f"Travel deactivate: {e}")
     return sent
 
 
