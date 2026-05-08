@@ -860,10 +860,9 @@ ICIMS_ORGS = {
     "Legacy Health":                    "careers-lhs.icims.com",
     "OHSU":                             "careersat-ohsu.icims.com",
     # ── Added 2026-05-06: acute-care expansion ──
-    # Ascension's public site (jobs.ascension.org) is a Phenom skin, but apply
-    # links resolve to ascensionjobs1-ascension.icims.com — same shape as the
-    # other careers-* iCIMS portals. ~140 hospitals.
-    "Ascension Health":                 "ascensionjobs1-ascension.icims.com",
+    # NOTE 2026-05-08: Ascension was ICIMS_ORGS but HAR analysis showed the
+    # listings actually come from Phenom (POST jobs.ascension.org/widgets);
+    # iCIMS is only used for the apply submit page. Moved to PHENOM_ORGS.
     # MyMichigan: small (~6 hospitals) but fills the empty MI coverage hole.
     "MyMichigan Health":                "careers-mymichigan.icims.com",
     # ── Added 2026-05-06: Home Health / Hospice expansion ──
@@ -2046,6 +2045,13 @@ PHENOM_ORGS = {
     "CentraCare":                   "https://jobs.centracare.com",
     "Children's Minnesota":         "https://careers.childrensmn.org",
     "St. Charles Health":           "https://careers.stcharleshealthcare.org",
+    # ── Added 2026-05-08 from HAR analysis ──
+    # Ascension's careers site is Phenom-hosted with iCIMS only handling the
+    # final apply step — the listings come from POST jobs.ascension.org/widgets,
+    # confirmed via HAR. Tenant code AHEAHUUS already in PHENOM_ORG_CODES.
+    # Was previously routed to Playwright (CUSTOM_SITES) which returned 0 jobs.
+    # ~140 hospitals expected.
+    "Ascension Health":             "https://jobs.ascension.org",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
@@ -3910,7 +3916,10 @@ async def run_playwright_scrapers() -> list[Job]:
         ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
         # LARGE SYSTEMS — Phenom via Playwright (proxy-free)
         # NOTE: HCA Healthcare is handled by dedicated run_hca() — do NOT add here
-        ("Ascension Health",              "https://jobs.ascension.org/us/en/search-results"),
+        # Ascension Health moved to PHENOM_ORGS (2026-05-08) — was returning 0
+        # jobs here; the Phenom widgets path produces full inventory.
+        # Cleveland Clinic is in WORKDAY_TENANTS (ccf.wd1) — Playwright is a
+        # fallback; left here in case Workday route flakes out.
         ("Cleveland Clinic",              "https://jobs.clevelandclinic.org/search/"),
         # HCA AFFILIATES
         ("Methodist Healthcare",          "https://www.joinmethodist.com/search/jobs"),
