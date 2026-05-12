@@ -1580,7 +1580,11 @@ async def run_findly(session) -> list[Job]:
 FINDLY_GOOGLE_ORGS = {
     "AdventHealth": (
         "657741e2-bfab-4de3-a2e1-660a06974a62",
-        ["AdventHealth-Workday-Mulesoft", "Manual Postings"],
+        # "Manual Postings" portal removed 2026-05-12. Audit found every
+        # /job/{numeric}/ URL it produced returns 404 — AdventHealth retired
+        # the legacy URL path during their Workday migration. Workday-Mulesoft
+        # alone serves the live R-prefixed URLs that resolve.
+        ["AdventHealth-Workday-Mulesoft"],
         "https://jobs.adventhealth.com",
     ),
 }
@@ -5610,6 +5614,116 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     return sent
 
 
+# ── Hospital upsert + deactivation pass (added 2026-05-12) ─────────────────
+# Mirrors _upsert_travel_jobs_to_supabase. The hospital pipeline previously
+# had no deactivation step, so when a hospital filled or removed a posting it
+# would sit in our DB with is_active=true forever — causing dead-link rates
+# of 70%+ on AdventHealth, CommonSpirit, and others.
+#
+# This function:
+#   1. Upserts every row in the current run with scraped_at=run_started_iso,
+#      refreshing the timestamp on conflict.
+#   2. Per-system deactivation: any row whose hospital_system appeared in
+#      THIS run (≥ DEACT_MIN rows) AND whose scraped_at < run_started_iso
+#      gets is_active=false. Systems that produced fewer than DEACT_MIN rows
+#      this run get skipped — that protects them from being wiped on a bad
+#      run (e.g. when an ATS migrates or the proxy chain glitches).
+def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) -> int:
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = (os.environ.get("SUPABASE_KEY", "")
+              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    if not sb_url or not sb_key:
+        logger.info("Hospital upsert: SUPABASE_URL/SUPABASE_KEY not set — no-op")
+        return 0
+    if not rows:
+        logger.info("Hospital upsert: no rows to send")
+        return 0
+
+    import urllib.request as _urlreq, urllib.error as _urlerr
+    from urllib.parse import quote as _q
+
+    # 1. Upsert. Stamp scraped_at to this run's start so on-conflict merge
+    #    refreshes it — that's what makes the deactivation pass below
+    #    correctly distinguish fresh rows from stale.
+    for r in rows:
+        r["scraped_at"] = run_started_iso
+        r["is_active"]  = True
+
+    url = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
+           f"?on_conflict=ats_platform,hospital_system,job_id")
+    headers = {
+        "apikey":        sb_key,
+        "Authorization": f"Bearer {sb_key}",
+        "Content-Type":  "application/json",
+        "Prefer":        "resolution=merge-duplicates,return=minimal",
+    }
+    BATCH = 500
+    sent = 0
+    for i in range(0, len(rows), BATCH):
+        chunk = rows[i:i + BATCH]
+        body  = json.dumps(chunk).encode()
+        rq    = _urlreq.Request(url, data=body, headers=headers, method="POST")
+        try:
+            with _urlreq.urlopen(rq, timeout=60) as resp:
+                _ = resp.read()
+            sent += len(chunk)
+        except _urlerr.HTTPError as e:
+            err_body = e.read().decode()[:500]
+            logger.warning(f"Hospital upsert batch {i}: HTTP {e.code} — {err_body}")
+            break
+        except Exception as e:
+            logger.warning(f"Hospital upsert batch {i}: {e}")
+            break
+    logger.info(f"Hospital upsert: {sent}/{len(rows)} rows sent")
+    if sent == 0:
+        return 0
+
+    # 2. Per-system deactivation pass.
+    DEACT_MIN = 10
+    system_counts: dict[str, int] = {}
+    for r in rows:
+        s = r.get("hospital_system")
+        if s:
+            system_counts[s] = system_counts.get(s, 0) + 1
+    safe_systems = sorted(s for s, n in system_counts.items() if n >= DEACT_MIN)
+    skipped      = sorted((s, n) for s, n in system_counts.items() if 0 < n < DEACT_MIN)
+    if skipped:
+        sk = skipped[:8]
+        more = f" (+{len(skipped) - 8} more)" if len(skipped) > 8 else ""
+        logger.info(f"Hospital deactivate skip (below DEACT_MIN={DEACT_MIN}): {sk}{more}")
+
+    patch_headers = {
+        "apikey":        sb_key,
+        "Authorization": f"Bearer {sb_key}",
+        "Content-Type":  "application/json",
+        "Prefer":        "return=minimal,count=exact",
+    }
+    body = json.dumps({"is_active": False}).encode()
+    total_deactivated = 0
+    for system in safe_systems:
+        purl = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
+                f"?is_active=eq.true"
+                f"&hospital_system=eq.{_q(system)}"
+                f"&scraped_at=lt.{_q(run_started_iso)}")
+        rq = _urlreq.Request(purl, data=body, headers=patch_headers, method="PATCH")
+        try:
+            with _urlreq.urlopen(rq, timeout=60) as resp:
+                cr = resp.headers.get("Content-Range", "")
+                n  = int(cr.split("/")[-1]) if "/" in cr and cr.split("/")[-1].isdigit() else 0
+                if n:
+                    logger.info(f"  Deactivated {n} stale rows for {system}")
+                    total_deactivated += n
+        except _urlerr.HTTPError as e:
+            try: err = e.read().decode()[:300]
+            except Exception: err = ""
+            logger.warning(f"Deactivate {system}: HTTP {e.code} — {err}")
+        except Exception as e:
+            logger.warning(f"Deactivate {system}: {e}")
+    logger.info(f"Hospital deactivation pass: {total_deactivated} rows across "
+                f"{len(safe_systems)} systems (skipped {len(skipped)})")
+    return sent
+
+
 def scrape_travel() -> list[dict]:
     os.makedirs("logs", exist_ok=True)
     return asyncio.run(run_all_travel())
@@ -5804,7 +5918,23 @@ def scrape() -> list[dict]:
     try/except so it can never break the hospital-jobs nightly run.
     """
     os.makedirs("logs", exist_ok=True)
+
+    # Stamp this run's start so the upsert + deactivation pass agree on
+    # "what was scraped this run vs what's stale". Same pattern as travel.
+    run_started_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
     hospital_jobs = asyncio.run(run_all())
+
+    # ── Hospital upsert + deactivation pass (added 2026-05-12) ────────────
+    # Mirrors the travel side-flow. Without this, jobs that disappear from
+    # a hospital's ATS stay is_active=true in our DB forever and accumulate
+    # as dead links. The deactivation pass is per-system with a DEACT_MIN
+    # safety threshold — a broken scraper module (Ascension, Hoag) can't
+    # wipe its inventory by producing zero rows.
+    try:
+        _upsert_hospital_jobs_to_supabase(hospital_jobs, run_started_iso)
+    except Exception as e:
+        logger.warning(f"Hospital upsert/deactivation failed (non-fatal): {e}")
 
     # ── Travel jobs side-flow (separate table, self-contained) ────────────
     try:
