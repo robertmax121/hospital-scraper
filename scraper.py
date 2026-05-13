@@ -5649,13 +5649,8 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         r["scraped_at"] = run_started_iso
         r["is_active"]  = True
 
-    # Constraint matches the existing UNIQUE (job_id, hospital_system) — the
-    # same on_conflict spec the Railway runner uses. Originally written as
-    # (ats_platform, hospital_system, job_id) which doesn't match any actual
-    # constraint, so PostgREST returned HTTP 400 and our upsert returned 0
-    # rows sent — which made the deactivation pass early-return.
     url = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
-           f"?on_conflict=job_id,hospital_system")
+           f"?on_conflict=ats_platform,hospital_system,job_id")
     headers = {
         "apikey":        sb_key,
         "Authorization": f"Bearer {sb_key}",
@@ -5680,12 +5675,8 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
             logger.warning(f"Hospital upsert batch {i}: {e}")
             break
     logger.info(f"Hospital upsert: {sent}/{len(rows)} rows sent")
-    # Note: we deliberately do NOT early-return on sent==0. The Railway
-    # runner does its own upsert AFTER scrape() returns, so even if our
-    # upsert flakes, the data still lands in Supabase with run_started_iso
-    # as scraped_at (we mutated the row dicts before returning them).
-    # The deactivation pass below uses scraped_at < run_started_iso, which
-    # works regardless of whether our upsert or the runner's did the write.
+    if sent == 0:
+        return 0
 
     # 2. Per-system deactivation pass.
     DEACT_MIN = 10
