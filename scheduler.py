@@ -1,6 +1,7 @@
 """
 Nightly Scheduler — Lean Build
-Scrapes all hospital systems → deduplicates → pushes to Supabase.
+Scrapes all hospital systems → deduplicates → pushes to Supabase →
+hybrid-deactivates stale → direct link-health-checks every active URL.
 No email. No alerts. Maximum performance.
 
 Cron: 0 20 * * *  (8 PM nightly)
@@ -11,6 +12,7 @@ import os
 from datetime import datetime
 from scraper import scrape
 from database import upsert_jobs, mark_inactive_jobs, get_stats
+import link_health
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,12 +46,32 @@ def run():
     result = upsert_jobs(jobs)
     logger.info(f"  Result: {result}")
 
-    # Mark jobs no longer found as inactive
-    current_keys = {f"{j['hospital_system']}::{j['job_id']}" for j in jobs}
-    deactivated = mark_inactive_jobs(current_keys)
-    logger.info(f"  Deactivated {deactivated} stale listings")
+    # ── Step 2.5: Hybrid deactivation ─────────────────────────────
+    # Per-system diff for healthy systems + age-based sweep for the rest.
+    # See database.mark_inactive_jobs docstring for the rationale.
+    logger.info("\n[ STEP 2.5 ] Hybrid deactivation pass...")
+    try:
+        deact_stats = mark_inactive_jobs(jobs)
+        logger.info(f"  Deactivation: {deact_stats}")
+    except Exception as e:
+        logger.warning(f"  Hybrid deactivation failed (non-fatal): {e}")
 
-    # ── Step 3: Summary ───────────────────────────────────────────
+    # ── Step 3: Direct link-health check ──────────────────────────
+    # Ground-truth dead-link detection. HEADs every active URL; flags
+    # is_active=false on definitive 404/410. Other failure modes (timeouts,
+    # 5xx, 403, DNS errors) are NOT deactivated — they're usually transient
+    # or bot-blocked rather than truly dead.
+    #
+    # On a ~70K-row table with 50 workers this takes roughly 10-15 minutes.
+    # Wrapped in try/except so a transport issue can't break the cron.
+    logger.info("\n[ STEP 3 ] Direct link-health check (HEAD scan)...")
+    try:
+        link_stats = link_health.run()
+        logger.info(f"  Link health: {link_stats}")
+    except Exception as e:
+        logger.warning(f"  Link health check failed (non-fatal): {e}")
+
+    # ── Step 4: Summary ───────────────────────────────────────────
     stats = get_stats()
     elapsed = (datetime.now() - start).seconds
 
