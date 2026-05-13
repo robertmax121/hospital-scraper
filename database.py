@@ -5,7 +5,7 @@ Handles upsert, deactivation, and stats queries.
 
 import os
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS hospital_jobs (
     ats_platform    TEXT,
     scraped_at      TIMESTAMPTZ DEFAULT NOW(),
     is_active       BOOLEAN DEFAULT TRUE,
+    dead_check_failures INT NOT NULL DEFAULT 0,
+    last_dead_check_at  TIMESTAMPTZ,
     UNIQUE(job_id, hospital_system)
 );
 CREATE INDEX IF NOT EXISTS idx_state      ON hospital_jobs(state);
@@ -36,6 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_specialty  ON hospital_jobs(specialty);
 CREATE INDEX IF NOT EXISTS idx_system     ON hospital_jobs(hospital_system);
 CREATE INDEX IF NOT EXISTS idx_active     ON hospital_jobs(is_active);
 CREATE INDEX IF NOT EXISTS idx_ats        ON hospital_jobs(ats_platform);
+CREATE INDEX IF NOT EXISTS idx_dead_check_at ON hospital_jobs(last_dead_check_at);
 """
 
 # PostgREST returns at most this many rows per request unless overridden via
@@ -66,137 +69,93 @@ def upsert_jobs(jobs: list[dict]) -> dict:
     return {"inserted": inserted, "errors": errors}
 
 
-def mark_inactive_jobs(current_jobs: list[dict], deact_min: int = 10,
-                       age_days: int = 14) -> dict:
-    """Hybrid deactivation. Replaces the previous set-diff implementation,
-    which (a) silently truncated to 1000 rows because it never paginated and
-    (b) was too aggressive — a broken scraper module returning zero rows
-    would wipe that system's entire inventory.
+def mark_inactive_jobs(current_jobs: list[dict]) -> dict:
+    """Strict-diff deactivation.
 
-    Two passes:
+    The only signal we trust is: did this scrape run produce this row?
 
-      A. **Diff-based deactivation, per healthy system.** A system is
-         "healthy" this run if it produced >= `deact_min` rows. For each
-         such system, fetch ALL active rows (paginated), diff against the
-         job_ids in this run, mark the leftover stale.
+      - Row's (job_id, hospital_system) IS in the current scrape → keep active.
+      - Row's (job_id, hospital_system) is NOT in the current scrape → deactivate.
 
-      B. **Age-based sweep across the whole table.** Any active row whose
-         scraped_at hasn't been refreshed in > `age_days` days gets marked
-         inactive — regardless of which system it belongs to. This is the
-         backstop for systems whose scraper module is broken (Healthcare-
-         Source, Tenet, iCIMS modern, etc.) — those rows never get
-         refreshed by the diff pass because the scraper produces zero
-         current jobs for them.
+    No DEACT_MIN guard, no age-based fallback, no per-system carve-outs.
+    Earlier iterations had both — the reasoning being "protect a system's
+    inventory from a broken/transient scraper module." That was wrong: if
+    a module returns zero, those URLs ARE dead from the user's perspective
+    (the hospital's ATS hasn't confirmed them in this run). Better to show
+    an empty system for a night than show a system with dead apply links.
+    If the module comes back, those jobs come back next run.
 
-    Note: this does NOT verify the apply URL actually resolves. That's the
-    link_health module's job, which runs as a separate step.
+    The replaced implementation also had a silent 1000-row pagination cap
+    on the active-rows fetch, which is why the 2026-05-12 nightly only
+    deactivated 98 rows out of a true ~36K stale backlog. This pass
+    paginates explicitly.
+
+    URL-resolves-on-HEAD verification is link_health.py's job — separate.
 
     Args:
-        current_jobs: the list of job dicts this scrape produced. We use
-                      it to build per-system key sets and identify which
-                      systems counted as "healthy."
-        deact_min:    minimum rows-per-system to enable diff-based
-                      deactivation for that system. Below this, only the
-                      age-based sweep can deactivate the system's rows.
-        age_days:     scraped_at age threshold for the age-based sweep.
+        current_jobs: every job dict this scrape produced. We diff their
+                      (hospital_system, job_id) tuples against the active
+                      set in the DB.
 
     Returns:
-        Stats dict.
+        Stats dict: deactivated, current_keys, active_before.
     """
     db = client()
 
-    # Bucket current scrape by system
-    by_system: dict[str, set[str]] = {}
+    # Build the canonical "what's in this run" key set.
+    current_keys: set[tuple[str, str]] = set()
     for j in current_jobs:
         s = j.get("hospital_system")
         k = j.get("job_id")
-        if not s or not k:
-            continue
-        by_system.setdefault(s, set()).add(str(k))
+        if s and k:
+            current_keys.add((s, str(k)))
+    logger.info(f"  Strict-diff: {len(current_keys):,} keys in current scrape")
 
-    healthy = sorted(s for s, ks in by_system.items() if len(ks) >= deact_min)
-    skipped = sorted((s, len(ks)) for s, ks in by_system.items() if len(ks) < deact_min)
-    if skipped:
-        sample = skipped[:8]
-        more = f" (+{len(skipped) - 8} more)" if len(skipped) > 8 else ""
-        logger.info(f"  Diff-deactivation skip (below DEACT_MIN={deact_min}): {sample}{more}")
-
-    # ── Pass A: Diff-based deactivation, per healthy system ───────────────
-    diff_deact = 0
-    for system in healthy:
-        current_keys = by_system[system]
-        existing: set[str] = set()
-        offset = 0
-        while True:
-            try:
-                resp = (db.table("hospital_jobs")
-                          .select("job_id")
-                          .eq("is_active", True)
-                          .eq("hospital_system", system)
-                          .range(offset, offset + PAGE - 1)
-                          .execute())
-                rows = resp.data or []
-            except Exception as e:
-                logger.warning(f"  Fetch active for {system}: {e}")
-                rows = []
-            existing.update(str(r["job_id"]) for r in rows)
-            if len(rows) < PAGE:
-                break
-            offset += PAGE
-        stale = list(existing - current_keys)
-        if not stale:
-            continue
-        for i in range(0, len(stale), 500):
-            chunk = stale[i:i+500]
-            try:
-                (db.table("hospital_jobs")
-                   .update({"is_active": False})
-                   .eq("hospital_system", system)
-                   .in_("job_id", chunk)
-                   .execute())
-                diff_deact += len(chunk)
-            except Exception as e:
-                logger.warning(f"  Deactivate {system} chunk {i//500}: {e}")
-        logger.info(f"  Deactivated {len(stale):,} stale rows for {system}")
-
-    # ── Pass B: Age-based sweep (catches broken-module systems) ───────────
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=age_days)).isoformat()
-    age_ids: list[int] = []
+    # Page through ALL active rows.
+    active: list[dict] = []
     offset = 0
     while True:
         try:
             resp = (db.table("hospital_jobs")
-                      .select("id")
+                      .select("id,job_id,hospital_system")
                       .eq("is_active", True)
-                      .lt("scraped_at", cutoff)
                       .range(offset, offset + PAGE - 1)
                       .execute())
             rows = resp.data or []
         except Exception as e:
-            logger.warning(f"  Fetch age-stale rows: {e}")
-            rows = []
-        age_ids.extend(r["id"] for r in rows)
+            logger.warning(f"  Fetch active page (offset={offset}): {e}")
+            break
+        active.extend(rows)
         if len(rows) < PAGE:
             break
         offset += PAGE
-    age_deact = 0
-    for i in range(0, len(age_ids), 500):
-        chunk = age_ids[i:i+500]
+    logger.info(f"  Strict-diff: {len(active):,} active rows in DB")
+
+    # Diff in memory.
+    stale_ids = [
+        r["id"] for r in active
+        if (r["hospital_system"], str(r["job_id"])) not in current_keys
+    ]
+
+    # Batch-deactivate.
+    deactivated = 0
+    for i in range(0, len(stale_ids), 500):
+        chunk = stale_ids[i:i+500]
         try:
-            db.table("hospital_jobs").update({"is_active": False}).in_("id", chunk).execute()
-            age_deact += len(chunk)
+            (db.table("hospital_jobs")
+               .update({"is_active": False})
+               .in_("id", chunk)
+               .execute())
+            deactivated += len(chunk)
         except Exception as e:
-            logger.warning(f"  Age-deactivate batch {i//500}: {e}")
-    if age_deact:
-        logger.info(f"  Age-deactivated {age_deact:,} rows older than {age_days} days")
+            logger.warning(f"  Deactivate chunk {i//500}: {e}")
 
     summary = {
-        "diff_deactivated": diff_deact,
-        "age_deactivated":  age_deact,
-        "healthy_systems":  len(healthy),
-        "broken_systems":   len(skipped),
+        "deactivated":   deactivated,
+        "current_keys":  len(current_keys),
+        "active_before": len(active),
     }
-    logger.info(f"Hybrid deactivation: {summary}")
+    logger.info(f"Strict-diff deactivation: {summary}")
     return summary
 
 
