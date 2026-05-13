@@ -132,25 +132,33 @@ def mark_inactive_jobs(current_jobs: list[dict],
             current_keys.add((s, str(k)))
     logger.info(f"  Layer 4: {len(current_keys):,} keys in current scrape")
 
-    # Page through ALL active rows. We need consecutive_scrape_misses
-    # to compute each row's NEW count.
+    # Page through ALL active rows using CURSOR pagination on id.
+    # Previously used .range(offset, offset+PAGE-1) which broke when
+    # PostgREST returned 999 rows for a Range request of 0-999: the
+    # `len(rows) < PAGE` termination check fired on the first page and
+    # the loop exited after fetching ~1.4% of the table. Cursor
+    # pagination (WHERE id > last_seen ORDER BY id LIMIT PAGE) doesn't
+    # care about the per-request size — it just keeps advancing until
+    # an empty page comes back.
     active: list[dict] = []
-    offset = 0
+    last_id = 0
     while True:
         try:
             resp = (db.table("hospital_jobs")
                       .select("id,job_id,hospital_system,consecutive_scrape_misses")
                       .eq("is_active", True)
-                      .range(offset, offset + PAGE - 1)
+                      .gt("id", last_id)
+                      .order("id", desc=False)
+                      .limit(PAGE)
                       .execute())
             rows = resp.data or []
         except Exception as e:
-            logger.warning(f"  Fetch active page (offset={offset}): {e}")
+            logger.warning(f"  Fetch active page (last_id={last_id}): {e}")
+            break
+        if not rows:
             break
         active.extend(rows)
-        if len(rows) < PAGE:
-            break
-        offset += PAGE
+        last_id = rows[-1]["id"]
     logger.info(f"  Layer 4: {len(active):,} active rows in DB")
 
     # Categorize each active row.
