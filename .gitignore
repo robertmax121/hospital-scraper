@@ -1,0 +1,33 @@
+# Secrets / proxy lists — must never be committed.
+proxies.txt
+proxies/
+.env
+.env.*
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Logs (scraper writes nightly logs/run_YYYYMMDD.log)
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local artifacts produced by scraper
+jobs_latest.json
+travel_jobs_latest.json
+link_scan_results.txt
+*.har
