@@ -44,10 +44,11 @@ def run():
     result = upsert_jobs(jobs)
     logger.info(f"  Result: {result}")
 
-    # Mark jobs no longer found as inactive
-    current_keys = {f"{j['hospital_system']}::{j['job_id']}" for j in jobs}
-    deactivated = mark_inactive_jobs(current_keys)
-    logger.info(f"  Deactivated {deactivated} stale listings")
+    # Layer 4: multi-run miss confirmation before deactivation.
+    # A row needs to miss MISS_THRESHOLD consecutive scrapes before going
+    # is_active=false. mark_inactive_jobs handles the counter bookkeeping.
+    deact_stats = mark_inactive_jobs(jobs)
+    logger.info(f"  Layer 4 deactivation: {deact_stats}")
 
     # ── Step 3: Summary ───────────────────────────────────────────
     stats = get_stats()

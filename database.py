@@ -1,6 +1,7 @@
 """
 Database — Supabase
-Handles upsert, deactivation, and stats queries.
+Handles upsert, deactivation (Layer 4: multi-run miss confirmation),
+and stats queries.
 """
 
 import os
@@ -10,7 +11,7 @@ from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
 
-# ── Run this SQL once in your Supabase SQL editor ─────────────────────────────
+# ── Schema. Run once in Supabase SQL editor; subsequent runs are no-ops. ────
 SETUP_SQL = """
 CREATE TABLE IF NOT EXISTS hospital_jobs (
     id              BIGSERIAL PRIMARY KEY,
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS hospital_jobs (
     ats_platform    TEXT,
     scraped_at      TIMESTAMPTZ DEFAULT NOW(),
     is_active       BOOLEAN DEFAULT TRUE,
+    consecutive_scrape_misses INT NOT NULL DEFAULT 0,
     UNIQUE(job_id, hospital_system)
 );
 CREATE INDEX IF NOT EXISTS idx_state      ON hospital_jobs(state);
@@ -36,7 +38,22 @@ CREATE INDEX IF NOT EXISTS idx_specialty  ON hospital_jobs(specialty);
 CREATE INDEX IF NOT EXISTS idx_system     ON hospital_jobs(hospital_system);
 CREATE INDEX IF NOT EXISTS idx_active     ON hospital_jobs(is_active);
 CREATE INDEX IF NOT EXISTS idx_ats        ON hospital_jobs(ats_platform);
+CREATE INDEX IF NOT EXISTS idx_scrape_misses
+    ON hospital_jobs(consecutive_scrape_misses) WHERE is_active = true;
 """
+
+# PostgREST returns at most this many rows per request unless overridden via
+# Range headers (which supabase-py's .range(a, b) sets). Pagination is
+# explicit everywhere we'd otherwise be silently truncated.
+PAGE = 1000
+
+# Layer 4 threshold. A row must be missed by `MISS_THRESHOLD` consecutive
+# scrape runs before we deactivate it. This is the tolerance for a single
+# bad scrape — a network glitch, an ATS rate-limit, a transient module bug.
+# At 3 with a nightly cron, worst-case lag is ~2 extra days on board for a
+# genuinely-dead job (acceptable). False-deactivations from one-off scraper
+# flakiness become near-zero.
+MISS_THRESHOLD = 3
 
 
 def client() -> Client:
@@ -48,12 +65,19 @@ def client() -> Client:
 
 
 def upsert_jobs(jobs: list[dict]) -> dict:
+    """Upsert jobs by (job_id, hospital_system). On conflict, refreshes the
+    row's mutable fields (including scraped_at). consecutive_scrape_misses
+    is NOT reset here — mark_inactive_jobs handles that explicitly for
+    found rows so the reset is symmetric with the miss-increment.
+    """
     db = client()
     inserted, errors = 0, 0
     for i in range(0, len(jobs), 100):
         batch = jobs[i:i+100]
         try:
-            db.table("hospital_jobs").upsert(batch, on_conflict="job_id,hospital_system").execute()
+            (db.table("hospital_jobs")
+               .upsert(batch, on_conflict="job_id,hospital_system")
+               .execute())
             inserted += len(batch)
         except Exception as e:
             logger.error(f"Batch {i//100} upsert error: {e}")
@@ -61,25 +85,137 @@ def upsert_jobs(jobs: list[dict]) -> dict:
     return {"inserted": inserted, "errors": errors}
 
 
-def mark_inactive_jobs(current_keys: set[str]) -> int:
+def mark_inactive_jobs(current_jobs: list[dict],
+                       miss_threshold: int = MISS_THRESHOLD) -> dict:
+    """Layer 4 deactivation: multi-run miss confirmation.
+
+    Per active row each scrape run:
+      - Row's (system, job_id) IS in this scrape → reset misses to 0.
+      - Row's (system, job_id) NOT in this scrape → increment misses.
+      - On increment, if misses >= miss_threshold → deactivate.
+
+    This replaces the previous strict-diff-on-first-miss approach. The
+    earlier version was correct in spirit (the scraper is the source of
+    truth for what the hospital is currently listing) but too punitive
+    in practice: one flaky run could deactivate thousands of legitimately
+    live jobs, which then take days to re-appear as scrapers find them
+    again. By requiring N consecutive misses we tolerate a single bad
+    scrape per row without losing it from the board.
+
+    Pagination of the active-row fetch is explicit. The 2026-05-12
+    nightly's "98 stale" result was actually a 1000-row PostgREST page
+    cap silently truncating the diff — fixed here too.
+
+    Args:
+        current_jobs:   every row this scrape run produced. We diff their
+                        (hospital_system, job_id) tuples against active.
+        miss_threshold: number of consecutive misses required to
+                        deactivate. Default 3.
+
+    Returns:
+        Stats dict with:
+            deactivated:      rows that reached miss_threshold this run
+            misses_pending:   rows whose miss count rose but isn't yet
+                              at threshold
+            reset_to_found:   rows confirmed present in this scrape
+            current_keys:     count of (system, job_id) tuples in scrape
+            active_before:    active rows before the pass
+    """
     db = client()
-    try:
-        result = db.table("hospital_jobs").select("job_id,hospital_system").eq("is_active", True).execute()
-        stale = {f"{r['hospital_system']}::{r['job_id']}" for r in result.data} - current_keys
-        for key in stale:
-            system, job_id = key.split("::", 1)
-            db.table("hospital_jobs").update({"is_active": False}).eq("hospital_system", system).eq("job_id", job_id).execute()
-        return len(stale)
-    except Exception as e:
-        logger.error(f"mark_inactive error: {e}")
-        return 0
+
+    # Build canonical "what's in this run" key set.
+    current_keys: set[tuple[str, str]] = set()
+    for j in current_jobs:
+        s = j.get("hospital_system")
+        k = j.get("job_id")
+        if s and k:
+            current_keys.add((s, str(k)))
+    logger.info(f"  Layer 4: {len(current_keys):,} keys in current scrape")
+
+    # Page through ALL active rows. We need consecutive_scrape_misses
+    # to compute each row's NEW count.
+    active: list[dict] = []
+    offset = 0
+    while True:
+        try:
+            resp = (db.table("hospital_jobs")
+                      .select("id,job_id,hospital_system,consecutive_scrape_misses")
+                      .eq("is_active", True)
+                      .range(offset, offset + PAGE - 1)
+                      .execute())
+            rows = resp.data or []
+        except Exception as e:
+            logger.warning(f"  Fetch active page (offset={offset}): {e}")
+            break
+        active.extend(rows)
+        if len(rows) < PAGE:
+            break
+        offset += PAGE
+    logger.info(f"  Layer 4: {len(active):,} active rows in DB")
+
+    # Categorize each active row.
+    found_ids: list[int] = []                    # Was in current scrape → reset misses to 0
+    deactivate_ids: list[int] = []               # Missed, new count >= threshold → deactivate
+    bump_by_new_count: dict[int, list[int]] = {} # Missed, not yet at threshold → set new miss count
+
+    for r in active:
+        key = (r["hospital_system"], str(r["job_id"]))
+        if key in current_keys:
+            # Only emit a reset for rows whose previous miss count was non-zero.
+            # Avoids a no-op UPDATE on the (typical) majority of rows.
+            if int(r.get("consecutive_scrape_misses") or 0) > 0:
+                found_ids.append(r["id"])
+        else:
+            new_count = int(r.get("consecutive_scrape_misses") or 0) + 1
+            if new_count >= miss_threshold:
+                deactivate_ids.append(r["id"])
+            else:
+                bump_by_new_count.setdefault(new_count, []).append(r["id"])
+
+    # Helper for batched updates.
+    def _batch_update(ids: list[int], patch: dict, label: str) -> int:
+        n = 0
+        for i in range(0, len(ids), 500):
+            chunk = ids[i:i+500]
+            try:
+                (db.table("hospital_jobs").update(patch)
+                   .in_("id", chunk).execute())
+                n += len(chunk)
+            except Exception as e:
+                logger.warning(f"  Update {label} chunk {i//500}: {e}")
+        return n
+
+    # Apply: reset found, deactivate threshold-hit, bump others.
+    reset_n = _batch_update(found_ids, {"consecutive_scrape_misses": 0}, "reset-found")
+    deact_n = _batch_update(deactivate_ids,
+                            {"is_active": False, "consecutive_scrape_misses": 0},
+                            "deactivate-at-threshold")
+    bump_n = 0
+    for new_count, ids in bump_by_new_count.items():
+        bump_n += _batch_update(ids,
+                                {"consecutive_scrape_misses": new_count},
+                                f"bump-to-{new_count}")
+
+    summary = {
+        "deactivated":     deact_n,
+        "misses_pending":  bump_n,
+        "reset_to_found":  reset_n,
+        "current_keys":    len(current_keys),
+        "active_before":   len(active),
+    }
+    logger.info(f"Layer 4 deactivation: {summary}")
+    return summary
 
 
 def get_stats() -> dict:
     db = client()
     try:
-        result = db.table("hospital_jobs").select("id", count="exact").eq("is_active", True).execute()
-        return {"total_active_jobs": result.count, "last_updated": datetime.now().isoformat()}
+        result = (db.table("hospital_jobs")
+                    .select("id", count="exact")
+                    .eq("is_active", True)
+                    .execute())
+        return {"total_active_jobs": result.count,
+                "last_updated": datetime.now().isoformat()}
     except Exception as e:
         logger.error(f"get_stats error: {e}")
         return {}
