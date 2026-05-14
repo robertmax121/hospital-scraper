@@ -244,6 +244,14 @@ WORKDAY_TENANTS = {
     # ── Added 2026-05-06: acute-care expansion (verified via careers-page HTML) ──
     "Trinity Health":            ("trinityhealth", "1", "Jobs"),
     "Cleveland Clinic":          ("ccf",           "1", "ClevelandClinicCareers"),
+    # ── Added 2026-05-13: post-acute expansion Phase 1 (verified via careers-page HTML) ──
+    # Fresenius Medical Care: ~2,500 US dialysis centers. Largest US dialysis operator
+    # alongside DaVita. Confirmed via redirect from jobs.fmcna.com → careers homepage
+    # → Workday "Returning Applicants" link points to wd3 tenant.
+    "Fresenius Medical Care":    ("freseniusmedicalcare", "3", "fme"),
+    # ProMedica: 10 hospitals across 9 states (Toledo, OH HQ). Workday confirmed via
+    # web search — promedica.wd12.myworkdayjobs.com/External_Careers shows 439 jobs.
+    "ProMedica":                 ("promedica", "12", "External_Careers"),
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -870,6 +878,15 @@ ICIMS_ORGS = {
     # Apply links resolve to careersen-amedisys.icims.com (verified via careers
     # page HTML). Same iCIMS pattern as Cone Health etc.
     "Amedisys":                         "careersen-amedisys.icims.com",
+    # ── Added 2026-05-13: post-acute expansion Phase 1 (verified) ──
+    # Select Medical: nation's largest post-acute care operator. ~100 LTAC
+    # hospitals (Select Specialty Hospitals) + outpatient rehab. Confirmed
+    # iCIMS tenant via web search — careers.selectmedical.com is a marketing
+    # shell that funnels apply clicks to jobs-selectmedicalcorp.icims.com.
+    "Select Medical":                   "jobs-selectmedicalcorp.icims.com",
+    # Genesis HealthCare: 250+ skilled nursing facilities. Confirmed via
+    # genesiscareers.jobs → "Returning Candidate Login" points to careers-genesishcc.icims.com.
+    "Genesis HealthCare":               "careers-genesishcc.icims.com",
 }
 
 
@@ -3249,6 +3266,13 @@ ORACLE_ORGS = {
     "HealthPartners":            ("https://fa-etnv-saasfaprod1.fa.ocs.oraclecloud.com",       "healthpartners"),
     "United Regional":           ("https://erqh.fa.us2.oraclecloud.com",                      "CX_1001"),
     "Unknown (fa-eyip)":         ("https://fa-eyip-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_4001"),
+    # ── Added 2026-05-13: post-acute expansion Phase 1 (verified) ──
+    # VITAS Healthcare: largest US hospice operator (~30K patients/day).
+    # Confirmed via redirect from www.vitas.com/careers → ejrz.fa.us2.oraclecloud.com.
+    "VITAS Healthcare":          ("https://ejrz.fa.us2.oraclecloud.com",                      "CX_5001"),
+    # Brookdale Senior Living: ~650 senior living + memory care + SNF communities.
+    # Confirmed via careers.brookdale.com — "Search Jobs" buttons point to ibmwjb.fa.ocs.
+    "Brookdale Senior Living":   ("https://ibmwjb.fa.ocs.oraclecloud.com",                    "CX_1"),
 }
 
 async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
