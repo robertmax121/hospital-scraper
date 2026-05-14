@@ -3278,9 +3278,25 @@ ORACLE_ORGS = {
 async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     base_url, site_number = org_data
     jobs = []
-    # Confirmed from Guthrie network intercept.
-    # IMPORTANT: offset/limit are top-level params, NOT inside the finder string.
-    # onlyData=true strips pagination metadata → totalResults=0 → never paginates.
+    # Oracle HCM recruiting API. Confirmed shape (2026-05-14, VITAS):
+    #   {
+    #     "items": [ <single SearchResult metadata wrapper> ],   <-- top-level
+    #     "count": 1, "hasMore": false, "limit": ..., "offset": ...
+    #   }
+    # The SearchResult wrapper holds the actual jobs nested:
+    #   items[0] = {
+    #     "TotalJobsCount": <int>,
+    #     "Limit": <int>, "Offset": <int>,
+    #     "requisitionList": {
+    #       "items": [ <-- THESE are the actual jobs (Title, Id, etc.) -->,
+    #                  ... up to `limit` rows ... ],
+    #       "count": <int>, "hasMore": <bool>
+    #     }
+    #   }
+    # The previous version of this scraper iterated `data.items` directly,
+    # treating the SearchResult wrapper itself as a job — which is why every
+    # Oracle tenant except one (HealthPartners, by accident) returned 0 jobs.
+    # Fix: dive two levels deeper to data.items[0].requisitionList.items.
     api = f"{base_url}/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
     offset = 0
     limit  = 25
@@ -3301,10 +3317,16 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                     logger.info(f"Oracle {system}: HTTP {r.status}")
                     break
                 data = await r.json(content_type=None)
-            items = data.get("items", [])
-            if not items:
+            search_results = data.get("items", [])
+            if not search_results:
                 break
-            for j in items:
+            search_result = search_results[0]
+            total = int(search_result.get("TotalJobsCount", 0) or 0)
+            req_list_wrapper = search_result.get("requisitionList") or {}
+            page_items = req_list_wrapper.get("items", []) if isinstance(req_list_wrapper, dict) else []
+            if not page_items:
+                break
+            for j in page_items:
                 loc = j.get("PrimaryLocation", j.get("primaryLocation", ""))
                 if isinstance(loc, dict):
                     loc = loc.get("Name", loc.get("name", ""))
@@ -3317,23 +3339,21 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                     hospital_system=system,
                     hospital_name=system,
                     city=_city, state=_state, location=str(loc),
-                    specialty=str(func),
-                    job_type=j.get("WorkHours", j.get("workHours", "")),
+                    specialty=str(func) if func else "",
+                    job_type=j.get("WorkHours", j.get("workHours", "")) or "",
                     url=f"{base_url}/hcmUI/CandidateExperience/en/sites/{site_number}/jobs/{j.get('Id', j.get('id', ''))}",
                     job_id=str(j.get("Id", j.get("id", j.get("RequisitionNumber", "")))),
                     posted_date=str(j.get("PostedDate", j.get("postedDate", "")))[:10],
                     description="",
                     ats_platform="Oracle HCM",
                 ))
-            # Use hasMore if present; fall back to totalResults; fall back to item count < limit
-            has_more    = data.get("hasMore", None)
-            total       = data.get("totalResults", data.get("count", 0))
+            # Pagination: Oracle's top-level limit/offset paginate the
+            # requisitionList contents. Stop when we've fetched the reported
+            # total, or when the page came back short.
             offset += limit
-            if has_more is False:
+            if total and offset >= total:
                 break
-            if has_more is None and total and offset >= total:
-                break
-            if has_more is None and not total and len(items) < limit:
+            if len(page_items) < limit:
                 break
             await jitter()
         except Exception as e:
