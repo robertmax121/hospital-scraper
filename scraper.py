@@ -691,16 +691,29 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     working_url = f"https://{tenant}.wd{wd_num}.myworkdayjobs.com/wday/cxs/{tenant}/{primary_site}/jobs"
     logger.info(f"Workday {system}: using {working_url}")
     offset = 0
+    LIMIT = 20
+    # Bug fix (2026-05-14): some Workday tenants return the correct `total` on
+    # page 1 (e.g. Fresenius=2000, ProMedica=416) but report total=0 on every
+    # subsequent page, while still returning a full page of jobs. The old break
+    # condition `offset >= data.get("total", 0)` therefore tripped immediately
+    # after page 2 because 40 >= 0 is true. Fix: snapshot the first response's
+    # non-zero total and rely primarily on `len(listings) < LIMIT` as the
+    # universal end-of-pagination signal.
+    initial_total = None
     while True:
         try:
             async with req(session, "post", working_url,
-                json={"limit": 20, "offset": offset, "searchText": "", "locations": [], "categories": []},
+                json={"limit": LIMIT, "offset": offset, "searchText": "", "locations": [], "categories": []},
                 headers={**HEADERS, "Content-Type": "application/json"}, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
                     break
                 data = await r.json()
             listings = data.get("jobPostings", [])
             if not listings: break
+            # Record first-page total (subsequent pages may report 0 spuriously).
+            page_total = data.get("total", 0) or 0
+            if initial_total is None and page_total > 0:
+                initial_total = page_total
             for j in listings:
                 loc = j.get("locationsText", "")
                 _city, _state = parse_city_state(loc)
@@ -719,8 +732,14 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     description=strip_html(str(j.get("jobDescription", ""))),
                     ats_platform="Workday",
                 ))
-            offset += 20
-            if offset >= data.get("total", 0): break
+            offset += LIMIT
+            # End-of-pagination signals, in priority order:
+            #  1. Page came back short — definitive end (universal across tenants).
+            #  2. We know the initial total and have reached/exceeded it.
+            if len(listings) < LIMIT:
+                break
+            if initial_total and offset >= initial_total:
+                break
             await jitter()
         except Exception as e:
             logger.info(f"Workday {system}: {e}")
