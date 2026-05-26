@@ -4734,7 +4734,28 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
             except ImportError:
                 logger.warning("HCA Healthcare: playwright-stealth NOT installed — bot detection likely.")
 
-    logger.info("HCA Healthcare: launching Chromium for Cloudflare-protected scrape...")
+    # ── Retry loop wrapping the whole Chromium-launch + CF-clear flow ──
+    # Cloudflare's "bad IP" table flags datacenter IPs aggressively and even
+    # residential proxies can be flagged after a single failed attempt. The
+    # fix is to launch a FRESH Chromium with a fresh proxy on retry. Three
+    # attempts total, with increasing cool-down between them.
+    MAX_HCA_ATTEMPTS = 3
+    for hca_attempt in range(1, MAX_HCA_ATTEMPTS + 1):
+        logger.info(f"HCA Healthcare: attempt {hca_attempt}/{MAX_HCA_ATTEMPTS} - launching Chromium...")
+        result = await _hca_single_attempt(async_playwright, using_patchright, stealth_async)
+        if result:
+            logger.info(f"HCA Healthcare: attempt {hca_attempt} succeeded with {len(result):,} jobs")
+            return result
+        if hca_attempt < MAX_HCA_ATTEMPTS:
+            cooldown = 20 + (hca_attempt - 1) * 15   # 20s, 35s, then give up
+            logger.info(f"HCA Healthcare: attempt {hca_attempt} returned 0 jobs - cooling down {cooldown}s before next attempt")
+            await asyncio.sleep(cooldown)
+    logger.warning(f"HCA Healthcare: all {MAX_HCA_ATTEMPTS} attempts failed - returning empty")
+    return []
+
+
+async def _hca_single_attempt(async_playwright, using_patchright, stealth_async) -> list[Job]:
+    """One end-to-end HCA scrape attempt. Returns jobs or [] on failure."""
     all_jobs: list[Job] = []
 
     # Pull a residential proxy from the rotator and parse into Playwright's format.
@@ -4798,13 +4819,14 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
 
             # Wait through Cloudflare interstitial. Job-card class 'neu-link' is the
             # signal that we're on the real results page, not the challenge page.
-            # Bumped from 30s → 75s because Patchright's Cloudflare bypass sometimes
-            # needs the full Turnstile challenge to grade out, which can take 45-60s
-            # on residential proxy IPs that haven't been seen before.
+            # Bumped 2026-05-26: 75s -> 120s. Some residential proxy IPs need the
+            # full Turnstile challenge to grade out, which can take 90-100s. The
+            # cost of waiting longer is small relative to the cost of failing
+            # the whole attempt and re-launching Chromium.
             logger.info(f"HCA Healthcare: waiting for Cloudflare to clear "
-                        f"(patchright={using_patchright}, max 75s)...")
+                        f"(patchright={using_patchright}, max 120s)...")
             cleared = False
-            for attempt in range(50):
+            for attempt in range(80):  # 80 * 1.5s = 120s
                 content = await page.content()
                 if "neu-link" in content and "Showing" in content:
                     cleared = True
