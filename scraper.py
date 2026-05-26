@@ -140,6 +140,7 @@ def req(session, method, url, **kwargs):
 # data). Verified 2026-05-26 against the wage_join_gap.txt inspection.
 # Initial pass: +25,108 jobs gained wage match, 60.0% -> 90.7% coverage.
 HOSPITAL_SYSTEM_ALIASES = {
+    # Round 1 (2026-05-26): the 16 big ones (60.0% -> 90.7% wage coverage)
     "CommonSpirit Health":         "CommonSpirit",
     "Community Health Systems":    "CHS",
     "Intermountain Health (IMH)":  "Intermountain Healthcare",
@@ -156,11 +157,25 @@ HOSPITAL_SYSTEM_ALIASES = {
     "Freeman Health System":       "Freeman Health",
     "Spartanburg Regional":        "Spartanburg Regional Healthcare",
     "CentraCare":                  "CentraCare Health",
+    # Round 2 (2026-05-26): smaller wins after the big-ones canonicalization
+    "HSHS Hospitals":              "HSHS",
+    "MultiCare Health":            "MultiCare",
+    "Trinity Health (Oregon)":     "Trinity Health",
+    "Erlanger Health System":      "Erlanger",
+    "Guthrie Health":              "Guthrie",
+    "Southwest Health":            "Southwest Healthcare",
 }
 
 
 WORKDAY_TENANTS = {
-    "Kaiser Permanente":         ("kaiserpermanente",   "5",  "KP_External_Careers"),
+    # ── Kaiser Permanente removed 2026-05-26 ──
+    # The kaiserpermanente.wd5.myworkdayjobs.com tenant now returns
+    # HTTP 422 for cxs POST and 500 + maintenance-page redirect for
+    # the public site URL. Kaiser is on TalentBrew now (company 641
+    # at www.kaiserpermanentejobs.org) but the JSON /results endpoint
+    # returns 0 jobs without a working session warmup. Replaced with a
+    # dedicated HTML-pagination adapter (scrape_kaiser_html) which
+    # parses /search-jobs?p=N directly and works without proxies.
     "Providence Health":         ("providence",         "5",  "Providence_External"),
     "Banner Health":             ("bannerhealth",       "108","Careers"),
     "Northwell Health":          ("northwell",          "5",  "Northwell_External"),
@@ -947,12 +962,10 @@ TALENTBREW_ORGS = {
     # ScionHealth — confirmed TalentBrew (company 40922, tbcdn.talentbrew.com)
     # 61 long-term acute care + 15 community hospitals across 26 states
     "ScionHealth":              ("https://jobs.scionhealth.com/search-jobs", 25),
-    # Kaiser Permanente — confirmed TalentBrew via HAR Apr 29 2026.
-    # Uses session-based flow: GET landing → POST SetSearchRequestGeoLocation
-    # → GET /search-jobs/results. Direct API call returns hasContent:false
-    # without proper proxy + cookies, so this entry depends on proxy session
-    # init handled inside scrape_talentbrew.
-    "Kaiser Permanente":        ("https://www.kaiserpermanentejobs.org/search-jobs", 100),
+    # Kaiser Permanente moved to dedicated scrape_kaiser_html adapter
+    # 2026-05-26 — the session-based /results JSON endpoint was returning
+    # 0 jobs even with warmup. Direct HTML pagination at /search-jobs?p=N
+    # works reliably (15 jobs/page, ~34 pages, 510 jobs total).
     # NewYork-Presbyterian — same TalentBrew session pattern as Kaiser.
     "NewYork-Presbyterian":     ("https://careers.nyp.org/search-jobs", 100),
     # Mayo Clinic — TalentBrew company id 33647 + Eightfold AI overlay.
@@ -1278,6 +1291,135 @@ async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
             all_jobs.extend(result)
     logger.info(f"  TalentBrew total: {total} jobs")
     return all_jobs
+
+
+# ── Kaiser Permanente (dedicated HTML adapter) ────────────────────────────
+# Kaiser's job board is at www.kaiserpermanentejobs.org and uses TalentBrew
+# (company 641) for both rendering and behind-the-scenes data. The standard
+# TalentBrew /results JSON endpoint requires a session warmup that's flaky.
+# We bypass it entirely by paginating /search-jobs?p={N} and parsing the
+# rendered HTML directly - works without proxies, returns 15 jobs per page,
+# total ~34 pages for ~510 jobs as of 2026-05-26.
+KAISER_BASE = "https://www.kaiserpermanentejobs.org"
+KAISER_JOB_PATTERN = re.compile(r'href="(/job/([^/]+)/([^/]+)/641/(\d+))"')
+# Title extraction: the <a href> is followed by a <span class="job-title">title</span>
+# Quick fallback: derive from URL slug if span lookup fails.
+KAISER_TITLE_NEAR_HREF = re.compile(
+    r'href="[^"]*?/641/(\d+)"[^>]*>(?:\s*<[^>]+>)*\s*([^<\n]{3,150}?)\s*<'
+)
+# City -> state for Kaiser locations. Built from observed locations + the
+# CommonSpirit map; Kaiser is heaviest in CA, with Mid-Atlantic, NW, and HI.
+KAISER_CITY_STATE = {
+    # California (overlap with CommonSpirit map but added for safety)
+    "union-city": "CA", "pleasanton": "CA", "vista": "CA", "downey": "CA",
+    "san-diego": "CA", "anaheim": "CA", "irvine": "CA", "santa-clara": "CA",
+    "sunnyside": "WA", "panorama-city": "CA", "fontana": "CA",
+    "south-san-francisco": "CA", "harbor-city": "CA", "west-los-angeles": "CA",
+    "baldwin-park": "CA", "woodland-hills": "CA", "antioch": "CA",
+    "redwood-city": "CA", "vallejo": "CA", "fremont": "CA", "fresno": "CA",
+    "roseville": "CA", "sacramento": "CA", "san-jose": "CA",
+    "santa-rosa": "CA", "san-rafael": "CA", "richmond": "CA",
+    "oakland": "CA", "south-sacramento": "CA", "modesto": "CA",
+    "stockton": "CA", "manteca": "CA", "tracy": "CA",
+    # Mid-Atlantic (Mid-Atlantic permanente group)
+    "rockville": "MD", "gaithersburg": "MD", "silver-spring": "MD",
+    "largo": "MD", "kensington": "MD", "manassas": "VA",
+    "tysons-corner": "VA", "fairfax": "VA", "alexandria": "VA",
+    "burke": "VA", "reston": "VA", "springfield": "VA",
+    "halethorpe": "MD", "frederick": "MD", "camp-springs": "MD",
+    # Northwest
+    "portland": "OR", "salem": "OR", "longview": "WA", "vancouver": "WA",
+    # Colorado
+    "denver": "CO", "lakewood": "CO", "westminster": "CO", "aurora": "CO",
+    "lone-tree": "CO", "loveland": "CO", "wheat-ridge": "CO",
+    # Hawaii
+    "honolulu": "HI", "wailuku": "HI", "lihue": "HI",
+    # Georgia
+    "atlanta": "GA", "duluth": "GA", "stockbridge": "GA", "lawrenceville": "GA",
+    # Washington state (Group Health legacy)
+    "seattle": "WA", "renton": "WA", "redmond": "WA", "tacoma": "WA",
+    "olympia": "WA", "everett": "WA", "bellevue": "WA",
+}
+
+
+async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
+    """Paginate Kaiser's /search-jobs?p=N and parse jobs out of the rendered HTML."""
+    SYSTEM = "Kaiser Permanente"
+    MAX_PAGES = 60                   # 510 jobs / 15 per page = 34 + safety
+    EXPECTED_PER_PAGE = 15
+    jobs: list[Job] = []
+    seen_ids: set[str] = set()
+    empty_pages_in_a_row = 0
+    for page in range(1, MAX_PAGES + 1):
+        url = f"{KAISER_BASE}/search-jobs?p={page}"
+        try:
+            async with req(session, "get", url,
+                           headers={**HEADERS, "Accept": "text/html,*/*"},
+                           timeout=aiohttp.ClientTimeout(total=45)) as r:
+                if r.status != 200:
+                    logger.info(f"Kaiser: page {page} HTTP {r.status} - stopping")
+                    break
+                html = await r.text()
+        except Exception as e:
+            logger.info(f"Kaiser: page {page} fetch error: {e} - stopping")
+            break
+
+        # Extract job links + IDs
+        matches = KAISER_JOB_PATTERN.findall(html)
+        # Build job_id -> title lookup from the heading-after-href pattern
+        title_map = {jid: t.strip() for jid, t in KAISER_TITLE_NEAR_HREF.findall(html)}
+
+        new_this_page = 0
+        for url_path, city, title_slug, job_id in matches:
+            if job_id in seen_ids:
+                continue
+            seen_ids.add(job_id)
+            new_this_page += 1
+            # Prefer the actual heading title; fall back to slug-derived
+            title = title_map.get(job_id) or title_slug.replace("-", " ").title()
+            city_name = city.replace("-", " ").title()
+            state = KAISER_CITY_STATE.get(city.lower(), "")
+            jobs.append(Job(
+                title=title,
+                hospital_system=SYSTEM,
+                hospital_name=SYSTEM,
+                city=city_name,
+                state=state,
+                location=f"{city_name}, {state}" if state else city_name,
+                specialty="",
+                job_type="",
+                url=f"{KAISER_BASE}{url_path}",
+                job_id=job_id,
+                posted_date="",
+                description="",
+                ats_platform="TalentBrew",   # underlying ATS - matches reality
+            ))
+
+        logger.info(f"Kaiser: page {page} -> {new_this_page} new jobs (total: {len(jobs)})")
+
+        # End conditions:
+        #   - page yielded 0 new IDs twice in a row (end-of-results)
+        #   - page yielded fewer than half the expected page size (likely last page)
+        if new_this_page == 0:
+            empty_pages_in_a_row += 1
+            if empty_pages_in_a_row >= 2:
+                logger.info(f"Kaiser: 2 empty pages in a row - done at page {page}")
+                break
+        else:
+            empty_pages_in_a_row = 0
+        if new_this_page < EXPECTED_PER_PAGE // 2 and page > 5:
+            logger.info(f"Kaiser: partial page {page} ({new_this_page} jobs) - done")
+            break
+
+        await jitter()
+
+    logger.info(f"  Kaiser Permanente: {len(jobs)} jobs")
+    return jobs
+
+
+async def run_kaiser(session: aiohttp.ClientSession) -> list[Job]:
+    return await scrape_kaiser_html(session)
+
 
 async def _scrape_icims_modern(session: aiohttp.ClientSession, system: str, domain: str) -> list[Job]:
     """Handles newer iCIMS portals that use JavaScript-rendered search pages.
@@ -5863,6 +6005,7 @@ async def run_all() -> list[dict]:
             run_phenom(proxy_session),
             run_bsw(direct_session),         # Baylor Scott & White — Phenom refineSearch direct API (Apr 29 2026)
             run_talentbrew(proxy_session),
+            run_kaiser(direct_session),  # Kaiser Permanente — TalentBrew company 641, HTML pagination, direct (no proxy) needed since pages are ~1.9MB
             # ── New platforms from URL spreadsheet ──
             run_ukg(proxy_session),
             run_oracle(proxy_session),
