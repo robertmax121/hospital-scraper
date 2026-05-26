@@ -131,6 +131,34 @@ def req(session, method, url, **kwargs):
 #  Format: "System Name": (tenant, wd_num, career_site_name)
 #  Find these by visiting: https://tenant.wd5.myworkdayjobs.com/
 # ══════════════════════════════════════════════════════════════════════════
+# ── hospital_system aliases ────────────────────────────────────────────────
+# Scraper-side emit names that don't exact-match the hospital_wages canonical
+# names. Applied just before upserting to Supabase so the wage-join works
+# without any downstream code changes.
+#
+# Source of truth for canonical names: hos1master.xlsx (the curated wage
+# data). Verified 2026-05-26 against the wage_join_gap.txt inspection.
+# Initial pass: +25,108 jobs gained wage match, 60.0% -> 90.7% coverage.
+HOSPITAL_SYSTEM_ALIASES = {
+    "CommonSpirit Health":         "CommonSpirit",
+    "Community Health Systems":    "CHS",
+    "Intermountain Health (IMH)":  "Intermountain Healthcare",
+    "Ascension Health":            "Ascension",
+    "Saint Luke's Health System":  "St. Luke's Health System",
+    "Bon Secours Mercy":           "Bon Secours Mercy Health",
+    "Memorial Healthcare System":  "Memorial Health System",
+    "Vanderbilt (VUMC)":           "Vanderbilt",
+    "Montefiore Health":           "Montefiore",
+    "Cone Health":                 "ConeHealth",
+    "Baptist Health (FL)":         "Baptist Health South Florida",
+    "Samaritan Health NY":         "Samaritan Health",
+    "Texas Health Resources":      "Texas Health",
+    "Freeman Health System":       "Freeman Health",
+    "Spartanburg Regional":        "Spartanburg Regional Healthcare",
+    "CentraCare":                  "CentraCare Health",
+}
+
+
 WORKDAY_TENANTS = {
     "Kaiser Permanente":         ("kaiserpermanente",   "5",  "KP_External_Careers"),
     "Providence Health":         ("providence",         "5",  "Providence_External"),
@@ -5708,9 +5736,20 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # 1. Upsert. Stamp scraped_at to this run's start so on-conflict merge
     #    refreshes it — that's what makes the deactivation pass below
     #    correctly distinguish fresh rows from stale.
+    #
+    # ALIAS CANONICALIZATION (added 2026-05-26): rewrite hospital_system
+    # to the canonical name used in hospital_wages so the wage-join works.
+    # See HOSPITAL_SYSTEM_ALIASES at the top of this file.
+    alias_hits = 0
     for r in rows:
         r["scraped_at"] = run_started_iso
         r["is_active"]  = True
+        sys_name = r.get("hospital_system")
+        if sys_name and sys_name in HOSPITAL_SYSTEM_ALIASES:
+            r["hospital_system"] = HOSPITAL_SYSTEM_ALIASES[sys_name]
+            alias_hits += 1
+    if alias_hits:
+        logger.info(f"Hospital upsert: canonicalized {alias_hits} rows via HOSPITAL_SYSTEM_ALIASES")
 
     url = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
            f"?on_conflict=ats_platform,hospital_system,job_id")
