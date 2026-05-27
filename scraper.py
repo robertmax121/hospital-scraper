@@ -295,6 +295,16 @@ WORKDAY_TENANTS = {
     # ProMedica: 10 hospitals across 9 states (Toledo, OH HQ). Workday confirmed via
     # web search — promedica.wd12.myworkdayjobs.com/External_Careers shows 439 jobs.
     "ProMedica":                 ("promedica", "12", "External_Careers"),
+    # ── Added 2026-05-26: Phase 2 non-acute expansion (verified Workday cxs 200) ──
+    # GoHealth Urgent Care: ~250 urgent care centers across the US.
+    # Endpoint validated 2026-05-26: gohealthuc.wd12/external returns total=412.
+    "GoHealth Urgent Care":      ("gohealthuc", "12", "external"),
+    # CityMD (Summit Health parent SHM): ~150 urgent care centers in NY/NJ/CT.
+    # Endpoint validated 2026-05-26: shm.wd5/summit_citymd returns total=548.
+    "CityMD":                    ("shm", "5", "summit_citymd"),
+    # Compassus: hospice + palliative care + home health across ~200 locations.
+    # Endpoint validated 2026-05-26: hospicecom.wd5/Compassus returns total=1076.
+    "Compassus":                 ("hospicecom", "5", "Compassus"),
 }
 
 # Generic fallback site names to try when the specific one fails
