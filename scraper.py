@@ -2492,6 +2492,7 @@ PHENOM_ORG_CODES = {
     "Ascension Health":  "AHEAHUUS",   # confirmed from cdn.phenompeople.com/CareerConnectResources/AHEAHUUS/
     "Corewell Health":   "SPHEUS",      # confirmed from cdn.phenompeople.com/CareerConnectResources/SPHEUS/
     "Temple Health":     "TUHTUHUS",   # confirmed from widgets intercept refNum
+    "DaVita":            "DAVIUS",     # confirmed from careers.davita.com 2026-05-27
 }
 
 PHENOM_ORGS = {
@@ -2502,6 +2503,10 @@ PHENOM_ORGS = {
     # Workday entry above; cross-scraper job overlap dedups on the unique
     # (job_id, hospital_system) constraint.
     "Baptist Health (KY/IN)":       "https://jobs.baptisthealthcareers.com",
+    # 2026-05-27: DaVita added (Phase 1C). Probed careers.davita.com,
+    # confirmed Phenom hosting with org code DAVIUS. Dialysis market
+    # leader, ~2,800 centers nationwide — expected +3-5K jobs.
+    "DaVita":                       "https://careers.davita.com",
     "Munson Healthcare":            "https://careers.munsonhealthcare.org",
     "Bryan Health":                 "https://careers.bryanhealth.com",
     "PeaceHealth":                  "https://careers.peacehealth.org",
