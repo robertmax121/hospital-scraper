@@ -1535,6 +1535,160 @@ async def run_kaiser(session: aiohttp.ClientSession) -> list[Job]:
     return await scrape_kaiser_html(session)
 
 
+# ── UnitedHealth Group TalentBrew (dedicated HTML adapter) ──────────────────
+# UHG runs careers.unitedhealthgroup.com on TalentBrew company 34088. Single
+# tenant hosts MULTIPLE sub-brands: UnitedHealth Group, Optum, LHC Group
+# (home health/hospice, ~32K employees), MedExpress (urgent care), Surgical
+# Care Affiliates, Naviguard. ~5,800 jobs as of 2026-05-27.
+#
+# v1 (this implementation): label every row as "UnitedHealth Group" with
+# ats_platform=TalentBrew. Sub-brand splitting via title-keyword classifier
+# is a v2 refinement — most jobs don't expose their sub-brand in the
+# search-result HTML, so v1 captures volume; v2 captures attribution.
+#
+# Same pagination pattern as Kaiser: ?p={N}, 15 jobs/page, plain HTML.
+# No proxy needed (tested 2026-05-27, direct fetch works).
+UHG_BASE = "https://careers.unitedhealthgroup.com"
+UHG_JOB_PATTERN = re.compile(r'href="(/job/([^/]+)/([^/]+)/34088/(\d+))"')
+UHG_TITLE_NEAR_HREF = re.compile(
+    r'href="[^"]*?/34088/(\d+)"[^>]*>(?:\s*<[^>]+>)*\s*([^<\n]{3,150}?)\s*<'
+)
+# Sub-brand classifier — applied during v2; v1 labels everything UHG.
+# Keys are substrings to check in title (lowercase); values are the
+# sub-brand to credit. First-match-wins on the order below.
+UHG_SUBBRAND_HINTS = [
+    ('atrius',     'Optum'),
+    ('optum',      'Optum'),
+    ('medexpress', 'MedExpress'),
+    ('hospice',    'LHC Group'),
+    ('home health','LHC Group'),
+    ('home-health','LHC Group'),
+    ('lhc',        'LHC Group'),
+    ('sca ',       'Surgical Care Affiliates'),
+    ('surgery center', 'Surgical Care Affiliates'),
+    ('naviguard',  'Naviguard'),
+]
+# US city → state lookup — minimal seed (TalentBrew search URLs include
+# city as a slug). When unmapped, state is left blank; the public-board
+# search still works from city/title. Expand this dict as gaps surface in
+# the logs.
+UHG_CITY_STATE_SEED = {
+    # Major UHG/Optum hubs
+    "eden-prairie": "MN", "minneaponew-york": "NY", "minneapolis": "MN",
+    "san-antonio": "TX", "phoenix": "AZ", "san-diego": "CA",
+    "boston": "MA", "atlanta": "GA", "charlotte": "NC",
+    "chicago": "IL", "denver": "CO", "indianapolis": "IN",
+    "irvine": "CA", "los-angeles": "CA", "miami": "FL",
+    "houston": "TX", "dallas": "TX", "austin": "TX",
+    "tampa": "FL", "orlando": "FL", "philadelphia": "PA",
+    "pittsburgh": "PA", "seattle": "WA", "portland": "OR",
+    "st-louis": "MO", "kansas-city": "MO", "nashville": "TN",
+    "raleigh": "NC", "tucson": "AZ", "salt-lake-city": "UT",
+    "everett": "WA", "chelmsford": "MA", "little-rock": "AR",
+    # LHC Group footprint (home health/hospice — heavy in South + Midwest)
+    "lafayette": "LA", "baton-rouge": "LA", "shreveport": "LA",
+    "jackson": "MS", "memphis": "TN", "knoxville": "TN",
+    "louisville": "KY", "lexington": "KY", "cincinnati": "OH",
+}
+
+
+async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
+    """Paginate UHG's /search-jobs?p=N and parse jobs from the rendered HTML.
+
+    Identical shape to the Kaiser adapter. 5,800+ jobs across UHG sub-brands
+    (Optum, LHC Group, MedExpress, etc.) all parented under "UnitedHealth Group"
+    in v1. Set the env var UHG_SPLIT_SUBBRANDS=1 to enable title-keyword
+    sub-brand attribution (v2; experimental).
+    """
+    SYSTEM = "UnitedHealth Group"
+    MAX_PAGES = 500                  # 5,800 jobs / 15 per page = 387 + safety
+    EXPECTED_PER_PAGE = 15
+    SPLIT = os.environ.get("UHG_SPLIT_SUBBRANDS") == "1"
+
+    jobs: list[Job] = []
+    seen_ids: set[str] = set()
+    empty_pages_in_a_row = 0
+    subbrand_counts = {}
+    for page in range(1, MAX_PAGES + 1):
+        url = f"{UHG_BASE}/search-jobs?p={page}"
+        try:
+            async with req(session, "get", url,
+                           headers={**HEADERS, "Accept": "text/html,*/*"},
+                           timeout=aiohttp.ClientTimeout(total=60)) as r:
+                if r.status != 200:
+                    logger.info(f"UHG: page {page} HTTP {r.status} — stopping")
+                    break
+                html = await r.text()
+        except Exception as e:
+            logger.info(f"UHG: page {page} fetch error: {e} — stopping")
+            break
+
+        matches = UHG_JOB_PATTERN.findall(html)
+        title_map = {jid: t.strip() for jid, t in UHG_TITLE_NEAR_HREF.findall(html)}
+
+        new_this_page = 0
+        for url_path, city, title_slug, job_id in matches:
+            if job_id in seen_ids:
+                continue
+            seen_ids.add(job_id)
+            new_this_page += 1
+            title = title_map.get(job_id) or title_slug.replace("-", " ").title()
+            city_name = city.replace("-", " ").title()
+            state = UHG_CITY_STATE_SEED.get(city.lower(), "")
+            # Sub-brand attribution (v2 only). Default is parent UHG label.
+            system_label = SYSTEM
+            if SPLIT:
+                tl = title.lower()
+                for needle, brand in UHG_SUBBRAND_HINTS:
+                    if needle in tl:
+                        system_label = brand
+                        break
+                subbrand_counts[system_label] = subbrand_counts.get(system_label, 0) + 1
+
+            jobs.append(Job(
+                title=title,
+                hospital_system=system_label,
+                hospital_name=system_label,
+                city=city_name,
+                state=state,
+                location=f"{city_name}, {state}" if state else city_name,
+                specialty="",
+                job_type="",
+                url=f"{UHG_BASE}{url_path}",
+                job_id=job_id,
+                posted_date="",
+                description="",
+                ats_platform="TalentBrew",
+            ))
+
+        logger.info(f"UHG: page {page} -> {new_this_page} new jobs (total: {len(jobs)})")
+
+        # Same end conditions as Kaiser:
+        #   - two consecutive empty pages = end of results
+        #   - <half a page worth and we're past page 5 = partial last page
+        if new_this_page == 0:
+            empty_pages_in_a_row += 1
+            if empty_pages_in_a_row >= 2:
+                logger.info(f"UHG: 2 empty pages in a row - done at page {page}")
+                break
+        else:
+            empty_pages_in_a_row = 0
+        if new_this_page < EXPECTED_PER_PAGE // 2 and page > 5:
+            logger.info(f"UHG: partial page {page} ({new_this_page} jobs) - done")
+            break
+
+        await jitter()
+
+    if SPLIT and subbrand_counts:
+        logger.info(f"  UHG sub-brand split: {subbrand_counts}")
+    logger.info(f"  UnitedHealth Group (TalentBrew 34088): {len(jobs)} jobs")
+    return jobs
+
+
+async def run_uhg(session: aiohttp.ClientSession) -> list[Job]:
+    return await scrape_uhg_talentbrew(session)
+
+
 async def _scrape_icims_modern(session: aiohttp.ClientSession, system: str, domain: str) -> list[Job]:
     """Handles newer iCIMS portals that use JavaScript-rendered search pages.
     Fetches the search results page and extracts job data from embedded JSON
@@ -6169,6 +6323,7 @@ async def run_all() -> list[dict]:
             run_bsw(direct_session),         # Baylor Scott & White — Phenom refineSearch direct API (Apr 29 2026)
             run_talentbrew(proxy_session),
             run_kaiser(direct_session),  # Kaiser Permanente — TalentBrew company 641, HTML pagination, direct (no proxy) needed since pages are ~1.9MB
+            run_uhg(direct_session),     # UnitedHealth Group (Optum, LHC, MedExpress) — TalentBrew company 34088, 5,800+ jobs, ~7MB pages, direct fetch works
             # ── New platforms from URL spreadsheet ──
             run_ukg(proxy_session),
             run_oracle(proxy_session),
