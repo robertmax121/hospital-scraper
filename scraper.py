@@ -3472,6 +3472,13 @@ ORACLE_ORGS = {
     # Brookdale Senior Living: ~650 senior living + memory care + SNF communities.
     # Confirmed via careers.brookdale.com — "Search Jobs" buttons point to ibmwjb.fa.ocs.
     "Brookdale Senior Living":   ("https://ibmwjb.fa.ocs.oraclecloud.com",                    "CX_1"),
+    # ── Added 2026-05-26: Phase 2 non-acute expansion (verified Oracle HCM 200) ──
+    # Encompass Health: ~160 inpatient rehab hospitals across the US. Confirmed
+    # via careers.encompasshealth.com job listing - all 'Apply' URLs route through
+    # ibwsjb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/job/...
+    # Endpoint validated 2026-05-26: ibwsjb + siteNumber=CX returns
+    # TotalJobsCount=2157 with full requisitionList.items[] populated.
+    "Encompass Health":          ("https://ibwsjb.fa.ocs.oraclecloud.com",                    "CX"),
 }
 
 async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
