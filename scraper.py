@@ -152,6 +152,12 @@ HOSPITAL_SYSTEM_ALIASES = {
     "Montefiore Health":           "Montefiore",
     "Cone Health":                 "ConeHealth",
     "Baptist Health (FL)":         "Baptist Health South Florida",
+    # 2026-05-27: catch any stragglers labeled with the ambiguous "Baptist
+    # Health" or with the old Billings Clinic mislabel, canonicalize them
+    # to the disambiguated KY/IN label. Applied at upsert time so the
+    # next scrape cycle self-heals any legacy rows.
+    "Baptist Health":              "Baptist Health (KY/IN)",
+    "Billings Clinic":             "Baptist Health (KY/IN)",
     "Samaritan Health NY":         "Samaritan Health",
     "Texas Health Resources":      "Texas Health",
     "Freeman Health System":       "Freeman Health",
@@ -228,7 +234,24 @@ WORKDAY_TENANTS = {
     "Albany Med":                ("albanymed", "5", "Albany_Med"),
     "Allina Health":             ("allina", "5", "External"),
     "Avera Health":              ("avera", "5", "avera-careers"),
-    "Billings Clinic":           ("bhs", "1", "careers"),
+    # 2026-05-27 CORRECTION: the "bhs" tenant is Baptist Health (KY/IN) —
+    # the Louisville-based system, NOT Billings Clinic (Montana). All 1,079
+    # jobs at this tenant were being mislabeled as Billings Clinic — URLs
+    # like bhs.wd1.myworkdayjobs.com plus titles like "Director, Baptist
+    # Health Medical Group" + KY/IN locations confirm. Real Billings Clinic
+    # does not appear to be on Workday.
+    #
+    # 2026-05-27 (updated): use explicit "(KY/IN)" region tag to disambiguate
+    # from the FOUR other Baptist Health systems in the dossier:
+    #   - Baptist Health (KY/IN)       — Louisville, this entry
+    #   - Baptist Health South Florida — Miami area, via Phenom
+    #   - Baptist Health System (TX)   — San Antonio, via Taleo
+    #   - Valley Baptist Health System — Rio Grande Valley TX, via Taleo
+    #   - Baptist Memorial (TN)        — Memphis (not yet scraped)
+    # Same system is also scraped via Phenom at jobs.baptisthealthcareers.com
+    # (entry below in PHENOM_ORGS uses identical name; upsert dedups on
+    # (job_id, hospital_system) so cross-scraper overlap collapses cleanly).
+    "Baptist Health (KY/IN)":    ("bhs", "1", "careers"),
     "Bozeman Health":            ("bozemanhealth", "1", "BozemanHealthCareers"),
     "Broadlawns Medical Center": ("broadlawns",            "501","Broadlawns_Careers"),
     "Cape Fear Valley Health":   ("capefearvalley", "1", "CFV"),
@@ -2239,7 +2262,11 @@ PHENOM_ORG_CODES = {
 PHENOM_ORGS = {
     # CommonSpirit moved to TalentBrew — see run_talentbrew
     # Baylor Scott & White moved to Playwright — session-based Phenom
-    "Baptist Health":               "https://jobs.baptisthealthcareers.com",
+    # 2026-05-27: renamed from "Baptist Health" → "Baptist Health (KY/IN)"
+    # to disambiguate from FL/TX/AR/TN systems. Same canonical name as the
+    # Workday entry above; cross-scraper job overlap dedups on the unique
+    # (job_id, hospital_system) constraint.
+    "Baptist Health (KY/IN)":       "https://jobs.baptisthealthcareers.com",
     "Munson Healthcare":            "https://careers.munsonhealthcare.org",
     "Bryan Health":                 "https://careers.bryanhealth.com",
     "PeaceHealth":                  "https://careers.peacehealth.org",
