@@ -173,6 +173,87 @@ HOSPITAL_SYSTEM_ALIASES = {
 }
 
 
+################################################################################
+# JOB-TYPE CLASSIFIER (added 2026-05-27)
+#
+# Most hospital ATSs do not expose a clean job-type field. Of 70K active
+# rows snapshotted on the day this was written:
+#   - 40K had job_type = NULL/empty
+#   - ~6K had wage-range strings ("$31.53 - $52.24") landed there by upstream
+#     scraper bugs
+#   - the rest split among "full time", "part-time", "PRN", "regular", and
+#     dozens of system-specific variants
+#
+# This classifier normalizes all of that into seven canonical buckets:
+#   travel           - explicit travel-RN/nurse postings
+#   per_diem         - PRN, casual, relief, on-call, variable-time
+#   temporary        - temp, seasonal, interim
+#   part_time        - explicit PT or <20-hour or "20-39" labels
+#   full_time        - explicit FT or "regular" or "benefit-eligible"
+#   resident_intern  - residency / fellowship / intern training positions
+#   standard         - hospital staff positions with no signal; conventionally
+#                      full-time in practice but we don't claim that without
+#                      proof. ~53% of rows fall here today.
+#
+# The result is written to hospital_jobs.derived_job_type at upsert time.
+# Mirror this function's logic if you change the SQL backfill query, or
+# vice versa — they must stay in sync.
+################################################################################
+
+def derive_job_type(title, raw_job_type):
+    """Classify a job into one of seven canonical buckets.
+
+    Lowercases + substring-matches against `raw_job_type` first (the ATS-
+    reported value, which may be noisy), then falls back to title keywords.
+    Returns one of the seven bucket strings above; never None.
+    """
+    t  = (title or '').lower()
+    jt = (raw_job_type or '').lower()
+
+    # Travel — exclusive top priority since "Travel RN PRN" should not
+    # match PRN first.
+    if ('travel rn' in t or 'travel nurse' in t
+            or 'travel allied' in t or 'travel tech' in t):
+        return 'travel'
+
+    # Per-Diem / PRN — match on either source.
+    PD_KW = ('prn', 'per diem', 'per-diem', 'casual', 'relief',
+             'variable time', 'on call', 'on-call', 'pool')
+    if any(k in jt for k in PD_KW):
+        return 'per_diem'
+    if any(k in t  for k in ('prn', 'per diem', 'per-diem', 'on call')):
+        return 'per_diem'
+
+    # Temporary / Seasonal / Contract
+    TEMP_KW = ('temporary', 'temp', 'seasonal', 'interim')
+    if any(k in jt for k in TEMP_KW):
+        return 'temporary'
+    if 'temporary' in t or 'seasonal' in t:
+        return 'temporary'
+
+    # Part-Time
+    PT_KW = ('part time', 'part-time', 'less than 20', '(20-39)', 'limited benefits')
+    if any(k in jt for k in PT_KW) or 'part time' in t or 'part-time' in t:
+        return 'part_time'
+
+    # Full-Time / "Regular" / Benefit-Eligible
+    FT_KW = ('full time', 'full-time', 'regular', 'benefit eligible',
+             'benefits eligible', '40 hours', '(40 hours/week)')
+    if any(k in jt for k in FT_KW) or 'full time' in t or 'full-time' in t:
+        return 'full_time'
+
+    # Residency / Fellowship / Intern training positions
+    if ('resident' in t or 'fellowship' in t or ' fellow ' in t
+            or 'fellow,' in t or 'intern' in t):
+        return 'resident_intern'
+
+    # Honest residual: hospital staff job with no schedule signal. The vast
+    # majority of these are FT in reality, but we don't have proof from the
+    # ATS, so we don't claim it. The dashboard and PDF report call this
+    # bucket "Standard staff (unsignaled)" so users understand the gap.
+    return 'standard'
+
+
 WORKDAY_TENANTS = {
     # ── Kaiser Permanente removed 2026-05-26 ──
     # The kaiserpermanente.wd5.myworkdayjobs.com tenant now returns
@@ -5948,7 +6029,14 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # ALIAS CANONICALIZATION (added 2026-05-26): rewrite hospital_system
     # to the canonical name used in hospital_wages so the wage-join works.
     # See HOSPITAL_SYSTEM_ALIASES at the top of this file.
+    # JOB-TYPE DERIVATION (added 2026-05-27): populate derived_job_type from
+    # the noisy raw job_type + title. See derive_job_type() at top of file.
+    # ~67% of hospital ATSs do not expose a clean job-type field; the rest
+    # bleed wage strings or schedule prose into the column. The classifier
+    # buckets into: travel, per_diem, temporary, part_time, full_time,
+    # resident_intern, standard (= unsignaled hospital staff).
     alias_hits = 0
+    jt_buckets = {}
     for r in rows:
         r["scraped_at"] = run_started_iso
         r["is_active"]  = True
@@ -5956,8 +6044,17 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         if sys_name and sys_name in HOSPITAL_SYSTEM_ALIASES:
             r["hospital_system"] = HOSPITAL_SYSTEM_ALIASES[sys_name]
             alias_hits += 1
+        # Job-type classification — uses raw job_type (which may be noise)
+        # + title as fallback signal. Result lands in derived_job_type so
+        # the read side can ignore the original column without losing info.
+        djt = derive_job_type(r.get("title"), r.get("job_type"))
+        r["derived_job_type"] = djt
+        jt_buckets[djt] = jt_buckets.get(djt, 0) + 1
     if alias_hits:
         logger.info(f"Hospital upsert: canonicalized {alias_hits} rows via HOSPITAL_SYSTEM_ALIASES")
+    if jt_buckets:
+        top = sorted(jt_buckets.items(), key=lambda kv: -kv[1])
+        logger.info(f"Hospital upsert: derived_job_type buckets = {dict(top)}")
 
     url = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
            f"?on_conflict=job_id,hospital_system")
