@@ -1355,7 +1355,7 @@ KAISER_CITY_STATE = {
 async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
     """Paginate Kaiser's /search-jobs?p=N and parse jobs out of the rendered HTML."""
     SYSTEM = "Kaiser Permanente"
-    MAX_PAGES = 60                   # 510 jobs / 15 per page = 34 + safety
+    MAX_PAGES = 100                  # 510 jobs / 15 per page = 34, but real total ~900+; cap high
     EXPECTED_PER_PAGE = 15
     jobs: list[Job] = []
     seen_ids: set[str] = set()
@@ -4884,7 +4884,7 @@ async def _hca_single_attempt(async_playwright, using_patchright, stealth_async)
                 logger.info(f"HCA diag: failed to capture diagnostics: {_diag_e}")
 
             if not cleared:
-                logger.warning("HCA Healthcare: Cloudflare challenge did not clear after 75s — aborting")
+                logger.warning("HCA Healthcare: Cloudflare challenge did not clear after 120s — aborting")
                 await browser.close()
                 return []
 
@@ -5933,7 +5933,7 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         logger.info(f"Hospital upsert: canonicalized {alias_hits} rows via HOSPITAL_SYSTEM_ALIASES")
 
     url = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
-           f"?on_conflict=ats_platform,hospital_system,job_id")
+           f"?on_conflict=job_id,hospital_system")
     headers = {
         "apikey":        sb_key,
         "Authorization": f"Bearer {sb_key}",
