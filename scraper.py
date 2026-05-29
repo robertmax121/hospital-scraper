@@ -893,6 +893,17 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
             for j in listings:
                 loc = j.get("locationsText", "")
                 _city, _state = parse_city_state(loc)
+                # job_id (bug fix 2026-05-29): most tenants put the requisition
+                # number in bulletFields[0], but some (e.g. Elara Caring) put
+                # the *state* there and the req number in [1] — using [0]
+                # blindly collapsed 943 jobs onto ~13 state values. Pick the
+                # first bulletField that contains a digit (the req number);
+                # fall back to the always-unique externalPath. Tenants whose
+                # bulletFields[0] already holds a numeric req id are unaffected.
+                _bf = j.get("bulletFields") or []
+                _jid = next((str(b) for b in _bf if any(c.isdigit() for c in str(b))), "")
+                if not _jid:
+                    _jid = j.get("externalPath", "") or (j.get("title", "") + loc)
                 jobs.append(Job(
                     title=j.get("title", ""),
                     hospital_system=system,
@@ -903,7 +914,7 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     specialty=(j.get("categories") or [{}])[0].get("name", ""),
                     job_type=j.get("timeType", ""),
                     url=working_url.replace("/wday/cxs/"+tenant+"/","/" ).replace("/jobs","") + "/job/" + j.get("externalPath",""),
-                    job_id=str(j.get("bulletFields", [""])[0] or j.get("title", "") + loc),
+                    job_id=_jid,
                     posted_date=j.get("postedOn", ""),
                     description=strip_html(str(j.get("jobDescription", ""))),
                     ats_platform="Workday",
@@ -1107,10 +1118,10 @@ TALENTBREW_ORGS = {
     # Search results page mirrors CommonSpirit's HTML pattern; rpp=100.
     # Added 2026-05-06.
     "Mayo Clinic":              ("https://jobs.mayoclinic.org/search-jobs", 100),
-    # ── Added 2026-05-29: non-acute expansion (verified TalentBrew, companyId 39891) ──
-    # Enhabit Home Health & Hospice — careers.enhabit.com is TalentBrew, not iCIMS.
-    # /search-jobs page reports ~1,622 openings. ~250 home-health + 100 hospice locations.
-    "Enhabit Home Health":      ("https://careers.enhabit.com/search-jobs", 100),
+    # NOTE (2026-05-29): Enhabit Home Health (TalentBrew company 39891) was here
+    # but its /results JSON endpoint returns hasContent:false even after the geo
+    # warmup, so the generic adapter yielded 0. Moved to a dedicated HTML
+    # adapter (scrape_enhabit_html / run_enhabit) that paginates /search-jobs?p=N.
 }
 
 
@@ -1712,6 +1723,108 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
 
 async def run_uhg(session: aiohttp.ClientSession) -> list[Job]:
     return await scrape_uhg_talentbrew(session)
+
+
+# ── Enhabit Home Health & Hospice (dedicated HTML adapter) ──────────────────
+# Enhabit runs careers.enhabit.com on TalentBrew company 39891. The standard
+# /results JSON endpoint replies hasContent:false / 61-byte shell even after
+# the Chicago geo warmup (verified 2026-05-29) — so the generic TalentBrew
+# adapter returned 0 for Enhabit. The rendered /search-jobs?p=N HTML, however,
+# embeds the job links directly (~16/page, ~1,621 jobs / company id 39891 in
+# the URL path), so we paginate the HTML like Kaiser/UHG.
+ENHABIT_BASE = "https://careers.enhabit.com"
+ENHABIT_JOB_PATTERN = re.compile(r'href="(/job/([^/]+)/([^/]+)/39891/(\d+))"')
+ENHABIT_TITLE_NEAR_HREF = re.compile(
+    r'href="[^"]*?/39891/(\d+)"[^>]*>(?:\s*<[^>]+>)*\s*([^<\n]{3,150}?)\s*<'
+)
+# City → state seed (home-health/hospice footprint, heaviest in TX/KS/VA/AZ).
+# Unmapped cities leave state blank; the public board still searches by city.
+ENHABIT_CITY_STATE_SEED = {
+    "hutchinson": "KS", "south-hutchinson": "KS", "wichita": "KS",
+    "virginia-beach": "VA", "norfolk": "VA", "richmond": "VA",
+    "el-paso": "TX", "mesa": "AZ", "phoenix": "AZ", "tucson": "AZ",
+    "dallas": "TX", "fort-worth": "TX", "houston": "TX", "austin": "TX",
+    "san-antonio": "TX", "plano": "TX", "arlington": "TX",
+    "oklahoma-city": "OK", "tulsa": "OK", "little-rock": "AR",
+    "memphis": "TN", "nashville": "TN", "knoxville": "TN",
+    "birmingham": "AL", "jackson": "MS", "baton-rouge": "LA",
+    "denver": "CO", "colorado-springs": "CO", "boise": "ID",
+    "salt-lake-city": "UT", "albuquerque": "NM", "las-vegas": "NV",
+}
+
+
+async def scrape_enhabit_html(session: aiohttp.ClientSession) -> list[Job]:
+    """Paginate Enhabit's /search-jobs?p=N and parse jobs from rendered HTML."""
+    SYSTEM = "Enhabit Home Health"
+    MAX_PAGES = 200                  # ~1,621 jobs / 16 per page ≈ 102 + safety
+    EXPECTED_PER_PAGE = 16
+    jobs: list[Job] = []
+    seen_ids: set[str] = set()
+    empty_pages_in_a_row = 0
+    for page in range(1, MAX_PAGES + 1):
+        url = f"{ENHABIT_BASE}/search-jobs?p={page}"
+        try:
+            async with req(session, "get", url,
+                           headers={**HEADERS, "Accept": "text/html,*/*"},
+                           proxy=proxies.get(),
+                           timeout=aiohttp.ClientTimeout(total=60)) as r:
+                if r.status != 200:
+                    logger.info(f"Enhabit: page {page} HTTP {r.status} — stopping")
+                    break
+                html = await r.text()
+        except Exception as e:
+            logger.info(f"Enhabit: page {page} fetch error: {e} — stopping")
+            break
+
+        matches = ENHABIT_JOB_PATTERN.findall(html)
+        title_map = {jid: t.strip() for jid, t in ENHABIT_TITLE_NEAR_HREF.findall(html)}
+
+        new_this_page = 0
+        for url_path, city, title_slug, job_id in matches:
+            if job_id in seen_ids:
+                continue
+            seen_ids.add(job_id)
+            new_this_page += 1
+            title = title_map.get(job_id) or title_slug.replace("-", " ").title()
+            city_name = city.replace("-", " ").title()
+            state = ENHABIT_CITY_STATE_SEED.get(city.lower(), "")
+            jobs.append(Job(
+                title=title,
+                hospital_system=SYSTEM,
+                hospital_name=SYSTEM,
+                city=city_name,
+                state=state,
+                location=f"{city_name}, {state}" if state else city_name,
+                specialty="",
+                job_type="",
+                url=f"{ENHABIT_BASE}{url_path}",
+                job_id=job_id,
+                posted_date="",
+                description="",
+                ats_platform="TalentBrew",
+            ))
+
+        logger.info(f"Enhabit: page {page} -> {new_this_page} new jobs (total: {len(jobs)})")
+
+        if new_this_page == 0:
+            empty_pages_in_a_row += 1
+            if empty_pages_in_a_row >= 2:
+                logger.info(f"Enhabit: 2 empty pages in a row - done at page {page}")
+                break
+        else:
+            empty_pages_in_a_row = 0
+        if new_this_page < EXPECTED_PER_PAGE // 2 and page > 5:
+            logger.info(f"Enhabit: partial page {page} ({new_this_page} jobs) - done")
+            break
+
+        await jitter()
+
+    logger.info(f"  Enhabit Home Health (TalentBrew 39891): {len(jobs)} jobs")
+    return jobs
+
+
+async def run_enhabit(session: aiohttp.ClientSession) -> list[Job]:
+    return await scrape_enhabit_html(session)
 
 
 async def _scrape_icims_modern(session: aiohttp.ClientSession, system: str, domain: str) -> list[Job]:
@@ -3913,11 +4026,21 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
     limit  = 25
     while True:
         try:
+            # Bug fix (2026-05-29): the top-level limit/offset query params
+            # paginate the OUTER resourcecollection — which only ever holds a
+            # single SearchResult wrapper — so they were a no-op. Every Oracle
+            # tenant was therefore stuck on page 1 (exactly 25 jobs each, e.g.
+            # Encompass 25/2168, Brookdale 25/2096, Lifepoint 26/3790). The
+            # real pagination knobs live INSIDE the finder predicate. Passing
+            # limit/offset in BOTH places paginates correctly and is verified
+            # safe against the previously-"working" tenants.
             params = {
-                "finder":  f"findReqs;siteNumber={site_number},sortBy=POSTING_DATES_DESC",
+                "finder":  (f"findReqs;siteNumber={site_number},sortBy=POSTING_DATES_DESC,"
+                            f"limit={limit},offset={offset}"),
                 "expand":  "requisitionList.workLocation,requisitionList.secondaryLocations",
                 "limit":   limit,
                 "offset":  offset,
+                "totalResults": "true",
             }
             async with req(session, "get", api, params=params,
                 headers={**HEADERS,
@@ -6468,6 +6591,7 @@ async def run_all() -> list[dict]:
             run_talentbrew(proxy_session),
             run_kaiser(direct_session),  # Kaiser Permanente — TalentBrew company 641, HTML pagination, direct (no proxy) needed since pages are ~1.9MB
             run_uhg(direct_session),     # UnitedHealth Group (Optum, LHC, MedExpress) — TalentBrew company 34088, 5,800+ jobs, ~7MB pages, direct fetch works
+            run_enhabit(direct_session), # Enhabit Home Health — TalentBrew company 39891, HTML pagination (/results JSON is empty), ~1,621 jobs
             # ── New platforms from URL spreadsheet ──
             run_ukg(proxy_session),
             run_oracle(proxy_session),
