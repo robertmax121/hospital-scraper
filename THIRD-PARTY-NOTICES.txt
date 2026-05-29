@@ -1,0 +1,23 @@
+THIRD-PARTY SOFTWARE NOTICES AND LICENSE INVENTORY (SBOM)
+hospital-scraper (Python data-collection service)
+Copyright (c) 2026 Waypoint Recruitment and Staffing, Inc.
+Generated: 2026-05-28  |  Source: requirements.txt
+========================================================================
+
+Direct dependencies and their upstream licenses:
+
+  PACKAGE               VERSION     LICENSE
+  aiohttp               3.9.3       Apache-2.0
+  supabase              1.2.0       MIT
+  httpx                 0.24.1      BSD-3-Clause
+  python-dotenv         1.0.0       BSD-3-Clause
+  playwright-stealth    >=1.0.6     MIT
+  patchright            >=1.40.0    Apache-2.0
+
+All direct dependencies are permissive (Apache-2.0 / MIT / BSD).
+No GPL / AGPL / SSPL among direct dependencies.
+
+NOTE: This lists DIRECT dependencies only. To produce a full
+transitive inventory, run in the project venv:
+    pip install pip-licenses && pip-licenses --format=plain --with-urls > THIRD-PARTY-NOTICES-full.txt
+and confirm no copyleft appears among transitive packages.
