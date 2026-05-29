@@ -1827,6 +1827,104 @@ async def run_enhabit(session: aiohttp.ClientSession) -> list[Job]:
     return await scrape_enhabit_html(session)
 
 
+# ── Maxim Healthcare Services (dedicated HTML adapter) ──────────────────────
+# Maxim runs careers.maximhealthcare.com on TalentBrew company 49382. Same
+# story as Enhabit: the /results JSON markup didn't parse, but the rendered
+# /search-jobs?p=N HTML embeds the job links directly (~19/page, count ~1,826,
+# company id 49382 in the URL path). Home health / pediatric homecare /
+# staffing, nationwide. Verified 2026-05-29.
+MAXIM_BASE = "https://careers.maximhealthcare.com"
+MAXIM_JOB_PATTERN = re.compile(r'href="(/job/([^/]+)/([^/]+)/49382/(\d+))"')
+MAXIM_TITLE_NEAR_HREF = re.compile(
+    r'href="[^"]*?/49382/(\d+)"[^>]*>(?:\s*<[^>]+>)*\s*([^<\n]{3,150}?)\s*<'
+)
+MAXIM_CITY_STATE_SEED = {
+    "zanesville": "OH", "columbus": "OH", "cleveland": "OH", "cincinnati": "OH",
+    "roanoke": "VA", "richmond": "VA", "virginia-beach": "VA", "rainelle": "WV",
+    "charleston": "WV", "morgantown": "WV", "pittsburgh": "PA", "philadelphia": "PA",
+    "baltimore": "MD", "rockville": "MD", "columbia": "MD", "washington": "DC",
+    "atlanta": "GA", "charlotte": "NC", "raleigh": "NC", "tampa": "FL",
+    "orlando": "FL", "miami": "FL", "jacksonville": "FL", "houston": "TX",
+    "dallas": "TX", "san-antonio": "TX", "austin": "TX", "chicago": "IL",
+    "detroit": "MI", "boston": "MA", "newark": "NJ", "los-angeles": "CA",
+    "san-diego": "CA", "sacramento": "CA", "phoenix": "AZ", "denver": "CO",
+}
+
+
+async def scrape_maxim_html(session: aiohttp.ClientSession) -> list[Job]:
+    """Paginate Maxim's /search-jobs?p=N and parse jobs from rendered HTML."""
+    SYSTEM = "Maxim Healthcare"
+    MAX_PAGES = 250                  # ~1,826 jobs / ~14 unique per page ≈ 130 + safety
+    EXPECTED_PER_PAGE = 19
+    jobs: list[Job] = []
+    seen_ids: set[str] = set()
+    empty_pages_in_a_row = 0
+    for page in range(1, MAX_PAGES + 1):
+        url = f"{MAXIM_BASE}/search-jobs?p={page}"
+        try:
+            async with req(session, "get", url,
+                           headers={**HEADERS, "Accept": "text/html,*/*"},
+                           proxy=proxies.get(),
+                           timeout=aiohttp.ClientTimeout(total=60)) as r:
+                if r.status != 200:
+                    logger.info(f"Maxim: page {page} HTTP {r.status} — stopping")
+                    break
+                html = await r.text()
+        except Exception as e:
+            logger.info(f"Maxim: page {page} fetch error: {e} — stopping")
+            break
+
+        matches = MAXIM_JOB_PATTERN.findall(html)
+        title_map = {jid: t.strip() for jid, t in MAXIM_TITLE_NEAR_HREF.findall(html)}
+
+        new_this_page = 0
+        for url_path, city, title_slug, job_id in matches:
+            if job_id in seen_ids:
+                continue
+            seen_ids.add(job_id)
+            new_this_page += 1
+            title = title_map.get(job_id) or title_slug.replace("-", " ").title()
+            city_name = city.replace("-", " ").title()
+            state = MAXIM_CITY_STATE_SEED.get(city.lower(), "")
+            jobs.append(Job(
+                title=title,
+                hospital_system=SYSTEM,
+                hospital_name=SYSTEM,
+                city=city_name,
+                state=state,
+                location=f"{city_name}, {state}" if state else city_name,
+                specialty="",
+                job_type="",
+                url=f"{MAXIM_BASE}{url_path}",
+                job_id=job_id,
+                posted_date="",
+                description="",
+                ats_platform="TalentBrew",
+            ))
+
+        logger.info(f"Maxim: page {page} -> {new_this_page} new jobs (total: {len(jobs)})")
+
+        if new_this_page == 0:
+            empty_pages_in_a_row += 1
+            if empty_pages_in_a_row >= 2:
+                logger.info(f"Maxim: 2 empty pages in a row - done at page {page}")
+                break
+        else:
+            empty_pages_in_a_row = 0
+        if new_this_page < EXPECTED_PER_PAGE // 3 and page > 5:
+            logger.info(f"Maxim: partial page {page} ({new_this_page} jobs) - done")
+            break
+
+        await jitter()
+
+    logger.info(f"  Maxim Healthcare (TalentBrew 49382): {len(jobs)} jobs")
+    return jobs
+
+
+async def run_maxim(session: aiohttp.ClientSession) -> list[Job]:
+    return await scrape_maxim_html(session)
+
+
 async def _scrape_icims_modern(session: aiohttp.ClientSession, system: str, domain: str) -> list[Job]:
     """Handles newer iCIMS portals that use JavaScript-rendered search pages.
     Fetches the search results page and extracts job data from embedded JSON
@@ -6592,6 +6690,7 @@ async def run_all() -> list[dict]:
             run_kaiser(direct_session),  # Kaiser Permanente — TalentBrew company 641, HTML pagination, direct (no proxy) needed since pages are ~1.9MB
             run_uhg(direct_session),     # UnitedHealth Group (Optum, LHC, MedExpress) — TalentBrew company 34088, 5,800+ jobs, ~7MB pages, direct fetch works
             run_enhabit(direct_session), # Enhabit Home Health — TalentBrew company 39891, HTML pagination (/results JSON is empty), ~1,621 jobs
+            run_maxim(direct_session),   # Maxim Healthcare — TalentBrew company 49382, HTML pagination, ~1,826 jobs
             # ── New platforms from URL spreadsheet ──
             run_ukg(proxy_session),
             run_oracle(proxy_session),
