@@ -1107,6 +1107,10 @@ TALENTBREW_ORGS = {
     # Search results page mirrors CommonSpirit's HTML pattern; rpp=100.
     # Added 2026-05-06.
     "Mayo Clinic":              ("https://jobs.mayoclinic.org/search-jobs", 100),
+    # ── Added 2026-05-29: non-acute expansion (verified TalentBrew, companyId 39891) ──
+    # Enhabit Home Health & Hospice — careers.enhabit.com is TalentBrew, not iCIMS.
+    # /search-jobs page reports ~1,622 openings. ~250 home-health + 100 hospice locations.
+    "Enhabit Home Health":      ("https://careers.enhabit.com/search-jobs", 100),
 }
 
 
@@ -2665,6 +2669,10 @@ PHENOM_ORGS = {
     # Was previously routed to Playwright (CUSTOM_SITES) which returned 0 jobs.
     # ~140 hospitals expected.
     "Ascension Health":             "https://jobs.ascension.org",
+    # ── Added 2026-05-29: non-acute expansion (Phenom detected via landing page) ──
+    # PruittHealth — SNF + home health + hospice across the Southeast (~180 locations).
+    # careers.pruitthealth.com is Phenom (/us/en path). Adapter discovers pageId from HTML.
+    "PruittHealth":                 "https://careers.pruitthealth.com",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
