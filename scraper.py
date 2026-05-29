@@ -271,7 +271,11 @@ WORKDAY_TENANTS = {
     "Novant Health":             ("novant",             "1",  "Novant_Health_External"),
     "Prisma Health":             ("prismahealth",       "1",  "External"),
     "Geisinger":                 ("geisinger",          "1",  "Geisinger_External"),
-    "Sanford Health":            ("sanfordhealth",      "5",  "Sanford_Health"),
+    # 2026-05-29: old tenant (sanfordhealth/Sanford_Health) now returns HTTP 422 —
+    # dead. Live tenant is sanford.wd5/SanfordHealth (total=2000, Fargo/Sioux Falls/
+    # Mandan geography). This is the full Sanford system INCLUDING Good Samaritan
+    # Society (senior living/SNF), so no separate Good Sam entry is needed.
+    "Sanford Health":            ("sanford",            "5",  "SanfordHealth"),
     "SSM Health":                ("ssmhealth",          "1",  "SSM_Health_External"),
     "Mercy Health":               ("mercy",              "5",  "External"),
     "Carilion Clinic":           ("carilion",           "1",  "Carilion_External"),
@@ -409,6 +413,21 @@ WORKDAY_TENANTS = {
     # Compassus: hospice + palliative care + home health across ~200 locations.
     # Endpoint validated 2026-05-26: hospicecom.wd5/Compassus returns total=1076.
     "Compassus":                 ("hospicecom", "5", "Compassus"),
+    # ── Added 2026-05-29: Phase 3 non-acute expansion (verified Workday cxs 200) ──
+    # All endpoints validated live 2026-05-29 via probe_ats.py (Origin/Referer
+    # headers required; reads data["total"]).
+    # Elara Caring: home health + hospice + personal care, ~200 locations.
+    "Elara Caring":              ("elara", "5", "External"),            # 937 jobs, home-health
+    # Option Care Health: nation's largest independent home/alternate-site infusion provider.
+    "Option Care Health":        ("optioncare", "1", "OptionCare"),     # 292 jobs, home-infusion
+    # LifeStance Health: ~700 outpatient mental-health centers.
+    "LifeStance Health":         ("lifestance", "5", "Careers"),        # 152 jobs, behavioral
+    # WellNow Urgent Care: ~190 urgent care centers (shares Aspen Dental's Workday tenant).
+    "WellNow Urgent Care":       ("aspendental", "1", "WellNowUrgentCareCareers"),  # 186 jobs, urgent-care
+    # SimonMed Imaging: ~170 outpatient imaging centers.
+    "SimonMed Imaging":          ("sim", "3", "External"),              # 98 jobs, imaging
+    # Akumin: outpatient imaging + oncology, ~130 centers.
+    "Akumin":                    ("akumincorp", "5", "akumincareers"),  # 260 jobs, imaging
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -1025,7 +1044,9 @@ ICIMS_ORGS = {
     "Kettering Health":       "careers-ketteringhealth.icims.com",
     "Loma Linda University":  "careers-lluh.icims.com",
     # "Texas Health Resources" moved to FINDLY_CWS_ORGS — uses Findly/m-cloud.io, not iCIMS
-    "Cone Health":            "careers-conehealth.icims.com",
+    # "Cone Health" REMOVED 2026-05-29: HAR analysis proved careers.conehealth.com is
+    #   Phenom (org code CHPCHVUS, POST /widgets), NOT iCIMS. Already in PHENOM_ORGS;
+    #   the iCIMS entry only ever returned 0. See note in PHENOM_ORGS.
     "Monument Health":        "careers-monument.icims.com",
     "Owensboro Health":       "careers-owensborohealth.icims.com",
     "Stormont Vail":          "careers-stormontvail.icims.com",
@@ -2306,6 +2327,10 @@ SMARTRECRUITERS_ORGS = {
     # IORA Health removed — acquired by One Medical (Amazon)
     # ── Added from scraper1.xlsx expansion ──
     "University of Maryland Medical System": "UniversityOfMarylandMedicalSystem",
+    # ── Added 2026-05-29: Phase 3 non-acute expansion (verified SR API 200) ──
+    # totalFound validated live 2026-05-29 via probe_ats.py.
+    "US Physical Therapy":  "usphysicaltherapy2",   # 1,075 jobs, outpatient PT (~600 clinics)
+    "Atria Senior Living":  "AtriaGroupLLC",         # 966 jobs, senior living (~200 communities)
 }
 
 async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -2357,6 +2382,107 @@ async def run_smartrecruiters(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  SmartRecruiters: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  CONCENTRA  (Sitecore SXA Search)
+# ══════════════════════════════════════════════════════════════════════════
+# Concentra runs ~520 occupational/urgent-care clinics. Its career site is NOT
+# iCIMS — it's a Sitecore SXA "search results" controller. The public JSON API:
+#   GET https://www.concentra.com//sxa/search/results/
+#       ?s={SCOPE}|{SCOPE}&itemid={ITEMID}&sig=careers&v={VARIANT}
+#       &e={offset}&p={pageSize}&g=&o=&q=
+# Pagination semantics (verified live 2026-05-29): e = OFFSET (start index),
+# p = PAGE SIZE; the server returns items[e : e+p]. Total is in "Count".
+# Each result's job fields live in the `Html` blob; `Url`/`Id` are clean.
+CONCENTRA_SCOPE   = "{E6F6B861-8426-447A-A003-80760B98B375}"
+CONCENTRA_ITEMID  = "{A9A7A019-FD55-4B3A-8BF9-6B439042625B}"
+CONCENTRA_VARIANT = "{6DE7E335-E365-482E-B2E4-3E28CE99D128}"
+CONCENTRA_PAGE    = 500   # 500 verified safe; server caps very large p
+CONCENTRA_BASE    = "https://www.concentra.com"
+
+_CONCENTRA_TITLE_RE    = re.compile(r'<a[^>]*\btitle="([^"]+)"', re.I)
+_CONCENTRA_LOCATION_RE = re.compile(r'field-location">([^<]+)<', re.I)
+_CONCENTRA_CATEGORY_RE = re.compile(r'field-category[^"]*">([^<]+)<', re.I)
+_CONCENTRA_JOBID_RE    = re.compile(r'/(\d+)/?$')
+
+async def scrape_concentra(session: aiohttp.ClientSession) -> list[Job]:
+    jobs: list[Job] = []
+    offset, total = 0, None
+    headers = {
+        **HEADERS,
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": f"{CONCENTRA_BASE}/careers/career-search/",
+    }
+    while True:
+        params = {
+            "s": f"{CONCENTRA_SCOPE}|{CONCENTRA_SCOPE}",
+            "itemid": CONCENTRA_ITEMID, "sig": "careers",
+            "g": "", "o": "", "q": "",
+            "e": str(offset), "p": str(CONCENTRA_PAGE),
+            "v": CONCENTRA_VARIANT,
+        }
+        try:
+            async with req(session, "get",
+                f"{CONCENTRA_BASE}//sxa/search/results/",
+                params=params, headers=headers, ssl=False, proxy=proxies.get(),
+                timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"Concentra: HTTP {r.status} at offset {offset}")
+                    break
+                data = await r.json(content_type=None)
+        except Exception as e:
+            logger.info(f"Concentra: {e} at offset {offset}")
+            break
+
+        if total is None:
+            total = data.get("Count", 0) or 0
+        results = data.get("Results") or []
+        if not results:
+            break
+
+        for it in results:
+            html = it.get("Html", "") or ""
+            mt = _CONCENTRA_TITLE_RE.search(html)
+            ml = _CONCENTRA_LOCATION_RE.search(html)
+            mc = _CONCENTRA_CATEGORY_RE.search(html)
+            title = (mt.group(1) if mt else "").strip()
+            if not title:
+                continue
+            loc_txt = (ml.group(1) if ml else "").strip()
+            city, state = parse_city_state(loc_txt)
+            specialty = (mc.group(1) if mc else "").replace("-", " ").strip()
+            path = it.get("Url", "") or ""
+            url = f"{CONCENTRA_BASE}{path}" if path.startswith("/") else path
+            mj = _CONCENTRA_JOBID_RE.search(path.rstrip("/") + "/")
+            job_id = (mj.group(1) if mj else "") or str(it.get("Id", ""))
+            jobs.append(Job(
+                title=title,
+                hospital_system="Concentra",
+                hospital_name="Concentra",
+                city=city, state=state, location=loc_txt,
+                specialty=specialty, job_type="",
+                url=url, job_id=str(job_id),
+                posted_date="", description="",
+                ats_platform="Concentra",
+            ))
+
+        # NOTE: Concentra returns SHORT pages (e.g. 496 for a 500-window) because
+        # some index entries are filtered server-side. Do NOT break on a short
+        # page — advance by the full window and stop only when offset >= total
+        # (or an empty page). Verified 2026-05-29: 496+500+263 = 1,259 jobs.
+        offset += CONCENTRA_PAGE
+        if total and offset >= total:
+            break
+        await jitter()
+    return jobs
+
+async def run_concentra(session) -> list[Job]:
+    logger.info("Concentra: scraping Sitecore SXA career search...")
+    jobs = await scrape_concentra(session)
+    logger.info(f"  Concentra: {len(jobs):,} jobs")
     return jobs
 
 
@@ -3746,6 +3872,10 @@ ORACLE_ORGS = {
     # Endpoint validated 2026-05-26: ibwsjb + siteNumber=CX returns
     # TotalJobsCount=2157 with full requisitionList.items[] populated.
     "Encompass Health":          ("https://ibwsjb.fa.ocs.oraclecloud.com",                    "CX"),
+    # ── Added 2026-05-29: Phase 3 non-acute expansion (verified Oracle HCM 200) ──
+    # Lifepoint Health (behavioral + community hospitals + rehab). Endpoint
+    # validated 2026-05-29: ibnjjb + siteNumber=CX_1 returns TotalJobsCount=3814.
+    "Lifepoint Health":          ("https://ibnjjb.fa.ocs.oraclecloud.com",                    "CX_1"),
 }
 
 async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
@@ -6318,6 +6448,7 @@ async def run_all() -> list[dict]:
             run_findly_google(direct_session),   # Findly CWS Google CTS (AdventHealth) — direct (no proxy) for large JSON payloads
             run_greenhouse(proxy_session),
             run_smartrecruiters(proxy_session),
+            run_concentra(proxy_session),    # Concentra — Sitecore SXA search (~1,260 jobs)
             run_lever(proxy_session),
             run_usajobs(direct_session),
             run_adp(proxy_session),
