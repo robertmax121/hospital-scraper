@@ -216,13 +216,34 @@ def mark_inactive_jobs(current_jobs: list[dict],
 
 
 def get_stats() -> dict:
+    """Count active jobs.
+
+    A single `SELECT id ... count=exact WHERE is_active=true` forces Postgres
+    to scan the whole active set in one statement, which now exceeds the role's
+    statement_timeout (error 57014 / HTTP 500) and returned a misleading 0 to
+    the website's job counter. Instead we CURSOR-paginate on id — the same
+    pattern Layer 4 uses to walk the table without timing out — and tally the
+    rows. Each page is a small indexed range scan with a LIMIT, so no single
+    statement can blow the timeout regardless of table size.
+    """
     db = client()
     try:
-        result = (db.table("hospital_jobs")
-                    .select("id", count="exact")
-                    .eq("is_active", True)
-                    .execute())
-        return {"total_active_jobs": result.count,
+        total = 0
+        last_id = 0
+        while True:
+            resp = (db.table("hospital_jobs")
+                      .select("id")
+                      .eq("is_active", True)
+                      .gt("id", last_id)
+                      .order("id", desc=False)
+                      .limit(PAGE)
+                      .execute())
+            rows = resp.data or []
+            if not rows:
+                break
+            total += len(rows)
+            last_id = rows[-1]["id"]
+        return {"total_active_jobs": total,
                 "last_updated": datetime.now().isoformat()}
     except Exception as e:
         logger.error(f"get_stats error: {e}")
