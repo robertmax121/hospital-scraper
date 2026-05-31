@@ -243,6 +243,20 @@ def get_stats() -> dict:
                 break
             total += len(rows)
             last_id = rows[-1]["id"]
+
+        # Persist to the single-row site_stats summary table. The public
+        # website reads THIS one row for its hero-pill count instead of
+        # running a live exact COUNT (which times out at this table size).
+        # Service-role key bypasses RLS, so this write is allowed.
+        try:
+            (db.table("site_stats")
+               .upsert({"id": 1,
+                        "total_active_jobs": total,
+                        "updated_at": datetime.now().isoformat()})
+               .execute())
+        except Exception as e:
+            logger.warning(f"site_stats write failed (non-fatal): {e}")
+
         return {"total_active_jobs": total,
                 "last_updated": datetime.now().isoformat()}
     except Exception as e:
