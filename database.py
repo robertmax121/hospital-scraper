@@ -64,6 +64,23 @@ def client() -> Client:
     return create_client(url, key)
 
 
+def service_client() -> Client:
+    """Client for privileged writes to RLS-protected tables (currently
+    site_stats). Uses the service-role key, which bypasses row-level security.
+
+    Falls back to SUPABASE_KEY only so local/dev runs don't crash outright —
+    but in production that fallback is the anon key, which RLS will reject for
+    these tables (error 42501). The site_stats counter only updates when
+    SUPABASE_SERVICE_ROLE_KEY is present in the environment.
+    """
+    url = os.environ.get("SUPABASE_URL", "")
+    key = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+           or os.environ.get("SUPABASE_KEY", ""))
+    if not url or not key:
+        raise ValueError("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
+    return create_client(url, key)
+
+
 def upsert_jobs(jobs: list[dict]) -> dict:
     """Upsert jobs by (job_id, hospital_system). On conflict, refreshes the
     row's mutable fields (including scraped_at). consecutive_scrape_misses
@@ -247,13 +264,25 @@ def get_stats() -> dict:
         # Persist to the single-row site_stats summary table. The public
         # website reads THIS one row for its hero-pill count instead of
         # running a live exact COUNT (which times out at this table size).
-        # Service-role key bypasses RLS, so this write is allowed.
+        #
+        # site_stats has RLS enabled with a public-read-only policy, so the
+        # write MUST go through the service-role key (service_client), which
+        # bypasses RLS. The plain client() is the anon key — it can write the
+        # RLS-off hospital_jobs table fine but is rejected here (42501), which
+        # is exactly how this counter silently went stale before.
+        if not os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
+            logger.warning(
+                "SUPABASE_SERVICE_ROLE_KEY not set — the site_stats write will be "
+                "rejected by RLS and the homepage job counter will NOT update. "
+                "Add it to the cron environment (Supabase > Settings > API > "
+                "service_role key).")
         try:
-            (db.table("site_stats")
+            (service_client().table("site_stats")
                .upsert({"id": 1,
                         "total_active_jobs": total,
                         "updated_at": datetime.now().isoformat()})
                .execute())
+            logger.info(f"site_stats updated: total_active_jobs={total:,}")
         except Exception as e:
             logger.warning(f"site_stats write failed (non-fatal): {e}")
 
