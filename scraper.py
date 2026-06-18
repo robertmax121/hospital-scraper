@@ -2888,6 +2888,16 @@ PHENOM_ORGS = {
     # PruittHealth — SNF + home health + hospice across the Southeast (~180 locations).
     # careers.pruitthealth.com is Phenom (/us/en path). Adapter discovers pageId from HTML.
     "PruittHealth":                 "https://careers.pruitthealth.com",
+    # ── Added 2026-06-18: HCA Healthcare — largest US hospital operator (~185
+    # hospitals). Confirmed Phenom People (POST /widgets) via web research.
+    # careers.hcahealthcare.com is Cloudflare-protected and 403s datacenter IPs,
+    # so it REQUIRES the residential proxy pool (proxies.get(), which scrape_phenom
+    # already uses). Org code is auto-discovered from the career-page HTML at
+    # runtime. Could NOT validate from the dev IP (403 on both /widgets and the
+    # landing page) — verify the job count in the first nightly run's log; if it
+    # returns 0, the generic adapter likely needs an HCA org code in
+    # PHENOM_ORG_CODES and/or stronger anti-bot headers.
+    "HCA Healthcare":               "https://careers.hcahealthcare.com",
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
