@@ -6038,7 +6038,7 @@ def _classify_travel_specialty(title: str | None, raw_specialty: str | None) -> 
 # browsers use). App ID and key extracted from the browser HAR; the API key
 # is search-only, safe to embed.
 VIVIAN_ALGOLIA_APP_ID  = "Q86HQHHJLB"
-VIVIAN_ALGOLIA_API_KEY = "1e4ad038ed6e776a28e406a06e749aa5"
+VIVIAN_ALGOLIA_API_KEY = "d303713dffdc1b685b8993b09665717d"  # rotated key, refreshed 2026-06-18 (old 1e4ad0… returned 403; app id unchanged)
 VIVIAN_ALGOLIA_HOST    = f"https://{VIVIAN_ALGOLIA_APP_ID.lower()}-dsn.algolia.net"
 VIVIAN_INDEX           = "searchable-jobs-prod"
 VIVIAN_HITS_PER_PAGE   = 250          # Algolia hard cap
