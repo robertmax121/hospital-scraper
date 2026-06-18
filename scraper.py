@@ -263,7 +263,11 @@ WORKDAY_TENANTS = {
     # returns 0 jobs without a working session warmup. Replaced with a
     # dedicated HTML-pagination adapter (scrape_kaiser_html) which
     # parses /search-jobs?p=N directly and works without proxies.
-    "Providence Health":         ("providence",         "5",  "Providence_External"),
+    # Advocate Health (Advocate Aurora + Atrium) — Workday tenant 'aah'.
+    # Validated 2026-06-18: aah.wd5 / site "External" returns total ~2,000.
+    "Advocate Health":           ("aah",                "5",  "External"),
+    # Providence moved off Workday to Oracle HCM (see ORACLE_ORGS). The old
+    # providence.wd5 / Providence_External tenant returns 0 now. Removed 2026-06-18.
     "Banner Health":             ("bannerhealth",       "108","Careers"),
     "Northwell Health":          ("northwell",          "5",  "Northwell_External"),
     "Intermountain Health":      ("intermountain",      "1",  "Careers"),
@@ -1114,10 +1118,10 @@ TALENTBREW_ORGS = {
     # works reliably (15 jobs/page, ~34 pages, 510 jobs total).
     # NewYork-Presbyterian — same TalentBrew session pattern as Kaiser.
     "NewYork-Presbyterian":     ("https://careers.nyp.org/search-jobs", 100),
-    # Mayo Clinic — TalentBrew company id 33647 + Eightfold AI overlay.
-    # Search results page mirrors CommonSpirit's HTML pattern; rpp=100.
-    # Added 2026-05-06.
-    "Mayo Clinic":              ("https://jobs.mayoclinic.org/search-jobs", 100),
+    # Mayo Clinic — REMOVED 2026-06-18. This TalentBrew/HTML scrape of
+    # jobs.mayoclinic.org returned only ~14 jobs because Mayo migrated to
+    # Oracle HCM. Now scraped via ORACLE_ORGS (fa-euwp-saasfaprod1 / Mayo-US,
+    # ~1,318 jobs).
     # NOTE (2026-05-29): Enhabit Home Health (TalentBrew company 39891) was here
     # but its /results JSON endpoint returns hasContent:false even after the geo
     # warmup, so the generic adapter yielded 0. Moved to a dedicated HTML
@@ -4095,6 +4099,14 @@ ORACLE_ORGS = {
     # Lifepoint Health (behavioral + community hospitals + rehab). Endpoint
     # validated 2026-05-29: ibnjjb + siteNumber=CX_1 returns TotalJobsCount=3814.
     "Lifepoint Health":          ("https://ibnjjb.fa.ocs.oraclecloud.com",                    "CX_1"),
+    # ── Added 2026-06-18: top missing acute-care systems on Oracle HCM (validated) ──
+    # Providence: migrated off Workday to Oracle. evac/CX_1 → TotalJobsCount=1,877.
+    "Providence Health":         ("https://evac.fa.us2.oraclecloud.com",                      "CX_1"),
+    # Tenet Healthcare: eodr/CX_1001 → TotalJobsCount=2,363.
+    "Tenet Healthcare":          ("https://eodr.fa.us2.oraclecloud.com",                      "CX_1001"),
+    # Mayo Clinic: was a broken TalentBrew HTML scrape (~14 jobs); Mayo runs on
+    # Oracle HCM now. fa-euwp-saasfaprod1/Mayo-US → TotalJobsCount=1,318.
+    "Mayo Clinic":               ("https://fa-euwp-saasfaprod1.fa.ocs.oraclecloud.com",       "Mayo-US"),
 }
 
 async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
@@ -4786,7 +4798,7 @@ async def run_playwright_scrapers() -> list[Job]:
 
     CUSTOM_SITES = [
         # PRODUCING JOBS — keep these
-        ("Mayo Clinic",                   "https://jobs.mayoclinic.org/search-jobs"),
+        # Mayo Clinic removed 2026-06-18 — migrated to Oracle HCM (see ORACLE_ORGS).
         ("CHRISTUS Health",               "https://careers.christushealth.org/job-search"),
         # Baylor Scott & White — moved to dedicated run_bsw() handler (Apr 29 2026)
         # using Phenom refineSearch endpoint. The Playwright route only captured
