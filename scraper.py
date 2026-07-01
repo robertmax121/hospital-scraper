@@ -917,7 +917,13 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     location=loc,
                     specialty=(j.get("categories") or [{}])[0].get("name", ""),
                     job_type=j.get("timeType", ""),
-                    url=working_url.replace("/wday/cxs/"+tenant+"/","/" ).replace("/jobs","") + "/job/" + j.get("externalPath",""),
+                    # 2026-07-01: many tenants' externalPath already begins with
+                    # "/job/", so prepending "/job/" produced "/job//job/..." URLs
+                    # that render Workday's Sign-In page instead of the job (a live
+                    # render test found this broke ~84% of Workday apply links).
+                    # Collapse the doubled segment to the canonical single-slash form.
+                    url=(working_url.replace("/wday/cxs/"+tenant+"/","/").replace("/jobs","")
+                         + "/job/" + j.get("externalPath","")).replace("/job//job/", "/job/"),
                     job_id=_jid,
                     posted_date=j.get("postedOn", ""),
                     description=strip_html(str(j.get("jobDescription", ""))),
