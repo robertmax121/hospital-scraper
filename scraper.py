@@ -4207,7 +4207,11 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                     city=_city, state=_state, location=str(loc),
                     specialty=str(func) if func else "",
                     job_type=j.get("WorkHours", j.get("workHours", "")) or "",
-                    url=f"{base_url}/hcmUI/CandidateExperience/en/sites/{site_number}/jobs/{j.get('Id', j.get('id', ''))}",
+                    # 2026-07-01: candidate URL must be singular "/job/{id}".
+                    # The plural "/jobs/{id}" renders Oracle's "Page not found"
+                    # page (a live render test confirmed this across 8 tenants),
+                    # so ~22k Oracle apply links were dead. Singular resolves.
+                    url=f"{base_url}/hcmUI/CandidateExperience/en/sites/{site_number}/job/{j.get('Id', j.get('id', ''))}",
                     job_id=str(j.get("Id", j.get("id", j.get("RequisitionNumber", "")))),
                     posted_date=str(j.get("PostedDate", j.get("postedDate", "")))[:10],
                     description="",
