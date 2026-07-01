@@ -2398,8 +2398,14 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
             description = j.get("description", "") or ""
             posted_raw = j.get("posting_publish_time", "") or j.get("open_date", "") or ""
             posted = str(posted_raw)[:10] if posted_raw else ""
-            # Findly's standard apply URL pattern is /job/{ref}/
-            url = f"{base_site}/job/{ref}/" if ref else base_site
+            # 2026-07-01: AdventHealth retired the /job/{ref}/ path — the
+            # link audit found 100% of those URLs return 404. The Google CTS
+            # payload already carries the real URLs: `url` is the canonical
+            # Findly job page (numeric id + slug), `seo_url` is the direct
+            # Workday apply URL. Both validated 200. Prefer the canonical
+            # branded `url`, fall back to seo_url, then the legacy pattern.
+            url = (j.get("url") or j.get("seo_url")
+                   or (f"{base_site}/job/{ref}/" if ref else base_site))
 
             jobs.append(Job(
                 title=title,
