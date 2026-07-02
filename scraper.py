@@ -6550,6 +6550,124 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     return sent
 
 
+# ── Apply-link QA guardrails (added 2026-07-01) ───────────────────────────
+# Root-caused three "job exists but the apply link is broken" bugs — Workday
+# /job//job/ (Sign-In page), Oracle /jobs/{id} (Page-not-found), AdventHealth
+# /job/R- (404) — that together broke ~61% of apply links while every job still
+# looked fine (the scraper only checked "did we get jobs", never "does the link
+# resolve"). Three guardrails so a template break can't silently ship again:
+#   _sanitize_apply_url  - defensively repairs known-bad URL shapes on write
+#   _apply_verified_for  - domain-based verified flag that drives board ranking
+#   _qa_link_gate        - structural check per platform; alarms on regression
+from urllib.parse import urlsplit as _urlsplit
+
+# Opaque SPA platforms whose apply links can't be verified from outside without
+# their own API (generic shell, no JSON-LD, redirect-on-live). Ranked to the
+# back of the board via apply_verified=false until per-platform verification.
+OPAQUE_APPLY_DOMAINS = {
+    "hhccareers.org", "careershealthcare.com", "inforcloudsuite.com",
+    "dukehealth.org", "taleo.net", "spartanburgregional.com", "practicematch.com",
+    "kontactintelligence.com", "ecuhealth.org", "pruitthealth.com", "icims.com",
+}
+
+def _reg_domain(url: str) -> str:
+    try:
+        host = _urlsplit(url).netloc.lower().split(":")[0].split(".")
+        return ".".join(host[-2:]) if len(host) >= 2 else ".".join(host)
+    except Exception:
+        return ""
+
+def _sanitize_apply_url(url: str) -> str:
+    """Defensively repair known-bad apply-URL shapes on write, so a regressed
+    adapter can't ship a link that 404s / lands on Sign-In. Idempotent."""
+    if not url or not url.startswith(("http://", "https://")):
+        return url
+    # Workday: externalPath already begins with /job/, so a prepended /job/
+    # produces /job//job/ -> Sign-In page. Collapse to canonical single slash.
+    url = url.replace("/job//job/", "/job/")
+    # Oracle HCM: candidate URL must be singular /sites/{site}/job/{id};
+    # plural /jobs/{id} renders "Page not found". Leave /jobs/preview/{id}.
+    url = re.sub(r"(/sites/[^/]+)/jobs/(?!preview/)([0-9A-Za-z])", r"\1/job/\2", url)
+    return url
+
+def _apply_verified_for(url: str) -> bool:
+    """True for platforms whose apply links we trust; False for the opaque
+    tranche (ranked to the back of the board until we can verify them)."""
+    return _reg_domain(url) not in OPAQUE_APPLY_DOMAINS
+
+def _structural_url_ok(url: str, platform: str) -> tuple[bool, str]:
+    """Does the apply URL match its platform's canonical shape? Catches the
+    template breaks behind the three broken-link bugs, and novel breaks that
+    deviate from the expected pattern."""
+    if not url or not url.startswith(("http://", "https://")):
+        return False, "empty_or_relative"
+    low = url.lower()
+    if "myworkdayjobs.com" in low or "myworkdaysite.com" in low:
+        if "/job//job/" in url:
+            return False, "workday_doubled_slash"
+        if "/job/" not in url:
+            return False, "workday_no_job_path"
+        return True, ""
+    if "oraclecloud.com" in low:
+        if re.search(r"/sites/[^/]+/jobs/(?!preview/)[0-9A-Za-z]", url):
+            return False, "oracle_plural_jobs"
+        return True, ""
+    if "jobsapi-google" in low or "adventhealth.com" in low:
+        if re.search(r"/job/R-", url):
+            return False, "findly_retired_R_path"
+        return True, ""
+    try:
+        p = _urlsplit(url)
+        if not p.path or p.path == "/":
+            return False, "no_path"
+    except Exception:
+        return False, "unparseable"
+    return True, ""
+
+def _qa_link_gate(rows: list[dict], run_started_iso: str, sb_url: str, sb_key: str) -> None:
+    """Post-scrape resolvability gate: structurally validate every apply URL per
+    platform, log per-platform malformed-rates, ALARM on regressions, and record
+    to qa_link_audit for monitoring. Non-fatal — never blocks a run."""
+    from collections import Counter
+    by: dict[str, dict] = {}
+    for r in rows:
+        plat = r.get("ats_platform") or "unknown"
+        ok, reason = _structural_url_ok(r.get("url", ""), plat)
+        d = by.setdefault(plat, {"total": 0, "bad": 0, "reasons": Counter()})
+        d["total"] += 1
+        if not ok:
+            d["bad"] += 1
+            d["reasons"][reason] += 1
+    THRESH = 0.05
+    audit_rows, any_alarm = [], False
+    for plat, d in sorted(by.items()):
+        rate = d["bad"] / d["total"] if d["total"] else 0.0
+        alarm = rate > THRESH and d["total"] >= 20
+        any_alarm = any_alarm or alarm
+        msg = f"QA link gate [{plat}]: {d['bad']}/{d['total']} malformed ({rate:.1%})"
+        if d["reasons"]:
+            msg += f" {dict(d['reasons'])}"
+        logger.warning("  ALARM " + msg) if alarm else logger.info("  " + msg)
+        audit_rows.append({"run_at": run_started_iso, "platform": plat,
+                           "total": d["total"], "structural_bad": d["bad"],
+                           "bad_rate": round(rate, 4), "alarm": alarm})
+    if any_alarm:
+        logger.warning(f"QA link gate: a platform exceeded the {THRESH:.0%} malformed-URL "
+                       "threshold — a scraper adapter likely regressed; investigate.")
+    if sb_url and sb_key and audit_rows:
+        try:
+            import urllib.request as _u
+            rq = _u.Request(f"{sb_url.rstrip('/')}/rest/v1/qa_link_audit",
+                            data=json.dumps(audit_rows).encode(),
+                            headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
+                                     "Content-Type": "application/json", "Prefer": "return=minimal"},
+                            method="POST")
+            with _u.urlopen(rq, timeout=30) as resp:
+                resp.read()
+        except Exception as e:
+            logger.info(f"QA link gate: audit insert skipped ({e})")
+
+
 # ── Hospital upsert + deactivation pass (added 2026-05-12) ─────────────────
 # Mirrors _upsert_travel_jobs_to_supabase. The hospital pipeline previously
 # had no deactivation step, so when a hospital filled or removed a posting it
@@ -6596,6 +6714,10 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     for r in rows:
         r["scraped_at"] = run_started_iso
         r["is_active"]  = True
+        # QA guardrails: repair any known-bad apply-URL shape, then set the
+        # verified flag that ranks working links first on the board.
+        r["url"] = _sanitize_apply_url(r.get("url", ""))
+        r["apply_verified"] = _apply_verified_for(r.get("url", ""))
         sys_name = r.get("hospital_system")
         if sys_name and sys_name in HOSPITAL_SYSTEM_ALIASES:
             r["hospital_system"] = HOSPITAL_SYSTEM_ALIASES[sys_name]
@@ -6611,6 +6733,11 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     if jt_buckets:
         top = sorted(jt_buckets.items(), key=lambda kv: -kv[1])
         logger.info(f"Hospital upsert: derived_job_type buckets = {dict(top)}")
+
+    # QA link gate — structural resolvability check on the final (sanitized)
+    # URLs. Runs before the write so a regression is logged even if the upsert
+    # later fails. Non-fatal.
+    _qa_link_gate(rows, run_started_iso, sb_url, sb_key)
 
     url = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
            f"?on_conflict=job_id,hospital_system")
