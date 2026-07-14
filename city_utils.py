@@ -58,6 +58,8 @@ def is_plausible_city(c: str) -> bool:
     c = c.strip()
     if len(c) < 2 or len(c) > 40:
         return False
+    if c.upper() in STATE_CODES:                # bare "MO"/"KY" is a state, not a city
+        return False
     if any(ch.isdigit() for ch in c):          # street addresses, "N Locations"
         return False
     if "|" in c or "\n" in c or "\r" in c or "\t" in c:
