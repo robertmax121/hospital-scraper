@@ -14,6 +14,7 @@ import os
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
+from city_utils import clean_city
 
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
@@ -6930,7 +6931,11 @@ async def run_all() -> list[dict]:
         """
         d = asdict(j)
 
-        city  = (d.get("city")  or "").strip().strip(",").strip()
+        # Sanitize/extract the city up front: turns "2 Locations", street
+        # addresses, and pipe/newline facility blocks into a real city or "".
+        # Anything blanked here is refilled by the FACILITY/SYSTEM location
+        # fallback below. (see city_utils.clean_city)
+        city  = clean_city((d.get("city") or "").strip().strip(",").strip())
         state = (d.get("state") or "").strip().upper()
 
         # Force override — always wins regardless of scraped data
