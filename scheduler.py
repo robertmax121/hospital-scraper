@@ -50,6 +50,19 @@ def run():
     deact_stats = mark_inactive_jobs(jobs)
     logger.info(f"  Layer 4 deactivation: {deact_stats}")
 
+    # ── Step 2b: travel URL liveness sweep (added 2026-07-20) ─────
+    # Travel contracts churn fast — a same-day sample showed ~20% of
+    # fresh-scraped listings already 404/410 by evening. HEAD-validate every
+    # active travel URL and deactivate the definitively dead so the /travel
+    # board doesn't serve broken apply links between scrapes. Non-fatal.
+    try:
+        import asyncio as _asyncio
+        from validate_travel_urls import main as _validate_travel
+        logger.info("\n[ STEP 2b ] Validating travel job URLs...")
+        _asyncio.run(_validate_travel())
+    except Exception as e:
+        logger.warning(f"travel URL validation failed (non-fatal): {e}")
+
     # ── Step 3: Summary ───────────────────────────────────────────
     stats = get_stats()
     elapsed = (datetime.now() - start).seconds
