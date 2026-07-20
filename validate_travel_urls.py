@@ -65,29 +65,46 @@ def _env() -> tuple[str, str]:
 
 
 async def _fetch_active(session: aiohttp.ClientSession, sb_url: str, sb_key: str) -> list[dict]:
-    """Page through is_active=true rows, return [{id, url}, ...]."""
+    """Collect is_active=true rows via PK id-range windows, return
+    [{id, url}, ...].
+
+    Rewritten 2026-07-20: the old offset-Range pagination
+    (`order=id` + `Range: frm-to`) re-scans from the top of the table on
+    every page and started hitting the 8s statement timeout (HTTP 500)
+    once the table passed ~250k rows, silently validating 0 rows. Windowed
+    PK-range scans are bounded per statement regardless of table size, and
+    each window retries so a transient 500 can't zero the run."""
+    headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}"}
+
+    async def _get_json(url: str, tries: int = 4):
+        for attempt in range(1, tries + 1):
+            try:
+                async with session.get(url, headers=headers) as r:
+                    if r.status in (200, 206):
+                        return await r.json()
+                    logger.warning(f"fetch window: HTTP {r.status} (attempt {attempt})")
+            except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+                logger.warning(f"fetch window: {e} (attempt {attempt})")
+            await asyncio.sleep(3 * attempt)
+        return None
+
+    top = await _get_json(f"{sb_url}/rest/v1/travel_jobs?select=id&order=id.desc&limit=1")
+    if not top:
+        logger.error("fetch active rows: could not resolve max id")
+        return []
+    max_id = top[0]["id"]
+
+    WINDOW = 20000
     rows: list[dict] = []
-    page = 0
-    while True:
-        frm = page * PAGE_SIZE
-        to = frm + PAGE_SIZE - 1
-        url = f"{sb_url}/rest/v1/travel_jobs?select=id,url&is_active=eq.true&order=id"
-        headers = {
-            "apikey": sb_key,
-            "Authorization": f"Bearer {sb_key}",
-            "Range": f"{frm}-{to}",
-        }
-        async with session.get(url, headers=headers) as r:
-            if r.status not in (200, 206):
-                logger.error(f"fetch active rows: HTTP {r.status}")
-                return rows
-            chunk = await r.json()
-            if not chunk:
-                break
+    for lo in range(0, max_id + WINDOW, WINDOW):
+        chunk = await _get_json(
+            f"{sb_url}/rest/v1/travel_jobs?select=id,url"
+            f"&is_active=eq.true&id=gte.{lo}&id=lt.{lo + WINDOW}&limit={WINDOW}"
+        )
+        if chunk:
             rows.extend(chunk)
-            if len(chunk) < PAGE_SIZE:
-                break
-            page += 1
+        elif chunk is None:
+            logger.warning(f"fetch window id {lo}-{lo + WINDOW}: gave up after retries")
     return rows
 
 
