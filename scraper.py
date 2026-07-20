@@ -6432,6 +6432,10 @@ async def run_all_travel() -> list[dict]:
         d = asdict(j)
         d["is_active"] = True
         d["scraped_at"] = run_started_at_iso
+        # Same city sanitation as the hospital pipeline: extract the real city
+        # from embedded facility/address junk, blank it when unrecoverable.
+        if d.get("city"):
+            d["city"] = clean_city(d["city"])
         rows.append(d)
     elapsed = (datetime.now() - start).seconds
     logger.info("=" * 55)
@@ -6485,20 +6489,20 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
             break
     logger.info(f"Travel upsert: {sent}/{len(rows)} rows sent to Supabase")
 
-    # ── Deactivation pass ──────────────────────────────────────────────
-    # Mark every still-active row whose scraped_at predates this run as
-    # is_active=false. We do NOT scope by url anymore — the previous
-    # `url ILIKE '%vivian.com%'` pattern is a sequential substring scan
-    # that hit Supabase's 8s statement timeout (HTTP 500, error 57014).
-    # Dropping the URL filter lets the existing `idx_travel_jobs_active`
-    # partial index drive the query in ~3s, well under timeout.
-    #
-    # Safety: every known travel scraper (Vivian, Aya) must have produced
-    # at least DEACT_MIN rows this run. If any expected scraper came up
-    # short — typical of a partial outage — skip deactivation entirely so
-    # we don't wipe its rows along with the genuinely stale ones.
+    # ── Deactivation pass (rewritten 2026-07-20) ───────────────────────
+    # The previous implementation issued ONE global PATCH over every active
+    # row older than this run. At ~170k active rows that statement blew the
+    # 8s statement timeout, the HTTPError was logged-and-swallowed, and stale
+    # rows snowballed (121k rows >30 days stale by the time this was caught —
+    # the /travel board's broken links). Now: per-source, id-WINDOWED patches
+    # — every statement is a small PK-range update that cannot time out.
+    # A source is swept only when it produced >= DEACT_MIN rows this run, so
+    # a partial outage can't wipe a healthy source's inventory (previously a
+    # single short source skipped the sweep for ALL sources — the other half
+    # of the snowball).
     KNOWN_DOMAINS = ("vivian.com", "ayahealthcare.com")
     DEACT_MIN     = 100
+    WINDOW        = 5000
     if sent == 0:
         return sent
     run_started_iso = min(
@@ -6515,39 +6519,96 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
             if d in u:
                 domain_counts[d] += 1
                 break
+    sweep = [d for d, n in domain_counts.items() if n >= DEACT_MIN]
     short = [d for d, n in domain_counts.items() if n < DEACT_MIN]
     if short:
-        logger.info(
-            f"Travel deactivate: skipping — {short} below DEACT_MIN={DEACT_MIN} "
-            f"(counts={domain_counts})"
+        logger.warning(
+            f"Travel deactivate: NOT sweeping {short} — below DEACT_MIN={DEACT_MIN} "
+            f"(counts={domain_counts}); healthy sources still sweep"
         )
-        return sent
     from urllib.parse import quote as _q
-    purl = (
-        f"{sb_url.rstrip('/')}/rest/v1/travel_jobs"
-        f"?is_active=eq.true"
-        f"&scraped_at=lt.{_q(run_started_iso)}"
-    )
-    body = json.dumps({"is_active": False}).encode()
-    patch_headers = {
-        "apikey":        sb_key,
-        "Authorization": f"Bearer {sb_key}",
-        "Content-Type":  "application/json",
-        "Prefer":        "return=minimal,count=exact",
-    }
-    rq = _urlreq.Request(purl, data=body, headers=patch_headers, method="PATCH")
-    try:
-        with _urlreq.urlopen(rq, timeout=120) as resp:
-            cr = resp.headers.get("Content-Range", "")
-            deactivated = cr.split("/")[-1] if "/" in cr else "?"
+    total_deact = 0
+    failed_windows = 0
+    if sweep:
+        # max id for windowing (PK-indexed, fast)
+        try:
+            rq = _urlreq.Request(
+                f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?select=id&order=id.desc&limit=1",
+                headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            with _urlreq.urlopen(rq, timeout=30) as resp:
+                _maxrows = json.loads(resp.read())
+            max_id = _maxrows[0]["id"] if _maxrows else 0
+        except Exception as e:
+            logger.warning(f"Travel deactivate: max-id lookup failed ({e}); skipping sweep")
+            max_id = 0
+        body = json.dumps({"is_active": False}).encode()
+        patch_headers = {
+            "apikey":        sb_key,
+            "Authorization": f"Bearer {sb_key}",
+            "Content-Type":  "application/json",
+            "Prefer":        "return=minimal,count=exact",
+        }
+        for domain in sweep:
+            for lo in range(0, max_id + WINDOW, WINDOW):
+                purl = (
+                    f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?is_active=eq.true"
+                    f"&scraped_at=lt.{_q(run_started_iso)}"
+                    f"&url=like.{_q('*' + domain + '*')}"
+                    f"&id=gte.{lo}&id=lt.{lo + WINDOW}"
+                )
+                try:
+                    rq = _urlreq.Request(purl, data=body, headers=patch_headers, method="PATCH")
+                    with _urlreq.urlopen(rq, timeout=60) as resp:
+                        cr = resp.headers.get("Content-Range", "")
+                        n = cr.split("/")[-1]
+                        if n.isdigit():
+                            total_deact += int(n)
+                except Exception as e:
+                    failed_windows += 1
+                    if failed_windows <= 3:
+                        logger.warning(f"Travel deactivate window {domain} id>={lo}: {e}")
         logger.info(
-            f"Travel deactivate: {deactivated} rows (scraped_at < {run_started_iso}, "
-            f"counts={domain_counts})"
+            f"Travel deactivate: {total_deact:,} rows swept across {len(sweep)} source(s) "
+            f"({failed_windows} failed windows, counts={domain_counts})"
         )
-    except _urlerr.HTTPError as e:
-        logger.warning(f"Travel deactivate: HTTP {e.code} — {e.read().decode()[:300]}")
+
+    # ── Travel count → site_stats id=2 (added 2026-07-20) ─────────────
+    # Exact count via id-cursor pagination (same timeout-proof pattern as the
+    # hospital counter in database.get_stats). The website reads site_stats
+    # id=1 (hospital) + id=2 (travel) and shows the combined "Open Roles"
+    # number with a hospital/travel split.
+    stats_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "") or sb_key
+    try:
+        travel_total = 0
+        last_id = 0
+        while True:
+            rq = _urlreq.Request(
+                f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?select=id&is_active=eq.true"
+                f"&id=gt.{last_id}&order=id.asc&limit=1000",
+                headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            with _urlreq.urlopen(rq, timeout=60) as resp:
+                page = json.loads(resp.read())
+            if not page:
+                break
+            travel_total += len(page)
+            last_id = page[-1]["id"]
+        stats_body = json.dumps({
+            "id": 2,
+            "total_active_jobs": travel_total,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).encode()
+        rq = _urlreq.Request(
+            f"{sb_url.rstrip('/')}/rest/v1/site_stats?on_conflict=id",
+            data=stats_body,
+            headers={"apikey": stats_key, "Authorization": f"Bearer {stats_key}",
+                     "Content-Type": "application/json",
+                     "Prefer": "resolution=merge-duplicates,return=minimal"},
+            method="POST")
+        with _urlreq.urlopen(rq, timeout=30) as resp:
+            _ = resp.read()
+        logger.info(f"site_stats id=2 (travel) updated: {travel_total:,} active")
     except Exception as e:
-        logger.warning(f"Travel deactivate: {e}")
+        logger.warning(f"Travel site_stats write failed (non-fatal): {e}")
     return sent
 
 
