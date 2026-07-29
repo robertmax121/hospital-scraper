@@ -6476,6 +6476,264 @@ async def run_aya(session: aiohttp.ClientSession) -> list[TravelJob]:
     return uniq
 
 
+# ══════════════════════════════════════════════════════════════════════════
+#  NOMAD HEALTH — public Elasticsearch JSON API (added 2026-07-29)
+#
+#  nomadhealth.com's own UI XHR (/api/jobposts/jobpost_search/) 401s anon
+#  callers, but the sibling GET /api/v1/jobposts/search/ is fully public (no
+#  auth/cookie/CSRF). It defaults to discipline=nurse, so all 10 disciplines
+#  must be iterated to get the whole board (~16.7k travel/contract jobs; every
+#  listing is travel). per_page is snake_case (camelCase silently caps at 10).
+#  Behind Cloudflare -> curl_cffi via _curl_fetch (webshare-first). Job-page
+#  URLs are long SEO slugs, so we join the trailing job CODE against the job
+#  sitemap once for real apply links.
+# ══════════════════════════════════════════════════════════════════════════
+
+NOMAD_SEARCH = "https://nomadhealth.com/api/v1/jobposts/search/"
+NOMAD_DISCIPLINES = [
+    "nurse", "cath_lab_technologist", "lab_technician", "occupational_therapist",
+    "physical_therapist", "radiology_technologist", "respiratory_therapist",
+    "ultrasound_technologist", "speech_language_pathologist", "surgical_technologist",
+]
+
+
+def _nomad_url_map() -> dict:
+    """Build {job_code: canonical_url} from Nomad's job sitemap chunks (~18 of
+    1,000 URLs each). One-time cost; gives real SEO apply links instead of the
+    non-reconstructable slug. Empty dict on failure (adapter falls back to the
+    detail-API URL, which still carries the nomadhealth.com domain)."""
+    out = {}
+    for i in range(0, 30):  # 18 observed; stop on first missing/empty chunk
+        try:
+            r = _curl_fetch("get", f"https://nomadhealth.com/sitemap-jobs-chunk/{i}.xml",
+                            "chrome", timeout=60)
+        except Exception:
+            break
+        locs = re.findall(r"<loc>([^<]+)</loc>", r.text)
+        if not locs:
+            break
+        for u in locs:
+            code = u.rstrip("/").rsplit("/", 1)[-1]
+            if code:
+                out[code] = u
+    return out
+
+
+def _nomad_map(rec: dict, url_map: dict) -> Optional[TravelJob]:
+    jid = rec.get("id")
+    title = (rec.get("title") or "").strip()
+    if not jid or not title:
+        return None
+    agency = rec.get("agency") or {}
+    fac = rec.get("facility") or {}
+    city = fac.get("city")
+    state = fac.get("state")
+    specs = rec.get("specializations") or []
+    specialty = ", ".join(s.get("name", "") for s in specs if s.get("name")) or None
+    wpay = rec.get("weekly_gross_compensation")
+    m = re.search(r"\$[\d,]+/wk", title)
+    wp_display = m.group(0) if m else (f"${wpay:,.0f}/wk" if wpay else None)
+    hourly = rec.get("pay_rate") if rec.get("pay_rate_period") == "hour" else None
+    hpw = None
+    mm = re.match(r"(\d+)x(\d+)", rec.get("shift_hours_and_days") or "")
+    if mm:
+        hpw = int(mm.group(1)) * int(mm.group(2))
+    shift_types = rec.get("shift_types") or []
+    shift = ", ".join(shift_types) if shift_types else (rec.get("shift_hours_and_days") or None)
+    code = rec.get("code")
+    url = (url_map.get(code)
+           or (f"https://nomadhealth.com/api/jobposts/code/{code}" if code else "https://nomadhealth.com/jobs"))
+    return TravelJob(
+        agency_name=agency.get("name") or "Nomad Health",
+        agency_job_id=f"nomad-{jid}",
+        title=title,
+        specialty=specialty,
+        city=city, state=state,
+        location=f"{city}, {state}" if city and state else (city or state),
+        weekly_pay_numeric=float(wpay) if wpay else None,
+        weekly_pay_display=wp_display,
+        hourly_rate_numeric=float(hourly) if hourly else None,
+        housing_stipend=None,
+        contract_weeks=rec.get("contract_length"),
+        hours_per_week=hpw,
+        shift=shift,
+        start_date=rec.get("start_date"),
+        hospital_facility=fac.get("name"),
+        description=None,
+        url=url,
+        posted_date=rec.get("date_last_published"),
+    )
+
+
+def _nomad_fetch_all() -> list[TravelJob]:
+    """Blocking full pull — runs in a worker thread. Webshare-first via _curl_fetch."""
+    url_map = _nomad_url_map()
+    logger.info(f"  Nomad Health: sitemap URL map has {len(url_map):,} codes")
+    seen: dict = {}
+    for disc in NOMAD_DISCIPLINES:
+        page, errors = 1, 0
+        while page <= 80:  # per-discipline guard (nurse ~13 pages at per_page=1000)
+            try:
+                r = _curl_fetch("get", NOMAD_SEARCH, "chrome", timeout=90,
+                                params={"discipline": disc, "per_page": 1000, "page": page},
+                                headers={"Accept": "application/json"})
+                data = r.json()
+            except Exception as e:
+                errors += 1
+                if errors >= 3:
+                    logger.info(f"  Nomad {disc}: page {page} failed 3x ({e}) — moving on")
+                    break
+                time.sleep(2 * errors)
+                continue
+            errors = 0
+            posts = data.get("jobposts") or []
+            for rec in posts:
+                rid = rec.get("id")
+                if rid:
+                    seen[rid] = rec
+            pag = data.get("pagination") or {}
+            if not posts or not pag.get("has_next"):
+                break
+            page += 1
+            time.sleep(0.3)
+    out: list[TravelJob] = []
+    for rec in seen.values():
+        tj = _nomad_map(rec, url_map)
+        if tj:
+            out.append(tj)
+    return out
+
+
+async def run_nomad() -> list[TravelJob]:
+    if curl_requests is None:
+        logger.warning("Nomad Health: curl_cffi not installed — skipping")
+        return []
+    logger.info("Nomad Health: public JSON API, 10 disciplines (curl_cffi)...")
+    try:
+        jobs = await asyncio.to_thread(_nomad_fetch_all)
+    except Exception as e:
+        logger.info(f"  Nomad Health: ERROR {e}")
+        return []
+    logger.info(f"  Nomad Health: {len(jobs):,} travel listings")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  AMN HEALTHCARE — public "ONE" Azure JSON API (added 2026-07-29)
+#
+#  The largest US travel staffing agency. Custom "ONE" search SPA backed by a
+#  fully anonymous Azure APIM JSON API (no auth/key/cookie). GET /JobSearch
+#  with Filters=JobType:Travel returns ~10.8k travel nursing+allied jobs.
+#  pageSize hard-caps at 100. Not Cloudflare/fingerprint-gated, but routed
+#  through _curl_fetch anyway to honor webshare-first. Real hospital name is
+#  withheld (organization.name always blank) -> facilityType category used.
+#  Apply URL is built from the SPA's own GetJobSlug() algorithm (verified 200).
+# ══════════════════════════════════════════════════════════════════════════
+
+AMN_API = "https://api.amnhealthcare.io/ONEAmnJobSearch/v1/JobSearch"
+
+
+def _amn_slug(j: dict) -> str:
+    ds = j.get("disciplineSpecialty") or {}
+    disc = ds.get("disciplineName") or ""
+    spec = ds.get("specialtyName") or ""
+    s = disc + ("-" if spec else "") + spec
+    s = s.replace(" - ", "-").replace(" ", "-").replace("/", "-").replace("&", "")
+    jid = j.get("jobID")
+    city = (j.get("city") or {}).get("name")
+    st = (j.get("state") or {}).get("abbrev")
+    if city and st:
+        tail = f"{jid}/{city.replace(' - ', '-').replace(' ', '-').replace('&', '')}-{st}-{s}/"
+    elif st:
+        tail = f"{jid}/{st}-{s}/"
+    else:
+        tail = f"{jid}/{s}/"
+    return ("https://www.amnhealthcare.com/job-details/" + tail).lower()
+
+
+def _amn_map(j: dict) -> Optional[TravelJob]:
+    jid = j.get("jobID")
+    title = (j.get("jobTitle") or "").strip()
+    if not jid or not title:
+        return None
+    pr = j.get("payRate") or {}
+    ds = j.get("disciplineSpecialty") or {}
+    org = j.get("organization") or {}
+    city = (j.get("city") or {}).get("name")
+    st = (j.get("state") or {}).get("abbrev")
+    mn, mx = pr.get("minPayRate"), pr.get("maxPayRate")
+    weekly = float(mx or mn) if (pr.get("payRateType") == "Weekly" and (mx or mn)) else None
+    display = f"${mn}-${mx}/{pr.get('payRateTypeAbbrev')}" if (mn or mx) else None
+    return TravelJob(
+        agency_name="AMN Healthcare",
+        agency_job_id=f"amn-{jid}",
+        title=title,
+        specialty=ds.get("specialtyName") or ds.get("disciplineName"),
+        city=city, state=st,
+        location=f"{city}, {st}" if city and st else (city or st),
+        weekly_pay_numeric=weekly,
+        weekly_pay_display=display,
+        hourly_rate_numeric=None,
+        housing_stipend=None,
+        contract_weeks=j.get("durationInt"),
+        hours_per_week=j.get("hoursPerWeek"),
+        shift=j.get("shift"),
+        start_date=j.get("startDate"),
+        hospital_facility=(org.get("name") or j.get("facilityType")),
+        description=j.get("descriptionLong"),
+        url=_amn_slug(j),
+        posted_date=j.get("datePosted"),
+    )
+
+
+def _amn_fetch_all() -> list[TravelJob]:
+    """Blocking full pull (~109 pages at pageSize=100) — runs in a worker thread."""
+    out: list[TravelJob] = []
+    seen: set = set()
+    page, errors = 1, 0
+    while page <= 300:  # ~109 expected; guard against runaway
+        try:
+            r = _curl_fetch("get", AMN_API, "chrome", timeout=60,
+                            params={"pageNumber": page, "pageSize": 100,
+                                    "sortOrder": "relevance", "Filters": "JobType:Travel"},
+                            headers={"Accept": "application/json"})
+            jobs = (r.json() or {}).get("jobs") or []
+        except Exception as e:
+            errors += 1
+            if errors >= 3:
+                logger.info(f"  AMN: page {page} failed 3x ({e}) — stopping at {len(out)}")
+                break
+            time.sleep(2 * errors)
+            continue
+        errors = 0
+        if not jobs:
+            break
+        for j in jobs:
+            jid = j.get("jobID")
+            if jid and jid not in seen:
+                seen.add(jid)
+                tj = _amn_map(j)
+                if tj:
+                    out.append(tj)
+        page += 1
+        time.sleep(0.3)
+    return out
+
+
+async def run_amn() -> list[TravelJob]:
+    if curl_requests is None:
+        logger.warning("AMN Healthcare: curl_cffi not installed — skipping")
+        return []
+    logger.info("AMN Healthcare: public ONE Azure JSON API (curl_cffi)...")
+    try:
+        jobs = await asyncio.to_thread(_amn_fetch_all)
+    except Exception as e:
+        logger.info(f"  AMN Healthcare: ERROR {e}")
+        return []
+    logger.info(f"  AMN Healthcare: {len(jobs):,} travel listings")
+    return jobs
+
+
 # ── Travel jobs runner + Supabase upsert ──────────────────────────────────
 async def run_all_travel() -> list[dict]:
     start = datetime.now()
@@ -6488,6 +6746,8 @@ async def run_all_travel() -> list[dict]:
         results = await asyncio.gather(
             run_vivian(direct_session),    # Vivian doesn't need proxy; Cloudflare on their end is mild
             run_aya(direct_session),       # Aya — clean public JSON, no proxy needed
+            run_nomad(),                   # Nomad Health — public JSON API via _curl_fetch (webshare-first)
+            run_amn(),                     # AMN Healthcare — public Azure JSON API via _curl_fetch (webshare-first)
             return_exceptions=True,
         )
     all_travel: list[TravelJob] = []
@@ -6572,7 +6832,11 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     # a partial outage can't wipe a healthy source's inventory (previously a
     # single short source skipped the sweep for ALL sources — the other half
     # of the snowball).
-    KNOWN_DOMAINS = ("vivian.com", "ayahealthcare.com")
+    # Each source is swept independently, matched by its url domain. New
+    # sources MUST be listed here or their removed listings never deactivate
+    # (the 2026-07-20 travel-purge bug). nomadhealth.com + amnhealthcare.com
+    # added 2026-07-29.
+    KNOWN_DOMAINS = ("vivian.com", "ayahealthcare.com", "nomadhealth.com", "amnhealthcare.com")
     DEACT_MIN     = 100
     WINDOW        = 5000
     if sent == 0:
