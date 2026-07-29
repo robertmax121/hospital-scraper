@@ -5393,53 +5393,61 @@ def _parse_hca_cards(page_html: str) -> list[Job]:
     return jobs
 
 
-def _hca_new_session():
-    """Fresh Firefox-fingerprint session, routed through a residential proxy
-    when one is configured.
+def _curl_fetch(method: str, url: str, impersonate: str, timeout: int = 60, **kw):
+    """One curl_cffi fetch honoring the house proxy policy: webshare pool
+    FIRST, direct connection as the BACKUP — the same order the aiohttp
+    adapters get from req()/_FallbackResponse.
 
-    Cloudflare on careers.hcahealthcare.com blocks by TLS fingerprint AND IP
-    reputation. A Firefox handshake from a RESIDENTIAL IP passes (verified
-    2026-07-29: 200, 99 cards from a home connection), but the same handshake
-    from a DATACENTER IP is 403'd on nearly every request — the 2026-07-29
-    Railway nightly pulled only 2 of ~16,000 jobs. So on Railway HCA must ride
-    the residential proxy pool; direct is only for local dev, where the dev IP
-    is itself residential. Returns (session, proxy_or_None).
+    Rotates to the next pool entry on every call (proxies.get()). A proxied
+    attempt that errors or returns non-200 (402 = pool out of bandwidth,
+    407/5xx = proxy trouble) falls straight through to one direct attempt.
+    Raises the last failure if both paths fail; caller owns retries/backoff.
+
+    Why HCA needs the pool specifically: Cloudflare on careers.hcahealthcare.com
+    blocks by TLS fingerprint AND IP reputation — the Firefox handshake passes
+    from residential IPs (webshare pool, home connections; verified 200/99
+    cards 2026-07-29) but is 403'd from Railway's datacenter IP (the
+    2026-07-29 nightly pulled 2 of ~16,000 jobs going direct).
     """
-    s = curl_requests.Session(impersonate="firefox")
-    proxy = proxies.get()  # None if no pool configured (local dev)
-    if proxy:
-        s.proxies = {"http": proxy, "https": proxy}
-    return s, proxy
+    proxy = proxies.get()  # None when no pool is configured
+    paths = ([{"http": proxy, "https": proxy}, None] if proxy else [None])
+    last_exc = None
+    for proxy_cfg in paths:
+        try:
+            s = curl_requests.Session(impersonate=impersonate)
+            if proxy_cfg:
+                s.proxies = proxy_cfg
+            r = getattr(s, method)(url, timeout=timeout, **kw)
+            if r.status_code == 200:
+                return r
+            last_exc = RuntimeError(
+                f"HTTP {r.status_code} {'via proxy' if proxy_cfg else 'direct'}")
+        except Exception as e:
+            last_exc = e
+    raise last_exc
 
 
 def _hca_fetch_state(slug: str) -> list[Job]:
     """Blocking per-state crawl — runs in a worker thread via asyncio.to_thread."""
-    sess, proxy = _hca_new_session()
     out: list[Job] = []
-    page, errors, last_status = 1, 0, None
+    page, errors, last_err = 1, 0, None
     while True:
         try:
-            r = sess.get(
-                f"{HCA_BASE}/search/jobs/in/{slug}",
+            r = _curl_fetch(
+                "get", f"{HCA_BASE}/search/jobs/in/{slug}", "firefox", timeout=90,
                 params={"q": "", "page": str(page), "per_page": "500"},
-                timeout=90,
             )
-            last_status = r.status_code
-            if r.status_code != 200:
-                raise RuntimeError(f"HTTP {r.status_code}")
             cards = _parse_hca_cards(r.text)
         except Exception as e:
+            last_err = e
             errors += 1
-            if errors >= 4:
-                # Surface WHY we gave up: HTTP 403 => Cloudflare blocked this
-                # IP (datacenter IP with no/exhausted residential proxy);
-                # timeout/None => network. Distinguishing the two is the
-                # difference between "top up the proxy account" and "retry".
-                logger.info(f"  HCA {slug}: page {page} failed 4x (last_status={last_status}) "
-                            f"— stopping at {len(out)} jobs"
-                            + ("" if proxy else " [DIRECT — no proxy configured]"))
+            if errors >= 3:
+                # Each _curl_fetch already tried proxy AND direct, so 3 loop
+                # errors = up to 6 failed attempts. Surface WHY: 402 = pool
+                # out of bandwidth, 403 = Cloudflare IP block, else network.
+                logger.info(f"  HCA {slug}: page {page} failed 3x (last: {last_err}) "
+                            f"— stopping at {len(out)} jobs")
                 return out
-            sess, proxy = _hca_new_session()  # rotate proxy + fresh session on each retry
             time.sleep(2 * errors)
             continue
         errors = 0
@@ -5517,20 +5525,17 @@ HM_CAMPUS_MAP = [
 
 
 def _hm_fetch_all() -> list[Job]:
-    """Blocking full pull (~71 requests at limit=20) — runs in a worker thread."""
-    sess = curl_requests.Session(impersonate="chrome")
+    """Blocking full pull (~71 requests at limit=20) — runs in a worker thread.
+    Webshare-pool-first / direct-backup via _curl_fetch (house policy)."""
     jobs: list[Job] = []
     offset, total, errors = 0, None, 0
     while total is None or offset < total:
         try:
-            r = sess.post(
-                HM_CXS_URL,
+            r = _curl_fetch(
+                "post", HM_CXS_URL, "chrome", timeout=45,
                 json={"limit": 20, "offset": offset, "searchText": "", "appliedFacets": {}},
                 headers={"Content-Type": "application/json", "Accept": "application/json"},
-                timeout=45,
             )
-            if r.status_code != 200:
-                raise RuntimeError(f"HTTP {r.status_code}")
             data = r.json()
         except Exception as e:
             errors += 1
@@ -5634,11 +5639,10 @@ def _oceans_job(rec: dict) -> Optional[Job]:
 
 
 def _oceans_fetch_all() -> list[Job]:
-    """Blocking full pull (~13 requests) — runs in a worker thread."""
-    sess = curl_requests.Session(impersonate="chrome")
-    r = sess.get(f"{OCEANS_BASE}/jobs", timeout=45)
-    if r.status_code != 200:
-        raise RuntimeError(f"landing page HTTP {r.status_code}")
+    """Blocking full pull (~13 requests) — runs in a worker thread.
+    The board is stateless (no cookies/CSRF — proven), so each request can go
+    through _curl_fetch's webshare-first / direct-backup path independently."""
+    r = _curl_fetch("get", f"{OCEANS_BASE}/jobs", "chrome", timeout=45)
     m = _OCEANS_DATA_RE.search(r.text)
     if not m:
         raise RuntimeError("embedded Vue data blob not found (board redesigned?)")
@@ -5650,14 +5654,14 @@ def _oceans_fetch_all() -> list[Job]:
     guard = 0  # board is ~13 pages today; 60 caps a runaway HasMore loop
     while has_more and guard < 60:
         guard += 1
-        rr = sess.post(
-            f"{OCEANS_BASE}/jobs/LoadMoreSearchCallback",
-            json={"FilterGroups": filter_groups, "CurrentResultCount": len(records)},
-            headers={"Content-Type": "application/json"},
-            timeout=45,
-        )
-        if rr.status_code != 200:
-            logger.info(f"  Oceans: LoadMore HTTP {rr.status_code} — stopping at {len(records)}")
+        try:
+            rr = _curl_fetch(
+                "post", f"{OCEANS_BASE}/jobs/LoadMoreSearchCallback", "chrome", timeout=45,
+                json={"FilterGroups": filter_groups, "CurrentResultCount": len(records)},
+                headers={"Content-Type": "application/json"},
+            )
+        except Exception as e:
+            logger.info(f"  Oceans: LoadMore failed ({e}) — stopping at {len(records)}")
             break
         d = rr.json()
         page_jobs = d.get("Jobs") or []
