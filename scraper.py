@@ -5393,11 +5393,30 @@ def _parse_hca_cards(page_html: str) -> list[Job]:
     return jobs
 
 
+def _hca_new_session():
+    """Fresh Firefox-fingerprint session, routed through a residential proxy
+    when one is configured.
+
+    Cloudflare on careers.hcahealthcare.com blocks by TLS fingerprint AND IP
+    reputation. A Firefox handshake from a RESIDENTIAL IP passes (verified
+    2026-07-29: 200, 99 cards from a home connection), but the same handshake
+    from a DATACENTER IP is 403'd on nearly every request — the 2026-07-29
+    Railway nightly pulled only 2 of ~16,000 jobs. So on Railway HCA must ride
+    the residential proxy pool; direct is only for local dev, where the dev IP
+    is itself residential. Returns (session, proxy_or_None).
+    """
+    s = curl_requests.Session(impersonate="firefox")
+    proxy = proxies.get()  # None if no pool configured (local dev)
+    if proxy:
+        s.proxies = {"http": proxy, "https": proxy}
+    return s, proxy
+
+
 def _hca_fetch_state(slug: str) -> list[Job]:
     """Blocking per-state crawl — runs in a worker thread via asyncio.to_thread."""
-    sess = curl_requests.Session(impersonate="firefox")
+    sess, proxy = _hca_new_session()
     out: list[Job] = []
-    page, errors = 1, 0
+    page, errors, last_status = 1, 0, None
     while True:
         try:
             r = sess.get(
@@ -5405,22 +5424,30 @@ def _hca_fetch_state(slug: str) -> list[Job]:
                 params={"q": "", "page": str(page), "per_page": "500"},
                 timeout=90,
             )
+            last_status = r.status_code
             if r.status_code != 200:
                 raise RuntimeError(f"HTTP {r.status_code}")
             cards = _parse_hca_cards(r.text)
         except Exception as e:
             errors += 1
-            if errors >= 3:
-                logger.info(f"  HCA {slug}: page {page} failed 3x ({e}) — stopping at {len(out)} jobs")
+            if errors >= 4:
+                # Surface WHY we gave up: HTTP 403 => Cloudflare blocked this
+                # IP (datacenter IP with no/exhausted residential proxy);
+                # timeout/None => network. Distinguishing the two is the
+                # difference between "top up the proxy account" and "retry".
+                logger.info(f"  HCA {slug}: page {page} failed 4x (last_status={last_status}) "
+                            f"— stopping at {len(out)} jobs"
+                            + ("" if proxy else " [DIRECT — no proxy configured]"))
                 return out
-            time.sleep(3 * errors)
+            sess, proxy = _hca_new_session()  # rotate proxy + fresh session on each retry
+            time.sleep(2 * errors)
             continue
         errors = 0
         if not cards:
             return out
         out.extend(cards)
         page += 1
-        time.sleep(0.6)  # polite pacing — the WAF is currently generous; keep it that way
+        time.sleep(0.6)  # polite pacing — keep the WAF happy
 
 
 async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
@@ -6885,6 +6912,42 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         more = f" (+{len(skipped) - 8} more)" if len(skipped) > 8 else ""
         logger.info(f"Hospital deactivate skip (below DEACT_MIN={DEACT_MIN}): {sk}{more}")
 
+    # 2b. Proportional sweep guard (added 2026-07-29). DEACT_MIN alone is a
+    # thin shield: the 2026-07-29 Railway run pulled 2 of ~16k HCA jobs
+    # (Cloudflare IP block) — had it pulled 10+, the sweep would have
+    # deactivated the system's entire healthy inventory. Before sweeping,
+    # compare this run's yield against the system's currently-active rows;
+    # a large system suddenly yielding under a quarter of its inventory is a
+    # broken/blocked adapter, not a hiring freeze. Skip it loudly and let a
+    # healthy future run resume sweeping. Count failures fall through to the
+    # old behavior (sweep) so a flaky count can't disable cleanup globally.
+    GUARD_MIN_ACTIVE = 200   # only guard systems with a real inventory
+    GUARD_RATIO      = 0.25  # this run must yield >= 25% of active rows
+    guarded: list[str] = []
+    for system in list(safe_systems):
+        try:
+            curl_ = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
+                     f"?select=id&is_active=eq.true&hospital_system=eq.{_q(system)}&limit=1")
+            crq = _urlreq.Request(curl_, headers={"apikey": sb_key,
+                                                  "Authorization": f"Bearer {sb_key}",
+                                                  "Prefer": "count=exact",
+                                                  "Range": "0-0"})
+            with _urlreq.urlopen(crq, timeout=30) as resp:
+                cr = resp.headers.get("Content-Range", "")
+                active_n = int(cr.split("/")[-1]) if "/" in cr and cr.split("/")[-1].isdigit() else 0
+        except Exception as e:
+            logger.info(f"Sweep guard: active-count failed for {system} ({e}) — sweeping as usual")
+            continue
+        if active_n >= GUARD_MIN_ACTIVE and system_counts[system] < GUARD_RATIO * active_n:
+            safe_systems.remove(system)
+            guarded.append(system)
+            logger.warning(
+                f"SWEEP GUARD: NOT sweeping {system} — run yielded {system_counts[system]} rows "
+                f"vs {active_n} active in DB (<{int(GUARD_RATIO*100)}%). Adapter likely "
+                f"broken/blocked; inventory preserved.")
+    if guarded:
+        logger.warning(f"Sweep guard protected {len(guarded)} system(s): {guarded}")
+
     patch_headers = {
         "apikey":        sb_key,
         "Authorization": f"Bearer {sb_key}",
@@ -6925,6 +6988,116 @@ def scrape_travel() -> list[dict]:
 # ══════════════════════════════════════════════════════════════════════════
 #  MASTER RUNNER
 # ══════════════════════════════════════════════════════════════════════════
+# ── Normalization helpers (hoisted from run_all 2026-07-29 so partial-push
+#    scripts like hca_local_push.py reuse the exact same pipeline) ──────────
+SPECIALTY_MAP = {
+    "ICU / Critical Care": ["icu", "intensive care", "critical care", "micu", "sicu", "cvicu", "neuro icu", "picu", "cardiac icu", "ccu", "coronary care", "trauma icu", "burn icu"],
+    "Emergency / Trauma": ["emergency department", "emergency room", "emergency care", "emergency medicine", " ed rn", " er rn", "ecc ", "trauma nurse", "trauma rn", " er nurse", "emergency nurse"],
+    "Labor & Delivery": ["labor and delivery", "labor & delivery", "l&d", "ldrp", "ldrpn", "obstetric", "ob nurse", "ob rn", "mother baby", "antepartum", "postpartum", "maternal", "perinatal", "birth center", "women and infant", "women & infant"],
+    "Med / Surg": ["med surg", "med-surg", "medsurg", "medical surgical", "medical-surgical", "acute care", "acute medsurg", "telemetry", "tele rn", "tele nurse", "imc"],
+    "Operating Room / Surgery": ["operating room", " or rn", "or nurse", "perioperative", "surgical services", "surgery rn", "surgery nurse", "circulator", "scrub nurse", "pacu", "post anesthesia", "pre-op", "pre operative", "preoperative", "post-op", "post operative", "postoperative", "ambulatory surgery"],
+    "Cardiac / Cardiovascular": ["cardiac", "cardiology", "cardiovascular", "cath lab", "catheterization", "cardiothoracic", "electrophysiology", "ep lab", "echocardiogram", "echo tech", "cardiac rehab", "heart failure"],
+    "Oncology": ["oncology", "cancer", "chemo", "chemotherapy", "hematology", "infusion", "radiation therapy", "radiation therapist", "radiation oncology"],
+    "Pediatrics": ["pediatric", "peds ", "pedi ", "neonatal", "nicu", "newborn", "pediatrician", "children", "child life"],
+    "Behavioral Health / Psych": ["behavioral health", "behavioral medicine", "psychiatric", "psych ", "mental health", "addiction", "substance abuse", "detox", "counselor", "behavioral counselor"],
+    "Home Health": ["home health", "home care", "visiting nurse", "home hospice"],
+    "Wound Care / Dialysis": ["wound care", "ostomy", "dialysis", "hemodialysis", "renal", "nephrology"],
+    "CRNA / Anesthesia": ["crna", "certified registered nurse anesthetist", "anesthesia", "anesthesiologist"],
+    "Travel Nursing": ["travel nurse", "travel rn", "travel assignment", "travel contract", "13-week", "13 week"],
+    "Nurse Practitioner / PA": ["nurse practitioner", " np ", "np-", " pa ", "pa-", "physician assistant", "advanced practice", "aprn", "acnp", "fnp", "agacnp", "np/pa", "np-pa"],
+    "Float Pool / General RN": ["float pool", "float rn", "staff nurse", "staff rn", "registered nurse", " rn ", "clinical nurse", "nurse resident", "nurse residency", "nurse extern", "nurse intern", "nurse manager", "charge nurse", "nursing supervisor", "nursing assistant", "nurse aide", "cna ", "licensed practical nurse", "lpn ", " lvn ", "licensed vocational nurse"],
+    "Radiology / Imaging": ["radiology", "radiolog", "radiologic", "x-ray", "xray", "mri", "magnetic resonance", "ct tech", "ct scan", "computed tomography", "ultrasound", "sonograph", "mammograph", "nuclear medicine", "fluoroscopy", "interventional radiology", "imaging tech", "dosimetrist"],
+    "Respiratory Therapy": ["respiratory therapist", "respiratory therapy", "rrt", "crt ", "pulmonary", "ventilator"],
+    "Physical / Occupational Therapy": ["physical therapist", "physical therapy", " pt ", "occupational therapist", "occupational therapy", " ot ", "speech patholog", "speech therapist", "speech language", " slp ", "rehab therapist", "rehabilitation", "athletic trainer"],
+    "Pharmacy": ["pharmacist", "pharmacy technician", "pharmacy tech", "clinical pharmacist", "pharmacy manager"],
+    "Laboratory": ["laboratory", "lab technician", "lab tech", "lab scientist", "clinical laboratory", "medical laboratory", "phlebotomist", "phlebotomy", "blood bank", "histolog", "patholog", "microbiology", "lab assistant"],
+    "Surgical Tech": ["surgical technologist", "surgical tech", "scrub tech", "cst ", "sterile processing", "central sterile"],
+    "EMS / Paramedic": ["paramedic", "emt ", "emergency medical tech", "ems ", "ambulance", "flight medic"],
+    "Physician": ["physician", " md ", " do ", "hospitalist", "intensivist", "neonatologist", "cardiologist", "neurologist", "oncologist", "radiologist", "anesthesiologist", "surgeon", "psychiatrist", "pulmonologist", "gastroenterologist", "nephrologist", "endocrinologist", "rheumatologist", "urologist", "orthopedic", "ophthalmologist", "dermatologist", "pathologist", "emergency medicine physician", "family medicine", "internal medicine", "primary care", "physiatrist"],
+    "Healthcare Administration": ["director", "administrator", "chief ", " vp ", "vice president", "manager ", "supervisor", "coordinator", "case manager", "care manager", "utilization management", "quality management", "compliance", "revenue cycle", "coding", "billing", "health information", "medical records", "hr business", "human resources", "accounts payable", "accounts receivable", "enrollment representative", "enrollment specialist"],
+    "Support Staff": ["patient transporter", "patient care tech", "patient care assistant", "unit secretary", "unit clerk", "medical assistant", "patient registrar", "patient access", "admitting", "scheduling", "front desk", "receptionist", "food service", "dietary", "housekeeping", "environmental services", "evs ", "security officer", "security guard", "groundskeeper", "maintenance", "supply chain", "driver ", "chaplain", "office assistant", "registrar"],
+}
+
+def classify_title(title: str):
+    if not title:
+        return None
+    t = f" {title.lower()} "
+    for specialty, keywords in SPECIALTY_MAP.items():
+        for kw in keywords:
+            if kw in t:
+                return specialty
+    return None
+
+def normalize_job(j: Job) -> dict:
+    """Standardize location fields before writing to Supabase.
+    - city/state cleaned and trimmed
+    - If city matches hospital_name (or hospital_system), blank the city
+    - location always built as 'City, ST' from clean city + state
+    """
+    d = asdict(j)
+
+    # Sanitize/extract the city up front: turns "2 Locations", street
+    # addresses, and pipe/newline facility blocks into a real city or "".
+    # Anything blanked here is refilled by the FACILITY/SYSTEM location
+    # fallback below. (see city_utils.clean_city)
+    city  = clean_city((d.get("city") or "").strip().strip(",").strip())
+    state = (d.get("state") or "").strip().upper()
+
+    # Force override — always wins regardless of scraped data
+    _sys_key = (d.get("hospital_system") or "").strip().lower()
+    if _sys_key in FORCE_LOCATION_OVERRIDE:
+        city, state = FORCE_LOCATION_OVERRIDE[_sys_key]
+
+    # Keep only the 2-char state code if state is noisy (e.g. "TX, United States" or "United States")
+    COUNTRY_JUNK = {"united states", "us", "usa", "canada", "united kingdom", "uk"}
+    if state and (len(state) > 2 or state.lower() in COUNTRY_JUNK):
+        parts = [p.strip() for p in state.split(",")]
+        state = next((p for p in parts if len(p) == 2 and p.isalpha()), "")
+        if not state:
+            # Try pulling state from raw location string instead
+            raw_loc = (d.get("location") or "").upper()
+            loc_parts = [p.strip() for p in raw_loc.split(",")]
+            state = next((p for p in loc_parts if len(p) == 2 and p.isalpha()), "")
+
+    # Blank city only if it is an exact match for the hospital/system name
+    # (Workday previously put loc string as hospital_name — now fixed upstream)
+    hosp_name   = (d.get("hospital_name")   or "").strip().lower()
+    hosp_system = (d.get("hospital_system") or "").strip().lower()
+    city_lower  = city.lower()
+    if city_lower and (city_lower == hosp_name or city_lower == hosp_system):
+        city = ""
+
+    # Location lookup fallback — fires when city or state still missing
+    if not city or not state:
+        lookup = FACILITY_LOCATION_MAP.get(hosp_name) or SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
+        if lookup:
+            fallback_city, fallback_state = lookup
+            if not city:
+                city = fallback_city
+            if not state:
+                state = fallback_state
+
+    # Build canonical location: "City, ST" — blank if both missing
+    if city and state:
+        location = f"{city}, {state}"
+    elif state:
+        location = state
+    elif city:
+        location = city
+    else:
+        location = ""
+
+    d["city"]     = city
+    d["state"]    = state
+    d["location"] = location
+
+    # Classify specialty from title if not already set by scraper
+    if not d.get("specialty"):
+        d["specialty"] = classify_title(d.get("title", ""))
+
+    return d
+
+
 async def run_all() -> list[dict]:
     start = datetime.now()
     # Two sessions: one with ssl=False for proxy-routed scrapers,
@@ -6988,113 +7161,6 @@ async def run_all() -> list[dict]:
             all_jobs.extend(r)
 
     seen, unique = set(), []
-
-    SPECIALTY_MAP = {
-        "ICU / Critical Care": ["icu", "intensive care", "critical care", "micu", "sicu", "cvicu", "neuro icu", "picu", "cardiac icu", "ccu", "coronary care", "trauma icu", "burn icu"],
-        "Emergency / Trauma": ["emergency department", "emergency room", "emergency care", "emergency medicine", " ed rn", " er rn", "ecc ", "trauma nurse", "trauma rn", " er nurse", "emergency nurse"],
-        "Labor & Delivery": ["labor and delivery", "labor & delivery", "l&d", "ldrp", "ldrpn", "obstetric", "ob nurse", "ob rn", "mother baby", "antepartum", "postpartum", "maternal", "perinatal", "birth center", "women and infant", "women & infant"],
-        "Med / Surg": ["med surg", "med-surg", "medsurg", "medical surgical", "medical-surgical", "acute care", "acute medsurg", "telemetry", "tele rn", "tele nurse", "imc"],
-        "Operating Room / Surgery": ["operating room", " or rn", "or nurse", "perioperative", "surgical services", "surgery rn", "surgery nurse", "circulator", "scrub nurse", "pacu", "post anesthesia", "pre-op", "pre operative", "preoperative", "post-op", "post operative", "postoperative", "ambulatory surgery"],
-        "Cardiac / Cardiovascular": ["cardiac", "cardiology", "cardiovascular", "cath lab", "catheterization", "cardiothoracic", "electrophysiology", "ep lab", "echocardiogram", "echo tech", "cardiac rehab", "heart failure"],
-        "Oncology": ["oncology", "cancer", "chemo", "chemotherapy", "hematology", "infusion", "radiation therapy", "radiation therapist", "radiation oncology"],
-        "Pediatrics": ["pediatric", "peds ", "pedi ", "neonatal", "nicu", "newborn", "pediatrician", "children", "child life"],
-        "Behavioral Health / Psych": ["behavioral health", "behavioral medicine", "psychiatric", "psych ", "mental health", "addiction", "substance abuse", "detox", "counselor", "behavioral counselor"],
-        "Home Health": ["home health", "home care", "visiting nurse", "home hospice"],
-        "Wound Care / Dialysis": ["wound care", "ostomy", "dialysis", "hemodialysis", "renal", "nephrology"],
-        "CRNA / Anesthesia": ["crna", "certified registered nurse anesthetist", "anesthesia", "anesthesiologist"],
-        "Travel Nursing": ["travel nurse", "travel rn", "travel assignment", "travel contract", "13-week", "13 week"],
-        "Nurse Practitioner / PA": ["nurse practitioner", " np ", "np-", " pa ", "pa-", "physician assistant", "advanced practice", "aprn", "acnp", "fnp", "agacnp", "np/pa", "np-pa"],
-        "Float Pool / General RN": ["float pool", "float rn", "staff nurse", "staff rn", "registered nurse", " rn ", "clinical nurse", "nurse resident", "nurse residency", "nurse extern", "nurse intern", "nurse manager", "charge nurse", "nursing supervisor", "nursing assistant", "nurse aide", "cna ", "licensed practical nurse", "lpn ", " lvn ", "licensed vocational nurse"],
-        "Radiology / Imaging": ["radiology", "radiolog", "radiologic", "x-ray", "xray", "mri", "magnetic resonance", "ct tech", "ct scan", "computed tomography", "ultrasound", "sonograph", "mammograph", "nuclear medicine", "fluoroscopy", "interventional radiology", "imaging tech", "dosimetrist"],
-        "Respiratory Therapy": ["respiratory therapist", "respiratory therapy", "rrt", "crt ", "pulmonary", "ventilator"],
-        "Physical / Occupational Therapy": ["physical therapist", "physical therapy", " pt ", "occupational therapist", "occupational therapy", " ot ", "speech patholog", "speech therapist", "speech language", " slp ", "rehab therapist", "rehabilitation", "athletic trainer"],
-        "Pharmacy": ["pharmacist", "pharmacy technician", "pharmacy tech", "clinical pharmacist", "pharmacy manager"],
-        "Laboratory": ["laboratory", "lab technician", "lab tech", "lab scientist", "clinical laboratory", "medical laboratory", "phlebotomist", "phlebotomy", "blood bank", "histolog", "patholog", "microbiology", "lab assistant"],
-        "Surgical Tech": ["surgical technologist", "surgical tech", "scrub tech", "cst ", "sterile processing", "central sterile"],
-        "EMS / Paramedic": ["paramedic", "emt ", "emergency medical tech", "ems ", "ambulance", "flight medic"],
-        "Physician": ["physician", " md ", " do ", "hospitalist", "intensivist", "neonatologist", "cardiologist", "neurologist", "oncologist", "radiologist", "anesthesiologist", "surgeon", "psychiatrist", "pulmonologist", "gastroenterologist", "nephrologist", "endocrinologist", "rheumatologist", "urologist", "orthopedic", "ophthalmologist", "dermatologist", "pathologist", "emergency medicine physician", "family medicine", "internal medicine", "primary care", "physiatrist"],
-        "Healthcare Administration": ["director", "administrator", "chief ", " vp ", "vice president", "manager ", "supervisor", "coordinator", "case manager", "care manager", "utilization management", "quality management", "compliance", "revenue cycle", "coding", "billing", "health information", "medical records", "hr business", "human resources", "accounts payable", "accounts receivable", "enrollment representative", "enrollment specialist"],
-        "Support Staff": ["patient transporter", "patient care tech", "patient care assistant", "unit secretary", "unit clerk", "medical assistant", "patient registrar", "patient access", "admitting", "scheduling", "front desk", "receptionist", "food service", "dietary", "housekeeping", "environmental services", "evs ", "security officer", "security guard", "groundskeeper", "maintenance", "supply chain", "driver ", "chaplain", "office assistant", "registrar"],
-    }
-
-    def classify_title(title: str):
-        if not title:
-            return None
-        t = f" {title.lower()} "
-        for specialty, keywords in SPECIALTY_MAP.items():
-            for kw in keywords:
-                if kw in t:
-                    return specialty
-        return None
-
-    def normalize_job(j: Job) -> dict:
-        """Standardize location fields before writing to Supabase.
-        - city/state cleaned and trimmed
-        - If city matches hospital_name (or hospital_system), blank the city
-        - location always built as 'City, ST' from clean city + state
-        """
-        d = asdict(j)
-
-        # Sanitize/extract the city up front: turns "2 Locations", street
-        # addresses, and pipe/newline facility blocks into a real city or "".
-        # Anything blanked here is refilled by the FACILITY/SYSTEM location
-        # fallback below. (see city_utils.clean_city)
-        city  = clean_city((d.get("city") or "").strip().strip(",").strip())
-        state = (d.get("state") or "").strip().upper()
-
-        # Force override — always wins regardless of scraped data
-        _sys_key = (d.get("hospital_system") or "").strip().lower()
-        if _sys_key in FORCE_LOCATION_OVERRIDE:
-            city, state = FORCE_LOCATION_OVERRIDE[_sys_key]
-
-        # Keep only the 2-char state code if state is noisy (e.g. "TX, United States" or "United States")
-        COUNTRY_JUNK = {"united states", "us", "usa", "canada", "united kingdom", "uk"}
-        if state and (len(state) > 2 or state.lower() in COUNTRY_JUNK):
-            parts = [p.strip() for p in state.split(",")]
-            state = next((p for p in parts if len(p) == 2 and p.isalpha()), "")
-            if not state:
-                # Try pulling state from raw location string instead
-                raw_loc = (d.get("location") or "").upper()
-                loc_parts = [p.strip() for p in raw_loc.split(",")]
-                state = next((p for p in loc_parts if len(p) == 2 and p.isalpha()), "")
-
-        # Blank city only if it is an exact match for the hospital/system name
-        # (Workday previously put loc string as hospital_name — now fixed upstream)
-        hosp_name   = (d.get("hospital_name")   or "").strip().lower()
-        hosp_system = (d.get("hospital_system") or "").strip().lower()
-        city_lower  = city.lower()
-        if city_lower and (city_lower == hosp_name or city_lower == hosp_system):
-            city = ""
-
-        # Location lookup fallback — fires when city or state still missing
-        if not city or not state:
-            lookup = FACILITY_LOCATION_MAP.get(hosp_name) or SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
-            if lookup:
-                fallback_city, fallback_state = lookup
-                if not city:
-                    city = fallback_city
-                if not state:
-                    state = fallback_state
-
-        # Build canonical location: "City, ST" — blank if both missing
-        if city and state:
-            location = f"{city}, {state}"
-        elif state:
-            location = state
-        elif city:
-            location = city
-        else:
-            location = ""
-
-        d["city"]     = city
-        d["state"]    = state
-        d["location"] = location
-
-        # Classify specialty from title if not already set by scraper
-        if not d.get("specialty"):
-            d["specialty"] = classify_title(d.get("title", ""))
-
-        return d
 
     for job in all_jobs:
         key = f"{job.ats_platform}::{job.hospital_system}::{job.job_id}"

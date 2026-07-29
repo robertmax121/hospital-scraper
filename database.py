@@ -159,23 +159,45 @@ def mark_inactive_jobs(current_jobs: list[dict],
     # an empty page comes back.
     active: list[dict] = []
     last_id = 0
+    fetch_failed = False
     while True:
-        try:
-            resp = (db.table("hospital_jobs")
-                      .select("id,job_id,hospital_system,consecutive_scrape_misses")
-                      .eq("is_active", True)
-                      .gt("id", last_id)
-                      .order("id", desc=False)
-                      .limit(PAGE)
-                      .execute())
-            rows = resp.data or []
-        except Exception as e:
-            logger.warning(f"  Fetch active page (last_id={last_id}): {e}")
+        # Retry each page: right after the nightly's ~115k-row upsert wave the
+        # first page reliably times out (seen 2026-07-29, "read operation
+        # timed out"), and the old single-try + break turned the whole pass
+        # into a silent no-op on an "empty" table.
+        rows = None
+        for attempt in range(4):
+            try:
+                resp = (db.table("hospital_jobs")
+                          .select("id,job_id,hospital_system,consecutive_scrape_misses")
+                          .eq("is_active", True)
+                          .gt("id", last_id)
+                          .order("id", desc=False)
+                          .limit(PAGE)
+                          .execute())
+                rows = resp.data or []
+                break
+            except Exception as e:
+                logger.warning(f"  Fetch active page (last_id={last_id}, attempt {attempt + 1}/4): {e}")
+                import time as _t
+                _t.sleep(3 * (attempt + 1))
+        if rows is None:
+            fetch_failed = True
             break
         if not rows:
             break
         active.extend(rows)
         last_id = rows[-1]["id"]
+    if fetch_failed:
+        # Refuse to run the pass on a partial/empty picture of the table —
+        # incrementing misses against rows we failed to page over would be
+        # wrong, and pretending the table is empty hides the failure.
+        logger.error(f"  Layer 4 ABORTED: active-row fetch failed after retries "
+                     f"({len(active):,} rows fetched before failure). "
+                     f"No misses bumped, nothing deactivated this run.")
+        return {"deactivated": 0, "misses_pending": 0, "reset_to_found": 0,
+                "current_keys": len(current_keys), "active_before": len(active),
+                "aborted": True}
     logger.info(f"  Layer 4: {len(active):,} active rows in DB")
 
     # Categorize each active row.
