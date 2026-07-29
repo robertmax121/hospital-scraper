@@ -5,6 +5,7 @@ Fixed API endpoints + verbose error logging to diagnose 0-job issues.
 
 import asyncio
 import aiohttp
+import html as htmllib
 import json
 import logging
 import random
@@ -15,6 +16,17 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
 from city_utils import clean_city
+
+# curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
+# impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
+# Cloudflare on careers.hcahealthcare.com blocks aiohttp's TLS outright but
+# accepts a Firefox fingerprint (verified 2026-07-28), and Workday CXS
+# sometimes 403s non-browser TLS. Optional import so every other adapter
+# still runs if the wheel is missing.
+try:
+    from curl_cffi import requests as curl_requests
+except ImportError:
+    curl_requests = None
 
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
@@ -103,13 +115,16 @@ class _FallbackResponse:
         try:
             self._ctx = fn(self._url, proxy=self._proxy, **self._kw)
             r = await self._ctx.__aenter__()
-            if r.status in (502, 503, 407) and self._proxy:
+            # 402 = webshare "Payment Required" — the pool ran out of paid
+            # bandwidth (first seen 2026-07-28); treat like any proxy failure
+            # and retry direct so an exhausted proxy account can't zero a run.
+            if r.status in (502, 503, 407, 402) and self._proxy:
                 await self._ctx.__aexit__(None, None, None)
                 self._ctx = fn(self._url, **self._kw)  # no proxy
                 r = await self._ctx.__aenter__()
             return r
         except Exception as e:
-            if self._proxy and ("502" in str(e) or "Bad Gateway" in str(e) or "407" in str(e)):
+            if self._proxy and ("502" in str(e) or "Bad Gateway" in str(e) or "407" in str(e) or "402" in str(e)):
                 fn2 = getattr(self._s, self._method)
                 self._ctx = fn2(self._url, **self._kw)
                 return await self._ctx.__aenter__()
@@ -286,7 +301,11 @@ WORKDAY_TENANTS = {
     "Carilion Clinic":           ("carilion",           "1",  "Carilion_External"),
     "DaVita":                    ("davita",             "1",  "DaVita_External"),
     "Henry Ford Health":         ("henryford",          "1",  "Henry_Ford_External"),
-    "Houston Methodist":         ("houstonmethodist",   "1",  "HoustonMethodist_External"),
+    # Houston Methodist — REMOVED 2026-07-28. Tenant moved wd1 -> wd12 and the
+    # external site is now "GTI"; the old wd1/HoustonMethodist_External CXS
+    # returns HTTP 422 (this adapter never wrote a single row). Workday's wd12
+    # edge also 403s non-browser TLS, so it now has a dedicated curl_cffi
+    # adapter: run_houston_methodist().
     "Indiana University Health": ("iuhealth",           "1",  "IU_Health_External"),
     "Inova Health":              ("inova",              "1",  "Inova_Careers"),
     "NewYork-Presbyterian":      ("nyp",                "1",  "NYP_External"),
@@ -756,8 +775,14 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "hca healthcare":             ("Nashville",         "TN"),
     "cleveland clinic":           ("Cleveland",         "OH"),
     "mymichigan health":          ("Midland",           "MI"),
-    # CommonSpirit (TalentBrew — no state from URL)
-    "commonspirit health":        ("Chicago",           "IL"),  # last resort for cities not in COMMONSPIRIT_CITY_STATE
+    # CommonSpirit — REMOVED 2026-07-28. The old ("Chicago", "IL") last-resort
+    # default was actively harmful: TalentBrew cities missing from
+    # COMMONSPIRIT_CITY_STATE (Lufkin, Lake Jackson, Livingston, The Woodlands,
+    # San Augustine — all the CHI St. Luke's TX towns) were being saved with
+    # state=IL, hiding them from Texas searches/hubs. scrape_talentbrew now
+    # reads "City, ST" straight off each result card, so the default would
+    # only ever fire on a parse regression — better to save state="" and
+    # surface the bug than to mislabel Texas jobs as Illinois.
     # Greenhouse
     "davita":                     ("Denver",            "CO"),
     # AdventHealth — Findly Google CTS (added 2026-04-24)
@@ -1114,8 +1139,10 @@ ICIMS_ORGS = {
 TALENTBREW_ORGS = {
     # Format: "System": ("base_url", records_per_page)
     "CommonSpirit Health":      ("https://www.commonspirit.careers/search-jobs", 100),
-    # Methodist Healthcare (HCA San Antonio) — same Talemetry JSON platform as HCA
-    "Methodist Healthcare": ("https://www.joinmethodist.com/search/jobs", 25),
+    # Methodist Healthcare (HCA San Antonio) — REMOVED 2026-07-28. joinmethodist.com
+    # is Talemetry, not TalentBrew — the /results endpoint never existed there and
+    # this entry never wrote a row. Methodist SA facilities (Methodist Hospital
+    # Stone Oak etc.) are covered by the rebuilt run_hca() master crawl.
     # ScionHealth — confirmed TalentBrew (company 40922, tbcdn.talentbrew.com)
     # 61 long-term acute care + 15 community hospitals across 26 states
     "ScionHealth":              ("https://jobs.scionhealth.com/search-jobs", 25),
@@ -1359,50 +1386,80 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     logger.info(f"TalentBrew {system}: hasJobs={has_jobs}, empty on page {page} — done")
                     return jobs
 
-                # Extract job URLs — pattern: /job/{city}/{title-slug}/35300/{job-id}
-                job_matches = re.findall(
-                    r'href="(?:https?://[^"]*)?(/job/([^/]+)/([^/]+)/\d+/(\d+))"',
-                    results_html
+                # ── Card-level parse (2026-07-28 rewrite) ─────────────────
+                # Each result card carries everything we need — no more city-slug
+                # map, no more hardcoded domain:
+                #   <a class="search-results-list__job-link" href="/job/..."
+                #      data-job-id="98433922176">Medical Surgical Nurse</a>
+                #   <li class="... job-department"> Med/Surg </li>
+                #   <li class="... job-facility"> St Luke&#x27;s Health - Memorial - Lufkin </li>
+                #   <li class="... job-location"> Lufkin, TX </li>
+                # Verified across all 5,319 CommonSpirit cards: zero missing a
+                # 2-letter state, zero missing a facility element.
+                origin_m = re.match(r"https?://[^/]+", base_url)
+                origin = origin_m.group(0) if origin_m else "https://www.commonspirit.careers"
+
+                card_matches = re.finditer(
+                    r'href="(/job/[^"]+)"[^>]*data-job-id="(\d+)"[^>]*>([^<]*)</a>'
+                    r'(.*?)(?=<a class="search-results-list__job-link"|\Z)',
+                    results_html, re.S
                 )
-
-                if not job_matches:
-                    logger.info(f"TalentBrew {system}: no job links on page {page} — done")
-                    return jobs
-
                 seen = set()
-                for url_path, city, title_slug, job_id in job_matches:
+                for cm in card_matches:
+                    url_path, job_id, title, tail = cm.groups()
                     if job_id in seen:
                         continue
                     seen.add(job_id)
+                    title = htmllib.unescape(title).strip()
 
-                    title = title_slug.replace("-", " ").title()
-                    city_name = city.replace("-", " ").title()
-                    # Resolve state from city slug using CommonSpirit location map
-                    city_state = COMMONSPIRIT_CITY_STATE.get(city.lower(), "") or                                  COMMONSPIRIT_CITY_STATE.get(city_name.lower(), "")
+                    fac_m = re.search(r'job-facility">\s*([^<]*?)\s*</li>', tail)
+                    loc_m = re.search(r'job-location">\s*([^<]*?)\s*</li>', tail)
+                    facility = htmllib.unescape(fac_m.group(1)).strip() if fac_m else ""
+                    # Corporate/remote roles carry the generic system name
+                    if not facility or facility.lower() == system.lower():
+                        facility = system
 
-                    # Extract actual title from adjacent heading in HTML
-                    title_match = re.search(
-                        rf'href="[^"]*{re.escape(job_id)}"[^>]*>\s*([^<]+)<',
-                        results_html
-                    )
-                    if title_match:
-                        title = title_match.group(1).strip()
+                    # Location is "City, ST" or "City, County, ST" — state is
+                    # ALWAYS the last comma segment (344/5319 cards are 3-part,
+                    # e.g. "Bryan, Brazos, TX"; a naive 2-split would store the
+                    # county as the state).
+                    city_name, city_state = "", ""
+                    if loc_m:
+                        loc = htmllib.unescape(loc_m.group(1)).strip()
+                        parts = [p.strip() for p in loc.split(",") if p.strip()]
+                        if parts:
+                            city_name = parts[0]
+                            last = parts[-1]
+                            if len(last) == 2 and last.isalpha():
+                                city_state = last.upper()
+                    if not city_name:
+                        # Fall back to the URL slug for city
+                        slug_m = re.match(r"/job/([^/]+)/", url_path)
+                        if slug_m:
+                            city_name = slug_m.group(1).replace("-", " ").title()
+                    if not city_state:
+                        # Legacy slug map as last resort (kept for parse regressions)
+                        city_state = COMMONSPIRIT_CITY_STATE.get(city_name.lower().replace(" ", "-"), "")
 
                     jobs.append(Job(
                         title=title,
                         hospital_system=system,
-                        hospital_name=system,
+                        hospital_name=facility,
                         city=city_name,
                         state=city_state,
                         location=f"{city_name}, {city_state}" if city_state else city_name,
                         specialty="",
                         job_type="",
-                        url=f"https://www.commonspirit.careers{url_path}",
+                        url=f"{origin}{url_path}",
                         job_id=job_id,
                         posted_date="",
                         description="",
                         ats_platform="TalentBrew",
                     ))
+
+                if not seen:
+                    logger.info(f"TalentBrew {system}: no job cards on page {page} — done")
+                    return jobs
 
                 logger.info(f"TalentBrew {system}: page {page} → {len(seen)} jobs (total so far: {len(jobs)})")
                 page_succeeded = True
@@ -2901,16 +2958,9 @@ PHENOM_ORGS = {
     # PruittHealth — SNF + home health + hospice across the Southeast (~180 locations).
     # careers.pruitthealth.com is Phenom (/us/en path). Adapter discovers pageId from HTML.
     "PruittHealth":                 "https://careers.pruitthealth.com",
-    # ── Added 2026-06-18: HCA Healthcare — largest US hospital operator (~185
-    # hospitals). Confirmed Phenom People (POST /widgets) via web research.
-    # careers.hcahealthcare.com is Cloudflare-protected and 403s datacenter IPs,
-    # so it REQUIRES the residential proxy pool (proxies.get(), which scrape_phenom
-    # already uses). Org code is auto-discovered from the career-page HTML at
-    # runtime. Could NOT validate from the dev IP (403 on both /widgets and the
-    # landing page) — verify the job count in the first nightly run's log; if it
-    # returns 0, the generic adapter likely needs an HCA org code in
-    # PHENOM_ORG_CODES and/or stronger anti-bot headers.
-    "HCA Healthcare":               "https://careers.hcahealthcare.com",
+    # HCA Healthcare — REMOVED 2026-07-28. It was never Phenom (that 2026-06-18
+    # web-research note was wrong): careers.hcahealthcare.com is Talemetry, and
+    # this entry just burned a nightly 403. Covered by the rebuilt run_hca().
 }
 
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
@@ -4840,8 +4890,8 @@ async def run_playwright_scrapers() -> list[Job]:
         # Cleveland Clinic is in WORKDAY_TENANTS (ccf.wd1) — Playwright is a
         # fallback; left here in case Workday route flakes out.
         ("Cleveland Clinic",              "https://jobs.clevelandclinic.org/search/"),
-        # HCA AFFILIATES
-        ("Methodist Healthcare",          "https://www.joinmethodist.com/search/jobs"),
+        # Methodist Healthcare (joinmethodist.com) — REMOVED 2026-07-28. HCA
+        # affiliate; its jobs come through the rebuilt run_hca() master crawl.
         # LIFEPOINT — rebuilt on WordPress 2025
         ("LifePoint Health",              "https://jobs.lifepointhealth.net/jobs/"),
         # CUSTOM ATS
@@ -5245,383 +5295,374 @@ async def run_paycor(session) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  HCA HEALTHCARE — Talemetry HTML scrape via Playwright (revised 2026-04-27)
+#  HCA HEALTHCARE — browserless Talemetry crawl via curl_cffi (rebuilt 2026-07-28)
 #
-#  HCA's career site is fronted by Cloudflare with a JS challenge.
-#  Every aiohttp attempt — proxy or direct — gets HTTP 403:
-#    - April 27 first run (proxy_session, /search/jobs.json):  403
-#    - April 27 second run (direct_session, /search/jobs/in):  403
-#  Cloudflare requires JS execution to set cf_clearance. Playwright is the
-#  only viable path.
+#  History: careers.hcahealthcare.com sits behind Cloudflare. aiohttp got 403
+#  everywhere (Apr 2026), and the Playwright/patchright build that replaced it
+#  never cleared the challenge on Railway either — HCA wrote 25 rows on
+#  2026-04-27 and nothing since. The block turned out to be TLS-fingerprint-
+#  specific: a Chrome-profile TLS handshake gets 403, but a Firefox
+#  fingerprint sails through (verified 3/3 fresh sessions, 2026-07-28).
+#  curl_cffi impersonate="firefox" + plain GETs is all it takes — no browser,
+#  no proxy.
 #
-#  Strategy: open Chromium → navigate page 1 → wait for Cloudflare interstitial
-#  to clear (signalled by 'neu-link' appearing in DOM) → use page.evaluate() to
-#  fire batches of 8 parallel fetch() calls inside the same browser. The
-#  cf_clearance cookie is sent automatically with every request.
-#
-#  ~16,067 jobs across 643 pages of 25 jobs each. Expected runtime: 5-8 min.
-#
-#  HTML structure (each card):
-#    <a class="neu-link" href="https://careers.hcahealthcare.com/jobs/{id}-{slug}">{title}</a>
-#    <div class="neu-text--caption">{hospital_name}</div>
-#    <div class="neu-text--caption neu-margin--bottom-10">{City}, {ST}, United States</div>
-#    ...>work</i> {Full-time|PRN/Per Diem|...}
-#  Total parsed from "Showing 1-25 of N results" on page 1.
+#  Shape: GET /search/jobs/in/{state-slug}?q=&page=N&per_page=500 (HTML).
+#  The unsegmented search silently truncates at 10,000 rows (page 21 @500
+#  returns nothing and reports total 0), so we crawl per state — the largest
+#  (FL, ~4.6k) is comfortably under the cap; a per-state crawl was proven to
+#  collect exactly the site-reported total (16,263 unique ids on 2026-07-28).
+#  ~16.3k jobs / ~186 hospitals / 23 states in ~40 requests. Each card
+#  carries the real facility name ("Medical City Plano"), a "City, ST"
+#  location, title, absolute URL, and the stable Talemetry job id.
 # ══════════════════════════════════════════════════════════════════════════
-# HCA_HEADERS retained as fallback for any future direct-aiohttp attempt
-HCA_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Upgrade-Insecure-Requests": "1",
-}
 
-# Card-level regex patterns (compiled once for speed across 643 pages × 25 jobs)
-_HCA_CARD_RE  = re.compile(
-    r'<a class="neu-link" href="https://careers\.hcahealthcare\.com/jobs/(\d+)-([^"]+)">([^<]+)</a>'
+HCA_BASE = "https://careers.hcahealthcare.com"
+# Active-state slugs from the site's State facet (2026-07-28). A slug with no
+# jobs just returns an empty page — harmless — so this list only needs a new
+# entry if HCA expands into a new state (check the State facet on /search/jobs).
+HCA_STATE_SLUGS = [
+    "ak-alaska", "ar-arkansas", "ca-california", "co-colorado", "fl-florida",
+    "ga-georgia", "id-idaho", "ks-kansas", "ky-kentucky", "la-louisiana",
+    "mo-missouri", "ms-mississippi", "nc-north-carolina", "nh-new-hampshire",
+    "nv-nevada", "oh-ohio", "ok-oklahoma", "sc-south-carolina", "tn-tennessee",
+    "tx-texas", "ut-utah", "va-virginia", "wy-wyoming",
+]
+
+_HCA_ANCHOR_RE = re.compile(
+    r'<a class="neu-link" href="(https://careers\.hcahealthcare\.com/jobs/(\d+)-[^"]+)"[^>]*>([^<]+)</a>'
 )
-_HCA_HOSP_RE  = re.compile(r'<div class="neu-text--caption">([^<]+)</div>')
-_HCA_LOC_RE   = re.compile(r'<div class="neu-text--caption neu-margin--bottom-10">(.*?)</div>', re.DOTALL)
-_HCA_TYPE_RE  = re.compile(r'>work</i>\s*([^<&]+)')
-_HCA_TOTAL_RE = re.compile(r'Showing\s*</span>\s*1-<span[^>]*>[^<]*</span>\s*(\d+)\s*of\s*(\d+)', re.IGNORECASE)
+_HCA_FACILITY_RE = re.compile(r'<div class="neu-text--caption">([^<]+)</div>')
+_HCA_LOCATION_RE = re.compile(
+    r'<div class="neu-text--caption neu-margin--bottom-10">(.*?)</div>', re.DOTALL
+)
+_HCA_TYPE_RE = re.compile(r'>work</i>\s*([^<&]+)')
 
 
-def _parse_hca_html(html: str) -> tuple[list[Job], int]:
-    """Parse one HCA search-results HTML page. Returns (jobs, total_jobs_from_header)."""
+def _parse_hca_cards(page_html: str) -> list[Job]:
+    """Parse one HCA search-results page by splitting on the card container.
+
+    Card DOM — note facility/location captions come BEFORE the title anchor
+    (the pre-rebuild parser looked after the anchor and would have shifted
+    every card's facility onto its neighbor):
+        <div class="neu-text--caption">Medical City Plano</div>
+        <div class="neu-text--caption neu-margin--bottom-10"> Plano, TX, United States </div>
+        <h2 class="neu-text--h6"><a class="neu-link" href=".../jobs/17676170-slug">Title</a></h2>
+        ... work</i> Full-time ...
+    The plain-caption regex cannot match the location div (different class
+    attribute), so first-match-per-chunk is safe for the facility.
+    """
     jobs: list[Job] = []
-    total = 0
+    for chunk in page_html.split("jobs-section__item-outer")[1:]:
+        am = _HCA_ANCHOR_RE.search(chunk)
+        if not am:
+            continue
+        url, job_id, title = am.group(1), am.group(2), htmllib.unescape(am.group(3)).strip()
 
-    # Total count — present on every page in the "Showing 1-25 of N results" label
-    tm = _HCA_TOTAL_RE.search(html)
-    if tm:
-        total = int(tm.group(2))
+        fac_m = _HCA_FACILITY_RE.search(chunk)
+        facility = htmllib.unescape(fac_m.group(1)).strip() if fac_m else "HCA Healthcare"
 
-    # Find each card by its anchor, then walk a fixed window of surrounding HTML
-    for m in _HCA_CARD_RE.finditer(html):
-        job_id, slug, title = m.group(1), m.group(2), m.group(3).strip()
-        before = html[max(0, m.start() - 1500):m.start()]
-        after  = html[m.end():m.end() + 2500]
-
-        hosp_m = _HCA_HOSP_RE.search(after)
-        hospital_name = hosp_m.group(1).strip() if hosp_m else "HCA Healthcare"
-
-        loc_m = _HCA_LOC_RE.search(after)
+        city = state = ""
+        loc_m = _HCA_LOCATION_RE.search(chunk)
         if loc_m:
-            loc_raw = re.sub(r'<[^>]+>', '', loc_m.group(1))
-            loc_raw = re.sub(r'\s+', ' ', loc_raw).strip().rstrip(',').strip()
-        else:
-            loc_raw = ''
-        parts = [p.strip() for p in loc_raw.split(',')]
-        city  = parts[0] if len(parts) >= 1 else ''
-        state = parts[1] if len(parts) >= 2 else ''
+            loc_raw = re.sub(r"<[^>]+>", "", loc_m.group(1))
+            loc_raw = re.sub(r"\s+", " ", loc_raw).strip().strip(",")
+            parts = [p.strip() for p in loc_raw.split(",") if p.strip()]
+            if parts:
+                city = parts[0]
+            for p in parts[1:]:
+                if len(p) == 2 and p.isalpha():
+                    state = p.upper()
+                    break
 
-        jt_m = _HCA_TYPE_RE.search(after)
-        job_type = jt_m.group(1).strip().rstrip('&').rstrip() if jt_m else ''
+        jt_m = _HCA_TYPE_RE.search(chunk)
+        job_type = jt_m.group(1).strip().rstrip("&").strip() if jt_m else ""
 
         jobs.append(Job(
             title=title,
             hospital_system="HCA Healthcare",
-            hospital_name=hospital_name,
+            hospital_name=facility,
             city=city, state=state,
             location=f"{city}, {state}" if city and state else city or state,
             specialty="", job_type=job_type,
-            url=f"https://careers.hcahealthcare.com/jobs/{job_id}-{slug}",
+            url=url,
             job_id=str(job_id),
             posted_date="",
             description="",
             ats_platform="Talemetry",
         ))
+    return jobs
 
-    return jobs, total
 
-
-async def _fetch_hca_page(session: aiohttp.ClientSession, page: int) -> str:
-    """Fetch one HCA results page with retries. Returns HTML body or '' on failure."""
-    url = "https://careers.hcahealthcare.com/search/jobs/in"
-    params = {"ns_from_search": "1", "ns_radius": "40.2336", "page": str(page)}
-    for attempt in range(3):
+def _hca_fetch_state(slug: str) -> list[Job]:
+    """Blocking per-state crawl — runs in a worker thread via asyncio.to_thread."""
+    sess = curl_requests.Session(impersonate="firefox")
+    out: list[Job] = []
+    page, errors = 1, 0
+    while True:
         try:
-            async with session.get(
-                url, params=params, headers=HCA_HEADERS,
-                timeout=aiohttp.ClientTimeout(total=60)
-            ) as r:
-                if r.status != 200:
-                    if attempt == 2:
-                        logger.info(f"HCA: page {page} HTTP {r.status} after 3 attempts")
-                    await asyncio.sleep(2 ** attempt)
-                    continue
-                return await r.text()
+            r = sess.get(
+                f"{HCA_BASE}/search/jobs/in/{slug}",
+                params={"q": "", "page": str(page), "per_page": "500"},
+                timeout=90,
+            )
+            if r.status_code != 200:
+                raise RuntimeError(f"HTTP {r.status_code}")
+            cards = _parse_hca_cards(r.text)
         except Exception as e:
-            if attempt == 2:
-                logger.info(f"HCA: page {page} failed after 3 attempts ({e})")
-            await asyncio.sleep(2 ** attempt)
-    return ""
+            errors += 1
+            if errors >= 3:
+                logger.info(f"  HCA {slug}: page {page} failed 3x ({e}) — stopping at {len(out)} jobs")
+                return out
+            time.sleep(3 * errors)
+            continue
+        errors = 0
+        if not cards:
+            return out
+        out.extend(cards)
+        page += 1
+        time.sleep(0.6)  # polite pacing — the WAF is currently generous; keep it that way
 
 
 async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
-    """HCA Healthcare — Playwright scrape of careers.hcahealthcare.com (Talemetry).
+    """HCA Healthcare — every division from the master site, no browser needed."""
+    if curl_requests is None:
+        logger.warning("HCA Healthcare: curl_cffi not installed — skipping")
+        return []
+    logger.info(f"HCA Healthcare: browserless crawl, {len(HCA_STATE_SLUGS)} states (Firefox TLS)...")
 
-    Cloudflare blocks every aiohttp attempt, proxy or direct, with a JS challenge.
-    The only viable path is a real browser:
-      1. Navigate page 1 with Chromium → Cloudflare runs its challenge, sets cf_clearance
-      2. Parse the page-1 HTML to learn total job count
-      3. For pages 2..N, use page.evaluate() to fire 8 parallel fetch() calls inside
-         the browser — the cleared cf_clearance cookie is sent automatically
-      4. Parse each fetched HTML body with the same regex used for page 1
-
-    Anti-bot: launches Chromium through a Webshare residential proxy (Railway
-    datacenter IPs are flagged by Cloudflare). Applies playwright-stealth if
-    available — install with `pip install playwright-stealth` in requirements.txt.
-    """
-    # Try Patchright FIRST — drop-in Playwright fork engineered specifically
-    # to defeat Cloudflare/CF Turnstile/DataDome detection. Patches a number
-    # of automation fingerprints that even playwright-stealth misses.
-    #   pip install patchright
-    # If patchright isn't installed, fall back to playwright + stealth.
-    async_playwright = None
-    using_patchright = False
-    try:
-        from patchright.async_api import async_playwright as _patchright_pw
-        async_playwright = _patchright_pw
-        using_patchright = True
-        logger.info("HCA Healthcare: Patchright detected — using anti-detection fork")
-    except ImportError:
-        try:
-            from playwright.async_api import async_playwright as _playwright_pw
-            async_playwright = _playwright_pw
-            logger.info("HCA Healthcare: using vanilla Playwright (consider installing patchright for HCA)")
-        except ImportError:
-            logger.warning("HCA Healthcare: neither patchright nor playwright installed — skipping")
-            return []
-
-    # Stealth — applied if available; less critical when using Patchright since
-    # Patchright already bundles the same patches (and more).
-    #
-    # playwright-stealth has TWO incompatible APIs depending on version:
-    #   1.x — `from playwright_stealth import stealth_async`  (function, deprecated)
-    #   2.x — `from playwright_stealth import Stealth`        (class with .apply_stealth_async)
-    stealth_async = None
-    if not using_patchright:    # don't double-patch if Patchright already covers it
-        try:
-            from playwright_stealth import Stealth as _StealthCls
-            _stealth_obj = _StealthCls()
-            async def stealth_async(page):  # noqa: F811
-                await _stealth_obj.apply_stealth_async(page)
-            logger.info("HCA Healthcare: playwright-stealth 2.x detected (Stealth class API)")
-        except ImportError:
-            try:
-                from playwright_stealth import stealth_async  # noqa: F401
-                logger.info("HCA Healthcare: playwright-stealth 1.x detected (stealth_async function API)")
-            except ImportError:
-                logger.warning("HCA Healthcare: playwright-stealth NOT installed — bot detection likely.")
-
-    # ── Retry loop wrapping the whole Chromium-launch + CF-clear flow ──
-    # Cloudflare's "bad IP" table flags datacenter IPs aggressively and even
-    # residential proxies can be flagged after a single failed attempt. The
-    # fix is to launch a FRESH Chromium with a fresh proxy on retry. Three
-    # attempts total, with increasing cool-down between them.
-    MAX_HCA_ATTEMPTS = 3
-    for hca_attempt in range(1, MAX_HCA_ATTEMPTS + 1):
-        logger.info(f"HCA Healthcare: attempt {hca_attempt}/{MAX_HCA_ATTEMPTS} - launching Chromium...")
-        result = await _hca_single_attempt(async_playwright, using_patchright, stealth_async)
-        if result:
-            logger.info(f"HCA Healthcare: attempt {hca_attempt} succeeded with {len(result):,} jobs")
-            return result
-        if hca_attempt < MAX_HCA_ATTEMPTS:
-            cooldown = 20 + (hca_attempt - 1) * 15   # 20s, 35s, then give up
-            logger.info(f"HCA Healthcare: attempt {hca_attempt} returned 0 jobs - cooling down {cooldown}s before next attempt")
-            await asyncio.sleep(cooldown)
-    logger.warning(f"HCA Healthcare: all {MAX_HCA_ATTEMPTS} attempts failed - returning empty")
-    return []
-
-
-async def _hca_single_attempt(async_playwright, using_patchright, stealth_async) -> list[Job]:
-    """One end-to-end HCA scrape attempt. Returns jobs or [] on failure."""
     all_jobs: list[Job] = []
-
-    # Pull a residential proxy from the rotator and parse into Playwright's format.
-    # Webshare URLs come from ProxyRotator.get() as "http://user:pass@host:port".
-    pw_proxy = None
-    proxy_url = proxies.get()
-    if proxy_url:
-        m = re.match(r"https?://([^:]+):([^@]+)@([^:]+):(\d+)", proxy_url)
-        if m:
-            pw_proxy = {
-                "server":   f"http://{m.group(3)}:{m.group(4)}",
-                "username": m.group(1),
-                "password": m.group(2),
-            }
-            logger.info(f"HCA Healthcare: using residential proxy {m.group(3)}:{m.group(4)}")
-        else:
-            logger.info(f"HCA Healthcare: proxy URL didn't parse, going direct: {proxy_url[:60]}")
-    else:
-        logger.info("HCA Healthcare: no proxy configured, going direct (likely to fail Cloudflare)")
-
-    async with async_playwright() as pw:
-        launch_kwargs = dict(
-            headless=True,
-            args=[
-                "--no-sandbox", "--disable-setuid-sandbox",
-                "--disable-blink-features=AutomationControlled",
-                "--disable-dev-shm-usage",
-            ],
+    BATCH = 4  # states in flight at once ≈ 2 req/s peak across threads
+    for i in range(0, len(HCA_STATE_SLUGS), BATCH):
+        batch = HCA_STATE_SLUGS[i:i + BATCH]
+        results = await asyncio.gather(
+            *[asyncio.to_thread(_hca_fetch_state, s) for s in batch],
+            return_exceptions=True,
         )
-        if pw_proxy:
-            launch_kwargs["proxy"] = pw_proxy
-        browser = await pw.chromium.launch(**launch_kwargs)
-        try:
-            ctx = await browser.new_context(
-                viewport={"width": 1440, "height": 900},
-                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                locale="en-US",
-                timezone_id="America/New_York",
-            )
-            await ctx.add_init_script(
-                "Object.defineProperty(navigator,'webdriver',{get:()=>false});"
-                "window.chrome = window.chrome || {runtime: {}};"
-                "Object.defineProperty(navigator,'plugins',{get:()=>[1,2,3,4,5]});"
-                "Object.defineProperty(navigator,'languages',{get:()=>['en-US','en']});"
-            )
-            page = await ctx.new_page()
-            if stealth_async:
-                try:
-                    await stealth_async(page)
-                except Exception as _e:
-                    logger.info(f"HCA: stealth_async failed (continuing): {_e}")
+        for slug, res in zip(batch, results):
+            if isinstance(res, Exception):
+                logger.info(f"  HCA {slug}: ERROR {res}")
+            else:
+                logger.info(f"  HCA {slug}: {len(res)} jobs")
+                all_jobs.extend(res)
 
-            # ── Page 1: navigate, wait for Cloudflare challenge to clear ──
-            url1 = "https://careers.hcahealthcare.com/search/jobs/in?ns_from_search=1&ns_radius=40.2336&page=1"
-            try:
-                await page.goto(url1, wait_until="domcontentloaded", timeout=90000)
-            except Exception as e:
-                logger.warning(f"HCA Healthcare: page 1 navigation failed ({e}) — aborting")
-                await browser.close()
-                return []
-
-            # Wait through Cloudflare interstitial. Job-card class 'neu-link' is the
-            # signal that we're on the real results page, not the challenge page.
-            # Bumped 2026-05-26: 75s -> 120s. Some residential proxy IPs need the
-            # full Turnstile challenge to grade out, which can take 90-100s. The
-            # cost of waiting longer is small relative to the cost of failing
-            # the whole attempt and re-launching Chromium.
-            logger.info(f"HCA Healthcare: waiting for Cloudflare to clear "
-                        f"(patchright={using_patchright}, max 120s)...")
-            cleared = False
-            for attempt in range(80):  # 80 * 1.5s = 120s
-                content = await page.content()
-                if "neu-link" in content and "Showing" in content:
-                    cleared = True
-                    logger.info(f"HCA Healthcare: Cloudflare cleared after {attempt*1.5:.0f}s")
-                    break
-                if any(s in content for s in (
-                    "Just a moment", "Checking your browser",
-                    "challenges.cloudflare.com", "cf-browser-verification",
-                )):
-                    await asyncio.sleep(1.5)
-                    continue
-                await asyncio.sleep(1.5)
-
-            # ── HCA diagnostic block ──────────────────────────────────────────
-            # Always emit a few lines so we can decode failure mode from logs.
-            try:
-                cookies = await ctx.cookies()
-                cookie_names = sorted({c.get("name", "") for c in cookies})
-                cf_clearance_present = any(c.get("name") == "cf_clearance" for c in cookies)
-                final_url = page.url
-                title = await page.title()
-                body_size = len(content)
-                MARKERS = (
-                    "neu-link", "just_a_moment", "Just a moment",
-                    "Checking your browser", "challenges.cloudflare.com",
-                    "cf-browser-verification", "turnstile", "captcha",
-                    "Verify you are human", "Access denied",
-                )
-                marker_hits = {m: (m.lower() in content.lower()) for m in MARKERS}
-                logger.info(f"HCA diag: cleared={cleared} url={final_url}")
-                logger.info(f"HCA diag: title={title!r} body_size={body_size}")
-                logger.info(f"HCA diag: cf_clearance={cf_clearance_present} cookies={cookie_names[:25]}")
-                logger.info(f"HCA diag: markers={marker_hits}")
-                if not cleared:
-                    snippet = re.sub(r"\s+", " ", content[:1500])
-                    logger.info(f"HCA diag: html_first_1500={snippet}")
-            except Exception as _diag_e:
-                logger.info(f"HCA diag: failed to capture diagnostics: {_diag_e}")
-
-            if not cleared:
-                logger.warning("HCA Healthcare: Cloudflare challenge did not clear after 120s — aborting")
-                await browser.close()
-                return []
-
-            html1 = await page.content()
-            page1_jobs, total = _parse_hca_html(html1)
-            all_jobs.extend(page1_jobs)
-
-            if total == 0 or not page1_jobs:
-                logger.warning(f"HCA Healthcare: page 1 cleared but parser found 0 jobs (total={total})")
-                await browser.close()
-                return []
-
-            pages = (total + 24) // 25
-            logger.info(f"  HCA: {total:,} jobs across {pages} pages, page 1: {len(page1_jobs)}")
-
-            # ── Pages 2..N via in-page parallel fetch() ──
-            # Cookies (incl. cf_clearance) ride along automatically.
-            BATCH = 8
-            PAUSE = 0.6  # gentle pacing between batches
-            for batch_start in range(2, pages + 1, BATCH):
-                batch_pages = list(range(batch_start, min(batch_start + BATCH, pages + 1)))
-                try:
-                    htmls = await page.evaluate(
-                        """async (pageNums) => {
-                            const fetchOne = async (p) => {
-                                try {
-                                    const r = await fetch(
-                                        '/search/jobs/in?ns_from_search=1&ns_radius=40.2336&page=' + p,
-                                        { credentials: 'include',
-                                          headers: { 'Accept': 'text/html,application/xhtml+xml' } }
-                                    );
-                                    if (!r.ok) return '';
-                                    return await r.text();
-                                } catch (e) { return ''; }
-                            };
-                            return await Promise.all(pageNums.map(fetchOne));
-                        }""",
-                        batch_pages,
-                    )
-                    for p, html in zip(batch_pages, htmls):
-                        if not html or len(html) < 10000:
-                            continue
-                        pj, _ = _parse_hca_html(html)
-                        all_jobs.extend(pj)
-                except Exception as e:
-                    logger.info(f"HCA: batch starting at page {batch_start} failed: {e}")
-
-                # Periodic progress log every 10 batches
-                if (batch_start - 2) % (BATCH * 10) == 0:
-                    logger.info(
-                        f"  HCA: ...through page {min(batch_start + BATCH - 1, pages)}/{pages}, "
-                        f"{len(all_jobs):,} jobs so far"
-                    )
-                await asyncio.sleep(PAUSE)
-
-        finally:
-            try: await browser.close()
-            except Exception: pass
-
-    # Dedupe within HCA in case same job_id appeared on overlapping pages
-    seen = set()
-    unique_jobs: list[Job] = []
+    seen: set[str] = set()
+    unique: list[Job] = []
     for j in all_jobs:
         if j.job_id in seen:
             continue
         seen.add(j.job_id)
-        unique_jobs.append(j)
+        unique.append(j)
+    dupes = len(all_jobs) - len(unique)
+    logger.info(f"  HCA Healthcare TOTAL: {len(unique):,} jobs"
+                + (f" ({dupes} cross-state dupes removed)" if dupes else ""))
+    return unique
 
-    dupes = len(all_jobs) - len(unique_jobs)
-    logger.info(f"  HCA Healthcare: {len(unique_jobs):,} jobs"
-                + (f" ({dupes} dupes removed)" if dupes else ""))
-    return unique_jobs
+
+# ══════════════════════════════════════════════════════════════════════════
+#  HOUSTON METHODIST — Workday CXS on wd12/GTI via curl_cffi (added 2026-07-28)
+#
+#  The old wd1 tenant (HoustonMethodist_External) returns HTTP 422 — the
+#  tenant moved to wd12 and the external career site is now named "GTI"
+#  (houstonmethodistcareers.org links only to .../en-US/GTI/...). Quirks that
+#  keep it out of the generic Workday adapter: the CXS rejects limit > 20
+#  with HTTP 400, and the wd12 edge 403s non-browser TLS, so this uses
+#  curl_cffi Chrome impersonation in a worker thread. 1,414 jobs at build
+#  time, all Houston-metro TX. locationsText is a building-level string
+#  ("HM Willowbrook - Main Hospital Building"); the campus prefix maps to the
+#  marketing facility name + city below.
+# ══════════════════════════════════════════════════════════════════════════
+
+HM_CXS_URL = "https://houstonmethodist.wd12.myworkdayjobs.com/wday/cxs/houstonmethodist/GTI/jobs"
+HM_PUBLIC_BASE = "https://houstonmethodist.wd12.myworkdayjobs.com/en-US/GTI"
+# locationsText prefix -> (facility marketing name, city). Longest prefixes
+# are matched in list order. CMS lists Clear Lake's city as Nassau Bay.
+HM_CAMPUS_MAP = [
+    ("HM Baytown",              ("Houston Methodist Baytown Hospital", "Baytown")),
+    ("HM Sugar Land",           ("Houston Methodist Sugar Land Hospital", "Sugar Land")),
+    ("HM The Woodlands",        ("Houston Methodist The Woodlands Hospital", "The Woodlands")),
+    ("HM Clear Lake",           ("Houston Methodist Clear Lake Hospital", "Nassau Bay")),
+    ("HM Willowbrook",          ("Houston Methodist Willowbrook Hospital", "Houston")),
+    ("HM Cypress",              ("Houston Methodist Cypress Hospital", "Cypress")),
+    ("HM West",                 ("Houston Methodist West Hospital", "Houston")),
+    ("HM Texas Medical Center", ("Houston Methodist Hospital", "Houston")),
+    ("HM Continuing Care",      ("Houston Methodist Continuing Care Hospital", "Katy")),
+]
+
+
+def _hm_fetch_all() -> list[Job]:
+    """Blocking full pull (~71 requests at limit=20) — runs in a worker thread."""
+    sess = curl_requests.Session(impersonate="chrome")
+    jobs: list[Job] = []
+    offset, total, errors = 0, None, 0
+    while total is None or offset < total:
+        try:
+            r = sess.post(
+                HM_CXS_URL,
+                json={"limit": 20, "offset": offset, "searchText": "", "appliedFacets": {}},
+                headers={"Content-Type": "application/json", "Accept": "application/json"},
+                timeout=45,
+            )
+            if r.status_code != 200:
+                raise RuntimeError(f"HTTP {r.status_code}")
+            data = r.json()
+        except Exception as e:
+            errors += 1
+            if errors >= 3:
+                logger.info(f"  Houston Methodist: offset {offset} failed 3x ({e}) — stopping at {len(jobs)}")
+                return jobs
+            time.sleep(3 * errors)
+            continue
+        errors = 0
+        total = data.get("total", 0)
+        postings = data.get("jobPostings", [])
+        if not postings:
+            break
+        for p in postings:
+            loc_text = p.get("locationsText") or ""  # null on system-wide postings
+            facility, city = "Houston Methodist", "Houston"
+            for prefix, (fac, cty) in HM_CAMPUS_MAP:
+                if loc_text.startswith(prefix):
+                    facility, city = fac, cty
+                    break
+            path = p.get("externalPath") or ""
+            bullets = p.get("bulletFields") or []
+            job_id = bullets[0] if bullets else path.rsplit("_", 1)[-1]
+            if not path or not job_id:
+                continue
+            jobs.append(Job(
+                title=(p.get("title") or "").strip(),
+                hospital_system="Houston Methodist",
+                hospital_name=facility,
+                city=city, state="TX",
+                location=f"{city}, TX",
+                specialty="", job_type="",
+                url=f"{HM_PUBLIC_BASE}{path}",
+                job_id=str(job_id),
+                posted_date=p.get("postedOn") or "",
+                description="",
+                ats_platform="Workday",
+            ))
+        offset += 20
+        time.sleep(0.4)
+    return jobs
+
+
+async def run_houston_methodist() -> list[Job]:
+    if curl_requests is None:
+        logger.warning("Houston Methodist: curl_cffi not installed — skipping")
+        return []
+    logger.info("Houston Methodist: Workday CXS wd12/GTI (curl_cffi)...")
+    try:
+        jobs = await asyncio.to_thread(_hm_fetch_all)
+    except Exception as e:
+        logger.info(f"  Houston Methodist: ERROR {e}")
+        return []
+    logger.info(f"  Houston Methodist: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  OCEANS HEALTHCARE — custom in-house job board (added 2026-07-28)
+#
+#  Behavioral-health chain (Oceans Behavioral Hospitals + Haven Behavioral,
+#  acquired 2024): ~33 facilities across TX/LA/MS/PA/NM/OH/OK/AZ/ID, incl.
+#  10 Texas psychiatric hospitals (Midland's is listed as "of the Permian
+#  Basin"). No commercial ATS — a self-hosted ASP.NET MVC board at
+#  oceansjobboard.com (careers.oceansjobboard.com is only a Weebly shell).
+#  Recipe: GET /jobs embeds the first 25 jobs + FilterGroups in a Vue data
+#  blob; POST /jobs/LoadMoreSearchCallback pages ~26 at a time, echoing the
+#  server's FilterGroups back each round. ~328 jobs / 13 requests at build
+#  time. Soft 404s: dead pages return HTTP 200 with a tiny "Page Not Found"
+#  body — never trust status alone on the detail pages.
+# ══════════════════════════════════════════════════════════════════════════
+
+OCEANS_BASE = "https://oceansjobboard.com"
+_OCEANS_DATA_RE = re.compile(r'data:\s*(\{"FilterGroups".*?\}),\s*\n\s*mounted:', re.DOTALL)
+
+
+def _oceans_job(rec: dict) -> Optional[Job]:
+    title = (rec.get("Title") or "").strip()
+    job_no = rec.get("JobNumber")
+    url_path = rec.get("Url") or ""
+    if not title or not job_no or not url_path:
+        return None
+    # /job-detail/{JobNumber}/{yyyy-MM-dd} — the date segment is the post date
+    dm = re.search(r"/(\d{4}-\d{2}-\d{2})$", url_path)
+    city = (rec.get("City") or "").strip()
+    state = (rec.get("State") or "").strip()
+    return Job(
+        title=title,
+        hospital_system="Oceans Healthcare",
+        hospital_name=(rec.get("LocationName") or "Oceans Healthcare").strip(),
+        city=city, state=state,
+        location=f"{city}, {state}" if city and state else city or state,
+        specialty="",
+        job_type="",
+        url=f"{OCEANS_BASE}{url_path}",
+        job_id=str(job_no),
+        posted_date=dm.group(1) if dm else "",
+        description="",
+        ats_platform="OceansJobBoard",
+    )
+
+
+def _oceans_fetch_all() -> list[Job]:
+    """Blocking full pull (~13 requests) — runs in a worker thread."""
+    sess = curl_requests.Session(impersonate="chrome")
+    r = sess.get(f"{OCEANS_BASE}/jobs", timeout=45)
+    if r.status_code != 200:
+        raise RuntimeError(f"landing page HTTP {r.status_code}")
+    m = _OCEANS_DATA_RE.search(r.text)
+    if not m:
+        raise RuntimeError("embedded Vue data blob not found (board redesigned?)")
+    blob = json.loads(m.group(1))
+    records = list(blob.get("Jobs") or [])
+    filter_groups = blob.get("FilterGroups") or []
+    has_more = bool(blob.get("HasMore"))
+
+    guard = 0  # board is ~13 pages today; 60 caps a runaway HasMore loop
+    while has_more and guard < 60:
+        guard += 1
+        rr = sess.post(
+            f"{OCEANS_BASE}/jobs/LoadMoreSearchCallback",
+            json={"FilterGroups": filter_groups, "CurrentResultCount": len(records)},
+            headers={"Content-Type": "application/json"},
+            timeout=45,
+        )
+        if rr.status_code != 200:
+            logger.info(f"  Oceans: LoadMore HTTP {rr.status_code} — stopping at {len(records)}")
+            break
+        d = rr.json()
+        page_jobs = d.get("Jobs") or []
+        if not page_jobs:
+            break
+        records.extend(page_jobs)
+        filter_groups = d.get("FilterGroups") or filter_groups
+        has_more = bool(d.get("HasMore"))
+        time.sleep(0.4)
+
+    out: list[Job] = []
+    seen: set[str] = set()
+    for rec in records:
+        j = _oceans_job(rec)
+        if j and j.job_id not in seen:
+            seen.add(j.job_id)
+            out.append(j)
+    return out
+
+
+async def run_oceans() -> list[Job]:
+    if curl_requests is None:
+        logger.warning("Oceans Healthcare: curl_cffi not installed — skipping")
+        return []
+    logger.info("Oceans Healthcare: crawling oceansjobboard.com...")
+    try:
+        jobs = await asyncio.to_thread(_oceans_fetch_all)
+    except Exception as e:
+        logger.info(f"  Oceans Healthcare: ERROR {e}")
+        return []
+    logger.info(f"  Oceans Healthcare: {len(jobs):,} jobs")
+    return jobs
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -6931,7 +6972,9 @@ async def run_all() -> list[dict]:
             run_csod(proxy_session),
             run_paycom(proxy_session),
             run_paycor(proxy_session),
-            run_hca(direct_session),    # HCA Healthcare — HTML scrape, direct (no proxy) for 1.75MB pages
+            run_hca(direct_session),    # HCA Healthcare — browserless per-state crawl via curl_cffi Firefox TLS (rebuilt 2026-07-28)
+            run_houston_methodist(),    # Workday wd12/GTI — curl_cffi; wd12 edge 403s non-browser TLS (added 2026-07-28)
+            run_oceans(),               # Oceans Behavioral — custom board at oceansjobboard.com via curl_cffi (added 2026-07-28)
             run_chs(proxy_session),
             run_atrium(proxy_session),  # Atrium Health — Coveo HTML pagination via residential proxy
             return_exceptions=True,

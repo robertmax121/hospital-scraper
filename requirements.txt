@@ -4,3 +4,4 @@ httpx==0.24.1
 python-dotenv==1.0.0
 playwright-stealth>=1.0.6
 patchright>=1.40.0
+curl_cffi>=0.10,<1.0
