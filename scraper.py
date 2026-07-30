@@ -16,6 +16,7 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
 from city_utils import clean_city
+from specialty_canon import canonical_specialty
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -6108,27 +6109,18 @@ def _coerce_money(v) -> float | None:
 
 
 def _classify_travel_specialty(title: str | None, raw_specialty: str | None) -> str | None:
-    """Normalize travel-job specialty using the same SPECIALTY_MAP keywords used
-    for hospital jobs (fall back to whatever the agency provided)."""
-    if raw_specialty:
-        return raw_specialty
-    if not title:
-        return None
-    # Reuse SPECIALTY_MAP (defined inside run_all). Inline a lightweight lookup here.
-    t = f" {title.lower()} "
-    for spec, kws in (
-        ("ICU / Critical Care", ["icu","intensive care","critical care","picu","nicu","cvicu"]),
-        ("Emergency / Trauma", ["emergency","trauma","er rn","ed rn"]),
-        ("Labor & Delivery",   ["labor","delivery","l&d","ldrp","postpartum","mother baby"]),
-        ("Med / Surg",         ["med surg","medsurg","telemetry","tele rn"]),
-        ("Operating Room / Surgery", ["operating room"," or rn","perioperative","pacu","pre-op","post-op"]),
-        ("Cardiac / Cardiovascular", ["cardiac","cath lab","cvor"]),
-        ("Oncology",           ["oncology","chemo","infusion"]),
-        ("Pediatrics",         ["pediatric","peds"]),
-    ):
-        for kw in kws:
-            if kw in t: return spec
-    return None
+    """Canonical specialty for a travel contract.
+
+    Rewritten 2026-07-30. It used to return the agency's own string untouched
+    whenever one existed, which is why travel_jobs held 588 distinct specialty
+    values ("PT Outpatient", "PT Inpatient Rehab", "PT SNF", "CVOR", "CVOR
+    Technologist"…) and the board's specialty filter matched almost none of
+    them. Same canonicaliser as the hospital side now, so a travel PT contract
+    and a staff PT job land in the same bucket. Unmappable agency values are
+    preserved, not nulled — measured 2026-07-30, this leaves travel at 0%
+    uncategorised (unchanged) while collapsing 588 values to ~140.
+    """
+    return canonical_specialty(title, raw_specialty)
 
 
 # ── Vivian Health ─────────────────────────────────────────────────────────
@@ -7437,9 +7429,21 @@ def normalize_job(j: Job) -> dict:
     d["state"]    = state
     d["location"] = location
 
-    # Classify specialty from title if not already set by scraper
-    if not d.get("specialty"):
-        d["specialty"] = classify_title(d.get("title", ""))
+    # Canonical specialty (2026-07-30). This USED to be
+    #   if not d.get("specialty"): d["specialty"] = classify_title(...)
+    # i.e. whatever string the ATS supplied won and was stored verbatim, which
+    # left 214 distinct values in hospital_jobs — five spellings of "Advanced
+    # Practice", seven of "Administrative", plus "Rehabilitation Services",
+    # "Physical Therapist Assistant" and a long tail nobody could filter by.
+    # A user searching "physical therapist" got 5,746 hits while the specialty
+    # filter returned a fraction of them.
+    #
+    # Now every row is canonicalised: title first (profession before setting,
+    # so "Physical Therapist - Inpatient - Acute Care" is Physical Therapy, not
+    # Med / Surg), then the ATS string through an alias table, and if neither
+    # resolves the original value is kept rather than nulled — so this can
+    # never make a row worse. See specialty_canon.py.
+    d["specialty"] = canonical_specialty(d.get("title", ""), d.get("specialty"))
 
     return d
 
