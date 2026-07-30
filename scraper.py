@@ -6939,21 +6939,69 @@ def update_travel_site_stats() -> int:
     if not sb_url or not sb_key:
         logger.info("Travel site_stats: SUPABASE_URL/KEY not set — skipping")
         return 0
-    try:
-        rq = _urlreq.Request(
-            f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?select=id&is_active=eq.true&limit=1",
-            headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
-                     "Prefer": "count=exact", "Range": "0-0"})
-        with _urlreq.urlopen(rq, timeout=60) as resp:
-            cr = resp.headers.get("Content-Range", "")
-            resp.read()
-        tail = cr.split("/")[-1] if "/" in cr else ""
-        if not tail.isdigit():
-            logger.warning(f"Travel site_stats: unparseable count header {cr!r} — not writing")
+    def _head_count(extra: str = "") -> Optional[int]:
+        """One count=exact head request. None on failure."""
+        try:
+            rq = _urlreq.Request(
+                f"{sb_url.rstrip('/')}/rest/v1/travel_jobs"
+                f"?select=id&is_active=eq.true{extra}&limit=1",
+                headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
+                         "Prefer": "count=exact", "Range": "0-0"})
+            with _urlreq.urlopen(rq, timeout=90) as resp:
+                cr = resp.headers.get("Content-Range", "")
+                resp.read()
+            tail = cr.split("/")[-1] if "/" in cr else ""
+            return int(tail) if tail.isdigit() else None
+        except Exception:
+            return None
+
+    # Fast path: whole-table exact count, retried. It usually succeeds in well
+    # under a second, but it is NOT reliable on its own — travel_jobs is ~1.95M
+    # rows with no index on is_active, and the same query was observed
+    # succeeding and then 500ing (57014 statement timeout) minutes apart on
+    # 2026-07-29. A single un-retried attempt is precisely how this counter
+    # went stale for two days in the first place.
+    travel_total = None
+    for attempt in range(4):
+        travel_total = _head_count()
+        if travel_total is not None:
+            break
+        time.sleep(2 * (attempt + 1))
+
+    # Slow path: count in id windows. Each window is a small indexed range that
+    # cannot hit the statement timeout. ~79 requests / ~77s at current size —
+    # slow, but it always returns a number, and a correct slow count beats a
+    # homepage that silently advertises half the inventory.
+    if travel_total is None:
+        logger.info("Travel site_stats: exact count kept timing out — falling back to id windows")
+        try:
+            rq = _urlreq.Request(
+                f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?select=id&order=id.desc&limit=1",
+                headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            with _urlreq.urlopen(rq, timeout=30) as resp:
+                rows = json.loads(resp.read())
+            max_id = rows[0]["id"] if rows else 0
+        except Exception as e:
+            logger.warning(f"Travel site_stats: max-id lookup failed ({e}) — not writing")
             return 0
-        travel_total = int(tail)
-    except Exception as e:
-        logger.warning(f"Travel site_stats: count failed ({e}) — not writing")
+        WINDOW = 25000
+        total, failed, lo = 0, 0, 0
+        while lo <= max_id:
+            n = _head_count(f"&id=gte.{lo}&id=lt.{lo + WINDOW}")
+            if n is None:
+                failed += 1
+            else:
+                total += n
+            lo += WINDOW
+        if failed:
+            # A partial sum would UNDERSTATE the count — the exact failure mode
+            # we're fixing. Refuse rather than write a number we know is short.
+            logger.warning(f"Travel site_stats: {failed} windows failed — not writing a partial count")
+            return 0
+        travel_total = total
+
+    if travel_total is None:
+        logger.warning("Travel site_stats: could not determine count — not writing")
         return 0
 
     try:
