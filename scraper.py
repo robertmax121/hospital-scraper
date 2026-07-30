@@ -6908,26 +6908,55 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
             f"({failed_windows} failed windows, counts={domain_counts})"
         )
 
-    # ── Travel count → site_stats id=2 (added 2026-07-20) ─────────────
-    # Exact count via id-cursor pagination (same timeout-proof pattern as the
-    # hospital counter in database.get_stats). The website reads site_stats
-    # id=1 (hospital) + id=2 (travel) and shows the combined "Open Roles"
-    # number with a hospital/travel split.
+    # Travel count → site_stats id=2. Written again at the very end of the
+    # scheduler run (after the URL validator deactivates dead links) so the
+    # homepage shows the final number, not a mid-run one.
+    update_travel_site_stats()
+    return sent
+
+
+def update_travel_site_stats() -> int:
+    """Write the live travel-jobs count to site_stats id=2. Returns the count.
+
+    The homepage's "Open Roles" figure is site_stats id=1 (hospital) + id=2
+    (travel), so if this write fails the site silently advertises a stale
+    number.
+
+    Rewritten 2026-07-29 — it HAD been failing silently. The old version
+    counted by paging every active row 1,000 at a time; that was ~26 requests
+    when it shipped, but travel inventory doubled to 52k (Nomad + AMN) and the
+    loop became ~53 sequential round-trips, long enough to fail and get
+    swallowed by the surrounding try/except. Result: id=2 froze at 26,444 from
+    2026-07-27 while the table actually held 52,641 — the homepage was
+    understating travel inventory by half. A single head request with
+    count=exact does the same job in one round-trip.
+    """
+    import urllib.request as _urlreq
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = (os.environ.get("SUPABASE_KEY", "")
+              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
     stats_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "") or sb_key
+    if not sb_url or not sb_key:
+        logger.info("Travel site_stats: SUPABASE_URL/KEY not set — skipping")
+        return 0
     try:
-        travel_total = 0
-        last_id = 0
-        while True:
-            rq = _urlreq.Request(
-                f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?select=id&is_active=eq.true"
-                f"&id=gt.{last_id}&order=id.asc&limit=1000",
-                headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
-            with _urlreq.urlopen(rq, timeout=60) as resp:
-                page = json.loads(resp.read())
-            if not page:
-                break
-            travel_total += len(page)
-            last_id = page[-1]["id"]
+        rq = _urlreq.Request(
+            f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?select=id&is_active=eq.true&limit=1",
+            headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
+                     "Prefer": "count=exact", "Range": "0-0"})
+        with _urlreq.urlopen(rq, timeout=60) as resp:
+            cr = resp.headers.get("Content-Range", "")
+            resp.read()
+        tail = cr.split("/")[-1] if "/" in cr else ""
+        if not tail.isdigit():
+            logger.warning(f"Travel site_stats: unparseable count header {cr!r} — not writing")
+            return 0
+        travel_total = int(tail)
+    except Exception as e:
+        logger.warning(f"Travel site_stats: count failed ({e}) — not writing")
+        return 0
+
+    try:
         stats_body = json.dumps({
             "id": 2,
             "total_active_jobs": travel_total,
@@ -6941,11 +6970,12 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
                      "Prefer": "resolution=merge-duplicates,return=minimal"},
             method="POST")
         with _urlreq.urlopen(rq, timeout=30) as resp:
-            _ = resp.read()
+            resp.read()
         logger.info(f"site_stats id=2 (travel) updated: {travel_total:,} active")
+        return travel_total
     except Exception as e:
         logger.warning(f"Travel site_stats write failed (non-fatal): {e}")
-    return sent
+        return 0
 
 
 # ── Apply-link QA guardrails (added 2026-07-01) ───────────────────────────

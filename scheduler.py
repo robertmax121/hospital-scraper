@@ -63,6 +63,18 @@ def run():
     except Exception as e:
         logger.warning(f"travel URL validation failed (non-fatal): {e}")
 
+    # ── Step 2c: re-count travel AFTER validation (added 2026-07-29) ──
+    # The travel counter used to run inside the travel upsert, i.e. BEFORE
+    # the validator above deactivates dead links — so even a successful write
+    # was stale by a couple thousand rows. Re-running it here makes
+    # site_stats id=2 the final, post-sweep number the homepage should show.
+    try:
+        from scraper import update_travel_site_stats
+        logger.info("\n[ STEP 2c ] Recounting travel jobs for site_stats...")
+        update_travel_site_stats()
+    except Exception as e:
+        logger.warning(f"travel site_stats recount failed (non-fatal): {e}")
+
     # ── Step 3: Summary ───────────────────────────────────────────
     stats = get_stats()
     elapsed = (datetime.now() - start).seconds
