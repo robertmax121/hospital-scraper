@@ -41,9 +41,11 @@ PROFESSION_MAP = {
         "occupational therap", " cota", "ot assistant", " ota ", "occupational therapist",
         " otr", "hand therapist",
     ],
+    # "speech lang" catches the abbreviated "Speech Lang Pathologist" forms,
+    # which otherwise fell through to Laboratory on the bare "patholog" stem.
     "Speech Language Pathology": [
-        "speech language", "speech-language", "speech patholog", "speech therap",
-        " slp ", "slp-", "audiolog",
+        "speech language", "speech-language", "speech lang", "speech patholog",
+        "speech therap", "speech clinician", " slp ", "slp-", "audiolog",
     ],
     "Respiratory Therapy": [
         "respiratory therap", "respiratory care", " rrt", " crt ", "pulmonary function",
@@ -66,12 +68,18 @@ PROFESSION_MAP = {
                       "sterile processing", "central sterile", "sterile tech"],
     "EMS / Paramedic": ["paramedic", " emt", "emergency medical tech", " ems ",
                         "ambulance", "flight medic"],
+    # -IST forms only. "cardiolog"/"neurolog" also match "Cardiology
+    # Sonographer" and "Pediatric Neurology Social Worker", which are not
+    # physician roles; and "family medicine" / "internal medicine" are
+    # department names that appear on NP, PA and RN postings just as often
+    # ("Family Medicine Nurse Practitioner"). Requiring the practitioner noun
+    # keeps this bucket to actual physicians. (2026-07-30 audit.)
     "Physician": [
-        "physician", " md ", "m.d.", " do ", "hospitalist", "intensivist", "neonatolog",
-        "cardiolog", "neurolog", "oncologist", "surgeon", "psychiatrist", "pulmonolog",
-        "gastroenterolog", "nephrolog", "endocrinolog", "rheumatolog", "urolog",
-        "ophthalmolog", "dermatolog", "physiatrist", "podiatr", "family medicine",
-        "internal medicine", "primary care physician", "resident physician",
+        "physician", " md ", "m.d.", " do ", "hospitalist", "intensivist",
+        "neonatologist", "cardiologist", "neurologist", "oncologist", "surgeon",
+        "psychiatrist", "pulmonologist", "gastroenterologist", "nephrologist",
+        "endocrinologist", "rheumatologist", "urologist", "ophthalmologist",
+        "dermatologist", "physiatrist", "podiatrist", "resident physician",
     ],
     "Dietary / Nutrition": ["dietit", "dietary", "nutrition"],
     "Social Work / Case Management": [
@@ -266,15 +274,44 @@ def _norm_ats(s):
 
 
 def classify_title(title):
-    """Canonical specialty from a job title, or None."""
+    """Canonical specialty from a job title, or None.
+
+    Two different rules, because the two kinds of bucket behave differently
+    (2026-07-30 accuracy audit).
+
+    PROFESSIONS — earliest keyword wins. A title leads with the role and
+    qualifies it afterwards, so the left-most match is the actual job. Plain
+    map-order mis-filed every title naming two professions:
+      "Occupational Therapist - Physical Therapy"  -> Physical Therapy  (wrong)
+      "Speech Pathologist - Physical Therapy"      -> Physical Therapy  (wrong)
+      "Dietitian - Pediatric Gastroenterology"     -> Physician         (wrong)
+      "Surgical Technician - Radiology"            -> Radiology         (wrong)
+
+    SETTINGS / NON-CLINICAL — map order wins. Here the leading words are
+    boilerplate ("Registered Nurse - ICU" starts with the credential, not the
+    unit), and the generic catch-alls (Float Pool / General RN, Support Staff)
+    are deliberately last so specific units are tested first. Position-matching
+    these would send every "Registered Nurse - X" to the float pool.
+
+    Tier precedence always holds: profession beats setting beats non-clinical.
+    """
     if not title:
         return None
     t = f" {str(title).lower()} "
     for tier in TIERS:
-        for specialty, keywords in tier.items():
-            for kw in keywords:
-                if kw in t:
-                    return specialty
+        if tier is PROFESSION_MAP:
+            best = None  # (position, map_order, specialty)
+            for order, (specialty, keywords) in enumerate(tier.items()):
+                pos = min((t.find(kw) for kw in keywords if kw in t), default=-1)
+                if pos >= 0 and (best is None or (pos, order) < (best[0], best[1])):
+                    best = (pos, order, specialty)
+            if best:
+                return best[2]
+        else:
+            for specialty, keywords in tier.items():
+                for kw in keywords:
+                    if kw in t:
+                        return specialty
     return None
 
 
