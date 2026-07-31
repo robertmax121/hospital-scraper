@@ -97,7 +97,21 @@ HEADERS = {
 }
 
 async def jitter(): await asyncio.sleep(random.uniform(0.8, 2.5))
-def strip_html(s): return re.sub(r"<[^>]+>", "", s or "")[:500]
+# 2026-07-31: cap raised 500 -> 8000. At 500 chars a description was cut
+# mid-word, usually before the job-specific text even started, so postings from
+# the same system shared a byte-identical boilerplate preamble — duplicate
+# primary content across indexed pages. It also kept descriptions short enough
+# that many fell under the desc_len >= 200 bar the sitemap and the page-level
+# indexability rule both use.
+#
+# Measured impact is bounded: only 5,246 of 137,995 active jobs were actually
+# at the cap (22,135 were already under 500 naturally, and 110,582 have NO
+# description at all — those need per-job detail fetches, a separate fix).
+#
+# 8000 is well past a typical posting (~2-6k after tag stripping) and costs
+# nothing structurally: description is TEXT, and Postgres TOASTs + compresses
+# anything over ~2KB. Est. +150-200MB against a 796MB database.
+def strip_html(s): return re.sub(r"<[^>]+>", "", s or "")[:8000]
 
 
 
