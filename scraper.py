@@ -3132,6 +3132,12 @@ PHENOM_ORGS = {
     # PruittHealth — SNF + home health + hospice across the Southeast (~180 locations).
     # careers.pruitthealth.com is Phenom (/us/en path). Adapter discovers pageId from HTML.
     "PruittHealth":                 "https://careers.pruitthealth.com",
+    # ── Added 2026-08-04: behavioral-health expansion ──
+    # Acadia Healthcare — ~250 behavioral facilities nationwide. Landing page
+    # carries the full Phenom fingerprint (phenompeople.com CDN, window.phApp,
+    # /us/en path), verified live. Apply step is iCIMS but listings come from
+    # the Phenom widgets API like Ascension's.
+    "Acadia Healthcare":            "https://www.acadiacareers.com",
     # HCA Healthcare — REMOVED 2026-07-28. It was never Phenom (that 2026-06-18
     # web-research note was wrong): careers.hcahealthcare.com is Talemetry, and
     # this entry just burned a nightly 403. Covered by the rebuilt run_hca().
@@ -4312,6 +4318,12 @@ ORACLE_ORGS = {
     # siteNumber extracted from original career site URLs (/sites/{siteNumber})
     # API: GET {base}/hcmRestApi/resources/latest/recruitingCEJobRequisitions
     #      with finder=findReqs;siteNumber={siteNumber},limit=N,offset=N
+    # Northwell Health (2026-08-04). Was misconfigured as a Workday tenant and
+    # 422'd on every run since May — jobs.northwell.edu is actually an Oracle
+    # Cloud front (host + siteNumber pulled from the landing page's deeplink,
+    # validated live: TotalJobsCount=1286 on this endpoint). NY's largest
+    # private employer; expect this to grow as their sites are enumerated.
+    "Northwell Health":          ("https://eppr.fa.us2.oraclecloud.com",                      "CX_2"),
     "Jackson Hospital":          ("https://ejid.fa.us6.oraclecloud.com",                      "CX_1001"),
     "Erlanger Health System":    ("https://elar.fa.us2.oraclecloud.com",                      "CX_1"),
     "EvergreenHealth":           ("https://erym.fa.us6.oraclecloud.com",                      "CX_1"),
