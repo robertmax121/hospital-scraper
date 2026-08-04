@@ -7163,10 +7163,46 @@ def update_travel_site_stats() -> int:
         with _urlreq.urlopen(rq, timeout=30) as resp:
             resp.read()
         logger.info(f"site_stats id=2 (travel) updated: {travel_total:,} active")
+        _refresh_travel_sitemap_cohort(sb_url, stats_key)
         return travel_total
     except Exception as e:
         logger.warning(f"Travel site_stats write failed (non-fatal): {e}")
         return 0
+
+
+def _refresh_travel_sitemap_cohort(sb_url: str, sb_key: str) -> None:
+    """Rebuild the travel_sitemap_cohort snapshot table (added 2026-08-04).
+
+    app/sitemap.js tier 4 on the website reads the travel quality cohort
+    (active + description >= 200 chars) from this slim table instead of
+    filtering travel_jobs live: the live char_length() filter cannot survive
+    the 8s statement timeout while a Vercel build hammers the DB with ~185
+    concurrent page renders. The snapshot only has to be as fresh as the data,
+    and the data only changes when THIS scraper runs — so refreshing it here,
+    right after site_stats, keeps the sitemap exactly one scrape behind
+    reality, same as everything else on the site.
+
+    Non-fatal by design: a failed refresh leaves yesterday's snapshot, which
+    is a slightly stale sitemap — strictly better than a missing one.
+    """
+    import urllib.request as _urlreq
+    for attempt in range(4):
+        try:
+            rq = _urlreq.Request(
+                f"{sb_url.rstrip('/')}/rest/v1/rpc/refresh_travel_sitemap_cohort",
+                data=b"{}",
+                headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
+                         "Content-Type": "application/json"},
+                method="POST")
+            with _urlreq.urlopen(rq, timeout=150) as resp:
+                n = resp.read().decode().strip()
+            logger.info(f"travel_sitemap_cohort refreshed: {n} rows")
+            return
+        except Exception as e:
+            if attempt == 3:
+                logger.warning(f"travel_sitemap_cohort refresh failed after 4 tries (non-fatal): {e}")
+            else:
+                time.sleep(5 * (attempt + 1))
 
 
 # ── Apply-link QA guardrails (added 2026-07-01) ───────────────────────────
