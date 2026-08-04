@@ -154,6 +154,14 @@ class _DescBudget:
 
 WD_DESC_BUDGET = _DescBudget(WD_DESC_MAX_PER_RUN)
 
+# Aya description pass (2026-08-04) — same containment contract as Workday's:
+# off by default, run-wide budget, throttled. Aya's per-job JSON endpoint is
+# ~6KB so the budget can be generous once the canary run looks right.
+AYA_FETCH_DESCRIPTIONS = os.getenv("AYA_FETCH_DESCRIPTIONS", "0") == "1"
+AYA_DESC_MAX_PER_RUN   = int(os.getenv("AYA_DESC_MAX_PER_RUN", "500"))
+AYA_DESC_CONCURRENCY   = int(os.getenv("AYA_DESC_CONCURRENCY", "4"))
+AYA_DESC_BUDGET        = _DescBudget(AYA_DESC_MAX_PER_RUN)
+
 # Hard stop for Workday list pagination. Replaces the old `offset >= total`
 # break, which truncated six large tenants at exactly 2,000 jobs because
 # Workday caps the REPORTED total at 2000 while still serving results beyond it
@@ -6616,7 +6624,66 @@ async def run_aya(session: aiohttp.ClientSession) -> list[TravelJob]:
         if j.agency_job_id in seen: continue
         seen.add(j.agency_job_id); uniq.append(j)
     logger.info(f"Aya Healthcare: {len(uniq):,} unique travel listings")
+
+    # Optional detail pass — no-op unless AYA_FETCH_DESCRIPTIONS=1.
+    if AYA_FETCH_DESCRIPTIONS and uniq:
+        try:
+            await _aya_fetch_details(session, uniq)
+        except Exception as e:
+            logger.info(f"Aya: detail pass failed ({e}) — keeping list data")
     return uniq
+
+
+async def _aya_fetch_details(session: aiohttp.ClientSession, jobs: list) -> None:
+    """Fill descriptions from Aya's per-job JSON endpoint (added 2026-08-04).
+
+    The search API returns NO description text (probed: `details` is null on
+    every item), but GET api.ayahealthcare.com/AyaHealthcareWeb/job/{id} is a
+    public ~6KB JSON document whose `jobDescription` runs 1-4k chars of real
+    per-job text — measured 3,788 chars on the probe job. 6KB x 10.8k jobs is
+    ~65MB for a full backfill, so this is cheap even through proxies (the
+    page-scrape alternative was 181KB per job).
+
+    Same containment contract as the Workday pass: flag-gated, budgeted per
+    run via AYA_DESC_BUDGET, failures leave the job exactly as the list
+    returned it, and only text clearing the 200-char sitemap bar is kept.
+    """
+    headers = {
+        "Origin":     "https://www.ayahealthcare.com",
+        "Referer":    "https://www.ayahealthcare.com/healthcare-jobs/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Accept":     "application/json, text/plain, */*",
+    }
+    candidates = [j for j in jobs if not (j.description or "").strip() and j.agency_job_id]
+    allowed = AYA_DESC_BUDGET.take(len(candidates))
+    pending = candidates[:allowed]
+    if not pending:
+        return
+
+    sem = asyncio.Semaphore(AYA_DESC_CONCURRENCY)
+    filled = 0
+
+    async def one(job):
+        nonlocal filled
+        url = f"https://api.ayahealthcare.com/AyaHealthcareWeb/job/{job.agency_job_id}"
+        async with sem:
+            try:
+                async with req(session, "get", url, headers=headers, ssl=False,
+                               proxy=proxies.get(),
+                               timeout=aiohttp.ClientTimeout(total=20)) as r:
+                    if r.status != 200:
+                        return
+                    data = await r.json(content_type=None)
+            except Exception:
+                return
+            desc = strip_html(str((data or {}).get("jobDescription") or ""))
+            if len(desc) >= 200:
+                job.description = desc
+                filled += 1
+            await asyncio.sleep(random.uniform(0.15, 0.4))
+
+    await asyncio.gather(*[one(j) for j in pending], return_exceptions=True)
+    logger.info(f"  Aya: details {len(pending)} fetched -> {filled} descriptions")
 
 
 # ══════════════════════════════════════════════════════════════════════════
