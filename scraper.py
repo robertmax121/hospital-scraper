@@ -133,6 +133,27 @@ WD_FETCH_DESCRIPTIONS = os.getenv("WD_FETCH_DESCRIPTIONS", "0") == "1"
 WD_DESC_MAX_PER_RUN   = int(os.getenv("WD_DESC_MAX_PER_RUN", "500"))
 WD_DESC_CONCURRENCY   = int(os.getenv("WD_DESC_CONCURRENCY", "4"))
 
+
+class _DescBudget:
+    """GLOBAL cap on detail fetches for a whole run.
+
+    scrape_workday() runs once per tenant and there are ~99 of them, so a
+    per-tenant cap of 500 would authorise ~49,500 requests a night — the exact
+    opposite of the intended canary. This budget is shared across every tenant
+    so WD_DESC_MAX_PER_RUN means what it says. asyncio is single-threaded and
+    take() has no await inside it, so a plain int needs no lock.
+    """
+    def __init__(self, total):
+        self.remaining = max(0, total)
+
+    def take(self, n):
+        n = max(0, min(n, self.remaining))
+        self.remaining -= n
+        return n
+
+
+WD_DESC_BUDGET = _DescBudget(WD_DESC_MAX_PER_RUN)
+
 # Hard stop for Workday list pagination. Replaces the old `offset >= total`
 # break, which truncated six large tenants at exactly 2,000 jobs because
 # Workday caps the REPORTED total at 2000 while still serving results beyond it
@@ -944,8 +965,13 @@ async def _workday_fetch_details(session, working_url, targets, system):
     # plus the job's externalPath, which already begins with "/job/".
     base = working_url[:-len("/jobs")] if working_url.endswith("/jobs") else working_url
 
-    pending = [(j, p) for j, p in targets
-               if p and not (j.description or "").strip()][:WD_DESC_MAX_PER_RUN]
+    candidates = [(j, p) for j, p in targets
+                  if p and not (j.description or "").strip()]
+    # Draw from the RUN-WIDE budget, not a per-tenant one. Whichever tenants
+    # finish their listing pass first get the allowance; later tenants simply
+    # get none this run and pick it up on a subsequent night.
+    allowed = WD_DESC_BUDGET.take(len(candidates))
+    pending = candidates[:allowed]
     if not pending:
         return
 
