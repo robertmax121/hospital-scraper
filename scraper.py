@@ -2388,6 +2388,11 @@ JIBE_SITES = {
     # hospice — the largest missing non-acute operator), Novant totalCount=1639.
     "Amedisys":      "https://careers.amedisys.com",
     "Novant Health": "https://jobs.novanthealth.org",
+    # SNF expansion (2026-08-04): found via the CMS nursing-home chain
+    # analysis — Trilogy runs 124 SNF/AL campuses across IN/OH/KY/MI and its
+    # careers site is the same Jibe surface. Validated live: totalCount=1560,
+    # 7k-char descriptions in-feed.
+    "Trilogy Health Services": "https://jobs.trilogyhs.com",
 }
 
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
