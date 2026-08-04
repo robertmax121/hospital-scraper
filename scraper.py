@@ -114,6 +114,26 @@ async def jitter(): await asyncio.sleep(random.uniform(0.8, 2.5))
 def strip_html(s): return re.sub(r"<[^>]+>", "", s or "")[:8000]
 
 
+# ── Workday job descriptions (2026-08-03) ─────────────────────────────────
+# Workday's LIST endpoint returns an empty jobDescription, which is why all
+# ~45k Workday rows have no description and are therefore ineligible for the
+# sitemap (app/sitemap.js tier 3 requires >= 200 chars). The per-job DETAIL
+# endpoint carries it — and also `startDate`, a real ISO date that replaces
+# the unsortable relative `postedOn` label ("Posted 3 Days Ago"). One request
+# per job fixes both problems at once.
+#
+# OFF BY DEFAULT — set WD_FETCH_DESCRIPTIONS=1 to enable. When on, this adds
+# ONE HTTP request per job that lacks a description, so it is capped and
+# throttled rather than let loose on 45k jobs:
+#   WD_DESC_MAX_PER_RUN  hard ceiling per scrape (default 500 = a canary batch)
+#   WD_DESC_CONCURRENCY  parallel detail fetches (default 4)
+# Raise MAX_PER_RUN only after watching a full run: 45k detail hits in one
+# night is exactly the pattern that gets a tenant to rate-limit us.
+WD_FETCH_DESCRIPTIONS = os.getenv("WD_FETCH_DESCRIPTIONS", "0") == "1"
+WD_DESC_MAX_PER_RUN   = int(os.getenv("WD_DESC_MAX_PER_RUN", "500"))
+WD_DESC_CONCURRENCY   = int(os.getenv("WD_DESC_CONCURRENCY", "4"))
+
+
 
 class _FallbackResponse:
     """Wrapper so we can use 'async with' syntax with fallback logic."""
@@ -904,9 +924,65 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
     return city.strip(), state.upper() if state else ""
 
 
+async def _workday_fetch_details(session, working_url, targets, system):
+    """Fill description + ISO posted_date from Workday's per-job DETAIL endpoint.
+
+    `targets` is [(Job, externalPath), ...]. Mutates the Job objects in place.
+    Never raises and never aborts the scrape: a failed detail fetch simply
+    leaves that job exactly as the list endpoint returned it, which is the
+    current behaviour for every Workday job anyway. Worst case is no change.
+    """
+    # Detail URL = the CXS site base (list URL minus its trailing "/jobs")
+    # plus the job's externalPath, which already begins with "/job/".
+    base = working_url[:-len("/jobs")] if working_url.endswith("/jobs") else working_url
+
+    pending = [(j, p) for j, p in targets
+               if p and not (j.description or "").strip()][:WD_DESC_MAX_PER_RUN]
+    if not pending:
+        return
+
+    sem = asyncio.Semaphore(WD_DESC_CONCURRENCY)
+    filled = dated = 0
+
+    async def one(job, path):
+        nonlocal filled, dated
+        url = base + (path if path.startswith("/") else "/" + path)
+        async with sem:
+            try:
+                async with req(session, "get", url, headers=HEADERS, ssl=False,
+                               proxy=proxies.get(),
+                               timeout=aiohttp.ClientTimeout(total=20)) as r:
+                    if r.status != 200:
+                        return
+                    data = await r.json()
+            except Exception:
+                return
+            info = (data or {}).get("jobPostingInfo") or {}
+            desc = strip_html(str(info.get("jobDescription") or ""))
+            # Only accept a description that clears the sitemap bar; a shorter
+            # one adds storage and churn without making the job indexable.
+            if len(desc) >= 200:
+                job.description = desc
+                filled += 1
+            start = str(info.get("startDate") or "")[:10]
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", start):
+                job.posted_date = start
+                dated += 1
+            # Throttle inside the semaphore so this genuinely paces requests
+            # rather than just staggering their completion.
+            await asyncio.sleep(random.uniform(0.15, 0.45))
+
+    await asyncio.gather(*[one(j, p) for j, p in pending], return_exceptions=True)
+    logger.info(f"  Workday {system}: details {len(pending)} fetched -> "
+                f"{filled} descriptions, {dated} ISO dates")
+
+
 async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_data: tuple) -> list[Job]:
     tenant, wd_num, primary_site = tenant_data
     jobs = []
+    # (Job, externalPath) pairs, so the optional detail pass can rebuild each
+    # job's CXS detail URL. externalPath is not carried on the Job dataclass.
+    detail_targets = []
 
     # Use the confirmed URL directly — no probe loop
     working_url = f"https://{tenant}.wd{wd_num}.myworkdayjobs.com/wday/cxs/{tenant}/{primary_site}/jobs"
@@ -970,6 +1046,12 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     description=strip_html(str(j.get("jobDescription", ""))),
                     ats_platform="Workday",
                 ))
+                # Remember the path so the optional detail pass can fetch this
+                # job's description + ISO startDate. Cheap: one tuple per job,
+                # discarded when the function returns.
+                _ext = j.get("externalPath", "")
+                if _ext:
+                    detail_targets.append((jobs[-1], _ext))
             offset += LIMIT
             # End-of-pagination signals, in priority order:
             #  1. Page came back short — definitive end (universal across tenants).
@@ -982,6 +1064,14 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
         except Exception as e:
             logger.info(f"Workday {system}: {e}")
             break
+
+    # Optional second pass — no-op unless WD_FETCH_DESCRIPTIONS=1.
+    if WD_FETCH_DESCRIPTIONS and detail_targets:
+        try:
+            await _workday_fetch_details(session, working_url, detail_targets, system)
+        except Exception as e:
+            # Descriptions are a bonus; never let them cost us the listings.
+            logger.info(f"Workday {system}: detail pass failed ({e}) — keeping list data")
     return jobs
 
 async def run_workday(session) -> list[Job]:
