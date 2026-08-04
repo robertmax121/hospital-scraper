@@ -2367,6 +2367,125 @@ async def run_icims(session) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+#  JIBE (iCIMS Talent Cloud front) — {careers-site}/api/jobs  (added 2026-08-04)
+#
+#  Distinct from the classic *.icims.com portals scrape_icims() handles: Jibe
+#  sites serve a clean JSON API on the branded careers domain itself.
+#    GET {base}/api/jobs?page=N&limit=100   -> { jobs: [{data: {...}}], totalCount }
+#  limit=100 is honored (default is 10), and the payload includes the FULL job
+#  description in-feed (Amedisys sample: 7,206 chars) — no per-job detail
+#  fetches needed, which also means these rows clear the sitemap's 200-char
+#  indexability bar on day one.
+#
+#  URL: meta_data.canonical_url is the public posting page (validated live —
+#  /jobs/{req_id} 302s to it). Do NOT use apply_url: it points at the iCIMS
+#  /login gate, which is exactly the broken-apply-link shape the QA guardrails
+#  exist to prevent.
+# ══════════════════════════════════════════════════════════════════════════
+
+JIBE_SITES = {
+    # Both validated live 2026-08-04: Amedisys totalCount=1175 (home health /
+    # hospice — the largest missing non-acute operator), Novant totalCount=1639.
+    "Amedisys":      "https://careers.amedisys.com",
+    "Novant Health": "https://jobs.novanthealth.org",
+}
+
+async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
+    jobs: list[Job] = []
+    page, total = 1, None
+    while page <= 60:  # 60 x 100 = 6,000/site ceiling; both sites are well under
+        try:
+            async with req(session, "get", f"{base_url}/api/jobs",
+                           params={"page": str(page), "limit": "100"},
+                           headers={**HEADERS, "Accept": "application/json"},
+                           ssl=False, proxy=proxies.get(),
+                           timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"Jibe {system}: HTTP {r.status} at page {page}")
+                    break
+                data = await r.json(content_type=None)
+        except Exception as e:
+            logger.info(f"Jibe {system}: page {page} error: {e}")
+            break
+        items = data.get("jobs") or []
+        if total is None:
+            total = data.get("totalCount") or 0
+        if not items:
+            break
+        row_errors = 0
+        first_err = None
+        for wrap in items:
+            try:
+                j = (wrap or {}).get("data") or wrap
+                rid = str(j.get("req_id") or "").strip()
+                title = (j.get("title") or "").strip()
+                if not rid or not title:
+                    continue
+                # `state` arrives as a FULL name ("Maryland"); parse_city_state
+                # owns the full-name -> 2-letter mapping (its STATE_ABBR table
+                # is LOCAL to that function — referencing it from here was a
+                # NameError that a bare except silently ate on every row,
+                # yielding "0 jobs (site reports 1175)" on the first test run).
+                city, st = parse_city_state(
+                    f"{(j.get('city') or '').strip()}, {(j.get('state') or '').strip()}")
+                meta = j.get("meta_data") or {}
+                url = (meta.get("canonical_url")
+                       or f"{base_url}/jobs/{rid}")
+                cat = j.get("category")
+                if isinstance(cat, list):
+                    cat = cat[0] if cat else None
+                posted = str(j.get("posted_date") or "")[:10]
+                jobs.append(Job(
+                    title=title,
+                    hospital_system=system,
+                    hospital_name=system,
+                    city=city,
+                    state=st,
+                    location=", ".join(p for p in (city, st) if p),
+                    specialty=str(cat) if cat else "",
+                    job_type=(j.get("employment_type") or ""),
+                    url=str(url),
+                    job_id=rid,
+                    posted_date=posted,
+                    description=strip_html(str(j.get("description") or "")),
+                    ats_platform="iCIMS",
+                ))
+            except Exception as e:
+                # Count and report instead of swallowing: a structural bug
+                # (wrong field, missing name) fails EVERY row identically, and
+                # a silent continue turns that into "0 jobs" with no clue.
+                row_errors += 1
+                if first_err is None:
+                    first_err = repr(e)
+                continue
+        if row_errors:
+            logger.info(f"Jibe {system}: page {page}: {row_errors} row errors (first: {first_err})")
+        if len(items) < 100 or (total and page * 100 >= total):
+            break
+        page += 1
+        await jitter()
+    # Dedupe on job_id — Jibe repeats a req across category pages occasionally.
+    seen, uniq = set(), []
+    for jb in jobs:
+        if jb.job_id in seen:
+            continue
+        seen.add(jb.job_id)
+        uniq.append(jb)
+    logger.info(f"  Jibe {system}: {len(uniq):,} jobs (site reports {total})")
+    return uniq
+
+async def run_jibe(session) -> list[Job]:
+    logger.info(f"Jibe: scraping {len(JIBE_SITES)} systems...")
+    results = await asyncio.gather(
+        *[scrape_jibe(session, s, b) for s, b in JIBE_SITES.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Jibe: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
 #  FINDLY CWS (Careers Widget Service) — jobsapi-internal.m-cloud.io
 #
 #  Findly is a career-site aggregator that fronts ATS backends (most commonly
@@ -7744,6 +7863,7 @@ async def run_all() -> list[dict]:
             run_workday(proxy_session),
             run_taleo(direct_session),       # direct — no ssl=False
             run_icims(proxy_session),
+            run_jibe(proxy_session),         # Jibe/iCIMS Talent Cloud JSON API — Amedisys + Novant (added 2026-08-04)
             run_findly(proxy_session),           # Findly CWS legacy (Texas Health)
             run_findly_google(direct_session),   # Findly CWS Google CTS (AdventHealth) — direct (no proxy) for large JSON payloads
             run_greenhouse(proxy_session),
