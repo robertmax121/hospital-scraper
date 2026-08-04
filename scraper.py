@@ -235,6 +235,8 @@ HOSPITAL_SYSTEM_ALIASES = {
     # Prisma runs two Workday sites (corporate + providers); merge both under
     # one board-facing system name (2026-08-04).
     "Prisma Health (Providers)":   "Prisma Health",
+    "Northwell Health (CX_1)":     "Northwell Health",
+    "Northwell Health (CX_3)":     "Northwell Health",
     "Ascension Health":            "Ascension",
     "Saint Luke's Health System":  "St. Luke's Health System",
     "Bon Secours Mercy":           "Bon Secours Mercy Health",
@@ -377,6 +379,10 @@ WORKDAY_TENANTS = {
     "Prisma Health":             ("prismahealth",       "5",  "PrismaHealthCorporate"),
     "Prisma Health (Providers)": ("prismahealth",       "5",  "PrismaHealthProviders"),
     "Geisinger":                 ("geisinger",          "5",  "GeisingerExternal"),
+    # Summit BHC — behavioral health, ~35 facilities (2026-08-04 psych-gap
+    # sweep; the CMS analysis put psychiatric coverage at 41.7%). Tenant from
+    # summitbhc.com/careers, validated live: total=293.
+    "Summit BHC":                ("summitbhc",          "1",  "Summit_BHC"),
     # 2026-05-29: old tenant (sanfordhealth/Sanford_Health) now returns HTTP 422 —
     # dead. Live tenant is sanford.wd5/SanfordHealth (total=2000, Fargo/Sioux Falls/
     # Mandan geography). This is the full Sanford system INCLUDING Good Samaritan
@@ -4348,6 +4354,10 @@ UKG_ORGS = {
     "Erie County Medical Center":   ("https://ecmc462.rec.pro.ukg.net/ERI1003ECMC",      "4d1858fb-5b2a-499b-a320-4f1f4e5bcb06"),
     "Wyoming County Community":     ("https://recruiting.ultipro.com/WYC1000WHMC",       "5e6bf310-55e9-45dd-8252-85e4c670f433"),
     "Deaconess Health":             ("https://deaconess.rec.pro.ukg.net/DEA1005DEAC",    "a1f943e7-8d4d-4348-bf5e-4664f78d3abb"),
+    # NHC — National HealthCare Corporation, 69 SNFs across the Southeast
+    # (2026-08-04 SNF expansion, from the CMS chain analysis). Coordinates
+    # pulled from nhccare.com/careers; validated live: totalCount=1092.
+    "NHC":                          ("https://recruiting2.ultipro.com/NAT1059NHTH",      "02b4dc60-27be-428b-aa7b-4f7b89a29f7a"),
     "North Mississippi Medical":    ("https://recruiting.ultipro.com/NOR1041NAHO",       "84528182-2cf7-4f42-b7ca-dbb54c6f1c10"),
     "Kern Medical":                 ("https://recruiting.ultipro.com/KER1002KERN",       "e74fb506-5af0-e4c1-999e-64d5e8414cb0"),
     "Grinnell Regional Medical":    ("https://recruiting.ultipro.com/GRI1004GHSC",       "f5d979ef-386f-4469-8178-a3801183d063"),
@@ -4448,6 +4458,12 @@ ORACLE_ORGS = {
     # validated live: TotalJobsCount=1286 on this endpoint). NY's largest
     # private employer; expect this to grow as their sites are enumerated.
     "Northwell Health":          ("https://eppr.fa.us2.oraclecloud.com",                      "CX_2"),
+    # Northwell runs several CE sites on the same instance (enumerated
+    # 2026-08-04: CX_1=367, CX_2=1291, CX_3=1370 — pools overlap heavily).
+    # Both alias back to "Northwell Health" and the (job_id, hospital_system)
+    # unique key collapses cross-site duplicates on upsert.
+    "Northwell Health (CX_1)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_1"),
+    "Northwell Health (CX_3)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_3"),
     "Jackson Hospital":          ("https://ejid.fa.us6.oraclecloud.com",                      "CX_1001"),
     "Erlanger Health System":    ("https://elar.fa.us2.oraclecloud.com",                      "CX_1"),
     "EvergreenHealth":           ("https://erym.fa.us6.oraclecloud.com",                      "CX_1"),
