@@ -133,6 +133,14 @@ WD_FETCH_DESCRIPTIONS = os.getenv("WD_FETCH_DESCRIPTIONS", "0") == "1"
 WD_DESC_MAX_PER_RUN   = int(os.getenv("WD_DESC_MAX_PER_RUN", "500"))
 WD_DESC_CONCURRENCY   = int(os.getenv("WD_DESC_CONCURRENCY", "4"))
 
+# Hard stop for Workday list pagination. Replaces the old `offset >= total`
+# break, which truncated six large tenants at exactly 2,000 jobs because
+# Workday caps the REPORTED total at 2000 while still serving results beyond it
+# (see the note at the end-of-pagination check in scrape_workday). 20,000 =
+# 1,000 pages at LIMIT=20; no health system has that many open reqs, so hitting
+# this means something is wrong and the log line will say so.
+WD_MAX_OFFSET = int(os.getenv("WD_MAX_OFFSET", "20000"))
+
 
 
 class _FallbackResponse:
@@ -1053,12 +1061,25 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                 if _ext:
                     detail_targets.append((jobs[-1], _ext))
             offset += LIMIT
-            # End-of-pagination signals, in priority order:
-            #  1. Page came back short — definitive end (universal across tenants).
-            #  2. We know the initial total and have reached/exceeded it.
+            # End of pagination: a SHORT page is the only trustworthy signal.
+            #
+            # 2026-08-04: the old second condition (`offset >= initial_total`)
+            # truncated six large tenants at exactly 2,000 jobs — Mass General
+            # Brigham, WVU Medicine, Fresenius, Advocate, Sanford and Trinity
+            # were all pinned at 2000, which is 12,000 of 45,348 Workday jobs.
+            # Workday CAPS the reported `total` at 2000 while continuing to
+            # serve results past it: probing a tenant reporting total=2000
+            # returned a full page at offset=2020 AND at offset=3000. Trusting
+            # `total` therefore threw away every job past the cap.
+            #
+            # initial_total is still captured for logging, but it must NOT bound
+            # the loop. WD_MAX_OFFSET is the safety net instead: a hard stop so
+            # a misbehaving tenant can't spin forever.
             if len(listings) < LIMIT:
                 break
-            if initial_total and offset >= initial_total:
+            if offset >= WD_MAX_OFFSET:
+                logger.info(f"Workday {system}: hit WD_MAX_OFFSET={WD_MAX_OFFSET} "
+                            f"(reported total={initial_total}) — stopping")
                 break
             await jitter()
         except Exception as e:
