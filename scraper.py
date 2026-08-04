@@ -232,6 +232,9 @@ HOSPITAL_SYSTEM_ALIASES = {
     "CommonSpirit Health":         "CommonSpirit",
     "Community Health Systems":    "CHS",
     "Intermountain Health (IMH)":  "Intermountain Healthcare",
+    # Prisma runs two Workday sites (corporate + providers); merge both under
+    # one board-facing system name (2026-08-04).
+    "Prisma Health (Providers)":   "Prisma Health",
     "Ascension Health":            "Ascension",
     "Saint Luke's Health System":  "St. Luke's Health System",
     "Bon Secours Mercy":           "Bon Secours Mercy Health",
@@ -357,12 +360,23 @@ WORKDAY_TENANTS = {
     # Providence moved off Workday to Oracle HCM (see ORACLE_ORGS). The old
     # providence.wd5 / Providence_External tenant returns 0 now. Removed 2026-06-18.
     "Banner Health":             ("bannerhealth",       "108","Careers"),
-    "Northwell Health":          ("northwell",          "5",  "Northwell_External"),
-    "Intermountain Health":      ("intermountain",      "1",  "Careers"),
-    "UC Health (Colorado)":      ("uchealth",           "1",  "UCHealth_External"),
-    "Novant Health":             ("novant",             "1",  "Novant_Health_External"),
-    "Prisma Health":             ("prismahealth",       "1",  "External"),
-    "Geisinger":                 ("geisinger",          "1",  "Geisinger_External"),
+    # ── 2026-08-04 cleanup: this block of six had returned HTTP 422 on every
+    # run since it was added — the tenant identifiers were guesses that never
+    # validated. Audit findings, entry by entry:
+    #   Northwell Health      -> NOT Workday (jobs.northwell.edu, own portal).
+    #   Novant Health         -> NOT Workday (iCIMS: easyapply-novanthealth.icims.com).
+    #   UC Health (Colorado)  -> NOT Workday (Radancy: careers.uchealth.org).
+    #     All three removed — each needs its own non-Workday adapter (future
+    #     expansion targets, Northwell alone is ~NY's largest employer).
+    #   Intermountain Health  -> removed: broken DUPLICATE. The working entry
+    #     is "Intermountain Health (IMH)" (imh/wd108) further down, whose rows
+    #     land as "Intermountain Healthcare" via HOSPITAL_SYSTEM_ALIASES —
+    #     1,354 active jobs, never actually missing.
+    #   Prisma / Geisinger    -> wrong tenant coordinates; fixed below and
+    #     validated live 2026-08-04 (1,632 + 585 + 1,473 jobs on the CXS API).
+    "Prisma Health":             ("prismahealth",       "5",  "PrismaHealthCorporate"),
+    "Prisma Health (Providers)": ("prismahealth",       "5",  "PrismaHealthProviders"),
+    "Geisinger":                 ("geisinger",          "5",  "GeisingerExternal"),
     # 2026-05-29: old tenant (sanfordhealth/Sanford_Health) now returns HTTP 422 —
     # dead. Live tenant is sanford.wd5/SanfordHealth (total=2000, Fargo/Sioux Falls/
     # Mandan geography). This is the full Sanford system INCLUDING Good Samaritan
