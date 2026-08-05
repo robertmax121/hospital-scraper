@@ -995,6 +995,13 @@ async def _workday_fetch_details(session, working_url, targets, system):
 
     candidates = [(j, p) for j, p in targets
                   if p and not (j.description or "").strip()]
+    # SHUFFLE (2026-08-05): the scrape can't see which rows already carry a
+    # DB-side description (the preserve_scraped_enrichment trigger keeps those
+    # safe), so without shuffling the budget re-fetched the SAME first-N jobs
+    # every night and coverage never accumulated past one night's budget
+    # (measured: 4,931 -> 4,935 across a full run). Random order makes each
+    # night enrich a fresh slice; the trigger makes it stick.
+    random.shuffle(candidates)
     # Draw from the RUN-WIDE budget, not a per-tenant one. Whichever tenants
     # finish their listing pass first get the allowance; later tenants simply
     # get none this run and pick it up on a subsequent night.
@@ -6854,6 +6861,10 @@ async def _aya_fetch_details(session: aiohttp.ClientSession, jobs: list) -> None
         "Accept":     "application/json, text/plain, */*",
     }
     candidates = [j for j in jobs if not (j.description or "").strip() and j.agency_job_id]
+    # Shuffle for the same reason as the Workday pass: the DB-side trigger
+    # preserves previously fetched descriptions, so a random slice per night
+    # accumulates coverage instead of re-fetching the same 500 forever.
+    random.shuffle(candidates)
     allowed = AYA_DESC_BUDGET.take(len(candidates))
     pending = candidates[:allowed]
     if not pending:
