@@ -1049,96 +1049,129 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # Use the confirmed URL directly — no probe loop
     working_url = f"https://{tenant}.wd{wd_num}.myworkdayjobs.com/wday/cxs/{tenant}/{primary_site}/jobs"
     logger.info(f"Workday {system}: using {working_url}")
-    offset = 0
     LIMIT = 20
-    # Bug fix (2026-05-14): some Workday tenants return the correct `total` on
-    # page 1 (e.g. Fresenius=2000, ProMedica=416) but report total=0 on every
-    # subsequent page, while still returning a full page of jobs. The old break
-    # condition `offset >= data.get("total", 0)` therefore tripped immediately
-    # after page 2 because 40 >= 0 is true. Fix: snapshot the first response's
-    # non-zero total and rely primarily on `len(listings) < LIMIT` as the
-    # universal end-of-pagination signal.
-    initial_total = None
-    while True:
+    # Workday's CXS search serves at most ~2,000 UNIQUE results per query —
+    # measured 2026-08-04: pages past offset 2000 return 200 OK with full
+    # pages that are DUPLICATES of earlier rows (100 distinct ids across 200
+    # sampled rows spanning offsets 0-3040). The 08-04 morning fix removed the
+    # `offset >= total` break believing results continued past 2,000; they
+    # respond, but they repeat. Pagination alone can NEVER see past the
+    # window — big tenants need the facet-sliced pass below.
+    WD_RESULT_WINDOW = 2000
+    # Dedupe within the tenant across the wrap-around AND across facet slices.
+    # Also protects the upsert: two identical (job_id, system) rows in one
+    # batch would make ON CONFLICT error out ("cannot affect row a second
+    # time"), failing the whole 500-row chunk.
+    seen_ids = set()
+
+    async def _crawl(applied_facets=None):
+        """One paginated sweep; parses into jobs/detail_targets via seen_ids.
+        Returns True if it hit the 2,000-result window (i.e. likely truncated)."""
+        offset = 0
+        # 2026-05-14 quirk preserved: some tenants report the true total only
+        # on page 1 and 0 afterwards. Kept for logging; never bounds the loop.
+        initial_total = None
+        while True:
+            try:
+                body = {"limit": LIMIT, "offset": offset, "searchText": "",
+                        "locations": [], "categories": []}
+                if applied_facets:
+                    body["appliedFacets"] = applied_facets
+                async with req(session, "post", working_url, json=body,
+                    headers={**HEADERS, "Content-Type": "application/json"},
+                    ssl=False, proxy=proxies.get(),
+                    timeout=aiohttp.ClientTimeout(total=25)) as r:
+                    if r.status != 200:
+                        return False
+                    data = await r.json()
+                listings = data.get("jobPostings", [])
+                if not listings:
+                    return False
+                page_total = data.get("total", 0) or 0
+                if initial_total is None and page_total > 0:
+                    initial_total = page_total
+                for j in listings:
+                    loc = j.get("locationsText", "")
+                    _city, _state = parse_city_state(loc)
+                    # job_id (2026-05-29): first digit-bearing bulletField is the
+                    # req number (some tenants put the state in [0]); fall back to
+                    # the always-unique externalPath.
+                    _bf = j.get("bulletFields") or []
+                    _jid = next((str(b) for b in _bf if any(c.isdigit() for c in str(b))), "")
+                    if not _jid:
+                        _jid = j.get("externalPath", "") or (j.get("title", "") + loc)
+                    if _jid in seen_ids:
+                        continue
+                    seen_ids.add(_jid)
+                    jobs.append(Job(
+                        title=j.get("title", ""),
+                        hospital_system=system,
+                        hospital_name=system,
+                        city=_city,
+                        state=_state,
+                        location=loc,
+                        specialty=(j.get("categories") or [{}])[0].get("name", ""),
+                        job_type=j.get("timeType", ""),
+                        # 2026-07-01: externalPath often already starts "/job/";
+                        # collapse "/job//job/" or ~84% of apply links break.
+                        url=(working_url.replace("/wday/cxs/"+tenant+"/","/").replace("/jobs","")
+                             + "/job/" + j.get("externalPath","")).replace("/job//job/", "/job/"),
+                        job_id=_jid,
+                        posted_date=j.get("postedOn", ""),
+                        description=strip_html(str(j.get("jobDescription", ""))),
+                        ats_platform="Workday",
+                    ))
+                    _ext = j.get("externalPath", "")
+                    if _ext:
+                        detail_targets.append((jobs[-1], _ext))
+                offset += LIMIT
+                if len(listings) < LIMIT:
+                    return False           # short page — genuine end
+                if offset >= WD_RESULT_WINDOW:
+                    return True            # hit the window — truncated
+                await jitter()
+            except Exception as e:
+                logger.info(f"Workday {system}: {e}")
+                return False
+
+    hit_window = await _crawl()
+
+    # ── Facet-sliced recovery (2026-08-04) ────────────────────────────────
+    # Only fires when the plain sweep filled the whole 2,000-result window,
+    # which means the tenant almost certainly has more. Re-crawl one facet
+    # value at a time; each slice gets its own 2,000-row window, and seen_ids
+    # collapses the overlap. Advocate measured ~5,098 real openings behind a
+    # "total" of 2,000. Facet preference: jobFamilyGroup splits finest
+    # (25 values, largest 1,951 at Advocate); timeType (2 values) is the
+    # last-resort coarse split.
+    if hit_window:
         try:
             async with req(session, "post", working_url,
-                json={"limit": LIMIT, "offset": offset, "searchText": "", "locations": [], "categories": []},
-                headers={**HEADERS, "Content-Type": "application/json"}, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
-                if r.status != 200:
-                    break
-                data = await r.json()
-            listings = data.get("jobPostings", [])
-            if not listings: break
-            # Record first-page total (subsequent pages may report 0 spuriously).
-            page_total = data.get("total", 0) or 0
-            if initial_total is None and page_total > 0:
-                initial_total = page_total
-            for j in listings:
-                loc = j.get("locationsText", "")
-                _city, _state = parse_city_state(loc)
-                # job_id (bug fix 2026-05-29): most tenants put the requisition
-                # number in bulletFields[0], but some (e.g. Elara Caring) put
-                # the *state* there and the req number in [1] — using [0]
-                # blindly collapsed 943 jobs onto ~13 state values. Pick the
-                # first bulletField that contains a digit (the req number);
-                # fall back to the always-unique externalPath. Tenants whose
-                # bulletFields[0] already holds a numeric req id are unaffected.
-                _bf = j.get("bulletFields") or []
-                _jid = next((str(b) for b in _bf if any(c.isdigit() for c in str(b))), "")
-                if not _jid:
-                    _jid = j.get("externalPath", "") or (j.get("title", "") + loc)
-                jobs.append(Job(
-                    title=j.get("title", ""),
-                    hospital_system=system,
-                    hospital_name=system,
-                    city=_city,
-                    state=_state,
-                    location=loc,
-                    specialty=(j.get("categories") or [{}])[0].get("name", ""),
-                    job_type=j.get("timeType", ""),
-                    # 2026-07-01: many tenants' externalPath already begins with
-                    # "/job/", so prepending "/job/" produced "/job//job/..." URLs
-                    # that render Workday's Sign-In page instead of the job (a live
-                    # render test found this broke ~84% of Workday apply links).
-                    # Collapse the doubled segment to the canonical single-slash form.
-                    url=(working_url.replace("/wday/cxs/"+tenant+"/","/").replace("/jobs","")
-                         + "/job/" + j.get("externalPath","")).replace("/job//job/", "/job/"),
-                    job_id=_jid,
-                    posted_date=j.get("postedOn", ""),
-                    description=strip_html(str(j.get("jobDescription", ""))),
-                    ats_platform="Workday",
-                ))
-                # Remember the path so the optional detail pass can fetch this
-                # job's description + ISO startDate. Cheap: one tuple per job,
-                # discarded when the function returns.
-                _ext = j.get("externalPath", "")
-                if _ext:
-                    detail_targets.append((jobs[-1], _ext))
-            offset += LIMIT
-            # End of pagination: a SHORT page is the only trustworthy signal.
-            #
-            # 2026-08-04: the old second condition (`offset >= initial_total`)
-            # truncated six large tenants at exactly 2,000 jobs — Mass General
-            # Brigham, WVU Medicine, Fresenius, Advocate, Sanford and Trinity
-            # were all pinned at 2000, which is 12,000 of 45,348 Workday jobs.
-            # Workday CAPS the reported `total` at 2000 while continuing to
-            # serve results past it: probing a tenant reporting total=2000
-            # returned a full page at offset=2020 AND at offset=3000. Trusting
-            # `total` therefore threw away every job past the cap.
-            #
-            # initial_total is still captured for logging, but it must NOT bound
-            # the loop. WD_MAX_OFFSET is the safety net instead: a hard stop so
-            # a misbehaving tenant can't spin forever.
-            if len(listings) < LIMIT:
-                break
-            if offset >= WD_MAX_OFFSET:
-                logger.info(f"Workday {system}: hit WD_MAX_OFFSET={WD_MAX_OFFSET} "
-                            f"(reported total={initial_total}) — stopping")
-                break
-            await jitter()
-        except Exception as e:
-            logger.info(f"Workday {system}: {e}")
-            break
+                json={"limit": 1, "offset": 0, "searchText": "", "appliedFacets": {}},
+                headers={**HEADERS, "Content-Type": "application/json"},
+                ssl=False, proxy=proxies.get(),
+                timeout=aiohttp.ClientTimeout(total=25)) as r:
+                facet_data = await r.json() if r.status == 200 else {}
+        except Exception:
+            facet_data = {}
+        facets = {f.get("facetParameter"): [v.get("id") for v in (f.get("values") or []) if v.get("id")]
+                  for f in (facet_data.get("facets") or [])}
+        slice_param = next((p for p in ("jobFamilyGroup", "jobFamily", "timeType")
+                            if facets.get(p)), None)
+        if slice_param:
+            before = len(jobs)
+            truncated_slices = 0
+            for vid in facets[slice_param]:
+                if await _crawl({slice_param: [vid]}):
+                    truncated_slices += 1
+                await jitter()
+            logger.info(f"  Workday {system}: window hit — facet-sliced by {slice_param} "
+                        f"({len(facets[slice_param])} slices) recovered {len(jobs)-before} more jobs"
+                        + (f"; {truncated_slices} slices ALSO hit the window (still truncated)"
+                           if truncated_slices else ""))
+        else:
+            logger.info(f"Workday {system}: hit the 2,000 window but no usable facet to slice by "
+                        f"— inventory beyond 2,000 is unreachable for this tenant")
 
     # Optional second pass — no-op unless WD_FETCH_DESCRIPTIONS=1.
     if WD_FETCH_DESCRIPTIONS and detail_targets:
