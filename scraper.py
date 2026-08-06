@@ -7222,24 +7222,37 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
         "Content-Type":  "application/json",
         "Prefer":        "resolution=merge-duplicates,return=minimal",
     }
+    # Batch loop rewritten 2026-08-06. The old version BROKE on the first
+    # failed batch: on 2026-08-05 batch 8 of ~120 errored, only 3,500 rows
+    # got fresh scraped_at, and the deactivation sweep below then wiped the
+    # 63,631 rows whose upsert never ran. Now each batch retries 3x with
+    # backoff; a permanently-failed batch is skipped (not fatal) and, most
+    # importantly, ANY permanent failure disables this run's sweep.
     BATCH = 500
     sent = 0
+    failed_batches = 0
     for i in range(0, len(rows), BATCH):
         chunk = rows[i:i + BATCH]
         body = json.dumps(chunk).encode()
-        rq = _urlreq.Request(url, data=body, headers=headers, method="POST")
-        try:
-            with _urlreq.urlopen(rq, timeout=60) as resp:
-                _ = resp.read()
+        ok = False
+        for attempt in range(3):
+            rq = _urlreq.Request(url, data=body, headers=headers, method="POST")
+            try:
+                with _urlreq.urlopen(rq, timeout=60) as resp:
+                    _ = resp.read()
+                ok = True
+                break
+            except _urlerr.HTTPError as e:
+                err_body = e.read().decode()[:500]
+                logger.warning(f"Travel upsert batch {i} attempt {attempt + 1}: HTTP {e.code} — {err_body}")
+            except Exception as e:
+                logger.warning(f"Travel upsert batch {i} attempt {attempt + 1}: {e}")
+            time.sleep(5 * (attempt + 1))
+        if ok:
             sent += len(chunk)
-        except _urlerr.HTTPError as e:
-            err_body = e.read().decode()[:500]
-            logger.warning(f"Travel upsert batch {i}: HTTP {e.code} — {err_body}")
-            break
-        except Exception as e:
-            logger.warning(f"Travel upsert batch {i}: {e}")
-            break
-    logger.info(f"Travel upsert: {sent}/{len(rows)} rows sent to Supabase")
+        else:
+            failed_batches += 1
+    logger.info(f"Travel upsert: {sent}/{len(rows)} rows sent to Supabase ({failed_batches} batches permanently failed)")
 
     # ── Deactivation pass (rewritten 2026-07-20) ───────────────────────
     # The previous implementation issued ONE global PATCH over every active
@@ -7260,6 +7273,19 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     DEACT_MIN     = 100
     WINDOW        = 5000
     if sent == 0:
+        return sent
+    # HARD GUARD (2026-08-06): a partial upsert must NEVER trigger the sweep.
+    # Rows whose batch failed keep their old scraped_at, so sweeping now would
+    # deactivate live listings wholesale (the 2026-08-05 incident: 63,631
+    # wrongly-deactivated rows). One extra day of stale rows is harmless —
+    # the URL validator still runs — so skip and let tomorrow's run true up.
+    if failed_batches > 0:
+        logger.warning(
+            f"Travel deactivate: SKIPPING sweep — {failed_batches} upsert batch(es) "
+            f"permanently failed ({sent}/{len(rows)} rows landed). Sweeping after a "
+            f"partial upsert would deactivate live listings."
+        )
+        update_travel_site_stats()
         return sent
     run_started_iso = min(
         (r.get("scraped_at") for r in rows if r.get("scraped_at")),
