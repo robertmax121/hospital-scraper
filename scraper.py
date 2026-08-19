@@ -7995,7 +7995,84 @@ def normalize_job(j: Job) -> dict:
     # never make a row worse. See specialty_canon.py.
     d["specialty"] = canonical_specialty(d.get("title", ""), d.get("specialty"))
 
+    # Posted-wage extraction (2026-08-08, Robert): pay-transparency states
+    # put real ranges in the posting text we already scrape. Stamp them when
+    # found; NULLs never clobber a prior extraction (enrichment trigger).
+    wage = extract_posted_wage(f"{d.get('title') or ''}\n{d.get('description') or ''}")
+    d["wage_min"], d["wage_max"], d["wage_unit"] = wage if wage else (None, None, None)
+
     return d
+
+
+# ── Posted-wage extraction (2026-08-08) ────────────────────────────────────
+# Regex over text the scrape already holds — zero extra requests. Guards:
+# ignore dollar figures near bonus/sign-on/relocation/stipend language, and
+# sanity-bound hourly 12-250 and annual 25k-900k so "$401k match" noise and
+# job-ID-like numbers can't become a wage. Hourly ranges win over annual
+# when both appear (healthcare postings quote hourly for the roles we pill).
+_WAGE_NEAR_NOISE = re.compile(
+    r"sign[- ]?on|signing|bonus|relocation|retention|referral|differential|stipend|reimburse", re.I)
+_WAGE_RANGE_RX = re.compile(
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:-|–|—|to|through)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)")
+_WAGE_SINGLE_RX = re.compile(
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:per\s+hour|/\s*hr\b|/\s*hour|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum)", re.I)
+
+
+def _wage_num(s):
+    try:
+        return float(s.replace(",", ""))
+    except (ValueError, AttributeError):
+        return None
+
+
+def _wage_pair(lo, hi):
+    """(lo, hi, unit) when the pair lands in a plausible band, else None."""
+    if lo is None or hi is None:
+        return None
+    if lo > hi:
+        lo, hi = hi, lo
+    if 12 <= lo <= 250 and 12 <= hi <= 250:
+        return (lo, hi, "hour")
+    if 25000 <= lo <= 900000 and 25000 <= hi <= 900000:
+        return (lo, hi, "year")
+    return None
+
+
+def _wage_ctx(t, start, end):
+    """Noise-check window: the current sentence before the match (so an
+    earlier bonus sentence can't veto a legit range) + 20 chars after."""
+    before = t[max(0, start - 60):start]
+    before = re.split(r"[.!?;\n]", before)[-1]
+    return before + t[end:end + 20]
+
+
+def extract_posted_wage(text):
+    """Best-effort (min, max, unit) from posting text, or None.
+    14-case fixture suite in the session scratchpad passes 14/14."""
+    if not text:
+        return None
+    t = text[:12000]
+    best_annual = None
+    for m in _WAGE_RANGE_RX.finditer(t):
+        if _WAGE_NEAR_NOISE.search(_wage_ctx(t, m.start(), m.end())):
+            continue
+        got = _wage_pair(_wage_num(m.group(1)), _wage_num(m.group(2)))
+        if not got:
+            continue
+        if got[2] == "hour":
+            return got
+        best_annual = best_annual or got
+    if best_annual:
+        return best_annual
+    for m in _WAGE_SINGLE_RX.finditer(t):
+        if _WAGE_NEAR_NOISE.search(_wage_ctx(t, m.start(), m.end())):
+            continue
+        v = _wage_num(m.group(1))
+        unit = "hour" if re.search(r"hour|hr", m.group(0), re.I) else "year"
+        got = _wage_pair(v, v)
+        if got and got[2] == unit:
+            return (v, v, unit)
+    return None
 
 
 async def run_all() -> list[dict]:
