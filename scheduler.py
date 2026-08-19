@@ -75,6 +75,18 @@ def run():
     except Exception as e:
         logger.warning(f"travel site_stats recount failed (non-fatal): {e}")
 
+    # ── Step 2d: sign-on bonus flag pass (added 2026-08-08) ───────
+    # Flags active hospital_jobs mentioning a sign-on/signing bonus in the
+    # title or description; the website renders the bonus pill from it.
+    # Runs after the description-fetch phase so late-arriving descriptions
+    # get flagged the same night. Non-fatal.
+    try:
+        from scraper import flag_signon_jobs
+        logger.info("\n[ STEP 2d ] Flagging sign-on bonus jobs...")
+        flag_signon_jobs()
+    except Exception as e:
+        logger.warning(f"sign-on flag pass failed (non-fatal): {e}")
+
     # ── Step 3: Summary ───────────────────────────────────────────
     stats = get_stats()
     elapsed = (datetime.now() - start).seconds

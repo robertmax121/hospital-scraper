@@ -7473,6 +7473,66 @@ def update_travel_site_stats() -> int:
         return 0
 
 
+def flag_signon_jobs() -> int:
+    """Set has_signon=true on active hospital_jobs whose title or description
+    mentions a sign-on / signing bonus (2026-08-08, Robert — feeds the solid
+    yellow bonus pill on the job cards).
+
+    Runs nightly as scheduler Step 2d so rows whose description only arrives
+    later via the detail-fetch budget still get flagged. Title matches on a
+    bare "sign-on"; descriptions require bonus/incentive proximity so ATS
+    boilerplate like "sign on to your account" doesn't false-positive.
+    Id-windowed PATCHes (the travel-deactivate pattern) so no statement can
+    time out. Never un-flags: the enrichment trigger means a description can
+    only gain mentions, and a title mention is stable for the row's life."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    if not sb_url or not sb_key:
+        logger.info("flag_signon: SUPABASE_URL/SUPABASE_KEY not set; skipping")
+        return 0
+    import urllib.request as _urlreq
+    from urllib.parse import quote as _q
+    try:
+        rq = _urlreq.Request(
+            f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id&order=id.desc&limit=1",
+            headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+        with _urlreq.urlopen(rq, timeout=30) as resp:
+            rows = json.loads(resp.read())
+        max_id = rows[0]["id"] if rows else 0
+    except Exception as e:
+        logger.warning(f"flag_signon: max-id lookup failed ({e}); skipping")
+        return 0
+    TITLE_RX = "sign[- ]?on|signing bonus"
+    DESC_RX = "sign[- ]?on (bonus|incentive)|signing bonus|sign[- ]?on bonus"
+    body = json.dumps({"has_signon": True}).encode()
+    patch_headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
+                     "Content-Type": "application/json",
+                     "Prefer": "return=minimal,count=exact"}
+    WINDOW = 5000
+    total = 0
+    failed = 0
+    for lo in range(0, max_id + WINDOW, WINDOW):
+        purl = (
+            f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?is_active=eq.true"
+            f"&has_signon=eq.false"
+            f"&or=(title.imatch.{_q(TITLE_RX)},description.imatch.{_q(DESC_RX)})"
+            f"&id=gte.{lo}&id=lt.{lo + WINDOW}"
+        )
+        try:
+            rq = _urlreq.Request(purl, data=body, headers=patch_headers, method="PATCH")
+            with _urlreq.urlopen(rq, timeout=60) as resp:
+                cr = resp.headers.get("Content-Range", "")
+                n = cr.split("/")[-1]
+                if n.isdigit():
+                    total += int(n)
+        except Exception as e:
+            failed += 1
+            if failed <= 3:
+                logger.warning(f"flag_signon window id>={lo}: {e}")
+    logger.info(f"flag_signon: {total:,} rows newly flagged ({failed} failed windows)")
+    return total
+
+
 def _refresh_travel_sitemap_cohort(sb_url: str, sb_key: str) -> None:
     """Rebuild the travel_sitemap_cohort snapshot table (added 2026-08-04).
 
@@ -7834,11 +7894,11 @@ SPECIALTY_MAP = {
     "Travel Nursing": ["travel nurse", "travel rn", "travel assignment", "travel contract", "13-week", "13 week"],
     "Nurse Practitioner / PA": ["nurse practitioner", " np ", "np-", " pa ", "pa-", "physician assistant", "advanced practice", "aprn", "acnp", "fnp", "agacnp", "np/pa", "np-pa"],
     "Float Pool / General RN": ["float pool", "float rn", "staff nurse", "staff rn", "registered nurse", " rn ", "clinical nurse", "nurse resident", "nurse residency", "nurse extern", "nurse intern", "nurse manager", "charge nurse", "nursing supervisor", "nursing assistant", "nurse aide", "cna ", "licensed practical nurse", "lpn ", " lvn ", "licensed vocational nurse"],
-    "Radiology / Imaging": ["radiology", "radiolog", "radiologic", "x-ray", "xray", "mri", "magnetic resonance", "ct tech", "ct scan", "computed tomography", "ultrasound", "sonograph", "mammograph", "nuclear medicine", "fluoroscopy", "interventional radiology", "imaging tech", "dosimetrist"],
+    "Radiology / Imaging": ["radiology", "radiolog", "radiologic", "x-ray", "xray", "mri", "magnetic resonance", "ct tech", "ct scan", "computed tomography", "ultrasound", "sonograph", "mammograph", "nuclear medicine", "nuclear med", "fluoroscopy", "interventional radiology", "imaging tech", "dosimetrist"],
     "Respiratory Therapy": ["respiratory therapist", "respiratory therapy", "rrt", "crt ", "pulmonary", "ventilator"],
     "Physical / Occupational Therapy": ["physical therapist", "physical therapy", " pt ", "occupational therapist", "occupational therapy", " ot ", "speech patholog", "speech therapist", "speech language", " slp ", "rehab therapist", "rehabilitation", "athletic trainer"],
     "Pharmacy": ["pharmacist", "pharmacy technician", "pharmacy tech", "clinical pharmacist", "pharmacy manager"],
-    "Laboratory": ["laboratory", "lab technician", "lab tech", "lab scientist", "clinical laboratory", "medical laboratory", "phlebotomist", "phlebotomy", "blood bank", "histolog", "patholog", "microbiology", "lab assistant"],
+    "Laboratory": ["laboratory", "lab technician", "lab tech", "lab scientist", "clinical laboratory", "medical laboratory", "phlebotomist", "phlebotomy", "blood bank", "histolog", "histotech", "cytotech", "patholog", "microbiology", "lab assistant", " mlt ", " mls ", "medical technologist", "med technologist"],
     "Surgical Tech": ["surgical technologist", "surgical tech", "scrub tech", "cst ", "sterile processing", "central sterile"],
     "EMS / Paramedic": ["paramedic", "emt ", "emergency medical tech", "ems ", "ambulance", "flight medic"],
     "Physician": ["physician", " md ", " do ", "hospitalist", "intensivist", "neonatologist", "cardiologist", "neurologist", "oncologist", "radiologist", "anesthesiologist", "surgeon", "psychiatrist", "pulmonologist", "gastroenterologist", "nephrologist", "endocrinologist", "rheumatologist", "urologist", "orthopedic", "ophthalmologist", "dermatologist", "pathologist", "emergency medicine physician", "family medicine", "internal medicine", "primary care", "physiatrist"],
