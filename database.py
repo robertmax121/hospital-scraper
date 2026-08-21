@@ -88,6 +88,23 @@ def upsert_jobs(jobs: list[dict]) -> dict:
     found rows so the reset is symmetric with the miss-increment.
     """
     db = client()
+    # Dedupe on the conflict key BEFORE batching (2026-08-21). Two sources
+    # can emit the same (job_id, hospital_system) — e.g. Northwell's three
+    # Oracle portals aliased to one system name — and Postgres raises 21000
+    # ("ON CONFLICT DO UPDATE cannot affect row a second time") when both
+    # land in one statement, losing the whole 100-row batch. Last one wins,
+    # but prefer a row that carries a description over one that doesn't.
+    by_key = {}
+    for j in jobs:
+        key = (j.get("hospital_system"), j.get("job_id"))
+        prev = by_key.get(key)
+        if prev is not None and (prev.get("description") or "") and not (j.get("description") or ""):
+            continue
+        by_key[key] = j
+    if len(by_key) < len(jobs):
+        logger.info(f"upsert_jobs: deduped {len(jobs) - len(by_key)} duplicate (system, job_id) rows before batching")
+    jobs = list(by_key.values())
+
     inserted, errors = 0, 0
     for i in range(0, len(jobs), 100):
         batch = jobs[i:i+100]

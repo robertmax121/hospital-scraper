@@ -7502,8 +7502,13 @@ def flag_signon_jobs() -> int:
     except Exception as e:
         logger.warning(f"flag_signon: max-id lookup failed ({e}); skipping")
         return 0
+    # NO parentheses in these regexes: PostgREST's or=() parser consumes a
+    # decoded ")" as the group terminator, Postgres then gets an unbalanced
+    # regex and every window 400s (2026-08-21 run: 3,962 failed windows,
+    # error 2201B "parentheses () not balanced"). Values are additionally
+    # double-quoted inside or=() per PostgREST quoting rules.
     TITLE_RX = "sign[- ]?on|signing bonus"
-    DESC_RX = "sign[- ]?on (bonus|incentive)|signing bonus|sign[- ]?on bonus"
+    DESC_RX = "sign[- ]?on bonus|sign[- ]?on incentive|signing bonus"
     body = json.dumps({"has_signon": True}).encode()
     patch_headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
                      "Content-Type": "application/json",
@@ -7515,7 +7520,7 @@ def flag_signon_jobs() -> int:
         purl = (
             f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?is_active=eq.true"
             f"&has_signon=eq.false"
-            f"&or=(title.imatch.{_q(TITLE_RX)},description.imatch.{_q(DESC_RX)})"
+            f"&or=(title.imatch.%22{_q(TITLE_RX)}%22,description.imatch.%22{_q(DESC_RX)}%22)"
             f"&id=gte.{lo}&id=lt.{lo + WINDOW}"
         )
         try:
