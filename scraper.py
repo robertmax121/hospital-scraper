@@ -89,6 +89,12 @@ class Job:
     description: str
     ats_platform: str
     scraped_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    # Posted pay (2026-08-21): set by adapters with STRUCTURED salary fields
+    # (USAJobs PositionRemuneration, Lever salaryRange). When left None,
+    # normalize_job falls back to regex extraction from title+description.
+    wage_min: float | None = None
+    wage_max: float | None = None
+    wage_unit: str | None = None
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
@@ -1002,6 +1008,14 @@ async def _workday_fetch_details(session, working_url, targets, system):
     # (measured: 4,931 -> 4,935 across a full run). Random order makes each
     # night enrich a fresh slice; the trigger makes it stick.
     random.shuffle(candidates)
+    # TRANSPARENCY-STATE PRIORITY (2026-08-21, Robert): jobs in states with
+    # mandatory pay disclosure get their descriptions fetched first — those
+    # descriptions carry posted wage ranges 60-80% of the time vs ~20%
+    # elsewhere, so each budget slot yields 3-4x the wage pills AND the
+    # indexable description either way. Stable sort preserves the shuffle
+    # within each group, so coverage still accumulates across nights.
+    TRANSPARENCY_STATES = {"CA", "CO", "CT", "DC", "HI", "IL", "MD", "MN", "NJ", "NY", "VT", "WA"}
+    candidates.sort(key=lambda t: 0 if (t[0].state or "").strip().upper() in TRANSPARENCY_STATES else 1)
     # Draw from the RUN-WIDE budget, not a per-tenant one. Whichever tenants
     # finish their listing pass first get the allowance; later tenants simply
     # get none this run and pick it up on a subsequent night.
@@ -3145,6 +3159,16 @@ async def scrape_lever(session: aiohttp.ClientSession, system: str, org: str) ->
         for j in (listings if isinstance(listings, list) else []):
             loc = j.get("categories", {}).get("location", "")
             _city, _state = parse_city_state(loc)
+            # Structured salary (2026-08-21): Lever exposes salaryRange
+            # {min, max, interval} when the org publishes it. interval is
+            # e.g. "per-year-salary" / "per-hour-wage".
+            sr = j.get("salaryRange") or {}
+            _ival = str(sr.get("interval") or "").lower()
+            _unit = "year" if "year" in _ival else ("hour" if "hour" in _ival else None)
+            _w = _wage_pair(_wage_num(str(sr.get("min") or "")),
+                            _wage_num(str(sr.get("max") or ""))) if _unit else None
+            if _w and _w[2] != _unit:
+                _w = None
             jobs.append(Job(
                 title=j.get("text", ""),
                 hospital_system=system,
@@ -3159,6 +3183,9 @@ async def scrape_lever(session: aiohttp.ClientSession, system: str, org: str) ->
                 posted_date=str(j.get("createdAt", ""))[:10],
                 description=strip_html(j.get("descriptionPlain", "")),
                 ats_platform="Lever",
+                wage_min=_w[0] if _w else None,
+                wage_max=_w[1] if _w else None,
+                wage_unit=_w[2] if _w else None,
             ))
         return jobs
     except Exception as e:
@@ -3216,6 +3243,17 @@ async def run_usajobs(session) -> list[Job]:
                 loc = (m.get("PositionLocation") or [{}])[0]
                 city  = loc.get("CityName", "")
                 state = loc.get("CountrySubDivisionCode", "")
+                # Federal postings ALWAYS carry an exact pay range (2026-08-21).
+                # RateIntervalCode: PA = Per Annum, PH = Per Hour; anything
+                # else (per-day/bi-weekly oddities) is left for the regex path.
+                rem = (m.get("PositionRemuneration") or [{}])[0]
+                _wmin = _wage_num(str(rem.get("MinimumRange") or ""))
+                _wmax = _wage_num(str(rem.get("MaximumRange") or ""))
+                _code = str(rem.get("RateIntervalCode") or "").upper()
+                _unit = {"PA": "year", "PH": "hour"}.get(_code)
+                _w = _wage_pair(_wmin, _wmax) if _unit else None
+                if _w and _w[2] != _unit:
+                    _w = None
                 jobs.append(Job(
                     title=m.get("PositionTitle", ""),
                     hospital_system=system_name,
@@ -3228,6 +3266,9 @@ async def run_usajobs(session) -> list[Job]:
                     posted_date=m.get("PublicationStartDate", "")[:10],
                     description=m.get("QualificationSummary", "")[:500],
                     ats_platform="USAJOBS",
+                    wage_min=_w[0] if _w else None,
+                    wage_max=_w[1] if _w else None,
+                    wage_unit=_w[2] if _w else None,
                 ))
             await jitter()
         except Exception as e:
@@ -8000,11 +8041,13 @@ def normalize_job(j: Job) -> dict:
     # never make a row worse. See specialty_canon.py.
     d["specialty"] = canonical_specialty(d.get("title", ""), d.get("specialty"))
 
-    # Posted-wage extraction (2026-08-08, Robert): pay-transparency states
-    # put real ranges in the posting text we already scrape. Stamp them when
-    # found; NULLs never clobber a prior extraction (enrichment trigger).
-    wage = extract_posted_wage(f"{d.get('title') or ''}\n{d.get('description') or ''}")
-    d["wage_min"], d["wage_max"], d["wage_unit"] = wage if wage else (None, None, None)
+    # Posted-wage (2026-08-08; adapter-first 2026-08-21): a structured salary
+    # field set by the adapter (USAJobs, Lever) always wins; otherwise regex
+    # extraction from the posting text. NULLs never clobber a prior value
+    # (enrichment trigger).
+    if d.get("wage_min") is None:
+        wage = extract_posted_wage(f"{d.get('title') or ''}\n{d.get('description') or ''}")
+        d["wage_min"], d["wage_max"], d["wage_unit"] = wage if wage else (None, None, None)
 
     return d
 
