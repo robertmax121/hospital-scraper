@@ -325,6 +325,16 @@ def get_stats() -> dict:
         except Exception as e:
             logger.warning(f"site_stats write failed (non-fatal): {e}")
 
+        # Sticky sitemap cohort refresh (2026-08-24): admit tonight's new
+        # quality-bar qualifiers, evict only deactivated jobs. Kills the
+        # quality-gate flapping that swung GSC "known pages" by thousands
+        # per day. Non-fatal; the website's sitemap RPC reads the table.
+        try:
+            res = service_client().rpc("refresh_hospital_sitemap_cohort").execute()
+            logger.info(f"hospital_sitemap_cohort refreshed: {res.data}")
+        except Exception as e:
+            logger.warning(f"hospital_sitemap_cohort refresh failed (non-fatal): {e}")
+
         return {"total_active_jobs": total,
                 "last_updated": datetime.now().isoformat()}
     except Exception as e:
