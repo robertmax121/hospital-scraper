@@ -117,7 +117,17 @@ async def jitter(): await asyncio.sleep(random.uniform(0.8, 2.5))
 # 8000 is well past a typical posting (~2-6k after tag stripping) and costs
 # nothing structurally: description is TEXT, and Postgres TOASTs + compresses
 # anything over ~2KB. Est. +150-200MB against a 796MB database.
-def strip_html(s): return re.sub(r"<[^>]+>", "", s or "")[:8000]
+def strip_html(s):
+    s = s or ""
+    # Greenhouse's boards API returns `content` HTML-ENTITY-ESCAPED
+    # ("&lt;div class=&quot;…&quot;&gt;"), so the tag regex below saw no tags
+    # and job pages rendered literal markup (2026-08-25, One Medical /
+    # Silver Spring example). Decode twice (their payloads carry &amp;nbsp;
+    # style double escapes) only when the text has escaped tags and no real
+    # ones — plain descriptions never hit this branch.
+    if "<" not in s and "&lt;" in s:
+        s = htmllib.unescape(htmllib.unescape(s))
+    return re.sub(r"<[^>]+>", "", s)[:8000]
 
 
 # ── Workday job descriptions (2026-08-03) ─────────────────────────────────
@@ -8069,6 +8079,14 @@ _WAGE_RANGE_RX = re.compile(
     r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:-|–|—|to|through)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)")
 _WAGE_SINGLE_RX = re.compile(
     r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:per\s+hour|/\s*hr\b|/\s*hour|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum)", re.I)
+# Dollar-less annual ranges (2026-08-25): One Medical et al. write "The base
+# salary range for this role is 253,200 - 302,700" with no $. Gated hard:
+# "salary/pay/compensation range" wording within the same sentence, both
+# numbers comma-grouped (so "range is 3 - 5 years" can never match), and
+# _wage_pair's 25k-900k annual band still applies.
+_WAGE_BARE_RANGE_RX = re.compile(
+    r"(?:salary|pay|compensation)\s+range[^.\n$]{0,60}?"
+    r"(\d{2,3},\d{3}(?:\.\d{1,2})?)\s*(?:-|–|—|to|through)\s*(\d{2,3},\d{3}(?:\.\d{1,2})?)", re.I)
 
 
 def _wage_num(s):
@@ -8215,6 +8233,12 @@ def extract_posted_wage(text):
         best_annual = best_annual or got
     if best_annual:
         return best_annual
+    for m in _WAGE_BARE_RANGE_RX.finditer(t):
+        if _WAGE_NEAR_NOISE.search(_wage_ctx(t, m.start(), m.end())):
+            continue
+        got = _wage_pair(_wage_num(m.group(1)), _wage_num(m.group(2)))
+        if got and got[2] == "year":
+            return got
     for m in _WAGE_SINGLE_RX.finditer(t):
         if _WAGE_NEAR_NOISE.search(_wage_ctx(t, m.start(), m.end())):
             continue
