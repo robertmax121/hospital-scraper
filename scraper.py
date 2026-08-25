@@ -8049,6 +8049,11 @@ def normalize_job(j: Job) -> dict:
         wage = extract_posted_wage(f"{d.get('title') or ''}\n{d.get('description') or ''}")
         d["wage_min"], d["wage_max"], d["wage_unit"] = wage if wage else (None, None, None)
 
+    # Requirements chips (2026-08-24): certs/education/shift/experience from
+    # the posting text. Null when nothing found; the enrichment trigger
+    # preserves a stored value across list-only upserts.
+    d["posting_facts"] = extract_posting_facts(d.get("description"))
+
     return d
 
 
@@ -8084,6 +8089,104 @@ def _wage_pair(lo, hi):
     if 25000 <= lo <= 900000 and 25000 <= hi <= 900000:
         return (lo, hi, "year")
     return None
+
+
+# ── Posting-facts extraction (2026-08-24, Robert-approved chips) ────────────
+# Closed-vocabulary extraction of certifications / education / shift /
+# experience from posting text, with required-vs-preferred classified per
+# sentence ("prefer" anywhere in the sentence => pref). Stored as ONE jsonb
+# column (posting_facts) and rendered as the Requirements chip row in the
+# job page key-facts box. Same honesty contract as the wage extractor:
+# nothing extractable => null => the row doesn't render.
+_FACT_CERTS = [
+    ("BLS",   r"\bBLS\b|basic life support"),
+    ("ACLS",  r"\bACLS\b|advanced cardiac life support|advanced cardiovascular life support"),
+    ("PALS",  r"\bPALS\b|pediatric advanced life support"),
+    ("NRP",   r"\bNRP\b|neonatal resuscitation"),
+    ("TNCC",  r"\bTNCC\b"),
+    ("CCRN",  r"\bCCRN\b"),
+    ("CNOR",  r"\bCNOR\b"),
+    ("CEN",   r"\bCEN\b"),
+    ("CPR",   r"\bCPR\b"),
+    ("ARRT",  r"\bARRT\b"),
+    ("CST",   r"\bCST\b|certified surgical technologist"),
+    ("RRT",   r"\bRRT\b|registered respiratory therapist"),
+    ("NIHSS", r"\bNIHSS\b"),
+    ("RN license",      r"\bRN license\b|registered nurse licen|current.{0,20}\bRN\b.{0,20}licen|licensure as a registered nurse"),
+    ("Compact license", r"compact (?:state )?licen|multistate licen|\beNLC\b|\bNLC\b"),
+    ("LPN license",     r"\bLPN licen|licensed practical nurse licen"),
+]
+_FACT_EDU = [
+    ("BSN",       r"\bBSN\b|bachelor(?:'s)? (?:of science )?(?:degree )?in nursing|baccalaureate.{0,15}nursing"),
+    ("ADN/ASN",   r"\bADN\b|\bASN\b|associate(?:'s)? degree in nursing|associate degree nursing"),
+    ("MSN",       r"\bMSN\b|master(?:'s)? (?:of science )?in nursing"),
+    ("DNP",       r"\bDNP\b"),
+    ("Nursing diploma", r"diploma (?:in|of) nursing|nursing diploma"),
+    ("HS diploma/GED",  r"high school diploma|\bGED\b"),
+]
+_FACT_SHIFT = [
+    ("Nights",   r"\bnight shift\b|\b7p\s*-?\s*7a\b|overnight"),
+    ("Days",     r"\bday shift\b|\b7a\s*-?\s*7p\b"),
+    ("Evenings", r"\bevening shift\b|\bevenings\b"),
+    ("Rotating", r"\brotating shift|shift rotation"),
+    ("Weekends", r"\bweekend(?:s| option| program| coverage| shifts?| rotation)\b|every other weekend"),
+    ("3x12s",    r"\b3\s*x\s*12|three 12s|\b12[- ]hour shifts"),
+    ("PRN",      r"\bPRN\b|per diem"),
+]
+_FACT_EXP_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+                   "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+_FACT_EXP_RX = re.compile(
+    r"(?:minimum of\s+|at least\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*"
+    r"(?:\+|or more|plus)?\s*(?:-|to\s+)?\s*(\d+)?\s*years?(?:'|s)?\s*(?:of\s+)?"
+    r"(?:[a-z ]{0,25}?)(experience|clinical|nursing|\bRN\b|acute care|bedside)", re.I)
+
+
+def extract_posting_facts(text):
+    """{'certs': [[label, pref_bool]...], 'education': [...], 'shift': [...],
+    'experience': [label, pref_bool] | None} or None when nothing found."""
+    if not text:
+        return None
+    t = re.sub(r"([.!?;])(?=[A-Z(])", r"\1 ", text[:12000])
+    sents = re.split(r"(?<=[.!?;])\s+", t)
+    out = {"certs": [], "education": [], "shift": [], "experience": None}
+    seen = set()
+    for s in sents:
+        pref = bool(re.search(r"prefer", s, re.I))
+        for label, rx in _FACT_CERTS:
+            if label not in seen and re.search(rx, s, re.I):
+                seen.add(label)
+                out["certs"].append([label, pref])
+        for label, rx in _FACT_EDU:
+            k = "e:" + label
+            if k not in seen and re.search(rx, s, re.I):
+                seen.add(k)
+                out["education"].append([label, pref])
+        for label, rx in _FACT_SHIFT:
+            k = "s:" + label
+            if k not in seen and re.search(rx, s, re.I):
+                seen.add(k)
+                out["shift"].append([label, pref])
+        if out["experience"] is None:
+            m = _FACT_EXP_RX.search(s)
+            if m:
+                lo = _FACT_EXP_WORDS.get(m.group(1).lower())
+                if lo is None:
+                    try:
+                        lo = int(m.group(1))
+                    except ValueError:
+                        lo = None
+                if lo is not None and 0 < lo <= 15:
+                    hi = m.group(2)
+                    out["experience"] = [f"{lo}-{hi} years" if hi else f"{lo}+ years", pref]
+    # BLS implies CPR — drop the redundant chip.
+    if any(c[0] == "BLS" for c in out["certs"]):
+        out["certs"] = [c for c in out["certs"] if c[0] != "CPR"]
+    out["certs"] = out["certs"][:5]
+    out["education"] = out["education"][:2]
+    out["shift"] = out["shift"][:2]
+    if not (out["certs"] or out["education"] or out["shift"] or out["experience"]):
+        return None
+    return out
 
 
 def _wage_ctx(t, start, end):
