@@ -330,7 +330,12 @@ def get_stats() -> dict:
         # quality-gate flapping that swung GSC "known pages" by thousands
         # per day. Non-fatal; the website's sitemap RPC reads the table.
         try:
-            res = service_client().rpc("refresh_hospital_sitemap_cohort").execute()
+            # Railway's older supabase-py requires the params argument
+            # explicitly; the no-arg form raised "Client.rpc() missing 1
+            # required positional argument: 'params'" every night, so the
+            # cohort never admitted new jobs after the 8/24 seed (confirmed
+            # 2026-08-26: cohort_joined_tonight=0 until a manual refresh).
+            res = service_client().rpc("refresh_hospital_sitemap_cohort", {}).execute()
             logger.info(f"hospital_sitemap_cohort refreshed: {res.data}")
         except Exception as e:
             logger.warning(f"hospital_sitemap_cohort refresh failed (non-fatal): {e}")
