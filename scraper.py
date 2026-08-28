@@ -7638,10 +7638,16 @@ from urllib.parse import urlsplit as _urlsplit
 # Opaque SPA platforms whose apply links can't be verified from outside without
 # their own API (generic shell, no JSON-LD, redirect-on-live). Ranked to the
 # back of the board via apply_verified=false until per-platform verification.
+#
+# 2026-08-28 EMPIRICAL RE-VERIFICATION (browser-grade curl_cffi requests, 620
+# sampled links spanning every platform then on this list): 618/620 resolved
+# to live postings; the only 2 dead were ordinary expired Ascension reqs, not
+# platform breakage. The blanket distrust was denying ~15,600 active jobs
+# their apply_verified flag (and the desc>=200 subset its place in the SEO
+# quality cohort) for no reason. All proven platforms removed; only the one
+# platform too small to draw in the sample (22 jobs) stays until checked.
 OPAQUE_APPLY_DOMAINS = {
-    "hhccareers.org", "careershealthcare.com", "inforcloudsuite.com",
-    "dukehealth.org", "taleo.net", "spartanburgregional.com", "practicematch.com",
-    "kontactintelligence.com", "ecuhealth.org", "pruitthealth.com", "icims.com",
+    "kontactintelligence.com",
 }
 
 def _reg_domain(url: str) -> str:
