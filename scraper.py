@@ -404,11 +404,11 @@ WORKDAY_TENANTS = {
     # Mandan geography). This is the full Sanford system INCLUDING Good Samaritan
     # Society (senior living/SNF), so no separate Good Sam entry is needed.
     "Sanford Health":            ("sanford",            "5",  "SanfordHealth"),
-    "SSM Health":                ("ssmhealth",          "1",  "SSM_Health_External"),
-    "Mercy Health":               ("mercy",              "5",  "External"),
-    "Carilion Clinic":           ("carilion",           "1",  "Carilion_External"),
+    # SSM Health, Mercy Health, Henry Ford removed 2026-08-28: dead tenants;
+    # re-homed (SSM -> Phenom; Mercy -> Bon Secours Mercy Health Phenom;
+    # Henry Ford -> SmartRecruiters). See the resurrection block below.
+    "Carilion Clinic":           ("carilionclinic",     "12", "External_Careers"),  # 732, validated 2026-08-28
     "DaVita":                    ("davita",             "1",  "DaVita_External"),
-    "Henry Ford Health":         ("henryford",          "1",  "Henry_Ford_External"),
     # ── 2026-08-28 non-acute Bucket A (scraper-audit expansion). Every tenant
     # below validated live with a PLAIN client this session (the wd12 pair
     # too — Houston Methodist's 403 was tenant-specific, not a wd12 rule):
@@ -427,36 +427,46 @@ WORKDAY_TENANTS = {
     # returns HTTP 422 (this adapter never wrote a single row). Workday's wd12
     # edge also 403s non-browser TLS, so it now has a dedicated curl_cffi
     # adapter: run_houston_methodist().
-    "Indiana University Health": ("iuhealth",           "1",  "IU_Health_External"),
-    "Inova Health":              ("inova",              "1",  "Inova_Careers"),
-    "NewYork-Presbyterian":      ("nyp",                "1",  "NYP_External"),
-    "Ochsner Health":            ("ochsner",            "5",  "Ochsner_Careers"),
-    "Parkland Health":           ("parkland",           "5",  "Parkland_External"),
-    "Piedmont Healthcare":       ("piedmont",           "1",  "Piedmont_Careers"),
-    "RWJBarnabas Health":        ("rwjbarnabas",        "1",  "RWJBarnabas_External"),
+    # ── 2026-08-28 DARK-SYSTEMS RESURRECTION (scraper-audit expansion) ──────
+    # The completeness probe found this whole block returning HTTP 422/404
+    # with ZERO rows banked — tenant coordinates guessed long ago and never
+    # validated, silently dead for months. Every entry below was re-discovered
+    # and validated live this session (CXS total in the trailing comment).
+    # Systems that MIGRATED PLATFORMS are removed here and re-homed:
+    #   SSM Health -> Phenom (PHENOM_ORGS, jobs.ssmhealth.com, ~1,616)
+    #   Mercy Health / Bon Secours -> consolidated Bon Secours Mercy Health
+    #     (Phenom careers.bsmhealth.org, already banking ~2,034)
+    #   Henry Ford Health -> SmartRecruiters (SMARTRECRUITERS_ORGS, ~1,689)
+    #   Indiana University Health -> Oracle (ORACLE_ORGS ekcm/CX, ~1,069)
+    #   Inova Health -> Oracle (ORACLE_ORGS elar/CX_1, ~682)
+    #   WellSpan Health -> Oracle (ORACLE_ORGS fa-evzu/CX_1, ~1,049)
+    #   Fairview / OSF / WakeMed -> Jibe (JIBE_SITES, ~1,262/1,411/565)
+    #   Hackensack Meridian -> TalentBrew (TALENTBREW_ORGS, ~1,665)
+    #   Adventist Health -> Oracle: the existing ecvz/CX_1 entry mislabeled
+    #     "Cape Cod Healthcare" IS Adventist (1,421 banked rows sit in
+    #     CA/HI/OR); renamed in ORACLE_ORGS + needs a one-shot DB relabel.
+    #   Dignity Health -> no standalone board; it is the industry facet of
+    #     the CommonSpirit TalentBrew scrape (already banking ~5,494).
+    #   CommonSpirit Workday tenant dead -> covered by TalentBrew adapter.
+    #   Piedmont -> classic iCIMS (careers-piedmont.icims.com, ~1,810);
+    #   UnityPoint -> LiquidCompass API (~1,573); UTSW -> Taleo REST (~574);
+    #   McLaren -> SelectMinds HTML (~1,094); UNC -> Talemetry jobs.json
+    #     (~2,007, needs firefox TLS); MaineHealth -> Talemetry jobs.json
+    #     (~1,107, firefox TLS); RWJBarnabas -> symplr JobseekerSearchAPI
+    #     (~2,073). These six need adapter work: wave 3, see the audit doc.
+    "NewYork-Presbyterian":      ("nyp",                "1",  "nypcareers"),               # 385
+    "Ochsner Health":            ("ochsner",            "1",  "Ochsner"),                  # 1,903
+    "Parkland Health":           ("parklandhospital",   "12", "Parkland_Careers"),         # 349
     "Sharp HealthCare":          ("sharp",              "1",  "External"),
-    "Sutter Health":             ("sutterhealth",       "1",  "Sutter_Health"),
-    "UNC Health":                ("unchealth",          "1",  "UNC_Health"),
-    "UnityPoint Health":         ("unitypoint",         "1",  "UnityPoint_Careers"),
-    "UT Southwestern Medical":   ("utsouthwestern",     "1",  "UTSW_External"),
-    "VCU Health":                ("vcuhealth",          "5",  "VCUHealth"),
-    "WakeMed":                   ("wakemed",            "1",  "WakeMed_External"),
-    "Wellstar Health":           ("wellstar",           "1",  "Wellstar_Health_External"),
-    "Memorial Hermann":          ("memorialhermann",    "5",  "memorialhermann"),
-    "OhioHealth":                ("ohiohealth",         "1",  "OhioHealth_External"),
-    "WellSpan Health":           ("wellspan",           "1",  "WellSpan_Health"),
-    "Hackensack Meridian":       ("hackensackmeridian", "1",  "HMH_External"),
-    "MaineHealth":               ("mainehealth",        "1",  "MaineHealth_Careers"),
-    "McLaren Health Care":       ("mclaren",            "1",  "McLaren_External"),
-    "OSF HealthCare":            ("osf",                "1",  "OSF_HealthCare_External"),
-    "Tufts Medicine":            ("tuftsmedicine",      "1",  "TuftsMedicine_External"),
-    "Virtua Health":             ("virtua",             "1",  "Virtua_Careers"),
-    "Adventist Health":          ("adventisthealth",    "1",  "Adventist_Health"),
-    "CommonSpirit Health":       ("commonspirit",       "1",  "CommonSpirit_Health_External"),
-    "Dignity Health":             ("dignityhealth",      "1",  "DignityHealth_External"),
-    "Bon Secours":               ("bonsecours",         "1",  "BonSecours_External"),
-    "Essentia Health":           ("essentiahealth",     "1",  "Essentia_Health_External"),
-    "Fairview Health":           ("fairview",           "1",  "Fairview_Health_External"),
+    "Sutter Health":             ("sutterhealth",       "1",  "SH"),                       # 1,206
+    "VCU Health":                ("vcuhealth",          "1",  "VCUHealth_careers"),        # 386
+    "Wellstar Health":           ("wellstar",           "1",  "wellstarcareers"),          # 816
+    "Wellstar Health (Providers)": ("wellstar",         "1",  "wellstarprovidercareers"),  # 199
+    "Memorial Hermann":          ("memorialhermann",    "5",  "External"),                 # 598
+    "OhioHealth":                ("ohiohealth",         "5",  "OhioHealthJobs"),           # 1,034
+    "Tufts Medicine":            ("tuftsmedicine",      "1",  "Jobs"),                     # 490
+    "Virtua Health":             ("virtua",             "1",  "Virtua_Health_External_Career_Site"), # 739
+    "Essentia Health":           ("essentiahealth",     "1",  "Essentia_Health"),          # 791
     # ── Confirmed from direct URL verification ──
     "BestCare Health":           ("bestcare", "1", "bestcare"),
     "Bronson Healthcare":        ("bronsonhg", "1", "newhires"),
@@ -519,7 +529,8 @@ WORKDAY_TENANTS = {
     "Pullman Regional Hospital": ("pullmanregionalhospital","1", "Careers"),
     "Riverside Health System":   ("rivhs", "1", "Non-ProviderRHS"),
     "University of Rochester":   ("rochester", "5", "UR_Staff"),
-    "Saint Francis Health":      ("saintfrancis", "1", "External"),
+    # wd115 is the real shard (unusual high number); wd1 422'd forever.
+    "Saint Francis Health":      ("saintfrancis", "115", "External"),  # 536, validated 2026-08-28
     "Saint Luke's Health System":("saintlukes", "1", "saintlukeshealthcareers"),
     "Salinas Valley Health":     ("salinasvalleyhealth", "5", "SalinasValleyHealth"),
     "Samaritan Health NY":       ("samaritanhealth", "12", "shsny"),
@@ -1407,8 +1418,12 @@ TALENTBREW_ORGS = {
     # 2026-05-26 — the session-based /results JSON endpoint was returning
     # 0 jobs even with warmup. Direct HTML pagination at /search-jobs?p=N
     # works reliably (15 jobs/page, ~34 pages, 510 jobs total).
-    # NewYork-Presbyterian — same TalentBrew session pattern as Kaiser.
-    "NewYork-Presbyterian":     ("https://careers.nyp.org/search-jobs", 100),
+    # NewYork-Presbyterian REMOVED 2026-08-28: this TalentBrew entry banked 0
+    # (same session issue as Kaiser); NYP now flows from its validated
+    # Workday tenant (nyp.wd1/nypcareers) in WORKDAY_TENANTS instead.
+    # Hackensack Meridian (2026-08-28 resurrection): TalentBrew front over
+    # iCIMS; results endpoint validated live, ~1,665 jobs, 15/page.
+    "Hackensack Meridian Health": ("https://jobs.hackensackmeridianhealth.org/search-jobs", 15),
     # Mayo Clinic — REMOVED 2026-06-18. This TalentBrew/HTML scrape of
     # jobs.mayoclinic.org returned only ~14 jobs because Mayo migrated to
     # Oracle HCM. Now scraped via ORACLE_ORGS (fa-euwp-saasfaprod1 / Mayo-US,
@@ -2483,6 +2498,12 @@ JIBE_SITES = {
     "AccentCare":              "https://careers.accentcare.com",
     "RadNet":                  "https://careers.radnet.com",
     "Fast Pace Health":        "https://talent.fastpacehealth.com",
+    # ── 2026-08-28 dark-systems resurrection: three majors whose Workday
+    # tenants were dead turned out to run Jibe fronts; /api/jobs validated
+    # live (Fairview 1,262 as M Health Fairview; OSF 1,411; WakeMed 565).
+    "Fairview Health":         "https://careers.fairview.org",
+    "OSF HealthCare":          "https://www.osfcareers.org",
+    "WakeMed":                 "https://jobs.wakemed.org",
 }
 
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
@@ -3005,6 +3026,9 @@ SMARTRECRUITERS_ORGS = {
     "Kindred Healthcare":   "KindredatHome",
     "Acadia Healthcare":    "AcadiaHealthcare",
     "Surgery Partners":     "SurgeryPartners",
+    # Henry Ford moved off its dead Workday tenant to SmartRecruiters
+    # (2026-08-28 resurrection; totalFound=1,689 validated live).
+    "Henry Ford Health":    "HenryFordHealth1",
     # IORA Health removed — acquired by One Medical (Amazon)
     # ── Added from scraper1.xlsx expansion ──
     "University of Maryland Medical System": "UniversityOfMarylandMedicalSystem",
@@ -3359,6 +3383,9 @@ PHENOM_ORGS = {
     "Duke Health":                  "https://careers.dukehealth.org",
     "Cone Health":                  "https://careers.conehealth.com",
     "Hartford HealthCare":          "https://www.hhccareers.org",
+    # SSM moved off its dead Workday tenant to Phenom (2026-08-28
+    # resurrection; totalHits=1,616 validated live, refNum SHWSHLUS).
+    "SSM Health":                   "https://jobs.ssmhealth.com",
     "Baptist Health (FL)":          "https://careers.baptisthealth.net",
     "Jackson Health System":        "https://jobs.jacksonhealth.org",
     "Children's Healthcare ATL":    "https://careers.choa.org",
@@ -4172,7 +4199,11 @@ async def run_adp(session) -> list[Job]:
 #  SelectMinds exposes a public JSON search API
 ##############################################################################
 SELECTMINDS_ORGS = {
-    "Henry Ford Health": "henryford",
+    # Henry Ford removed 2026-08-28: banked 0 here; HF is on SmartRecruiters
+    # now (SMARTRECRUITERS_ORGS "HenryFordHealth1", validated 1,689 jobs).
+    # McLaren Health Care is a wave-3 SelectMinds candidate (front-end HTML
+    # at careers.mclaren.org, ~1,094 jobs; their AJAX endpoint 403s without
+    # a browser session — see the 2026-08-28 audit doc before adding).
 }
 
 async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -4580,13 +4611,20 @@ ORACLE_ORGS = {
     "Northwell Health (CX_1)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_1"),
     "Northwell Health (CX_3)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_3"),
     "Jackson Hospital":          ("https://ejid.fa.us6.oraclecloud.com",                      "CX_1001"),
-    "Erlanger Health System":    ("https://elar.fa.us2.oraclecloud.com",                      "CX_1"),
+    # elar/CX_1 was mislabeled "Erlanger Health System" and never banked a
+    # row under that name; careers.inova.org redirect confirms it is INOVA
+    # (validated 2026-08-28, TotalJobsCount=682).
+    "Inova Health System":       ("https://elar.fa.us2.oraclecloud.com",                      "CX_1"),
     "EvergreenHealth":           ("https://erym.fa.us6.oraclecloud.com",                      "CX_1"),
     "Valley Health (NV)":        ("https://fa-eveq-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),
     "Mount Nittany Health":      ("https://mnh-ibosjb.fa.ocs.oraclecloud.com",               "MountNittanyHealthCareers"),
     "Trinity Health (Oregon)":   ("https://ertr.fa.us2.oraclecloud.com",                      "CX_3001"),
     "Memorial Hospital":         ("https://wearememorial-ibrkjb.fa.ocs.oraclecloud.com",      "Careers"),
-    "Cape Cod Healthcare":       ("https://ecvz.fa.us2.oraclecloud.com",                      "CX_1"),
+    # ecvz/CX_1 was mislabeled "Cape Cod Healthcare" — its 1,421 banked rows
+    # sit in CA/HI/OR and careers.adventisthealth.org redirects here: this is
+    # ADVENTIST HEALTH (validated 2026-08-28, TotalJobsCount=1,430). Renamed;
+    # the old Cape Cod rows need a one-shot DB relabel (post-push step).
+    "Adventist Health":          ("https://ecvz.fa.us2.oraclecloud.com",                      "CX_1"),
     "Flagler Health":            ("https://erou.fa.us2.oraclecloud.com",                      "CX_1"),
     "Eastern Connecticut Health":("https://eglz.fa.us2.oraclecloud.com",                      "CX"),
     "Guthrie Health":            ("https://elfw.fa.us2.oraclecloud.com",                      "CX_1001"),  # confirmed
@@ -4602,6 +4640,10 @@ ORACLE_ORGS = {
     # Brookdale Senior Living: ~650 senior living + memory care + SNF communities.
     # Confirmed via careers.brookdale.com — "Search Jobs" buttons point to ibmwjb.fa.ocs.
     "Brookdale Senior Living":   ("https://ibmwjb.fa.ocs.oraclecloud.com",                    "CX_1"),
+    # ── 2026-08-28 dark-systems resurrection: both migrated OFF dead Workday
+    # tenants onto Oracle; validated live via recruitingCEJobRequisitions.
+    "Indiana University Health": ("https://ekcm.fa.us6.oraclecloud.com",                      "CX"),      # 1,069
+    "WellSpan Health":           ("https://fa-evzu-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),    # 1,049
     # ── Added 2026-05-26: Phase 2 non-acute expansion (verified Oracle HCM 200) ──
     # Encompass Health: ~160 inpatient rehab hospitals across the US. Confirmed
     # via careers.encompasshealth.com job listing - all 'Apply' URLs route through
