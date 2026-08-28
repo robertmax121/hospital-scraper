@@ -408,7 +408,8 @@ WORKDAY_TENANTS = {
     # re-homed (SSM -> Phenom; Mercy -> Bon Secours Mercy Health Phenom;
     # Henry Ford -> SmartRecruiters). See the resurrection block below.
     "Carilion Clinic":           ("carilionclinic",     "12", "External_Careers"),  # 732, validated 2026-08-28
-    "DaVita":                    ("davita",             "1",  "DaVita_External"),
+    # DaVita Workday entry removed 2026-08-28: HTTP 404 (dead tenant); the
+    # 3,441 banked DaVita rows flow from PHENOM_ORGS (careers.davita.com).
     # ── 2026-08-28 non-acute Bucket A (scraper-audit expansion). Every tenant
     # below validated live with a PLAIN client this session (the wd12 pair
     # too — Houston Methodist's 403 was tenant-specific, not a wd12 rule):
