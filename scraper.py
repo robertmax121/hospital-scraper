@@ -409,6 +409,19 @@ WORKDAY_TENANTS = {
     "Carilion Clinic":           ("carilion",           "1",  "Carilion_External"),
     "DaVita":                    ("davita",             "1",  "DaVita_External"),
     "Henry Ford Health":         ("henryford",          "1",  "Henry_Ford_External"),
+    # ── 2026-08-28 non-acute Bucket A (scraper-audit expansion). Every tenant
+    # below validated live with a PLAIN client this session (the wd12 pair
+    # too — Houston Methodist's 403 was tenant-specific, not a wd12 rule):
+    # Duly 364 · LifeStance 113 · CityMD 581 · SummitPhysicians 128 ·
+    # Fresenius 2000-capped (global tenant; check first run for non-US rows) ·
+    # Sunrise 1,928 · GoHealth 489.
+    "Duly Health and Care":      ("dulyhealthandcare",  "1",  "Duly"),
+    "LifeStance Health":         ("lifestance",         "5",  "Careers"),
+    "Summit Health (CityMD)":    ("shm",                "5",  "Summit_CityMD"),
+    "Summit Health (Physicians)":("shm",                "5",  "SummitHealthPhysicians"),
+    "Fresenius Medical Care":    ("freseniusmedicalcare","3", "fme"),
+    "Sunrise Senior Living":     ("sunriseseniorliving","12", "SUNRISE_EXT_CAREERS"),
+    "GoHealth Urgent Care":      ("gohealthuc",         "12", "External"),
     # Houston Methodist — REMOVED 2026-07-28. Tenant moved wd1 -> wd12 and the
     # external site is now "GTI"; the old wd1/HoustonMethodist_External CXS
     # returns HTTP 422 (this adapter never wrote a single row). Workday's wd12
@@ -2463,6 +2476,13 @@ JIBE_SITES = {
     # careers site is the same Jibe surface. Validated live: totalCount=1560,
     # 7k-char descriptions in-feed.
     "Trilogy Health Services": "https://jobs.trilogyhs.com",
+    # ── 2026-08-28 non-acute Bucket A: all four /api/jobs endpoints validated
+    # live this session with a plain client (US Renal 436, AccentCare 1,344,
+    # RadNet 1,083, Fast Pace 430; full descriptions in-feed as usual).
+    "US Renal Care":           "https://careers.usrenalcare.com",
+    "AccentCare":              "https://careers.accentcare.com",
+    "RadNet":                  "https://careers.radnet.com",
+    "Fast Pace Health":        "https://talent.fastpacehealth.com",
 }
 
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
@@ -2908,6 +2928,10 @@ async def run_successfactors(session) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 GREENHOUSE_ORGS = {
     "One Medical":                 "onemedical",   # ✅ ~269 jobs (April 2026)
+    # BAYADA Home Health Care (2026-08-28 non-acute Bucket A): boards-api
+    # validated live this session, 2,571 jobs. Their branded site 403s plain
+    # clients but the Greenhouse API is open.
+    "BAYADA Home Health Care":     "bayada",
     # ── Removed 2026-04-27: all returned HTTP 404 in production ──
     # "Carbon Health":             "carbonhealth",        # 404
     # "Included Health":           "includedhealth",      # 404
