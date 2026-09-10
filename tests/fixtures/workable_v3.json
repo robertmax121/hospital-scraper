@@ -1,0 +1,73 @@
+{
+ "total": 2,
+ "results": [
+  {
+   "id": 5934703,
+   "shortcode": "3934C5C72F",
+   "title": "PRN Exercise Physiologist",
+   "remote": false,
+   "location": {
+    "country": "United States",
+    "countryCode": "US",
+    "city": "Huntsville",
+    "region": "Texas"
+   },
+   "locations": [
+    {
+     "country": "United States",
+     "countryCode": "US",
+     "city": "Huntsville",
+     "region": "Texas",
+     "hidden": false
+    }
+   ],
+   "state": "published",
+   "isInternal": false,
+   "code": null,
+   "published": "2026-09-10T00:00:00.000Z",
+   "type": "part",
+   "language": "en",
+   "department": [
+    "Ancillary Clinical",
+    "Therapy Services"
+   ],
+   "accountUid": "617c7450-7679-4fac-91c4-264ffa0ad010",
+   "approvalStatus": "approved",
+   "workplace": "on_site"
+  },
+  {
+   "id": 6088437,
+   "shortcode": "BD39B4F4A9",
+   "title": "Respiratory Therapist (Nights) - Full Time",
+   "remote": false,
+   "location": {
+    "country": "United States",
+    "countryCode": "US",
+    "city": "Huntsville",
+    "region": "Texas"
+   },
+   "locations": [
+    {
+     "country": "United States",
+     "countryCode": "US",
+     "city": "Huntsville",
+     "region": "Texas",
+     "hidden": false
+    }
+   ],
+   "state": "published",
+   "isInternal": false,
+   "code": "J24107",
+   "published": "2026-09-09T00:00:00.000Z",
+   "type": "full",
+   "language": "en",
+   "department": [
+    "Cardiopulmonary"
+   ],
+   "accountUid": "617c7450-7679-4fac-91c4-264ffa0ad010",
+   "approvalStatus": "approved",
+   "workplace": "on_site"
+  }
+ ],
+ "nextPage": "WzE3ODcyNzA0MDAwMDAsNTEyOTgwM10="
+}

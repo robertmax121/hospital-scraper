@@ -1,0 +1,46 @@
+{
+ "jobPosting": {
+  "jobId": 165817,
+  "clientCode": "0FO19",
+  "jobTitle": "Point of Care Specialist",
+  "location": "Main 499 - Floresville, TX 78114",
+  "secondaryLocations": [],
+  "city": "Floresville",
+  "remoteType": "",
+  "isHotJob": false,
+  "salaryRange": "",
+  "legalId": 262,
+  "legalRevisionDate": {
+   "date": "2025-05-05 17:18:33.000000",
+   "timezone_type": 3,
+   "timezone": "America/Chicago"
+  },
+  "level": "",
+  "startDate": "",
+  "endDate": "",
+  "positionType": "Full Time",
+  "jobShift": "Any",
+  "educationLevel": "High School",
+  "travelPercentage": "Up to 25%",
+  "jobCategory": "Health Care",
+  "description": "<p style=\"margin-left:0in;margin-right:0in;\"><span style=\"font-size:12pt;\"><strong><span style=\"font-size:11pt;\">Job Title: </span></strong><strong>Point of Care Specialist</strong></span></p>\r\n\r\n<p style=\"margin-left:0in;margin-right:0in;\"><span style=\"font-size:12pt;\"><strong><span style=\"font-size:11pt;\">Department: </span></strong><span style=\"font-size:11pt;\">Lab</span></span></p>\r\n\r\n<p style=\"margin-left:0in;margin-right:0in;\"><span style=\"font-size:12pt;\"><strong><span style=\"font-size:11pt;\">Reports To: </span></strong><span style=\"font-size:11pt;\">Lab Manager</span></span></p>\r\n\r\n<p style=\"margin-left:0in;margin-right:0in;\"><span style=\"font-size:12pt;\"><strong><span style=\"font-size:11pt;\">FLSA Status: </span></strong><span style=\"font-size:11pt;\">Non-Exempt</span></span></p>\r\n\r\n<p style=\"margin-left:0in;margin-right:0in;\"><span style=\"font-size:12pt;\"><strong>",
+  "descriptionTitle": "Description",
+  "qualifications": "<p style=\"margin-left:0in;margin-right:0in;\"><span style=\"font-size:12pt;\"><strong><span style=\"font-size:11pt;\">Education and/or Experience </span></strong> </span></p>\r\n\r\n<p style=\"margin-left:0in;margin-right:0in;\"><span style=\"font-size:12pt;\"><span style=\"font-size:11pt;\">High School diploma, &gt;10 years experience in hospital related experience and/or training (laboratory preferred; and equivalent combination of experience and knowledge of lab processes and work flow.</span></span></p>\r\n\r\n<p style=\"margin-left:0in;margin-right:0in;\"> </p>\r\n\r\n<p style=\"margin-left:0in;margin-right:0in;\"><span style=\"font-size:12pt;\"><strong><span style=\"font-size:11pt;\">Certificates, Licenses, Registrations </span></strong></span></p>\r\n\r\n<p style=\"margin-left:0in;margin-right:0in;\"><span style=\"font-size:12pt;\"><span style=\"font-size:11pt;\">",
+  "qualificationsTitle": "Qualifications",
+  "isQuickApply": false,
+  "applyAvailable": true,
+  "socialMedia": {
+   "facebookLink": null,
+   "linkedInLink": null,
+   "xLink": null,
+   "emailLink": null
+  },
+  "jobYoutubeVideoId": "",
+  "countryPaidIn": "",
+  "googleJobJson": "{\"@context\":\"https://schema.org/\",\"@type\":\"JobPosting\",\"title\":\"Point of Care Specialist\",\"identifier\":\"J0FO19165817\",\"url\":\"https://www.paycomonline.net/v4/ats/web.php/portal/772E59A3981B29A14463EC6C3223083C/jobs/165817\",\"image\":\"https://www.paycomonline.net/v4/ats/web.php/application/style/logo?clientkey=772E59A3981B29A14463EC6C3223083C\",\"datePosted\":\"2026-08-27\",\"description\":\"Job DetailsJob Location: Main 499 - Floresville, TX 78114Position Type: Full TimeEducation Level: High SchoolTravel Percentage: Up to 25%Job Shift: AnyJob Category: Health CareJob Title: Point of Care Specialist\\r\\n\\r\\nDepartment: Lab\\r\\n\\r\\nReports To: Lab Manager\\r\\n\\r\\nFLSA Status: Non-Exempt\\r\\n\\r\\nApproved By: Laurie L. Bougher, Human Resources Manager\\r\\n\\r\\nApproved Date: 02/1/2018\\r\\n\\r\\n \\r\\n\\r\\nSummary Draws blood from patients or donors in hospital, blood bank, and or similar facility for analysis of ",
+  "primaryPhoneEnabled": true,
+  "primaryPhoneRequired": true,
+  "primaryPhoneCountry": "US",
+  "primaryPhoneNumberDoesNotExist": false
+ }
+}

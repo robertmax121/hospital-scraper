@@ -10,6 +10,7 @@ import json
 import logging
 import random
 import re
+from html import unescape as _html_unescape   # 2026-09-10: Paycor / TaleoBE / HCTS parsers
 import time
 import os
 from dataclasses import dataclass, asdict, field
@@ -3055,6 +3056,17 @@ FINDLY_GOOGLE_ORGS = {
         ["AdventHealth-Workday-Mulesoft"],
         "https://jobs.adventhealth.com",
     ),
+    # 2026-09-10 (Z-texas-acute-D): jobs.utsouthwestern.edu is the same
+    # WordPress "cws" plugin (cws_opts.api = jobsapi-google.m-cloud.io,
+    # org companies/06f73e7c-...). The unfiltered search answered 839 jobs;
+    # an empty portal list means "no customAttributeFilter" (see below).
+    # utsw.taleo.net itself is Taleo Enterprise (careersection/2); its REST
+    # renderRequisitionList 404s, so this front is the source.
+    "UT Southwestern Medical Center": (
+        "06f73e7c-038e-4e98-9022-c43f1967ae9c",
+        [],
+        "https://jobs.utsouthwestern.edu",
+    ),
 }
 
 
@@ -3088,7 +3100,7 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
             "callback": "CWS.jobs.jobCallback",
             "pageSize": str(page_size),
             "companyName": f"companies/{company_uuid}",
-            "customAttributeFilter": attr_filter,
+            **({"customAttributeFilter": attr_filter} if portal_ids else {}),  # 2026-09-10: none for UTSW
             "orderBy": "posting_publish_time desc",
         }
         if next_page_token:
@@ -4817,6 +4829,15 @@ ADP_ORGS = {
         ("7889f006-4c3f-49f9-931b-a7ffd827148d", "9200389848466_2", "OH", "Wooster Community Hospital"),
     "Wooster Community Hospital (BMS)":
         ("7889f006-4c3f-49f9-931b-a7ffd827148d", "9200402128985_2", "OH", "Bloomington Medical Services"),
+    # 2026-09-10 (Z-texas-acute-D): Texas block D. legenthealth.com/careers links
+    # one Workforce Now career center for all three Legent hospitals (Plano,
+    # Grapevine, San Antonio); the facility comes from requisitionLocations,
+    # so hospital_name is left blank here. ppgh.com/careers/current-openings
+    # links its own center (page 403s WebFetch; read through curl_cffi).
+    "Legent Health":
+        ("f159ab44-676f-4e8e-aee4-ed91de0cda16", "19000101_000001", "TX"),
+    "Palo Pinto General Hospital":
+        ("c66c3f90-0bcf-49e7-a8ce-6eb2974431ee", "19000101_000001", "TX", "Palo Pinto General Hospital"),
     # Legacy cids from scraper1.xlsx (system names were never learned because
     # the old endpoint never answered). Kept so the rebuilt adapter can say
     # in the log which of them are live boards; rename once a run shows them.
@@ -5651,132 +5672,111 @@ HEALTHCARESOURCE_ORGS = {
     "Lawrence General":         "lawrence",
     "Holyoke Health":           "Holyokehealth",
     "Sarasota Memorial":        "smh",
+    # 2026-09-10 (Z-texas-acute-D): Texas block D, keys read from the /cs/<tenant>
+    # links on shannonhealth.com/careers and mchodessa.com/careers.
+    "Shannon Medical Center":   "shannonhealth",
+    "Medical Center Health System (Odessa)": "medicalcenterhealth",
 }
 
+def _dig(d, *path, default=""):
+    """Nested dict read: _dig(src, "jobLocation", "address", "addressLocality")."""
+    cur = d
+    for p in path:
+        if isinstance(cur, list):
+            cur = cur[0] if cur else None
+        if not isinstance(cur, dict):
+            return default
+        cur = cur.get(p)
+    if isinstance(cur, list):
+        cur = cur[0] if cur else None
+    return default if cur in (None, "") else cur
+
+
+def _hcs_job(hit: dict, system: str, tenant: str) -> Job | None:
+    """One Elasticsearch hit from JobseekerSearchAPI -> Job (2026-09-10).
+    Field names follow the schema.org-style document the client bundle
+    filters on (jobLocation.address.addressLocalityRegion, userArea.
+    jobPostingID); every read has a plain-key fallback."""
+    src_ = hit.get("_source") if isinstance(hit.get("_source"), dict) else hit
+    job_id = str(_dig(src_, "userArea", "jobPostingID") or src_.get("jobPostingID") or src_.get("requisitionId")
+                 or src_.get("jobId") or src_.get("id") or hit.get("_id") or "").strip()
+    title = str(src_.get("title") or src_.get("jobTitle") or _dig(src_, "userArea", "title") or "").strip()
+    if not job_id or not title:
+        return None
+    city = str(_dig(src_, "jobLocation", "address", "addressLocality") or src_.get("city") or "").strip()
+    st = str(_dig(src_, "jobLocation", "address", "addressRegion") or src_.get("state") or "").strip()
+    if not (city and st):
+        c2, s2 = parse_city_state(str(_dig(src_, "jobLocation", "address", "addressLocalityRegion") or src_.get("location") or ""))
+        city, st = city or c2, st or s2
+    if len(st) > 2:
+        st = parse_city_state(f"{city}, {st}")[1] or st
+    # 2026-09-10: hiringOrganization.subOrganization.name is the facility
+    # ("Shannon Medical Center", "Medical Center Hospital", both exact CMS
+    # names); .name is the system ("Shannon Health"); a further nested
+    # subOrganization is the department ("LD ROOMS", skipped).
+    sub = str(_dig(src_, "hiringOrganization", "subOrganization", "name") or "").strip()
+    facility = sub if sub and not sub.isupper() and not re.search(r"\d", sub) else ""
+    facility = facility or str(_dig(src_, "jobLocation", "name") or _dig(src_, "hiringOrganization", "name")
+                               or src_.get("facilityName") or src_.get("facility") or "").strip()
+    return Job(
+        title=title,
+        hospital_system=system,
+        hospital_name=facility or system,
+        city=city, state=st.upper(),
+        location=f"{city}, {st.upper()}".strip(", "),
+        specialty=str(src_.get("occupationalCategory") or src_.get("category") or _dig(src_, "userArea", "category") or ""),
+        job_type=str(src_.get("employmentType") or _dig(src_, "userArea", "employmentType") or ""),
+        url=f"https://pm.healthcaresource.com/cs/{tenant}#/job/{job_id}",
+        job_id=job_id,
+        posted_date=str(src_.get("datePosted") or src_.get("postedDate") or "")[:10],
+        description=strip_html(str(src_.get("description") or "")),
+        ats_platform="HealthcareSource",
+    )
+
+
+# 2026-09-10 (Z-texas-acute-D): the endpoint is an Elasticsearch proxy. GET
+# answers 405; the earlier minimal POST body {"size","from"} answered 500
+# ("Cannot perform runtime binding on a null reference") for every tenant,
+# so this adapter had never returned a row. The client bundle (CS/build/
+# client.bundle.js, esQueryGenerator) posts a bool query and passes the page
+# size as a query-string parameter (searchEndpoint + "?size=N").
+_HCS_PAGE = 50
+_HCS_BODY = {"query": {"bool": {"must": {"match_all": {}}}}}   # 2026-09-10: "*" alone matches nothing
+
+
 async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, tenant: str) -> list[Job]:
-    jobs = []
-    # Try GET first (simpler), then POST if that fails.
-    # Endpoint confirmed: /JobseekerSearchAPI/{tenant}/api/Search
-    api    = f"https://pm.healthcaresource.com/JobseekerSearchAPI/{tenant}/api/Search"
+    jobs: list[Job] = []
+    api = f"https://pm.healthcaresource.com/JobseekerSearchAPI/{tenant}/api/Search"
     offset = 0
-    size   = 25
-    # Determine method — try GET with query params first
-    method = "get"
     while True:
         try:
-            if method == "get":
-                async with req(session, "get", api,
-                    params={"size": size, "from": offset},
-                    headers={**HEADERS, "Accept": "application/json"},
-                    ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
-                    status = r.status
-                    if status == 405:
-                        method = "post"   # Switch to POST and retry
-                        logger.info(f"HealthcareSource {system}: GET 405, switching to POST")
-                        break
-                    if status != 200:
-                        logger.info(f"HealthcareSource {system}: HTTP {status}")
-                        return jobs
-                    data = await r.json(content_type=None)
-            else:
-                # Minimal POST body — avoid Elasticsearch syntax that causes 500
-                async with req(session, "post", api,
-                    json={"size": size, "from": offset},
-                    headers={**HEADERS, "Accept": "application/json",
-                             "Content-Type": "application/json"},
-                    ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
-                    status = r.status
-                    if status != 200:
-                        logger.info(f"HealthcareSource {system}: HTTP {status}")
-                        return jobs
-                    data = await r.json(content_type=None)
-
-            # Response shape: {"hits": {"hits": [...], "total": N or {"value": N}}}
-            hits  = data.get("hits", {})
-            items = hits.get("hits", [])
+            async with req(session, "post", api,
+                params={"size": _HCS_PAGE, "from": offset},
+                json=_HCS_BODY,
+                headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json; charset=utf-8",
+                         "Referer": f"https://pm.healthcaresource.com/cs/{tenant}"},
+                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"HealthcareSource {system}: HTTP {r.status} {(await r.text())[:120]}")
+                    break
+                data = await r.json(content_type=None)
+            hits = (data or {}).get("hits") or {}
+            items = hits.get("hits") or []
             if not items:
                 break
-            for j in items:
-                src    = j.get("_source", j)
-                city   = src.get("city",  src.get("City",  ""))
-                state  = src.get("state", src.get("State", ""))
-                job_id = str(src.get("requisitionId", src.get("jobId",
-                             src.get("id", j.get("_id", "")))))
-                jobs.append(Job(
-                    title=src.get("title", src.get("jobTitle", "")),
-                    hospital_system=system,
-                    hospital_name=src.get("facilityName", src.get("facility", system)),
-                    city=city, state=state,
-                    location=f"{city}, {state}".strip(", "),
-                    specialty=src.get("category", src.get("jobCategory", "")),
-                    job_type=src.get("employmentType", src.get("jobType", "")),
-                    url=f"https://pm.healthcaresource.com/cs/{tenant}/#/job/{job_id}",
-                    job_id=job_id,
-                    posted_date=str(src.get("postedDate", src.get("datePosted", "")))[:10],
-                    description="",
-                    ats_platform="HealthcareSource",
-                ))
-            total = (hits.get("total", {}).get("value", 0)
-                     if isinstance(hits.get("total"), dict)
-                     else hits.get("total", 0))
-            offset += size
-            if offset >= total or len(items) < size:
+            for h in items:
+                job = _hcs_job(h, system, tenant)
+                if job:
+                    jobs.append(job)
+            total = hits.get("total")
+            total = int((total or {}).get("value", 0)) if isinstance(total, dict) else int(total or 0)
+            offset += len(items)
+            if offset >= total or len(items) < _HCS_PAGE:
                 break
             await jitter()
         except Exception as e:
             logger.info(f"HealthcareSource {system}: {e}")
             break
-
-    # If we switched method mid-loop, restart with POST
-    if method == "post" and not jobs:
-        offset = 0
-        method = "post_active"   # prevent infinite loop
-        while True:
-            try:
-                async with req(session, "post", api,
-                    json={"size": size, "from": offset},
-                    headers={**HEADERS, "Accept": "application/json",
-                             "Content-Type": "application/json"},
-                    ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
-                    if r.status != 200:
-                        logger.info(f"HealthcareSource {system}: POST HTTP {r.status}")
-                        break
-                    data = await r.json(content_type=None)
-                hits  = data.get("hits", {})
-                items = hits.get("hits", [])
-                if not items:
-                    break
-                for j in items:
-                    src    = j.get("_source", j)
-                    city   = src.get("city",  src.get("City",  ""))
-                    state  = src.get("state", src.get("State", ""))
-                    job_id = str(src.get("requisitionId", src.get("jobId",
-                                 src.get("id", j.get("_id", "")))))
-                    jobs.append(Job(
-                        title=src.get("title", src.get("jobTitle", "")),
-                        hospital_system=system,
-                        hospital_name=src.get("facilityName", src.get("facility", system)),
-                        city=city, state=state,
-                        location=f"{city}, {state}".strip(", "),
-                        specialty=src.get("category", src.get("jobCategory", "")),
-                        job_type=src.get("employmentType", src.get("jobType", "")),
-                        url=f"https://pm.healthcaresource.com/cs/{tenant}/#/job/{job_id}",
-                        job_id=job_id,
-                        posted_date=str(src.get("postedDate", src.get("datePosted", "")))[:10],
-                        description="",
-                        ats_platform="HealthcareSource",
-                    ))
-                total = (hits.get("total", {}).get("value", 0)
-                         if isinstance(hits.get("total"), dict)
-                         else hits.get("total", 0))
-                offset += size
-                if offset >= total or len(items) < size:
-                    break
-                await jitter()
-            except Exception as e:
-                logger.info(f"HealthcareSource {system}: {e}")
-                break
-
     logger.info(f"  HealthcareSource {system}: {len(jobs)} jobs")
     return jobs
 
@@ -6051,13 +6051,40 @@ KRONOS_ORGS = {
     # Ready (this adapter), not UKG Dimensions; the optional third element is
     # the state (run order + default).
     "Magruder Hospital": ("prd01-hcm01.npr", "6070232", "OH"),
+    # 2026-09-10 (Z-texas-acute-D): wghospital.com links secure7.saashr.com/ta/
+    # 6215251.careers, the same UKG Ready REST API on the older saashr.com
+    # host; a value with a full host name is used as-is. 12 rows, all Vernon
+    # TX, with base_pay_from/frequency (mapped to posted pay below).
+    "Wilbarger General Hospital": ("secure7.saashr.com", "6215251", "TX"),
 }
+
+
+def _kronos_wage(j: dict):
+    """base_pay_from / base_pay_to + base_pay_frequency -> (min, max, unit)
+    or None. Frequency HOUR / YEAR must agree with the magnitude check in
+    _wage_pair (2026-09-10)."""
+    lo, hi = j.get("base_pay_from"), j.get("base_pay_to")
+    if not isinstance(lo, (int, float)):
+        return None
+    if not isinstance(hi, (int, float)):
+        hi = lo
+    pair = _wage_pair(float(lo), float(hi))
+    freq = str(j.get("base_pay_frequency") or "").upper()
+    if not pair:
+        return None
+    if freq.startswith("HOUR") and pair[2] != "hour":
+        return None
+    if freq.startswith("YEAR") and pair[2] != "year":
+        return None
+    return pair
 
 async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     subdomain, company_id = org_data[0], org_data[1]
     default_state = org_data[2] if len(org_data) > 2 else ""
     jobs  = []
-    base  = f"https://{subdomain}.mykronos.com"
+    # 2026-09-10: a value carrying a full host ("secure7.saashr.com") is used
+    # as-is; the short form still maps to <subdomain>.mykronos.com.
+    base  = f"https://{subdomain}" if subdomain.endswith((".com", ".net")) else f"https://{subdomain}.mykronos.com"
     api   = f"{base}/ta/rest/ui/recruitment/companies/%7C{company_id}/job-requisitions"
     offset = 1
     size   = 20
@@ -6087,6 +6114,7 @@ async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: t
                 city  = loc.get("city", "") or ""
                 state = (loc.get("state", "") or default_state)
                 cats  = j.get("job_categories", []) or []
+                wage  = _kronos_wage(j)
                 jobs.append(Job(
                     title=j.get("job_title", ""),
                     hospital_system=system,
@@ -6103,6 +6131,9 @@ async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: t
                     posted_date="",
                     description=strip_html(j.get("job_description") or ""),
                     ats_platform="Kronos",
+                    wage_min=wage[0] if wage else None,
+                    wage_max=wage[1] if wage else None,
+                    wage_unit=wage[2] if wage else None,
                 ))
             offset += size
             if len(items) < size:
@@ -6311,7 +6342,12 @@ APPLICANTPRO_ORGS = {
     "Cayuga Health":        ("cayugahealthsystem", "17888"),
     "Cascade Medical":      ("cascademedicalcenter", ""),
     "Jefferson Healthcare": ("jeffersonhealthcare", ""),
+    # 2026-09-10 (Z-texas-acute-D): the board is a Vue app now; its JobListings
+    # component reads /core/jobs/<domainId>?getParams=<json> (domainId from the
+    # page's bootstrapVue config; a bare /core/jobs/<id> answers a PHP error).
+    "Elite Hospital Kingwood": ("elitekingwood", "9514"),
 }
+_APPLICANTPRO_PARAMS = {"cityUrl": "", "countryAbbreviation": "", "stateAbbreviation": "", "isInternal": 0}
 
 async def scrape_applicantpro(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     subdomain, site_id = org_data
@@ -6326,7 +6362,7 @@ async def scrape_applicantpro(session: aiohttp.ClientSession, system: str, org_d
                 timeout=aiohttp.ClientTimeout(total=20)) as r:
                 if r.status == 200:
                     text = await r.text()
-                    m = re.search(r'/core/jobs/(\d+)', text)
+                    m = re.search(r'/core/jobs/(\d+)', text) or re.search(r'domainId\s*:\s*(\d+)', text)
                     if m:
                         site_id = m.group(1)
         except Exception as e:
@@ -6339,21 +6375,25 @@ async def scrape_applicantpro(session: aiohttp.ClientSession, system: str, org_d
 
     try:
         api = f"https://{subdomain}.applicantpro.com/core/jobs/{site_id}"
-        async with req(session, "get", api,
+        async with req(session, "get", api, params={"getParams": json.dumps(_APPLICANTPRO_PARAMS)},
             headers={**HEADERS, "Accept": "application/json"},
             ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
             if r.status != 200:
                 logger.info(f"ApplicantPro {system}: HTTP {r.status}")
                 return []
             data = await r.json(content_type=None)
-        items = data if isinstance(data, list) else data.get("jobs", [])
+        # 2026-09-10: {"success": true, "data": {"jobs": [...]}} on the Vue boards
+        items = data if isinstance(data, list) else (
+            (data.get("data") or {}).get("jobs") if isinstance(data.get("data"), dict) else data.get("jobs", [])) or []
         for j in items:
             city  = j.get("city", "")
-            state = j.get("abbreviation", j.get("state", ""))
+            state = j.get("abbreviation") or j.get("state") or j.get("stateAbbreviation") or ""
+            if not state:
+                state = parse_city_state(str(j.get("title", "")))[1]      # "... - Kingwood, Texas"
             jobs.append(Job(
                 title=j.get("title", ""),
                 hospital_system=system,
-                hospital_name=j.get("subdomain", system),
+                hospital_name=system,      # 2026-09-10: "subdomain" is a slug, not a facility
                 city=city, state=state,
                 location=f"{city}, {state}".strip(", "),
                 specialty=j.get("classification", j.get("jobCategory", "")),
@@ -6616,48 +6656,87 @@ CSOD_ORGS = {
     "Singing River Health System": ("https://singingriverhealthsystem.csod.com", "1"),
 }
 
+def _csod_job(rq: dict, system: str, base: str, site_id: str, corp: str) -> Job | None:
+    """One career-site search requisition -> Job (2026-09-10). Shape (JPS):
+    requisitionId, displayJobTitle, postingEffectiveDate "9/10/2026",
+    locations[{city, state, country}]. List-only rows (no description)."""
+    rid = str(rq.get("requisitionId") or rq.get("id") or "").strip()
+    title = str(rq.get("displayJobTitle") or rq.get("title") or "").strip()
+    if not rid or not title:
+        return None
+    loc0 = (rq.get("locations") or [{}])[0] or {}
+    city = str(loc0.get("city") or "").strip()
+    if city.isupper():
+        city = city.title()              # "FORT WORTH" alongside "Fort Worth" (JPS)
+    st = str(loc0.get("state") or "").strip().upper()
+    posted = ""
+    m = re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})", str(rq.get("postingEffectiveDate") or ""))
+    if m:
+        posted = f"{m.group(3)}-{int(m.group(1)):02d}-{int(m.group(2)):02d}"
+    return Job(
+        title=title, hospital_system=system, hospital_name=system,
+        city=city, state=st, location=f"{city}, {st}".strip(", "),
+        specialty="", job_type="",
+        url=f"{base}/ux/ats/careersite/{site_id}/requisition/{rid}?c={corp}",
+        job_id=rid, posted_date=posted, description="", ats_platform="CSOD",
+    )
+
+
+_CSOD_PAGE = 25
+
+
 async def scrape_csod(session: aiohttp.ClientSession, system: str, base: str, site_id: str) -> list[Job]:
-    jobs = []
-    api_url = f"{base}/ux/ats/careersite/{site_id}/jobs"
-    offset = 0
+    # 2026-09-10 (Z-texas-acute-D): /ux/ats/careersite/<id>/jobs was never an
+    # endpoint (it 302s to a SAML login without the c=<corp> parameter), so
+    # this adapter had returned 0 rows since it was added. The career-site
+    # home page embeds csod.context.token (a JWT); the search API is
+    # POST /services/x/career-site/v1/search with that token as Bearer and
+    # cultureName in the body (400 "CultureName field is required" without
+    # it). JPS: 209 requisitions on 2026-09-10.
+    jobs: list[Job] = []
+    corp = re.sub(r"^https?://", "", base).split("/")[0].split(".")[0]
     try:
+        async with req(session, "get", f"{base}/ux/ats/careersite/{site_id}/home", params={"c": corp},
+                       headers=HEADERS, ssl=False, proxy=proxies.get(),
+                       timeout=aiohttp.ClientTimeout(total=30)) as r:
+            if r.status != 200:
+                logger.info(f"CSOD {system}: home HTTP {r.status}")
+                return []
+            home = await r.text()
+        m = re.search(r'"token"\s*:\s*"([^"]+)"', home)
+        if not m:
+            logger.info(f"CSOD {system}: no csod.context.token on the home page")
+            return []
+        token = m.group(1)
+        page = 1
         while True:
-            async with session.get(
-                api_url,
-                params={"skip": offset, "take": 50, "lang": "en-US"},
-                headers={**HEADERS, "Accept": "application/json"},
-                timeout=aiohttp.ClientTimeout(total=20),
-            ) as r:
+            body = {"careerSiteId": int(site_id), "careerSitePageId": int(site_id), "pageNumber": page,
+                    "pageSize": _CSOD_PAGE, "cultureId": 1, "cultureName": "en-US", "searchText": "",
+                    "cities": [], "countryCodes": [], "cultures": [], "customFieldCheckboxKeys": [],
+                    "customFieldDropdowns": [], "customFieldRadios": [], "placeID": "",
+                    "postingsWithinDays": None, "radius": None, "searchResultsSortingOption": 0, "states": []}
+            async with req(session, "post", f"{base}/services/x/career-site/v1/search", json=body,
+                           headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json",
+                                    "Authorization": f"Bearer {token}", "X-Requested-With": "XMLHttpRequest",
+                                    "Referer": f"{base}/ux/ats/careersite/{site_id}/home?c={corp}"},
+                           ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
-                    logger.info(f"CSOD {system}: HTTP {r.status}")
+                    logger.info(f"CSOD {system}: search HTTP {r.status} {(await r.text())[:120]}")
                     break
                 data = await r.json(content_type=None)
-                items = data if isinstance(data, list) else (
-                    data.get("data") or data.get("jobs") or data.get("results") or []
-                )
-                if not items:
-                    break
-                for j in items:
-                    title = j.get("title") or j.get("Title") or ""
-                    city  = j.get("city") or j.get("City") or ""
-                    state = j.get("state") or j.get("State") or "TX"
-                    jid   = str(j.get("jobId") or j.get("id") or j.get("Id") or "")
-                    jurl  = j.get("url") or f"{base}/ux/ats/careersite/{site_id}/jobs/{jid}"
-                    if not title or not jid:
-                        continue
-                    jobs.append(Job(
-                        title=title, hospital_system=system, hospital_name=system,
-                        city=city, state=state,
-                        location=f"{city}, {state}".strip(", "),
-                        specialty="", job_type=j.get("employmentType") or "",
-                        url=jurl, job_id=jid,
-                        posted_date=j.get("postedDate") or "",
-                        description="", ats_platform="CSOD",
-                    ))
-                if len(items) < 50:
-                    break
-                offset += 50
-                await jitter()
+            d = (data or {}).get("data") or {}
+            items = d.get("requisitions") or []
+            if not items:
+                break
+            for rq in items:
+                job = _csod_job(rq, system, base, site_id, corp)
+                if job:
+                    jobs.append(job)
+            total = int(d.get("totalCount") or 0)
+            if page * _CSOD_PAGE >= total or len(items) < _CSOD_PAGE or page >= 80:
+                break
+            page += 1
+            await jitter()
     except Exception as e:
         logger.info(f"CSOD {system}: {e}")
     logger.info(f"  CSOD {system}: {len(jobs)} jobs")
@@ -6680,11 +6759,8 @@ async def run_csod(session) -> list[Job]:
 PAYCOM_ORGS = {
     "Connally Memorial Medical Center": "772E59A3981B29A14463EC6C3223083C",
     # ── 2026-09-10 Texas block D (Y-texas-build): client keys read from each
-    # hospital's careers page. NOTE: web.php/jobs?clientkey= now 302s to the
-    # SPA portal (/portal/<key>/career, an 8 KB loader that pulls its chunks
-    # and job list from portal-applicant-tracking.us-cent.paycomonline.net),
-    # so scrape_paycom below returns 0 rows for every key until it is
-    # rebuilt against that API (reports/Y-texas-build.md, follow-ups).
+    # hospital's careers page. The adapter was rebuilt the same day against
+    # the SPA portal's API (see scrape_paycom).
     "Childress Regional Medical Center": "B47435CED3FD56BC6C37E9204206C989",
     "El Paso Children's Hospital":       "2B54F2860AD440DB8B3B7C9BE2122564",
     "Nacogdoches Memorial Hospital":     "C4638CB50E7EB9BDFE01AC5E31D77604",
@@ -6698,45 +6774,124 @@ PAYCOM_ORGS = {
     "Paycom Hospital 6": "BA896DB60A5046DD23CC67AB5801923F",
 }
 
+_PAYCOM_LIST = "https://www.paycomonline.net/v4/ats/web.php/jobs"
+_PAYCOM_PAGE = 50
+_PAYCOM_DETAIL_MAX = int(os.getenv("PAYCOM_DETAIL_MAX", "300"))   # detail fetches per client key per run
+_PAYCOM_FILTERS = {"distanceFrom": 0, "workEnvironments": [], "positionTypes": [], "educationLevels": [],
+                   "categories": [], "travelTypes": [], "shiftTypes": [], "otherFilters": [],
+                   "keywordSearchText": "", "location": "", "sortOption": "N"}
+
+
+def _paycom_clean(desc: str) -> str:
+    """Detail descriptions arrive as HTML whose inner tags are entity-escaped
+    again (&lt;span style=...&gt;): unescape until stable, then strip (2026-09-10)."""
+    for _ in range(3):
+        u = _html_unescape(desc)
+        if u == desc:
+            break
+        desc = u
+    return re.sub(r"<[^>]*$", "", re.sub(r"<[^>]+>", " ", strip_html(desc))).strip()   # also a dangling open tag
+
+
+def _paycom_job(prev: dict, detail: dict | None, system: str, client_key: str, default_state: str = "TX") -> Job | None:
+    """One job-posting preview (+ optional job-postings/<id> detail) -> Job.
+    Preview: jobId, jobTitle, positionType, remoteType, locations ("Main 499 -
+    Floresville, TX 78114" / "Childress, TX 79201"), description (150-char
+    teaser), postedOn, isHotJob. Detail (jobPosting): city, location,
+    salaryRange, description... The SPA route for a posting is
+    /portal/<key>/jobs/<jobId> (the classic ViewJobDetails URL 302s into
+    that portal). 2026-09-10."""
+    jid = str(prev.get("jobId") or "").strip()
+    title = str(prev.get("jobTitle") or "").strip()
+    if not jid or not title:
+        return None
+    det = (detail or {}).get("jobPosting") if isinstance(detail, dict) else None
+    det = det if isinstance(det, dict) else (detail if isinstance(detail, dict) else {})
+    loc_text = str(det.get("location") or prev.get("locations") or "")
+    city = str(det.get("city") or "").strip()
+    st = str(det.get("state") or "").strip()
+    m = re.search(r"([A-Za-z .'-]+?),\s*([A-Z]{2})\b(?:\s+\d{5})?\s*$", loc_text)
+    if m:
+        city = city or m.group(1).split(" - ")[-1].strip()
+        st = st or m.group(2)
+    st = (st or default_state).upper()
+    desc = str(det.get("description") or det.get("jobDescription") or prev.get("description") or "")
+    pay = str(det.get("salaryRange") or "").strip()
+    if pay:
+        desc = f"Pay: {pay}\n\n{desc}"
+    posted = str(det.get("postedOn") or det.get("postedDate") or prev.get("postedOn") or "")[:10]
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", posted):
+        posted = ""                      # "1 day ago" style strings are not dates
+    if city.isupper():
+        city = city.title()              # "SWEETWATER" (Rolling Plains)
+    return Job(
+        title=title, hospital_system=system, hospital_name=system,
+        city=city, state=st, location=f"{city}, {st}".strip(", "),
+        specialty="", job_type=str(prev.get("positionType") or det.get("positionType") or ""),
+        url=f"https://www.paycomonline.net/v4/ats/web.php/portal/{client_key}/jobs/{jid}",
+        job_id=jid, posted_date=posted, description=_paycom_clean(desc), ats_platform="Paycom",
+    )
+
+
 async def scrape_paycom(session: aiohttp.ClientSession, system: str, client_key: str) -> list[Job]:
-    jobs = []
-    base_url = f"https://www.paycomonline.net/v4/ats/web.php/jobs?clientkey={client_key}"
+    # 2026-09-10 (Z-texas-acute-D): rebuilt. web.php/jobs?clientkey= is an SPA
+    # now; the same URL with Accept: application/json returns the portal's
+    # libConfig with a sessionJWT and atsPortalMantleServiceUrl. The SPA
+    # chunk (career-portal/main/index-sprawl-*.js) posts {skip, take,
+    # filtersForQuery} to api/ats/job-posting-previews/search with the JWT
+    # as Bearer and reads api/ats/job-postings/<jobId> for the detail.
+    # Connally 54 / Childress 14 previews on 2026-09-10.
+    jobs: list[Job] = []
     try:
-        async with session.get(
-            "https://www.paycomonline.net/v4/ats/web.php/jobs",
-            params={"clientkey": client_key},
-            headers={**HEADERS, "Accept": "text/html,*/*"},
-            timeout=aiohttp.ClientTimeout(total=20),
-        ) as r:
+        async with req(session, "get", _PAYCOM_LIST, params={"clientkey": client_key},
+                       headers={**HEADERS, "Accept": "application/json"},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
             if r.status != 200:
                 logger.info(f"Paycom {system}: HTTP {r.status}")
                 return []
-            text = await r.text()
-        # Paycom embeds job data in JSON within the page
-        import json as _j
-        m = re.search(r'var\s+jobs\s*=\s*(\[.*?\]);', text, re.DOTALL)  # noqa
-        if not m:
-            m = re.search(r'"jobs"\s*:\s*(\[.*?\])', text, re.DOTALL)  # noqa
-        if m:
-            try:
-                items = _j.loads(m.group(1))
-                for j in items:
-                    title = j.get("title") or j.get("jobTitle") or ""
-                    city  = j.get("city") or ""
-                    state = j.get("state") or "TX"
-                    jid   = str(j.get("id") or j.get("jobId") or "")
-                    if not title:
-                        continue
-                    jobs.append(Job(
-                        title=title, hospital_system=system, hospital_name=system,
-                        city=city, state=state,
-                        location=f"{city}, {state}".strip(", "),
-                        specialty="", job_type="",
-                        url=base_url, job_id=jid or title[:60],
-                        posted_date="", description="", ats_platform="Paycom",
-                    ))
-            except Exception as ex:
-                logger.info(f"Paycom {system}: parse error {ex}")
+            cfg = await r.json(content_type=None)
+        jwt = (cfg or {}).get("sessionJWT") or ""
+        base = str(((cfg or {}).get("libConfig") or {}).get("atsPortalMantleServiceUrl") or "").rstrip("/")
+        if not jwt or not base:
+            logger.info(f"Paycom {system}: libConfig without sessionJWT / service url")
+            return []
+        hdr = {**HEADERS, "Accept": "application/json", "Content-Type": "application/json",
+               "Authorization": f"Bearer {jwt}", "Locale": "en-US", "Translation-Highlights": "false",
+               "Origin": "https://www.paycomonline.net",
+               "Referer": f"{_PAYCOM_LIST}?clientkey={client_key}"}
+        previews: list[dict] = []
+        skip = 0
+        while True:
+            async with req(session, "post", f"{base}/api/ats/job-posting-previews/search",
+                           json={"skip": skip, "take": _PAYCOM_PAGE, "filtersForQuery": dict(_PAYCOM_FILTERS)},
+                           headers=hdr, ssl=False, proxy=proxies.get(),
+                           timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"Paycom {system}: search HTTP {r.status} {(await r.text())[:120]}")
+                    break
+                data = await r.json(content_type=None)
+            items = (data or {}).get("jobPostingPreviews") or []
+            previews.extend(items)
+            total = int((data or {}).get("jobPostingPreviewsCount") or 0)
+            skip += len(items)
+            if not items or skip >= total or len(items) < _PAYCOM_PAGE:
+                break
+            await jitter()
+        for n, prev in enumerate(previews):
+            detail = None
+            if n < _PAYCOM_DETAIL_MAX and prev.get("jobId"):
+                try:
+                    async with req(session, "get", f"{base}/api/ats/job-postings/{prev['jobId']}",
+                                   headers=hdr, ssl=False, proxy=proxies.get(),
+                                   timeout=aiohttp.ClientTimeout(total=30)) as r:
+                        if r.status == 200:
+                            detail = await r.json(content_type=None)
+                    await asyncio.sleep(random.uniform(0.3, 0.9))
+                except Exception as e:
+                    logger.info(f"Paycom {system}: detail {prev.get('jobId')}: {e}")
+            job = _paycom_job(prev, detail, system, client_key)
+            if job:
+                jobs.append(job)
     except Exception as e:
         logger.info(f"Paycom {system}: {e}")
     logger.info(f"  Paycom {system}: {len(jobs)} jobs")
@@ -6758,57 +6913,69 @@ async def run_paycom(session) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 PAYCOR_ORGS = {
     "Titus Regional Medical Center": "8a7883d0655a8a10016567ff244174f7",
+    # 2026-09-10 (Z-texas-acute-D): townsenmemorial.com/careers links this
+    # clientId ("Click To See Our Career Opportunities").
+    "Townsen Memorial Hospital": "8a7883d090b87b970190e27961ce11c4",
     # ── Added from scraper1.xlsx expansion ──
     "Paycor Hospital 2": "8a7883d07725ca8701773c07f64d08fa",
 }
 
+_PAYCOR_HOME = "https://recruitingbypaycor.com/career/CareerHome.action"
+_PAYCOR_ROW_RE = re.compile(
+    r'<a[^>]+href="([^"]*JobIntroduction\.action\?[^"]*\bid=([0-9a-f]+)[^"]*)"[^>]*>\s*(.*?)\s*</a>'
+    r'(?:(?!gnewtonCareerGroupJobTitleClass).)*?gnewtonCareerGroupJobDescriptionClass"\s*>\s*(.*?)\s*</div>',
+    re.S)
+_PAYCOR_HEAD_RE = re.compile(r'gnewtonCareerGroupHeaderClass"\s*>\s*(.*?)\s*</div>', re.S)
+
+
+def _parse_paycor_home(text: str, system: str, client_id: str, default_state: str = "TX") -> list[Job]:
+    """CareerHome.action is a server-rendered Newton (gnewton) table: a
+    department header ("Emergency Room - Humble"), then rows with the title
+    link (JobIntroduction.action?clientId=&id=<hex>) and a description line
+    "Hospital - Humble, TX" (facility - city, state). 2026-09-10."""
+    jobs: list[Job] = []
+    # walk header by header so the department is known for each row
+    heads = list(_PAYCOR_HEAD_RE.finditer(text))
+    for n, h in enumerate(heads):
+        seg = text[h.end(): heads[n + 1].start() if n + 1 < len(heads) else len(text)]
+        dept = _html_unescape(re.sub(r"<[^>]+>", "", h.group(1))).strip()
+        dept = dept.split(" - ")[0].strip()
+        for m in _PAYCOR_ROW_RE.finditer(seg):
+            url, jid, title, line = m.group(1), m.group(2), m.group(3), m.group(4)
+            title = _html_unescape(re.sub(r"<[^>]+>", "", title)).strip()
+            line = _html_unescape(re.sub(r"<[^>]+>", "", line)).strip()
+            facility, _, loc = line.rpartition(" - ")
+            city, st = parse_city_state(loc or line)
+            if not title or not jid:
+                continue
+            jobs.append(Job(
+                title=title, hospital_system=system, hospital_name=system,
+                city=city, state=(st or default_state).upper(),
+                location=f"{city}, {(st or default_state).upper()}".strip(", "),
+                specialty=dept, job_type="",
+                url=_html_unescape(url), job_id=jid, posted_date="", description="",
+                ats_platform="Paycor",
+            ))
+    return jobs
+
+
 async def scrape_paycor(session: aiohttp.ClientSession, system: str, client_id: str) -> list[Job]:
-    jobs = []
+    # 2026-09-10 (Z-texas-acute-D): the guessed CareerJobSearch.action JSON
+    # endpoint 404s; the board is server-rendered HTML (all jobs on the home
+    # page, no paging), parsed by _parse_paycor_home. Titus and "Paycor
+    # Hospital 2" had returned 0 rows since they were added.
     try:
-        async with session.get(
-            "https://recruitingbypaycor.com/career/CareerHome.action",
-            params={"clientId": client_id},
-            headers={**HEADERS, "Accept": "text/html,*/*"},
-            timeout=aiohttp.ClientTimeout(total=20),
-        ) as r:
+        async with req(session, "get", _PAYCOR_HOME, params={"clientId": client_id},
+                       headers={**HEADERS, "Accept": "text/html,*/*"},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
             if r.status != 200:
                 logger.info(f"Paycor {system}: HTTP {r.status}")
                 return []
             text = await r.text()
-        # Try JSON endpoint
-        import json as _j
-        async with session.get(
-            "https://recruitingbypaycor.com/career/CareerJobSearch.action",
-            params={"clientId": client_id, "start": 0, "num": 200},
-            headers={**HEADERS, "Accept": "application/json"},
-            timeout=aiohttp.ClientTimeout(total=20),
-        ) as r2:
-            if r2.status == 200:
-                try:
-                    data = await r2.json(content_type=None)
-                    items = data if isinstance(data, list) else (
-                        data.get("jobs") or data.get("results") or data.get("data") or []
-                    )
-                    for j in items:
-                        title = j.get("title") or j.get("jobTitle") or ""
-                        city  = j.get("city") or j.get("location") or ""
-                        state = j.get("state") or "TX"
-                        jid   = str(j.get("id") or j.get("jobId") or "")
-                        if not title:
-                            continue
-                        jobs.append(Job(
-                            title=title, hospital_system=system, hospital_name=system,
-                            city=city, state=state,
-                            location=f"{city}, {state}".strip(", "),
-                            specialty="", job_type="",
-                            url=f"https://recruitingbypaycor.com/career/CareerHome.action?clientId={client_id}",
-                            job_id=jid or title[:60],
-                            posted_date="", description="", ats_platform="Paycor",
-                        ))
-                except Exception:
-                    pass
     except Exception as e:
         logger.info(f"Paycor {system}: {e}")
+        return []
+    jobs = _parse_paycor_home(text, system, client_id)
     logger.info(f"  Paycor {system}: {len(jobs)} jobs")
     return jobs
 
@@ -6835,8 +7002,9 @@ PAYLOCITY_ORGS = {
     # Format: "System": (company guid, org slug, default state)
     # White Rock Medical Center (Dallas): 18 rows on 2026-09-10, all Dallas TX.
     "White Rock Medical Center": ("2bd01e6d-d70f-4766-9be9-6f4c349647bc", "White-Rock-Medical-Center", "TX"),
-    # Eastland Memorial Hospital: the careers page only loads a Paylocity
-    # script; no company guid was exposed. Add the guid when it is known.
+    # 2026-09-10 (Z-texas-acute-D): eastlandmemorial.com's employment page
+    # links this board under "Current Job Openings".
+    "Eastland Memorial Hospital": ("c1f736ba-2df6-4f47-95f4-117e45c82e0d", "Eastland-Memorial-Hospital-District", "TX"),
 }
 _PAYLOCITY_PAGEDATA_RE = re.compile(r"window\.pageData\s*=\s*(\{)")
 
@@ -6896,6 +7064,271 @@ async def run_paylocity(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Paylocity total: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  WORKABLE — apply.workable.com/<account>/ (added 2026-09-10, Z-texas-acute-D)
+#  POST https://apply.workable.com/api/v3/accounts/<account>/jobs with
+#  {query, location, department, worktype, remote} -> {total, results[],
+#  nextPage}; the next page is requested with "token": nextPage in the body
+#  (a ?token= query parameter repeats page 1). Items: id, shortcode, title,
+#  remote, location{city, region}, published, type ("full"/"part"),
+#  department[], workplace. Deep link: /<account>/j/<shortcode>/.
+# ══════════════════════════════════════════════════════════════════════════
+WORKABLE_ORGS = {
+    # Format: "System": (account slug, default state)
+    # Huntsville Memorial Hospital: 59 jobs on 2026-09-10, all Huntsville TX.
+    "Huntsville Memorial Hospital": ("huntsville-memorial-hospital", "TX"),
+}
+_WORKABLE_TYPES = {"full": "Full time", "part": "Part time", "contract": "Contract", "temporary": "Temporary"}
+
+
+def _workable_job(j: dict, system: str, slug: str, default_state: str) -> Job | None:
+    code = str(j.get("shortcode") or "").strip()
+    title = str(j.get("title") or "").strip()
+    if not code or not title or j.get("isInternal"):
+        return None
+    loc = j.get("location") or {}
+    city = str(loc.get("city") or "").strip()
+    region = str(loc.get("region") or "").strip()
+    st = parse_city_state(f"{city}, {region}")[1] if region else ""
+    st = (st or (region if len(region) == 2 else "") or default_state).upper()
+    dept = j.get("department") or []
+    return Job(
+        title=title, hospital_system=system, hospital_name=system,
+        city=city, state=st, location=f"{city}, {st}".strip(", "),
+        specialty=str(dept[-1] if isinstance(dept, list) and dept else dept or ""),
+        job_type=_WORKABLE_TYPES.get(str(j.get("type") or "").lower(), str(j.get("type") or "")),
+        url=f"https://apply.workable.com/{slug}/j/{code}/",
+        job_id=code, posted_date=str(j.get("published") or "")[:10], description="",
+        ats_platform="Workable",
+    )
+
+
+async def scrape_workable(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    slug, default_state = org_data
+    jobs: list[Job] = []
+    api = f"https://apply.workable.com/api/v3/accounts/{slug}/jobs"
+    body = {"query": "", "location": [], "department": [], "worktype": [], "remote": []}
+    token, pages = None, 0
+    while True:
+        try:
+            payload = {**body, **({"token": token} if token else {})}
+            async with req(session, "post", api, json=payload,
+                           headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json",
+                                    "Referer": f"https://apply.workable.com/{slug}/"},
+                           ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"Workable {system}: HTTP {r.status}")
+                    break
+                data = await r.json(content_type=None)
+        except Exception as e:
+            logger.info(f"Workable {system}: {e}")
+            break
+        items = (data or {}).get("results") or []
+        for j in items:
+            job = _workable_job(j, system, slug, default_state)
+            if job:
+                jobs.append(job)
+        token = (data or {}).get("nextPage")
+        pages += 1
+        if not items or not token or pages >= 60:
+            break
+        await jitter()
+    logger.info(f"  Workable {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def run_workable(session) -> list[Job]:
+    if not WORKABLE_ORGS:
+        return []
+    logger.info(f"Workable: scraping {len(WORKABLE_ORGS)} systems...")
+    ordered = priority_states_first(list(WORKABLE_ORGS.items()), lambda kv: kv[1][1])
+    results = await asyncio.gather(*[scrape_workable(session, s_, cfg) for s_, cfg in ordered], return_exceptions=True)
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Workable total: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  TALEO BUSINESS EDITION — <host>.tbe.taleo.net/<host>NN/ats/careers/v2/
+#  (added 2026-09-10, Z-texas-acute-D). The v2 searchResults page shows ten
+#  jobs and pages through a session-bound "next&rowFrom=" link, but the
+#  board publishes an RSS feed of every open position:
+#    <base>/ats/servlet/Rss?org=<ORG>&cws=<N>&WebPage=SRCHR_V2&WebVersion=0&_rss_version=2
+#  with taleo:reqId / department / locationCity / locationState and the
+#  full taleo:html-description (Baptist SE Texas: 140 items, 1.1 MB).
+#  Deep link: <base>/ats/careers/v2/viewRequisition?org=&cws=&rid=<reqId>.
+# ══════════════════════════════════════════════════════════════════════════
+TALEO_BE_ORGS = {
+    # Format: "System": (base up to the instance path, org code, cws number, default state)
+    # bhset.net/careers links phf02/ats/careers/v2/jobSearch?act=redirectCwsV2&cws=38&org=BHST.
+    "Baptist Hospitals of Southeast Texas": ("https://phf.tbe.taleo.net/phf02", "BHST", "38", "TX"),
+}
+_TBE_NS = {"taleo": "urn:TBERss"}
+
+
+def _parse_taleo_be_rss(xml_text: str, system: str, base: str, org: str, cws: str, default_state: str) -> list[Job]:
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+    jobs: list[Job] = []
+    root = ET.fromstring(xml_text)
+    for it in root.iter("item"):
+        def t(tag, ns=None):
+            el = it.find(f"taleo:{tag}", _TBE_NS) if ns else it.find(tag)
+            return (el.text or "").strip() if el is not None and el.text else ""
+        rid = t("reqId", ns=True) or (re.search(r"rid=(\d+)", t("link") or "") or [None, ""])[1]
+        title = t("title")
+        if not rid or not title:
+            continue
+        city = t("locationCity", ns=True)
+        st = t("locationState", ns=True)
+        if len(st) > 2:
+            st = parse_city_state(f"{city}, {st}")[1] or st
+        if not (city or st):
+            city, st = parse_city_state(t("location", ns=True))
+        posted = ""
+        try:
+            posted = parsedate_to_datetime(t("pubDate")).strftime("%Y-%m-%d")
+        except Exception:
+            pass
+        desc = t("html-description", ns=True) or t("description")
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=system,
+            city=city, state=(st or default_state).upper(),
+            location=f"{city}, {(st or default_state).upper()}".strip(", "),
+            specialty=t("department", ns=True), job_type="",
+            url=f"{base}/ats/careers/v2/viewRequisition?org={org}&cws={cws}&rid={rid}",
+            job_id=rid, posted_date=posted, description=strip_html(_html_unescape(desc)),
+            ats_platform="TaleoBE",
+        ))
+    return jobs
+
+
+async def scrape_taleo_be(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    base, org, cws, default_state = org_data
+    try:
+        async with req(session, "get", f"{base}/ats/servlet/Rss",
+                       params={"org": org, "cws": cws, "WebPage": "SRCHR_V2", "WebVersion": "0", "_rss_version": "2"},
+                       headers={**HEADERS, "Accept": "application/rss+xml,text/xml,*/*"},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=90)) as r:
+            if r.status != 200:
+                logger.info(f"TaleoBE {system}: HTTP {r.status}")
+                return []
+            text = await r.text()
+    except Exception as e:
+        logger.info(f"TaleoBE {system}: {e}")
+        return []
+    try:
+        jobs = _parse_taleo_be_rss(text, system, base, org, cws, default_state)
+    except Exception as e:
+        logger.info(f"TaleoBE {system}: RSS parse {e}")
+        return []
+    logger.info(f"  TaleoBE {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def run_taleo_be(session) -> list[Job]:
+    if not TALEO_BE_ORGS:
+        return []
+    logger.info(f"TaleoBE: scraping {len(TALEO_BE_ORGS)} systems...")
+    ordered = priority_states_first(list(TALEO_BE_ORGS.items()), lambda kv: kv[1][3])
+    results = await asyncio.gather(*[scrape_taleo_be(session, s_, cfg) for s_, cfg in ordered], return_exceptions=True)
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  TaleoBE total: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  HCTS PORTALS — <sub>.hctsportals.com (HealthcareSource's "Healthcare
+#  Talent Source" career sites; added 2026-09-10, Z-texas-acute-D). Server-
+#  rendered list at /jobs/search?page=N, 25 cards a page (<div class=
+#  "jobs-section__item ...">) carrying the title link (/jobs/<id>-<slug>),
+#  a Location line, Date Posted and a Facility line. UMC El Paso: 8 pages.
+# ══════════════════════════════════════════════════════════════════════════
+HCTS_PORTALS = {
+    # Format: "System": (subdomain, default state)
+    "University Medical Center of El Paso": ("umcelpasocareers", "TX"),
+}
+HCTS_MAX_PAGES = int(os.getenv("HCTS_MAX_PAGES", "40"))
+_HCTS_ITEM_RE = re.compile(r'class="jobs-section__item[\s"]')
+_HCTS_TITLE_RE = re.compile(r'<h2>\s*<a[^>]+href="([^"]*?/jobs/(\d+)[^"]*)"[^>]*>(.*?)</a>', re.S)
+
+
+def _hcts_field(seg: str, label: str) -> str:
+    m = re.search(r'title="\s*' + re.escape(label) + r'\s*"[^>]*>\s*</i>\s*</span>?\s*(?:&nbsp;)?\s*([^<]+)', seg)
+    if not m:
+        m = re.search(r'title="\s*' + re.escape(label) + r'\s*"[^>]*>\s*</i>\s*(?:&nbsp;)?\s*([^<]+)', seg)
+    return _html_unescape(m.group(1)).strip() if m else ""
+
+
+def _parse_hcts_page(text: str, system: str, sub: str, default_state: str) -> list[Job]:
+    jobs: list[Job] = []
+    starts = [m.start() for m in _HCTS_ITEM_RE.finditer(text)]
+    for n, s in enumerate(starts):
+        seg = text[s: starts[n + 1] if n + 1 < len(starts) else len(text)]
+        m = _HCTS_TITLE_RE.search(seg)
+        if not m:
+            continue
+        url, jid, title = m.group(1), m.group(2), _html_unescape(re.sub(r"<[^>]+>", "", m.group(3))).strip()
+        if url.startswith("/"):
+            url = f"https://{sub}.hctsportals.com{url}"
+        loc = _hcts_field(seg, "Location")
+        city, st = parse_city_state(re.sub(r",\s*United States\s*$", "", loc))
+        posted = ""
+        d = _hcts_field(seg, "Date Posted") or _hcts_field(seg, "Date Updated")
+        for fmt in ("%b %d, %Y", "%B %d, %Y", "%m/%d/%Y"):
+            try:
+                posted = datetime.strptime(d, fmt).strftime("%Y-%m-%d")
+                break
+            except Exception:
+                continue
+        facility = _hcts_field(seg, "Facility")
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=facility or system,
+            city=city, state=(st or default_state).upper(),
+            location=f"{city}, {(st or default_state).upper()}".strip(", "),
+            specialty="", job_type="", url=url, job_id=jid, posted_date=posted, description="",
+            ats_platform="HCTS",
+        ))
+    return jobs
+
+
+async def scrape_hcts(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    sub, default_state = org_data
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    for page in range(1, HCTS_MAX_PAGES + 1):
+        try:
+            async with req(session, "get", f"https://{sub}.hctsportals.com/jobs/search", params={"page": page},
+                           headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
+                           ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=40)) as r:
+                if r.status != 200:
+                    logger.info(f"HCTS {system}: HTTP {r.status} on page {page}")
+                    break
+                text = await r.text()
+        except Exception as e:
+            logger.info(f"HCTS {system}: page {page}: {e}")
+            break
+        batch = [j for j in _parse_hcts_page(text, system, sub, default_state) if j.job_id not in seen]
+        if not batch:
+            break
+        seen.update(j.job_id for j in batch)
+        jobs.extend(batch)
+        await jitter()
+    logger.info(f"  HCTS {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def run_hcts(session) -> list[Job]:
+    if not HCTS_PORTALS:
+        return []
+    logger.info(f"HCTS: scraping {len(HCTS_PORTALS)} portals...")
+    ordered = priority_states_first(list(HCTS_PORTALS.items()), lambda kv: kv[1][1])
+    results = await asyncio.gather(*[scrape_hcts(session, s_, cfg) for s_, cfg in ordered], return_exceptions=True)
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  HCTS total: {len(jobs):,} jobs")
     return jobs
 
 
@@ -9702,6 +10135,9 @@ async def run_all() -> list[dict]:
             run_paycom(proxy_session),
             run_paycor(proxy_session),
             run_paylocity(proxy_session),  # Paylocity pageData boards: White Rock Medical Center (added 2026-09-10)
+            run_workable(proxy_session),   # Workable v3 accounts API: Huntsville Memorial (added 2026-09-10)
+            run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
+            run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)
             run_hca(direct_session),    # HCA Healthcare — browserless per-state crawl via curl_cffi Firefox TLS (rebuilt 2026-07-28)
             run_houston_methodist(),    # Workday wd12/GTI — curl_cffi; wd12 edge 403s non-browser TLS (added 2026-07-28)
             run_oceans(),               # Oceans Behavioral — custom board at oceansjobboard.com via curl_cffi (added 2026-07-28)

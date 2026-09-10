@@ -1,0 +1,31 @@
+{
+ "job_requisitions": [
+  {
+   "id": 621281135,
+   "job_title": "Emergency Room Registered Nurse  (Days or NIghts)",
+   "location": {
+    "address_line_1": "920 HILLCREST DR",
+    "country": "USA",
+    "city": "Vernon",
+    "state": "TX",
+    "zip": "76384-3132"
+   },
+   "base_pay_from": 46.0,
+   "base_pay_frequency": "HOUR",
+   "employee_type": {
+    "id": 118810757,
+    "name": "PRN Non-Exempt"
+   },
+   "job_description": "Job Title: Registered Nurse Department: Emergency Department Job Summary: The RN has principal responsibility for the total nursing care, assessment, planning, implementation, and evaluation of each assigned patient. Plans, provides, and documents disch...",
+   "reapply_msg": "Thank you for your interest in Wilbarger General Hospital. Our records indicate that you have already submitted an application for employment. Should your prior experience match our business needs, you will be contacted by a representative of our company.",
+   "knockout_msg": "The goal of the questions that you have just answered is to help determine if this opportunity would be a good match for you and our company. At this time your qualifications do not match any of our positions. Your application will remain active for 30 days. Please do not reapply during this time period, as your application will register in the system as \"Already Applied\". Thank you for your interest in employment with us.",
+   "allow_quick_apply": false,
+   "is_remote_job": false
+  }
+ ],
+ "_paging": {
+  "offset": 1,
+  "size": 20,
+  "total": 12
+ }
+}
