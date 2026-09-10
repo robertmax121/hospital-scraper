@@ -9287,6 +9287,26 @@ def classify_title(title: str):
                 return specialty
     return None
 
+def _loc_text(v) -> str:
+    """Coerce an adapter's location-ish value to a stripped string. Dicts
+    (Ashby / ADP / UKG style {name, city, state, ...}) become their most
+    specific text; lists join with ', '; None becomes ''."""
+    if v is None:
+        return ""
+    if isinstance(v, str):
+        return v.strip()
+    if isinstance(v, dict):
+        for k in ("name", "locationName", "city", "text", "label", "value", "address"):
+            t = v.get(k)
+            if isinstance(t, str) and t.strip():
+                return t.strip()
+        parts = [str(x).strip() for x in v.values() if isinstance(x, (str, int)) and str(x).strip()]
+        return ", ".join(parts)
+    if isinstance(v, (list, tuple)):
+        return ", ".join(_loc_text(x) for x in v if _loc_text(x))
+    return str(v).strip()
+
+
 def normalize_job(j: Job) -> dict:
     """Standardize location fields before writing to Supabase.
     - city/state cleaned and trimmed
@@ -9301,10 +9321,17 @@ def normalize_job(j: Job) -> dict:
     # fallback below. (see city_utils.clean_city)
     # 2026-09-10: keep the adapter's raw city / location text for the CMS
     # facility lookup below (clean_city blanks facility names, correctly).
-    raw_city = (d.get("city") or "").strip()
-    raw_loc  = (d.get("location") or "").strip()
-    city  = clean_city((d.get("city") or "").strip().strip(",").strip())
-    state = (d.get("state") or "").strip().upper()
+    # 2026-09-10 (hotfix): two manual runs died here with "'dict' object has
+    # no attribute 'strip'": a new adapter handed a location OBJECT through.
+    # Every text field is coerced now, so one adapter's shape can never
+    # abort finalize_jobs for the whole run again.
+    raw_city = _loc_text(d.get("city"))
+    raw_loc  = _loc_text(d.get("location"))
+    city  = clean_city(raw_city.strip(",").strip())
+    state = _loc_text(d.get("state")).upper()
+    for _k in ("title", "hospital_name", "hospital_system", "url", "description", "specialty", "job_type"):
+        if isinstance(d.get(_k), (dict, list)):
+            d[_k] = _loc_text(d.get(_k))
 
     # Force override — always wins regardless of scraped data
     _sys_key = (d.get("hospital_system") or "").strip().lower()
