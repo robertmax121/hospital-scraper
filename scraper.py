@@ -230,6 +230,154 @@ def req(session, method, url, **kwargs):
 
 
 
+# ── Transparency states first (2026-09-10, S-scraper-2) ──────────────────
+# Pay-transparency states carry the rows the board sells best (posted pay on
+# the card), so every per-state or per-org crawl starts there: the HCA state
+# loop, the NeoGov agencies, the UKG / ADP / Kronos configs that carry a
+# state, and the Workday tenant order (also the order the WD_DESC_BUDGET
+# detail fetches are spent in). Ordering is the whole mechanism: nothing is
+# skipped, but when a per-run cap or a Cloudflare rate-limit bites mid-run,
+# it bites the non-transparency states. Documented in reports/S-scraper-2.md.
+TRANSPARENCY_STATES = ("CO", "WA", "CA", "NY", "IL", "MN", "MD", "HI", "DC", "NJ", "MA", "VT")
+_TRANSPARENCY_RANK = {s: i for i, s in enumerate(TRANSPARENCY_STATES)}
+
+
+def priority_states_first(items, state_of):
+    """Stable sort: TRANSPARENCY_STATES order first, everything else after in
+    its original order. state_of(item) returns a 2-letter code or ""."""
+    def rank(it):
+        try:
+            st = (state_of(it) or "").strip().upper()
+        except Exception:
+            st = ""
+        return _TRANSPARENCY_RANK.get(st, len(TRANSPARENCY_STATES))
+    return sorted(items, key=rank)
+
+
+# ── Partial-run protection (2026-09-10, S-scraper-2) ────────────────────────
+# An adapter that KNOWS it did not finish (HCA with a state slice that failed
+# every retry, for example) adds its emit-name here and the upsert's
+# per-system sweep skips that system tonight regardless of the 25% ratio
+# guard. The ratio guard alone lets a half-crawl of a 16k-row system retire
+# the other half: 3,368 HCA rows on 2026-09-10 were the survivors of exactly
+# that (per-state counts of 1000 / 500 / 500 / 500 = page boundaries).
+PARTIAL_SYSTEMS: set[str] = set()
+
+# ── Cross-tenant dedupe at the source (2026-09-10, S-scraper-2) ────────────
+# Two ATS tenants of one system can list the same posting (CityMD's two
+# Workday entries doubled 608 rows before the second entry was removed).
+# Systems mapped to one family are deduped in finalize_jobs: a row whose
+# (family, title, facility, city, state) was already emitted by a DIFFERENT
+# tenant is dropped; the same key from the same tenant is kept (two reqs for
+# one role at one site are two postings). Keys are the scraper-side emit
+# names, before HOSPITAL_SYSTEM_ALIASES. Opt-in on purpose: only families
+# known to cross-list belong here.
+SYSTEM_FAMILIES = {
+    "CityMD":                     "CityMD",
+    "Summit Health (CityMD)":     "CityMD",
+    "Summit Health (Physicians)": "CityMD",
+}
+
+# ── CMS blank-state fill (2026-09-10, S-scraper-2) ──────────────────────────
+# 24,158 active rows (14.4%) had no state on 2026-09-10, in 85 (system,
+# hospital_name) groups whose hospital_name is the system itself (WVU
+# Medicine 3,183, Trinity Health 2,671, ...). The September backfill filled
+# what it could from the CMS `hospitals` table once and the nightly upsert
+# blanked it again, so the same lookup now runs inside normalize_job: a
+# (normalised) facility name that is unique in CMS gives city and state, and
+# the adapter's raw location text gets the same lookup because Workday's
+# locationsText is often a facility name that clean_city (rightly) refuses as
+# a city. Nothing is guessed from the system alone: CMS hospital_system is
+# far too sparse to call a system single-state (Trinity Health has 5 tagged
+# rows there, all MI).
+_CMS_LOOKUP: dict | None = None      # normalised name -> (city, state)
+_CMS_FILLS = {"n": 0}
+
+
+def _cms_norm(name) -> str:
+    s = (name or "").lower().strip()
+    s = re.sub(r"\bsaint\b", "st", s)
+    s = re.sub(r"\bmed\b", "medical", s)
+    s = re.sub(r"\bctr\b", "center", s)
+    s = re.sub(r"\bhosp\b", "hospital", s)
+    s = re.sub(r"[^a-z0-9]+", " ", s)
+    s = re.sub(r"\b(the|inc|llc)\b", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def set_cms_lookup(rows) -> int:
+    """Build the lookup from hospitals rows ({hospital_name, city, state}).
+    Names shared by rows in different places are dropped (87 of 5,295 CMS
+    names, e.g. Memorial Hospital). Returns the usable count."""
+    global _CMS_LOOKUP
+    seen, ambiguous = {}, set()
+    for r in rows or []:
+        k = _cms_norm(r.get("hospital_name"))
+        st = (r.get("state") or "").strip().upper()
+        if not k or len(st) != 2:
+            continue
+        v = ((r.get("city") or "").strip(), st)
+        if k in seen and seen[k] != v:
+            ambiguous.add(k)
+        seen.setdefault(k, v)
+    for k in ambiguous:
+        seen.pop(k, None)
+    _CMS_LOOKUP = seen
+    _CMS_FILLS["n"] = 0
+    return len(seen)
+
+
+def load_cms_lookup() -> int:
+    """One read-only PostgREST pass over the CMS hospitals table per run (same
+    SUPABASE_URL / key the upsert uses). Without credentials the lookup stays
+    empty and normalize_job fills nothing, so dry runs behave as before."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = (os.environ.get("SUPABASE_KEY", "")
+              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    if not sb_url or not sb_key:
+        set_cms_lookup([])
+        logger.info("CMS lookup: SUPABASE_URL/SUPABASE_KEY not set — blank-state fill off")
+        return 0
+    import urllib.request as _urlreq
+    rows, off, page = [], 0, 1000
+    try:
+        while True:
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospitals?select=hospital_name,city,state"
+                 f"&order=id&limit={page}&offset={off}")
+            rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            with _urlreq.urlopen(rq, timeout=30) as resp:
+                chunk = json.loads(resp.read().decode())
+            rows.extend(chunk)
+            if len(chunk) < page:
+                break
+            off += page
+    except Exception as e:
+        logger.warning(f"CMS lookup: load failed ({e}); blank-state fill off this run")
+    n = set_cms_lookup(rows)
+    logger.info(f"CMS lookup: {len(rows)} hospitals, {n} unique names")
+    return n
+
+
+def cms_location_for(*names):
+    """(city, state) for the first name that is a unique CMS facility, trying
+    the head of "Facility - Department" / "Facility, Unit" too; else None."""
+    if not _CMS_LOOKUP:
+        return None
+    for n in names:
+        n = (n or "").strip()
+        if not n:
+            continue
+        hit = _CMS_LOOKUP.get(_cms_norm(n))
+        if hit:
+            return hit
+        head = re.split(r"\s[-|/]\s|,", n, maxsplit=1)[0].strip()
+        if head and head != n:
+            hit = _CMS_LOOKUP.get(_cms_norm(head))
+            if hit:
+                return hit
+    return None
+
+
 # ══════════════════════════════════════════════════════════════════════════
 #  WORKDAY
 #  Format: "System Name": (tenant, wd_num, career_site_name)
@@ -279,6 +427,15 @@ HOSPITAL_SYSTEM_ALIASES = {
     "Erlanger Health System":      "Erlanger",
     "Guthrie Health":              "Guthrie",
     "Southwest Health":            "Southwest Healthcare",
+    # 2026-09-10 (S-scraper-2): CityMD's two Workday entries pointed at ONE
+    # site (shm.wd5 Summit_CityMD / summit_citymd) and doubled every row (608
+    # under each name on 2026-09-10). The second entry is gone from
+    # WORKDAY_TENANTS; this alias folds any straggler onto the CityMD row so
+    # the (job_id, hospital_system) upsert key merges instead of duplicating.
+    "Summit Health (CityMD)":      "CityMD",
+    # Wooster's second ADP career center (Bloomington Medical Services) is the
+    # hospital's physician group; one board-facing system (2026-09-10).
+    "Wooster Community Hospital (BMS)": "Wooster Community Hospital",
 }
 
 
@@ -424,7 +581,10 @@ WORKDAY_TENANTS = {
     # Sunrise 1,928 · GoHealth 489.
     "Duly Health and Care":      ("dulyhealthandcare",  "1",  "Duly"),
     "LifeStance Health":         ("lifestance",         "5",  "Careers"),
-    "Summit Health (CityMD)":    ("shm",                "5",  "Summit_CityMD"),
+    # "Summit Health (CityMD)" (shm.wd5 Summit_CityMD) removed 2026-09-10
+    # (S-scraper-2): same site as the "CityMD" entry below (summit_citymd),
+    # every row landed twice. sql/16_scraper_dedupe_cleanup.sql retires the
+    # 608 rows it left under the old name.
     "Summit Health (Physicians)":("shm",                "5",  "SummitHealthPhysicians"),
     "Fresenius Medical Care":    ("freseniusmedicalcare","3", "fme"),
     "Sunrise Senior Living":     ("sunriseseniorliving","12", "SUNRISE_EXT_CAREERS"),
@@ -1246,8 +1406,15 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
 
 async def run_workday(session) -> list[Job]:
     logger.info(f"Workday: scraping {len(WORKDAY_TENANTS)} systems...")
+    # 2026-09-10 (S-scraper-2): transparency-state tenants first (state from
+    # SYSTEM_LOCATION_DEFAULTS; tenants without one keep their order, last).
+    # gather() starts tasks in this order, so it is also the order the shared
+    # WD_DESC_BUDGET is spent in.
+    tenants = priority_states_first(
+        list(WORKDAY_TENANTS.items()),
+        lambda kv: (SYSTEM_LOCATION_DEFAULTS.get(kv[0].lower()) or ("", ""))[1])
     results = await asyncio.gather(
-        *[scrape_workday(session, s, t) for s, t in WORKDAY_TENANTS.items()],
+        *[scrape_workday(session, s, t) for s, t in tenants],
         return_exceptions=True
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
@@ -4518,16 +4685,31 @@ async def run_phenom(session) -> list[Job]:
 
 
 ##############################################################################
-#  ADP WORKFORCE NOW — public job listings via ADP's embed API
-#  Each org has a unique `cid` (company ID) visible in the iframe URL
+#  ADP WORKFORCE NOW — public career-center JSON (rebuilt 2026-09-10, S-scraper-2)
+#  The earlier build posted to .../mdf/recruitment/json/jobPosting, which is
+#  not an ADP endpoint: twelve placeholder orgs and not one ADP row ever
+#  reached hospital_jobs. The career-center page
+#  (recruitment.html?cid=...&ccId=...) loads its list from
+#    GET /mascsr/default/careercenter/public/events/staffing/v1/job-requisitions
+#        ?cid=<cid>&ccId=<ccId>&timeStamp=<ms>&lang=en_US&locale=en_US&$top=20&$skip=0
+#    -> {"jobRequisitions": [...], "meta": {"totalNumber": N}}
+#  cid identifies the client, ccId the career center INSIDE the client
+#  (Wooster runs two: hospital positions and Bloomington Medical Services).
+#  Format: "System": (cid, ccId, state[, hospital_name]) | [tuples] | bare cid
 ##############################################################################
 ADP_ORGS = {
-    # cid values from the career page iframe URLs
-    # System names TBD — will show in logs once jobs come back
-    "ADP Health System 1": "152f13f3-9efa-4e16-9a69-bb7500136904",
-    "ADP Health System 2": "542f7b59-1156-4a17-a729-f8cd9337acf6",
-    "ADP Health System 3": "af93ba9c-e8c7-4a6f-ade3-711614110405",
-    # ── Added from scraper1.xlsx expansion ──
+    # 2026-09-10 (S-scraper-2): contract client, both career centers linked
+    # from woosterhospital.org/careers ("WCH Positions" / "BMS Positions").
+    "Wooster Community Hospital":
+        ("7889f006-4c3f-49f9-931b-a7ffd827148d", "9200389848466_2", "OH", "Wooster Community Hospital"),
+    "Wooster Community Hospital (BMS)":
+        ("7889f006-4c3f-49f9-931b-a7ffd827148d", "9200402128985_2", "OH", "Bloomington Medical Services"),
+    # Legacy cids from scraper1.xlsx (system names were never learned because
+    # the old endpoint never answered). Kept so the rebuilt adapter can say
+    # in the log which of them are live boards; rename once a run shows them.
+    "ADP Health System 1":  "152f13f3-9efa-4e16-9a69-bb7500136904",
+    "ADP Health System 2":  "542f7b59-1156-4a17-a729-f8cd9337acf6",
+    "ADP Health System 3":  "af93ba9c-e8c7-4a6f-ade3-711614110405",
     "ADP Health System 4":  "77e754a7-66ab-427f-ae54-31edee4e9bf6",
     "ADP Health System 5":  "86be0242-2e9b-4a21-9dac-6ef6b31fbbee",
     "ADP Health System 6":  "171c7aca-96cb-44e7-95db-7545554c14e8",
@@ -4538,95 +4720,144 @@ ADP_ORGS = {
     "ADP Health System 11": "58af5ddf-316e-4ac8-bc2f-471750cda3c7",
     "ADP Health System 12": "bb661c48-7edc-400c-adfb-40f8f7743374",
 }
+_ADP_API = "https://workforcenow.adp.com/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions"
+_ADP_PORTAL = "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html"
+_ADP_PAGE = 20
+_ADP_POSITION = {"F": "Full time", "P": "Part time", "T": "Temporary", "C": "Contract"}
 
-async def scrape_adp(session: aiohttp.ClientSession, system: str, cid: str) -> list[Job]:
-    jobs = []
-    # ADP WFN public job board backing endpoint — confirmed from browser network tab
-    # The iframe loads this URL to fetch job listings as JSON
-    base_portal = f"https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid={cid}&ccId=19000101_000001&type=MP&lang=en_US"
-    api_url = "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html"
-    # ADP's actual JSON endpoint for job listings
-    json_url = f"https://workforcenow.adp.com/mascsr/default/mdf/recruitment/json/jobPosting"
-    offset = 0
-    while True:
-        try:
-            async with req(session, "get",
-                json_url,
-                params={
-                    "cid": cid,
-                    "ccId": "19000101_000001",
-                    "type": "MP",
-                    "lang": "en_US",
-                    "start": offset,
-                    "limit": 25,
-                    "jobType": "all",
-                },
-                headers={
-                    **HEADERS,
-                    "Referer": base_portal,
-                    "Accept": "application/json, text/javascript, */*; q=0.01",
-                    "X-Requested-With": "XMLHttpRequest",
-                }, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)
-            ) as r:
-                if r.status != 200:
-                    logger.info(f"ADP {system}: HTTP {r.status} at {json_url}")
-                    break
-                data = await r.json(content_type=None)
 
-            listings = (
-                data.get("jobPostings") or
-                data.get("jobRequisitions") or
-                data.get("jobs") or
-                []
-            )
-            if not listings:
-                # Try alternate key structure
-                if isinstance(data, dict) and data.get("totalCount", 0) > 0:
-                    logger.info(f"ADP {system}: got data but unknown structure: {list(data.keys())}")
+def _adp_centers(value):
+    """Normalise an ADP_ORGS value to [(cid, ccId, state, hospital_name)]."""
+    if isinstance(value, str):
+        return [(value, "19000101_000001", "", "")]
+    if isinstance(value, tuple):
+        value = [value]
+    return [(v[0], v[1], v[2] if len(v) > 2 else "", v[3] if len(v) > 3 else "") for v in value]
+
+
+def _adp_job(j: dict, system: str, cid: str, cc_id: str, default_state: str = "",
+             hospital_name: str = ""):
+    """One jobRequisitions item -> Job, or None when it has no id / title."""
+    item_id = str(j.get("itemID") or j.get("itemId") or j.get("requisitionID") or j.get("id") or "").strip()
+    title = str(j.get("requisitionTitle") or j.get("jobTitle") or j.get("title") or "").strip()
+    if not item_id or not title:
+        return None
+    locs = j.get("requisitionLocations") or []
+    loc0 = locs[0] if locs and isinstance(locs[0], dict) else {}
+    addr = loc0.get("address") or {}
+    city = str(addr.get("cityName") or "").strip()
+    st = str((addr.get("countrySubdivisionLevel1") or {}).get("codeValue") or "").strip()
+    if not (city or st):
+        nc = loc0.get("nameCode") or {}
+        city, st = parse_city_state(str(nc.get("shortName") or nc.get("longName") or ""))
+    if len(st) > 2:
+        st = parse_city_state(f"{city}, {st}")[1] or st
+    st = (st or default_state).upper()
+    # Live shape (Wooster, 2026-09-10): postDate at the top level, JobClass /
+    # SalaryType in customFieldGroup, payGradeRange.min/maximumRate.amountValue
+    # as structured pay (16.21 - 20.92 + SalaryType "Hourly"), workLevelCode
+    # for the schedule ("Casual"), and the facility as the head of
+    # requisitionLocations[].nameCode.shortName ("Wooster Community Hospital,
+    # Wooster, OH, US"). No description in the list payload (list-only rows).
+    posted = str(j.get("postDate") or "")[:10]
+    if not posted:
+        for pi in j.get("postingInstructions") or []:
+            posted = str(pi.get("postingDate") or "")[:10]
+            if posted:
                 break
-
-            for j in listings:
-                loc_obj = j.get("location") or j.get("primaryLocation") or {}
-                if isinstance(loc_obj, str):
-                    loc = loc_obj
-                    city, state = parse_city_state(loc)
-                else:
-                    city  = loc_obj.get("city", "")
-                    raw_st = loc_obj.get("stateCode", "") or loc_obj.get("countrySubdivisionCode", "")
-                    _, state = parse_city_state(f"{city}, {raw_st}")
-                    state = state or raw_st
-                    loc   = f"{city}, {state}"
-                title  = j.get("jobTitle", j.get("title", ""))
-                job_id = str(j.get("requisitionId", j.get("id", j.get("jobPostingId", ""))))
-                jobs.append(Job(
-                    title=title,
-                    hospital_system=system,
-                    hospital_name=j.get("organizationName", j.get("company", system)),
-                    city=city, state=state, location=loc,
-                    specialty=j.get("jobCategory", ""),
-                    job_type=j.get("jobType", j.get("employmentType", "")),
-                    url=base_portal,
-                    job_id=job_id,
-                    posted_date=str(j.get("postingDate", j.get("postedDate", "")))[:10],
-                    description=strip_html(j.get("jobDescription", j.get("description", ""))),
-                    ats_platform="ADP",
-                ))
-
-            if len(listings) < 25:
-                break
-            offset += 25
-            await jitter()
-        except Exception as e:
-            logger.info(f"ADP {system}: {e}")
+    cfg = j.get("customFieldGroup") or {}
+    category, salary_type = "", ""
+    for f in cfg.get("stringFields") or []:
+        code = str((f.get("nameCode") or {}).get("codeValue") or "")
+        if code == "JobClass" or "categor" in code.lower():
+            category = str(f.get("stringValue") or "")
             break
+    for f in cfg.get("codeFields") or []:
+        if str((f.get("nameCode") or {}).get("codeValue") or "") == "SalaryType":
+            salary_type = str(f.get("shortName") or f.get("codeValue") or "")
+    pg = j.get("payGradeRange") or {}
+    lo = (pg.get("minimumRate") or {}).get("amountValue")
+    hi = (pg.get("maximumRate") or {}).get("amountValue")
+    wage = None
+    if isinstance(lo, (int, float)) and isinstance(hi, (int, float)):
+        pair = _wage_pair(float(lo), float(hi))
+        stl = salary_type.lower()
+        hourly = stl.startswith("hour") or stl == "hr"
+        annual = "annual" in stl or "year" in stl or stl in ("sa", "yr")
+        if pair and ((hourly and pair[2] == "hour") or (annual and pair[2] == "year") or not stl):
+            wage = pair
+    if not hospital_name:
+        head = str(((loc0.get("nameCode") or {}).get("shortName") or "")).split(",")[0].strip()
+        if head and head.lower() != city.lower() and not re.search(r"\d", head):
+            hospital_name = head
+    ptype = str((j.get("workLevelCode") or {}).get("shortName") or j.get("positionType") or "").strip()
+    return Job(
+        title=title,
+        hospital_system=system,
+        hospital_name=hospital_name or system,
+        city=city, state=st,
+        location=f"{city}, {st}".strip(", "),
+        specialty=category,
+        job_type=_ADP_POSITION.get(ptype.upper(), ptype),
+        url=f"{_ADP_PORTAL}?cid={cid}&ccId={cc_id}&lang=en_US&selectedMenuKey=CareerCenter&jobId={item_id}",
+        job_id=item_id,
+        posted_date=posted,
+        description=strip_html(j.get("jobDescription") or j.get("description") or ""),
+        ats_platform="ADP",
+        wage_min=wage[0] if wage else None,
+        wage_max=wage[1] if wage else None,
+        wage_unit=wage[2] if wage else None,
+    )
 
-    logger.info(f"  ADP {system}: {len(jobs)} jobs")
+
+async def scrape_adp(session: aiohttp.ClientSession, system: str, value) -> list[Job]:
+    jobs: list[Job] = []
+    totals: list[int] = []
+    for cid, cc_id, default_state, hospital_name in _adp_centers(value):
+        skip, total = 0, None
+        while True:
+            try:
+                async with req(session, "get", _ADP_API,
+                    params={"cid": cid, "ccId": cc_id, "timeStamp": str(int(time.time() * 1000)),
+                            "lang": "en_US", "locale": "en_US",
+                            "$top": str(_ADP_PAGE), "$skip": str(skip)},
+                    headers={**HEADERS,
+                             "Referer": f"{_ADP_PORTAL}?cid={cid}&ccId={cc_id}&lang=en_US",
+                             "Accept": "application/json, text/plain, */*"},
+                    ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)
+                ) as r:
+                    if r.status != 200:
+                        logger.info(f"ADP {system}: HTTP {r.status} (cid {cid[:8]}…, ccId {cc_id})")
+                        break
+                    data = await r.json(content_type=None)
+                items = (data or {}).get("jobRequisitions") or []
+                if total is None:
+                    total = int(((data or {}).get("meta") or {}).get("totalNumber") or 0)
+                for j in items:
+                    job = _adp_job(j, system, cid, cc_id, default_state, hospital_name)
+                    if job:
+                        jobs.append(job)
+                # The API answered 19 to $top=20 on every board in the
+                # 2026-09-10 dry run, so a short page is not the end: page by
+                # what was received until meta.totalNumber is reached.
+                skip += len(items)
+                if not items or (total and skip >= total):
+                    break
+                await jitter()
+            except Exception as e:
+                logger.info(f"ADP {system}: {e}")
+                break
+        totals.append(total or 0)
+    logger.info(f"  ADP {system}: {len(jobs)} jobs (board totals {totals})")
     return jobs
+
 
 async def run_adp(session) -> list[Job]:
     logger.info(f"ADP: scraping {len(ADP_ORGS)} systems...")
+    orgs = priority_states_first(list(ADP_ORGS.items()),
+                                 lambda kv: _adp_centers(kv[1])[0][2])
     results = await asyncio.gather(
-        *[scrape_adp(session, s, c) for s, c in ADP_ORGS.items()],
+        *[scrape_adp(session, s, v) for s, v in orgs],
         return_exceptions=True
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
@@ -4926,7 +5157,11 @@ async def run_infor(session) -> list[Job]:
 #  Format: ("base_url", "guid")
 ##############################################################################
 UKG_ORGS = {
-    "Catawba Valley Medical":       ("https://cchsconnect.rec.pro.ukg.net/COL1053CCHD",  "c6df4630-7da9-4627-af22-819e939d86fa"),
+    # Relabelled 2026-09-10: this board (cchsconnect / COL1053CCHD) is Columbia
+    # County Health System, Dayton WA (14 rows, all WA, in the dry run), not
+    # Catawba Valley (NC). The adapter had never written a row, so no old rows
+    # carry the wrong name.
+    "Columbia County Health System": ("https://cchsconnect.rec.pro.ukg.net/COL1053CCHD", "c6df4630-7da9-4627-af22-819e939d86fa", "WA"),
     "Augusta University Health":    ("https://recruiting.ultipro.com/AUG1000AUG",        "02a29cd6-e7aa-4501-96be-6336647e3184"),
     "Cape Regional Health":         ("https://crhukg.rec.pro.ukg.net/CHE1503CHPE",       "09584b08-b32f-4882-8c7b-223bbd8e3851"),
     "Northwest Medical Center":     ("https://nwmedicalctr.rec.pro.ukg.net/NOR1080NWMC", "f22ba272-5440-48f3-9f0f-84f6f384d461"),
@@ -4953,20 +5188,80 @@ UKG_ORGS = {
     "Murray-Calloway County":       ("https://murray.rec.pro.ukg.net/MUR1004MCCH",       "78a4032f-cda1-471d-86f1-9e64991ed7d2"),
     "TJ Regional Health":           ("https://tjregional.rec.pro.ukg.net/TJS1500TJSC",   "a4b9e606-5dc1-4c8c-ba68-83fd41e97ade"),
     "Lakewood Health":              ("https://recruiting2.ultipro.com/SKY1006LAKES",     "9dcd58e9-9155-4226-9b21-f476fcd1d29b"),
+    # ── 2026-09-10 (S-scraper-2): contract clients on UKG Pro Recruiting. An
+    # optional third element is the state (run order + default when the
+    # opportunity carries none). Springhill's board was found by web search
+    # (the hospital's own careers page 403s every crawler, WebFetch included).
+    "Springhill Medical Center":    ("https://springhill.rec.pro.ukg.net/SPR1500SHSL", "a6346066-8a35-4fb0-b665-fc48587cb154", "AL"),
 }
 
+_UKG_PAGE = 50
+
+
+def _ukg_job(j: dict, system: str, base_url: str, guid: str, default_state: str = "") -> Job:
+    """One LoadSearchResults opportunity -> Job (hoisted 2026-09-10 so the
+    fixture test covers it). UKG Pro Recruiting answers in PascalCase (Id,
+    Title, Locations[].Address.City / .State.Code, PostedDate, FullTime,
+    JobCategoryName, BriefDescription); the camelCase keys the earlier build
+    guessed at are still read second. The detail deep link is
+    /JobBoard/<guid>/OpportunityDetail?opportunityId=<Id>; the old
+    "?detail=" form opened the board's front page."""
+    def g(*keys, default=""):
+        for k in keys:
+            v = j.get(k)
+            if v not in (None, ""):
+                return v
+        return default
+    locs = g("Locations", "locations", default=[]) or []
+    loc0 = locs[0] if locs and isinstance(locs[0], dict) else {}
+    addr = loc0.get("Address") or loc0.get("address") or {}
+    city = str(addr.get("City") or addr.get("city") or g("city", "City") or "").strip()
+    st = addr.get("State") or addr.get("state") or g("state", "State") or ""
+    if isinstance(st, dict):
+        st = st.get("Code") or st.get("code") or st.get("Name") or st.get("name") or ""
+    st = str(st).strip()
+    if len(st) > 2:
+        st = parse_city_state(f"{city}, {st}")[1] or st
+    if not city and not st:
+        city, st = parse_city_state(str(g("location", "Location", "formattedLocation")))
+    st = (st or default_state).upper()
+    facility = str(loc0.get("LocalizedName") or loc0.get("LocalizedDescription")
+                   or loc0.get("Name") or loc0.get("name") or "").strip()
+    if (not facility or "," in facility or re.search(r"\d", facility)
+            or facility.lower() in _US_STATE_CODES or facility.upper() in _US_STATE_CODES.values()):
+        facility = system          # "City, ST", street addresses and region names ("Alabama") are not facilities
+    opp_id = str(g("Id", "id", "opportunityId", "OpportunityId")).strip()
+    full = j.get("FullTime")
+    job_type = str(g("employmentType", "workHours") or
+                   ("Full time" if full is True else "Part time" if full is False else ""))
+    return Job(
+        title=str(g("Title", "title")).strip(),
+        hospital_system=system,
+        hospital_name=facility,
+        city=city, state=st,
+        location=f"{city}, {st}".strip(", "),
+        specialty=str(g("JobCategoryName", "jobCategory", "category")),
+        job_type=job_type,
+        url=f"{base_url}/JobBoard/{guid}/OpportunityDetail?opportunityId={opp_id}",
+        job_id=opp_id,
+        posted_date=str(g("PostedDate", "postedDate"))[:10],
+        description=strip_html(g("BriefDescription", "shortDescription", "description")),
+        ats_platform="UKG",
+    )
+
+
 async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
-    base_url, guid = org_data
+    base_url, guid = org_data[0], org_data[1]
+    default_state = org_data[2] if len(org_data) > 2 else ""
     jobs = []
     # Confirmed endpoint from network intercept on Deaconess
     api = f"{base_url}/JobBoard/{guid}/JobBoardView/LoadSearchResults"
     offset = 0
-    limit = 25
     while True:
         try:
             payload = {
                 "opportunitySearch": {
-                    "Top": limit,
+                    "Top": _UKG_PAGE,
                     "Skip": offset,
                     "QueryString": "",
                     "OrderBy": [{"Value": "postedDateDesc", "PropertyName": "PostedDate", "Ascending": False}],
@@ -4977,39 +5272,24 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
             }
             async with req(session, "post", api,
                 json=payload,
-                headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
+                headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json",
+                         "Referer": f"{base_url}/JobBoard/{guid}/", "X-Requested-With": "XMLHttpRequest"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
                     logger.info(f"UKG {system}: HTTP {r.status}")
                     break
                 data = await r.json(content_type=None)
-            # Response: {"opportunities": [...], "total": N}
-            items = data.get("opportunities", data.get("Opportunities", []))
+            # Response: {"opportunities": [...], "totalCount": N}
+            items = data.get("opportunities", data.get("Opportunities", [])) if isinstance(data, dict) else []
             if not items:
                 break
             for j in items:
-                city  = j.get("city",  j.get("City",  ""))
-                state = j.get("state", j.get("State", ""))
-                if not city and not state:
-                    loc_raw = j.get("location", j.get("Location", j.get("formattedLocation", "")))
-                    city, state = parse_city_state(str(loc_raw))
-                jobs.append(Job(
-                    title=j.get("title", j.get("Title", "")),
-                    hospital_system=system,
-                    hospital_name=j.get("company", {}).get("name", system) if isinstance(j.get("company"), dict) else system,
-                    city=city, state=state,
-                    location=f"{city}, {state}".strip(", "),
-                    specialty=j.get("jobCategory", j.get("category", "")),
-                    job_type=j.get("employmentType", j.get("workHours", "")),
-                    url=f"{base_url}/JobBoard/{guid}/?detail={j.get('opportunityId', j.get('id', ''))}",
-                    job_id=str(j.get("opportunityId", j.get("id", j.get("jobId", "")))),
-                    posted_date=str(j.get("postedDate", j.get("PostedDate", "")))[:10],
-                    description=strip_html(j.get("shortDescription", j.get("description", ""))),
-                    ats_platform="UKG",
-                ))
-            total = data.get("total", data.get("Total", data.get("totalCount", 0)))
-            offset += limit
-            if offset >= total:
+                job = _ukg_job(j, system, base_url, guid, default_state)
+                if job.job_id and job.title:
+                    jobs.append(job)
+            total = int(data.get("totalCount", data.get("total", data.get("Total", 0))) or 0)
+            offset += _UKG_PAGE
+            if offset >= total or len(items) < _UKG_PAGE:
                 break
             await jitter()
         except Exception as e:
@@ -5020,8 +5300,10 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
 
 async def run_ukg(session) -> list[Job]:
     logger.info(f"UKG: scraping {len(UKG_ORGS)} systems...")
+    orgs = priority_states_first(list(UKG_ORGS.items()),
+                                 lambda kv: kv[1][2] if len(kv[1]) > 2 else "")
     results = await asyncio.gather(
-        *[scrape_ukg(session, s, o) for s, o in UKG_ORGS.items()],
+        *[scrape_ukg(session, s, o) for s, o in orgs],
         return_exceptions=True
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
@@ -5644,15 +5926,22 @@ KRONOS_ORGS = {
     # ── Added from scraper1.xlsx expansion ──
     "Kronos Hospital 2": ("prd01-hcm01.prd", "6059921"),
     "Kronos Hospital 3": ("prd01-hcm01.prd", "6142380"),
+    # 2026-09-10 (S-scraper-2): contract client. magruderhospital.com/about-us/
+    # careers links prd01-hcm01.npr.mykronos.com/ta/6070232.careers, i.e. UKG
+    # Ready (this adapter), not UKG Dimensions; the optional third element is
+    # the state (run order + default).
+    "Magruder Hospital": ("prd01-hcm01.npr", "6070232", "OH"),
 }
 
 async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
-    subdomain, company_id = org_data
+    subdomain, company_id = org_data[0], org_data[1]
+    default_state = org_data[2] if len(org_data) > 2 else ""
     jobs  = []
     base  = f"https://{subdomain}.mykronos.com"
     api   = f"{base}/ta/rest/ui/recruitment/companies/%7C{company_id}/job-requisitions"
     offset = 1
     size   = 20
+    seen_ids: set[str] = set()
     while True:
         try:
             params = {"offset": offset, "size": size, "sort": "desc",
@@ -5664,14 +5953,20 @@ async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: t
                     logger.info(f"Kronos {system}: HTTP {r.status}")
                     break
                 data = await r.json(content_type=None)
-            items = data if isinstance(data, list) else data.get("requisitions", data.get("jobs", []))
-            if not items:
-                break
-            for j in items:
-                loc  = j.get("location", {})
-                city  = loc.get("city", "")
-                state = loc.get("state", "")
-                cats  = j.get("job_categories", [])
+            # 2026-09-10 (S-scraper-2): UKG Ready answers {"job_requisitions":
+            # [...]} (Magruder dry run); the keys guessed before never matched,
+            # so this adapter had never returned a row for any org.
+            items = data if isinstance(data, list) else (
+                data.get("job_requisitions") or data.get("requisitions") or data.get("jobs") or [])
+            new = [j for j in items if str(j.get("id", "")) not in seen_ids]
+            if not items or not new:
+                break      # the endpoint ignores offset/size and repeats: stop on no new ids
+            for j in new:
+                seen_ids.add(str(j.get("id", "")))
+                loc  = j.get("location", {}) or {}
+                city  = loc.get("city", "") or ""
+                state = (loc.get("state", "") or default_state)
+                cats  = j.get("job_categories", []) or []
                 jobs.append(Job(
                     title=j.get("job_title", ""),
                     hospital_system=system,
@@ -5679,11 +5974,14 @@ async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: t
                     city=city, state=state,
                     location=f"{city}, {state}".strip(", "),
                     specialty=cats[0] if cats else "",
-                    job_type=j.get("base_pay_frequency", ""),
-                    url=f"{base}/ta/{company_id}.careers?CareersSearch=&lang=en-US",
+                    # 2026-09-10: employee_type is the schedule; base_pay_frequency
+                    # ("YEAR") was being stored as the job type.
+                    job_type=str(((j.get("employee_type") or {}).get("name") if isinstance(j.get("employee_type"), dict)
+                                  else j.get("employee_type")) or j.get("employment_type") or ""),
+                    url=f"{base}/ta/{company_id}.careers?CareersSearch=&ShowJob={j.get('id', '')}&lang=en-US",
                     job_id=str(j.get("id", "")),
                     posted_date="",
-                    description="",
+                    description=strip_html(j.get("job_description") or ""),
                     ats_platform="Kronos",
                 ))
             offset += size
@@ -5699,11 +5997,188 @@ async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: t
 async def run_kronos(session) -> list[Job]:
     logger.info(f"Kronos: scraping {len(KRONOS_ORGS)} systems...")
     results = await asyncio.gather(
-        *[scrape_kronos(session, s, o) for s, o in KRONOS_ORGS.items()],
+        *[scrape_kronos(session, s, o) for s, o in
+          priority_states_first(list(KRONOS_ORGS.items()), lambda kv: kv[1][2] if len(kv[1]) > 2 else "")],
         return_exceptions=True
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Kronos total: {len(jobs):,} jobs")
+    return jobs
+
+
+##############################################################################
+#  NEOGOV / GOVERNMENTJOBS.COM — county and public-district hospitals
+#  (added 2026-09-10, S-scraper-2). The careers page is an MVC app whose
+#  list is a plain GET partial (captured from the page's own XHR):
+#    GET https://www.governmentjobs.com/careers/home/index
+#        ?agency=<agency>&sort=PostingDate&isDescendingSort=true&page=N
+#  -> HTML with <li class="list-item" data-job-id="..."> cards, 10 a page:
+#  <a class="item-details-link" data-department-name="..." href="/careers/
+#  <agency>/jobs/<id>/<slug>">, a "Full time - $x - $y Annually" line,
+#  "Category:", "Department:", sometimes "Location:", a snippet, and
+#  <span id="job-postings-number">N</span> for the total. County boards mix
+#  every department, so each agency carries a department regex and rows from
+#  other departments are dropped. City / state default to the hospital's CMS
+#  city / state; a card "Location:" wins when present. List-only (no
+#  description body, relative posted date), like the UHG / Kaiser adapters.
+#  Format: "System": (agency, state, CMS city, hospital_name, department regex | None)
+##############################################################################
+NEOGOV_AGENCIES = {
+    # Seeded from CMS ownership "Government - Local / Hospital District" in the
+    # top coverage states; California first (transparency state, 64 government
+    # acute hospitals in CMS). Department strings are what each board used on
+    # 2026-09-10 (per-agency dry run in reports/S-scraper-2.md).
+    "Los Angeles County Department of Health Services":
+        ("lacounty", "CA", "", "Los Angeles County Department of Health Services", r"^HEALTH SERVICES$"),
+    "Riverside University Health System":
+        ("riverside", "CA", "Moreno Valley", "Riverside University Health System - Medical Center", r"^RUHS"),
+    "Arrowhead Regional Medical Center":
+        ("sanbernardino", "CA", "Colton", "Arrowhead Regional Medical Center", r"Arrowhead"),
+    "Ventura County Medical Center":
+        ("ventura", "CA", "Ventura", "Ventura County Medical Center", r"^Health Care Agency"),
+    "Contra Costa Regional Medical Center":
+        ("contracosta", "CA", "Martinez", "Contra Costa Regional Medical Center", r"^Health Services"),
+    "Natividad Medical Center":
+        ("montereycounty", "CA", "Salinas", "Natividad Medical Center", r"Natividad"),
+    # Santa Clara Valley Healthcare: Valley Medical Center plus the Regional
+    # Medical Center of San Jose the county took over in 2025; both San Jose.
+    "Santa Clara Valley Healthcare":
+        ("santaclara", "CA", "San Jose", "Santa Clara Valley Healthcare", r"^Santa Clara Valley Health"),
+    "San Mateo Medical Center":
+        ("sanmateo", "CA", "San Mateo", "San Mateo Medical Center", r"^San Mateo Medical Center"),
+    "University Medical Center of Southern Nevada":
+        ("umcsn", "NV", "Las Vegas", "University Medical Center of Southern Nevada", None),
+}
+NEOGOV_MAX_PAGES = int(os.getenv("NEOGOV_MAX_PAGES", "80"))   # 10 cards a page
+_NG_INDEX = "https://www.governmentjobs.com/careers/home/index"
+_NG_LINK_RX = re.compile(
+    r'class="item-details-link"[^>]*href="(/careers/[^"]+/jobs/(\d+)/[^"]*)"[^>]*>(.*?)</a>', re.S)
+_NG_DEPT_RX = re.compile(r'data-department-name="([^"]*)"')
+_NG_META_RX = re.compile(r'<ul class="list-meta">(.*?)</ul>', re.S)
+_NG_LI_RX = re.compile(r'<li[^>]*>(.*?)</li>', re.S)
+_NG_ENTRY_RX = re.compile(r'<div class="list-entry">(.*?)</div>', re.S)
+_NG_TOTAL_RX = re.compile(r'id="job-postings-number">\s*([\d,]+)')
+_NG_SALARY_RX = re.compile(
+    r'\$\s*([\d,]+(?:\.\d+)?)\s*-\s*\$\s*([\d,]+(?:\.\d+)?)\s*(Annually|Hourly|Monthly|Biweekly|Weekly|Daily)?', re.I)
+
+
+def _ng_text(s):
+    return re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", s or ""))).strip()
+
+
+def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, dept_rx=None):
+    """(jobs, total, cards_on_page) from one list partial. dept_rx (compiled)
+    keeps only the hospital departments of a county-wide board."""
+    total_m = _NG_TOTAL_RX.search(page_html or "")
+    total = int(total_m.group(1).replace(",", "")) if total_m else 0
+    jobs, cards = [], 0
+    for chunk in (page_html or "").split('<li class="list-item" data-job-id="')[1:]:
+        cards += 1
+        lm = _NG_LINK_RX.search(chunk)
+        if not lm:
+            continue
+        path, job_id, title = lm.group(1), lm.group(2), _ng_text(lm.group(3))
+        dm = _NG_DEPT_RX.search(chunk)
+        dept = _ng_text(dm.group(1)) if dm else ""
+        if dept_rx and not dept_rx.search(dept):
+            continue
+        mm = _NG_META_RX.search(chunk)
+        meta = [_ng_text(x) for x in _NG_LI_RX.findall(mm.group(1))] if mm else []
+        job_type, salary, category, loc_text = "", "", "", ""
+        for m in meta:
+            low = m.lower()
+            if not m:
+                continue
+            if low.startswith("category:"):
+                category = m.split(":", 1)[1].strip()
+            elif low.startswith("location:"):
+                loc_text = m.split(":", 1)[1].strip()
+            elif low.startswith(("department:", "exam type:", "closing:", "job number:")):
+                continue
+            elif "$" in m:
+                head, _, tail = m.partition("$")
+                job_type = head.strip(" -").strip() or job_type
+                salary = "$" + tail.strip()
+            elif not job_type:
+                job_type = m
+        wage = None
+        sm = _NG_SALARY_RX.search(salary)
+        if sm:
+            unit = (sm.group(3) or "").lower()
+            pair = _wage_pair(_wage_num(sm.group(1)), _wage_num(sm.group(2)))
+            if pair and ((unit == "annually" and pair[2] == "year") or (unit == "hourly" and pair[2] == "hour")):
+                wage = pair
+        c, s = parse_city_state(loc_text) if loc_text else ("", "")
+        c = c or city
+        s = (s or state).upper()
+        em = _NG_ENTRY_RX.search(chunk)
+        snippet = _ng_text(em.group(1)) if em else ""
+        desc = (f"Salary: {salary}. " if salary else "") + snippet
+        jobs.append(Job(
+            title=title,
+            hospital_system=system,
+            hospital_name=hospital_name or system,
+            city=c, state=s,
+            location=f"{c}, {s}".strip(", "),
+            specialty=category,
+            job_type=job_type,
+            url=f"https://www.governmentjobs.com{path}",
+            job_id=job_id,
+            posted_date="",
+            description=desc[:8000],
+            ats_platform="NeoGov",
+            wage_min=wage[0] if wage else None,
+            wage_max=wage[1] if wage else None,
+            wage_unit=wage[2] if wage else None,
+        ))
+    return jobs, total, cards
+
+
+async def _neogov_fetch_page(session, agency: str, page: int) -> tuple[int, str]:
+    async with req(session, "get", _NG_INDEX,
+        params={"agency": agency, "sort": "PostingDate", "isDescendingSort": "true", "page": str(page)},
+        headers={**HEADERS, "Accept": "text/html, */*; q=0.01", "X-Requested-With": "XMLHttpRequest",
+                 "Referer": f"https://www.governmentjobs.com/careers/{agency}"},
+        ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+        return r.status, (await r.text() if r.status == 200 else "")
+
+
+async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple) -> list[Job]:
+    agency, state, city, hospital_name, dept_pat = cfg
+    dept_rx = re.compile(dept_pat, re.I) if dept_pat else None
+    jobs: list[Job] = []
+    page, total = 1, 0
+    while True:
+        try:
+            status, html_ = await _neogov_fetch_page(session, agency, page)
+            if status != 200:
+                logger.info(f"NeoGov {system}: HTTP {status} (agency {agency}, page {page})")
+                break
+            got, total, cards = _parse_neogov_page(html_, system, agency, state, city, hospital_name, dept_rx)
+            jobs.extend(got)
+            if not cards or page * 10 >= total or page >= NEOGOV_MAX_PAGES:
+                break
+            page += 1
+            await jitter()
+        except Exception as e:
+            logger.info(f"NeoGov {system}: {e}")
+            break
+    logger.info(f"  NeoGov {system}: {len(jobs)} jobs kept of {total} on the {agency} board")
+    return jobs
+
+
+async def run_neogov(session) -> list[Job]:
+    logger.info(f"NeoGov: scraping {len(NEOGOV_AGENCIES)} agencies (transparency states first)...")
+    jobs: list[Job] = []
+    # Sequential on purpose: one agency at a time, jitter between pages, so a
+    # county board never sees more than one request in flight from us.
+    for system, cfg in priority_states_first(list(NEOGOV_AGENCIES.items()), lambda kv: kv[1][1]):
+        try:
+            jobs.extend(await scrape_neogov(session, system, cfg))
+        except Exception as e:
+            logger.info(f"NeoGov {system}: {e}")
+        await jitter()
+    logger.info(f"  NeoGov total: {len(jobs):,} jobs")
     return jobs
 
 
@@ -6240,16 +6715,32 @@ async def run_paycor(session) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 
 HCA_BASE = "https://careers.hcahealthcare.com"
-# Active-state slugs from the site's State facet (2026-07-28). A slug with no
-# jobs just returns an empty page — harmless — so this list only needs a new
-# entry if HCA expands into a new state (check the State facet on /search/jobs).
+# Active-state slugs from the site's State facet (2026-07-28; audited
+# 2026-09-10, S-scraper-2: ms-mississippi removed — HCA has no Mississippi
+# facilities and the site answered that slug with the NATIONAL search, 10,000
+# rows of other states; _hca_fetch_slice now catches that on page 1).
+# It is the FLOOR: run_hca also reads the live State facet and crawls any
+# slug it finds that is missing here (logged), so a new HCA state cannot go
+# uncrawled. Run order is set by priority_states_first (CO, CA first).
 HCA_STATE_SLUGS = [
     "ak-alaska", "ar-arkansas", "ca-california", "co-colorado", "fl-florida",
     "ga-georgia", "id-idaho", "ks-kansas", "ky-kentucky", "la-louisiana",
-    "mo-missouri", "ms-mississippi", "nc-north-carolina", "nh-new-hampshire",
+    "mo-missouri", "nc-north-carolina", "nh-new-hampshire", "nm-new-mexico",
     "nv-nevada", "oh-ohio", "ok-oklahoma", "sc-south-carolina", "tn-tennessee",
-    "tx-texas", "ut-utah", "va-virginia", "wy-wyoming",
+    "tx-texas", "ut-utah", "va-virginia", "wi-wisconsin", "wy-wyoming",
 ]
+HCA_PAGE_SIZE = 500
+HCA_PAGE_CAP = 20                 # 20 x 500 = the site's 10,000-row search ceiling
+HCA_IMPERSONATE = os.getenv("HCA_IMPERSONATE", "firefox")   # TLS profile; see _curl_fetch
+# Overflow slicing, only for a state that fills HCA_PAGE_CAP full pages (the
+# 10k ceiling truncated it): the same state is re-crawled per keyword and
+# unioned by job id. No state is near it today (FL, the largest, ~4.6k), so
+# this is the guard rail for the day one is.
+HCA_OVERFLOW_QUERIES = ["nurse", "rn", "tech", "technologist", "therapist", "physician",
+                        "assistant", "coordinator", "manager", "specialist", "pharmac",
+                        "surgical", "patient", "clinical"]
+_HCA_FACET_RE = re.compile(r'/search/jobs/in/([a-z]{2}-[a-z-]+)')
+_HCA_FAILED_SLICES: list[str] = []
 
 _HCA_ANCHOR_RE = re.compile(
     r'<a class="neu-link" href="(https://careers\.hcahealthcare\.com/jobs/(\d+)-[^"]+)"[^>]*>([^<]+)</a>'
@@ -6350,35 +6841,104 @@ def _curl_fetch(method: str, url: str, impersonate: str, timeout: int = 60, **kw
     raise last_exc
 
 
-def _hca_fetch_state(slug: str) -> list[Job]:
-    """Blocking per-state crawl — runs in a worker thread via asyncio.to_thread."""
+def _hca_is_state_slug(slug: str) -> bool:
+    """"co-colorado" yes; "el-paso" / "st-petersburg" no. The facet regex also
+    matches the site's city links (2026-09-10 dry run), and a city slug costs
+    a full national-search page before the page-1 guard rejects it."""
+    code, _, name = slug.partition("-")
+    return _US_STATE_CODES.get(name.replace("-", " ")) == code.upper()
+
+
+def _hca_discover_state_slugs() -> list[str]:
+    """Static list plus whatever the live State facet lists, transparency
+    states first. The static list alone when the facet page cannot be read
+    (logged, never fatal)."""
+    slugs = list(HCA_STATE_SLUGS)
+    try:
+        r = _curl_fetch("get", f"{HCA_BASE}/search/jobs", HCA_IMPERSONATE, timeout=60,
+                        params={"q": ""})
+        live = sorted(x for x in set(_HCA_FACET_RE.findall(r.text)) if _hca_is_state_slug(x))
+        new = [s for s in live if s not in slugs]
+        if new:
+            logger.info(f"  HCA: State facet lists {len(new)} slug(s) missing from "
+                        f"HCA_STATE_SLUGS {new} — crawling them too; add them to the list")
+            slugs.extend(new)
+    except Exception as e:
+        logger.info(f"  HCA: State facet unreadable ({e}); using the static list")
+    return priority_states_first(slugs, lambda s: s[:2])
+
+
+def _hca_fetch_slice(slug: str, q: str = "") -> tuple[list[Job], bool, bool]:
+    """Blocking crawl of one state (optionally one keyword inside it).
+    Returns (jobs, finished, capped): finished is False when a page failed
+    every retry, capped is True when the slice filled HCA_PAGE_CAP full pages
+    (the 10k ceiling; the caller re-slices by keyword)."""
     out: list[Job] = []
     page, errors, last_err = 1, 0, None
+    label = f"{slug}?q={q}" if q else slug
     while True:
         try:
             r = _curl_fetch(
-                "get", f"{HCA_BASE}/search/jobs/in/{slug}", "firefox", timeout=90,
-                params={"q": "", "page": str(page), "per_page": "500"},
+                "get", f"{HCA_BASE}/search/jobs/in/{slug}", HCA_IMPERSONATE, timeout=90,
+                params={"q": q, "page": str(page), "per_page": str(HCA_PAGE_SIZE)},
             )
             cards = _parse_hca_cards(r.text)
         except Exception as e:
             last_err = e
             errors += 1
-            if errors >= 3:
-                # Each _curl_fetch already tried proxy AND direct, so 3 loop
-                # errors = up to 6 failed attempts. Surface WHY: 402 = pool
+            if errors >= 4:
+                # Each _curl_fetch already tried proxy AND direct, so 4 loop
+                # errors = up to 8 failed attempts. Surface WHY: 402 = pool
                 # out of bandwidth, 403 = Cloudflare IP block, else network.
-                logger.info(f"  HCA {slug}: page {page} failed 3x (last: {last_err}) "
-                            f"— stopping at {len(out)} jobs")
-                return out
-            time.sleep(2 * errors)
+                logger.info(f"  HCA {label}: page {page} failed {errors}x (last: {last_err}) "
+                            f"— stopping at {len(out)} jobs; slice marked PARTIAL")
+                return out, False, False
+            time.sleep(min(30, 3 * 2 ** errors))   # 6, 12, 24 s: outlasts a WAF burst window
             continue
         errors = 0
         if not cards:
-            return out
+            return out, True, False
+        if page == 1 and not q:
+            # 2026-09-10 (S-scraper-2 dry run): a slug the site does not know
+            # is NOT an empty page. ms-mississippi (HCA left the state) came
+            # back as the unsegmented national search: 10,000 rows of other
+            # states over 716 s. Recognise that on page 1 and stop.
+            st = slug[:2].upper()
+            matched = sum(1 for c in cards if c.state == st)
+            if matched < len(cards) / 2:
+                logger.info(f"  HCA {slug}: not a State facet value — page 1 is the national "
+                            f"search ({matched}/{len(cards)} cards in {st}); skipping this slug "
+                            f"(remove it from HCA_STATE_SLUGS)")
+                return [], True, False
         out.extend(cards)
+        if page >= HCA_PAGE_CAP:
+            return out, True, len(cards) >= HCA_PAGE_SIZE
         page += 1
         time.sleep(0.6)  # polite pacing — keep the WAF happy
+
+
+def _hca_fetch_state(slug: str) -> list[Job]:
+    """Per-state crawl — runs in a worker thread via asyncio.to_thread.
+    Records unfinished slices in _HCA_FAILED_SLICES (run_hca turns that into
+    PARTIAL_SYSTEMS so the sweep leaves HCA alone that night)."""
+    jobs, finished, capped = _hca_fetch_slice(slug)
+    if not finished:
+        _HCA_FAILED_SLICES.append(slug)
+    if capped:
+        logger.warning(f"  HCA {slug}: filled {HCA_PAGE_CAP} pages — the {HCA_PAGE_CAP * HCA_PAGE_SIZE:,}-row "
+                       f"search ceiling truncated it; re-crawling by keyword")
+        ids = {j.job_id for j in jobs}
+        for q in HCA_OVERFLOW_QUERIES:
+            extra, ok, _ = _hca_fetch_slice(slug, q)
+            if not ok:
+                _HCA_FAILED_SLICES.append(f"{slug}?q={q}")
+            for j in extra:
+                if j.job_id not in ids:
+                    ids.add(j.job_id)
+                    jobs.append(j)
+            time.sleep(0.6)
+        logger.info(f"  HCA {slug}: {len(jobs):,} jobs after keyword slices")
+    return jobs
 
 
 async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
@@ -6386,12 +6946,16 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
     if curl_requests is None:
         logger.warning("HCA Healthcare: curl_cffi not installed — skipping")
         return []
-    logger.info(f"HCA Healthcare: browserless crawl, {len(HCA_STATE_SLUGS)} states (Firefox TLS)...")
+    _HCA_FAILED_SLICES.clear()
+    slugs = await asyncio.to_thread(_hca_discover_state_slugs)
+    logger.info(f"HCA Healthcare: browserless crawl, {len(slugs)} states, transparency states "
+                f"first ({HCA_IMPERSONATE} TLS)...")
 
     all_jobs: list[Job] = []
+    per_state: dict[str, int] = {}
     BATCH = 4  # states in flight at once ≈ 2 req/s peak across threads
-    for i in range(0, len(HCA_STATE_SLUGS), BATCH):
-        batch = HCA_STATE_SLUGS[i:i + BATCH]
+    for i in range(0, len(slugs), BATCH):
+        batch = slugs[i:i + BATCH]
         results = await asyncio.gather(
             *[asyncio.to_thread(_hca_fetch_state, s) for s in batch],
             return_exceptions=True,
@@ -6399,8 +6963,10 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
         for slug, res in zip(batch, results):
             if isinstance(res, Exception):
                 logger.info(f"  HCA {slug}: ERROR {res}")
+                _HCA_FAILED_SLICES.append(slug)
             else:
                 logger.info(f"  HCA {slug}: {len(res)} jobs")
+                per_state[slug[:2].upper()] = len(res)
                 all_jobs.extend(res)
 
     seen: set[str] = set()
@@ -6411,8 +6977,16 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
         seen.add(j.job_id)
         unique.append(j)
     dupes = len(all_jobs) - len(unique)
-    logger.info(f"  HCA Healthcare TOTAL: {len(unique):,} jobs"
+    logger.info(f"  HCA Healthcare TOTAL: {len(unique):,} jobs across {len(per_state)} states"
                 + (f" ({dupes} cross-state dupes removed)" if dupes else ""))
+    if _HCA_FAILED_SLICES:
+        # 2026-09-10: a slice that never finished means the crawl is not the
+        # inventory. Say so and keep the sweep off HCA tonight (PARTIAL_SYSTEMS).
+        PARTIAL_SYSTEMS.add("HCA Healthcare")
+        logger.warning(f"  HCA Healthcare: PARTIAL run — {len(_HCA_FAILED_SLICES)} slice(s) did not "
+                       f"finish {_HCA_FAILED_SLICES}; the per-system sweep skips HCA this run "
+                       f"(403 = Cloudflare IP block: fund the residential pool or run "
+                       f"hca_local_push.py from a home IP)")
     return unique
 
 
@@ -8366,7 +8940,12 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         s = r.get("hospital_system")
         if s:
             system_counts[s] = system_counts.get(s, 0) + 1
-    safe_systems = sorted(s for s, n in system_counts.items() if n >= DEACT_MIN)
+    # 2026-09-10 (S-scraper-2): an adapter that reported a partial run
+    # (PARTIAL_SYSTEMS, post-alias names) is never swept that night.
+    partial = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS}
+    if partial:
+        logger.warning(f"Hospital deactivate skip (adapter reported a PARTIAL run): {sorted(partial)}")
+    safe_systems = sorted(s for s, n in system_counts.items() if n >= DEACT_MIN and s not in partial)
     skipped      = sorted((s, n) for s, n in system_counts.items() if 0 < n < DEACT_MIN)
     if skipped:
         sk = skipped[:8]
@@ -8501,6 +9080,10 @@ def normalize_job(j: Job) -> dict:
     # addresses, and pipe/newline facility blocks into a real city or "".
     # Anything blanked here is refilled by the FACILITY/SYSTEM location
     # fallback below. (see city_utils.clean_city)
+    # 2026-09-10: keep the adapter's raw city / location text for the CMS
+    # facility lookup below (clean_city blanks facility names, correctly).
+    raw_city = (d.get("city") or "").strip()
+    raw_loc  = (d.get("location") or "").strip()
     city  = clean_city((d.get("city") or "").strip().strip(",").strip())
     state = (d.get("state") or "").strip().upper()
 
@@ -8537,6 +9120,17 @@ def normalize_job(j: Job) -> dict:
                 city = fallback_city
             if not state:
                 state = fallback_state
+
+    # CMS facility lookup (2026-09-10, S-scraper-2): a unique CMS facility
+    # name in hospital_name or in the raw location text fills state (and city
+    # when blank). Nothing system-level; see cms_location_for.
+    if not state:
+        hit = cms_location_for(d.get("hospital_name"), raw_loc, raw_city)
+        if hit:
+            if not city:
+                city = hit[0]
+            state = hit[1]
+            _CMS_FILLS["n"] += 1
 
     # Build canonical location: "City, ST" — blank if both missing
     if city and state:
@@ -8767,8 +9361,51 @@ def extract_posted_wage(text):
     return None
 
 
+def finalize_jobs(all_jobs: list) -> list[dict]:
+    """The tail every push shares (run_all and hca_local_push.py), hoisted
+    2026-09-10 (S-scraper-2): exact dedupe on (ats, post-alias system,
+    job_id), the telehealth rules, the cross-tenant family dedupe
+    (SYSTEM_FAMILIES) and normalize_job (which does the CMS fill)."""
+    seen, unique = set(), []
+    family_seen: dict[tuple, str] = {}
+    family_dropped = 0
+    for job in all_jobs:
+        if not job.job_id or not job.title:
+            continue
+        canon = HOSPITAL_SYSTEM_ALIASES.get(job.hospital_system, job.hospital_system)
+        key = f"{job.ats_platform}::{canon}::{job.job_id}"
+        if key in seen:
+            continue
+        seen.add(key)
+        # 2026-09-10 (T2): telehealth gates + state-from-title before
+        # normalize_job; None means the row is dropped.
+        job = apply_employer_rules(job)
+        if job is None:
+            continue
+        row = normalize_job(job)
+        fam = SYSTEM_FAMILIES.get(job.hospital_system)
+        if fam:
+            fac = "" if job.hospital_name in SYSTEM_FAMILIES else _cms_norm(row.get("hospital_name"))
+            fkey = (fam, (row.get("title") or "").strip().lower(), fac,
+                    (row.get("city") or "").strip().lower(), row.get("state") or "")
+            src = family_seen.get(fkey)
+            if src is not None and src != job.hospital_system:
+                family_dropped += 1
+                continue
+            family_seen.setdefault(fkey, job.hospital_system)
+        unique.append(row)
+    if family_dropped:
+        logger.info(f"Cross-tenant dedupe: dropped {family_dropped} rows listed twice by one family (SYSTEM_FAMILIES)")
+    if _CMS_FILLS["n"]:
+        logger.info(f"CMS lookup: filled state on {_CMS_FILLS['n']} rows")
+    return unique
+
+
 async def run_all() -> list[dict]:
     start = datetime.now()
+    # 2026-09-10: CMS facility lookup for the blank-state fill (read-only,
+    # no-op without credentials).
+    await asyncio.to_thread(load_cms_lookup)
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     proxy_connector  = aiohttp.TCPConnector(limit=30, ssl=False)
@@ -8813,6 +9450,7 @@ async def run_all() -> list[dict]:
             run_uhs(proxy_session),
             run_lifepoint(proxy_session),
             run_kronos(proxy_session),
+            run_neogov(proxy_session),  # NeoGov / governmentjobs.com county hospital boards (added 2026-09-10)
             run_applicantpro(proxy_session),
             run_csod(proxy_session),
             run_paycom(proxy_session),
@@ -8832,18 +9470,7 @@ async def run_all() -> list[dict]:
         if isinstance(r, list):
             all_jobs.extend(r)
 
-    seen, unique = set(), []
-
-    for job in all_jobs:
-        key = f"{job.ats_platform}::{job.hospital_system}::{job.job_id}"
-        if key not in seen and job.job_id and job.title:
-            seen.add(key)
-            # 2026-09-10 (T2): telehealth gates + state-from-title before
-            # normalize_job; None means the row is dropped.
-            job = apply_employer_rules(job)
-            if job is None:
-                continue
-            unique.append(normalize_job(job))
+    unique = finalize_jobs(all_jobs)
 
     elapsed = (datetime.now() - start).seconds
     logger.info("=" * 55)

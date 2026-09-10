@@ -1,0 +1,99 @@
+{
+ "opportunities": [
+  {
+   "Id": "ce9f32ac-832c-472b-8e49-e94ebb77e4b0",
+   "Featured": false,
+   "Title": "Clinic Office Assistant (RN,LPN, CMA/RMA/CCMA) - Elkton Primary Care",
+   "RequisitionNumber": "CLINI019854",
+   "FullTime": true,
+   "JobCategoryName": "Medical Office Professional",
+   "Locations": [
+    {
+     "Id": "c564c2a6-1161-51c4-bd9f-42fd4bf2367c",
+     "LocalizedName": null,
+     "LocalizedLocationId": null,
+     "LocalizedDescription": "Elkton Clinic",
+     "Address": {
+      "Line1": "713 W Main St",
+      "Line2": null,
+      "City": "Elkton",
+      "PostalCode": "42220",
+      "State": {
+       "Code": "KY",
+       "Name": "Kentucky"
+      },
+      "Country": {
+       "Code": "USA",
+       "Name": "United States"
+      }
+     },
+     "DisplayName": false,
+     "DisplayLocationId": false,
+     "DisplayAddress": true,
+     "DisplayStreetAddress": false,
+     "DisplayDescription": false,
+     "SourceOfTruth": 1,
+     "Coordinates": {
+      "Latitude": 36.813688095107,
+      "Longitude": -87.174264512572
+     }
+    }
+   ],
+   "PostedDate": "2026-09-10T04:18:12.543Z",
+   "BriefDescription": "Location: 713 W Main Street, Elkton, KY 42220\nSchedule: Days, Monday -Friday, no weekends or holidays\nHours: 40 per week\n\nBase Pay Ranges:\nCMA/RMA: $19.14\nClinic LPN: $22.32\nClinic RN: $26.04",
+   "MatchScore": 1.0,
+   "MatchedLocations": [],
+   "Distance": null,
+   "JobLocationType": 1,
+   "OpportunityType": 0
+  },
+  {
+   "Id": "47888fe1-77c0-4df7-8be2-07f2c7d4de2f",
+   "Featured": false,
+   "Title": "Family Nurse Practitioner - Deaconess Clinic Atkinson; F-T 80 hrs./pay",
+   "RequisitionNumber": "FAMIL019580",
+   "FullTime": true,
+   "JobCategoryName": "Advanced Practice Provider",
+   "Locations": [
+    {
+     "Id": "719c73fe-4b48-5fd4-bf99-c0906fb135e7",
+     "LocalizedName": null,
+     "LocalizedLocationId": null,
+     "LocalizedDescription": "Atkinson Medical Building",
+     "Address": {
+      "Line1": "1413 N Elm St",
+      "Line2": null,
+      "City": "Henderson",
+      "PostalCode": "42420",
+      "State": {
+       "Code": "KY",
+       "Name": "Kentucky"
+      },
+      "Country": {
+       "Code": "USA",
+       "Name": "United States"
+      }
+     },
+     "DisplayName": false,
+     "DisplayLocationId": false,
+     "DisplayAddress": true,
+     "DisplayStreetAddress": false,
+     "DisplayDescription": false,
+     "SourceOfTruth": 1,
+     "Coordinates": {
+      "Latitude": 37.85496825294556,
+      "Longitude": -87.5806072204216
+     }
+    }
+   ],
+   "PostedDate": "2026-09-09T20:34:20.592Z",
+   "BriefDescription": "Deaconess Clinic Atkinson is seeking a compassionate and skilled Family Nurse Practitioner to provide coverage under physician supervision.  This role will offer a focus on patient care within the clinic setting.  This is a salaried full-time position with a competitive base rate and benefits package.  Typical working hours will be Monday \u2013 Friday, 8:00 am \u2013 5:00 pm.   This role supports our mission of delivering high-quality care with respect and compassion to our community.  Position requires licensure in the state of Kentucky.",
+   "MatchScore": 1.0,
+   "MatchedLocations": [],
+   "Distance": null,
+   "JobLocationType": 1,
+   "OpportunityType": 0
+  }
+ ],
+ "totalCount": 2
+}

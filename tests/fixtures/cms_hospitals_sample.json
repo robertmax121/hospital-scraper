@@ -1,0 +1,37 @@
+[
+ {
+  "hospital_name": "ARROWHEAD REGIONAL MEDICAL CENTER",
+  "city": "Colton",
+  "state": "CA"
+ },
+ {
+  "hospital_name": "CONTRA COSTA REGIONAL MEDICAL CENTER",
+  "city": "Martinez",
+  "state": "CA"
+ },
+ {
+  "hospital_name": "NATIVIDAD MEDICAL CENTER",
+  "city": "Salinas",
+  "state": "CA"
+ },
+ {
+  "hospital_name": "VENTURA COUNTY MEDICAL CENTER",
+  "city": "Ventura",
+  "state": "CA"
+ },
+ {
+  "hospital_name": "MEMORIAL HOSPITAL",
+  "city": "Belleville",
+  "state": "IL"
+ },
+ {
+  "hospital_name": "MEMORIAL HOSPITAL",
+  "city": "Carthage",
+  "state": "IL"
+ },
+ {
+  "hospital_name": "MEMORIAL HOSPITAL",
+  "city": "Chester",
+  "state": "IL"
+ }
+]

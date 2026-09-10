@@ -1,0 +1,4 @@
+# Test-only dependencies (2026-09-10). `python -m pytest` from the repo root;
+# the suite is fixture-based and needs no network or database.
+-r requirements.txt
+pytest>=8
