@@ -364,6 +364,12 @@ def derive_job_type(title, raw_job_type):
 
 
 WORKDAY_TENANTS = {
+    # Teladoc Health (2026-09-10 T2 telehealth batch): the wd1 link on their
+    # careers page returns HTTP 422; the live tenant is wd503, site
+    # teladochealth_is_hiring (43 postings, 21 US, 8 US clinical on
+    # 2026-09-09). Brand anchor, small board; the 1099 THMG network is
+    # recruited off-ATS. Non-US rows are dropped by apply_employer_rules.
+    "Teladoc Health":            ("teladoc",            "503", "teladochealth_is_hiring"),
     # ── Kaiser Permanente removed 2026-05-26 ──
     # The kaiserpermanente.wd5.myworkdayjobs.com tenant now returns
     # HTTP 422 for cxs POST and 500 + maintenance-page redirect for
@@ -2066,6 +2072,7 @@ async def run_uhg(session: aiohttp.ClientSession) -> list[Job]:
     return await scrape_uhg_talentbrew(session)
 
 
+
 # ── Enhabit Home Health & Hospice (dedicated HTML adapter) ──────────────────
 # Enhabit runs careers.enhabit.com on TalentBrew company 39891. The standard
 # /results JSON endpoint replies hasContent:false / 61-byte shell even after
@@ -2954,6 +2961,26 @@ GREENHOUSE_ORGS = {
     # validated live this session, 2,571 jobs. Their branded site 403s plain
     # clients but the Greenhouse API is open.
     "BAYADA Home Health Care":     "bayada",
+    # ── 2026-09-10 telehealth batch (T2). Every token confirmed via boards-api
+    # on 2026-09-09 (HTTP 200; whole-board total, then the clinical slice from
+    # reports/W-telehealth-targets.md). All are tagged employer_type=telehealth
+    # through TELEHEALTH_SYSTEMS and pass the clinical-title and 1099 gates
+    # (apply_employer_rules), so only the clinical slice lands.
+    "Charlie Health":    "charliehealth",       # 261 total, ~46 clinical: W2 therapists by state, pay posted
+    "Equum Medical":     "equummedical",        # 8 total, 5 clinical: tele-ICU, tele-psych, virtual nursing
+    "Cadence":           "cadencehealth",       # 15 total, 11 clinical: remote RN/LPN/NP, pay posted
+    "Boulder Care":      "bouldercare",         # 18 total, ~11 clinical: telehealth NP by state, pay posted
+    "Hazel Health":      "hazel",               # 18 total, ~17 clinical: part-time virtual BH by state
+    "Galileo":           "galileo",             # 13 total, ~7 clinical: remote NP by state, TX physicians
+    "Ophelia":           "ophelia",             # 12 total, 6 clinical: NP/PA by state, no pay posted
+    "Hicuity Health":    "hicuityhealth",       # 7 total, 2 clinical: tele-ICU program LVNs
+    "Workit Health":     "workithealth",        # 8 total, 3 clinical
+    "Bicycle Health":    "bicyclehealth",       # 11 total, ~3 clinical
+    "Spring Health":     "springhealth66",      # 76 total, 5 clinical (engineering board; the gate drops the rest)
+    # 1099-only boards, included so the entries exist if the 1099 gate is ever
+    # relaxed; with the gate on they contribute 0 rows:
+    "Octave":            "octave",              # 29 total, 24 clinical, all 1099
+    "Headspace":         "headspaceproviders",  # 7 total, 6 clinical, all 1099
     # ── Removed 2026-04-27: all returned HTTP 404 in production ──
     # "Carbon Health":             "carbonhealth",        # 404
     # "Included Health":           "includedhealth",      # 404
@@ -3197,12 +3224,23 @@ async def run_concentra(session) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 LEVER_ORGS = {
     # Verified working Lever org IDs (slug from jobs.lever.co/{slug})
-    "Brightside Health":    "brightside",
     "Tempus AI":            "tempus-ai",
-    "Hims & Hers":          "hims-hers-1",
-    "SonderMind":           "SonderMind",
     "Nuvation Bio":         "nuvation-bio",
     # Removed (404): cityblock-health, nomi-health, calibrate
+    # Removed 2026-09-10 (HTTP 404 on 2026-09-09): "Brightside Health": "brightside"
+    # (placeholder board; clinician recruiting is off-ATS), "Hims & Hers":
+    # "hims-hers-1" and "SonderMind": "SonderMind" (both moved to Ashby; see
+    # ASHBY_ORGS). No Lever row had ever landed in hospital_jobs.
+    # ── 2026-09-10 telehealth batch (T2). Slugs confirmed via
+    # api.lever.co/v0/postings on 2026-09-09. Tagged employer_type=telehealth;
+    # the clinical-title, 1099 and non-US gates in apply_employer_rules apply.
+    "Included Health":   "includedhealth",      # 85 total, ~66 clinical: W2 virtual primary care NP/MD,
+                                                # RN care managers. Moved off Greenhouse (that token has
+                                                # 404ed since 2026-04). Pay not posted; salaryRange on 4 rows.
+    "Ro":                "ro",                  # 47 total, 8 clinical: salaried virtual physicians, seasonal RN
+    "Curai Health":      "curai",               # 8 total, 6 clinical: virtual primary care physicians by shift
+    "Lyra Health":       "lyrahealth",          # 558 total (484 US), ~397 clinical, ~95% 1099; the 1099 gate
+                                                # keeps the ~20 W2 rows (crisis, DBT, telehealth physician)
 }
 
 async def scrape_lever(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -3217,6 +3255,13 @@ async def scrape_lever(session: aiohttp.ClientSession, system: str, org: str) ->
         jobs = []
         for j in (listings if isinstance(listings, list) else []):
             loc = j.get("categories", {}).get("location", "")
+            # 2026-09-10: telehealth boards (Lyra) carry non-US postings and
+            # normalize_job only blanks the state, it never drops the row; so
+            # drop them here on Lever's own country field.
+            if system in TELEHEALTH_SYSTEMS:
+                _country = str(j.get("country") or "").strip().upper()
+                if _country and _country not in ("US", "USA", "UNITED STATES"):
+                    continue
             _city, _state = parse_city_state(loc)
             # Structured salary (2026-08-21): Lever exposes salaryRange
             # {min, max, interval} when the org publishes it. interval is
@@ -3260,6 +3305,400 @@ async def run_lever(session) -> list[Job]:
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Lever: {len(jobs):,} jobs")
     return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  ASHBY: public posting API (no key); one GET returns the whole board.
+#  2026-09-10 (T2 telehealth batch): the scraper had no Ashby adapter and the
+#  two largest W2 telehealth boards (Talkiatry, SonderMind) live here. Field
+#  mapping confirmed against the talkiatry feed on 2026-09-09
+#  (reports/W-telehealth-scraper-plan.md, section 3c). Counts in the comments
+#  are that day's whole-board totals and the clinical slice that survives the
+#  telehealth gates (apply_employer_rules, below).
+# ══════════════════════════════════════════════════════════════════════════
+ASHBY_ORGS = {
+    "Talkiatry":   "talkiatry",        # 186 total, ~155 clinical, 100% remote, one posting per
+                                       # state; compensationTierSummary on 185 of 186
+    "SonderMind":  "sondermind",       # 135 total, ~132 clinical; pay is in the description text
+                                       # (0 of 135 structured), so normalize_job's regex does it
+    "Brightline":  "hellobrightline",  # 10 total, ~4 clinical (NY, WI)
+    "Wheel":       "wheel",            # 5 total, ~3 clinical: multi-state telemedicine physicians
+    # Read but not added (0 or 1 clinical on 2026-09-09): rula, grow-therapy,
+    # virtahealth, sesame, hinge-health. hims-and-hers: 13 clinical, all
+    # in-person pharmacists.
+}
+
+# Ashby reports employmentType in camel case; derive_job_type keys on the
+# spaced words, so map them.
+_ASHBY_EMPLOYMENT = {"fulltime": "Full time", "parttime": "Part time",
+                     "contract": "Contract", "temporary": "Temporary", "intern": "Intern"}
+_ASHBY_COMP_RX = re.compile(
+    r"\$\s*(\d[\d,]*(?:\.\d+)?)\s*([Kk])?\s*(?:-|\u2013|\u2014|to)\s*\$?\s*(\d[\d,]*(?:\.\d+)?)\s*([Kk])?")
+
+
+def _ashby_wage(summary):
+    """(lo, hi, unit) from Ashby's compensationTierSummary, else None so that
+    normalize_job falls back to the description regex (the SonderMind case).
+    Shapes seen live: "$230K - $260K + Offers Bonus", "$100 - $120 per hour",
+    "$85,000 - $95,000", null. The plausibility band (_wage_pair) and the
+    wording must agree; "$50 - $60" with no unit stays None."""
+    if not summary:
+        return None
+    s = str(summary)
+    m = _ASHBY_COMP_RX.search(s)
+    if not m:
+        return None
+    lo, hi = _wage_num(m.group(1)), _wage_num(m.group(3))
+    if lo is None or hi is None:
+        return None
+    if m.group(2):
+        lo *= 1000
+    if m.group(4):
+        hi *= 1000
+    pair = _wage_pair(lo, hi)
+    if not pair:
+        return None
+    hourly = bool(re.search(r"per\s+hour|/\s*hr\b|hourly|an\s+hour", s, re.I))
+    return pair if (pair[2] == "hour") == hourly else None
+
+
+async def scrape_ashby(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
+    try:
+        async with req(session, "get",
+            f"https://api.ashbyhq.com/posting-api/job-board/{org}?includeCompensation=true",
+            headers=HEADERS, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+            if r.status != 200:
+                logger.info(f"Ashby {system}: HTTP {r.status}")
+                return []
+            data = await r.json()
+        jobs = []
+        for j in data.get("jobs", []):
+            if j.get("isListed") is False:
+                continue
+            addr = ((j.get("address") or {}).get("postalAddress") or {})
+            _city  = (addr.get("addressLocality") or "").strip()
+            _state = (addr.get("addressRegion") or "").strip()
+            loc = j.get("location") or ""
+            if not (_city or _state):
+                _city, _state = parse_city_state(loc)
+            elif len(_state) > 2:
+                # addressRegion is sometimes the full state name
+                _state = parse_city_state(f"{_city}, {_state}")[1] or _state
+            comp = j.get("compensation") or {}
+            _w = _ashby_wage(comp.get("compensationTierSummary"))
+            et = re.sub(r"[^a-z]", "", str(j.get("employmentType") or "").lower())
+            jobs.append(Job(
+                title=j.get("title", ""),
+                hospital_system=system,
+                hospital_name=system,
+                city=_city,
+                state=_state,
+                location=loc,
+                specialty=j.get("department") or j.get("team") or "",
+                job_type=_ASHBY_EMPLOYMENT.get(et, str(j.get("employmentType") or "")),
+                url=j.get("jobUrl", "") or j.get("applyUrl", ""),
+                job_id=str(j.get("id", "")),
+                posted_date=str(j.get("publishedAt") or "")[:10],
+                description=strip_html(j.get("descriptionHtml") or j.get("descriptionPlain") or ""),
+                ats_platform="Ashby",
+                wage_min=_w[0] if _w else None,
+                wage_max=_w[1] if _w else None,
+                wage_unit=_w[2] if _w else None,
+            ))
+        return jobs
+    except Exception as e:
+        logger.info(f"Ashby {system}: {e}")
+        return []
+
+
+async def run_ashby(session) -> list[Job]:
+    logger.info(f"Ashby: scraping {len(ASHBY_ORGS)} orgs...")
+    jobs: list[Job] = []
+    # One request per org, sequential with jitter (scrape_ashby never raises).
+    for s, o in ASHBY_ORGS.items():
+        jobs.extend(await scrape_ashby(session, s, o))
+        await jitter()
+    logger.info(f"  Ashby: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  CAREERPLUG: franchise job boards, plain HTML, /jobs?page=N pagination.
+#  2026-09-10 (T2 urgent-care batch): American Family Care (~250 clinics per
+#  afcurgentcare.com and Orbital 2026-06; 26 states) posts franchise-clinic
+#  jobs on one shared CareerPlug board (27 pages on 2026-09-10). Corporate
+#  roles sit on HRMDirect and physicians go through AHR Staffing; neither is
+#  scraped. List-only like the UHG / Kaiser HTML adapters: no description,
+#  posted_date empty, the CareerPlug job page is the apply URL.
+# ══════════════════════════════════════════════════════════════════════════
+CAREERPLUG_ORGS = {
+    "American Family Care": "american-family-care-careers",
+}
+_CP_LINK_RX = re.compile(
+    r'<a\b[^>]*href="(?:https?://[^"/]+)?/jobs/(\d+)(?:[?#][^"]*)?"[^>]*>(.*?)</a>', re.S | re.I)
+# "Knoxville, TN 37919" / "Fort Worth, TX": 1-4 capitalised words before the
+# comma; all-caps tokens (PRN, NP) cannot start a word so titles do not bleed in.
+_CP_LOC_RX = re.compile(r"((?:[A-Z][a-z][A-Za-z.'\-]*\s){0,3}[A-Z][a-z][A-Za-z.'\-]*),\s*([A-Z]{2})\b(?:\s+\d{5})?")
+
+
+_CP_CARD_RX = re.compile(
+    r"^(?P<title>.*?)\s*Location:\s*(?P<st>[A-Z]{2})-(?P<city>.+?)(?:-(?P<zip>\d{5}))?"
+    r"(?:\s+Post Date:\s*(?P<mm>\d{2})-(?P<dd>\d{2})-(?P<yy>\d{2}))?\s*$", re.S)
+
+
+def _cp_text(fragment: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", fragment or "")).strip()
+
+
+def _cp_parse_card(text: str, tail_text: str):
+    """(title, city, state, posted_date) from a CareerPlug card. AFC's anchor
+    text reads "NP/PA PRN Location: TN-Powell-37849 Post Date: 09-10-26"
+    (seen 2026-09-10); other boards put "City, ST" after the title, inside
+    or after the anchor, so those two shapes are the fallbacks."""
+    m = _CP_CARD_RX.match(text)
+    if m and m.group("st") in _US_STATE_SET:
+        posted = f"20{m.group('yy')}-{m.group('mm')}-{m.group('dd')}" if m.group("yy") else ""
+        return (m.group("title").strip(" -|,\u2022"), m.group("city").replace("-", " ").strip(),
+                m.group("st"), posted)
+    lm = _CP_LOC_RX.search(text)
+    if lm and lm.group(2) in _US_STATE_SET:
+        return (text[:lm.start()].strip(" -|,\u2022"), lm.group(1).strip(), lm.group(2), "")
+    lm = _CP_LOC_RX.search(tail_text)
+    if lm and lm.group(2) in _US_STATE_SET:
+        return (text, lm.group(1).strip(), lm.group(2), "")
+    return (text, "", "", "")
+
+
+async def scrape_careerplug(session: aiohttp.ClientSession, system: str, slug: str) -> list[Job]:
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    base = f"https://{slug}.careerplug.com"
+    for page in range(1, 80):
+        url = f"{base}/jobs?page={page}"
+        try:
+            async with req(session, "get", url, headers={**HEADERS, "Accept": "text/html,*/*"},
+                           ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=40)) as r:
+                if r.status != 200:
+                    logger.info(f"CareerPlug {system}: page {page} HTTP {r.status}; stopping")
+                    break
+                html = await r.text()
+        except Exception as e:
+            logger.info(f"CareerPlug {system}: page {page} {e}; stopping")
+            break
+        found = list(_CP_LINK_RX.finditer(html))
+        new = 0
+        for k, m in enumerate(found):
+            jid = m.group(1)
+            if jid in seen:
+                continue
+            text = _cp_text(m.group(2))
+            if not text:
+                continue
+            tail_end = found[k + 1].start() if k + 1 < len(found) else m.end() + 800
+            title, city, state, posted = _cp_parse_card(text, _cp_text(html[m.end():tail_end]))
+            if not title:
+                continue
+            seen.add(jid)
+            new += 1
+            jobs.append(Job(
+                title=title,
+                hospital_system=system,
+                hospital_name=system,
+                city=city,
+                state=state,
+                location=f"{city}, {state}" if city and state else (state or city),
+                specialty="",
+                job_type="",
+                url=f"{base}/jobs/{jid}",
+                job_id=jid,
+                posted_date=posted,
+                description="",
+                ats_platform="CareerPlug",
+            ))
+        if page == 1 and not found:
+            i = html.find("/jobs/")
+            logger.info(f"CareerPlug {system}: no rows parsed on page 1 "
+                        f"(len {len(html)}, '/jobs/' x{html.count('/jobs/')}); "
+                        f"snippet {html[max(0, i - 300):i + 300]!r}")
+        if new == 0:
+            break
+        await jitter()
+    logger.info(f"  CareerPlug {system}: {len(jobs):,} jobs")
+    return jobs
+
+
+async def run_careerplug(session) -> list[Job]:
+    logger.info(f"CareerPlug: scraping {len(CAREERPLUG_ORGS)} orgs...")
+    results = await asyncio.gather(
+        *[scrape_careerplug(session, s, o) for s, o in CAREERPLUG_ORGS.items()],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  CareerPlug: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  EMPLOYER CLASS (hospital_jobs.employer_type), 2026-09-10 (T2 batch)
+#  Stamped per hospital_system on every upsert so the column always reflects
+#  this config, never a stale manual value; None = hospital or unclassified.
+#  The column and its CHECK were applied on the DATA project on 2026-09-10;
+#  the CHECK allows 'hospital', 'telehealth', 'urgent_care', 'freestanding_er',
+#  'snf', 'home_health', 'dialysis', 'other'. Any other value makes PostgREST
+#  reject the whole 500-row chunk, so add DB values before scraper values.
+# ══════════════════════════════════════════════════════════════════════════
+TELEHEALTH_SYSTEMS = {"Talkiatry", "SonderMind", "Brightline", "Wheel", "Included Health",
+                      "Ro", "Curai Health", "Lyra Health", "Charlie Health", "Equum Medical",
+                      "Cadence", "Boulder Care", "Hazel Health", "Galileo", "Ophelia",
+                      "Hicuity Health", "Workit Health", "Bicycle Health", "Spring Health",
+                      "Octave", "Headspace", "Teladoc Health"}
+# Urgent-care operators already crawled by their own adapters (active rows on
+# 2026-09-10: Concentra 1,280; CityMD 608 under each of its two names; GoHealth
+# 494; Fast Pace 450; WellNow 228) plus the T2 additions.
+URGENT_CARE_SYSTEMS = {"Concentra", "CityMD", "Summit Health (CityMD)", "GoHealth Urgent Care",
+                       "WellNow Urgent Care", "Fast Pace Health", "American Family Care"}
+# None scraped yet: the Texas freestanding-ER chains have no readable ATS
+# (see reports/T2-telehealth-urgentcare.md); HCA bought 11 SignatureCare ERs
+# in 2026 and those ride inside the HCA crawl unlabelled.
+FREESTANDING_ER_SYSTEMS: set[str] = set()
+# Sub-brands that ride inside a bigger system's crawl and only show in
+# hospital_name: HCA's CareNow (121 active rows on 2026-09-10) and MD Now (19).
+# Matched as a hospital_name prefix. MedExpress is NOT reachable this way: the
+# UHG TalentBrew crawl cannot tell sub-brands apart and its keyword search
+# pages are JS-only (checked 2026-09-10).
+URGENT_CARE_NAME_PREFIXES = ("CareNow", "MD Now")
+
+
+def employer_type_for(system, name=""):
+    """Coarse employer class for hospital_jobs.employer_type; None means
+    hospital or unclassified. Keyed on the post-alias hospital_system first,
+    then on hospital_name prefixes for sub-brands inside a bigger crawl."""
+    if system in TELEHEALTH_SYSTEMS:
+        return "telehealth"
+    if system in URGENT_CARE_SYSTEMS:
+        return "urgent_care"
+    if system in FREESTANDING_ER_SYSTEMS:
+        return "freestanding_er"
+    if (name or "").strip().startswith(URGENT_CARE_NAME_PREFIXES):
+        return "urgent_care"
+    return None
+
+
+# ── Telehealth row rules (2026-09-10, T2) ───────────────────────────────────
+# A telehealth company's board is mostly corporate (Spring Health 5 clinical
+# of 76) or 1099 (Lyra ~95%). Two gates, applied only to TELEHEALTH_SYSTEMS,
+# keep the board clinical and W2: the clinical-title gate and the 1099 gate.
+# derive_job_type has no contractor bucket, so a 1099 posting would surface
+# as a W2-looking job with a pay pill; keep the gate on until a contract_1099
+# bucket and a card label ship together (owner's call).
+TELEHEALTH_DROP_1099 = True
+# Title-based on purpose: Ashby employmentType is "Contract" on boards the
+# targets report counts as W2 (SonderMind), so the field is not trusted yet.
+_RX_1099 = re.compile(r"\b1099\b|independent contractor|\bcontract(?:or)?\b", re.I)
+_CLINICAL_WORD_RX = re.compile(
+    r"\b(nurse|nursing|physician|doctor|psychiatrist|psychiatry|intensivist|hospitalist|"
+    r"cardiologist|neurologist|therapist|therapy|psychologist|counselor|clinician|pharmacist|"
+    r"respiratory|dietitian|dietician|nutritionist|medical assistant|health coach|care manager|"
+    r"medical director|clinical director|social worker|practitioner|prescriber)\b", re.I)
+_CLINICAL_ABBR_RX = re.compile(
+    r"\b(RN|LPN|LVN|NP|PA|APRN|PMHNP|FNP|DNP|MD|DO|RT|RD|RDN|LCSW|LPC|LPCC|LMFT|LMHC|LCPC|"
+    r"LICSW|LISW|BCBA|CRNA|PsyD)\b")
+_CORPORATE_RX = re.compile(
+    r"\b(engineer\w*|software|developer|sales|marketing|recruit\w*|finance|financial|accountant|"
+    r"accounting|product|design\w*|analyst|analytics|partnership\w*|legal|people|payroll|"
+    r"data scientist|growth|account executive|customer success|copywriter|brand|communications|"
+    r"revenue cycle|billing|talent acquisition|human resources|procurement|devops|infrastructure|"
+    r"operations|relations|credentialing|onboarding|scheduler|enrollment|business)\b", re.I)
+# Non-US rows on telehealth boards (Lyra, Teladoc: Spain, Canada). Workday and
+# Ashby carry the country only in the location text.
+_NON_US_RX = re.compile(
+    r"\b(canada|spain|india|united kingdom|england|scotland|ireland|mexico|philippines|germany|"
+    r"france|australia|brazil|colombia|argentina|chile|portugal|netherlands|israel|singapore|"
+    r"japan|poland|toronto|montreal|ontario|british columbia|barcelona|madrid|london|"
+    r"dublin|bangalore|bengaluru|hyderabad|pune|mumbai|chennai|manila|sydney)\b", re.I)
+# Workday job paths start with the country ("/job/ES-Barcelona/...", US rows
+# are "/job/USA---Any-Location..."), and Teladoc's Spanish titles carry no
+# country in the location text at all.
+_NON_US_URL_RX = re.compile(r"myworkdayjobs\.com/[^/]+/job/(?!US)[A-Z]{2,3}(?:-|/)")
+_NON_US_TITLE_RX = re.compile(r"campa[n\u00f1]a|espa[n\u00f1]a|\bESP\b|\bCanad[a\u00e1]\b|\bUK\b")
+
+# Per-state remote postings name the state in the title ("Psychiatrist -
+# Texas", "Virtual Nurse Practitioner - CA License") and often carry no
+# address, so normalize_job would leave state blank and the row would never
+# reach /jobs/state/tx. Same map as parse_city_state's, kept module-level.
+_US_STATE_CODES = {
+    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR", "california": "CA",
+    "colorado": "CO", "connecticut": "CT", "delaware": "DE", "florida": "FL", "georgia": "GA",
+    "hawaii": "HI", "idaho": "ID", "illinois": "IL", "indiana": "IN", "iowa": "IA",
+    "kansas": "KS", "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
+    "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
+    "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV", "new hampshire": "NH",
+    "new jersey": "NJ", "new mexico": "NM", "new york": "NY", "north carolina": "NC",
+    "north dakota": "ND", "ohio": "OH", "oklahoma": "OK", "oregon": "OR", "pennsylvania": "PA",
+    "rhode island": "RI", "south carolina": "SC", "south dakota": "SD", "tennessee": "TN",
+    "texas": "TX", "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
+    "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY", "district of columbia": "DC",
+}
+_US_STATE_SET = set(_US_STATE_CODES.values())
+# "(Philadelphia, PA)" / "- MD": a state code after a comma, dash, paren or
+# slash is a location, not a credential; stripped before the abbr gate.
+_STATE_TOKEN_RX = re.compile(r"[,(\-\u2013\u2014/]\s*(?:" + "|".join(sorted(_US_STATE_SET)) + r")\b")
+_STATE_NAME_RX = re.compile(
+    r"\b(" + "|".join(sorted((re.escape(n) for n in _US_STATE_CODES), key=len, reverse=True)) + r")\b", re.I)
+_DC_RX = re.compile(r"\bwashington,?\s*d\.?\s*c\.?\b", re.I)
+# Two-letter codes only in unambiguous positions: "(TX)", "CA License" /
+# "CA-licensed", or after a dash / pipe / comma at the end of the title.
+_STATE_CODE_RX = re.compile(
+    r"\(\s*([A-Z]{2})\s*\)"
+    r"|\b([A-Z]{2})(?=\s*[-\u2013\u2014]?\s*(?:License|Licensed|Licensure|Lic\b))"
+    r"|[-\u2013\u2014|,/]\s*([A-Z]{2})\s*$")
+# Codes that double as credentials (PA, MD) or roles (MA, CT): accept them
+# only next to "License".
+_STATE_CODE_LICENSE_ONLY = {"PA", "MD", "MA", "CT"}
+
+
+def _state_from_title(title: str) -> str:
+    """Two-letter state from a posting title, or "". Full names win over
+    codes; the first match wins on multi-state titles ("Registered Dietitian -
+    Pennsylvania / New Jersey" gives PA), which the report notes."""
+    t = title or ""
+    if _DC_RX.search(t):
+        return "DC"
+    m = _STATE_NAME_RX.search(t)
+    if m:
+        return _US_STATE_CODES[m.group(1).lower()]
+    for m in _STATE_CODE_RX.finditer(t):
+        paren, lic, tail = m.group(1), m.group(2), m.group(3)
+        code = paren or lic or tail
+        if code not in _US_STATE_SET:
+            continue
+        if code in _STATE_CODE_LICENSE_ONLY and not lic:
+            continue
+        return code
+    return ""
+
+
+def apply_employer_rules(job: Job):
+    """Telehealth-only row rules, run in run_all before normalize_job. Returns
+    the job (state possibly filled from the title) or None to drop it. Rows
+    from every other system pass through untouched."""
+    if job.hospital_system not in TELEHEALTH_SYSTEMS:
+        return job
+    t = job.title or ""
+    if TELEHEALTH_DROP_1099 and _RX_1099.search(t):
+        return None
+    if _CORPORATE_RX.search(t):
+        return None
+    if not (_CLINICAL_WORD_RX.search(t) or _CLINICAL_ABBR_RX.search(_STATE_TOKEN_RX.sub("", t))):
+        return None
+    if (_NON_US_RX.search(f"{job.location or ''} {job.city or ''}")
+            or _NON_US_URL_RX.search(job.url or "") or _NON_US_TITLE_RX.search(t)):
+        return None
+    if (job.city or "").strip().lower() == "remote":
+        job.city = ""
+    if not (job.state or "").strip():
+        job.state = _state_from_title(t)
+    return job
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -7875,6 +8314,11 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         djt = derive_job_type(r.get("title"), r.get("job_type"))
         r["derived_job_type"] = djt
         jt_buckets[djt] = jt_buckets.get(djt, 0) + 1
+        # 2026-09-10 (T2): employer class (telehealth / urgent_care / ...);
+        # None for hospitals. Every row carries the key because PostgREST bulk
+        # upserts need uniform keys, and the DB CHECK on employer_type lists
+        # the allowed values (see employer_type_for).
+        r["employer_type"] = employer_type_for(r.get("hospital_system"), r.get("hospital_name"))
     if alias_hits:
         logger.info(f"Hospital upsert: canonicalized {alias_hits} rows via HOSPITAL_SYSTEM_ALIASES")
     if jt_buckets:
@@ -8346,6 +8790,8 @@ async def run_all() -> list[dict]:
             run_smartrecruiters(proxy_session),
             run_concentra(proxy_session),    # Concentra — Sitecore SXA search (~1,260 jobs)
             run_lever(proxy_session),
+            run_ashby(proxy_session),        # Ashby posting API: Talkiatry, SonderMind, Brightline, Wheel (added 2026-09-10)
+            run_careerplug(proxy_session),   # CareerPlug HTML board: American Family Care franchise clinics (added 2026-09-10)
             run_usajobs(direct_session),
             run_adp(proxy_session),
             run_selectminds(proxy_session),
@@ -8392,6 +8838,11 @@ async def run_all() -> list[dict]:
         key = f"{job.ats_platform}::{job.hospital_system}::{job.job_id}"
         if key not in seen and job.job_id and job.title:
             seen.add(key)
+            # 2026-09-10 (T2): telehealth gates + state-from-title before
+            # normalize_job; None means the row is dropped.
+            job = apply_employer_rules(job)
+            if job is None:
+                continue
             unique.append(normalize_job(job))
 
     elapsed = (datetime.now() - start).seconds
