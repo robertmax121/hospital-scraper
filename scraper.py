@@ -538,6 +538,15 @@ WORKDAY_TENANTS = {
     # Advocate Health (Advocate Aurora + Atrium) — Workday tenant 'aah'.
     # Validated 2026-06-18: aah.wd5 / site "External" returns total ~2,000.
     "Advocate Health":           ("aah",                "5",  "External"),
+    # ── 2026-09-10 Texas block C (Y-texas-build): four children's tenants.
+    # Site names read from each careers page's "view openings" link on
+    # 2026-09-10; row counts from the same day's dry run are in
+    # reports/Y-texas-build.md. Shriners is a wd12 tenant like Houston
+    # Methodist; if the edge 403s aiohttp it needs the curl_cffi path.
+    "Cook Children's":                  ("cookchildrens",     "1",  "Cook_Childrens_Careers"),
+    "Driscoll Children's Hospital":     ("driscoll",          "1",  "DHS"),
+    "Shriners Children's":              ("shrinerschildrens", "12", "Shriners"),
+    "Texas Scottish Rite for Children": ("src",               "1",  "scottishriteforchildren"),
     # Providence moved off Workday to Oracle HCM (see ORACLE_ORGS). The old
     # providence.wd5 / Providence_External tenant returns 0 now. Removed 2026-06-18.
     "Banner Health":             ("bannerhealth",       "108","Careers"),
@@ -1096,6 +1105,8 @@ SYSTEM_LOCATION_DEFAULTS = {k.lower(): v for k, v in SYSTEM_LOCATION_DEFAULTS.it
 # and every job is definitively in one location.
 FORCE_LOCATION_OVERRIDE: dict[str, tuple[str, str]] = {
     # Systems where ALL jobs are in one metro — always override ATS data
+    # 2026-09-10 (Y-texas-build): hospital-midlandhealth.icims.com cards carry no location field.
+    "Midland Health": ("Midland", "TX"),
     "memorial hermann":                    ("Houston",      "TX"),
     "methodist health system":             ("Dallas",       "TX"),
     "methodist le bonheur":                ("Memphis",      "TN"),
@@ -1543,6 +1554,11 @@ ICIMS_ORGS = {
     "Appalachian Regional Healthcare":  "careers-arh.icims.com",
     "Prime Healthcare":                 "careers-primehealthcare.icims.com",
     "Midland Health":                   "hospital-midlandhealth.icims.com",
+    # ── 2026-09-10 Texas block C (Y-texas-build): Ardent (UT Health East
+    # Texas x8, BSA Amarillo, Seton Harker Heights). The careers pages link
+    # only the referrals portal; careers-/jobs-ardenthealth 404. Card-list
+    # portal like Prime; dry-run result in reports/Y-texas-build.md.
+    "Ardent Health":                    "referrals-ardenthealth.icims.com",
     "Covenant Health":                  "careers-covenanthealth.icims.com",
     "Providence Health & Services":     "careers-hub-phs.icims.com",
     "Tri-City Medical Center":          "careers-tricitymed.icims.com",
@@ -2440,6 +2456,85 @@ async def run_maxim(session: aiohttp.ClientSession) -> list[Job]:
     return await scrape_maxim_html(session)
 
 
+# ── 2026-09-10 (Y-texas-build): iCIMS card-list portals ──────────────────
+# careers-primehealthcare.icims.com and hospital-midlandhealth.icims.com
+# answer the classic /jobs/search?mode=json request with HTTP 200 and the
+# portal's HTML card list (<li class="iCIMS_JobCardItem">, 50 a page, pr=N
+# paging). The classic path only parsed JSON or data-id attributes, so both
+# tenants (configured since May) returned 0 rows every night; Prime alone is
+# 5 Texas hospitals. The card carries Facility, title, description, the deep
+# link and a <dl> of fields (Job Locations "US-TX-Weslaco").
+_ICIMS_CARD_RE = re.compile(r'<li class="iCIMS_JobCardItem">(.*?)</li>', re.DOTALL)
+_ICIMS_FIELD_RE = re.compile(r"<dt[^>]*>(.*?)</dt>\s*<dd[^>]*>(.*?)</dd>", re.DOTALL)
+
+
+def _icims_card_location(loc: str) -> tuple[str, str]:
+    m = re.match(r"^\s*US-([A-Z]{2})-(.+?)\s*$", loc or "")
+    if m:
+        return m.group(2).strip(), m.group(1)
+    return parse_city_state(loc or "")
+
+
+def _parse_icims_cards(text: str, system: str, domain: str) -> list[Job]:
+    import html as _html  # card text carries entities (&rsquo;) that strip_html leaves in place
+    jobs = []
+    for card in _ICIMS_CARD_RE.findall(text):
+        m = re.search(r'href="(https?://[^"]+/jobs/(\d+)/[^"]*?)"', card)
+        t = re.search(r"<h3[^>]*>(.*?)</h3>", card, re.DOTALL)
+        if not m or not t:
+            continue
+        title = strip_html(t.group(1)).strip()
+        if not title:
+            continue
+        url = m.group(1).replace("&amp;", "&").split("?")[0]
+        fac = re.search(r'field-label">\s*Facility\s*</span>\s*<span[^>]*>(.*?)</span>', card, re.DOTALL)
+        facility = strip_html(fac.group(1)).strip() if fac else ""
+        fields = {strip_html(k).strip().lower(): strip_html(v).strip() for k, v in _ICIMS_FIELD_RE.findall(card)}
+        loc = next((v for k, v in fields.items() if "location" in k), "")
+        city, state = _icims_card_location(loc)
+        d = re.search(r'class="[^"]*\bdescription\b[^"]*"[^>]*>(.*?)</div>', card, re.DOTALL)
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=facility or system,
+            city=city, state=state, location=loc,
+            specialty=fields.get("category", ""),
+            job_type=fields.get("position type", fields.get("type", "")),
+            url=url, job_id=m.group(2),
+            posted_date=fields.get("posted date", "")[:10],
+            description=_html.unescape(strip_html(d.group(1))).strip() if d else "",
+            ats_platform="iCIMS",
+        ))
+    return jobs
+
+
+async def _scrape_icims_cards(session: aiohttp.ClientSession, system: str, domain: str, first_text: str) -> list[Job]:
+    """Page 0 is the classic response already in hand; pr=1.. until a page
+    adds no new ids (200-page cap = 10,000 jobs)."""
+    jobs = _parse_icims_cards(first_text, system, domain)
+    seen = {j.job_id for j in jobs}
+    page = 1
+    while jobs and page < 200:
+        await jitter()
+        try:
+            async with req(session, "get", f"https://{domain}/jobs/search",
+                           params={"ss": "1", "pr": str(page), "in_iframe": "1", "searchRelation": "keyword_all"},
+                           headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
+                           proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    break
+                text = await r.text()
+        except Exception as e:
+            logger.info(f"iCIMS {system} cards page {page}: {e}")
+            break
+        new = [j for j in _parse_icims_cards(text, system, domain) if j.job_id not in seen]
+        if not new:
+            break
+        jobs.extend(new)
+        seen.update(j.job_id for j in new)
+        page += 1
+    logger.info(f"  iCIMS {system}: {len(jobs)} jobs (card list, {page} pages)")
+    return jobs
+
+
 async def _scrape_icims_modern(session: aiohttp.ClientSession, system: str, domain: str) -> list[Job]:
     """Handles newer iCIMS portals that use JavaScript-rendered search pages.
     Fetches the search results page and extracts job data from embedded JSON
@@ -2585,6 +2680,10 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
                 else:
                     # HTML fallback — parse structured data from page
                     text = await r.text()
+                    # 2026-09-10 (Y-texas-build): card-list portals (see _parse_icims_cards).
+                    if "iCIMS_JobCardItem" in text:
+                        jobs = await _scrape_icims_cards(session, system, domain, text)
+                        break
                     found = re.findall(
                         r'data-id="(\d+)"[^>]*data-title="([^"]+)"[^>]*data-location="([^"]*)"',
                         text
@@ -2677,6 +2776,13 @@ JIBE_SITES = {
     # tenants were dead turned out to run Jibe fronts; /api/jobs validated
     # live (Fairview 1,262 as M Health Fairview; OSF 1,411; WakeMed 565).
     "Fairview Health":         "https://careers.fairview.org",
+    # ── 2026-09-10 Texas block C (Y-texas-build): careers-uhsinc.icims.com
+    # answers every search with a redirect script to jobs.uhsinc.com, which
+    # is a Jibe front. Validated through scrape_jibe on 2026-09-10: 4,823
+    # rows, 831 TX, full descriptions in-feed. The feed carries no facility
+    # label (every row is "Universal Health Services"), so the 19 Texas UHS
+    # hospitals are linked through hospital_cms_alias (sql/17).
+    "Universal Health Services": "https://jobs.uhsinc.com",
     "OSF HealthCare":          "https://www.osfcareers.org",
     "WakeMed":                 "https://jobs.wakemed.org",
 }
@@ -3972,6 +4078,13 @@ PHENOM_ORGS = {
     # confirmed Phenom hosting with org code DAVIUS. Dialysis market
     # leader, ~2,800 centers nationwide — expected +3-5K jobs.
     "DaVita":                       "https://careers.davita.com",
+    # ── 2026-09-10 Texas block C (Y-texas-build). Both validated through
+    # scrape_phenom on 2026-09-10 (widgets/refineSearch path): Children's
+    # Health (Dallas + Plano, refNum CHHEUS) 173 rows, all TX, apply links
+    # are Infor deep links; Hendrick Health (Abilene + Brownwood, refNum
+    # HHSHHSUS) 353 rows, all TX, apply links go to HealthcareSource.
+    "Children's Health":            "https://jobsearch.childrens.com",
+    "Hendrick Health":              "https://careers.hendrickhealth.org",
     "Munson Healthcare":            "https://careers.munsonhealthcare.org",
     "Bryan Health":                 "https://careers.bryanhealth.com",
     "PeaceHealth":                  "https://careers.peacehealth.org",
@@ -5333,6 +5446,13 @@ ORACLE_ORGS = {
     "Northwell Health (CX_1)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_1"),
     "Northwell Health (CX_3)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_3"),
     "Jackson Hospital":          ("https://ejid.fa.us6.oraclecloud.com",                      "CX_1001"),
+    # ── 2026-09-10 Texas block C (Y-texas-build): site CX_1 on all three,
+    # validated through scrape_oracle on 2026-09-10 (Texas Children's 412
+    # rows, 98% TX, Houston + Austin; United Regional 79, Wichita Falls;
+    # UT Health San Antonio 221, San Antonio). No structured pay on any.
+    "Texas Children's":                   ("https://eohh.fa.us2.oraclecloud.com",                 "CX_1"),
+    "United Regional Health Care System": ("https://iaoxqy.fa.ocs.oraclecloud.com",               "CX_1"),
+    "UT Health San Antonio":              ("https://fa-eomf-saasfaprod1.fa.ocs.oraclecloud.com",  "CX_1"),
     # elar/CX_1 was mislabeled "Erlanger Health System" and never banked a
     # row under that name; careers.inova.org redirect confirms it is INOVA
     # (validated 2026-08-28, TotalJobsCount=682).
@@ -6559,6 +6679,17 @@ async def run_csod(session) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 PAYCOM_ORGS = {
     "Connally Memorial Medical Center": "772E59A3981B29A14463EC6C3223083C",
+    # ── 2026-09-10 Texas block D (Y-texas-build): client keys read from each
+    # hospital's careers page. NOTE: web.php/jobs?clientkey= now 302s to the
+    # SPA portal (/portal/<key>/career, an 8 KB loader that pulls its chunks
+    # and job list from portal-applicant-tracking.us-cent.paycomonline.net),
+    # so scrape_paycom below returns 0 rows for every key until it is
+    # rebuilt against that API (reports/Y-texas-build.md, follow-ups).
+    "Childress Regional Medical Center": "B47435CED3FD56BC6C37E9204206C989",
+    "El Paso Children's Hospital":       "2B54F2860AD440DB8B3B7C9BE2122564",
+    "Nacogdoches Memorial Hospital":     "C4638CB50E7EB9BDFE01AC5E31D77604",
+    "Rolling Plains Memorial Hospital":  "1C3BB3931F4EB94FBCE852E05A8DEDA5",
+    "SUN Behavioral Houston":            "292ACA5AA961D98C89091BAB7A81FFE5",
     # ── Added from scraper1.xlsx expansion ──
     "Paycom Hospital 2": "4863CB61AD1B2555F37E9E5884626947",
     "Paycom Hospital 3": "C48961799EBD231096CE8423D325C34C",
@@ -6689,6 +6820,82 @@ async def run_paycor(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Paycor total: {len(jobs):,} jobs")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  PAYLOCITY — recruiting.paylocity.com/recruiting/jobs/All/<guid>/<org>
+#  2026-09-10 (Y-texas-build): the listing page embeds `window.pageData =
+#  {...}` whose Jobs[] carry JobId, JobTitle, LocationName, PublishedDate,
+#  Description (HTML) and JobLocation{City, State, Zip}. The v2 feed
+#  (/recruiting/v2/api/feed/jobs/<guid>) answers {"jobs": []} for these orgs,
+#  so the page is the source. Deep link: /Recruiting/Jobs/Details/<JobId>.
+# ══════════════════════════════════════════════════════════════════════════
+PAYLOCITY_ORGS = {
+    # Format: "System": (company guid, org slug, default state)
+    # White Rock Medical Center (Dallas): 18 rows on 2026-09-10, all Dallas TX.
+    "White Rock Medical Center": ("2bd01e6d-d70f-4766-9be9-6f4c349647bc", "White-Rock-Medical-Center", "TX"),
+    # Eastland Memorial Hospital: the careers page only loads a Paylocity
+    # script; no company guid was exposed. Add the guid when it is known.
+}
+_PAYLOCITY_PAGEDATA_RE = re.compile(r"window\.pageData\s*=\s*(\{)")
+
+
+def _parse_paylocity_page(text: str, system: str, guid: str, org: str, default_state: str) -> list[Job]:
+    m = _PAYLOCITY_PAGEDATA_RE.search(text)
+    if not m:
+        return []
+    data, _end = json.JSONDecoder().raw_decode(text, m.start(1))
+    jobs = []
+    for j in data.get("Jobs") or []:
+        jid = j.get("JobId")
+        title = (j.get("JobTitle") or "").strip()
+        if not jid or not title or j.get("IsInternal"):
+            continue
+        loc = j.get("JobLocation") or {}
+        city = (loc.get("City") or j.get("LocationName") or "").strip()
+        state = (loc.get("State") or "").strip().upper() or default_state
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=system,
+            city=city, state=state, location=f"{city}, {state}".strip(", "),
+            specialty=j.get("HiringDepartment") or "", job_type="",
+            url=f"https://recruiting.paylocity.com/Recruiting/Jobs/Details/{jid}",
+            job_id=str(jid), posted_date=str(j.get("PublishedDate") or "")[:10],
+            description=strip_html(j.get("Description") or "").strip(),
+            ats_platform="Paylocity",
+        ))
+    return jobs
+
+
+async def scrape_paylocity(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    guid, org, default_state = org_data
+    url = f"https://recruiting.paylocity.com/recruiting/jobs/All/{guid}/{org}"
+    try:
+        async with req(session, "get", url, headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
+                       proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+            if r.status != 200:
+                logger.info(f"Paylocity {system}: HTTP {r.status}")
+                return []
+            text = await r.text()
+    except Exception as e:
+        logger.info(f"Paylocity {system}: {e}")
+        return []
+    jobs = _parse_paylocity_page(text, system, guid, org, default_state)
+    logger.info(f"  Paylocity {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def run_paylocity(session) -> list[Job]:
+    if not PAYLOCITY_ORGS:
+        return []
+    logger.info(f"Paylocity: scraping {len(PAYLOCITY_ORGS)} systems...")
+    ordered = priority_states_first(list(PAYLOCITY_ORGS.items()), lambda kv: kv[1][2])
+    results = await asyncio.gather(
+        *[scrape_paylocity(session, s_, cfg) for s_, cfg in ordered],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Paylocity total: {len(jobs):,} jobs")
     return jobs
 
 
@@ -7106,7 +7313,22 @@ async def run_houston_methodist() -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 
 OCEANS_BASE = "https://oceansjobboard.com"
-_OCEANS_DATA_RE = re.compile(r'data:\s*(\{"FilterGroups".*?\}),\s*\n\s*mounted:', re.DOTALL)
+_OCEANS_DATA_START = re.compile(r'data:\s*(\{"FilterGroups")')
+
+
+def _oceans_parse_blob(text: str) -> dict:
+    """2026-09-10 (Y-texas-build): the board's Vue block gained a `computed:`
+    member between `data:` and `mounted:`, so the old non-greedy regex
+    (`data: {...}, mounted:`) captured the data object PLUS the computed block
+    and json.loads raised "Extra data"; run_oceans logged the error and
+    returned 0 rows every night since (734 rows in the table, none active,
+    10 Texas psychiatric hospitals dark). Decode exactly one JSON object from
+    the first `data: {"FilterGroups"` on, whatever follows it."""
+    m = _OCEANS_DATA_START.search(text)
+    if not m:
+        raise RuntimeError("embedded Vue data blob not found (board redesigned?)")
+    blob, _end = json.JSONDecoder().raw_decode(text, m.start(1))
+    return blob
 
 
 def _oceans_job(rec: dict) -> Optional[Job]:
@@ -7140,10 +7362,7 @@ def _oceans_fetch_all() -> list[Job]:
     The board is stateless (no cookies/CSRF — proven), so each request can go
     through _curl_fetch's webshare-first / direct-backup path independently."""
     r = _curl_fetch("get", f"{OCEANS_BASE}/jobs", "chrome", timeout=45)
-    m = _OCEANS_DATA_RE.search(r.text)
-    if not m:
-        raise RuntimeError("embedded Vue data blob not found (board redesigned?)")
-    blob = json.loads(m.group(1))
+    blob = _oceans_parse_blob(r.text)
     records = list(blob.get("Jobs") or [])
     filter_groups = blob.get("FilterGroups") or []
     has_more = bool(blob.get("HasMore"))
@@ -9455,6 +9674,7 @@ async def run_all() -> list[dict]:
             run_csod(proxy_session),
             run_paycom(proxy_session),
             run_paycor(proxy_session),
+            run_paylocity(proxy_session),  # Paylocity pageData boards: White Rock Medical Center (added 2026-09-10)
             run_hca(direct_session),    # HCA Healthcare — browserless per-state crawl via curl_cffi Firefox TLS (rebuilt 2026-07-28)
             run_houston_methodist(),    # Workday wd12/GTI — curl_cffi; wd12 edge 403s non-browser TLS (added 2026-07-28)
             run_oceans(),               # Oceans Behavioral — custom board at oceansjobboard.com via curl_cffi (added 2026-07-28)
