@@ -321,6 +321,19 @@ def classify_title(title):
 # wins when nothing more specific is available.
 WEAK_MATCHES = {"Travel Nursing"}
 
+# 2026-09-15 (W-role-specialty-audit 7d.5): employer DEPARTMENT CODES leak
+# into hospital_jobs.specialty through keep_raw ("Mountain Laurel Division
+# (MTL) - 370", "Acacia Division (ACD) - 1047", " Nurse (RN/LPN)",
+# " Clinical Services"). They are never a specialty a visitor can filter on,
+# so a raw value that looks like one is dropped (None) instead of kept.
+_DEPT_CODE_RX = re.compile(
+    r"(\(\w{2,6}\)\s*-\s*\d+|\bdivision\b|\bdept\.?\b|\bdepartment\b|^\s|\s-\s*\d{2,6}\s*$|^\d{2,6}\s*-\s)",
+    re.I)
+
+
+def looks_like_department_code(raw):
+    return bool(raw) and bool(_DEPT_CODE_RX.search(str(raw)))
+
 
 def canonical_specialty(title, raw_specialty=None, keep_raw=True):
     """Title first, then the ATS/agency category, else the raw value unchanged.
@@ -342,6 +355,8 @@ def canonical_specialty(title, raw_specialty=None, keep_raw=True):
         # Explicit None = "known but ambiguous"; fall through to raw/None.
     if hit:                      # weak match, but better than nothing
         return hit
+    if looks_like_department_code(raw_specialty):
+        return None
     return (raw_specialty or None) if keep_raw else None
 
 

@@ -3719,6 +3719,32 @@ async def run_ashby(session) -> list[Job]:
 CAREERPLUG_ORGS = {
     "American Family Care": "american-family-care-careers",
 }
+# 2026-09-15 (owner backlog): a budgeted detail pass. The job link 302s to
+# /jobs/<id>/apps/new, whose <div class="job-description-container"> holds the
+# posting (benefits list, duties, requirements). CP_DESC_BUDGET fetches per
+# run, newest first; the DB trigger preserve_scraped_enrichment keeps a
+# description once a row has one, so the whole board fills in over a few
+# nights without re-fetching.
+CP_DESC_BUDGET = 300
+_CP_DESC_RX = re.compile(r'<div[^>]+class="[^"]*job-description-container[^"]*"[^>]*>(.*?)<(?:form|div class="apply-page|div class="account_description)', re.S | re.I)
+
+
+async def _careerplug_detail(session, url: str) -> str:
+    """Description text from a CareerPlug apply page, or '' on any failure."""
+    try:
+        async with req(session, "get", url, headers={**HEADERS, "Accept": "text/html,*/*"},
+                       ssl=False, proxy=proxies.get(), allow_redirects=True,
+                       timeout=aiohttp.ClientTimeout(total=30)) as r:
+            if r.status != 200:
+                return ""
+            html = await r.text()
+    except Exception:
+        return ""
+    m = _CP_DESC_RX.search(html)
+    if not m:
+        return ""
+    text = strip_html(m.group(1))
+    return text if len(text) >= 80 else ""
 _CP_LINK_RX = re.compile(
     r'<a\b[^>]*href="(?:https?://[^"/]+)?/jobs/(\d+)(?:[?#][^"]*)?"[^>]*>(.*?)</a>', re.S | re.I)
 # "Knoxville, TN 37919" / "Fort Worth, TX": 1-4 capitalised words before the
@@ -3808,7 +3834,15 @@ async def scrape_careerplug(session: aiohttp.ClientSession, system: str, slug: s
         if new == 0:
             break
         await jitter()
-    logger.info(f"  CareerPlug {system}: {len(jobs):,} jobs")
+    # 2026-09-15: detail pass within the budget (newest posted first).
+    spent = 0
+    for j in sorted(jobs, key=lambda x: x.posted_date or "", reverse=True):
+        if spent >= CP_DESC_BUDGET:
+            break
+        await jitter()
+        j.description = await _careerplug_detail(session, j.url)
+        spent += 1
+    logger.info(f"  CareerPlug {system}: {len(jobs)} jobs, {sum(1 for j in jobs if j.description)} with descriptions ({spent} fetched)")
     return jobs
 
 
