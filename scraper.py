@@ -3840,8 +3840,12 @@ TELEHEALTH_SYSTEMS = {"Talkiatry", "SonderMind", "Brightline", "Wheel", "Include
 # Urgent-care operators already crawled by their own adapters (active rows on
 # 2026-09-10: Concentra 1,280; CityMD 608 under each of its two names; GoHealth
 # 494; Fast Pace 450; WellNow 228) plus the T2 additions.
+# 2026-09-14 (W-urgentcare) adds NextCare (ADP CX, 104 rows), FastMed Urgent
+# Care (ADP WorkforceNow, 41 rows) and Patient First (own WordPress REST, 223
+# rows, parsed end to end but shipped OFF — see the Patient First section).
 URGENT_CARE_SYSTEMS = {"Concentra", "CityMD", "Summit Health (CityMD)", "GoHealth Urgent Care",
-                       "WellNow Urgent Care", "Fast Pace Health", "American Family Care"}
+                       "WellNow Urgent Care", "Fast Pace Health", "American Family Care",
+                       "NextCare", "FastMed Urgent Care", "Patient First"}
 # None scraped yet: the Texas freestanding-ER chains have no readable ATS
 # (see reports/T2-telehealth-urgentcare.md); HCA bought 11 SignatureCare ERs
 # in 2026 and those ride inside the HCA crawl unlabelled.
@@ -3851,6 +3855,16 @@ FREESTANDING_ER_SYSTEMS: set[str] = set()
 # Matched as a hospital_name prefix. MedExpress is NOT reachable this way: the
 # UHG TalentBrew crawl cannot tell sub-brands apart and its keyword search
 # pages are JS-only (checked 2026-09-10).
+#
+# 2026-09-14 (W-urgentcare): MedExpress needs no adapter at all — the BRAND is
+# gone. optum.com serves medexpress.com/careers as a page titled "MedExpress
+# Closed in Most States | Request Medical Records", and the UHG sitemap
+# (careers.unitedhealthgroup.com/sitemap.xml, 5,519 job URLs, the whole
+# board and robots-allowed unlike /search-jobs/) contains zero MedExpress
+# URLs and zero MedExpress facets under custom_fields.brand / .entity /
+# .division / .uhgoptumsubbrands. The 21 urgent-care job URLs on that board
+# belong to Optum NY, Atrius, Reliant ReadyMed and Colonial Healthcare, and
+# already ride inside run_uhg. Do not spend Playwright time on this.
 URGENT_CARE_NAME_PREFIXES = ("CareNow", "MD Now")
 
 
@@ -4838,6 +4852,18 @@ ADP_ORGS = {
         ("f159ab44-676f-4e8e-aee4-ed91de0cda16", "19000101_000001", "TX"),
     "Palo Pinto General Hospital":
         ("c66c3f90-0bcf-49e7-a8ce-6eb2974431ee", "19000101_000001", "TX", "Palo Pinto General Hospital"),
+    # 2026-09-14 (W-urgentcare): FastMed's ATS was unidentified in the T2
+    # report. It is a plain WorkforceNow career center — fastmed.com/careers
+    # embeds the recruitment.html link carrying this cid — so no new adapter
+    # was needed. Verified live through scrape_adp 2026-09-14: board total 40,
+    # 41 rows parsed, all 41 with a city and a 2-letter state, all NC (FastMed
+    # left AZ/TX/NC-outside markets; the chain is North Carolina only now).
+    # Rows are list-only, no description, like every other ADP board here.
+    # hospital_name is left blank on purpose: nameCode.shortName here
+    # is just " Cary, NC, US", whose head is the city, so _adp_job falls back
+    # to the system name instead of storing a city as a facility.
+    "FastMed Urgent Care":
+        ("05f4cb80-7271-43f3-b774-34a057858613", "19000101_000001", "NC"),
     # Legacy cids from scraper1.xlsx (system names were never learned because
     # the old endpoint never answered). Kept so the rebuilt adapter can say
     # in the log which of them are live boards; rename once a run shows them.
@@ -4997,6 +5023,443 @@ async def run_adp(session) -> list[Job]:
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  ADP total: {len(jobs):,} jobs")
     return jobs
+
+
+##############################################################################
+#  ADP RECRUITMENT MANAGEMENT "CX" (myjobs.adp.com) — 2026-09-14, W-urgentcare
+#
+#  NOT the WorkforceNow career center scrape_adp() reads; a different ADP
+#  product with a different API. nextcare.com/careers 301s to
+#  myjobs.adp.com/nextcare/cx, an Angular app. The T2 report stopped at the
+#  SiteMinder bounce (/cx/staffing/v2/job-applicant 302s to
+#  workforcenow/login.html) and the privacy-statement modal. Neither is on the
+#  data path: the modal gates the APPLY flow in the browser only, and the job
+#  list comes from my.adp.com behind two PUBLIC request headers.
+#
+#  Two GETs, no cookie and no session:
+#    1. myjobs.adp.com/public/staffing/v1/career-site/<domain>
+#       -> {"orgoid": "...", "myJobsToken": "..."}  (both public; ADP rotates
+#          the token, so it is fetched per run and never hardcoded)
+#    2. my.adp.com/.../v1/job-requisitions with orgoid + myjobstoken as
+#       REQUEST HEADERS. Without orgoid the API answers HTTP 400
+#       {"message":"Missing orgoid header"}; without $select the payload
+#       carries no description and no posting date.
+#  `count` is the true total, $skip pages, and $top=100 was served in full.
+#  The one trap is Accept-Language; see the note in scrape_adp_cx.
+#  Verified live through this adapter 2026-09-14: NextCare count 104, 104/104
+#  rows with a city and a 2-letter state, 104/104 with a description over 200
+#  chars and a postingDate, 10 states (AZ CO KS MO NC NE OK TX VA WY).
+##############################################################################
+ADPCX_ORGS = {
+    # "System": ("career-site domain", default_state)
+    # NextCare: ~170 urgent-care clinics in 11 states (nextcare.com "170+").
+    "NextCare": ("nextcare", ""),
+}
+_ADPCX_SITE    = "https://myjobs.adp.com/public/staffing/v1/career-site/{domain}"
+_ADPCX_API     = "https://my.adp.com/myadp_prefix/mycareer/public/staffing/v1/job-requisitions"
+_ADPCX_DETAILS = "https://myjobs.adp.com/{domain}/cx/job-details?reqId={req}"
+# Field list copied from the app's own XHR. publishedJobTitle is the candidate-
+# facing title; jobTitle is the internal one (identical on NextCare today).
+_ADPCX_SELECT = ("reqId,jobTitle,publishedJobTitle,type,jobDescription,jobQualifications,"
+                 "workLocations,workLevelCode,clientRequisitionID,postingDate,"
+                 "requisitionLocations")
+_ADPCX_PAGE = 100
+_ADPCX_MAX_PAGES = 40        # 4,000 reqs; a bigger board means something is wrong
+
+
+def _adpcx_job(j: dict, system: str, domain: str, default_state: str = "") -> Job | None:
+    """One jobRequisitions item -> Job, or None when it has no id / title or
+    is not a US posting."""
+    req_id = str(j.get("reqId") or "").strip()
+    title = str(j.get("publishedJobTitle") or j.get("jobTitle") or "").strip()
+    if not req_id or not title:
+        return None
+    locs = j.get("requisitionLocations") or []
+    loc0 = locs[0] if locs and isinstance(locs[0], dict) else {}
+    addr = loc0.get("address") or {}
+    country = str((addr.get("country") or {}).get("codeValue") or "").upper()
+    if country and country not in ("USA", "US"):
+        return None
+    city = str(addr.get("cityName") or "").strip()
+    st = str((addr.get("countrySubdivisionLevel1") or {}).get("codeValue") or "").strip()
+    if not (city and st):
+        # Every NextCare row carried both on 2026-09-14; this is the degrade
+        # path for a board that does not. The clinician titles read
+        # "… | Cedar Park, TX", so the tail after the last pipe is a location.
+        c2, s2 = parse_city_state(title.rsplit("|", 1)[-1] if "|" in title else "")
+        city, st = city or c2, st or s2
+    if len(st) > 2:
+        st = parse_city_state(f"{city}, {st}")[1] or ""
+    st = (st or default_state).upper()
+    # NextCare appends the location to the candidate-facing title
+    # ("Physician Assistant or Nurse Practitioner | Cedar Park, TX"). The card
+    # already carries city and state, so the suffix is noise in the headline
+    # and in search. Trimmed only when the tail really is this row's location
+    # — never blindly, because a pipe can carry a credential list.
+    if "|" in title:
+        head, tail = title.rsplit("|", 1)
+        _c, _s = parse_city_state(tail.strip())
+        if _s and _s.upper() == st and head.strip():
+            title = head.strip()
+    return Job(
+        title=title,
+        hospital_system=system,
+        hospital_name=system,
+        city=city,
+        state=st,
+        location=f"{city}, {st}".strip(", "),
+        specialty="",
+        job_type=derive_job_type(title, str(j.get("workLevelCode") or "")),
+        url=_ADPCX_DETAILS.format(domain=domain, req=req_id),
+        job_id=req_id,
+        posted_date=str(j.get("postingDate") or "")[:10],
+        description=strip_html(j.get("jobDescription") or ""),
+        ats_platform="ADP CX",
+    )
+
+
+async def _adpcx_credentials(session: aiohttp.ClientSession, domain: str) -> tuple[str, str]:
+    """(orgoid, myJobsToken) from the public career-site config. ("", "") when
+    the config cannot be read — the caller then skips the board rather than
+    hammering the API with headers it knows are missing."""
+    try:
+        async with req(session, "get", _ADPCX_SITE.format(domain=domain),
+                       headers={**HEADERS, "Accept": "application/json"},
+                       ssl=False, proxy=proxies.get(),
+                       timeout=aiohttp.ClientTimeout(total=30)) as r:
+            if r.status != 200:
+                logger.info(f"ADP CX {domain}: career-site HTTP {r.status}")
+                return "", ""
+            cfg = await r.json(content_type=None)
+    except Exception as e:
+        logger.info(f"ADP CX {domain}: career-site {e}")
+        return "", ""
+    return str((cfg or {}).get("orgoid") or ""), str((cfg or {}).get("myJobsToken") or "")
+
+
+async def scrape_adp_cx(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    domain, default_state = (org_data if isinstance(org_data, tuple) else (org_data, ""))
+    orgoid, token = await _adpcx_credentials(session, domain)
+    if not (orgoid and token):
+        logger.info(f"  ADP CX {system}: no orgoid/token — skipped")
+        return []
+    # Accept-Language is NOT cosmetic here and must stay exactly "en-US".
+    # The API matches the header against the posting's locale as a literal
+    # string, so anything else answers HTTP 200 with {"count":0} and no
+    # error: HEADERS' own "en-US,en;q=0.9" (a normal browser q-list), "en",
+    # "en_US" and "*" all return 0, while "en-US" and no header at all
+    # return the full board. Measured on NextCare 2026-09-14; this silent
+    # zero is why the first cut of this adapter banked nothing.
+    headers = {**HEADERS, "Accept": "application/json, text/plain, */*",
+               "Accept-Language": "en-US",
+               "Referer": f"https://myjobs.adp.com/{domain}/cx/job-listing",
+               "orgoid": orgoid, "myjobstoken": token}
+    jobs: list[Job] = []
+    total = None
+    skip = 0
+    for _ in range(_ADPCX_MAX_PAGES):
+        try:
+            async with req(session, "get", _ADPCX_API,
+                           params={"$select": _ADPCX_SELECT, "$top": str(_ADPCX_PAGE),
+                                   "$skip": str(skip), "radius": "25", "$filter": "",
+                                   "tz": "America/Chicago"},
+                           headers=headers, ssl=False, proxy=proxies.get(),
+                           timeout=aiohttp.ClientTimeout(total=90)) as r:
+                if r.status != 200:
+                    logger.info(f"ADP CX {system}: HTTP {r.status} at $skip={skip}")
+                    break
+                data = await r.json(content_type=None)
+        except Exception as e:
+            logger.info(f"ADP CX {system}: {e} at $skip={skip}")
+            break
+        items = (data or {}).get("jobRequisitions") or []
+        if total is None:
+            total = int((data or {}).get("count") or 0)
+        for j in items:
+            job = _adpcx_job(j, system, domain, default_state)
+            if job:
+                jobs.append(job)
+        skip += len(items)
+        if not items or (total and skip >= total):
+            break
+        await jitter()
+    if not total:
+        # A live urgent-care board is never empty; count 0 means the request
+        # was shaped wrong (see the Accept-Language note above), not that the
+        # employer stopped hiring. Loud, but still no exception: one bad board
+        # must not take the run down.
+        logger.warning(f"  ADP CX {system}: board count 0 — request rejected silently, check headers")
+    logger.info(f"  ADP CX {system}: {len(jobs)} jobs (board count {total})")
+    return jobs
+
+
+async def run_adp_cx(session) -> list[Job]:
+    logger.info(f"ADP CX: scraping {len(ADPCX_ORGS)} orgs...")
+    results = await asyncio.gather(
+        *[scrape_adp_cx(session, s, v) for s, v in ADPCX_ORGS.items()],
+        return_exceptions=True
+    )
+    for (s, _), r in zip(ADPCX_ORGS.items(), results):
+        if isinstance(r, Exception):
+            logger.info(f"  ADP CX {s}: ERROR {r}")
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  ADP CX total: {len(jobs):,} jobs")
+    return jobs
+
+
+##############################################################################
+#  PATIENT FIRST — own-domain WordPress board, 2026-09-14, W-urgentcare
+#
+#  78 medical centers across VA / MD / NJ / PA; 223 open posts on 2026-09-14.
+#  Worth having: the physician and physician-extender posts carry a POSTED PAY
+#  BAND in the body ("$129,000 - $286,000 a year", "$27 - $37 an hour"), which
+#  is the inventory this board sells.
+#
+#  SOURCE IS THE SITE'S OWN WORDPRESS REST API, not the 23 listing pages:
+#    /wp-json/wp/v2/job?per_page=100&page=N      223 posts, 3 requests
+#      -> id, title.rendered, link, date, content.rendered (full description,
+#         2.5k to 8k chars), and the term ids for location / job-type
+#    /wp-json/wp/v2/location?per_page=100&page=N 256 terms, 3 requests
+#      -> term id to "Aberdeen, MD" / "Abington, PA" (a few are bare centre
+#         names like "Bayview"; those fall back to the state in the title)
+#    /wp-json/wp/v2/center?per_page=100         79 centres, 1 request
+#      -> acf.city / acf.stateCode, which is what gives the bare-centre-name
+#         rows a real location (72% of rows placed without it, 97% with it)
+#  Seven requests instead of 23 HTML pages, and full descriptions instead of
+#  excerpts. A job page past the end answers 400, which the fetch reads as
+#  empty, so the pager cannot run away.
+#  The card R-number (R20203553) is NOT in the REST payload — it is themed in
+#  from a private ACF field — so job_id is the WordPress post id, which is the
+#  stable key the site itself uses in class_list and never changes.
+#
+#  OFF BY DEFAULT, and it is not a bug. EVERY patientfirst.com URL — the
+#  listing, the REST API, even /robots.txt — answers HTTP 403 with a
+#  "Checking your browser..." JavaScript challenge (a8c-cdn; it sets a short
+#  _hcc cookie). aiohttp cannot pass it and neither can curl_cffi with a
+#  Chrome TLS fingerprint; both were tried again on 2026-09-14 and got the
+#  same 6,877-byte challenge page every time, before and after a homepage
+#  visit. An ordinary browser runs the site's own script and loads the page
+#  normally, so the fetch below is the repo's existing rendered-page route:
+#  Chromium navigates the careers page, the page clears itself, and the REST
+#  calls then run inside that cleared session with page.evaluate + fetch()
+#  — exactly what run_atrium() does for Cloudflare-fronted Coveo.
+#
+#  No challenge solver was written and none is wanted: whether to run a
+#  browser at a site that fronts itself this way is Robert's call, not the
+#  scraper's, so the adapter ships disabled. robots.txt cannot be read to
+#  check policy (it 403s too). Set PATIENT_FIRST_ENABLED=1 to turn it on.
+#  See reports/W-urgentcare-adapters.md.
+##############################################################################
+PATIENT_FIRST_BASE = "https://www.patientfirst.com"
+PATIENT_FIRST_CAREERS = PATIENT_FIRST_BASE + "/careers/medical-center-administrative-opportunities/"
+PATIENT_FIRST_ENABLED = os.getenv("PATIENT_FIRST_ENABLED", "0") == "1"
+# 100 posts per page; 223 live on 2026-09-14, so 3 pages. The cap is the
+# runaway guard, the same shape as _ADPCX_MAX_PAGES.
+PATIENT_FIRST_MAX_PAGES = int(os.getenv("PATIENT_FIRST_MAX_PAGES", "4"))
+_PF_JOB_API = "/wp-json/wp/v2/job?per_page=100&page={page}"
+_PF_LOC_API = "/wp-json/wp/v2/location?per_page=100&page={page}"
+# The centre post type (79 live) is how the bare-centre-name location terms
+# get a city and a state: acf.city / acf.stateCode per centre, keyed by the
+# centre title ("Midlothian" -> Richmond, VA). One request.
+_PF_CENTER_API = "/wp-json/wp/v2/center?per_page=100"
+_PF_JOBTYPE = {"full time": "Full time", "part time": "Part time",
+               "per diem": "PRN", "prn": "PRN", "temporary": "Temporary"}
+
+
+def _pf_text(fragment: str) -> str:
+    """Rendered WordPress HTML -> flat text. Never raises on None."""
+    return re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", fragment or ""))).strip()
+
+
+def _pf_job(j: dict, locations: dict, job_types: dict, centers: dict,
+            system: str = "Patient First") -> Job | None:
+    """One wp/v2/job item -> Job, or None when it has no id, title or link."""
+    post_id = str(j.get("id") or "").strip()
+    title = _pf_text(((j.get("title") or {}) or {}).get("rendered") or "")
+    url = str(j.get("link") or "").strip()
+    if not (post_id and title and url):
+        return None
+    term_ids = j.get("location") or []
+    term = locations.get(term_ids[0], "") if term_ids else ""
+    city, state = parse_city_state(term) if term else ("", "")
+    if state not in _US_STATE_SET:
+        # Bare centre name ("Bayview", "Indian River"): not a city/state pair.
+        # The centre post type carries the real address, so look it up there
+        # first; failing that take the state from the title, which on this
+        # board often names it ("Virginia Part Time Physician Extender").
+        city, state = centers.get(term.strip().lower(), ("", ""))
+        if state not in _US_STATE_SET:
+            city, state = "", _state_from_title(title)
+    raw_type = ""
+    for t in (j.get("job-type") or []):
+        raw_type = _PF_JOBTYPE.get((job_types.get(t, "") or "").strip().lower(), "")
+        if raw_type:
+            break
+    return Job(
+        title=title,
+        hospital_system=system,
+        hospital_name=f"{system} - {term}" if term and not city else system,
+        city=city,
+        state=state,
+        location=f"{city}, {state}" if city and state else (city or state),
+        specialty="",
+        job_type=derive_job_type(title, raw_type),
+        url=url,
+        job_id=post_id,
+        posted_date=str(j.get("date") or "")[:10],
+        description=_pf_text(((j.get("content") or {}) or {}).get("rendered") or ""),
+        ats_platform="WordPress",
+    )
+
+
+async def _pf_fetch_json(paths: list[str]) -> dict[str, list]:
+    """Fetch REST paths inside a rendered patientfirst.com session.
+
+    Mirrors run_atrium(): Chromium loads one real page so the edge challenge
+    clears itself, then the JSON calls ride that session's cookies through
+    page.evaluate + fetch(). Returns {path: parsed list}; a path that fails is
+    simply absent, and the whole function returns {} rather than raising, so a
+    dead browser or a changed page can never take the run down.
+    """
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        logger.warning("Patient First: playwright not installed — skipping")
+        return {}
+    pw_proxy = None
+    proxy_url = proxies.get()
+    if proxy_url:
+        m = re.match(r"https?://([^:]+):([^@]+)@([^:]+):(\d+)", proxy_url)
+        if m:
+            pw_proxy = {"server": f"http://{m.group(3)}:{m.group(4)}",
+                        "username": m.group(1), "password": m.group(2)}
+    out: dict[str, list] = {}
+    try:
+        async with async_playwright() as pw:
+            launch_kwargs = dict(
+                headless=True,
+                args=["--no-sandbox", "--disable-setuid-sandbox",
+                      "--disable-blink-features=AutomationControlled",
+                      "--disable-dev-shm-usage"],
+            )
+            if pw_proxy:
+                launch_kwargs["proxy"] = pw_proxy
+            browser = await pw.chromium.launch(**launch_kwargs)
+            try:
+                ctx = await browser.new_context(
+                    viewport={"width": 1440, "height": 900},
+                    user_agent=HEADERS["User-Agent"],
+                    locale="en-US", timezone_id="America/New_York",
+                )
+                page = await ctx.new_page()
+                await page.goto(PATIENT_FIRST_CAREERS, wait_until="domcontentloaded", timeout=60000)
+                cleared = False
+                for _ in range(15):
+                    content = await page.content()
+                    if "fl-post-feed-post" in content:
+                        cleared = True
+                        break
+                    await asyncio.sleep(2)
+                if not cleared:
+                    logger.warning("Patient First: careers page never rendered — challenge held or page changed")
+                    return {}
+                bodies = await page.evaluate(
+                    """async (paths) => {
+                        const one = async (p) => {
+                            try {
+                                const r = await fetch(p, { credentials: 'include',
+                                                           headers: { 'Accept': 'application/json' } });
+                                if (!r.ok) return '';
+                                return await r.text();
+                            } catch (e) { return ''; }
+                        };
+                        const out = [];
+                        for (const p of paths) { out.push(await one(p)); }
+                        return out;
+                    }""",
+                    paths,
+                )
+            finally:
+                await browser.close()
+    except Exception as e:
+        logger.warning(f"Patient First: rendered fetch failed ({e})")
+        return {}
+    for path, body in zip(paths, bodies or []):
+        if not body:
+            continue
+        try:
+            data = json.loads(body)
+        except Exception:
+            continue
+        if isinstance(data, list):
+            out[path] = data
+    return out
+
+
+async def scrape_patient_first(session: aiohttp.ClientSession) -> list[Job]:
+    system = "Patient First"
+    # One browser session covers both taxonomies and every job page; the
+    # request list is built up front so the page is opened exactly once.
+    paths = [_PF_LOC_API.format(page=p) for p in range(1, 4)] + [_PF_CENTER_API]
+    paths += [_PF_JOB_API.format(page=p) for p in range(1, PATIENT_FIRST_MAX_PAGES + 1)]
+    payloads = await _pf_fetch_json(paths)
+    if not payloads:
+        logger.info(f"  {system}: 0 jobs (no payload)")
+        return []
+    locations: dict[int, str] = {}
+    job_types: dict[int, str] = {}
+    for p in paths[:3]:
+        for t in payloads.get(p, []):
+            if isinstance(t, dict) and t.get("id"):
+                locations[t["id"]] = _pf_text(t.get("name") or "")
+    centers: dict[str, tuple[str, str]] = {}
+    for c in payloads.get(_PF_CENTER_API, []):
+        if not isinstance(c, dict):
+            continue
+        acf = c.get("acf") if isinstance(c.get("acf"), dict) else {}
+        name = _pf_text(((c.get("title") or {}) or {}).get("rendered") or "")
+        city = str(acf.get("city") or "").strip()
+        st = str(acf.get("stateCode") or "").strip().upper()
+        if name and city and st in _US_STATE_SET:
+            centers[name.lower()] = (clean_city(city), st)
+            # A few location terms are the centre's CITY rather than the
+            # centre's name ("Fredericksburg"), so index both. setdefault
+            # keeps the centre-name key authoritative when they collide.
+            centers.setdefault(city.strip().lower(), (clean_city(city), st))
+    # job-type terms are few and ride inside the posts' _embedded only when
+    # asked for; the names are stable, so map the ids from the class_list the
+    # REST payload already carries ("job-type-part-time").
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    for p in paths[4:]:
+        items = payloads.get(p, [])
+        if not items:
+            break
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            for cls in (it.get("class_list") or []):
+                if str(cls).startswith("job-type-"):
+                    slug = str(cls)[len("job-type-"):].replace("-", " ")
+                    for tid in (it.get("job-type") or []):
+                        job_types.setdefault(tid, slug)
+            job = _pf_job(it, locations, job_types, centers, system)
+            if not job or job.job_id in seen:
+                continue
+            seen.add(job.job_id)
+            jobs.append(job)
+    logger.info(f"  {system}: {len(jobs)} jobs ({len(locations)} location terms, {len(centers)} centres)")
+    return jobs
+
+
+async def run_patient_first(session) -> list[Job]:
+    if not PATIENT_FIRST_ENABLED:
+        logger.info("Patient First: disabled (PATIENT_FIRST_ENABLED != 1) — "
+                    "patientfirst.com answers 403 behind a JS challenge on every "
+                    "URL, so it needs the rendered fetch; turning that on is the "
+                    "owner's call. See reports/W-urgentcare-adapters.md")
+        return []
+    return await scrape_patient_first(session)
 
 
 ##############################################################################
@@ -6154,6 +6617,110 @@ async def run_kronos(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Kronos total: {len(jobs):,} jobs")
+    return jobs
+
+
+##############################################################################
+#  THE APPLICANT MANAGER (theapplicantmanager.com) — small independent
+#  hospitals. Added 2026-09-15 for Bayou Bend Health System (Franklin, LA),
+#  a showcase client. Server-rendered HTML: the careers page lists one
+#  <a class="pos_title_list" href="jobs?pos=<id>"> per opening, title with
+#  "(City, ST)" appended, an optional one-line blurb in the next <p>; the
+#  detail page carries the text in <div class="job_listing"> and the schedule
+#  in <p class="small_font">. No JSON, no pagination, no auth.
+##############################################################################
+TAM_ORGS = {
+    # system: (company code, default city, default state)
+    "Bayou Bend Health System": ("fr", "Franklin", "LA"),
+}
+_TAM_BASE = "https://theapplicantmanager.com"
+_TAM_LINK_RE = re.compile(
+    r'<a[^>]+class="pos_title_list"[^>]+href="jobs\?pos=([A-Za-z0-9]+)[^"]*"[^>]*>(.*?)</a>\s*</p>\s*(?:<p>(.*?)</p>)?',
+    re.S)
+_TAM_LOC_RE = re.compile(r'\s*\(([^()]+?),\s*([A-Za-z]{2})\)\s*$')
+_TAM_EEO_RE = re.compile(r'Equal Employment Opportunity Statement.*', re.S | re.I)
+
+
+def _tam_split_title(raw: str, default_city: str, default_state: str) -> tuple[str, str, str]:
+    """'Medical Assistant (MA) (Franklin, LA)' -> title, city, state."""
+    t = strip_html(raw).strip()
+    m = _TAM_LOC_RE.search(t)
+    if m:
+        return t[:m.start()].strip(), m.group(1).strip(), m.group(2).upper()
+    return t, default_city, default_state
+
+
+async def scrape_tam(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    code, default_city, default_state = org_data
+    jobs: list[Job] = []
+    list_url = f"{_TAM_BASE}/careers?co={code}"
+    try:
+        async with req(session, "get", list_url, headers=HEADERS, ssl=False,
+                       proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+            if r.status != 200:
+                logger.info(f"TAM {system}: HTTP {r.status}")
+                return jobs
+            text = await r.text()
+    except Exception as e:
+        logger.info(f"TAM {system}: {e}")
+        return jobs
+    seen: set[str] = set()
+    for pos, raw_title, blurb in _TAM_LINK_RE.findall(text):
+        if pos in seen:
+            continue
+        seen.add(pos)
+        title, city, state = _tam_split_title(raw_title, default_city, default_state)
+        if not title or title.lower().startswith("general application"):
+            continue      # the evergreen "General Application" is not an opening
+        url = f"{_TAM_BASE}/jobs?pos={pos}"
+        description = strip_html(blurb or "").strip()
+        job_type = ""
+        try:
+            await jitter()
+            async with req(session, "get", url, headers=HEADERS, ssl=False,
+                           proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r2:
+                if r2.status == 200:
+                    d = await r2.text()
+                    m = re.search(r'<div class="job_listing">(.*?)<div class="line_div', d, re.S)
+                    if m:
+                        body = m.group(1)
+                        jt = re.search(r'<p class="small_font">(.*?)</p>', body, re.S)
+                        if jt:
+                            # "Department: 006 - ICU<br/>non-management position<br/>full time position"
+                            sched = re.search(r'(full[ -]?time|part[ -]?time|per diem|prn|temporary|seasonal)', strip_html(jt.group(1)), re.I)
+                            job_type = sched.group(1).title().replace("Prn", "PRN") if sched else ""
+                        full = _TAM_EEO_RE.sub("", strip_html(body)).strip()
+                        if len(full) > len(description):
+                            description = full
+        except Exception as e:
+            logger.info(f"TAM {system} {pos}: {e}")
+        jobs.append(Job(
+            title=title,
+            hospital_system=system,
+            hospital_name=system,
+            city=city, state=state,
+            location=f"{city}, {state}".strip(", "),
+            specialty="",
+            job_type=job_type,
+            url=url,
+            job_id=pos,
+            posted_date="",
+            description=description,
+            ats_platform="ApplicantManager",
+        ))
+    logger.info(f"  TAM {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def run_tam(session) -> list[Job]:
+    logger.info(f"TAM: scraping {len(TAM_ORGS)} systems...")
+    results = await asyncio.gather(
+        *[scrape_tam(session, s, o) for s, o in
+          priority_states_first(list(TAM_ORGS.items()), lambda kv: kv[1][2])],
+        return_exceptions=True
+    )
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  TAM total: {len(jobs):,} jobs")
     return jobs
 
 
@@ -10110,6 +10677,8 @@ async def run_all() -> list[dict]:
             run_careerplug(proxy_session),   # CareerPlug HTML board: American Family Care franchise clinics (added 2026-09-10)
             run_usajobs(direct_session),
             run_adp(proxy_session),
+            run_adp_cx(proxy_session),       # ADP Recruitment Management CX (myjobs.adp.com): NextCare urgent care (added 2026-09-14)
+            run_patient_first(proxy_session),# Patient First WordPress REST via a rendered page: OFF by default, owner's call (added 2026-09-14)
             run_selectminds(proxy_session),
             run_recruitingcom(proxy_session),
             run_infor(proxy_session),
@@ -10138,6 +10707,7 @@ async def run_all() -> list[dict]:
             run_workable(proxy_session),   # Workable v3 accounts API: Huntsville Memorial (added 2026-09-10)
             run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
             run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)
+            run_tam(proxy_session),        # The Applicant Manager HTML board: Bayou Bend Health System (added 2026-09-15)
             run_hca(direct_session),    # HCA Healthcare — browserless per-state crawl via curl_cffi Firefox TLS (rebuilt 2026-07-28)
             run_houston_methodist(),    # Workday wd12/GTI — curl_cffi; wd12 edge 403s non-browser TLS (added 2026-07-28)
             run_oceans(),               # Oceans Behavioral — custom board at oceansjobboard.com via curl_cffi (added 2026-07-28)
