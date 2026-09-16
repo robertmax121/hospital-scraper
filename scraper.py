@@ -8226,6 +8226,10 @@ def _hca_fetch_slice(slug: str, q: str = "") -> tuple[list[Job], bool, bool]:
             time.sleep(min(30, 3 * 2 ** errors))   # 6, 12, 24 s: outlasts a WAF burst window
             continue
         errors = 0
+        if not cards and ("Just a moment" in r.text or "cf-chl" in r.text or "challenge-platform" in r.text):
+            # 2026-09-16: a Cloudflare challenge page, not an empty state.
+            logger.info(f"  HCA {label}: page {page} is a Cloudflare challenge; slice marked PARTIAL")
+            return out, False, False
         if not cards:
             return out, True, False
         if page == 1 and not q:
@@ -8275,6 +8279,19 @@ async def run_hca(session: aiohttp.ClientSession) -> list[Job]:
     """HCA Healthcare — every division from the master site, no browser needed."""
     if curl_requests is None:
         logger.warning("HCA Healthcare: curl_cffi not installed — skipping")
+        return []
+    # 2026-09-16: on Railway (datacenter address) Cloudflare admits one page
+    # per state and refuses FL / TX / GA outright, so the nightly's partial
+    # crawl is never the inventory. When that partial yield crossed 25% of a
+    # shrinking inventory it passed the sweep guard and deactivated the rest:
+    # 16,941 rows from the 09-10 home run decayed to 2,367 by 09-15. HCA is
+    # therefore LOCAL-ONLY: hca_local_push.py (a residential address) owns the
+    # crawl and its own sweep; the nightly skips the crawl and marks HCA
+    # PARTIAL so the sweep leaves its rows alone. HCA_NIGHTLY=1 re-enables it.
+    if os.environ.get("RAILWAY_ENVIRONMENT") and os.environ.get("HCA_NIGHTLY") != "1":
+        PARTIAL_SYSTEMS.add("HCA Healthcare")
+        logger.warning("HCA Healthcare: local-only (Railway address is Cloudflare-blocked); "
+                       "crawl skipped, sweep skipped; run hca_local_push.py from a home address")
         return []
     _HCA_FAILED_SLICES.clear()
     slugs = await asyncio.to_thread(_hca_discover_state_slugs)
