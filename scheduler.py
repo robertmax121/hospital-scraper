@@ -9,7 +9,7 @@ Cron: 0 20 * * *  (8 PM nightly)
 import logging
 import os
 from datetime import datetime
-from scraper import scrape
+from scraper import scrape, PARTIAL_SYSTEMS, HOSPITAL_SYSTEM_ALIASES
 from database import upsert_jobs, mark_inactive_jobs, get_stats
 
 logging.basicConfig(
@@ -47,7 +47,15 @@ def run():
     # Layer 4: multi-run miss confirmation before deactivation.
     # A row needs to miss MISS_THRESHOLD consecutive scrapes before going
     # is_active=false. mark_inactive_jobs handles the counter bookkeeping.
-    deact_stats = mark_inactive_jobs(jobs)
+    # 2026-09-16: systems whose crawl was partial or skipped tonight are
+    # exempt from the miss count (the per-system sweep already exempted them;
+    # this pass did not, and it was the engine deactivating HCA's rows).
+    # HCA is maintained by hca_local_push.py from a residential IP unless the
+    # nightly is explicitly told to crawl it (HCA_NIGHTLY=1).
+    layer4_exempt = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS}
+    if os.environ.get("HCA_NIGHTLY") != "1":
+        layer4_exempt.add("HCA Healthcare")
+    deact_stats = mark_inactive_jobs(jobs, exclude_systems=layer4_exempt)
     logger.info(f"  Layer 4 deactivation: {deact_stats}")
 
     # ── Step 2b: travel URL liveness sweep (added 2026-07-20) ─────

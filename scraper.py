@@ -1623,9 +1623,10 @@ ICIMS_ORGS = {
     #   Northwestern Medicine (SmartRecruiters), HealthPartners (SmartRecruiters)
     # 2026-09-16 (NY coverage): fingerprinted live from the careers pages.
     "Catholic Health (Long Island)": "careers-chsli.icims.com",
-    "Garnet Health":          "careers-garnethealth.icims.com",
-    "Bassett Healthcare Network": "bassett.icims.com",
-    "Maimonides Health":      "careers.maimo.org",
+    # Garnet, Bassett and Maimonides (added here 2026-09-16) moved to
+    # JIBE_SITES the same day: their icims.com portals redirect to Jibe
+    # fronts (careers.garnethealth.org, jobs.bassett.org, careers.maimo.org)
+    # and the classic portal answers with an empty page or a login gate.
     "MedStar Health":         "careers.medstarhealth.org",
     "Kettering Health":       "careers-ketteringhealth.icims.com",
     "Loma Linda University":  "careers-lluh.icims.com",
@@ -2561,6 +2562,27 @@ def _icims_card_location(loc: str) -> tuple[str, str]:
     return parse_city_state(loc or "")
 
 
+# 2026-09-16: card header location ("<span class="sr-only field-label">
+# Location</span> <span > US-NY-West Islip</span>"), used by the Catholic
+# Health (Long Island) portal, whose <dl> holds only Category / Schedule /
+# Shift / FTE / Department.
+_ICIMS_HEADER_LOC_RE = re.compile(
+    r'field-label">\s*(?:Job\s+)?Locations?\s*</span>\s*<span[^>]*>(.*?)</span>', re.DOTALL)
+
+# Card-list portals with no Facility field: city -> campus, so the row names
+# the hospital the CMS table knows rather than the network.
+ICIMS_CITY_FACILITY = {
+    "Catholic Health (Long Island)": {
+        "West Islip":       "Good Samaritan University Hospital",
+        "Rockville Centre": "Mercy Hospital",
+        "Smithtown":        "St. Catherine of Siena Hospital",
+        "Port Jefferson":   "St. Charles Hospital",
+        "Roslyn":           "St. Francis Hospital & Heart Center",
+        "Bethpage":         "St. Joseph Hospital",
+    },
+}
+
+
 def _parse_icims_cards(text: str, system: str, domain: str) -> list[Job]:
     import html as _html  # card text carries entities (&rsquo;) that strip_html leaves in place
     jobs = []
@@ -2577,7 +2599,12 @@ def _parse_icims_cards(text: str, system: str, domain: str) -> list[Job]:
         facility = strip_html(fac.group(1)).strip() if fac else ""
         fields = {strip_html(k).strip().lower(): strip_html(v).strip() for k, v in _ICIMS_FIELD_RE.findall(card)}
         loc = next((v for k, v in fields.items() if "location" in k), "")
+        if not loc:
+            hl = _ICIMS_HEADER_LOC_RE.search(card)
+            loc = strip_html(hl.group(1)).strip() if hl else ""
         city, state = _icims_card_location(loc)
+        if not facility:
+            facility = ICIMS_CITY_FACILITY.get(system, {}).get(city, "")
         d = re.search(r'class="[^"]*\bdescription\b[^"]*"[^>]*>(.*?)</div>', card, re.DOTALL)
         jobs.append(Job(
             title=title, hospital_system=system, hospital_name=facility or system,
@@ -2871,7 +2898,20 @@ JIBE_SITES = {
     "Universal Health Services": "https://jobs.uhsinc.com",
     "OSF HealthCare":          "https://www.osfcareers.org",
     "WakeMed":                 "https://jobs.wakemed.org",
+    # ── 2026-09-16 New York coverage: the icims.com portals we first
+    # configured redirect here. Validated live: Garnet 112 (Middletown +
+    # Catskills campuses), Maimonides 175, Bassett 336 (Cooperstown, Fox,
+    # O'Connor, Little Falls, Cobleskill). location_name carries the
+    # facility, so these three take it as hospital_name (JIBE_FACILITY_NAME).
+    "Garnet Health":             "https://careers.garnethealth.org",
+    "Maimonides Health":         "https://careers.maimo.org",
+    "Bassett Healthcare Network": "https://jobs.bassett.org",
 }
+
+# Jibe feeds whose location_name is a facility (not a street or a region):
+# rows take it as hospital_name so the CMS coverage count and the job page
+# see the campus, not the network.
+JIBE_FACILITY_NAME = {"Garnet Health", "Maimonides Health", "Bassett Healthcare Network"}
 
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs: list[Job] = []
@@ -2918,10 +2958,11 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                 if isinstance(cat, list):
                     cat = cat[0] if cat else None
                 posted = str(j.get("posted_date") or "")[:10]
+                facility = (j.get("location_name") or "").strip()
                 jobs.append(Job(
                     title=title,
                     hospital_system=system,
-                    hospital_name=system,
+                    hospital_name=facility if (system in JIBE_FACILITY_NAME and facility) else system,
                     city=city,
                     state=st,
                     location=", ".join(p for p in (city, st) if p),
@@ -6113,6 +6154,47 @@ ORACLE_ORGS = {
     "Mayo Clinic":               ("https://fa-euwp-saasfaprod1.fa.ocs.oraclecloud.com",       "Mayo-US"),
 }
 
+# 2026-09-16 (NY coverage): Mount Sinai site names in requisition titles ->
+# (facility, city). Order matters: "Mount Sinai Hospital" must not swallow
+# "Mount Sinai Hospital of Queens"-style titles, so the specific sites go first.
+MOUNT_SINAI_SITES = [
+    (r"south nassau|\bMSSN\b",                 ("Mount Sinai South Nassau", "Oceanside")),
+    (r"mount sinai queens|\bMSQ\b",            ("Mount Sinai Queens", "Queens")),
+    (r"mount sinai brooklyn|\bMSB\b",          ("Mount Sinai Brooklyn", "Brooklyn")),
+    (r"morningside|\bMSM\b",                   ("Mount Sinai Morningside", "New York")),
+    (r"mount sinai west|\bMSW\b",              ("Mount Sinai West", "New York")),
+    (r"beth israel|\bMSBI\b",                  ("Mount Sinai Beth Israel", "New York")),
+    (r"kravis",                                ("Kravis Children's Hospital at Mount Sinai", "New York")),
+    (r"eye and ear|\bNYEE\b",                  ("New York Eye and Ear Infirmary of Mount Sinai", "New York")),
+    (r"union square",                          ("Mount Sinai Union Square", "New York")),
+    (r"chelsea",                               ("Mount Sinai Chelsea", "New York")),
+    (r"icahn",                                 ("Icahn School of Medicine at Mount Sinai", "New York")),
+    (r"at home",                               ("Mount Sinai at Home", "New York")),
+    (r"mount sinai doctors",                   ("Mount Sinai Doctors", "New York")),
+    (r"mount sinai hospital|\bMSH\b|the mount sinai\b", ("The Mount Sinai Hospital", "New York")),
+]
+_MOUNT_SINAI_SITES_RE = [(re.compile(pat, re.I), val) for pat, val in MOUNT_SINAI_SITES]
+
+
+def _mount_sinai_loc(title: str, city: str, state: str) -> tuple[str, str, str]:
+    """(hospital_name, city, state) for a Mount Sinai requisition.
+
+    A located row keeps its city and state and only gains the facility; an
+    unlocated one takes the site's city; a row with no site and no location
+    defaults to New York, NY."""
+    facility = "Mount Sinai Health System"
+    site_city = ""
+    for rx, (name, c) in _MOUNT_SINAI_SITES_RE:
+        if rx.search(title or ""):
+            facility, site_city = name, c
+            break
+    if state:
+        # Located rows keep their location; a New York row with no city takes
+        # the site's city; a New Jersey row with no city is left alone.
+        return facility, (city or (site_city if state == "NY" else "")), state
+    return facility, (site_city or "New York"), "NY"
+
+
 async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     base_url, site_number = org_data
     jobs = []
@@ -6179,13 +6261,16 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                 if isinstance(loc, dict):
                     loc = loc.get("Name", loc.get("name", ""))
                 _city, _state = parse_city_state(str(loc))
+                _facility = system
+                if system == "Mount Sinai Health System":
+                    _facility, _city, _state = _mount_sinai_loc(j.get("Title", j.get("title", "")), _city, _state)
                 func = j.get("JobFunction", j.get("jobFunction", ""))
                 if isinstance(func, dict):
                     func = func.get("Name", func.get("name", ""))
                 jobs.append(Job(
                     title=j.get("Title", j.get("title", "")),
                     hospital_system=system,
-                    hospital_name=system,
+                    hospital_name=_facility,
                     city=_city, state=_state, location=str(loc),
                     specialty=str(func) if func else "",
                     job_type=j.get("WorkHours", j.get("workHours", "")) or "",

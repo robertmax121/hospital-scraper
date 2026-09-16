@@ -120,8 +120,18 @@ def upsert_jobs(jobs: list[dict]) -> dict:
 
 
 def mark_inactive_jobs(current_jobs: list[dict],
-                       miss_threshold: int = MISS_THRESHOLD) -> dict:
+                       miss_threshold: int = MISS_THRESHOLD,
+                       exclude_systems: set[str] | None = None) -> dict:
     """Layer 4 deactivation: multi-run miss confirmation.
+
+    2026-09-16: `exclude_systems` (canonical hospital_system labels) are left
+    untouched: no miss bump, no reset, no deactivation. The per-system sweep
+    already skips PARTIAL_SYSTEMS (a system whose crawl came back partial or
+    empty), but this pass did not, so a system the nightly cannot crawl at
+    all decayed here instead: HCA Healthcare is crawled from a residential IP
+    by hca_local_push.py (Cloudflare 403s the Railway egress), and the 16,968
+    HCA rows it maintains were reaching miss_threshold three nights after
+    every local push (4,717 deactivated on 2026-09-16 alone).
 
     Per active row each scrape run:
       - Row's (system, job_id) IS in this scrape → reset misses to 0.
@@ -222,7 +232,11 @@ def mark_inactive_jobs(current_jobs: list[dict],
     deactivate_ids: list[int] = []               # Missed, new count >= threshold → deactivate
     bump_by_new_count: dict[int, list[int]] = {} # Missed, not yet at threshold → set new miss count
 
+    excluded_n = 0
     for r in active:
+        if exclude_systems and r["hospital_system"] in exclude_systems:
+            excluded_n += 1
+            continue
         key = (r["hospital_system"], str(r["job_id"]))
         if key in current_keys:
             # Only emit a reset for rows whose previous miss count was non-zero.
@@ -266,6 +280,8 @@ def mark_inactive_jobs(current_jobs: list[dict],
         "reset_to_found":  reset_n,
         "current_keys":    len(current_keys),
         "active_before":   len(active),
+        "excluded_rows":   excluded_n,
+        "excluded_systems": sorted(exclude_systems or []),
     }
     logger.info(f"Layer 4 deactivation: {summary}")
     return summary
