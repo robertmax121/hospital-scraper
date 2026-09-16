@@ -51,11 +51,42 @@ class ProxyRotator:
         else:
             raw = os.environ.get("PROXY_LIST", "")
             self.proxies = [p.strip().rstrip(",") for p in re.split(r"[,\n]+", raw) if p.strip().rstrip(",")]
+        # 2026-09-16: Webshare showed ZERO requests in 30 days on a live plan:
+        # proxies.txt is untracked and PROXY_LIST is unset on Railway, so every
+        # adapter ran direct. With WEBSHARE_API_KEY set, the current direct-mode
+        # list is fetched at startup, so a rotated pool never goes stale.
+        if not self.proxies and os.environ.get("WEBSHARE_API_KEY"):
+            self.proxies = self._webshare_list(os.environ["WEBSHARE_API_KEY"])
         self._i = 0
         if self.proxies:
             logger.info(f"  Proxies loaded: {len(self.proxies)} available")
         else:
             logger.warning("  No proxies configured — running without proxies")
+
+    @staticmethod
+    def _webshare_list(api_key: str) -> list:
+        """host:port:user:pass entries from the Webshare API (direct mode)."""
+        try:
+            import urllib.request
+            import json as _json
+            hdr = {"Authorization": "Token " + api_key}
+            def _get(url):
+                req_ = urllib.request.Request(url, headers=hdr)
+                with urllib.request.urlopen(req_, timeout=30) as r:
+                    return _json.loads(r.read().decode())
+            cfg = _get("https://proxy.webshare.io/api/v2/proxy/config/")
+            out, url = [], "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page_size=100"
+            while url and len(out) < 500:
+                page = _get(url)
+                for item in page.get("results", []):
+                    if item.get("valid", True):
+                        out.append(f"{item['proxy_address']}:{item['port']}:{cfg['username']}:{cfg['password']}")
+                url = page.get("next")
+            logger.info(f"  Webshare: {len(out)} proxies fetched")
+            return out
+        except Exception as e:
+            logger.warning(f"  Webshare list fetch failed ({e}); running without proxies")
+            return []
 
     def get(self) -> Optional[str]:
         if not self.proxies:
