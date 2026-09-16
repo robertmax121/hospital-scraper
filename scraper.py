@@ -700,7 +700,14 @@ WORKDAY_TENANTS = {
     "MultiCare Health":          ("multicare", "1", "multicare"),
     "Northeast Georgia Health":  ("nghs", "1", "External"),
     "Endeavor Health":           ("nshs", "1", "ns-eeh"),  # Renamed: NorthShore + Edward-Elmhurst merged into Endeavor Health (2024). Old key was "North Shore Health System".
-    "NYU Langone Health":        ("nyuhs", "12", "nyuhscareers1"),
+    # 2026-09-16 (NY coverage): this tenant is United Health Services of
+    # Binghamton (rows: Johnson City, Binghamton, Norwich, Walton), not NYU
+    # Langone, which runs SilkRoad OpenHire (no adapter yet). Relabelled; the
+    # 405 rows under the old name deactivate as the new ones land.
+    "United Health Services":    ("nyuhs", "12", "nyuhscareers1"),
+    # 2026-09-16 (NY coverage): fingerprinted live from the careers pages.
+    "Rochester Regional Health": ("rrhs", "5", "RRH"),
+    "Richmond University Medical Center": ("rumcsi", "5", "RUMC"),
     "Owensboro Health":          ("owensborohealth", "1", "owensborohealth"),
     "Phelps Health":             ("phelpshealth", "5", "Phelps"),
     "Pullman Regional Hospital": ("pullmanregionalhospital","1", "Careers"),
@@ -1035,6 +1042,9 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "methodist health system":    ("Dallas",            "TX"),
     "methodist le bonheur":       ("Memphis",           "TN"),
     "montefiore":                 ("Bronx",             "NY"),
+    "united health services":     ("Binghamton",        "NY"),
+    "rochester regional health":  ("Rochester",         "NY"),
+    "richmond university medical center": ("Staten Island", "NY"),
     "monument health":            ("Rapid City",        "SD"),
     "multicare":                  ("Tacoma",            "WA"),
     "northeast georgia medical center": ("Gainesville", "GA"),
@@ -1273,6 +1283,42 @@ async def _workday_fetch_details(session, working_url, targets, system):
                 f"{filled} descriptions, {dated} ISO dates")
 
 
+# 2026-09-16 (NY coverage): Montefiore's Workday tenant lists postings by street
+# address, so parse_city_state() found no city and no state on all 444 rows.
+# Address prefix -> (facility marketing name, city); every unmatched address in
+# the tally was in the Bronx, so that is the fallback city for this tenant.
+MONTEFIORE_ADDR_MAP = [
+    ("111 East 210", ("Montefiore Medical Center, Moses Campus", "Bronx")),
+    ("110 East 210", ("Montefiore Medical Center, Moses Campus", "Bronx")),
+    ("1825 Eastchester", ("Montefiore Medical Center, Einstein Campus", "Bronx")),
+    ("1695 Eastchester", ("Montefiore Medical Center, Einstein Campus", "Bronx")),
+    ("1621 Eastchester", ("Montefiore Medical Center, Einstein Campus", "Bronx")),
+    ("600 East 233", ("Montefiore Medical Center, Wakefield Campus", "Bronx")),
+    ("3415 Bainbridge", ("Children's Hospital at Montefiore", "Bronx")),
+    ("3400 Bainbridge", ("Children's Hospital at Montefiore", "Bronx")),
+    ("1250 Waters", ("Montefiore Hutchinson Campus", "Bronx")),
+    ("1510 Waters", ("Montefiore Hutchinson Campus", "Bronx")),
+    ("1300 Morris Park", ("Albert Einstein College of Medicine", "Bronx")),
+    ("555 South Broadway", ("Montefiore, Tarrytown", "Tarrytown")),
+    ("555 Taxter", ("Montefiore, Elmsford", "Elmsford")),
+    ("3 Odell", ("Montefiore, Yonkers", "Yonkers")),
+    ("200 Corporate", ("Montefiore, Yonkers", "Yonkers")),
+    ("100 Corporate", ("Montefiore, Yonkers", "Yonkers")),
+    ("6 Executive", ("Montefiore, Yonkers", "Yonkers")),
+    ("4 Executive", ("Montefiore, Yonkers", "Yonkers")),
+    ("440 White Plains", ("Montefiore, Eastchester", "Eastchester")),
+]
+
+
+def _montefiore_loc(loc: str, city: str, state: str) -> tuple[str, str, str]:
+    """(hospital_name, city, state) for a Montefiore locationsText."""
+    text = (loc or "").strip()
+    for prefix, (name, c) in MONTEFIORE_ADDR_MAP:
+        if text.startswith(prefix):
+            return name, c, "NY"
+    return "Montefiore", (city or "Bronx"), "NY"
+
+
 async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_data: tuple) -> list[Job]:
     tenant, wd_num, primary_site = tenant_data
     jobs = []
@@ -1327,6 +1373,9 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                 for j in listings:
                     loc = j.get("locationsText", "")
                     _city, _state = parse_city_state(loc)
+                    _facility = system
+                    if tenant == "montefiore":
+                        _facility, _city, _state = _montefiore_loc(loc, _city, _state)
                     # job_id (2026-05-29): first digit-bearing bulletField is the
                     # req number (some tenants put the state in [0]); fall back to
                     # the always-unique externalPath.
@@ -1340,7 +1389,7 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     jobs.append(Job(
                         title=j.get("title", ""),
                         hospital_system=system,
-                        hospital_name=system,
+                        hospital_name=_facility,
                         city=_city,
                         state=_state,
                         location=loc,
@@ -1541,6 +1590,11 @@ ICIMS_ORGS = {
     # All domains verified to use .icims.com subdomain format for JSON API access
     # REMOVED (wrong platform): UPMC (Taleo), Sentara (Workday), Advocate Aurora (Workday),
     #   Northwestern Medicine (SmartRecruiters), HealthPartners (SmartRecruiters)
+    # 2026-09-16 (NY coverage): fingerprinted live from the careers pages.
+    "Catholic Health (Long Island)": "careers-chsli.icims.com",
+    "Garnet Health":          "careers-garnethealth.icims.com",
+    "Bassett Healthcare Network": "bassett.icims.com",
+    "Maimonides Health":      "careers.maimo.org",
     "MedStar Health":         "careers.medstarhealth.org",
     "Kettering Health":       "careers-ketteringhealth.icims.com",
     "Loma Linda University":  "careers-lluh.icims.com",
@@ -5964,6 +6018,9 @@ ORACLE_ORGS = {
     "Northwell Health (CX_1)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_1"),
     "Northwell Health (CX_3)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_3"),
     "Jackson Hospital":          ("https://ejid.fa.us6.oraclecloud.com",                      "CX_1001"),
+    # 2026-09-16 (NY coverage): careers.mountsinai.org fronts this instance;
+    # TotalJobsCount 1,770 on 2026-09-16, New York NY primary locations.
+    "Mount Sinai Health System": ("https://ejis.fa.us6.oraclecloud.com",                      "CX_1"),
     # ── 2026-09-10 Texas block C (Y-texas-build): site CX_1 on all three,
     # validated through scrape_oracle on 2026-09-10 (Texas Children's 412
     # rows, 98% TX, Houston + Austin; United Regional 79, Wichita Falls;
@@ -6142,6 +6199,7 @@ async def run_oracle(session) -> list[Job]:
 #  Format: ("tenant_slug",)
 ##############################################################################
 HEALTHCARESOURCE_ORGS = {
+    "Ellis Medicine":           "ellishospital",   # 2026-09-16 (NY coverage), pm.healthcaresource.com/cs/ellishospital
     "Central Valley Medical":   "centralvalleymedicalcenter",
     "RMCM":                     "rmcm",
     "CRMC Health":              "crmchealth",
