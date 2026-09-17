@@ -1042,9 +1042,42 @@ FACILITY_LOCATION_MAP: dict[str, tuple[str, str]] = {
 # Normalize all keys to lowercase for matching
 FACILITY_LOCATION_MAP = {k.lower(): v for k, v in FACILITY_LOCATION_MAP.items()}
 
+# 2026-09-17 (blank states): systems whose board writes a bare city with no
+# state, where the system default would be wrong for part of the rows
+# (ProMedica is Toledo OH but Monroe / Adrian are MI; Legacy is Portland OR but
+# Vancouver is WA; Saint Luke's KC straddles the state line). Checked before
+# SYSTEM_LOCATION_DEFAULTS; keys are lowercased system and city.
+SYSTEM_CITY_STATE: dict[str, dict[str, str]] = {
+    "promedica": {"monroe": "MI", "adrian": "MI", "tecumseh": "MI", "lambertville": "MI",
+                  "coldwater": "MI", "hillsdale": "MI", "dundee": "MI"},
+    "legacy health": {"vancouver": "WA"},
+    "st. luke's health system": {"overland park": "KS", "iola": "KS", "lenexa": "KS",
+                                 "shawnee": "KS", "leawood": "KS", "olathe": "KS"},
+}
+
 # System-level fallback — used when facility lookup fails
 # Multi-state systems use primary HQ market as default
 SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
+    # 2026-09-17 (blank states): single-market systems whose boards carry no
+    # location at all (iCIMS card lists at Covenant / OHSU, Workday tenants
+    # with facility names). Both the adapter label and the canonical label.
+    "wvu medicine":               ("Morgantown",        "WV"),
+    "multicare":                  ("Tacoma",            "WA"),
+    "multicare health":           ("Tacoma",            "WA"),
+    "covenant health":            ("Knoxville",         "TN"),
+    "ohsu":                       ("Portland",          "OR"),
+    "kettering health":           ("Kettering",         "OH"),
+    "legacy health":              ("Portland",          "OR"),
+    "promedica":                  ("Toledo",            "OH"),
+    "university of rochester":    ("Rochester",         "NY"),
+    "saint francis health":       ("Tulsa",             "OK"),
+    "freeman health":             ("Joplin",            "MO"),
+    "freeman health system":      ("Joplin",            "MO"),
+    "samaritan health":           ("Watertown",         "NY"),
+    "samaritan health ny":        ("Watertown",         "NY"),
+    "duly health and care":       ("Downers Grove",     "IL"),
+    "wellstar health (providers)": ("Marietta",         "GA"),
+    "st. luke's health system":   ("Kansas City",       "MO"),
     # Workday tenants
     "kaiser permanente":          ("Oakland",          "CA"),
     "providence health":          ("Renton",           "WA"),
@@ -1222,6 +1255,20 @@ FORCE_LOCATION_OVERRIDE: dict[str, tuple[str, str]] = {
 FORCE_LOCATION_OVERRIDE = {k.lower(): v for k, v in FORCE_LOCATION_OVERRIDE.items()}
 
 
+_NOT_CITY_WORDS = re.compile(
+    r"\b(hospital|hospitals|medical|center|centre|clinic|clinics|campus|health|healthcare|regional|"
+    r"building|bldg|office|offices|suite|ste|floor|tower|institute|services?|department|dept|"
+    r"remote|corporate|plaza|park|complex|facility|system)\b", re.I)
+
+
+def _cityish(part: str) -> bool:
+    """A comma-separated part that could be a city name: short, no digits,
+    none of the facility words."""
+    p = (part or "").strip()
+    return bool(p) and len(p.split()) <= 4 and not any(ch.isdigit() for ch in p) \
+        and " - " not in p and not _NOT_CITY_WORDS.search(p)
+
+
 def parse_city_state(loc_str: str) -> tuple[str, str]:
     """
     Extract (city, state) from a location string robustly.
@@ -1250,7 +1297,28 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
     JUNK = {"united states","us","usa","canada","remote","united kingdom","uk",""}
     if not loc_str:
         return "", ""
-    parts = [p.strip() for p in str(loc_str).split(",")]
+    _codes = set(STATE_ABBR.values())
+    s = str(loc_str).strip()
+    # 2026-09-17 (blank states): Workday tenants also write "Rochester - NY",
+    # "Dallas - TX (LBJ FWY)", "MOUNT PLEASANT (SC)" and "Remote Work - New
+    # York". Rewrite those to "City, ST" before the comma split.
+    if "," not in s:
+        m = re.match(r"^(.*?\S)\s*[-\u2013]\s*([A-Za-z]{2})\b\s*(?:\(.*\))?\s*$", s)
+        if m and m.group(2).upper() in _codes:
+            s = f"{m.group(1)}, {m.group(2).upper()}"
+        else:
+            m = re.match(r"^(.*?\S)\s*\(([A-Za-z]{2})\)\s*$", s)
+            if m and m.group(2).upper() in _codes:
+                s = f"{m.group(1)}, {m.group(2).upper()}"
+            else:
+                m = re.match(r"^(.*?\S)\s*[-\u2013]\s*([A-Za-z ]{4,20}?)\s*$", s)
+                if m and m.group(2).strip().lower() in STATE_ABBR:
+                    s = f"{m.group(1)}, {m.group(2).strip()}"
+    parts = [p.strip() for p in s.split(",")]
+    # 2026-09-17: "Kennebunk, ME - Huntington Common" (Sunrise): a part that
+    # starts with a state code and a dash is the state.
+    parts = [(m.group(1).upper() if (m := re.match(r"^([A-Za-z]{2})\s*[-\u2013]\s*\S.*$", p)) and m.group(1).upper() in _codes else p)
+             for p in parts]
     # Strip trailing zip codes from each part (e.g. "TX  75039" → "TX", "Irving TX 75039" → "Irving TX")
     import re as _re
     parts = [_re.sub(r'\s+\d{5}(-\d{4})?$', '', p).strip() for p in parts]
@@ -1277,11 +1345,19 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
     if parts and len(parts[0]) == 2 and parts[0].isalpha() and parts[0].upper() == state:
         city = parts[1] if len(parts) > 1 else ""
     else:
-        # Remove state/country parts to get city
-        city = next((p for p in parts
-                     if p != state
-                     and p.lower() not in JUNK
-                     and not STATE_ABBR.get(p.lower(), "")), parts[0])
+        # Remove state/country parts to get city. 2026-09-17: prefer the part
+        # that looks like a city ("MercyOne North Iowa Medical Center - East
+        # Campus, Mason City, Iowa" -> Mason City), and take the tail of a
+        # "Facility - City" part ("Saint Francis Hospital - Hartford, CT").
+        cands = [p for p in parts
+                 if p != state
+                 and p.lower() not in JUNK
+                 and not STATE_ABBR.get(p.lower(), "")]
+        city = next((p for p in cands if _cityish(p)), cands[0] if cands else parts[0])
+        if " - " in city:
+            tail = city.rsplit(" - ", 1)[1].strip()
+            if tail and len(tail.split()) <= 4 and not any(ch.isdigit() for ch in tail):
+                city = tail
 
     return city.strip(), state.upper() if state else ""
 
@@ -1395,6 +1471,360 @@ def _montefiore_loc(loc: str, city: str, state: str) -> tuple[str, str, str]:
     return "Montefiore", (city or "Bronx"), "NY"
 
 
+# 2026-09-17 (blank states): tenants whose locationsText is a facility name
+# ("Ruby Memorial Hospital (WVUH)", "Strong Memorial Hospital", "SJHSYR-
+# MAINCAMPUS") or nothing at all. 25,882 active rows carried no state on
+# 2026-09-17, WVU 3,140 and Trinity 2,656 of them. Keyed by the WORKDAY_TENANTS
+# label; inner keys are the locationsText lowercased, whitespace collapsed,
+# trailing "(CODE)" stripped; a key also matches as a prefix. Value =
+# (facility label or None to keep the system name, city, state).
+WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
+    "WVU Medicine": {
+        "ruby memorial hospital": ("J.W. Ruby Memorial Hospital", "Morgantown", "WV"),
+        "wvu medicine golisano children's hospital": ("WVU Medicine Children's Hospital", "Morgantown", "WV"),
+        "wvu medicine children's hospital": ("WVU Medicine Children's Hospital", "Morgantown", "WV"),
+        "berkeley medical center": ("Berkeley Medical Center", "Martinsburg", "WV"),
+        "united hospital center": ("United Hospital Center", "Bridgeport", "WV"),
+        "wheeling hospital": ("Wheeling Hospital", "Wheeling", "WV"),
+        "thomas memorial hospital": ("Thomas Memorial Hospital", "South Charleston", "WV"),
+        "uniontown hospital": ("Uniontown Hospital", "Uniontown", "PA"),
+        "camden clark": ("Camden Clark Medical Center", "Parkersburg", "WV"),
+        "weirton medical center": ("Weirton Medical Center", "Weirton", "WV"),
+        "wmch medical office building weirton": ("Weirton Medical Center", "Weirton", "WV"),
+        "princeton community hospital": ("Princeton Community Hospital", "Princeton", "WV"),
+        "potomac valley hospital": ("Potomac Valley Hospital", "Keyser", "WV"),
+        "st. joseph's hospital": ("St. Joseph's Hospital", "Buckhannon", "WV"),
+        "garrett regional medical center": ("Garrett Regional Medical Center", "Oakland", "MD"),
+        "jefferson medical center": ("Jefferson Medical Center", "Ranson", "WV"),
+        "reynolds memorial hospital": ("Reynolds Memorial Hospital", "Glen Dale", "WV"),
+        "fairmont medical center": ("Fairmont Medical Center", "Fairmont", "WV"),
+        "grant memorial hospital": ("Grant Memorial Hospital", "Petersburg", "WV"),
+        "jackson general hospital": ("Jackson General Hospital", "Ripley", "WV"),
+        "summersville regional medical center": ("Summersville Regional Medical Center", "Summersville", "WV"),
+        "saint francis hospital": ("Saint Francis Hospital", "Charleston", "WV"),
+        "braxton county memorial hospital": ("Braxton County Memorial Hospital", "Gassaway", "WV"),
+        "wetzel county hospital": ("Wetzel County Hospital", "New Martinsville", "WV"),
+        "harrison community hospital": ("Harrison Community Hospital", "Cadiz", "OH"),
+        "barnesville hospital": ("Barnesville Hospital", "Barnesville", "OH"),
+        "bluefield behavioral health center": ("Bluefield Behavioral Health Center", "Bluefield", "WV"),
+        "mary babb randolph cancer center": ("Mary Babb Randolph Cancer Center", "Morgantown", "WV"),
+        "rockefeller neuroscience institute": ("Rockefeller Neuroscience Institute", "Morgantown", "WV"),
+        "wvu medicine eye institute": ("WVU Medicine Eye Institute", "Morgantown", "WV"),
+        "healthy minds clarksburg": (None, "Clarksburg", "WV"),
+        "southpointe clinic": (None, "Canonsburg", "PA"),
+        "operations support center": (None, "Morgantown", "WV"),
+        "physician office center": (None, "Morgantown", "WV"),
+        "health sciences center": (None, "Morgantown", "WV"),
+        "healthy minds morgantown": (None, "Morgantown", "WV"),
+        "information technology center": (None, "Morgantown", "WV"),
+        "suncrest towne centre": (None, "Morgantown", "WV"),
+        "university town center": (None, "Morgantown", "WV"),
+    },
+    "University of Rochester": {
+        "strong memorial hospital": ("Strong Memorial Hospital", "Rochester", "NY"),
+        "golisano children's hospital": ("Golisano Children's Hospital", "Rochester", "NY"),
+        "james p. wilmot cancer center": ("Wilmot Cancer Institute", "Rochester", "NY"),
+        "wilmot": ("Wilmot Cancer Institute", "Rochester", "NY"),
+        "highland hospital": ("Highland Hospital", "Rochester", "NY"),
+        "strong west": ("Strong West", "Brockport", "NY"),
+        "eastman dental": ("Eastman Institute for Oral Health", "Rochester", "NY"),
+        "f.f. thompson": ("F.F. Thompson Hospital", "Canandaigua", "NY"),
+        "thompson health": ("F.F. Thompson Hospital", "Canandaigua", "NY"),
+        "noyes": ("Noyes Health", "Dansville", "NY"),
+        "jones memorial": ("Jones Memorial Hospital", "Wellsville", "NY"),
+        "st. james": ("St. James Hospital", "Hornell", "NY"),
+        "school of medicine and dentistry": (None, "Rochester", "NY"),
+    },
+    "Trinity Health": {
+        "sjhsyr": ("St. Joseph's Health Hospital", "Syracuse", "NY"),
+        "loyola medicine - loyola university medical center": ("Loyola University Medical Center", "Maywood", "IL"),
+        "loyola medicine - macneal hospital": ("MacNeal Hospital", "Berwyn", "IL"),
+        "loyola medicine - gottlieb memorial hospital": ("Gottlieb Memorial Hospital", "Melrose Park", "IL"),
+        "loyola medicine": ("Loyola Medicine", "Maywood", "IL"),
+        "mmcia": ("MercyOne Des Moines Medical Center", "Des Moines", "IA"),
+        "mneia": ("MercyOne Waterloo Medical Center", "Waterloo", "IA"),
+        "moq": ("MercyOne Quad Cities", "Bettendorf", "IA"),
+        "mount carmel east": ("Mount Carmel East", "Columbus", "OH"),
+        "mount carmel st. ann's": ("Mount Carmel St. Ann's", "Westerville", "OH"),
+        "mount carmel grove city": ("Mount Carmel Grove City", "Grove City", "OH"),
+        "mount carmel": ("Mount Carmel Health", "Columbus", "OH"),
+        "mercy catholic medical center - mercy fitzgerald campus": ("Mercy Fitzgerald Hospital", "Darby", "PA"),
+        "langhorne": ("St. Mary Medical Center", "Langhorne", "PA"),
+        "thiha": ("Trinity Health IHA Medical Group", "Ann Arbor", "MI"),
+    },
+    "Intermountain Health (IMH)": {
+        "intermountain medical center": ("Intermountain Medical Center", "Murray", "UT"),
+        "alta view hospital": ("Alta View Hospital", "Sandy", "UT"),
+        "riverton hospital": ("Riverton Hospital", "Riverton", "UT"),
+        "american fork hospital": ("American Fork Hospital", "American Fork", "UT"),
+        "layton hospital": ("Layton Hospital", "Layton", "UT"),
+        "park city hospital": ("Park City Hospital", "Park City", "UT"),
+        "cedar city hospital": ("Cedar City Hospital", "Cedar City", "UT"),
+        "spanish fork hospital": ("Spanish Fork Hospital", "Spanish Fork", "UT"),
+        "orem community hospital": ("Orem Community Hospital", "Orem", "UT"),
+        "bear river valley hospital": ("Bear River Valley Hospital", "Tremonton", "UT"),
+        "cassia regional hospital": ("Cassia Regional Hospital", "Burley", "ID"),
+        "sevier valley hospital": ("Sevier Valley Hospital", "Richfield", "UT"),
+        "sanpete valley hospital": ("Sanpete Valley Hospital", "Mount Pleasant", "UT"),
+        "heber valley hospital": ("Heber Valley Hospital", "Heber City", "UT"),
+        "garfield memorial hospital": ("Garfield Memorial Hospital", "Panguitch", "UT"),
+        "st. james healthcare": ("St. James Healthcare", "Butte", "MT"),
+        "platte valley medical center": ("Platte Valley Medical Center", "Brighton", "CO"),
+        "primary childrens hospital": ("Primary Children's Hospital", "Salt Lake City", "UT"),
+        "primary children's hospital": ("Primary Children's Hospital", "Salt Lake City", "UT"),
+        "primary childrens at lehi": ("Primary Children's Hospital Lehi", "Lehi", "UT"),
+        "primary childrens at taylorsville": ("Primary Children's Hospital", "Taylorsville", "UT"),
+        "lds hospital": ("LDS Hospital", "Salt Lake City", "UT"),
+        "utah valley hospital": ("Utah Valley Hospital", "Provo", "UT"),
+        "mckay-dee hospital": ("McKay-Dee Hospital", "Ogden", "UT"),
+        "logan regional hospital": ("Logan Regional Hospital", "Logan", "UT"),
+        "st. george regional hospital": ("St. George Regional Hospital", "St. George", "UT"),
+        "saint joseph hospital": ("Saint Joseph Hospital", "Denver", "CO"),
+        "st. mary's medical center": ("St. Mary's Medical Center", "Grand Junction", "CO"),
+        "good samaritan medical center": ("Good Samaritan Medical Center", "Lafayette", "CO"),
+        "lutheran medical center": ("Lutheran Medical Center", "Wheat Ridge", "CO"),
+        "st. vincent regional hospital": ("St. Vincent Regional Hospital", "Billings", "MT"),
+        "holy rosary healthcare": ("Holy Rosary Healthcare", "Miles City", "MT"),
+        "peaks regional office": (None, "Broomfield", "CO"),
+        "nevada central office": (None, "Las Vegas", "NV"),
+        "home services - salt lake city": (None, "Salt Lake City", "UT"),
+        "valley center tower": (None, "Salt Lake City", "UT"),
+    },
+    "Saint Francis Health": {
+        "saint francis eufaula": ("Saint Francis Hospital Eufaula", "Eufaula", "OK"),
+        "saint francis muskogee": ("Saint Francis Hospital Muskogee", "Muskogee", "OK"),
+        "saint francis vinita": ("Saint Francis Hospital Vinita", "Vinita", "OK"),
+        "saint francis south": ("Saint Francis Hospital South", "Tulsa", "OK"),
+        "natalie building": (None, "Tulsa", "OK"),
+        "warren building": (None, "Tulsa", "OK"),
+        "blandine building": (None, "Tulsa", "OK"),
+        "tower": (None, "Tulsa", "OK"),
+    },
+    "Freeman Health System": {
+        "freeman fort scott": ("Freeman Fort Scott", "Fort Scott", "KS"),
+        "freeman neosho": ("Freeman Neosho Hospital", "Neosho", "MO"),
+    },
+}
+
+# Single-market tenants: rows still without a state after the map and the
+# facet pass take the tenant's home market. Multi-state tenants (Trinity,
+# Intermountain, Sunrise) are deliberately absent: a wrong state is worse than
+# none, and the state facet covers them where the tenant exposes one.
+WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
+    "WVU Medicine":            ("Morgantown", "WV"),
+    "University of Rochester": ("Rochester", "NY"),
+    "MultiCare Health":        ("Tacoma", "WA"),
+    "Saint Francis Health":    ("Tulsa", "OK"),
+    "Freeman Health System":   ("Joplin", "MO"),
+    "Samaritan Health NY":     ("Watertown", "NY"),
+    "Duly Health and Care":    ("Downers Grove", "IL"),
+    "Wellstar Health (Providers)": ("Marietta", "GA"),
+}
+
+_STATE_CODE_BY_NAME = {
+    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR", "california": "CA",
+    "colorado": "CO", "connecticut": "CT", "delaware": "DE", "florida": "FL", "georgia": "GA",
+    "hawaii": "HI", "idaho": "ID", "illinois": "IL", "indiana": "IN", "iowa": "IA",
+    "kansas": "KS", "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
+    "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
+    "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV", "new hampshire": "NH",
+    "new jersey": "NJ", "new mexico": "NM", "new york": "NY", "north carolina": "NC",
+    "north dakota": "ND", "ohio": "OH", "oklahoma": "OK", "oregon": "OR", "pennsylvania": "PA",
+    "rhode island": "RI", "south carolina": "SC", "south dakota": "SD", "tennessee": "TN",
+    "texas": "TX", "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
+    "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY", "district of columbia": "DC",
+}
+
+
+def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | None, str, str]:
+    """(facility or None, city, state) from WD_FACILITY_MAP for one posting.
+    Parsed city/state win; the map only fills what is blank."""
+    fmap = WD_FACILITY_MAP.get(system)
+    if not fmap:
+        return None, city, state
+    key = re.sub(r"\s*\([A-Za-z0-9&/ .'-]{1,14}\)\s*$", "", loc or "")
+    key = re.sub(r"\s+", " ", key).strip().lower()
+    if not key:
+        return None, city, state
+    hit = fmap.get(key)
+    if hit is None:
+        # prefix, then suffix ("Intermountain Health Alta View Hospital"),
+        # longest key first so "mount carmel east" beats "mount carmel".
+        for k in sorted(fmap, key=len, reverse=True):
+            if key.startswith(k) or key.endswith(" " + k):
+                hit = fmap[k]
+                break
+    if hit is None:
+        return None, city, state
+    facility, fc, fs = hit
+    return facility, (city or fc), (state or fs)
+
+
+WD_FACET_BUDGET = int(os.getenv("WD_FACET_BUDGET", "600"))   # requests per tenant for the location passes
+WD_FACET_WINDOW = 2000   # Workday serves at most 2,000 results per filter
+
+
+def _wd_facet_groups(data: dict) -> list[tuple[str, str, list]]:
+    """(facetParameter, group label, values) for every top-level facet and
+    every nested group inside locationMainGroup (Workday nests Country /
+    State / City / Locations there: MultiCare's `locations` values read
+    "Auburn, Washington", Intermountain's locationHierarchy2 is the city and
+    locationRegionStateProvince the state, Trinity's state facet is top-level)."""
+    out = []
+    for f in data.get("facets") or []:
+        p = f.get("facetParameter") or ""
+        vals = f.get("values") or []
+        if vals and isinstance(vals[0], dict) and vals[0].get("values"):
+            for g in vals:
+                gp, gv = g.get("facetParameter") or "", g.get("values") or []
+                if gp and gv:
+                    out.append((gp, g.get("descriptor") or "", gv))
+        elif vals:
+            out.append((p, "", vals))
+    return out
+
+
+async def _wd_facet_pass(session, working_url: str, param: str, values: list, budget: list) -> dict[str, str]:
+    """externalPath -> value descriptor for one facet parameter, paging each
+    value (20 a page) until the tenant budget runs out."""
+    out: dict[str, str] = {}
+    for v in values:
+        desc = (v.get("descriptor") or "").strip()
+        vid = v.get("id")
+        if not desc or not vid or not (v.get("count") or 0):
+            continue
+        offset = 0
+        while offset < WD_FACET_WINDOW and budget[0] > 0:
+            budget[0] -= 1
+            try:
+                async with req(session, "post", working_url,
+                               json={"limit": 20, "offset": offset, "searchText": "",
+                                     "appliedFacets": {param: [vid]}},
+                               headers={**HEADERS, "Content-Type": "application/json"},
+                               ssl=False, proxy=proxies.get(),
+                               timeout=aiohttp.ClientTimeout(total=25)) as r:
+                    if r.status != 200:
+                        break
+                    page = await r.json()
+            except Exception:
+                break
+            posts = page.get("jobPostings") or []
+            for pst in posts:
+                ext = pst.get("externalPath")
+                if ext:
+                    out.setdefault(ext, desc)
+            if len(posts) < 20:
+                break
+            offset += 20
+            await jitter()
+    return out
+
+
+async def _wd_location_facets(session, working_url: str, system: str) -> tuple[dict[str, str], dict[str, str]]:
+    """(externalPath -> city, externalPath -> state) from the tenant's location
+    facets. Prefers a "City, State" locations group (one pass); otherwise a
+    state group plus a city group. Empty dicts when the tenant has neither."""
+    try:
+        async with req(session, "post", working_url,
+                       json={"limit": 1, "offset": 0, "searchText": "", "appliedFacets": {}},
+                       headers={**HEADERS, "Content-Type": "application/json"},
+                       ssl=False, proxy=proxies.get(),
+                       timeout=aiohttp.ClientTimeout(total=25)) as r:
+            data = await r.json() if r.status == 200 else {}
+    except Exception:
+        return {}, {}
+    groups = _wd_facet_groups(data)
+
+    def _desc(v):
+        return (v.get("descriptor") or "").strip()
+
+    def _is_state_group(vals):
+        named = sum(1 for v in vals if _desc(v).lower() in _STATE_CODE_BY_NAME)
+        return named >= max(1, len(vals) // 2)
+
+    def _is_city_state_group(vals):
+        parsed = sum(1 for v in vals if all(parse_city_state(_desc(v))))
+        return parsed >= max(1, (len(vals) * 2) // 3)
+
+    budget = [WD_FACET_BUDGET]
+    path_city: dict[str, str] = {}
+    path_state: dict[str, str] = {}
+    locs = next(((p, v) for p, _, v in groups if p == "locations" and _is_city_state_group(v)), None)
+    if locs:
+        by_path = await _wd_facet_pass(session, working_url, locs[0], locs[1], budget)
+        for ext, desc in by_path.items():
+            c, st = parse_city_state(desc)
+            if st:
+                path_state[ext] = st
+            if c:
+                path_city[ext] = c
+        logger.info(f"  Workday {system}: locations facet located {len(path_state):,} postings ({len(locs[1])} values)")
+        return path_city, path_state
+    state_g = next(((p, v) for p, _, v in groups
+                    if re.search(r"state|province|region", p, re.I) and _is_state_group(v)), None)
+    if state_g:
+        by_path = await _wd_facet_pass(session, working_url, state_g[0], state_g[1], budget)
+        for ext, desc in by_path.items():
+            code = _STATE_CODE_BY_NAME.get(desc.lower())
+            if code:
+                path_state[ext] = code
+        city_g = next(((p, v) for p, label, v in groups
+                       if p == "locationHierarchy2" or label.strip().lower() == "city"), None)
+        if city_g and budget[0] > 0:
+            by_path = await _wd_facet_pass(session, working_url, city_g[0], city_g[1], budget)
+            for ext, desc in by_path.items():
+                if _cityish(desc):
+                    path_city[ext] = desc
+        logger.info(f"  Workday {system}: state facet '{state_g[0]}' located {len(path_state):,} postings"
+                    f" ({len(state_g[1])} states); city facet {len(path_city):,}; budget left {budget[0]}")
+    return path_city, path_state
+
+
+def _wd_apply_locations(jobs: list, ext_by_job: dict, path_city: dict, path_state: dict,
+                        default: tuple | None) -> tuple[int, int]:
+    """Fill blank states (and blank cities) from the facet maps, then the
+    tenant default for whatever is still without a state.
+    Returns (filled_by_facet, filled_by_default)."""
+    by_facet = by_default = 0
+    for jb in jobs:
+        ext = ext_by_job.get(id(jb), "")
+        if not (jb.city or "").strip() and path_city.get(ext):
+            jb.city = path_city[ext]
+        if (jb.state or "").strip():
+            continue
+        st = path_state.get(ext, "") if path_state else ""
+        if st:
+            jb.state = st
+            by_facet += 1
+        elif default:
+            jb.city = jb.city or default[0]
+            jb.state = default[1]
+            by_default += 1
+    return by_facet, by_default
+
+
+def _wd_apply_states(jobs: list, ext_by_job: dict, path_state: dict, default: tuple | None) -> tuple[int, int]:
+    return _wd_apply_locations(jobs, ext_by_job, {}, path_state, default)
+
+
+async def _wd_fill_states(session, working_url: str, system: str, jobs: list, detail_targets: list) -> None:
+    """Blank-state recovery for one tenant: location facets, then tenant default."""
+    blank = sum(1 for jb in jobs if not (jb.state or "").strip())
+    if not blank:
+        return
+    path_city: dict[str, str] = {}
+    path_state: dict[str, str] = {}
+    if blank >= max(20, len(jobs) // 5):
+        try:
+            path_city, path_state = await _wd_location_facets(session, working_url, system)
+        except Exception as e:
+            logger.info(f"Workday {system}: location facet pass failed ({e})")
+    ext_by_job = {id(j): ext for j, ext in detail_targets}
+    by_facet, by_default = _wd_apply_locations(jobs, ext_by_job, path_city, path_state, WD_TENANT_DEFAULT.get(system))
+    still = sum(1 for jb in jobs if not (jb.state or "").strip())
+    logger.info(f"  Workday {system}: blank states {blank:,} -> facet {by_facet:,}, default {by_default:,}, still blank {still:,}")
+
+
 async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_data: tuple) -> list[Job]:
     tenant, wd_num, primary_site = tenant_data
     jobs = []
@@ -1452,6 +1882,10 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     _facility = system
                     if tenant == "montefiore":
                         _facility, _city, _state = _montefiore_loc(loc, _city, _state)
+                    elif system in WD_FACILITY_MAP:
+                        _fac, _city, _state = _wd_facility(system, loc, _city, _state)
+                        if _fac:
+                            _facility = _fac
                     # job_id (2026-05-29): first digit-bearing bulletField is the
                     # req number (some tenants put the state in [0]); fall back to
                     # the always-unique externalPath.
@@ -1531,6 +1965,12 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
         else:
             logger.info(f"Workday {system}: hit the 2,000 window but no usable facet to slice by "
                         f"— inventory beyond 2,000 is unreachable for this tenant")
+
+    # ── Blank-state recovery (2026-09-17): state facet, then tenant default.
+    try:
+        await _wd_fill_states(session, working_url, system, jobs, detail_targets)
+    except Exception as e:
+        logger.info(f"Workday {system}: blank-state recovery failed ({e})")
 
     # Optional second pass — no-op unless WD_FETCH_DESCRIPTIONS=1.
     if WD_FETCH_DESCRIPTIONS and detail_targets:
@@ -2614,6 +3054,19 @@ def _icims_card_location(loc: str) -> tuple[str, str]:
 _ICIMS_HEADER_LOC_RE = re.compile(
     r'field-label">\s*(?:Job\s+)?Locations?\s*</span>\s*<span[^>]*>(.*?)</span>', re.DOTALL)
 
+# 2026-09-17 (blank states): card-list portals with a Facility field but no
+# location (Covenant Health, Knoxville): facility substring -> (city, state).
+ICIMS_FACILITY_LOC: dict[str, tuple[tuple[str, tuple[str, str]], ...]] = {
+    "Covenant Health": (
+        ("fort sanders", ("Knoxville", "TN")), ("parkwest", ("Knoxville", "TN")),
+        ("methodist medical center", ("Oak Ridge", "TN")), ("leconte", ("Sevierville", "TN")),
+        ("morristown", ("Morristown", "TN")), ("roane", ("Harriman", "TN")),
+        ("cumberland", ("Crossville", "TN")), ("claiborne", ("Tazewell", "TN")),
+        ("fort loudoun", ("Lenoir City", "TN")), ("peninsula", ("Louisville", "TN")),
+        ("thompson", ("Knoxville", "TN")), ("covenant", ("Knoxville", "TN")),
+    ),
+}
+
 # Card-list portals with no Facility field: city -> campus, so the row names
 # the hospital the CMS table knows rather than the network.
 ICIMS_CITY_FACILITY = {
@@ -2643,6 +3096,8 @@ def _parse_icims_cards(text: str, system: str, domain: str) -> list[Job]:
         fac = re.search(r'field-label">\s*Facility\s*</span>\s*<span[^>]*>(.*?)</span>', card, re.DOTALL)
         facility = strip_html(fac.group(1)).strip() if fac else ""
         fields = {strip_html(k).strip().lower(): strip_html(v).strip() for k, v in _ICIMS_FIELD_RE.findall(card)}
+        if not facility:
+            facility = fields.get("facility", "")   # Covenant Health keeps it in the <dl>
         loc = next((v for k, v in fields.items() if "location" in k), "")
         if not loc:
             hl = _ICIMS_HEADER_LOC_RE.search(card)
@@ -2650,6 +3105,12 @@ def _parse_icims_cards(text: str, system: str, domain: str) -> list[Job]:
         city, state = _icims_card_location(loc)
         if not facility:
             facility = ICIMS_CITY_FACILITY.get(system, {}).get(city, "")
+        if not state and facility:
+            fl = facility.lower()
+            for sub, (fc, fs) in ICIMS_FACILITY_LOC.get(system, ()):
+                if sub in fl:
+                    city, state = (city or fc), fs
+                    break
         d = re.search(r'class="[^"]*\bdescription\b[^"]*"[^>]*>(.*?)</div>', card, re.DOTALL)
         jobs.append(Job(
             title=title, hospital_system=system, hospital_name=facility or system,
@@ -10626,6 +11087,11 @@ def normalize_job(j: Job) -> dict:
     city_lower  = city.lower()
     if city_lower and (city_lower == hosp_name or city_lower == hosp_system):
         city = ""
+
+    # 2026-09-17: bare city with a known state for this system (ProMedica's
+    # Michigan towns, Legacy's Vancouver WA) before the system default.
+    if city and not state:
+        state = SYSTEM_CITY_STATE.get(hosp_system, {}).get(city_lower, "")
 
     # Location lookup fallback — fires when city or state still missing
     if not city or not state:
