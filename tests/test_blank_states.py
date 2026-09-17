@@ -126,3 +126,16 @@ def test_defaults_exist_for_the_blank_systems():
         assert k in scraper.SYSTEM_LOCATION_DEFAULTS
     assert scraper.SYSTEM_CITY_STATE["promedica"]["monroe"] == "MI"
     assert scraper.SYSTEM_CITY_STATE["legacy health"]["vancouver"] == "WA"
+
+
+def test_street_address_part_yields_city():
+    assert parse_city_state("Tempe Medical Center - 1500 S Mill Ave Tempe, AZ 85281") == ("Tempe", "AZ")
+    assert parse_city_state("Shea Medical Center - 9003 E Shea Blvd Scottsdale, AZ 85260") == ("Scottsdale", "AZ")
+    assert parse_city_state("Allentown, PA - 1736 Hamilton St") == ("Allentown", "PA")
+
+
+def test_workday_req_id_shape():
+    ok = ["JR11450", "R-53741", "JobReq0059731", "202500779", "JR-23434", "R142171"]
+    bad = ["Tempe Medical Center - 1500 S Mill Ave Tempe, AZ 85281", "Posted 30+ Days Ago", "Days (United States of America)", "Shift 1"]
+    assert all(scraper._WD_REQ_ID_RE.match(x) for x in ok)
+    assert not any(scraper._WD_REQ_ID_RE.match(x) for x in bad)

@@ -784,6 +784,17 @@ WORKDAY_TENANTS = {
     # 2026-09-16 (NY coverage): fingerprinted live from the careers pages.
     "Rochester Regional Health": ("rrhs", "5", "RRH"),
     "Richmond University Medical Center": ("rumcsi", "5", "RUMC"),
+    # 2026-09-17 (coverage lever 3): fingerprinted from the careers sites and
+    # probed live the same day (counts = Workday "total"; 2000 = the window,
+    # recovered by the facet slicing below).
+    "Sentara Healthcare":        ("sentara", "1", "scs"),                          # 2000+, VA/NC
+    "St. Luke's University Health Network": ("sluhn", "1", "SLUHN"),               # 964, PA/NJ
+    "Memorial Healthcare System": ("memorialhealthcare", "1", "mhs_careers"),      # 568, Hollywood FL
+    "HonorHealth":               ("honorhealth", "12", "honorhealth_careers"),     # 521, AZ
+    "CoxHealth":                 ("coxhealth", "5", "coxhealth_external"),         # 491, Springfield MO
+    "The University of Kansas Health System": ("kansashealthsystem", "1", "careers"),  # 1,042
+    "Saint Luke's Health System": ("saintlukes", "1", "saintlukeshealthcareers"),  # 565, Kansas City
+    "Stanford Health Care":      ("stanfordmedicine", "115", "SHC_External_Career_Site"),  # 391
     "Owensboro Health":          ("owensborohealth", "1", "owensborohealth"),
     "Phelps Health":             ("phelpshealth", "5", "Phelps"),
     "Pullman Regional Hospital": ("pullmanregionalhospital","1", "Careers"),
@@ -1078,6 +1089,32 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "duly health and care":       ("Downers Grove",     "IL"),
     "wellstar health (providers)": ("Marietta",         "GA"),
     "st. luke's health system":   ("Kansas City",       "MO"),
+    # 2026-09-17 (coverage lever 3): single-market systems added the same day.
+    "trihealth":                  ("Cincinnati",        "OH"),
+    "uc health":                  ("Cincinnati",        "OH"),
+    "loma linda university health": ("Loma Linda",      "CA"),
+    "uw health":                  ("Madison",           "WI"),
+    "baptist memorial health care": ("Memphis",         "TN"),
+    "franciscan missionaries of our lady health system": ("Baton Rouge", "LA"),
+    "honorhealth":                ("Scottsdale",        "AZ"),
+    "stanford health care":       ("Palo Alto",         "CA"),
+    "memorial healthcare system": ("Hollywood",         "FL"),
+    "renown health":              ("Reno",              "NV"),
+    "norton healthcare":          ("Louisville",        "KY"),
+    "tower health":               ("West Reading",      "PA"),
+    "orlando health":             ("Orlando",           "FL"),
+    "sarasota memorial health care system": ("Sarasota", "FL"),
+    "lcmc health":                ("New Orleans",       "LA"),
+    "parkview health":            ("Fort Wayne",        "IN"),
+    "coxhealth":                  ("Springfield",       "MO"),
+    "saint luke's health system": ("Kansas City",       "MO"),
+    "the university of kansas health system": ("Kansas City", "KS"),
+    "st. luke's university health network": ("Bethlehem", "PA"),
+    "sentara healthcare":         ("Norfolk",           "VA"),
+    "lee health":                 ("Fort Myers",        "FL"),
+    "baycare":                    ("Clearwater",        "FL"),
+    "penn state health":          ("Hershey",           "PA"),
+    "aspirus health":             ("Wausau",            "WI"),
     # Workday tenants
     "kaiser permanente":          ("Oakland",          "CA"),
     "providence health":          ("Renton",           "WA"),
@@ -1261,6 +1298,11 @@ _NOT_CITY_WORDS = re.compile(
     r"remote|corporate|plaza|park|complex|facility|system)\b", re.I)
 
 
+_STREET_THEN_CITY_RE = re.compile(
+    r"\d{1,6}\s+(?:[NSEW]\.?\s+)?[A-Za-z0-9 .'-]*?\b(?:Ave|Avenue|St|Street|Rd|Road|Blvd|Boulevard|Dr|Drive|Hwy|Highway|"
+    r"Pkwy|Parkway|Way|Ln|Lane|Pl|Place|Ct|Court|Cir|Circle|Trl|Trail|Ter|Terrace)\.?,?\s+([A-Z][A-Za-z .'-]{2,30})$")
+
+
 def _cityish(part: str) -> bool:
     """A comma-separated part that could be a city name: short, no digits,
     none of the facility words."""
@@ -1358,6 +1400,10 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
             tail = city.rsplit(" - ", 1)[1].strip()
             if tail and len(tail.split()) <= 4 and not any(ch.isdigit() for ch in tail):
                 city = tail
+        if any(ch.isdigit() for ch in city):
+            m = _STREET_THEN_CITY_RE.search(city)
+            if m:
+                city = m.group(1).strip()
 
     return city.strip(), state.upper() if state else ""
 
@@ -1470,6 +1516,10 @@ def _montefiore_loc(loc: str, city: str, state: str) -> tuple[str, str, str]:
             return name, c, "NY"
     return "Montefiore", (city or "Bronx"), "NY"
 
+
+# A Workday bulletField that is a requisition number: optional letter prefix,
+# optional separator, 3+ digits, optional suffix, no spaces.
+_WD_REQ_ID_RE = re.compile(r"^[A-Za-z]{0,12}[-_ ]?\d{3,}[A-Za-z0-9._-]*$")
 
 # 2026-09-17 (blank states): tenants whose locationsText is a facility name
 # ("Ruby Memorial Hospital (WVUH)", "Strong Memorial Hospital", "SJHSYR-
@@ -1890,8 +1940,13 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     # req number (some tenants put the state in [0]); fall back to
                     # the always-unique externalPath.
                     _bf = j.get("bulletFields") or []
-                    _jid = next((str(b) for b in _bf if any(c.isdigit() for c in str(b))), "")
+                    _jid = next((str(b).strip() for b in _bf if _WD_REQ_ID_RE.match(str(b).strip())), "")
                     if not _jid:
+                        # 2026-09-17: only a bullet shaped like a req number
+                        # ("JR11450", "R-53741", "JobReq0059731", "202500779")
+                        # may be the id; an address or "Posted 30+ Days Ago"
+                        # bullet used to be picked because it carried a digit,
+                        # collapsing whole tenants (HonorHealth 521 -> 135).
                         _jid = j.get("externalPath", "") or (j.get("title", "") + loc)
                     if _jid in seen_ids:
                         continue
@@ -3412,12 +3467,22 @@ JIBE_SITES = {
     "Garnet Health":             "https://careers.garnethealth.org",
     "Maimonides Health":         "https://careers.maimo.org",
     "Bassett Healthcare Network": "https://jobs.bassett.org",
+    # ── 2026-09-17 coverage lever 3: /api/jobs validated live (totalCount).
+    "Mercy":                     "https://careers.mercy.net",              # 2,193; Chesterfield MO, 66 uncovered CMS hospitals
+    "Orlando Health":            "https://careers.orlandohealth.com",      # 1,149
+    "UF Health":                 "https://jobs.ufhealth.org",              # 1,249
+    "BJC HealthCare":            "https://jobs.bjc.org",                   # 1,191 (Saint Luke's KC rows included since the 2024 merger)
+    "Norton Healthcare":         "https://nortonhealthcare.jibeapply.com", # 723, Louisville
+    "Sarasota Memorial Health Care System": "https://careers.smh.com",     # 381
+    "Tower Health":              "https://www.towercareers.org",           # 348, Reading PA
 }
 
 # Jibe feeds whose location_name is a facility (not a street or a region):
 # rows take it as hospital_name so the CMS coverage count and the job page
 # see the campus, not the network.
-JIBE_FACILITY_NAME = {"Garnet Health", "Maimonides Health", "Bassett Healthcare Network"}
+JIBE_FACILITY_NAME = {"Garnet Health", "Maimonides Health", "Bassett Healthcare Network",
+                      "Mercy", "Orlando Health", "UF Health", "BJC HealthCare", "Norton Healthcare",
+                      "Sarasota Memorial Health Care System", "Tower Health"}
 
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs: list[Job] = []
@@ -4777,6 +4842,9 @@ PHENOM_ORGS = {
     # HHSHHSUS) 353 rows, all TX, apply links go to HealthcareSource.
     "Children's Health":            "https://jobsearch.childrens.com",
     "Hendrick Health":              "https://careers.hendrickhealth.org",
+    # 2026-09-17 (coverage lever 3): search-results pages report 1,979 and 840 hits.
+    "Corewell Health":              "https://careers.corewellhealth.org",
+    "LCMC Health":                  "https://careers.lcmchealth.org",
     "Munson Healthcare":            "https://careers.munsonhealthcare.org",
     "Bryan Health":                 "https://careers.bryanhealth.com",
     "PeaceHealth":                  "https://careers.peacehealth.org",
@@ -6291,6 +6359,11 @@ async def run_recruitingcom(session) -> list[Job]:
 INFOR_ORGS = {
     # Format: "System": ("css-subdomain", "hr_org")
     "Faith Regional Health":       ("css-faithregional-prd",             "100"),
+    # 2026-09-17 (coverage lever 3): css host and HROrganization from the careers pages.
+    "BayCare":                     ("css-baycarehs-prd",                 "1"),      # 16 FL hospitals
+    "Aspirus Health":              ("css-aspirus-prd",                   "10"),     # WI/MI
+    "Penn State Health":           ("css-pennstatehealth-prd",           "PSH"),
+    "Lee Health":                  ("css-leememorial-prd",               "1000"),   # Fort Myers FL
     "CAMC":                        ("css-camc-prd",                      "CAMC"),
     "Vandalia Health":             ("css-camc-prd",                      "CAMC"),   # Vandalia rebranded from CAMC — same system
     "Ballad Health":               ("css-balladhealth-prd",              "1"),
@@ -6599,6 +6672,13 @@ ORACLE_ORGS = {
     # 2026-09-16 (NY coverage): careers.mountsinai.org fronts this instance;
     # TotalJobsCount 1,770 on 2026-09-16, New York NY primary locations.
     "Mount Sinai Health System": ("https://ejis.fa.us6.oraclecloud.com",                      "CX_1"),
+    # 2026-09-17 (coverage lever 3): TotalJobsCount probed live the same day.
+    "Baptist Memorial Health Care": ("https://fa-ewpe-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),   # 1,601; TN/MS/AR
+    "TriHealth":                 ("https://fa-evly-saasfaprod1.fa.ocs.oraclecloud.com",           "CX_1"),   # 525; Cincinnati
+    "Loma Linda University Health": ("https://egln.fa.us2.oraclecloud.com",                      "CX_1"),   # 459
+    "UW Health":                 ("https://eimy.fa.us6.oraclecloud.com",                          "CX_1"),   # 940; Madison WI
+    "Franciscan Missionaries of Our Lady Health System": ("https://eqtm.fa.us2.oraclecloud.com",  "CX_1"),   # 834; LA/MS
+    "UC Health":                 ("https://eswt.fa.us6.oraclecloud.com",                          "CX_1"),   # 426; Cincinnati
     # ── 2026-09-10 Texas block C (Y-texas-build): site CX_1 on all three,
     # validated through scrape_oracle on 2026-09-10 (Texas Children's 412
     # rows, 98% TX, Houston + Austin; United Regional 79, Wichita Falls;
@@ -6822,6 +6902,8 @@ async def run_oracle(session) -> list[Job]:
 ##############################################################################
 HEALTHCARESOURCE_ORGS = {
     "Ellis Medicine":           "ellishospital",   # 2026-09-16 (NY coverage), pm.healthcaresource.com/cs/ellishospital
+    "Parkview Health":          "pvh",             # 2026-09-17 (lever 3), Fort Wayne IN
+    "Renown Health":            "renownhealth",    # 2026-09-17 (lever 3), Reno NV
     "Central Valley Medical":   "centralvalleymedicalcenter",
     "RMCM":                     "rmcm",
     "CRMC Health":              "crmchealth",
