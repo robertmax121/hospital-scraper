@@ -42,8 +42,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── Proxy rotation ─────────────────────────────────────────────────────────
+# 2026-09-17: failures before a pool address is retired for the run. The first
+# run through the Webshare pool (09-16 22:27 UTC) showed a slice of the 100
+# addresses 403'd by the Jibe fronts while the rest passed; three strikes
+# takes a blocked address out instead of letting it keep costing retries.
+PROXY_STRIKES = int(os.getenv("PROXY_STRIKES", "3"))
+
+
 class ProxyRotator:
     def __init__(self):
+        self._bad: dict[str, int] = {}
+        self.retired: set[str] = set()
+        self.fallbacks = 0
         proxy_file = os.environ.get("PROXY_FILE", "proxies.txt")
         if os.path.exists(proxy_file):
             with open(proxy_file) as f:
@@ -88,19 +98,40 @@ class ProxyRotator:
             logger.warning(f"  Webshare list fetch failed ({e}); running without proxies")
             return []
 
-    def get(self) -> Optional[str]:
-        if not self.proxies:
-            return None
-        p = self.proxies[self._i % len(self.proxies)]
-        self._i += 1
+    @staticmethod
+    def _fmt(p: str) -> str:
         parts = p.split(":")
         # Support both host:port:user:pass and user:pass@host:port formats
         if len(parts) == 4:
             return f"http://{parts[2]}:{parts[3]}@{parts[0]}:{parts[1]}"
-        elif "@" in p:
-            return f"http://{p}"
-        else:
-            return f"http://{p}"
+        return f"http://{p}"
+
+    def get(self) -> Optional[str]:
+        """Next live address in rotation; None (direct) when the pool is empty
+        or every address has been retired this run."""
+        if not self.proxies:
+            return None
+        for _ in range(len(self.proxies)):
+            p = self.proxies[self._i % len(self.proxies)]
+            self._i += 1
+            url = self._fmt(p)
+            if url not in self.retired:
+                return url
+        return None
+
+    def mark_bad(self, proxy_url: Optional[str], why: str = "") -> None:
+        """Count a failed proxied request; PROXY_STRIKES of them retire the
+        address for the rest of the run."""
+        if not proxy_url:
+            return
+        self.fallbacks += 1
+        n = self._bad.get(proxy_url, 0) + 1
+        self._bad[proxy_url] = n
+        if n == PROXY_STRIKES and proxy_url not in self.retired:
+            self.retired.add(proxy_url)
+            live = sum(1 for p in self.proxies if self._fmt(p) not in self.retired)
+            host = proxy_url.rsplit("@", 1)[-1]
+            logger.info(f"  Proxy retired after {n} failures ({why}): {host}; {live} live")
 
 proxies = ProxyRotator()
 
@@ -230,25 +261,39 @@ class _FallbackResponse:
         self._kw = kwargs
         self._ctx = None
 
+    # Statuses a proxied attempt retries direct. 402 = Webshare "Payment
+    # Required" (the pool out of paid bandwidth, 2026-07-28); 407 = proxy auth;
+    # 403 / 429 = the target blocks or throttles that address (the 09-16 run:
+    # part of the Webshare pool is 403'd by the Jibe fronts, and every adapter
+    # stops paging at its first failed page, so Novant came back 101 of 1,688
+    # and UHS 1,140 of 4,834); 5xx / 52x = the proxy or an edge in front of
+    # the target. A direct retry costs one request; a broken page costs the
+    # rest of the tenant.
+    PROXY_RETRY_STATUSES = frozenset({402, 403, 407, 429, 500, 502, 503, 504,
+                                      520, 521, 522, 523, 524, 525, 526, 530})
+
     async def __aenter__(self):
         fn = getattr(self._s, self._method)
+        if not self._proxy:
+            self._ctx = fn(self._url, **self._kw)
+            return await self._ctx.__aenter__()
         try:
             self._ctx = fn(self._url, proxy=self._proxy, **self._kw)
             r = await self._ctx.__aenter__()
-            # 402 = webshare "Payment Required" — the pool ran out of paid
-            # bandwidth (first seen 2026-07-28); treat like any proxy failure
-            # and retry direct so an exhausted proxy account can't zero a run.
-            if r.status in (502, 503, 407, 402) and self._proxy:
-                await self._ctx.__aexit__(None, None, None)
-                self._ctx = fn(self._url, **self._kw)  # no proxy
-                r = await self._ctx.__aenter__()
-            return r
         except Exception as e:
-            if self._proxy and ("502" in str(e) or "Bad Gateway" in str(e) or "407" in str(e) or "402" in str(e)):
-                fn2 = getattr(self._s, self._method)
-                self._ctx = fn2(self._url, **self._kw)
-                return await self._ctx.__aenter__()
-            raise
+            # Refused, reset, timed out, proxy auth: whatever the proxied
+            # attempt did, the direct attempt is the one that counts. The
+            # old rule only fell back on 502 / 407 / 402 text matches, so a
+            # timed-out proxy ended the tenant's pagination.
+            proxies.mark_bad(self._proxy, type(e).__name__)
+            self._ctx = fn(self._url, **self._kw)
+            return await self._ctx.__aenter__()
+        if r.status in self.PROXY_RETRY_STATUSES:
+            proxies.mark_bad(self._proxy, f"HTTP {r.status}")
+            await self._ctx.__aexit__(None, None, None)
+            self._ctx = fn(self._url, **self._kw)  # no proxy
+            r = await self._ctx.__aenter__()
+        return r
 
     async def __aexit__(self, *args):
         if self._ctx:

@@ -9,7 +9,7 @@ Cron: 0 20 * * *  (8 PM nightly)
 import logging
 import os
 from datetime import datetime
-from scraper import scrape, PARTIAL_SYSTEMS, HOSPITAL_SYSTEM_ALIASES
+from scraper import scrape, PARTIAL_SYSTEMS, HOSPITAL_SYSTEM_ALIASES, proxies
 from database import upsert_jobs, mark_inactive_jobs, get_stats
 
 logging.basicConfig(
@@ -38,6 +38,10 @@ def run():
     if not jobs:
         logger.error("Zero jobs returned — aborting.")
         return
+
+    if proxies.proxies:
+        logger.info(f"  Proxy pool: {len(proxies.proxies)} loaded, {len(proxies.retired)} retired, "
+                    f"{proxies.fallbacks} proxied requests retried direct")
 
     # ── Step 2: Push to database ──────────────────────────────────
     logger.info(f"\n[ STEP 2 ] Pushing {len(jobs):,} jobs to Supabase...")
