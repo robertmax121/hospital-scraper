@@ -31,3 +31,8 @@ jobs_latest.json
 travel_jobs_latest.json
 link_scan_results.txt
 *.har
+
+# coverage lever 4 working files (2026-09-17)
+data/osm_hospitals/
+data/fingerprints/
+data/uncovered_hospitals_*.json
