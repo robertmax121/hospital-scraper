@@ -21,6 +21,7 @@ sweep guard (scraper.py, 2026-07-29) and the PARTIAL_SYSTEMS flag
 """
 import asyncio
 import os
+import time
 import sys
 from datetime import datetime, timezone
 
@@ -59,6 +60,45 @@ import scraper  # noqa: E402  (imports after env setup on purpose)
 scraper.proxies.proxies = []
 
 
+def _hca_detail_pass(jobs) -> None:
+    import random
+    from concurrent.futures import ThreadPoolExecutor
+    budget = int(os.environ.get("HCA_DESC_MAX_PER_RUN", "2000"))
+    workers = int(os.environ.get("HCA_DESC_WORKERS", "4"))
+    if budget <= 0:
+        return
+    try:
+        from curl_cffi import requests as _cr
+    except ImportError:
+        print("curl_cffi not installed — skipping the HCA detail pass")
+        return
+    cands = [j for j in jobs if (j.url or "").startswith("http") and len((j.description or "").strip()) < scraper.DETAIL_MIN_CHARS]
+    random.shuffle(cands)
+    cands.sort(key=lambda j: 0 if (j.state or "").strip().upper() in scraper.DETAIL_PRIORITY_STATES else 1)
+    pending = cands[:budget]
+    if not pending:
+        return
+    filled = 0
+
+    def one(job):
+        nonlocal filled
+        try:
+            r = _cr.get(job.url, impersonate="chrome", timeout=25)
+            if r.status_code != 200:
+                return
+            posting = scraper._jobposting_from_html(r.text)
+            if posting and scraper._apply_posting(job, posting):
+                filled += 1
+        except Exception:
+            return
+        time.sleep(random.uniform(0.2, 0.6))
+
+    print(f"HCA detail pass: {len(pending)} of {len(cands)} pages without a description (budget {budget}, {workers} workers)")
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        list(ex.map(one, pending))
+    print(f"HCA detail pass: {filled} descriptions landed")
+
+
 def main() -> None:
     run_started_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     jobs = asyncio.run(scraper.run_hca(None))
@@ -74,6 +114,12 @@ def main() -> None:
     # Same dedupe + normalize as scrape()'s tail (finalize_jobs, 2026-09-10),
     # including the CMS blank-state fill, which needs the credentials above.
     scraper.load_cms_lookup()
+    # 2026-09-21 (owner, job page v2): HCA's list carries no posting body, and
+    # Railway cannot read the job pages (Cloudflare). This machine can: fetch a
+    # budget of job pages and take the JSON-LD JobPosting (description,
+    # employment type, posted date). The enrichment trigger keeps what lands.
+    _hca_detail_pass(jobs)
+
     rows = scraper.finalize_jobs(jobs)
 
     print(f"Pushing {len(rows):,} HCA rows to Supabase "

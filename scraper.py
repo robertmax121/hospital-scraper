@@ -241,6 +241,24 @@ AYA_DESC_MAX_PER_RUN   = int(os.getenv("AYA_DESC_MAX_PER_RUN", "500"))
 AYA_DESC_CONCURRENCY   = int(os.getenv("AYA_DESC_CONCURRENCY", "4"))
 AYA_DESC_BUDGET        = _DescBudget(AYA_DESC_MAX_PER_RUN)
 
+# ── Detail passes for the platforms whose list endpoints carry no posting body
+# (2026-09-21, owner: the v2 job page needs the description, employment type,
+# schedule, benefits and bonus amounts, and 90k Oracle / Phenom / TalentBrew /
+# HCA rows had none). Same containment contract as the Workday pass: one
+# run-wide budget per platform, shuffled with transparency states first, and
+# the enrichment trigger keeps what a night fetched. On by default; DETAIL_FETCH=0
+# turns every pass off.
+DETAIL_FETCH            = os.getenv("DETAIL_FETCH", "1") == "1"
+DETAIL_CONCURRENCY      = int(os.getenv("DETAIL_CONCURRENCY", "4"))
+ORACLE_DESC_MAX_PER_RUN = int(os.getenv("ORACLE_DESC_MAX_PER_RUN", "3000"))
+TB_DESC_MAX_PER_RUN     = int(os.getenv("TB_DESC_MAX_PER_RUN", "1500"))
+PHENOM_DESC_MAX_PER_RUN = int(os.getenv("PHENOM_DESC_MAX_PER_RUN", "1200"))
+ORACLE_DESC_BUDGET      = _DescBudget(ORACLE_DESC_MAX_PER_RUN)
+TB_DESC_BUDGET          = _DescBudget(TB_DESC_MAX_PER_RUN)
+PHENOM_DESC_BUDGET      = _DescBudget(PHENOM_DESC_MAX_PER_RUN)
+DETAIL_PRIORITY_STATES  = {"CA", "CO", "CT", "DC", "HI", "IL", "MD", "MN", "NJ", "NY", "VT", "WA"}
+DETAIL_MIN_CHARS        = int(os.getenv("DETAIL_MIN_CHARS", "400"))   # shorter than this = worth a detail fetch
+
 # Hard stop for Workday list pagination. Replaces the old `offset >= total`
 # break, which truncated six large tenants at exactly 2,000 jobs because
 # Workday caps the REPORTED total at 2000 while still serving results beyond it
@@ -1481,6 +1499,205 @@ async def _workday_fetch_details(session, working_url, targets, system):
                 f"{filled} descriptions, {dated} ISO dates")
 
 
+# ── Detail helpers shared by the Oracle / TalentBrew / Phenom / HCA passes ──
+_LD_JSON_RX = re.compile(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', re.S | re.I)
+
+
+def _jobposting_from_html(html: str):
+    """The JSON-LD JobPosting on a job page (Workday job pages, TalentBrew,
+    HCA's Talemetry pages all carry one), or None."""
+    for m in _LD_JSON_RX.finditer(html or ""):
+        try:
+            j = json.loads(m.group(1).strip())
+        except Exception:
+            continue
+        cands = j if isinstance(j, list) else [j]
+        for c in cands:
+            if not isinstance(c, dict):
+                continue
+            if c.get("@type") == "JobPosting":
+                return c
+            for g in (c.get("@graph") or []):
+                if isinstance(g, dict) and g.get("@type") == "JobPosting":
+                    return g
+    return None
+
+
+def _apply_posting(job, posting: dict) -> bool:
+    """Copy a JSON-LD JobPosting onto a Job: description (+ qualifications),
+    employment type, posted date, structured pay. Fills blanks only; True when
+    a description of 200+ characters landed."""
+    desc = strip_html(str(posting.get("description") or "")).strip()
+    quals = strip_html(str(posting.get("qualifications") or "")).strip()
+    if quals and quals[:120] not in desc:
+        desc = f"{desc}\n\nQualifications\n{quals}".strip()
+    ok = False
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        ok = True
+    et = posting.get("employmentType")
+    if isinstance(et, list):
+        et = et[0] if et else None
+    if et and not (job.job_type or "").strip():
+        job.job_type = str(et)
+    dp = str(posting.get("datePosted") or "")[:10]
+    m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", dp)
+    if m and not (job.posted_date or "").strip():
+        job.posted_date = f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+    bs = posting.get("baseSalary")
+    if isinstance(bs, dict) and job.wage_min is None:
+        val = bs.get("value") if isinstance(bs.get("value"), dict) else bs
+        try:
+            lo = float(val.get("minValue")) if val.get("minValue") is not None else None
+            hi = float(val.get("maxValue")) if val.get("maxValue") is not None else lo
+            if lo is None and val.get("value") is not None:
+                lo = hi = float(val.get("value"))
+        except (TypeError, ValueError, AttributeError):
+            lo = hi = None
+        got = _wage_pair(lo, hi) if lo and hi else None
+        if got:
+            job.wage_min, job.wage_max, job.wage_unit = got
+    return ok
+
+
+async def _fetch_html(session, url: str, timeout: int = 20) -> str:
+    try:
+        async with req(session, "get", url, headers={**HEADERS, "Accept": "text/html,*/*"},
+                       ssl=False, proxy=proxies.get(),
+                       timeout=aiohttp.ClientTimeout(total=timeout)) as r:
+            if r.status != 200:
+                return ""
+            return await r.text()
+    except Exception:
+        return ""
+
+
+async def _jsonld_detail(session, job) -> bool:
+    """Job page -> JSON-LD JobPosting -> Job fields."""
+    posting = _jobposting_from_html(await _fetch_html(session, job.url))
+    return _apply_posting(job, posting) if posting else False
+
+
+async def _detail_pass(session, system: str, jobs: list, budget, fetch_one, label: str) -> None:
+    """Shared driver: rows without a description, shuffled, transparency
+    states first, as many as the platform budget allows, fetched under a
+    semaphore with a small pause. Never raises."""
+    # Rows with no body, or only a teaser (Phenom's list carries ~330
+    # characters of a 9,000-character posting).
+    cands = [j for j in jobs if (j.url or "").startswith("http") and len((j.description or "").strip()) < DETAIL_MIN_CHARS]
+    if not cands:
+        return
+    random.shuffle(cands)
+    cands.sort(key=lambda j: 0 if (j.state or "").strip().upper() in DETAIL_PRIORITY_STATES else 1)
+    allowed = budget.take(len(cands))
+    pending = cands[:allowed]
+    if not pending:
+        return
+    sem = asyncio.Semaphore(DETAIL_CONCURRENCY)
+    filled = 0
+
+    async def one(job):
+        nonlocal filled
+        async with sem:
+            try:
+                if await fetch_one(job):
+                    filled += 1
+            except Exception:
+                pass
+            await asyncio.sleep(random.uniform(0.15, 0.45))
+
+    await asyncio.gather(*[one(j) for j in pending], return_exceptions=True)
+    logger.info(f"  {label} {system}: details {len(pending)} fetched -> {filled} descriptions; "
+                f"{len(cands) - len(pending)} left for another night; budget left {budget.remaining}")
+
+
+def _oracle_posting_text(it: dict) -> tuple[str, str, str]:
+    """(description, job_type, posted_date) from an Oracle requisition detail.
+    The schedule line comes first so the facts extractor sees hours and shift."""
+    sched = str(it.get("JobSchedule") or "").strip()
+    shift = str(it.get("JobShift") or "").strip()
+    hours = it.get("WorkHours")
+    days = str(it.get("WorkDays") or "").strip()
+    head = " · ".join(x for x in (sched, shift, f"{hours} hours per week" if hours else "", days) if x)
+    parts = [f"Schedule: {head}"] if head else []
+    for k in ("ExternalDescriptionStr", "ExternalResponsibilitiesStr", "ExternalQualificationsStr"):
+        v = strip_html(str(it.get(k) or "")).strip()
+        if v:
+            parts.append(v)
+    start = str(it.get("ExternalPostedStartDate") or "")[:10]
+    return "\n\n".join(parts), sched, (start if re.match(r"^\d{4}-\d{2}-\d{2}$", start) else "")
+
+
+async def _oracle_detail(session, base_url: str, site_number: str, job) -> bool:
+    api = f"{base_url}/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails"
+    params = {"expand": "all", "onlyData": "true",
+              "finder": f'ById;Id="{job.job_id}",siteNumber={site_number}'}
+    async with req(session, "get", api, params=params,
+                   headers={**HEADERS, "Accept": "application/json", "REST-Framework-Version": "4"},
+                   ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+        if r.status != 200:
+            return False
+        data = await r.json(content_type=None)
+    items = (data or {}).get("items") or []
+    if not items:
+        return False
+    desc, sched, start = _oracle_posting_text(items[0])
+    ok = False
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        ok = True
+    if sched and not (job.job_type or "").strip():
+        job.job_type = sched
+    if start and not (job.posted_date or "").strip():
+        job.posted_date = start
+    return ok
+
+
+def _phenom_posting_text(jd: dict) -> tuple[str, str, str]:
+    """(description, job_type, posted_date) from a Phenom widgets jobDetail."""
+    desc = strip_html(str(jd.get("description") or "")).strip()
+    shift = str(jd.get("shift") or "").strip()
+    if shift and shift.lower() not in desc.lower()[:400]:
+        desc = f"Schedule: {shift}\n\n{desc}"
+    jt = str(jd.get("type") or jd.get("jobType") or "").strip()
+    created = str(jd.get("dateCreated") or jd.get("postedDate") or "")[:10]
+    return desc, jt, (created if re.match(r"^\d{4}-\d{2}-\d{2}$", created) else "")
+
+
+async def _phenom_detail(session, base_url: str, job) -> bool:
+    """Phenom rows point at three kinds of page: the Phenom job page (legacy
+    tenants answer the widgets jobDetail call), a Workday job page (Corewell,
+    SSM, LCMC: the Phenom front is a skin) or Taleo (nothing to read). Try the
+    widget, then the page's JSON-LD."""
+    if "/job/" in (job.url or "") and "myworkdayjobs" not in job.url and "taleo" not in job.url:
+        try:
+            body = {"lang": "en_us", "deviceType": "desktop", "country": "us", "pageName": "job-page",
+                    "ddoKey": "jobDetail", "jobId": str(job.job_id)}
+            async with req(session, "post", f"{base_url}/widgets", json=body,
+                           headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
+                           ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=20)) as r:
+                if r.status == 200 and "json" in (r.headers.get("content-type") or ""):
+                    data = await r.json(content_type=None)
+                    jd = (((data or {}).get("jobDetail") or {}).get("data") or {}).get("job") or {}
+                    if jd:
+                        desc, jt, created = _phenom_posting_text(jd)
+                        ok = False
+                        if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+                            job.description = desc
+                            ok = True
+                        if jt and not (job.job_type or "").strip():
+                            job.job_type = jt
+                        if created and not (job.posted_date or "").strip():
+                            job.posted_date = created
+                        if ok:
+                            return True
+        except Exception:
+            pass
+    if "taleo" in (job.url or ""):
+        return False
+    return await _jsonld_detail(session, job)
+
+
 # 2026-09-16 (NY coverage): Montefiore's Workday tenant lists postings by street
 # address, so parse_city_state() found no city and no state on all 444 rows.
 # Address prefix -> (facility marketing name, city); every unmatched address in
@@ -2580,6 +2797,12 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
         page += 1
         await jitter()
 
+    if DETAIL_FETCH and jobs:
+        try:
+            await _detail_pass(session, system, jobs, TB_DESC_BUDGET,
+                               lambda j: _jsonld_detail(session, j), "TalentBrew")
+        except Exception as e:
+            logger.info(f"TalentBrew {system}: detail pass failed ({e})")
     return jobs
 
 
@@ -5398,6 +5621,12 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
             logger.info(f"Phenom {system}: {e}")
             break
 
+    if DETAIL_FETCH and jobs:
+        try:
+            await _detail_pass(session, system, jobs, PHENOM_DESC_BUDGET,
+                               lambda j: _phenom_detail(session, base_url, j), "Phenom")
+        except Exception as e:
+            logger.info(f"Phenom {system}: detail pass failed ({e})")
     logger.info(f"  Phenom {system}: {len(jobs)} jobs")
     return jobs
 
@@ -6882,6 +7111,12 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
         except Exception as e:
             logger.info(f"Oracle {system}: {e}")
             break
+    if DETAIL_FETCH and jobs:
+        try:
+            await _detail_pass(session, system, jobs, ORACLE_DESC_BUDGET,
+                               lambda j: _oracle_detail(session, base_url, site_number, j), "Oracle")
+        except Exception as e:
+            logger.info(f"Oracle {system}: detail pass failed ({e})")
     logger.info(f"  Oracle {system}: {len(jobs)} jobs")
     return jobs
 
@@ -11226,6 +11461,12 @@ def normalize_job(j: Job) -> dict:
     # never make a row worse. See specialty_canon.py.
     d["specialty"] = canonical_specialty(d.get("title", ""), d.get("specialty"))
 
+    # Employment type (2026-09-21, job page v2): one vocabulary for the chip
+    # ("FULL_TIME", "Full-time", "Regular Full time" -> "Full time"); a blank
+    # ATS value falls back to the title. The enrichment trigger keeps a
+    # stored value when a list-only night sends a blank.
+    d["job_type"] = canonical_job_type(d.get("job_type"), d.get("title", ""))
+
     # Posted-wage (2026-08-08; adapter-first 2026-08-21): a structured salary
     # field set by the adapter (USAJobs, Lever) always wins; otherwise regex
     # extraction from the posting text. NULLs never clobber a prior value
@@ -11334,9 +11575,144 @@ _FACT_EXP_RX = re.compile(
     r"(?:[a-z ]{0,25}?)(experience|clinical|nursing|\bRN\b|acute care|bedside)", re.I)
 
 
+# 2026-09-21 (owner, job page v2): schedule summary, hours per week, sign-on
+# and relocation amounts, and a short benefits list, all from the posting text.
+_DAY = r"(mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:r|rs|rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)"
+_FACT_DAYS_RX = re.compile(_DAY + r"\s*(?:-|–|—|to|through|thru)\s*" + _DAY + r"\b", re.I)
+_FACT_HOURS_RX = re.compile(r"\b(\d{1,2}(?:\.\d)?)\s*(?:hours?|hrs?)\s*(?:per|/|a|each)\s*(?:week|wk)\b|\b(\d{1,2})\s*(?:hours?|hrs?)/(?:week|wk)\b", re.I)
+_FACT_SHIFTLEN_RX = re.compile(r"\b([2-6])\s*[x×]\s*(8|10|12)\b|\b(two|three|four|five|2|3|4|5)\s+(8|10|12)[- ]hour", re.I)
+_NUM_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5}
+# The amount that sits right before the keyword wins ("$10,000 sign-on bonus
+# ... and a $3,000 relocation package"), then an amount after it ("up to $15k").
+_BONUS_RXS = [
+    re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?[^$\n.]{0,40}?(?:sign[- ]?on|signing)", re.I),
+    re.compile(r"(?:sign[- ]?on|signing)(?:\s+bonus)?[^$\n.]{0,60}?\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?\b", re.I),
+]
+_RELO_RXS = [
+    re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?[^$\n.]{0,40}?relocation", re.I),
+    re.compile(r"relocation(?:\s+(?:bonus|assistance|package|allowance))?[^$\n.]{0,60}?\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?\b", re.I),
+]
+_BENEFIT_ITEMS = [
+    ("Medical, dental and vision", r"\b(?:medical|health)\b[^.]{0,40}\bdental\b|\bdental\b[^.]{0,30}\bvision\b"),
+    ("Benefits from day one",      r"benefits?[^.]{0,20}(?:from|starting|on|beginning)\s+day\s+one|day[- ]one benefits|benefits? start(?:ing)? (?:on )?(?:your )?first day"),
+    ("401(k) with match",          r"401\s?\(?k\)?[^.]{0,50}match|matching 401"),
+    ("401(k)",                     r"401\s?\(?k\)?"),
+    ("403(b)",                     r"403\s?\(?b\)?"),
+    ("Paid time off",              r"paid time off|\bPTO\b|paid vacation"),
+    ("Tuition assistance",         r"tuition (?:assistance|reimbursement|support)|student loan"),
+    ("Paid parental leave",        r"parental leave|paid maternity|paid family leave"),
+    ("Retirement plan",            r"\bpension\b|retirement (?:plan|savings)"),
+    ("Life and disability insurance", r"life insurance|disability insurance|short[- ]term disability|long[- ]term disability"),
+    ("Shift differentials",        r"shift differential|differential pay"),
+    ("Wellness and mental health resources", r"wellness program|employee assistance program|\bEAP\b|mental health (?:resources|support|benefits)"),
+    ("Childcare support",          r"child ?care"),
+    ("Continuing education",       r"continuing education|\bCEU|professional development"),
+]
+_BENEFIT_RXS = [(label, re.compile(rx, re.I)) for label, rx in _BENEFIT_ITEMS]
+
+
+def _money_amount(num: str, k: str):
+    try:
+        v = float(num.replace(",", ""))
+    except (TypeError, ValueError):
+        return None
+    if k:
+        v *= 1000
+    return int(v) if 500 <= v <= 100000 else None
+
+
+def _first_amount(text: str, rxs) -> int | None:
+    for rx in rxs:
+        for m in rx.finditer(text):
+            v = _money_amount(m.group(1), m.group(2))
+            if v:
+                return v
+    return None
+
+
+def _day3(d: str) -> str:
+    return d[:3].title()
+
+
+def extract_schedule(text: str, shift_labels) -> tuple:
+    """("Fri–Sun · 3×12h · Days", 36) style summary and hours per week."""
+    t = text or ""
+    pieces = []
+    m = _FACT_DAYS_RX.search(t)
+    if m:
+        pieces.append(f"{_day3(m.group(1))}–{_day3(m.group(2))}")
+    m = _FACT_SHIFTLEN_RX.search(t)
+    if m:
+        n = m.group(1) or m.group(3)
+        n = _NUM_WORDS.get(str(n).lower(), n)
+        length = m.group(2) or m.group(4)
+        pieces.append(f"{n}×{length}h")
+    hours = None
+    m = _FACT_HOURS_RX.search(t)
+    if m:
+        try:
+            hours = float(m.group(1) or m.group(2))
+        except (TypeError, ValueError):
+            hours = None
+        if hours is not None and not (4 <= hours <= 84):
+            hours = None
+        if hours is not None and not pieces:
+            pieces.append(f"{int(hours) if hours == int(hours) else hours} hrs/wk")
+    for lab in (shift_labels or []):
+        if lab in ("Days", "Nights", "Evenings", "Rotating") and lab not in pieces:
+            pieces.append(lab)
+            break
+    summary = " · ".join(pieces)[:48] if pieces else None
+    return summary, (int(hours) if hours is not None and hours == int(hours) else hours)
+
+
+def extract_benefits(text: str) -> list:
+    t = (text or "")[:20000]
+    out = []
+    for label, rx in _BENEFIT_RXS:
+        if rx.search(t):
+            if label == "401(k)" and any(o.startswith("401(k)") for o in out):
+                continue
+            out.append(label)
+        if len(out) == 5:
+            break
+    return out
+
+
+_JOB_TYPE_CANON = [
+    ("Full time", re.compile(r"full[\s_-]*time|\bFT\b|regular full|^full$", re.I)),
+    ("Part time", re.compile(r"part[\s_-]*time|\bPT\b|^part$", re.I)),
+    ("Per diem",  re.compile(r"per[\s_-]*diem|\bPRN\b|as[\s_-]needed|casual|\bpool\b|resource|flex", re.I)),
+    ("Travel",    re.compile(r"\btravel", re.I)),
+    ("Contract",  re.compile(r"contract|temporary|\btemp\b|seasonal|locum", re.I)),
+    ("Intern",    re.compile(r"intern|residen|fellow|student|apprentice", re.I)),
+    ("Volunteer", re.compile(r"volunteer", re.I)),
+]
+
+
+def canonical_job_type(raw, title: str = "") -> str:
+    """"FULL_TIME", "Full-time", "Regular Full time" -> "Full time"; a blank
+    value falls back to the title ("RN, PRN Nights" -> "Per diem"); anything
+    unrecognised is kept as the ATS wrote it."""
+    raw = (raw or "").strip()
+    for label, rx in _JOB_TYPE_CANON:
+        if raw and rx.search(raw):
+            return label
+    if raw and raw.lower() in ("regular", "standard", "employee", "staff"):
+        raw = ""
+    if not raw:
+        for label, rx in _JOB_TYPE_CANON[:3]:
+            if rx.search(title or ""):
+                return label
+        return ""
+    return raw[:40]
+
+
 def extract_posting_facts(text):
     """{'certs': [[label, pref_bool]...], 'education': [...], 'shift': [...],
-    'experience': [label, pref_bool] | None} or None when nothing found."""
+    'experience': [label, pref_bool] | None, 'schedule': str | None,
+    'hours': number | None, 'signon': int | None, 'relocation': int | None,
+    'benefits': [str...]} or None when nothing found."""
     if not text:
         return None
     t = re.sub(r"([.!?;])(?=[A-Z(])", r"\1 ", text[:12000])
@@ -11377,7 +11753,13 @@ def extract_posting_facts(text):
     out["certs"] = out["certs"][:5]
     out["education"] = out["education"][:2]
     out["shift"] = out["shift"][:2]
-    if not (out["certs"] or out["education"] or out["shift"] or out["experience"]):
+    # 2026-09-21: schedule summary, hours, bonus amounts, benefits.
+    out["schedule"], out["hours"] = extract_schedule(t, [x[0] for x in out["shift"]])
+    out["signon"] = _first_amount(t, _BONUS_RXS)
+    out["relocation"] = _first_amount(t, _RELO_RXS)
+    out["benefits"] = extract_benefits(t)
+    if not (out["certs"] or out["education"] or out["shift"] or out["experience"]
+            or out["schedule"] or out["hours"] or out["signon"] or out["relocation"] or out["benefits"]):
         return None
     return out
 
