@@ -114,3 +114,25 @@ def test_budgets_and_flags_exist():
     assert scraper.DETAIL_FETCH in (True, False)
     for b in (scraper.ORACLE_DESC_BUDGET, scraper.TB_DESC_BUDGET, scraper.PHENOM_DESC_BUDGET):
         assert b.remaining >= 0
+
+
+def test_bonus_ignores_salary_gaps():
+    f = extract_posting_facts("Compensation: Salary up to $100k based on experience. Incentives: Sign on bonus up to $10k and student debt repayment")
+    assert f["signon"] == 10000
+    f2 = extract_posting_facts("Compensation: starting at $76,000 annual base. Incentives: potential for sign on bonuses")
+    assert (f2 or {}).get("signon") is None
+    f3 = extract_posting_facts("Physician Gastroenterology: CME allowance, Sign-on bonus - $100K, paid malpractice")
+    assert f3["signon"] == 100000
+
+
+def test_budget_share_and_skip(monkeypatch):
+    import asyncio
+    b = scraper._DescBudget(100)
+    seen = []
+    async def fetch(job):
+        seen.append(job.url); return True
+    jobs = [_job(url=f"https://x/job/{i}", job_id=str(i)) for i in range(80)]
+    jobs += [_job(url=f"https://acme.taleo.net/j/{i}", job_id=f"t{i}") for i in range(20)]
+    asyncio.run(scraper._detail_pass(None, "T", jobs, b, fetch, "Test", skip=lambda j: "taleo" in j.url, share=30))
+    assert len(seen) == 30 and all("taleo" not in u for u in seen)
+    assert b.remaining == 70 and b.spent == 30

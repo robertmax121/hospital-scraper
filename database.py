@@ -78,7 +78,15 @@ def service_client() -> Client:
            or os.environ.get("SUPABASE_KEY", ""))
     if not url or not key:
         raise ValueError("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
-    return create_client(url, key)
+    # 2026-09-21: refresh_hospital_sitemap_cohort runs for minutes on 240k
+    # rows and timed out at the client default twice; give the privileged
+    # client a long read timeout (older supabase-py without ClientOptions
+    # keeps the default).
+    try:
+        from supabase.lib.client_options import ClientOptions
+        return create_client(url, key, options=ClientOptions(postgrest_client_timeout=300))
+    except Exception:
+        return create_client(url, key)
 
 
 def upsert_jobs(jobs: list[dict]) -> dict:

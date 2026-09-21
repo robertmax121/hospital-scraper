@@ -224,10 +224,12 @@ class _DescBudget:
     """
     def __init__(self, total):
         self.remaining = max(0, total)
+        self.spent = 0
 
     def take(self, n):
         n = max(0, min(n, self.remaining))
         self.remaining -= n
+        self.spent += n
         return n
 
 
@@ -251,13 +253,14 @@ AYA_DESC_BUDGET        = _DescBudget(AYA_DESC_MAX_PER_RUN)
 DETAIL_FETCH            = os.getenv("DETAIL_FETCH", "1") == "1"
 DETAIL_CONCURRENCY      = int(os.getenv("DETAIL_CONCURRENCY", "4"))
 ORACLE_DESC_MAX_PER_RUN = int(os.getenv("ORACLE_DESC_MAX_PER_RUN", "3000"))
-TB_DESC_MAX_PER_RUN     = int(os.getenv("TB_DESC_MAX_PER_RUN", "1500"))
-PHENOM_DESC_MAX_PER_RUN = int(os.getenv("PHENOM_DESC_MAX_PER_RUN", "1200"))
+TB_DESC_MAX_PER_RUN     = int(os.getenv("TB_DESC_MAX_PER_RUN", "2500"))
+PHENOM_DESC_MAX_PER_RUN = int(os.getenv("PHENOM_DESC_MAX_PER_RUN", "2500"))
+DETAIL_TENANT_SHARE     = int(os.getenv("DETAIL_TENANT_SHARE", "4"))   # one tenant takes at most budget/SHARE per run
 ORACLE_DESC_BUDGET      = _DescBudget(ORACLE_DESC_MAX_PER_RUN)
 TB_DESC_BUDGET          = _DescBudget(TB_DESC_MAX_PER_RUN)
 PHENOM_DESC_BUDGET      = _DescBudget(PHENOM_DESC_MAX_PER_RUN)
 DETAIL_PRIORITY_STATES  = {"CA", "CO", "CT", "DC", "HI", "IL", "MD", "MN", "NJ", "NY", "VT", "WA"}
-DETAIL_MIN_CHARS        = int(os.getenv("DETAIL_MIN_CHARS", "400"))   # shorter than this = worth a detail fetch
+DETAIL_MIN_CHARS        = int(os.getenv("DETAIL_MIN_CHARS", "1500"))  # shorter than this = a teaser, worth a detail fetch
 
 # Hard stop for Workday list pagination. Replaces the old `offset >= total`
 # break, which truncated six large tenants at exactly 2,000 jobs because
@@ -1578,18 +1581,21 @@ async def _jsonld_detail(session, job) -> bool:
     return _apply_posting(job, posting) if posting else False
 
 
-async def _detail_pass(session, system: str, jobs: list, budget, fetch_one, label: str) -> None:
-    """Shared driver: rows without a description, shuffled, transparency
-    states first, as many as the platform budget allows, fetched under a
-    semaphore with a small pause. Never raises."""
-    # Rows with no body, or only a teaser (Phenom's list carries ~330
-    # characters of a 9,000-character posting).
-    cands = [j for j in jobs if (j.url or "").startswith("http") and len((j.description or "").strip()) < DETAIL_MIN_CHARS]
+async def _detail_pass(session, system: str, jobs: list, budget, fetch_one, label: str, skip=None, share: int | None = None) -> None:
+    """Shared driver: rows without a full body, shuffled, transparency states
+    first, at most a fair share of the platform budget per tenant, fetched
+    under a semaphore with a small pause. `skip(job)` excludes rows whose page
+    is known to carry nothing (Taleo, iCIMS behind a Phenom front) so they
+    cost no budget. Never raises."""
+    cands = [j for j in jobs if (j.url or "").startswith("http")
+             and len((j.description or "").strip()) < DETAIL_MIN_CHARS
+             and not (skip and skip(j))]
     if not cands:
         return
     random.shuffle(cands)
     cands.sort(key=lambda j: 0 if (j.state or "").strip().upper() in DETAIL_PRIORITY_STATES else 1)
-    allowed = budget.take(len(cands))
+    cap = share if share else max(50, (budget.remaining + budget.spent) // max(1, DETAIL_TENANT_SHARE))
+    allowed = budget.take(min(len(cands), cap))
     pending = cands[:allowed]
     if not pending:
         return
@@ -2797,18 +2803,24 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
         page += 1
         await jitter()
 
-    if DETAIL_FETCH and jobs:
-        try:
-            await _detail_pass(session, system, jobs, TB_DESC_BUDGET,
-                               lambda j: _jsonld_detail(session, j), "TalentBrew")
-        except Exception as e:
-            logger.info(f"TalentBrew {system}: detail pass failed ({e})")
     return jobs
 
 
 async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
     logger.info(f"TalentBrew: scraping {len(TALENTBREW_ORGS)} systems...")
-    tasks = [scrape_talentbrew(session, sys, url, rpp) for sys, (url, rpp) in TALENTBREW_ORGS.items()]
+    async def _one(sys, url, rpp):
+        jobs = await scrape_talentbrew(session, sys, url, rpp)
+        # 2026-09-21: the detail pass lives here because scrape_talentbrew
+        # returns from inside its paging loop. Job pages carry a JSON-LD
+        # JobPosting with the body, employment type, date and often pay.
+        if DETAIL_FETCH and jobs:
+            try:
+                await _detail_pass(session, sys, jobs, TB_DESC_BUDGET,
+                                   lambda j: _jsonld_detail(session, j), "TalentBrew")
+            except Exception as e:
+                logger.info(f"TalentBrew {sys}: detail pass failed ({e})")
+        return jobs
+    tasks = [_one(sys, url, rpp) for sys, (url, rpp) in TALENTBREW_ORGS.items()]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     all_jobs = []
     total = 0
@@ -5624,7 +5636,8 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     if DETAIL_FETCH and jobs:
         try:
             await _detail_pass(session, system, jobs, PHENOM_DESC_BUDGET,
-                               lambda j: _phenom_detail(session, base_url, j), "Phenom")
+                               lambda j: _phenom_detail(session, base_url, j), "Phenom",
+                               skip=lambda j: bool(re.search(r"taleo\.net|icims\.com", j.url or "")))
         except Exception as e:
             logger.info(f"Phenom {system}: detail pass failed ({e})")
     logger.info(f"  Phenom {system}: {len(jobs)} jobs")
@@ -11585,12 +11598,12 @@ _NUM_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5}
 # The amount that sits right before the keyword wins ("$10,000 sign-on bonus
 # ... and a $3,000 relocation package"), then an amount after it ("up to $15k").
 _BONUS_RXS = [
-    re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?[^$\n.]{0,40}?(?:sign[- ]?on|signing)", re.I),
-    re.compile(r"(?:sign[- ]?on|signing)(?:\s+bonus)?[^$\n.]{0,60}?\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?\b", re.I),
+    re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?([^$\n.]{0,40}?)(?:sign[- ]?on|signing)", re.I),
+    re.compile(r"(?:sign[- ]?on|signing)(?:\s+bonus)?([^$\n.]{0,60}?)\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?\b", re.I),
 ]
 _RELO_RXS = [
-    re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?[^$\n.]{0,40}?relocation", re.I),
-    re.compile(r"relocation(?:\s+(?:bonus|assistance|package|allowance))?[^$\n.]{0,60}?\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?\b", re.I),
+    re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?([^$\n.]{0,40}?)relocation", re.I),
+    re.compile(r"relocation(?:\s+(?:bonus|assistance|package|allowance))?([^$\n.]{0,60}?)\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?\b", re.I),
 ]
 _BENEFIT_ITEMS = [
     ("Medical, dental and vision", r"\b(?:medical|health)\b[^.]{0,40}\bdental\b|\bdental\b[^.]{0,30}\bvision\b"),
@@ -11621,10 +11634,22 @@ def _money_amount(num: str, k: str):
     return int(v) if 500 <= v <= 100000 else None
 
 
+_PAY_WORDS = re.compile(r"salary|compensation|\bpay\b|\bbase\b|annual|per year|/yr|per hour|/hr|hourly|wage|rate", re.I)
+
+
 def _first_amount(text: str, rxs) -> int | None:
+    """First plausible amount; the gap between the figure and the keyword
+    (group 3, when the regex captures it) must not describe pay."""
     for rx in rxs:
         for m in rx.finditer(text):
-            v = _money_amount(m.group(1), m.group(2))
+            g = m.groups()
+            if g[0] is not None and not re.match(r"^[\d,.]+$", g[0] or ""):
+                gap, num, k = g[0], g[1], g[2]          # keyword first: (gap, amount, k)
+            else:
+                num, k, gap = g[0], g[1], (g[2] if len(g) > 2 else "")   # amount first: (amount, k, gap)
+            if gap and _PAY_WORDS.search(gap):
+                continue
+            v = _money_amount(num, k)
             if v:
                 return v
     return None
