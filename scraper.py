@@ -11503,6 +11503,15 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     logger.info(f"Hospital upsert: {sent}/{len(rows)} rows sent")
     if sent == 0:
         return 0
+    # 2026-09-22: the loop stops at the first failed batch, and the sweep
+    # below used to run anyway against the FULL row list. Every system whose
+    # batches came after the failure had no row re-stamped, so the sweep
+    # retired its whole inventory (22,689 rows on 2026-09-22 while the
+    # database was timing out). An incomplete upsert never sweeps.
+    if sent < len(rows):
+        logger.error(f"Hospital deactivate SKIPPED: upsert incomplete ({sent:,}/{len(rows):,} rows sent); "
+                     f"a sweep against an incomplete run would retire live jobs")
+        return sent
 
     # 2. Per-system deactivation pass.
     DEACT_MIN = 10
@@ -11532,8 +11541,14 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # broken/blocked adapter, not a hiring freeze. Skip it loudly and let a
     # healthy future run resume sweeping. Count failures fall through to the
     # old behavior (sweep) so a flaky count can't disable cleanup globally.
-    GUARD_MIN_ACTIVE = 200   # only guard systems with a real inventory
-    GUARD_RATIO      = 0.25  # this run must yield >= 25% of active rows
+    # 2026-09-22: three changes after the 22,689-row sweep. A count that
+    # fails now protects the system (it used to "sweep as usual", so a busy
+    # database turned every guard off at once); the guard covers systems
+    # from 20 active rows up, not 200; and a run must yield at least 80% of
+    # a system's active rows before the rest is retired, not 25%: a half
+    # crawl of a 16k-row system is a blocked adapter, not 8,000 closed jobs.
+    GUARD_MIN_ACTIVE = 20    # guard every system with an inventory worth protecting
+    GUARD_RATIO      = 0.80  # this run must yield >= 80% of active rows
     guarded: list[str] = []
     for system in list(safe_systems):
         try:
@@ -11547,7 +11562,9 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
                 cr = resp.headers.get("Content-Range", "")
                 active_n = int(cr.split("/")[-1]) if "/" in cr and cr.split("/")[-1].isdigit() else 0
         except Exception as e:
-            logger.info(f"Sweep guard: active-count failed for {system} ({e}) — sweeping as usual")
+            safe_systems.remove(system)
+            guarded.append(system)
+            logger.warning(f"SWEEP GUARD: NOT sweeping {system} — active-count failed ({e}); inventory preserved")
             continue
         if active_n >= GUARD_MIN_ACTIVE and system_counts[system] < GUARD_RATIO * active_n:
             safe_systems.remove(system)
@@ -11931,7 +11948,9 @@ _WAGE_SINGLE_RX = re.compile(
 _WAGE_LABELLED_RX = re.compile(
     r"(?:salary|compensation|pay(?:\s+rate)?|wage|income\s+guarantee|guarantee(?:d)?(?:\s+(?:annual\s+)?(?:salary|income|base|minimum))?|"
     r"base(?:\s+salary|\s+pay)?|earnings?|rate)\s*(?:of|at|is|:|-|–|starts?\s+at|from|starting\s+at)?\s*(?:up\s+to\s+)?"
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?(?!\s*(?:-|–|—|to|through)\s*\$?\s*\d)", re.I)
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)(?![\d,])\s*(k\b)?(?!\s*(?:-|–|—|to|through)\s*\$?\s*\d)", re.I)
+# (?![\d,]) after the figure: without it "Salary: $12,500 - $15,000" backtracked
+# to "$12" once the range lookahead failed, and stored $12/hr (backfill sample, 2026-09-22).
 
 
 def _amt(num, k):

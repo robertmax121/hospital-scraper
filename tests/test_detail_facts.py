@@ -265,6 +265,9 @@ def test_wage_labelled_bare_figures_and_k_suffix():
     assert extract_posted_wage("Sign-on bonus: $10,000 and a $2,000 referral bonus") is None
     assert extract_posted_wage("Compensation up to $2,000 in referral bonuses") is None
     assert extract_posted_wage("Salary: $100,000 - $120,000 per year") == (100000.0, 120000.0, "year")
+    # backfill sample 2026-09-22: a labelled figure must not backtrack to its first digits
+    assert extract_posted_wage("Salary: $12,500 - $15,000 annually Schedule: 2-3 hours/wk") is None
+    assert extract_posted_wage("Compensation: $53,5000/Yr At NovaCare") is None
 
 
 def test_scoreboard_patterns_2026_09_22():
