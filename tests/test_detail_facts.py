@@ -267,6 +267,47 @@ def test_wage_labelled_bare_figures_and_k_suffix():
     assert extract_posted_wage("Salary: $100,000 - $120,000 per year") == (100000.0, 120000.0, "year")
 
 
+def test_scoreboard_patterns_2026_09_22():
+    """The stated-but-not-captured list from the 2,860-row scoreboard."""
+    from scraper import extract_posted_wage, extract_posting_facts, job_type_from_text
+    # Sharp HealthCare (Workday): three decimals, minimum - midpoint - maximum
+    sharp = "On-Call Required:NoHourly Pay Range (Minimum - Midpoint - Maximum):$83.970 - $108.360 - $121.360 The stated pay scale reflects the range"
+    assert extract_posted_wage(sharp) == (83.97, 121.36, "hour")
+    # St. Charles (Phenom): a differential item glued after a labelled range
+    assert extract_posted_wage("Relief, Variable Pay range: $26.18 - $33.51 Relief Differential - 15% Swing Shift Differential - $2.50/hr") == (26.18, 33.51, "hour")
+    assert extract_posted_wage("Night Differential: $10.00/hr Weekend Differential: $2.00/hr Labor and Delivery Experience Required") is None
+    # SonderMind (Ashby): contract therapists above the old $250/hr ceiling
+    assert extract_posted_wage("contract position (1099) Pay: up to $296 per hour. Pay rates are based on the provider license type") == (296.0, 296.0, "hour")
+    # TriHealth (Oracle): differentials alone are not pay
+    assert extract_posted_wage("Night shift nurses receive a $4/hour shift differential plus a $6/hour night shift premium.") is None
+    # education beyond nursing
+    f = extract_posting_facts("Required Education Bachelor's Degree in finance, accounting, or other related field Experience 2 years")
+    assert f["education"][0][0] == "Bachelor's degree"
+    assert extract_posting_facts("What you’ll need: H.S. Diploma or Equivalent Required And Completion of approved LMRT training")["education"][0][0] == "HS diploma/GED"
+    assert extract_posting_facts("Qualifications Master’s Degree from an Accredited University Licensed as Advance Practice")["education"][0][0] == "Master's degree"
+    assert extract_posting_facts("Doctorate degree in physical therapy (DPT) required")["education"][0][0] == "Doctorate"
+    assert (extract_posting_facts("Works with associates across the unit; the doctor on call reviews orders.") or {}).get("education", []) == []
+    # shifts written without the word "shift"
+    assert extract_posting_facts("*** Full- Time Nights; 7pm- 7am; $5000 Sign on Bonus")["shift"][0][0] == "Nights"
+    assert extract_posting_facts("Work hours: Full-Time Nights (6:45 PM – 7:15 AM) for 36 hours/week.")["shift"][0][0] == "Nights"
+    assert extract_posting_facts("Job Description: Shift: Days Conduct comprehensive assessments")["shift"][0][0] == "Days"
+    assert extract_posting_facts("Clinic hours 8:00am - 5:00pm Monday through Friday")["shift"][0][0] == "Days"
+    assert all(s[0] != "Nights" for s in (extract_posting_facts("Schedule may include nights and weekends as needed.") or {}).get("shift", []))
+    # "Schedule Full-time" with no colon
+    assert job_type_from_text("Bilingual preferred\nSchedule Full-time Flexible availability required\n") == "Full time"
+    assert job_type_from_text("Full-time, Part-time, and PRN opportunities available.") == ""
+    # county boards quote a pay period or a month (NeoGov)
+    assert extract_posted_wage("Primary Care Clinic Physician: $9,404.43 - $10,893.28 Biweekly (This amount is prorated") == (244515.18, 283225.28, "year")
+    assert extract_posted_wage("Salary $6,500 per month plus benefits") == (78000.0, 78000.0, "year")
+    # shift after a comma or a dash
+    assert extract_posting_facts("Work hours: Full Time, Nights Department highlights")["shift"][0][0] == "Nights"
+    assert extract_posting_facts("Sterile Processing Tech II (Full Time- Nights) Bring your passion")["shift"][0][0] == "Nights"
+    assert extract_posting_facts("Relief, Days Pay range: $23.37 - $32.71")["shift"][0][0] == "Days"
+    # education written as a list of levels or a fragment
+    assert extract_posting_facts("Education: High School Grad or Equiv [Required] Associate [Preferred] Bachelor's [Preferred] Field of Study: N/A")["education"][0][0] == "HS diploma/GED"
+    assert extract_posting_facts("Education Associate's from an ARRT accredited program")["education"][0][0] == "Associate degree"
+
+
 def test_wage_bonus_amounts_still_rejected():
     from scraper import extract_posted_wage
     assert extract_posted_wage("Sign-on bonus: $10,000 for nights") is None

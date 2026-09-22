@@ -11658,7 +11658,7 @@ def _wage_is_noise(t, start, end):
     if m and not _PAY_WORDS.search(m.group(2)):
         if not (_WAGE_COMPONENT_WORD.match(m.group(1)) and _WAGE_COMPOSITION_RX.search(before[:m.start(1)])):
             return True
-    if _WAGE_UNIT_RX.match(after):
+    if _WAGE_PAY_LABEL_BEFORE_RX.search(before) or _WAGE_UNIT_RX.match(after):
         return False
     # Flattened bodies (Select Medical) glue the next label onto the figure:
     # "$35.67 - $48.00 (based on experience)Sign-on Bonus: $10,000". An aside
@@ -11684,10 +11684,27 @@ def _wage_is_noise(t, start, end):
         return True
     return False
 # 2026-09-22: a "k" suffix counts ("$95k - $110k", "$45k annually").
+# Three decimals too: Sharp HealthCare's Workday bodies write "Hourly Pay
+# Range (Minimum - Midpoint - Maximum):$83.970 - $108.360 - $121.360", and
+# the third figure (the maximum) is read by the range loop.
 _WAGE_RANGE_RX = re.compile(
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?\s*(?:-|–|—|to|through)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?\s*(?:-|–|—|to|through)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?", re.I)
+_WAGE_THIRD_RX = re.compile(r"\s*(?:-|–|—)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\b")
+# County boards (NeoGov) quote a month or a pay period: "$9,404.43 -
+# $10,893.28 Biweekly", "$6,500 per month". Converted to a year.
+_WAGE_PERIOD_RX = re.compile(r"\s*(?:(per\s+month|monthly|/\s*mo(?:nth)?\b|a\s+month)|(bi-?weekly|per\s+pay\s+period|every\s+(?:two|2)\s+weeks|per\s+(?:two|2)\s+weeks))", re.I)   # used with .match(t, pos): no ^ (it would anchor to the string start)
+
+
+def _period_scale(t, pos):
+    m = _WAGE_PERIOD_RX.match(t, pos)
+    return (12 if m.group(1) else 26) if m else 1
+# A pay label right before the figure settles it as pay whatever follows
+# ("Pay range: $26.18 - $33.51 Relief Differential - 15%", St. Charles).
+_WAGE_PAY_LABEL_BEFORE_RX = re.compile(
+    r"(?:salary|pay|compensation|wage|rate|guarantee)\s*(?:range|rate|scale)?\s*(?:\([^()]*\))?\s*(?:of|at|is|:|-|–|from|starting at|starts at|up to)?\s*(?:up to\s+)?$", re.I)
 _WAGE_SINGLE_RX = re.compile(
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?\s*(?:per\s+hour|/\s*hr\b|/\s*hour(?:ly)?|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum|a\s+year)", re.I)
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?\s*(?:per\s+hour|/\s*hr\b|/\s*hour(?:ly)?|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum|a\s+year|"
+    r"per\s+month|monthly|/\s*mo\b|a\s+month|bi-?weekly|per\s+pay\s+period|every\s+(?:two|2)\s+weeks)", re.I)
 # A pay label right before a bare figure ("Income Guarantee at $354,000",
 # "Salary: $85,000", "Pay rate $42") is a single figure with no unit; the
 # band decides hourly or annual. Not when a range follows (the range rule
@@ -11724,7 +11741,7 @@ def _wage_pair(lo, hi):
         return None
     if lo > hi:
         lo, hi = hi, lo
-    if 12 <= lo <= 250 and 12 <= hi <= 250:
+    if 12 <= lo <= 350 and 12 <= hi <= 350:     # 350: contract therapists and physicians quote "up to $296 per hour" (SonderMind, 2026-09-22)
         return (lo, hi, "hour")
     if 25000 <= lo <= 900000 and 25000 <= hi <= 900000:
         return (lo, hi, "year")
@@ -11757,17 +11774,27 @@ _FACT_CERTS = [
     ("LPN license",     r"\bLPN licen|licensed practical nurse licen"),
 ]
 _FACT_EDU = [
-    ("BSN",       r"\bBSN\b|bachelor(?:'s)? (?:of science )?(?:degree )?in nursing|baccalaureate.{0,15}nursing"),
-    ("ADN/ASN",   r"\bADN\b|\bASN\b|associate(?:'s)? degree in nursing|associate degree nursing"),
-    ("MSN",       r"\bMSN\b|master(?:'s)? (?:of science )?in nursing"),
+    ("BSN",       r"\bBSN\b|bachelor(?:'s|’s)? (?:of science )?(?:degree )?in nursing|baccalaureate.{0,15}nursing"),
+    ("ADN/ASN",   r"\bADN\b|\bASN\b|associate(?:'s|’s)? degree in nursing|associate degree nursing"),
+    ("MSN",       r"\bMSN\b|master(?:'s|’s)? (?:of science )?in nursing"),
     ("DNP",       r"\bDNP\b"),
     ("Nursing diploma", r"diploma (?:in|of) nursing|nursing diploma"),
-    ("HS diploma/GED",  r"high school diploma|\bGED\b"),
+    # 2026-09-22 (scoreboard): the list was nursing-only, so therapists, techs,
+    # NPs and office roles got no education chip although the body named the
+    # degree. Generic degrees come after the nursing ones; two chips at most.
+    ("Doctorate",         r"doctora(?:te|l)\b|\bPhD\b|\bPharmD\b|\bDPT\b|\bPsyD\b|\bAuD\b|\bDScPT\b"),
+    ("Master's degree",   r"master(?:'s|’s)?\s*(?:degree|of\s+[A-Za-z]|in\s+[A-Za-z]|[\[(]|(?:required|preferred|or|from)\b)|\bMHA\b|\bMPH\b|\bMBA\b|\bMSW\b"),
+    ("Bachelor's degree", r"bachelor(?:'s|’s)?\s*(?:degree|of\s+[A-Za-z]|in\s+[A-Za-z]|[\[(]|(?:required|preferred|or|from)\b)|baccalaureate degree|\bB\.?S\.?\s+(?:degree|in\s)|\bB\.?A\.?\s+(?:degree|in\s)"),
+    ("Associate degree",  r"associate(?:'s|’s)?\s*(?:degree|of\s+(?:applied\s+)?science|in\s+[A-Za-z]|[\[(]|(?:required|preferred)\b)|associate(?:'s|’s)\s+(?:or|from)\b|\bA\.?A\.?S\.?\s+degree"),
+    ("HS diploma/GED",    r"high school (?:diploma|grad|graduate|equivalen)|\bH\.?S\.?\s+diploma|\bGED\b"),
 ]
+# 2026-09-22 (scoreboard): "Full-Time Nights", "Shift: Nights", "Nights
+# 6:45pm - 7:15am" and a p.m.-to-a.m. span are night shifts; the mirror
+# forms are days. "may include nights and weekends" is not a shift.
 _FACT_SHIFT = [
-    ("Nights",   r"\bnight shift\b|\b7p\s*-?\s*7a\b|overnight"),
-    ("Days",     r"\bday shift\b|\b7a\s*-?\s*7p\b"),
-    ("Evenings", r"\bevening shift\b|\bevenings\b"),
+    ("Nights",   r"\bnight shift\b|\b7p\s*-?\s*7a\b|overnight|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*nights?\b|\bshift:\s*nights?\b|\bnights?\s*\(?\s*\d{1,2}(?::\d{2})?\s*[ap]\.?m|\b\d{1,2}(?::\d{2})?\s*p\.?m?\.?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*a\.?m\b"),
+    ("Days",     r"\bday shift\b|\b7a\s*-?\s*7p\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*days?\b|\bshift:\s*days?\b|\bdays?\s*\(?\s*\d{1,2}(?::\d{2})?\s*[ap]\.?m|\b\d{1,2}(?::\d{2})?\s*a\.?m?\.?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*p\.?m\b"),
+    ("Evenings", r"\bevening shift\b|\bevenings\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*evenings?\b|\bshift:\s*evenings?\b"),
     ("Rotating", r"\brotating shift|shift rotation"),
     ("Weekends", r"\bweekend(?:s| option| program| coverage| shifts?| rotation)\b|every other weekend"),
     ("3x12s",    r"\b3\s*x\s*12|three 12s|\b12[- ]hour shifts"),
@@ -11997,7 +12024,8 @@ def canonical_job_type(raw, title: str = "") -> str:
 # is skipped; prose like "full-time employees receive" never qualifies.
 _JOB_TYPE_LINE_RX = re.compile(
     r"(?im)^[ \t]*(?:job[ ]?type|employment[ ]?(?:type|status)|position[ ]?(?:type|status)|work[ ]?(?:type|schedule|status)|"
-    r"schedule(?:d)?(?:[ ]hours)?|status|fte[ ]status|hours[ ]type|time[ ]type|shift[ ]type|category)[ \t]*[:\-\u2013][ \t]*([^\n]{2,60})$")
+    r"schedule(?:d)?(?:[ ]hours)?|status|fte[ ]status|hours[ ]type|time[ ]type|shift[ ]type|category)"
+    r"(?:[ \t]*[:\-\u2013][ \t]*|[ \t]+(?=(?:full|part|prn|per[ \t-]?diem)\b))([^\n]{2,60})$")   # "Schedule Full-time" needs no colon
 
 
 def job_type_from_text(text) -> str:
@@ -12005,6 +12033,10 @@ def job_type_from_text(text) -> str:
     for m in _JOB_TYPE_LINE_RX.finditer(t):
         value = m.group(1).strip()
         hits = [label for label, rx in _JOB_TYPE_CANON if rx.search(value)]
+        # "Schedule Full-time Flexible availability": "flex" is a per-diem cue
+        # in an ATS field, not in a sentence that names another type.
+        if "Per diem" in hits and len(set(hits)) > 1 and not re.search(r"per[\s_-]*diem|\bPRN\b|as[\s_-]needed", value, re.I):
+            hits = [h for h in hits if h != "Per diem"]
         if len(set(hits)) == 1:
             return hits[0]
     return ""
@@ -12019,21 +12051,43 @@ def extract_posting_facts(text, job_type=None):
     posting lists per employment type."""
     if not text:
         return None
-    t = re.sub(r"([.!?;])(?=[A-Z(])", r"\1 ", text[:12000])
+    # Dotted abbreviations would split a sentence in two ("H.S. Diploma",
+    # "B.S. in", "Ph.D."), so they lose their dots first (2026-09-22).
+    t = re.sub(r"\b([A-Za-z])\.([A-Za-z])\.(?=[\s,;:)]|$)", r"\1\2", text[:12000])
+    t = re.sub(r"\bPh\.D\.", "PhD", t)
+    t = re.sub(r"([.!?;])(?=[A-Z(])", r"\1 ", t)
     sents = re.split(r"(?<=[.!?;])\s+", t)
     out = {"certs": [], "education": [], "shift": [], "experience": None}
     seen = set()
+    edu_pos = {}
+    offset = 0
     for s in sents:
+        offset = t.find(s, offset)
         pref = bool(re.search(r"prefer", s, re.I))
+
+        def item_pref(m):
+            # "[Required] Associate [Preferred] Bachelor's [Preferred]": the
+            # marker after the item decides; otherwise the sentence does,
+            # unless "required" follows the item (2026-09-22).
+            after = s[m.end():m.end() + 40]
+            if re.search(r"prefer", after, re.I):
+                return True
+            return pref and not re.search(r"requir", after, re.I)
+
         for label, rx in _FACT_CERTS:
-            if label not in seen and re.search(rx, s, re.I):
-                seen.add(label)
-                out["certs"].append([label, pref])
+            if label not in seen:
+                m = re.search(rx, s, re.I)
+                if m:
+                    seen.add(label)
+                    out["certs"].append([label, item_pref(m)])
         for label, rx in _FACT_EDU:
             k = "e:" + label
-            if k not in seen and re.search(rx, s, re.I):
-                seen.add(k)
-                out["education"].append([label, pref])
+            if k not in seen:
+                m = re.search(rx, s, re.I)
+                if m:
+                    seen.add(k)
+                    out["education"].append([label, item_pref(m)])
+                    edu_pos[label] = offset + m.start()
         for label, rx in _FACT_SHIFT:
             k = "s:" + label
             if k not in seen and re.search(rx, s, re.I):
@@ -12055,7 +12109,7 @@ def extract_posting_facts(text, job_type=None):
     if any(c[0] == "BLS" for c in out["certs"]):
         out["certs"] = [c for c in out["certs"] if c[0] != "CPR"]
     out["certs"] = out["certs"][:5]
-    out["education"] = out["education"][:2]
+    out["education"] = sorted(out["education"], key=lambda e: edu_pos.get(e[0], 0))[:2]   # the posting's own order, so the required level leads
     out["shift"] = out["shift"][:2]
     # 2026-09-21: schedule summary, hours, bonus amounts, benefits.
     out["schedule"], out["hours"] = extract_schedule(t, [x[0] for x in out["shift"]], job_type)
@@ -12097,7 +12151,17 @@ def extract_posted_wage(text, job_type=None):
         if _wage_is_noise(t, m.start(), m.end()):
             continue
         k = m.group(2) or m.group(4)                          # "$70-80K": one suffix for both ends
-        consider(m, _wage_pair(_amt(m.group(1), k), _amt(m.group(3), k)), 6)
+        lo, hi = _amt(m.group(1), k), _amt(m.group(3), k)
+        m3 = _WAGE_THIRD_RX.match(t, m.end())                 # "min - midpoint - max": the maximum is the third figure
+        end = m.end()
+        if m3 and hi is not None:
+            third = _amt(m3.group(1), k)
+            if third is not None and third > hi:
+                hi, end = third, m3.end()
+        scale = _period_scale(t, end)                         # "... Biweekly" / "... per month" -> a year
+        if scale != 1 and lo is not None and hi is not None:
+            lo, hi = lo * scale, hi * scale
+        consider(m, _wage_pair(lo, hi), 6)
     for m in _WAGE_BARE_RANGE_RX.finditer(t):
         if _wage_is_noise(t, m.start(), m.end()):
             continue
@@ -12108,7 +12172,13 @@ def extract_posted_wage(text, job_type=None):
         if _wage_is_noise(t, m.start(), m.end()):
             continue
         v = _amt(m.group(1), m.group(2))
-        unit = "hour" if re.search(r"hour|hr", m.group(0), re.I) else "year"
+        tail = m.group(0).lower()
+        if v is not None and re.search(r"month|/\s*mo\b", tail):
+            v, unit = v * 12, "year"
+        elif v is not None and re.search(r"weekly|pay period|two weeks|2 weeks", tail):
+            v, unit = v * 26, "year"
+        else:
+            unit = "hour" if re.search(r"hour|hr", tail) else "year"
         got = _wage_pair(v, v)
         if got and got[2] == unit:
             consider(m, (v, v, unit), 0)
