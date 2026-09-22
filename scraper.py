@@ -649,6 +649,10 @@ def derive_job_type(title, raw_job_type):
 
 
 WORKDAY_TENANTS = {
+    # 2026-09-22 Texas resume: UMC Health System, Lubbock (422 beds). 131
+    # postings in the dry run, bodies and dates from the detail pass; the
+    # board carries no state, see SYSTEM_LOCATION_DEFAULTS / WD_FACILITY_MAP.
+    "UMC Health System":         ("umchealthsystem",    "1",   "External"),
     # Teladoc Health (2026-09-10 T2 telehealth batch): the wd1 link on their
     # careers page returns HTTP 422; the live tenant is wd503, site
     # teladochealth_is_hiring (43 postings, 21 US, 8 US clinical on
@@ -1120,6 +1124,9 @@ SYSTEM_CITY_STATE: dict[str, dict[str, str]] = {
 # System-level fallback — used when facility lookup fails
 # Multi-state systems use primary HQ market as default
 SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
+    # 2026-09-22 Texas resume: UMC Lubbock's Workday board writes only the
+    # campus ("UMC Main Campus", "Health & Wellness Hospital"); every site is in Lubbock.
+    "umc health system":          ("Lubbock",          "TX"),
     # 2026-09-17 (blank states): single-market systems whose boards carry no
     # location at all (iCIMS card lists at Covenant / OHSU, Workday tenants
     # with facility names). Both the adapter label and the canonical label.
@@ -1793,6 +1800,12 @@ _WD_REQ_ID_RE = re.compile(r"^[A-Za-z]{0,12}[-_ ]?\d{3,}[A-Za-z0-9._-]*$")
 # trailing "(CODE)" stripped; a key also matches as a prefix. Value =
 # (facility label or None to keep the system name, city, state).
 WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
+    # 2026-09-22 Texas resume: the two campuses that are hospitals take the
+    # CMS names; clinics and offices keep the system name (SYSTEM_LOCATION_DEFAULTS gives Lubbock TX).
+    "UMC Health System": {
+        "umc main campus": ("University Medical Center", "Lubbock", "TX"),
+        "health & wellness hospital": ("UMC Health & Wellness Hospital", "Lubbock", "TX"),
+    },
     "WVU Medicine": {
         "ruby memorial hospital": ("J.W. Ruby Memorial Hospital", "Morgantown", "WV"),
         "wvu medicine golisano children's hospital": ("WVU Medicine Children's Hospital", "Morgantown", "WV"),
@@ -1925,6 +1938,7 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
 # Intermountain, Sunrise) are deliberately absent: a wrong state is worse than
 # none, and the state facet covers them where the tenant exposes one.
 WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
+    "UMC Health System": ("Lubbock", "TX"),   # 2026-09-22 Texas resume: every UMC site is in Lubbock
     "WVU Medicine":            ("Morgantown", "WV"),
     "University of Rochester": ("Rochester", "NY"),
     "MultiCare Health":        ("Tacoma", "WA"),
@@ -2448,11 +2462,11 @@ ICIMS_ORGS = {
     "Appalachian Regional Healthcare":  "careers-arh.icims.com",
     "Prime Healthcare":                 "careers-primehealthcare.icims.com",
     "Midland Health":                   "hospital-midlandhealth.icims.com",
-    # ── 2026-09-10 Texas block C (Y-texas-build): Ardent (UT Health East
-    # Texas x8, BSA Amarillo, Seton Harker Heights). The careers pages link
-    # only the referrals portal; careers-/jobs-ardenthealth 404. Card-list
-    # portal like Prime; dry-run result in reports/Y-texas-build.md.
-    "Ardent Health":                    "referrals-ardenthealth.icims.com",
+    # ── 2026-09-10 Texas block C: Ardent's referrals-only portal never
+    # yielded a row; Ardent moved to JIBE_SITES on 2026-09-22.
+    # ── 2026-09-22 Texas resume: OakBend (Richmond TX, 158 beds), card-list
+    # portal, 168 jobs in the dry run (166 TX, 91 bodies).
+    "OakBend Medical Center":           "careers-obmc.icims.com",
     "Covenant Health":                  "careers-covenanthealth.icims.com",
     "Providence Health & Services":     "careers-hub-phs.icims.com",
     "Tri-City Medical Center":          "careers-tricitymed.icims.com",
@@ -3754,6 +3768,12 @@ JIBE_SITES = {
     "Norton Healthcare":         "https://nortonhealthcare.jibeapply.com", # 723, Louisville
     "Sarasota Memorial Health Care System": "https://careers.smh.com",     # 381
     "Tower Health":              "https://www.towercareers.org",           # 348, Reading PA
+    # ── 2026-09-22 Texas resume: the referrals-only iCIMS portal never
+    # yielded a row; jobs.ardenthealth.com is a Jibe front (validated live:
+    # 1,538 jobs, 502 TX / 349 OK / 283 NM / 144 KS / 118 ID / 116 NJ, 7k-char
+    # bodies). location_name is the facility ("UT Health Tyler", "BAPTIST
+    # CAMPUS", "Seton Harker Heights"), linked to CMS through sql/45.
+    "Ardent Health":             "https://jobs.ardenthealth.com",
 }
 
 # Jibe feeds whose location_name is a facility (not a street or a region):
@@ -3761,7 +3781,7 @@ JIBE_SITES = {
 # see the campus, not the network.
 JIBE_FACILITY_NAME = {"Garnet Health", "Maimonides Health", "Bassett Healthcare Network",
                       "Mercy", "Orlando Health", "UF Health", "BJC HealthCare", "Norton Healthcare",
-                      "Sarasota Memorial Health Care System", "Tower Health"}
+                      "Sarasota Memorial Health Care System", "Tower Health", "Ardent Health"}
 
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs: list[Job] = []
@@ -5891,6 +5911,9 @@ ADP_ORGS = {
         ("7889f006-4c3f-49f9-931b-a7ffd827148d", "9200389848466_2", "OH", "Wooster Community Hospital"),
     "Wooster Community Hospital (BMS)":
         ("7889f006-4c3f-49f9-931b-a7ffd827148d", "9200402128985_2", "OH", "Bloomington Medical Services"),
+    # 2026-09-22 Texas resume: Breckenridge TX critical-access hospital, 32 jobs in the dry run.
+    "Stephens Memorial Hospital":
+        ("76d82eed-ed91-46db-82b7-9e829fb2467b", "19000101_000001", "TX", "Stephens Memorial Hospital"),
     # 2026-09-10 (Z-texas-acute-D): Texas block D. legenthealth.com/careers links
     # one Workforce Now career center for all three Legent hospitals (Plano,
     # Grapevine, San Antonio); the facility comes from requisitionLocations,
@@ -6816,6 +6839,14 @@ UKG_ORGS = {
     "Cape Regional Health":         ("https://crhukg.rec.pro.ukg.net/CHE1503CHPE",       "09584b08-b32f-4882-8c7b-223bbd8e3851"),
     "Northwest Medical Center":     ("https://nwmedicalctr.rec.pro.ukg.net/NOR1080NWMC", "f22ba272-5440-48f3-9f0f-84f6f384d461"),
     "Guadalupe Regional Medical":   ("https://grmedcenter.rec.pro.ukg.net/GUA1500GDRM",  "42079bd4-4198-48a9-b64a-26c8b01496d6"),
+    # ── 2026-09-22 Texas resume (dry-run counts): Surgery Partners' shared
+    # SUR1004SRGY board hosts two Texas hospitals under their own guids;
+    # Odessa Regional lives on recruiting2.ultipro.com (recruiting.ultipro.com
+    # answers 404 for it). Paris Regional's ACC1011RRCM board 404s on both
+    # hosts; that hospital is covered through the Lifepoint alias instead.
+    "Lubbock Heart & Surgical Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY",   "b20e37c3-0c12-41c6-a16d-381589bf39b0", "TX"),   # 15
+    "The Physicians Centre Hospital":    ("https://recruiting.ultipro.com/SUR1004SRGY",   "67c3533b-0e5c-446c-8a5c-28a8d13de3df", "TX"),   # 17, Bryan
+    "Odessa Regional Medical Center":    ("https://recruiting2.ultipro.com/QHC1000QHCS",  "3734377e-6308-45d0-b97a-c6f17d82c5e2", "TX"),   # 71
     "Quorum Health":                ("https://recruiting2.ultipro.com/QHC1000QHCS",      "c304f8f7-4638-4bc5-8567-18580345a749"),
     "Granite Hills Medical":        ("https://recruiting.ultipro.com/GRE1050GNHP",       "2b67ecb4-00fb-4863-931a-7bf0ebcb493a"),
     "Medical Associates":           ("https://recruiting.ultipro.com/MEA1004MEVM",       "d561e1d3-aa5e-4c1b-bcf5-5319c6abdcac"),
@@ -8449,6 +8480,18 @@ PAYCOM_ORGS = {
     "Nacogdoches Memorial Hospital":     "C4638CB50E7EB9BDFE01AC5E31D77604",
     "Rolling Plains Memorial Hospital":  "1C3BB3931F4EB94FBCE852E05A8DEDA5",
     "SUN Behavioral Houston":            "292ACA5AA961D98C89091BAB7A81FFE5",
+    # ── 2026-09-22 Texas resume: client keys from the fingerprint pass
+    # (data/fingerprints/20260917-0420), each validated in a dry run with
+    # full bodies in-feed. Family Hospital Systems' key serves Brushy Creek
+    # (Round Rock) and its other campuses, 44 TX rows.
+    "Uvalde Memorial Hospital":          "4F9268B125C765E56921BD62380F6FDA",   # 16
+    "Electra Memorial Hospital":         "CBCA8A5823AC214457E7B0DDADBFF53F",   # 30
+    "Iraan General Hospital":            "97DBDEC2FD8ADF5E89319516BC5CB310",   # 10
+    "Fisher County Hospital District":   "D1D2477089224081140D652FE53B44BA",   # 4
+    "Sweeny Community Hospital":         "B0F026CC4B9A9CD4D87975E3BBD9A6A1",   # 12
+    "Reagan Memorial Hospital":          "D4C72F026DE938686F749E27665CEBE1",   # 5
+    "Family Hospital Systems":           "D9DFA45B3E3394DFD6AF110856BDF669",   # 56 (Brushy Creek Family Hospital + sister campuses)
+    "Hemphill County Hospital":          "BA0F97E1F0BBEA0363815A42D822FDF2",   # 20
     # ── Added from scraper1.xlsx expansion ──
     "Paycom Hospital 2": "4863CB61AD1B2555F37E9E5884626947",
     "Paycom Hospital 3": "C48961799EBD231096CE8423D325C34C",
@@ -8688,6 +8731,23 @@ PAYLOCITY_ORGS = {
     # 2026-09-10 (Z-texas-acute-D): eastlandmemorial.com's employment page
     # links this board under "Current Job Openings".
     "Eastland Memorial Hospital": ("c1f736ba-2df6-4f47-95f4-117e45c82e0d", "Eastland-Memorial-Hospital-District", "TX"),
+    # ── 2026-09-22 Texas resume: twelve rural districts from the fingerprint
+    # pass, each validated in a dry run (counts in the comments). Paylocity
+    # answers HTTP 429 to a burst of requests; the runner's jitter spaces them.
+    # Altus Community Healthcare's board covers its Lumberton hospital and
+    # its free-standing ER sites.
+    "Coleman County Medical Center":    ("59046f49-fc75-436f-bc94-1ec0a76d1d2b", "Coleman-County-Medical-Center", "TX"),        # 12
+    "Sabine County Hospital":           ("fa086daf-eefa-4e0d-9672-4bc0f1bca7c8", "Sabine-County-Hospital", "TX"),               # 8
+    "Shamrock General Hospital":        ("19e0f8e8-d462-4685-87f4-50d63482b5f7", "Shamrock-General-Hospital", "TX"),            # 7
+    "Lynn County Hospital District":    ("decdd05f-efa3-4ad9-80c5-8a7dbd93d653", "Lynn-County-Hospital-District", "TX"),        # 7
+    "Stonewall Memorial Hospital":      ("5a6d7eef-c623-48b5-ba82-ecd26847b3ca", "Stonewall-Memorial-Hospital-District", "TX"), # 15
+    "Martin County Hospital District":  ("4a44721e-de82-4004-b17f-bb712eee0534", "Martin-County-Hospital-District", "TX"),      # 17
+    "Crane County Hospital District":   ("edfc210c-c5b1-44c5-83a0-804263517d79", "Crane-County-Hospital-District", "TX"),       # 10
+    "Kimble Hospital":                  ("1bcf0c7d-43e3-4c68-89fc-d02935d1b57e", "Kimble-Hospital", "TX"),                      # 9
+    "Culberson Hospital":               ("1f59bb01-19cc-4592-9fe8-4a17210e69cd", "Culberson-Hospital", "TX"),                   # 8
+    "Schleicher County Medical Center": ("a6bb2c61-8ed5-4bd9-99d7-8aa25c93983f", "Schleicher-County-Medical-Center", "TX"),     # 5
+    "Altus Community Healthcare":       ("071ad9aa-36cc-453e-baad-b9aed49da904", "Altus-Community-Healthcare", "TX"),           # 86
+    "Graham Regional Medical Center":   ("b5e3394e-0c3f-46b1-831d-54975f36e6aa", "Graham-Hospital-District", "TX"),             # 22
 }
 _PAYLOCITY_PAGEDATA_RE = re.compile(r"window\.pageData\s*=\s*(\{)")
 
@@ -8763,6 +8823,9 @@ WORKABLE_ORGS = {
     # Format: "System": (account slug, default state)
     # Huntsville Memorial Hospital: 59 jobs on 2026-09-10, all Huntsville TX.
     "Huntsville Memorial Hospital": ("huntsville-memorial-hospital", "TX"),
+    # 2026-09-22 Texas resume (dry-run counts): both boards answer the v3 API.
+    "Houston Behavioral Healthcare Hospital": ("houston-behavioral-healthcare-hospital", "TX"),   # 11
+    "Yoakum Community Hospital":              ("yoakum-community", "TX"),                         # 10
 }
 _WORKABLE_TYPES = {"full": "Full time", "part": "Part time", "contract": "Contract", "temporary": "Temporary"}
 

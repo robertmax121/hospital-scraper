@@ -84,6 +84,6 @@ def test_texas_block_c_config_entries_exist():
     for name in ("Children's Health", "Hendrick Health"):
         assert scraper.PHENOM_ORGS[name].startswith("https://")
     assert scraper.JIBE_SITES["Universal Health Services"] == "https://jobs.uhsinc.com"
-    assert scraper.ICIMS_ORGS["Ardent Health"].endswith(".icims.com")
+    assert scraper.JIBE_SITES["Ardent Health"] == "https://jobs.ardenthealth.com"   # moved off the referrals-only iCIMS portal 2026-09-22
     for key in scraper.PAYCOM_ORGS.values():
         assert re.fullmatch(r"[0-9A-F]{32}", key)
