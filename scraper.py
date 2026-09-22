@@ -11587,8 +11587,9 @@ def normalize_job(j: Job) -> dict:
 # ("/hour", "per year", "salary") settle it. See _wage_is_noise.
 _WAGE_NOISE_WORDS = r"sign[- ]?on|signing|bonus(?:es)?|relocation|retention|referral|differential|stipend|reimburse\w*|incentives?"
 _WAGE_NEAR_NOISE = re.compile(_WAGE_NOISE_WORDS, re.I)
-_WAGE_NOISE_HEAD_RX = re.compile(r"(?:^|[^A-Za-z$])(" + _WAGE_NOISE_WORDS + r")\b(?:\s+bonus(?:es)?)?([^$\n;]{0,40})$", re.I)
+_WAGE_NOISE_HEAD_RX = re.compile(r"(?:^|[^A-Za-z$])(" + _WAGE_NOISE_WORDS + r")\b(?:\s+bonus(?:es)?)?([^$\n;]{0,50})$", re.I)
 _WAGE_NOISE_TAIL_RX = re.compile(r"^([^$\n;]{0,40}?)\b(" + _WAGE_NOISE_WORDS + r")\b", re.I)
+_WAGE_NOISE_LABEL_RX = re.compile(r"(?:^|[^A-Za-z$])(" + _WAGE_NOISE_WORDS + r")\b(?:\s+bonus(?:es)?)?\s*(?::|-|–|\bof\b|\bup\s+to\b|\bis\b)", re.I)
 # Words that make a bonus part of the pay description rather than a priced
 # extra: "(base + bonus) $70,000", "$70,000 plus bonus", "$70,000, bonus eligible".
 _WAGE_COMPONENT_WORD = re.compile(r"^(?:bonus(?:es)?|incentives?|differentials?|stipends?)$", re.I)
@@ -11640,11 +11641,19 @@ def _wage_is_noise(t, start, end):
     # "experience)Sign-on Bonus").
     _clause = r"[\n;]|(?<=[a-z0-9)])[.!?](?=\s+[A-Z]|\s*$)|(?<=[a-z0-9)])(?=[A-Z][a-z])"
     after = re.split(_clause, t[end - 1:end + 80])[0][1:]      # one char of context so a glued boundary at the figure's end still splits
-    before = re.split(_clause, t[max(0, start - 80):start])[-1]
+    before = re.split(_clause, t[max(0, start - 100):start])[-1]
+    # An aside in parentheses before the figure is dropped, so "Retention
+    # Bonus (beginning at the completion of the 2nd year): up to $30,000"
+    # still reads as a bonus (Flagler Health, 2026-09-22).
+    before = re.sub(r"\([^()]{0,80}\)", " ", before)
     if "$" in before:
         before = before.rsplit("$", 1)[-1]
         if re.match(r"\s*\d", before):
-            before = ""
+            # The words after an earlier figure belong to it ("$5,000 sign-on
+            # bonus and $70,000"), unless a bonus word in them heads this
+            # figure with a label marker ("$30,000 Retention Bonus: up to $30,000").
+            m2 = _WAGE_NOISE_LABEL_RX.search(before)
+            before = before[m2.start():] if m2 else ""
     m = _WAGE_NOISE_HEAD_RX.search(before)
     if m and not _PAY_WORDS.search(m.group(2)):
         if not (_WAGE_COMPONENT_WORD.match(m.group(1)) and _WAGE_COMPOSITION_RX.search(before[:m.start(1)])):
@@ -11674,10 +11683,24 @@ def _wage_is_noise(t, start, end):
             return False
         return True
     return False
+# 2026-09-22: a "k" suffix counts ("$95k - $110k", "$45k annually").
 _WAGE_RANGE_RX = re.compile(
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:-|–|—|to|through)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)")
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?\s*(?:-|–|—|to|through)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
 _WAGE_SINGLE_RX = re.compile(
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:per\s+hour|/\s*hr\b|/\s*hour(?:ly)?|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum)", re.I)
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?\s*(?:per\s+hour|/\s*hr\b|/\s*hour(?:ly)?|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum|a\s+year)", re.I)
+# A pay label right before a bare figure ("Income Guarantee at $354,000",
+# "Salary: $85,000", "Pay rate $42") is a single figure with no unit; the
+# band decides hourly or annual. Not when a range follows (the range rule
+# owns it). Flagler Health's physician postings, 2026-09-22.
+_WAGE_LABELLED_RX = re.compile(
+    r"(?:salary|compensation|pay(?:\s+rate)?|wage|income\s+guarantee|guarantee(?:d)?(?:\s+(?:annual\s+)?(?:salary|income|base|minimum))?|"
+    r"base(?:\s+salary|\s+pay)?|earnings?|rate)\s*(?:of|at|is|:|-|–|starts?\s+at|from|starting\s+at)?\s*(?:up\s+to\s+)?"
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?(?!\s*(?:-|–|—|to|through)\s*\$?\s*\d)", re.I)
+
+
+def _amt(num, k):
+    v = _wage_num(num)
+    return v * 1000 if (v is not None and k) else v
 # Dollar-less annual ranges (2026-08-25): One Medical et al. write "The base
 # salary range for this role is 253,200 - 302,700" with no $. Gated hard:
 # "salary/pay/compensation range" wording within the same sentence, both
@@ -12068,12 +12091,13 @@ def extract_posted_wage(text, job_type=None):
     def consider(m, got, rank):
         if got:
             score = rank + (1 if got[2] == "hour" else 0) + _type_score(_line_type(t, m.start()), job_type)
-            cands.append((score, -len(cands), got))
+            cands.append((score, -m.start(), got))          # ties: the earlier figure in the text
 
     for m in _WAGE_RANGE_RX.finditer(t):
         if _wage_is_noise(t, m.start(), m.end()):
             continue
-        consider(m, _wage_pair(_wage_num(m.group(1)), _wage_num(m.group(2))), 6)
+        k = m.group(2) or m.group(4)                          # "$70-80K": one suffix for both ends
+        consider(m, _wage_pair(_amt(m.group(1), k), _amt(m.group(3), k)), 6)
     for m in _WAGE_BARE_RANGE_RX.finditer(t):
         if _wage_is_noise(t, m.start(), m.end()):
             continue
@@ -12083,11 +12107,19 @@ def extract_posted_wage(text, job_type=None):
     for m in _WAGE_SINGLE_RX.finditer(t):
         if _wage_is_noise(t, m.start(), m.end()):
             continue
-        v = _wage_num(m.group(1))
+        v = _amt(m.group(1), m.group(2))
         unit = "hour" if re.search(r"hour|hr", m.group(0), re.I) else "year"
         got = _wage_pair(v, v)
         if got and got[2] == unit:
             consider(m, (v, v, unit), 0)
+    for m in _WAGE_LABELLED_RX.finditer(t):
+        fig = t.rfind("$", m.start(), m.start(1))
+        if fig < 0 or _wage_is_noise(t, fig, m.end()):
+            continue
+        v = _amt(m.group(1), m.group(2))
+        got = _wage_pair(v, v)
+        if got:
+            consider(m, got, -1)                              # below a figure that carries its own unit
     if not cands:
         return None
     cands.sort(key=lambda c: (-c[0], -c[1]))

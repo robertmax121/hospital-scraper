@@ -249,6 +249,24 @@ def test_wage_survives_bonus_words_in_other_clauses():
     assert extract_posted_wage("Weekend only RNs earn an additional $20/hour for weekend incentive pay in addition to their base rate") is None
 
 
+def test_wage_labelled_bare_figures_and_k_suffix():
+    from scraper import extract_posted_wage
+    # Flagler Health physician posting: the guarantee is the pay, the retention
+    # bonus with a parenthetical aside is not, and the stored row had the bonus.
+    flagler = ("Compensation and Benefits: Income Guarantee at $354,000 Full-time: 15 shifts per month - 1 shift: 10 hours "
+               "APP Supervision: $12,000 per year per 1.0 FTE APP Signing Bonus: up to $30,000 Retention Bonus (beginning at the "
+               "completion of the 2nd year): up to $30,000 per year Relocation bonus: Up to $10,000 (based on location)")
+    assert extract_posted_wage(flagler, "Full time") == (354000.0, 354000.0, "year")
+    assert extract_posted_wage("Salary: $85,000") == (85000.0, 85000.0, "year")
+    assert extract_posted_wage("Pay rate $42") == (42.0, 42.0, "hour")
+    assert extract_posted_wage("The salary range is $95k - $110k depending on experience") == (95000.0, 110000.0, "year")
+    assert extract_posted_wage("Base salary up to $100k") == (100000.0, 100000.0, "year")
+    assert extract_posted_wage("Earn $45k annually with full benefits") == (45000.0, 45000.0, "year")
+    assert extract_posted_wage("Sign-on bonus: $10,000 and a $2,000 referral bonus") is None
+    assert extract_posted_wage("Compensation up to $2,000 in referral bonuses") is None
+    assert extract_posted_wage("Salary: $100,000 - $120,000 per year") == (100000.0, 120000.0, "year")
+
+
 def test_wage_bonus_amounts_still_rejected():
     from scraper import extract_posted_wage
     assert extract_posted_wage("Sign-on bonus: $10,000 for nights") is None
