@@ -99,6 +99,22 @@ def run():
     except Exception as e:
         logger.warning(f"sign-on flag pass failed (non-fatal): {e}")
 
+    # ── Step 2e: front-page link check (added 2026-09-22) ─────────
+    # The front page and /api/front-pool deal cards from per-state pools
+    # (verified platform + posted wage); apply_verified is a judgement about
+    # a platform, not a link, and four of the five cards the owner clicked
+    # that day were dead. validate_front_pool_urls HEAD-checks exactly the
+    # rows those pools serve, retires the confirmed 404/410s and stamps
+    # last_dead_check_at on the rest. Bounded to 15 minutes, refuses a mass
+    # retirement, non-fatal.
+    try:
+        import asyncio as _asyncio
+        from validate_front_pool_urls import main as _validate_front
+        logger.info("\n[ STEP 2e ] Checking front-page pool links...")
+        _asyncio.run(_validate_front())
+    except Exception as e:
+        logger.warning(f"front-pool link check failed (non-fatal): {e}")
+
     # ── Step 3: Summary ───────────────────────────────────────────
     stats = get_stats()
     elapsed = (datetime.now() - start).seconds
