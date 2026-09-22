@@ -136,3 +136,34 @@ def test_budget_share_and_skip(monkeypatch):
     asyncio.run(scraper._detail_pass(None, "T", jobs, b, fetch, "Test", skip=lambda j: "taleo" in j.url, share=30))
     assert len(seen) == 30 and all("taleo" not in u for u in seen)
     assert b.remaining == 70 and b.spent == 30
+
+
+
+# ── 2026-09-22: strip_html keeps line structure and decodes entities ─────────
+def test_strip_html_block_tags_become_line_breaks():
+    from scraper import strip_html
+    html = ("<p>Benefits from Day One: Medical, Dental, Vision Insurance</p>"
+            "<ul><li>Paid Time Off from Day One</li><li>403-B Retirement Plan</li></ul>"
+            "<p>Shift: Full Time Days Mon-Fri</p><p>Location: Providing coverage</p>")
+    out = strip_html(html)
+    assert "InsurancePaid" not in out
+    lines = [l for l in out.splitlines() if l]
+    assert lines[1] == "Paid Time Off from Day One"
+    assert lines[3] == "Shift: Full Time Days Mon-Fri"
+    assert lines[4] == "Location: Providing coverage"
+
+
+def test_strip_html_decodes_entities_and_keeps_plain_text():
+    from scraper import strip_html
+    assert strip_html("New York State License&nbsp;<br>Advance certification &amp; ARRT") == "New York State License\nAdvance certification & ARRT"
+    assert strip_html("Plain text, no markup.") == "Plain text, no markup."
+    assert strip_html("Inline <b>bold</b> word") == "Inline bold word"
+
+
+def test_canonical_job_type_rejects_pay_text():
+    from scraper import canonical_job_type
+    assert canonical_job_type("$16.58 - $26.53", "Certified Medical Assistant Float Pool") == "Per diem"
+    assert canonical_job_type("$16.58 - $26.53", "Clinic RN") == ""
+    assert canonical_job_type("40 hours/week", "ICU RN Full Time Nights") == "Full time"
+    assert canonical_job_type("Volunteer", "") == "Volunteer"
+    assert canonical_job_type("FULL_TIME", "") == "Full time"

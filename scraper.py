@@ -180,6 +180,11 @@ async def jitter(): await asyncio.sleep(random.uniform(0.8, 2.5))
 # 8000 is well past a typical posting (~2-6k after tag stripping) and costs
 # nothing structurally: description is TEXT, and Postgres TOASTs + compresses
 # anything over ~2KB. Est. +150-200MB against a 796MB database.
+_BLOCK_TAG_RX = re.compile(
+    r"</?(?:p|div|br|li|ul|ol|h[1-6]|tr|table|thead|tbody|section|article|header|footer|blockquote|pre|dl|dt|dd|hr)\b[^>]*>",
+    re.I)
+
+
 def strip_html(s):
     s = s or ""
     # Greenhouse's boards API returns `content` HTML-ENTITY-ESCAPED
@@ -190,7 +195,23 @@ def strip_html(s):
     # ones — plain descriptions never hit this branch.
     if "<" not in s and "&lt;" in s:
         s = htmllib.unescape(htmllib.unescape(s))
-    return re.sub(r"<[^>]+>", "", s)[:8000]
+    # 2026-09-22: tags used to vanish without a separator, so every HTML body
+    # (Workday / TalentBrew / HCA JSON-LD, Oracle, Phenom, Findly) arrived as
+    # one glued run ("InsurancePaid Time Off", "Mon-FriLocation") and the
+    # entities stayed ("License&nbsp;"). The site's schedule chips and
+    # qualification lines were missing or wrong because of it. Block tags now
+    # end a line, inline tags become a space, entities decode, and only runs
+    # of spaces collapse; the line breaks are what the parsers key on.
+    if "<" in s:
+        s = _BLOCK_TAG_RX.sub("\n", s)
+        s = re.sub(r"<[^>]+>", " ", s)
+    if "&" in s:
+        s = htmllib.unescape(s)
+    s = s.replace("\xa0", " ")
+    s = re.sub(r"[ \t\r\f\v]+", " ", s)
+    s = re.sub(r" ?\n ?", "\n", s)
+    s = re.sub(r"\n{3,}", "\n\n", s)
+    return s.strip()[:8000]
 
 
 # ── Workday job descriptions (2026-08-03) ─────────────────────────────────
@@ -3910,7 +3931,7 @@ async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: t
                 state=state,
                 location=f"{city}, {state}".strip(", "),
                 specialty=j.get("primary_category", "") or j.get("parent_category", ""),
-                job_type=j.get("job_type", "") or j.get("employment_type", ""),
+                job_type=j.get("employment_type", "") or j.get("job_type", ""),
                 url=url,
                 job_id=ref,
                 posted_date=str(open_date)[:10] if open_date else "",
@@ -4113,7 +4134,7 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
                 state=state,
                 location=f"{city}, {state}".strip(", "),
                 specialty=category,
-                job_type=j.get("job_type", "") or j.get("employment_type", ""),
+                job_type=j.get("employment_type", "") or j.get("job_type", ""),
                 url=url,
                 job_id=str(j.get("id", "") or ref),
                 posted_date=posted,
@@ -11723,6 +11744,12 @@ def canonical_job_type(raw, title: str = "") -> str:
     for label, rx in _JOB_TYPE_CANON:
         if raw and rx.search(raw):
             return label
+    # 2026-09-22: AdventHealth's Findly feed puts the pay range in job_type
+    # ("$16.58 - $26.53") and it was kept verbatim; every AdventHealth page
+    # showed pay text as its employment type. Anything with a digit or a
+    # symbol, or longer than a type name, is treated as blank (title fallback).
+    if raw and (len(raw) > 24 or not re.fullmatch(r"[A-Za-z][A-Za-z /&-]*", raw)):
+        raw = ""
     if raw and raw.lower() in ("regular", "standard", "employee", "staff"):
         raw = ""
     if not raw:
