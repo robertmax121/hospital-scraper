@@ -1127,6 +1127,7 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     # 2026-09-22 Texas resume: UMC Lubbock's Workday board writes only the
     # campus ("UMC Main Campus", "Health & Wellness Hospital"); every site is in Lubbock.
     "umc health system":          ("Lubbock",          "TX"),
+    "university health (san antonio)": ("San Antonio", "TX"),   # 2026-09-22: TalentBrew cards carry no location
     # 2026-09-17 (blank states): single-market systems whose boards carry no
     # location at all (iCIMS card lists at Covenant / OHSU, Workday tenants
     # with facility names). Both the adapter label and the canonical label.
@@ -2512,6 +2513,11 @@ TALENTBREW_ORGS = {
     # ScionHealth — confirmed TalentBrew (company 40922, tbcdn.talentbrew.com)
     # 61 long-term acute care + 15 community hospitals across 26 states
     "ScionHealth":              ("https://jobs.scionhealth.com/search-jobs", 25),
+    # 2026-09-22 Texas resume: University Health, San Antonio (657 beds, the
+    # county system). Company 43277; generic module names, h2 cards, pay in
+    # the card, no location (SYSTEM_LOCATION_DEFAULTS gives San Antonio TX).
+    # 1,031 jobs on the board on 2026-09-22.
+    "University Health (San Antonio)": ("https://careers.universityhealth.com/search-jobs", 15),
     # Kaiser Permanente moved to dedicated scrape_kaiser_html adapter
     # 2026-05-26 — the session-based /results JSON endpoint was returning
     # 0 jobs even with warmup. Direct HTML pagination at /search-jobs?p=N
@@ -2702,6 +2708,14 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
     except Exception as e:
         logger.info(f"TalentBrew {system}: warmup failed (non-fatal): {e}")
 
+    # 2026-09-22 (University Health San Antonio): some TalentBrew sites name
+    # their modules generically; the "Section 6" names return hasJobs=true
+    # with an empty results fragment. Page 1 is retried with the generic
+    # names before giving up.
+    module_sets = [("Section 6 - Search Results List", "Section 6 - Search Filters"),
+                   ("Search Results", "Search Filters")]
+    mod_idx = 0
+    retry_modules = False
     while True:
         params = {
             "ActiveFacetID": "0",
@@ -2717,8 +2731,8 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
             "CustomFacetName": "",
             "FacetTerm": "",
             "FacetType": "0",
-            "SearchResultsModuleName": "Section 6 - Search Results List",
-            "SearchFiltersModuleName": "Section 6 - Search Filters",
+            "SearchResultsModuleName": module_sets[mod_idx][0],
+            "SearchFiltersModuleName": module_sets[mod_idx][1],
             "SortCriteria": "0",
             "SortDirection": "0",
             "PostalCode": "",
@@ -2753,6 +2767,10 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     has_jobs = True
 
                 if not has_jobs or not results_html:
+                    if page == 1 and mod_idx == 0 and not jobs:
+                        logger.info(f"TalentBrew {system}: empty with the Section 6 module names; retrying page 1 with the generic names")
+                        mod_idx, retry_modules = 1, True
+                        break
                     logger.info(f"TalentBrew {system}: hasJobs={has_jobs}, empty on page {page} — done")
                     return jobs
 
@@ -2769,9 +2787,14 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                 origin_m = re.match(r"https?://[^/]+", base_url)
                 origin = origin_m.group(0) if origin_m else "https://www.commonspirit.careers"
 
+                # 2026-09-22 (University Health San Antonio): the other card
+                # shape puts the title in <h2>, the facility in a
+                # job-companyName span, the pay in a job-salary span, and no
+                # location at all (the city is the URL slug; the state comes
+                # from SYSTEM_LOCATION_DEFAULTS at normalize time).
                 card_matches = re.finditer(
-                    r'href="(/job/[^"]+)"[^>]*data-job-id="(\d+)"[^>]*>([^<]*)</a>'
-                    r'(.*?)(?=<a class="search-results-list__job-link"|\Z)',
+                    r'href="(/job/[^"]+)"[^>]*data-job-id="(\d+)"[^>]*>\s*(?:<h2>)?([^<]*)'
+                    r'(.*?)(?=<a class="search-results-list__job-link"|<li>\s*<a href="/job/|\Z)',
                     results_html, re.S
                 )
                 seen = set()
@@ -2781,9 +2804,14 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                         continue
                     seen.add(job_id)
                     title = htmllib.unescape(title).strip()
+                    if not title:
+                        continue
 
-                    fac_m = re.search(r'job-facility">\s*([^<]*?)\s*</li>', tail)
-                    loc_m = re.search(r'job-location">\s*([^<]*?)\s*</li>', tail)
+                    fac_m = (re.search(r'job-facility">\s*([^<]*?)\s*</li>', tail)
+                             or re.search(r'job-companyName">\s*([^<]*?)\s*</span>', tail))
+                    loc_m = re.search(r'job-location">\s*([^<]*?)\s*</(?:li|span)>', tail)
+                    sal_m = re.search(r'job-salary">\s*\$?\s*([\d,]+(?:\.\d+)?)\s*(?:-|–|—|to)\s*\$?\s*([\d,]+(?:\.\d+)?)', tail)
+                    card_wage = _wage_pair(_wage_num(sal_m.group(1)), _wage_num(sal_m.group(2))) if sal_m else None
                     facility = htmllib.unescape(fac_m.group(1)).strip() if fac_m else ""
                     # Corporate/remote roles carry the generic system name
                     if not facility or facility.lower() == system.lower():
@@ -2825,9 +2853,16 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                         posted_date="",
                         description="",
                         ats_platform="TalentBrew",
+                        wage_min=card_wage[0] if card_wage else None,
+                        wage_max=card_wage[1] if card_wage else None,
+                        wage_unit=card_wage[2] if card_wage else None,
                     ))
 
                 if not seen:
+                    if page == 1 and mod_idx == 0 and not jobs:
+                        logger.info(f"TalentBrew {system}: no cards with the Section 6 module names; retrying page 1 with the generic names")
+                        mod_idx, retry_modules = 1, True
+                        break
                     logger.info(f"TalentBrew {system}: no job cards on page {page} — done")
                     return jobs
 
@@ -2854,6 +2889,10 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                 else:
                     logger.info(f"TalentBrew {system}: page {page} failed after {MAX_RETRIES} retries — stopping at {len(jobs)} jobs")
                     return jobs  # give up on this system
+
+        if retry_modules:
+            retry_modules = False
+            continue                      # same page, generic module names
 
         if not page_succeeded:
             return jobs
@@ -8032,6 +8071,123 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
     return jobs
 
 
+# ══════════════════════════════════════════════════════════════════════════
+#  PRELOAD-STATE career sites (2026-09-22, Texas resume). jobs.harrishealth.org
+#  renders each listing page with
+#    window.__PRELOAD_STATE__ = {"jobSearch": {"totalJob": 475, "jobs": [...]}}
+#  ten jobs a page at /jobs/page/N, each with the description, the facility
+#  (locations[0].streetAddress: "Ben Taub Hospital"), city/state, the
+#  employment type and the PeopleSoft apply link (the PeopleSoft portal
+#  itself needs a session; this front does not).
+# ══════════════════════════════════════════════════════════════════════════
+PRELOAD_SITES = {
+    # "System": (base url, default state)
+    "Harris Health System": ("https://jobs.harrishealth.org", "TX"),   # 475 jobs on 2026-09-22; Houston, 595 beds (CMS 450289)
+}
+_PRELOAD_RX = re.compile(r"window\.__PRELOAD_STATE__\s*=\s*")
+_PRELOAD_FACILITY_RX = re.compile(r"hospital|medical center|health center|clinic|campus|institute|pavilion|center\b", re.I)
+
+
+def _preload_state(html: str):
+    m = _PRELOAD_RX.search(html)
+    if not m:
+        return None
+    try:
+        obj, _ = json.JSONDecoder().raw_decode(html, m.end())
+        return obj
+    except Exception:
+        return None
+
+
+async def scrape_preload(session: aiohttp.ClientSession, system: str, cfg: tuple) -> list[Job]:
+    base, default_state = cfg
+    jobs: list[Job] = []
+    page, total, per = 1, None, None
+    while page <= 200:
+        try:
+            async with req(session, "get", f"{base}/jobs/page/{page}", headers=HEADERS, ssl=False,
+                           proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    logger.info(f"Preload {system}: HTTP {r.status} at page {page}")
+                    break
+                html = await r.text()
+        except Exception as e:
+            logger.info(f"Preload {system}: page {page} error: {e}")
+            break
+        search = ((_preload_state(html) or {}).get("jobSearch")) or {}
+        items = search.get("jobs") or []
+        if total is None:
+            total = int(search.get("totalJob") or 0)
+        if not items:
+            break
+        per = per or len(items)
+        for j in items:
+            try:
+                title = (j.get("title") or "").strip()
+                rid = str(j.get("requisitionID") or j.get("uniqueID") or j.get("sourceID") or "").strip()
+                if not title or not rid:
+                    continue
+                loc = ((j.get("locations") or [None])[0]) or {}
+                facility = (loc.get("streetAddress") or loc.get("locationName") or "").strip()
+                city = (loc.get("city") or "").strip()
+                st = (loc.get("stateAbbr") or "").strip().upper() or default_state
+                et = j.get("employmentType")
+                et = et[0] if isinstance(et, list) and et else (et or "")
+                orig = (j.get("originalURL") or "").strip()
+                url = f"{base}/{orig.lstrip('/')}" if orig else str(j.get("applyURL") or "")
+                jobs.append(Job(
+                    title=title,
+                    hospital_system=system,
+                    hospital_name=facility if (facility and _PRELOAD_FACILITY_RX.search(facility)) else system,
+                    city=city,
+                    state=st,
+                    location=", ".join(p for p in (city, st) if p),
+                    specialty="",
+                    job_type=str(et),
+                    url=url,
+                    job_id=rid,
+                    posted_date=str(j.get("postedDate") or j.get("datePosted") or j.get("postingDate") or "")[:10],
+                    description=strip_html(str(j.get("description") or "")),
+                    ats_platform="PreloadState",
+                ))
+            except Exception as e:
+                logger.info(f"Preload {system}: row error {e!r}")
+        if total and per and page * per >= total:
+            break
+        page += 1
+        await jitter()
+    seen, uniq = set(), []
+    for jb in jobs:
+        if jb.job_id in seen:
+            continue
+        seen.add(jb.job_id)
+        uniq.append(jb)
+    logger.info(f"  Preload {system}: {len(uniq):,} jobs (site reports {total})")
+    return uniq
+
+
+async def run_preload(session) -> list[Job]:
+    async def _one(sys, cfg):
+        jobs = await scrape_preload(session, sys, cfg)
+        # The listing's description field is empty; the job page carries a
+        # JSON-LD JobPosting (4k-char body, datePosted, employmentType).
+        # Same detail pass and budget as TalentBrew.
+        if DETAIL_FETCH and jobs:
+            try:
+                await _detail_pass(session, sys, jobs, TB_DESC_BUDGET,
+                                   lambda j: _jsonld_detail(session, j), "Preload")
+            except Exception as e:
+                logger.info(f"Preload {sys}: detail pass failed ({e})")
+        return jobs
+    results = await asyncio.gather(*[_one(s, c) for s, c in PRELOAD_SITES.items()], return_exceptions=True)
+    out = [j for r in results if isinstance(r, list) for j in r]
+    for (s, _), r in zip(PRELOAD_SITES.items(), results):
+        if isinstance(r, Exception):
+            logger.info(f"  Preload {s}: ERROR {r}")
+    logger.info(f"  Preload total: {len(out):,} jobs")
+    return out
+
+
 async def run_neogov(session) -> list[Job]:
     logger.info(f"NeoGov: scraping {len(NEOGOV_AGENCIES)} agencies (transparency states first)...")
     jobs: list[Job] = []
@@ -12360,6 +12516,7 @@ async def run_all() -> list[dict]:
             run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
             run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)
             run_tam(proxy_session),        # The Applicant Manager HTML board: Bayou Bend Health System (added 2026-09-15)
+            run_preload(proxy_session),    # window.__PRELOAD_STATE__ career sites: Harris Health System (added 2026-09-22)
             run_hca(direct_session),    # HCA Healthcare — browserless per-state crawl via curl_cffi Firefox TLS (rebuilt 2026-07-28)
             run_houston_methodist(),    # Workday wd12/GTI — curl_cffi; wd12 edge 403s non-browser TLS (added 2026-07-28)
             run_oceans(),               # Oceans Behavioral — custom board at oceansjobboard.com via curl_cffi (added 2026-07-28)
