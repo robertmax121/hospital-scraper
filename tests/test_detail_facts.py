@@ -94,7 +94,10 @@ def test_schedule_only_hours():
 
 def test_benefits_cap_and_401k_dedupe():
     b = extract_benefits("401(k) with company match, 401(k), PTO, dental and vision, pension, EAP, childcare, tuition reimbursement")
-    assert len(b) == 5 and "401(k) with match" in b and "401(k)" not in b
+    assert len(b) == 7 and "401(k) with match" in b and "401(k)" not in b
+    b = extract_benefits("401(k) match, PTO, dental and vision, pension, EAP, childcare, tuition reimbursement, "
+                         "parental leave, life insurance, shift differential, malpractice coverage")
+    assert len(b) == 8
 
 
 def test_job_type_canon():
@@ -186,3 +189,114 @@ def test_workday_detail_defaults_are_on():
     assert scraper.WD_FETCH_DESCRIPTIONS is True or scraper.WD_FETCH_DESCRIPTIONS == (scraper.os.getenv("WD_FETCH_DESCRIPTIONS", "1") == "1")
     assert scraper.WD_DESC_MAX_PER_RUN >= 500
     assert scraper.ORACLE_DESC_MAX_PER_RUN >= 3000
+
+
+# ── 2026-09-22: the Charlie Health lesson (hospital_jobs 26658803) ──────────
+# Pay listed per employment type, a "(base + bonus)" note, a "Signing
+# Bonuses!" line right under the hourly figure, and an eleven-item benefits
+# list: the page showed a BLS estimate, five renamed benefits and 12 hrs/wk.
+CHARLIE = """Work Type: 100% Remote (W-2)
+We also believe clinicians deserve an exceptional compensation and benefits package.
+Compensation
+
+Full-Time Salary: (base + bonus) $70,000-$80,000
+Part-Time Rate: $54-$66/hour
+Signing Bonuses!
+
+Benefits
+
+401(k) with matching
+Medical, dental, and vision insurance
+Wellness stipend
+Free online CEUs
+Malpractice liability insurance
+PTO (vacation, sick time, select federal holidays)
+Reimbursement for new license applications
+Opportunity for cross-licensure sponsorship (if eligible)
+Transparent scheduling- know your schedule ahead of time
+Dedicated operational, HR, and IT support
+24/7 Employee Assistance Program
+
+The Provider Experience at Charlie Health:
+
+Flexibility: Work 100% remote from the comfort of your home - no commute, no problem!
+
+Part-Time: Minimum 12 hours/week; flexible scheduling
+Full-Time: 40 hours/week; evening availability required
+"""
+
+
+def test_wage_survives_bonus_words_in_other_clauses():
+    from scraper import extract_posted_wage
+    assert extract_posted_wage(CHARLIE, "Full time") == (70000.0, 80000.0, "year")
+    assert extract_posted_wage(CHARLIE, "Part time") == (54.0, 66.0, "hour")
+    assert extract_posted_wage(CHARLIE) == (70000.0, 80000.0, "year")            # unknown type: the full-time headline
+    assert extract_posted_wage("Part-Time Rate: $54-$66/hour\nSigning Bonuses!") == (54.0, 66.0, "hour")
+    assert extract_posted_wage("Salary: $70,000 per year plus bonus potential") == (70000.0, 70000.0, "year")
+    assert extract_posted_wage("Base pay $32 - $38 per hour, bonus eligible") == (32.0, 38.0, "hour")
+    assert extract_posted_wage("Pay $30 - $35/hr plus a $2,500 bonus") == (30.0, 35.0, "hour")
+    assert extract_posted_wage("$15/hr shift differential on nights; base pay $32 - $38 per hour") == (32.0, 38.0, "hour")
+    # Select Medical's flattened bodies glue the bonus label onto the figure
+    assert extract_posted_wage("Compensation: $35.67 - $48.00 (based on experience)Sign-on Bonus: $10,000 Select Specialty") == (35.67, 48.0, "hour")
+    assert extract_posted_wage("Compensation: Up to $47 per hour, based on experience Sign on bonus: $10,000") == (47.0, 47.0, "hour")
+    assert extract_posted_wage("Compensation: Up to $41.00/hr. (based on years of experience)Sign-on Bonus! $5,000") == (41.0, 41.0, "hour")
+    assert extract_posted_wage("Compensation: $41.00 per hour (competitive shift differentials)Sign on bonus: $15,000") == (41.0, 41.0, "hour")
+    assert extract_posted_wage("Compensation: $52 per hour plus shift differential for weekend shifts Sign on bonus:$5,000") == (52.0, 52.0, "hour")
+    assert extract_posted_wage("Compensation:$55/hr + Shift Differential Our inpatient") == (55.0, 55.0, "hour")
+    assert extract_posted_wage("Pay Rate $55.67 - 75.63, plus night shift differential**7,500 Sign on Bonus**") == (55.67, 75.63, "hour")
+    assert extract_posted_wage("Salary: $24.00/hourly + Mileage Reimbursement Up to 80% travel") == (24.0, 24.0, "hour")
+    assert extract_posted_wage("Sign-on bonus: $15,000Compensation: $40.00 to $53.87 per hour + differentials") == (40.0, 53.87, "hour")
+    assert extract_posted_wage("Weekend only RNs earn an additional $20/hour for weekend incentive pay in addition to their base rate") is None
+
+
+def test_wage_bonus_amounts_still_rejected():
+    from scraper import extract_posted_wage
+    assert extract_posted_wage("Sign-on bonus: $10,000 for nights") is None
+    assert extract_posted_wage("$10,000 sign-on bonus") is None
+    assert extract_posted_wage("Eligible for a retention bonus of up to $30,000 over three years") is None
+    assert extract_posted_wage("PTO and sign-on bonus up to $30,000") is None
+    assert extract_posted_wage("Tuition reimbursement up to $5,250 per year") is None
+    assert extract_posted_wage("$15/hr shift differential on nights") is None
+
+
+def test_hours_and_schedule_follow_the_job_type():
+    assert extract_posting_facts(CHARLIE, "Full time")["hours"] == 40
+    assert extract_posting_facts(CHARLIE, "Part time")["hours"] == 12
+    assert extract_posting_facts(CHARLIE)["hours"] == 40
+    assert extract_posting_facts(CHARLIE, "Full time")["schedule"] == "40 hrs/wk"
+    assert extract_posting_facts(TEXT)["hours"] == 36                            # a single figure is unchanged
+
+
+def test_signon_offered_without_amount():
+    f = extract_posting_facts(CHARLIE)
+    assert f["signon"] is None and f["signon_offered"] is True
+    f2 = extract_posting_facts("Sign on bonus up to $15k for nights")
+    assert f2["signon"] == 15000 and f2["signon_offered"] is False
+    assert extract_posting_facts("Sign-on bonus available. Great benefits.")["signon_offered"] is True
+    assert extract_posting_facts("Great benefits and a friendly team.") is None
+
+
+def test_benefit_lines_verbatim_under_heading():
+    from scraper import extract_benefit_lines
+    lines = extract_benefit_lines(CHARLIE)
+    assert lines[:3] == ["401(k) with matching", "Medical, dental, and vision insurance", "Wellness stipend"]
+    assert lines[-1] == "24/7 Employee Assistance Program" and len(lines) == 11
+    assert all("$" not in l for l in lines)
+    # prose under the heading is not a list; a lone item is not a list
+    assert extract_benefit_lines("Benefits\nWe offer a comprehensive package designed to support you and your family through every stage of life and career.") == []
+    assert extract_benefit_lines("Benefits:\n- Medical\nResponsibilities:\n- Charting") == []
+    assert extract_benefit_lines("What we offer:\n• Medical, dental, vision\n• 403(b) with match.\n• $5,000 sign-on\n\nAbout us\nWe are big.") == ["Medical, dental, vision", "403(b) with match"]
+    f = extract_posting_facts(CHARLIE)
+    assert f["benefit_lines"] == lines
+    assert "Malpractice insurance" in f["benefits"] and "License reimbursement" in f["benefits"] and "Wellness stipend" in f["benefits"]
+
+
+def test_greenhouse_type_and_pay_fields():
+    from scraper import _greenhouse_job_type, _greenhouse_pay
+    assert _greenhouse_job_type({"metadata": [{"name": "Employment Type", "value": "Part-time"}]}) == "Part-time"
+    assert _greenhouse_job_type({"metadata": [{"name": "Super Region", "value": None}]}) == ""
+    assert _greenhouse_job_type({}) == ""
+    assert _greenhouse_pay({"pay_input_ranges": [{"min_cents": 7000000, "max_cents": 8000000, "currency_type": "USD"}]}) == (70000.0, 80000.0, "year")
+    assert _greenhouse_pay({"pay_input_ranges": [{"min_cents": 5400, "max_cents": 6600, "currency_type": "USD"}]}) == (54.0, 66.0, "hour")
+    assert _greenhouse_pay({"pay_input_ranges": [{"min_cents": 100, "max_cents": 200, "currency_type": "USD"}]}) == (None, None, None)
+    assert _greenhouse_pay({}) == (None, None, None)

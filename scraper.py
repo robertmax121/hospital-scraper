@@ -4255,10 +4255,37 @@ GREENHOUSE_ORGS = {
     # Re-add only after confirming via curl https://boards-api.greenhouse.io/v1/boards/{slug}/jobs
 }
 
+# 2026-09-22 (Charlie Health lesson): every Greenhouse row was stamped
+# "Full-time" whatever the posting said (Charlie Health hires the same role
+# full- or part-time). The type now comes from a metadata field when the
+# board has one, else the title and the body's labelled lines (normalize_job),
+# else stays blank; and a board that publishes pay_input_ranges gives the
+# structured figure that always beats regex extraction.
+def _greenhouse_job_type(j) -> str:
+    for m in j.get("metadata") or []:
+        name, value = str(m.get("name") or ""), m.get("value")
+        if isinstance(value, str) and value.strip() and re.search(r"employment|job type|time type|schedule|hours type", name, re.I):
+            return value.strip()
+    return ""
+
+
+def _greenhouse_pay(j):
+    for r in j.get("pay_input_ranges") or []:
+        if (r.get("currency_type") or "USD") != "USD":
+            continue
+        lo, hi = r.get("min_cents"), r.get("max_cents")
+        if lo is None or hi is None:
+            continue
+        got = _wage_pair(lo / 100.0, hi / 100.0)
+        if got:
+            return got
+    return (None, None, None)
+
+
 async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
     try:
         async with req(session, "get",
-            f"https://boards-api.greenhouse.io/v1/boards/{org}/jobs?content=true",
+            f"https://boards-api.greenhouse.io/v1/boards/{org}/jobs?content=true&pay_transparency=true",
             headers=HEADERS, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
             if r.status != 200:
                 logger.info(f"Greenhouse {system}: HTTP {r.status}")
@@ -4276,12 +4303,13 @@ async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: st
                 state=_state,
                 location=loc,
                 specialty=next((d["name"] for d in j.get("departments", []) if d.get("name")), ""),
-                job_type="Full-time",
+                job_type=_greenhouse_job_type(j),
                 url=j.get("absolute_url", ""),
                 job_id=str(j.get("id", "")),
                 posted_date=j.get("updated_at", "")[:10],
                 description=strip_html(j.get("content", "")),
                 ats_platform="Greenhouse",
+                wage_min=_greenhouse_pay(j)[0], wage_max=_greenhouse_pay(j)[1], wage_unit=_greenhouse_pay(j)[2],
             ))
         return jobs
     except Exception as e:
@@ -11531,13 +11559,13 @@ def normalize_job(j: Job) -> dict:
     # extraction from the posting text. NULLs never clobber a prior value
     # (enrichment trigger).
     if d.get("wage_min") is None:
-        wage = extract_posted_wage(f"{d.get('title') or ''}\n{d.get('description') or ''}")
+        wage = extract_posted_wage(f"{d.get('title') or ''}\n{d.get('description') or ''}", d.get("job_type"))
         d["wage_min"], d["wage_max"], d["wage_unit"] = wage if wage else (None, None, None)
 
     # Requirements chips (2026-08-24): certs/education/shift/experience from
     # the posting text. Null when nothing found; the enrichment trigger
     # preserves a stored value across list-only upserts.
-    d["posting_facts"] = extract_posting_facts(d.get("description"))
+    d["posting_facts"] = extract_posting_facts(d.get("description"), d.get("job_type"))
 
     return d
 
@@ -11548,12 +11576,108 @@ def normalize_job(j: Job) -> dict:
 # sanity-bound hourly 12-250 and annual 25k-900k so "$401k match" noise and
 # job-ID-like numbers can't become a wage. Hourly ranges win over annual
 # when both appear (healthcare postings quote hourly for the roles we pill).
-_WAGE_NEAR_NOISE = re.compile(
-    r"sign[- ]?on|signing|bonus|relocation|retention|referral|differential|stipend|reimburse", re.I)
+# 2026-09-22 (Charlie Health lesson, hospital_jobs 26658803): the old guard
+# vetoed any figure with a bonus word within 60 characters before or 20 after,
+# across line breaks. "Full-Time Salary: (base + bonus) $70,000-$80,000" died
+# on "bonus", "Part-Time Rate: $54-$66/hour" died on the "Signing Bonuses!"
+# line under it, and the page showed a BLS estimate under "The posting lists
+# no pay". The veto now stays inside the figure's own clause, treats "base +
+# bonus" / "plus bonus" / "bonus eligible" as a description of the pay rather
+# than a priced bonus, and lets a unit or pay word right after the figure
+# ("/hour", "per year", "salary") settle it. See _wage_is_noise.
+_WAGE_NOISE_WORDS = r"sign[- ]?on|signing|bonus(?:es)?|relocation|retention|referral|differential|stipend|reimburse\w*|incentives?"
+_WAGE_NEAR_NOISE = re.compile(_WAGE_NOISE_WORDS, re.I)
+_WAGE_NOISE_HEAD_RX = re.compile(r"(?:^|[^A-Za-z$])(" + _WAGE_NOISE_WORDS + r")\b(?:\s+bonus(?:es)?)?([^$\n;]{0,40})$", re.I)
+_WAGE_NOISE_TAIL_RX = re.compile(r"^([^$\n;]{0,40}?)\b(" + _WAGE_NOISE_WORDS + r")\b", re.I)
+# Words that make a bonus part of the pay description rather than a priced
+# extra: "(base + bonus) $70,000", "$70,000 plus bonus", "$70,000, bonus eligible".
+_WAGE_COMPONENT_WORD = re.compile(r"^(?:bonus(?:es)?|incentives?|differentials?|stipends?)$", re.I)
+_WAGE_COMPOSITION_RX = re.compile(
+    r"(?:\+|plus|and|&|including|incl\.?|inclusive of|with|or)\s*(?:an?\s+|the\s+)?"
+    r"(?:annual|quarterly|monthly|performance|potential|productivity|generous|possible)?\s*$", re.I)
+_WAGE_BONUS_DESCR_RX = re.compile(r"\s*(?:eligib|potential|opportunit|program|structure|plan|available)", re.I)
+_WAGE_JOINER_RX = re.compile(r"^[\s,.]*(?:\+|(?:plus|and|&|with|including|incl\.?|in addition to|or)\b)", re.I)
+_WAGE_NEXT_FIGURE_RX = re.compile(r"(?:\s+bonus(?:es)?)?\s*[:\-!*]*\s*(?:of|up to|is|=|starting at)?\s*\$", re.I)
+_WAGE_UNIT_RX = re.compile(
+    r"^\s*(?:/\s*(?:hour|hr|year|yr|annum)|per\s+(?:hour|year|annum)|an?\s+(?:hour|year)|hourly|annually|annual|salary|base)\b", re.I)
+# A line that names one employment type before its figure ("Full-Time
+# Salary: $70,000-$80,000", "Part-Time: Minimum 12 hours/week") is scored
+# against the row's job_type: the matching line wins, the other loses, and
+# with no job_type the full-time line is the headline. Wordy forms only
+# ("PT" is also physical therapy).
+_WAGE_TYPE_LABELS = (
+    ("Full time", re.compile(r"full[\s-]*time", re.I)),
+    ("Part time", re.compile(r"part[\s-]*time", re.I)),
+    ("Per diem",  re.compile(r"per[\s-]*diem|\bPRN\b|as[\s-]needed", re.I)),
+)
+
+
+def _line_type(t, pos):
+    """The employment type the line names before position pos, or None when
+    it names none or more than one ("part-time or full-time")."""
+    head = t[t.rfind("\n", 0, pos) + 1:pos][-80:]
+    hits = [label for label, rx in _WAGE_TYPE_LABELS if rx.search(head)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def _type_score(label, job_type):
+    if not label:
+        return 0
+    if job_type:
+        return 4 if label == job_type else -4
+    return 2 if label == "Full time" else 0
+
+
+def _wage_is_noise(t, start, end):
+    """True when the dollar figure at t[start:end] prices a bonus, relocation
+    package, stipend or reimbursement rather than the pay. Decided inside the
+    figure's own clause only: no line break or sentence end is crossed, the
+    words between two figures belong to the earlier one, a component word
+    joined to the pay ("base + bonus", "plus bonus", "bonus eligible") is a
+    description, and a unit or pay word right after the figure makes it pay."""
+    # Clause bounds: a line break, a semicolon, a sentence end before a
+    # capital, or a flattened body's glued boundary ("27.25This position",
+    # "experience)Sign-on Bonus").
+    _clause = r"[\n;]|(?<=[a-z0-9)])[.!?](?=\s+[A-Z]|\s*$)|(?<=[a-z0-9)])(?=[A-Z][a-z])"
+    after = re.split(_clause, t[end - 1:end + 80])[0][1:]      # one char of context so a glued boundary at the figure's end still splits
+    before = re.split(_clause, t[max(0, start - 80):start])[-1]
+    if "$" in before:
+        before = before.rsplit("$", 1)[-1]
+        if re.match(r"\s*\d", before):
+            before = ""
+    m = _WAGE_NOISE_HEAD_RX.search(before)
+    if m and not _PAY_WORDS.search(m.group(2)):
+        if not (_WAGE_COMPONENT_WORD.match(m.group(1)) and _WAGE_COMPOSITION_RX.search(before[:m.start(1)])):
+            return True
+    if _WAGE_UNIT_RX.match(after):
+        return False
+    # Flattened bodies (Select Medical) glue the next label onto the figure:
+    # "$35.67 - $48.00 (based on experience)Sign-on Bonus: $10,000". An aside
+    # in parentheses is skipped unless it names the figure ("(sign-on
+    # bonus)"); a joining word means the bonus word is an extra, not the
+    # figure's identity ("$55/hr + shift differential"); and a bonus word
+    # that heads its own dollar figure belongs to that one.
+    tail = after
+    while True:
+        pm = re.match(r"[\s,.]*\(([^)]{0,60})\)", tail)
+        if not pm or _WAGE_NEAR_NOISE.match(pm.group(1).strip()):
+            break
+        tail = tail[pm.end():]
+    if _WAGE_JOINER_RX.match(tail):
+        return False
+    m = _WAGE_NOISE_TAIL_RX.match(tail)
+    if m:
+        gap, word, rest = m.group(1), m.group(2), tail[m.end(2):]
+        if _PAY_WORDS.search(gap) or _WAGE_NEXT_FIGURE_RX.match(rest):
+            return False
+        if _WAGE_COMPONENT_WORD.match(word) and (_WAGE_COMPOSITION_RX.search(gap) or _WAGE_BONUS_DESCR_RX.match(rest)):
+            return False
+        return True
+    return False
 _WAGE_RANGE_RX = re.compile(
     r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:-|–|—|to|through)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)")
 _WAGE_SINGLE_RX = re.compile(
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:per\s+hour|/\s*hr\b|/\s*hour|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum)", re.I)
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:per\s+hour|/\s*hr\b|/\s*hour(?:ly)?|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum)", re.I)
 # Dollar-less annual ranges (2026-08-25): One Medical et al. write "The base
 # salary range for this role is 253,200 - 302,700" with no $. Gated hard:
 # "salary/pay/compensation range" wording within the same sentence, both
@@ -11665,7 +11789,14 @@ _BENEFIT_ITEMS = [
     ("Shift differentials",        r"shift differential|differential pay"),
     ("Wellness and mental health resources", r"wellness program|employee assistance program|\bEAP\b|mental health (?:resources|support|benefits)"),
     ("Childcare support",          r"child ?care"),
-    ("Continuing education",       r"continuing education|\bCEU|professional development"),
+    ("Continuing education",       r"continuing education|\bCEU|professional development|\bCME\b"),
+    # 2026-09-22 (Charlie Health lesson): items behavioral-health and clinic
+    # employers list that the hospital vocabulary had no label for.
+    ("Malpractice insurance",       r"malpractice|liability (?:insurance|coverage)"),
+    ("License reimbursement",      r"licens\w*\s+(?:fees?\s+)?(?:reimburse|paid for)|reimburse\w*\s+(?:for\s+)?(?:new\s+|state\s+)?licens"),
+    ("Wellness stipend",           r"wellness (?:stipend|allowance|reimbursement)"),
+    ("Flexible scheduling",        r"flexible schedul|flexible hours|self[- ]scheduling"),
+    ("Employee discounts",         r"employee discount|discount program"),
 ]
 _BENEFIT_RXS = [(label, re.compile(rx, re.I)) for label, rx in _BENEFIT_ITEMS]
 
@@ -11705,7 +11836,25 @@ def _day3(d: str) -> str:
     return d[:3].title()
 
 
-def extract_schedule(text: str, shift_labels) -> tuple:
+def _hours_for_type(t, job_type):
+    """Hours per week; when the posting lists hours per employment type
+    ("Part-Time: Minimum 12 hours/week" / "Full-Time: 40 hours/week") the
+    line matching job_type wins, else the full-time line, else the first."""
+    best = None
+    for m in _FACT_HOURS_RX.finditer(t):
+        try:
+            h = float(m.group(1) or m.group(2))
+        except (TypeError, ValueError):
+            continue
+        if not (4 <= h <= 84):
+            continue
+        score = _type_score(_line_type(t, m.start()), job_type)
+        if best is None or score > best[0]:
+            best = (score, h)
+    return best[1] if best else None
+
+
+def extract_schedule(text: str, shift_labels, job_type=None) -> tuple:
     """("Fri–Sun · 3×12h · Days", 36) style summary and hours per week."""
     t = text or ""
     pieces = []
@@ -11718,17 +11867,9 @@ def extract_schedule(text: str, shift_labels) -> tuple:
         n = _NUM_WORDS.get(str(n).lower(), n)
         length = m.group(2) or m.group(4)
         pieces.append(f"{n}×{length}h")
-    hours = None
-    m = _FACT_HOURS_RX.search(t)
-    if m:
-        try:
-            hours = float(m.group(1) or m.group(2))
-        except (TypeError, ValueError):
-            hours = None
-        if hours is not None and not (4 <= hours <= 84):
-            hours = None
-        if hours is not None and not pieces:
-            pieces.append(f"{int(hours) if hours == int(hours) else hours} hrs/wk")
+    hours = _hours_for_type(t, job_type)
+    if hours is not None and not pieces:
+        pieces.append(f"{int(hours) if hours == int(hours) else hours} hrs/wk")
     for lab in (shift_labels or []):
         if lab in ("Days", "Nights", "Evenings", "Rotating") and lab not in pieces:
             pieces.append(lab)
@@ -11738,6 +11879,8 @@ def extract_schedule(text: str, shift_labels) -> tuple:
 
 
 def extract_benefits(text: str) -> list:
+    """Closed-vocabulary benefit labels, eight at most (the page shows the
+    first few; raised from five on 2026-09-22 so the stored row keeps more)."""
     t = (text or "")[:20000]
     out = []
     for label, rx in _BENEFIT_RXS:
@@ -11745,9 +11888,48 @@ def extract_benefits(text: str) -> list:
             if label == "401(k)" and any(o.startswith("401(k)") for o in out):
                 continue
             out.append(label)
-        if len(out) == 5:
+        if len(out) == 8:
             break
     return out
+
+
+# 2026-09-22 (Charlie Health lesson): the closed vocabulary caught five of a
+# posting's eleven listed benefits and renamed the rest ("24/7 Employee
+# Assistance Program" became "Wellness and mental health resources"). When a
+# posting has its own "Benefits" list, keep those lines verbatim as well:
+# the short lines under a benefits heading, until the next heading, a prose
+# line or a colon-terminated label. Pay lines (a "$") are not benefits.
+_SIGNON_MENTION_RX = re.compile(r"sign[- ]?(?:on|ing)\s+bonus", re.I)
+_BENEFIT_HEAD_RX = re.compile(
+    r"^\s*(?:(?:our|the|your|employee|full)\s+)?(?:benefits?(?:\s+(?:and|&)\s+perks)?|perks(?:\s+(?:and|&)\s+benefits)?|"
+    r"what we offer|benefits?\s+(?:include|package|highlights|summary|offered)|compensation\s+(?:and|&)\s+benefits|"
+    r"total rewards|why work (?:with|for) us)\s*[:!]?\s*$", re.I)
+_BENEFIT_STOP_RX = re.compile(
+    r"^\s*(?:about\b|responsibilit|qualifications?\b|requirements?\b|duties\b|what you|who you|position\b|"
+    r"job (?:summary|description|duties)|education\b|experience\b|schedule\b|compensation\b|pay\b|salary\b|"
+    r"equal opportunity|eeo\b|the (?:role|position)\b|apply\b|how to apply)", re.I)
+
+
+def extract_benefit_lines(text: str) -> list:
+    lines = (text or "")[:20000].split("\n")
+    for i, l in enumerate(lines):
+        if not _BENEFIT_HEAD_RX.match(l):
+            continue
+        out = []
+        for raw in lines[i + 1:]:
+            s = re.sub(r"^[\s•\-\*·–—>]+", "", raw).strip()
+            if not s:
+                continue
+            if s.endswith(":") or len(s) > 90 or _BENEFIT_STOP_RX.match(s) or _BENEFIT_HEAD_RX.match(s):
+                break
+            if "$" in s or len(s) < 4:
+                continue
+            out.append(s.rstrip(".;, "))
+            if len(out) == 12:
+                break
+        if len(out) >= 2:
+            return out
+    return []
 
 
 _JOB_TYPE_CANON = [
@@ -11805,11 +11987,13 @@ def job_type_from_text(text) -> str:
     return ""
 
 
-def extract_posting_facts(text):
+def extract_posting_facts(text, job_type=None):
     """{'certs': [[label, pref_bool]...], 'education': [...], 'shift': [...],
     'experience': [label, pref_bool] | None, 'schedule': str | None,
-    'hours': number | None, 'signon': int | None, 'relocation': int | None,
-    'benefits': [str...]} or None when nothing found."""
+    'hours': number | None, 'signon': int | None, 'signon_offered': bool,
+    'relocation': int | None, 'benefits': [str...], 'benefit_lines': [str...]}
+    or None when nothing found. job_type (canonical) picks between figures a
+    posting lists per employment type."""
     if not text:
         return None
     t = re.sub(r"([.!?;])(?=[A-Z(])", r"\1 ", text[:12000])
@@ -11851,57 +12035,63 @@ def extract_posting_facts(text):
     out["education"] = out["education"][:2]
     out["shift"] = out["shift"][:2]
     # 2026-09-21: schedule summary, hours, bonus amounts, benefits.
-    out["schedule"], out["hours"] = extract_schedule(t, [x[0] for x in out["shift"]])
+    out["schedule"], out["hours"] = extract_schedule(t, [x[0] for x in out["shift"]], job_type)
     out["signon"] = _first_amount(t, _BONUS_RXS)
+    # 2026-09-22: "Signing Bonuses!" / "sign-on bonus available" with no
+    # amount is still a fact worth a pill; the site shows it without a figure.
+    out["signon_offered"] = bool(out["signon"] is None and _SIGNON_MENTION_RX.search(t))
     out["relocation"] = _first_amount(t, _RELO_RXS)
     out["benefits"] = extract_benefits(t)
+    out["benefit_lines"] = extract_benefit_lines(text)
     if not (out["certs"] or out["education"] or out["shift"] or out["experience"]
-            or out["schedule"] or out["hours"] or out["signon"] or out["relocation"] or out["benefits"]):
+            or out["schedule"] or out["hours"] or out["signon"] or out["signon_offered"]
+            or out["relocation"] or out["benefits"] or out["benefit_lines"]):
         return None
     return out
 
 
-def _wage_ctx(t, start, end):
-    """Noise-check window: the current sentence before the match (so an
-    earlier bonus sentence can't veto a legit range) + 20 chars after."""
-    before = t[max(0, start - 60):start]
-    before = re.split(r"[.!?;\n]", before)[-1]
-    return before + t[end:end + 20]
-
-
-def extract_posted_wage(text):
+def extract_posted_wage(text, job_type=None):
     """Best-effort (min, max, unit) from posting text, or None.
-    14-case fixture suite in the session scratchpad passes 14/14."""
+
+    Every dollar figure that survives _wage_is_noise is a candidate. A dollar
+    range outranks a bare "salary range 70,000 - 80,000", which outranks a
+    single figure; hourly outranks annual at the same rank (healthcare quotes
+    hourly for the roles we pill); and when a posting prices several
+    employment types ("Full-Time Salary: ... / Part-Time Rate: ...") the line
+    matching job_type wins, or the full-time line when job_type is unknown.
+    Earlier text breaks ties."""
     if not text:
         return None
     t = text[:12000]
-    best_annual = None
+    cands = []
+
+    def consider(m, got, rank):
+        if got:
+            score = rank + (1 if got[2] == "hour" else 0) + _type_score(_line_type(t, m.start()), job_type)
+            cands.append((score, -len(cands), got))
+
     for m in _WAGE_RANGE_RX.finditer(t):
-        if _WAGE_NEAR_NOISE.search(_wage_ctx(t, m.start(), m.end())):
+        if _wage_is_noise(t, m.start(), m.end()):
             continue
-        got = _wage_pair(_wage_num(m.group(1)), _wage_num(m.group(2)))
-        if not got:
-            continue
-        if got[2] == "hour":
-            return got
-        best_annual = best_annual or got
-    if best_annual:
-        return best_annual
+        consider(m, _wage_pair(_wage_num(m.group(1)), _wage_num(m.group(2))), 6)
     for m in _WAGE_BARE_RANGE_RX.finditer(t):
-        if _WAGE_NEAR_NOISE.search(_wage_ctx(t, m.start(), m.end())):
+        if _wage_is_noise(t, m.start(), m.end()):
             continue
         got = _wage_pair(_wage_num(m.group(1)), _wage_num(m.group(2)))
         if got and got[2] == "year":
-            return got
+            consider(m, got, 3)
     for m in _WAGE_SINGLE_RX.finditer(t):
-        if _WAGE_NEAR_NOISE.search(_wage_ctx(t, m.start(), m.end())):
+        if _wage_is_noise(t, m.start(), m.end()):
             continue
         v = _wage_num(m.group(1))
         unit = "hour" if re.search(r"hour|hr", m.group(0), re.I) else "year"
         got = _wage_pair(v, v)
         if got and got[2] == unit:
-            return (v, v, unit)
-    return None
+            consider(m, (v, v, unit), 0)
+    if not cands:
+        return None
+    cands.sort(key=lambda c: (-c[0], -c[1]))
+    return cands[0][2]
 
 
 def finalize_jobs(all_jobs: list) -> list[dict]:
