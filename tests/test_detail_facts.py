@@ -167,3 +167,22 @@ def test_canonical_job_type_rejects_pay_text():
     assert canonical_job_type("40 hours/week", "ICU RN Full Time Nights") == "Full time"
     assert canonical_job_type("Volunteer", "") == "Volunteer"
     assert canonical_job_type("FULL_TIME", "") == "Full time"
+
+
+
+# ── 2026-09-22: employment type from a labelled body line (win 4) ────────────
+def test_job_type_from_text_reads_labelled_lines_only():
+    from scraper import job_type_from_text
+    assert job_type_from_text("Our promise\nSchedule: Full time\nShift: Day") == "Full time"
+    assert job_type_from_text("Job Type: Part-Time\nLocation: Tampa") == "Part time"
+    assert job_type_from_text("Status: PRN\n") == "Per diem"
+    assert job_type_from_text("Employment Type: Full-time or Part-time\n") == ""       # two types: skip
+    assert job_type_from_text("Full-time employees receive medical, dental and vision.") == ""
+    assert job_type_from_text("") == ""
+
+
+def test_workday_detail_defaults_are_on():
+    import scraper
+    assert scraper.WD_FETCH_DESCRIPTIONS is True or scraper.WD_FETCH_DESCRIPTIONS == (scraper.os.getenv("WD_FETCH_DESCRIPTIONS", "1") == "1")
+    assert scraper.WD_DESC_MAX_PER_RUN >= 500
+    assert scraper.ORACLE_DESC_MAX_PER_RUN >= 3000

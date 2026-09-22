@@ -229,9 +229,18 @@ def strip_html(s):
 #   WD_DESC_CONCURRENCY  parallel detail fetches (default 4)
 # Raise MAX_PER_RUN only after watching a full run: 45k detail hits in one
 # night is exactly the pattern that gets a tenant to rate-limit us.
-WD_FETCH_DESCRIPTIONS = os.getenv("WD_FETCH_DESCRIPTIONS", "0") == "1"
-WD_DESC_MAX_PER_RUN   = int(os.getenv("WD_DESC_MAX_PER_RUN", "500"))
+# 2026-09-22 (owner: fill the job page boxes): ON by default. Workday is 38%
+# of active rows and only a quarter of them had a body; the per-job endpoint
+# also carries timeType (employment type) and startDate (ISO posted date).
+# Budget 6,000 a night across all tenants, at most budget/DETAIL_TENANT_SHARE
+# per tenant, 4 in flight per tenant and WD_DESC_GLOBAL_CONCURRENCY in flight
+# overall (the ~99 tenants list in parallel, so a per-tenant limit alone
+# would allow hundreds of simultaneous detail requests).
+WD_FETCH_DESCRIPTIONS = os.getenv("WD_FETCH_DESCRIPTIONS", "1") == "1"
+WD_DESC_MAX_PER_RUN   = int(os.getenv("WD_DESC_MAX_PER_RUN", "6000"))
 WD_DESC_CONCURRENCY   = int(os.getenv("WD_DESC_CONCURRENCY", "4"))
+WD_DESC_GLOBAL_CONCURRENCY = int(os.getenv("WD_DESC_GLOBAL_CONCURRENCY", "12"))
+_wd_detail_gate = None   # asyncio.Semaphore, created per run in run_workday()
 
 
 class _DescBudget:
@@ -273,7 +282,7 @@ AYA_DESC_BUDGET        = _DescBudget(AYA_DESC_MAX_PER_RUN)
 # turns every pass off.
 DETAIL_FETCH            = os.getenv("DETAIL_FETCH", "1") == "1"
 DETAIL_CONCURRENCY      = int(os.getenv("DETAIL_CONCURRENCY", "4"))
-ORACLE_DESC_MAX_PER_RUN = int(os.getenv("ORACLE_DESC_MAX_PER_RUN", "3000"))
+ORACLE_DESC_MAX_PER_RUN = int(os.getenv("ORACLE_DESC_MAX_PER_RUN", "8000"))   # 2026-09-22: 3,000 -> 8,000 after a clean first night
 TB_DESC_MAX_PER_RUN     = int(os.getenv("TB_DESC_MAX_PER_RUN", "2500"))
 PHENOM_DESC_MAX_PER_RUN = int(os.getenv("PHENOM_DESC_MAX_PER_RUN", "2500"))
 DETAIL_TENANT_SHARE     = int(os.getenv("DETAIL_TENANT_SHARE", "4"))   # one tenant takes at most budget/SHARE per run
@@ -1462,8 +1471,12 @@ async def _workday_fetch_details(session, working_url, targets, system):
     # plus the job's externalPath, which already begins with "/job/".
     base = working_url[:-len("/jobs")] if working_url.endswith("/jobs") else working_url
 
+    # 2026-09-22: a teaser under DETAIL_MIN_CHARS is a candidate too (the
+    # list endpoint sometimes carries a stub), and one tenant may take at most
+    # budget/DETAIL_TENANT_SHARE so the first tenants to finish listing do not
+    # drain the night's allowance.
     candidates = [(j, p) for j, p in targets
-                  if p and not (j.description or "").strip()]
+                  if p and len((j.description or "").strip()) < DETAIL_MIN_CHARS]
     # SHUFFLE (2026-08-05): the scrape can't see which rows already carry a
     # DB-side description (the preserve_scraped_enrichment trigger keeps those
     # safe), so without shuffling the budget re-fetched the SAME first-N jobs
@@ -1482,18 +1495,20 @@ async def _workday_fetch_details(session, working_url, targets, system):
     # Draw from the RUN-WIDE budget, not a per-tenant one. Whichever tenants
     # finish their listing pass first get the allowance; later tenants simply
     # get none this run and pick it up on a subsequent night.
-    allowed = WD_DESC_BUDGET.take(len(candidates))
+    cap = max(50, (WD_DESC_BUDGET.remaining + WD_DESC_BUDGET.spent) // max(1, DETAIL_TENANT_SHARE))
+    allowed = WD_DESC_BUDGET.take(min(len(candidates), cap))
     pending = candidates[:allowed]
     if not pending:
         return
 
     sem = asyncio.Semaphore(WD_DESC_CONCURRENCY)
-    filled = dated = 0
+    gate = _wd_detail_gate or asyncio.Semaphore(WD_DESC_GLOBAL_CONCURRENCY)
+    filled = dated = typed = 0
 
     async def one(job, path):
-        nonlocal filled, dated
+        nonlocal filled, dated, typed
         url = base + (path if path.startswith("/") else "/" + path)
-        async with sem:
+        async with sem, gate:
             try:
                 async with req(session, "get", url, headers=HEADERS, ssl=False,
                                proxy=proxies.get(),
@@ -1505,22 +1520,27 @@ async def _workday_fetch_details(session, working_url, targets, system):
                 return
             info = (data or {}).get("jobPostingInfo") or {}
             desc = strip_html(str(info.get("jobDescription") or ""))
-            # Only accept a description that clears the sitemap bar; a shorter
-            # one adds storage and churn without making the job indexable.
-            if len(desc) >= 200:
+            # Only accept a description that clears the sitemap bar and beats
+            # what the list gave us; a shorter one adds storage and churn.
+            if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
                 job.description = desc
                 filled += 1
             start = str(info.get("startDate") or "")[:10]
             if re.match(r"^\d{4}-\d{2}-\d{2}$", start):
                 job.posted_date = start
                 dated += 1
+            # 2026-09-22: employment type from the detail when the list had none.
+            tt = str(info.get("timeType") or "").strip()
+            if tt and not (job.job_type or "").strip():
+                job.job_type = tt
+                typed += 1
             # Throttle inside the semaphore so this genuinely paces requests
             # rather than just staggering their completion.
             await asyncio.sleep(random.uniform(0.15, 0.45))
 
     await asyncio.gather(*[one(j, p) for j, p in pending], return_exceptions=True)
     logger.info(f"  Workday {system}: details {len(pending)} fetched -> "
-                f"{filled} descriptions, {dated} ISO dates")
+                f"{filled} descriptions, {dated} ISO dates, {typed} employment types")
 
 
 # ── Detail helpers shared by the Oracle / TalentBrew / Phenom / HCA passes ──
@@ -2281,7 +2301,10 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     return jobs
 
 async def run_workday(session) -> list[Job]:
-    logger.info(f"Workday: scraping {len(WORKDAY_TENANTS)} systems...")
+    global _wd_detail_gate
+    _wd_detail_gate = asyncio.Semaphore(WD_DESC_GLOBAL_CONCURRENCY)
+    logger.info(f"Workday: scraping {len(WORKDAY_TENANTS)} systems... "
+                f"(detail budget {WD_DESC_BUDGET.remaining:,}, {'on' if WD_FETCH_DESCRIPTIONS else 'off'})")
     # 2026-09-10 (S-scraper-2): transparency-state tenants first (state from
     # SYSTEM_LOCATION_DEFAULTS; tenants without one keep their order, last).
     # gather() starts tasks in this order, so it is also the order the shared
@@ -11500,6 +11523,8 @@ def normalize_job(j: Job) -> dict:
     # ATS value falls back to the title. The enrichment trigger keeps a
     # stored value when a list-only night sends a blank.
     d["job_type"] = canonical_job_type(d.get("job_type"), d.get("title", ""))
+    if not d["job_type"]:
+        d["job_type"] = job_type_from_text(d.get("description"))
 
     # Posted-wage (2026-08-08; adapter-first 2026-08-21): a structured salary
     # field set by the adapter (USAJobs, Lever) always wins; otherwise regex
@@ -11758,6 +11783,26 @@ def canonical_job_type(raw, title: str = "") -> str:
                 return label
         return ""
     return raw[:40]
+
+
+# 2026-09-22 (owner win 4): six rows in ten carry no employment type from
+# their feed, yet the body says it on a labelled line ("Job Type: Full-time",
+# "Schedule: Full time", "Status: PRN", "Employment Type: Part Time"). Only
+# labelled lines count, and a line naming two types ("Full-time or Part-time")
+# is skipped; prose like "full-time employees receive" never qualifies.
+_JOB_TYPE_LINE_RX = re.compile(
+    r"(?im)^[ \t]*(?:job[ ]?type|employment[ ]?(?:type|status)|position[ ]?(?:type|status)|work[ ]?(?:type|schedule|status)|"
+    r"schedule(?:d)?(?:[ ]hours)?|status|fte[ ]status|hours[ ]type|time[ ]type|shift[ ]type|category)[ \t]*[:\-\u2013][ \t]*([^\n]{2,60})$")
+
+
+def job_type_from_text(text) -> str:
+    t = str(text or "")[:6000]
+    for m in _JOB_TYPE_LINE_RX.finditer(t):
+        value = m.group(1).strip()
+        hits = [label for label, rx in _JOB_TYPE_CANON if rx.search(value)]
+        if len(set(hits)) == 1:
+            return hits[0]
+    return ""
 
 
 def extract_posting_facts(text):
