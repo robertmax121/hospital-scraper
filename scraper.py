@@ -11413,6 +11413,9 @@ def _qa_link_gate(rows: list[dict], run_started_iso: str, sb_url: str, sb_key: s
 #      gets is_active=false. Systems that produced fewer than DEACT_MIN rows
 #      this run get skipped — that protects them from being wiped on a bad
 #      run (e.g. when an ATS migrates or the proxy chain glitches).
+#   2026-09-24: batches of 100 that split, retry and continue; a system is
+#      swept only if every one of its rows landed, and only if it passes the
+#      yield guard shared with Layer 4 (retire_guard.py). Returns rows landed.
 def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) -> int:
     sb_url = os.environ.get("SUPABASE_URL", "")
     sb_key = (os.environ.get("SUPABASE_KEY", "")
@@ -11483,35 +11486,129 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         "Content-Type":  "application/json",
         "Prefer":        "resolution=merge-duplicates,return=minimal",
     }
-    BATCH = 500
-    sent = 0
-    for i in range(0, len(rows), BATCH):
-        chunk = rows[i:i + BATCH]
-        body  = json.dumps(chunk).encode()
-        rq    = _urlreq.Request(url, data=body, headers=headers, method="POST")
+    # Dedupe on the conflict key before batching (moved here from
+    # database.upsert_jobs on 2026-09-24, when scheduler stopped re-sending
+    # every row through it). finalize_jobs dedupes on (ats, system, job_id),
+    # so two ATS entries aliased to one system can still emit one key twice,
+    # and Postgres rejects the whole statement (21000, "ON CONFLICT DO UPDATE
+    # cannot affect row a second time"). Last one wins, but a row with a
+    # description beats one without.
+    by_key: dict[tuple, dict] = {}
+    for r in rows:
+        k = (r.get("hospital_system"), str(r.get("job_id")))
+        prev = by_key.get(k)
+        if prev is not None and (prev.get("description") or "") and not (r.get("description") or ""):
+            continue
+        by_key[k] = r
+    if len(by_key) < len(rows):
+        logger.info(f"Hospital upsert: deduped {len(rows) - len(by_key)} duplicate (system, job_id) rows")
+        rows = list(by_key.values())
+
+    # 2026-09-24: resilient batches. 500-row statements hit the role's 8 s
+    # statement_timeout (57014) on a 32-index table, and the loop used to stop
+    # at the first failure: the 09-24 HCA local push landed 6,500 of 17,153
+    # rows, and an incomplete nightly upsert skips the whole sweep (about 18k
+    # unseen rows of healthy systems were still live on 09-24). Now: 100-row
+    # batches; a failed batch is split in half (100, 50, 25) and the 25-row
+    # pieces are retried
+    # with backoff when the error is load-shaped (5xx, 57014, 408/429, network);
+    # a batch that still fails is recorded and the loop CONTINUES. A batch that
+    # had to be split halves the size of the batches after it (down to 25) and
+    # 20 clean batches double it back, so a database under pressure is not
+    # sent 100-row statements it cannot finish, 2,000 times a night. Only when
+    # UPSERT_BREAKER_ROWS rows in a row fail to land (the database is down, or
+    # every row is rejected: several minutes of failures) does the loop stop.
+    # Retrying is safe: the upsert is idempotent (merge-duplicates on
+    # job_id, hospital_system).
+    BATCH, MIN_BATCH = 100, 25
+    RETRY_PAUSES = (2, 5)      # seconds, before each retry of a MIN_BATCH piece
+    UPSERT_BREAKER_ROWS = 300
+    failed_rows: list[dict] = []
+    splits = [0]
+
+    def _post(chunk: list[dict]) -> tuple[bool, bool, str]:
+        """One POST. Returns (ok, retryable, detail)."""
+        rq = _urlreq.Request(url, data=json.dumps(chunk).encode(), headers=headers, method="POST")
         try:
             with _urlreq.urlopen(rq, timeout=60) as resp:
-                _ = resp.read()
-            sent += len(chunk)
+                resp.read()
+            return True, False, ""
         except _urlerr.HTTPError as e:
-            err_body = e.read().decode()[:500]
-            logger.warning(f"Hospital upsert batch {i}: HTTP {e.code} — {err_body}")
-            break
-        except Exception as e:
-            logger.warning(f"Hospital upsert batch {i}: {e}")
+            try:
+                err = e.read().decode()[:300]
+            except Exception:
+                err = ""
+            retryable = e.code >= 500 or e.code in (408, 429) or "57014" in err
+            return False, retryable, f"HTTP {e.code} {err}"
+        except Exception as e:   # URLError, socket timeout, connection reset
+            return False, True, f"{type(e).__name__}: {e}"
+
+    def _send(chunk: list[dict], label: str) -> int:
+        """Land as much of chunk as possible; returns rows landed. Rows that
+        never land go to failed_rows."""
+        ok, retryable, detail = _post(chunk)
+        if ok:
+            return len(chunk)
+        if len(chunk) > MIN_BATCH:
+            splits[0] += 1
+            logger.warning(f"Hospital upsert {label} ({len(chunk)} rows): {detail}; splitting in half")
+            if retryable:
+                time.sleep(RETRY_PAUSES[0])
+            mid = len(chunk) // 2
+            return _send(chunk[:mid], label + "a") + _send(chunk[mid:], label + "b")
+        for pause in (RETRY_PAUSES if retryable else ()):
+            time.sleep(pause)
+            ok, retryable, detail = _post(chunk)
+            if ok:
+                return len(chunk)
+            if not retryable:
+                break
+        logger.warning(f"Hospital upsert {label} ({len(chunk)} rows) FAILED, continuing: {detail}")
+        failed_rows.extend(chunk)
+        return 0
+
+    sent = 0
+    size, clean, dead_rows = BATCH, 0, 0
+    i = 0
+    while i < len(rows):
+        chunk = rows[i:i + size]
+        before = splits[0]
+        n = _send(chunk, f"batch {i}")
+        sent += n
+        i += len(chunk)
+        if splits[0] > before:
+            clean = 0
+            if size > MIN_BATCH:
+                size = max(MIN_BATCH, size // 2)
+                logger.warning(f"Hospital upsert: batch size down to {size}")
+        elif n == len(chunk):
+            clean += 1
+            if size < BATCH and clean >= 20:
+                size, clean = min(BATCH, size * 2), 0
+        else:
+            clean = 0
+        dead_rows = dead_rows + len(chunk) if n == 0 else 0
+        if dead_rows >= UPSERT_BREAKER_ROWS:
+            rest = rows[i:]
+            failed_rows.extend(rest)
+            logger.error(f"Hospital upsert STOPPED: {dead_rows} rows in a row failed to land "
+                         f"(through row {i:,}); {len(rest):,} rows not attempted")
             break
     logger.info(f"Hospital upsert: {sent}/{len(rows)} rows sent")
     if sent == 0:
         return 0
-    # 2026-09-22: the loop stops at the first failed batch, and the sweep
-    # below used to run anyway against the FULL row list. Every system whose
-    # batches came after the failure had no row re-stamped, so the sweep
-    # retired its whole inventory (22,689 rows on 2026-09-22 while the
-    # database was timing out). An incomplete upsert never sweeps.
-    if sent < len(rows):
-        logger.error(f"Hospital deactivate SKIPPED: upsert incomplete ({sent:,}/{len(rows):,} rows sent); "
-                     f"a sweep against an incomplete run would retire live jobs")
-        return sent
+
+    # 2026-09-22: while the database was timing out, the sweep ran against the
+    # FULL row list after an incomplete upsert, and every system whose rows
+    # were never re-stamped lost its whole inventory (22,689 rows). The rule
+    # is now per system (2026-09-24): a system with ANY row that did not land
+    # is not swept tonight; a system whose every row landed is swept as usual.
+    failed_systems = {r.get("hospital_system") for r in failed_rows if r.get("hospital_system")}
+    if failed_systems:
+        fs = sorted(failed_systems)
+        more = f" (+{len(fs) - 20} more)" if len(fs) > 20 else ""
+        logger.error(f"Hospital deactivate SKIPPED for {len(fs)} system(s) whose upsert did not fully land "
+                     f"({len(failed_rows):,} rows): {fs[:20]}{more}")
 
     # 2. Per-system deactivation pass.
     DEACT_MIN = 10
@@ -11525,7 +11622,8 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     partial = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS}
     if partial:
         logger.warning(f"Hospital deactivate skip (adapter reported a PARTIAL run): {sorted(partial)}")
-    safe_systems = sorted(s for s, n in system_counts.items() if n >= DEACT_MIN and s not in partial)
+    safe_systems = sorted(s for s, n in system_counts.items()
+                          if n >= DEACT_MIN and s not in partial and s not in failed_systems)
     skipped      = sorted((s, n) for s, n in system_counts.items() if 0 < n < DEACT_MIN)
     if skipped:
         sk = skipped[:8]
@@ -11547,8 +11645,10 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # from 20 active rows up, not 200; and a run must yield at least 80% of
     # a system's active rows before the rest is retired, not 25%: a half
     # crawl of a 16k-row system is a blocked adapter, not 8,000 closed jobs.
-    GUARD_MIN_ACTIVE = 20    # guard every system with an inventory worth protecting
-    GUARD_RATIO      = 0.80  # this run must yield >= 80% of active rows
+    # 2026-09-24: the thresholds and the test live in retire_guard.py, shared
+    # with Layer 4 (database.mark_inactive_jobs), so the two retirement passes
+    # cannot drift apart. A count whose total cannot be read also protects.
+    from retire_guard import GUARD_RATIO, guard_reason
     guarded: list[str] = []
     for system in list(safe_systems):
         try:
@@ -11560,17 +11660,21 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
                                                   "Range": "0-0"})
             with _urlreq.urlopen(crq, timeout=30) as resp:
                 cr = resp.headers.get("Content-Range", "")
-                active_n = int(cr.split("/")[-1]) if "/" in cr and cr.split("/")[-1].isdigit() else 0
+            total = cr.split("/")[-1] if "/" in cr else ""
+            if not total.isdigit():
+                raise ValueError(f"unreadable Content-Range {cr!r}")
+            active_n = int(total)
         except Exception as e:
             safe_systems.remove(system)
             guarded.append(system)
             logger.warning(f"SWEEP GUARD: NOT sweeping {system} — active-count failed ({e}); inventory preserved")
             continue
-        if active_n >= GUARD_MIN_ACTIVE and system_counts[system] < GUARD_RATIO * active_n:
+        reason = guard_reason(active_n, system_counts[system])
+        if reason:
             safe_systems.remove(system)
             guarded.append(system)
             logger.warning(
-                f"SWEEP GUARD: NOT sweeping {system} — run yielded {system_counts[system]} rows "
+                f"SWEEP GUARD: NOT sweeping {system} — {reason}: run yielded {system_counts[system]} rows "
                 f"vs {active_n} active in DB (<{int(GUARD_RATIO*100)}%). Adapter likely "
                 f"broken/blocked; inventory preserved.")
     if guarded:
