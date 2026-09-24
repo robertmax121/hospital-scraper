@@ -12158,6 +12158,198 @@ def _qa_link_gate(rows: list[dict], run_started_iso: str, sb_url: str, sb_key: s
             logger.info(f"QA link gate: audit insert skipped ({e})")
 
 
+# -- Resilient hospital_jobs POST loop and its delayed retry (2026-09-24) --
+# LAST_UPSERT_FAILED: the rows the last _upsert_hospital_jobs_to_supabase call
+# could not land (after splits, retries and the breaker). They are already
+# aliased, stamped and deduped, so scrape() re-sends them as they are, once,
+# after the travel side-flow (retry_failed_hospital_upsert). Their systems are
+# not swept that night whether or not the retry lands them.
+LAST_UPSERT_FAILED: list[dict] = []
+# Time-based breaker (2026-09-24 review). The loop pauses when
+# UPSERT_BREAKER_ROWS rows in a row have failed, or when rows are failing and
+# UPSERT_PROBE_PAUSE_S seconds have passed since the last successful POST.
+# Paused, it waits UPSERT_PROBE_PAUSE_S and probes with one MIN_BATCH piece;
+# a probe that lands resumes the loop at MIN_BATCH. Only UPSERT_ABANDON_S
+# seconds without a successful POST abandon the rest (into
+# LAST_UPSERT_FAILED). The old breaker abandoned after 300 failed rows, which
+# instant 503s reach in about 100 s: a two-minute brownout dropped every
+# remaining row for the night.
+UPSERT_BREAKER_ROWS = 300
+UPSERT_PROBE_PAUSE_S = 90
+UPSERT_ABANDON_S = 600
+
+
+def _post_hospital_rows(rows: list[dict], sb_url: str, sb_key: str,
+                        label: str = "Hospital upsert") -> tuple[int, list[dict]]:
+    """POST rows to hospital_jobs (merge-duplicates on job_id,
+    hospital_system) in resilient batches. Returns (rows landed, rows that
+    did not land). No aliasing, stamping, dedupe or sweep: the caller does
+    those.
+
+    500-row statements hit the role's 8 s statement_timeout (57014) on a
+    32-index table, and the loop used to stop at the first failure: the 09-24
+    HCA local push landed 6,500 of 17,153 rows, and an incomplete nightly
+    upsert skipped the whole sweep. So: 100-row batches; a failed batch is
+    split in half (100, 50, 25) and the 25-row pieces are retried with
+    backoff when the error is load-shaped (5xx, 57014, 408/429, network); a
+    batch that still fails is recorded and the loop CONTINUES. A batch that
+    had to be split halves the size of the batches after it (down to 25) and
+    20 clean batches double it back, so a database under pressure is not
+    sent 100-row statements it cannot finish, 2,000 times a night. When the
+    database stops answering, the time-based breaker above pauses and probes
+    instead of hammering it. Retrying is safe: the upsert is idempotent."""
+    import urllib.request as _urlreq, urllib.error as _urlerr
+
+    url = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
+           f"?on_conflict=job_id,hospital_system")
+    headers = {
+        "apikey":        sb_key,
+        "Authorization": f"Bearer {sb_key}",
+        "Content-Type":  "application/json",
+        "Prefer":        "resolution=merge-duplicates,return=minimal",
+    }
+    BATCH, MIN_BATCH = 100, 25
+    RETRY_PAUSES = (2, 5)      # seconds, before each retry of a MIN_BATCH piece
+    failed_rows: list[dict] = []
+    splits = [0]
+    last_ok = [time.monotonic()]   # last successful POST (the call start until one lands)
+
+    def _post(chunk: list[dict]) -> tuple[bool, bool, str]:
+        """One POST. Returns (ok, retryable, detail)."""
+        rq = _urlreq.Request(url, data=json.dumps(chunk).encode(), headers=headers, method="POST")
+        try:
+            with _urlreq.urlopen(rq, timeout=60) as resp:
+                resp.read()
+            last_ok[0] = time.monotonic()
+            return True, False, ""
+        except _urlerr.HTTPError as e:
+            try:
+                err = e.read().decode()[:300]
+            except Exception:
+                err = ""
+            retryable = e.code >= 500 or e.code in (408, 429) or "57014" in err
+            return False, retryable, f"HTTP {e.code} {err}"
+        except Exception as e:   # URLError, socket timeout, connection reset
+            return False, True, f"{type(e).__name__}: {e}"
+
+    def _send(chunk: list[dict], where: str) -> int:
+        """Land as much of chunk as possible; returns rows landed. Rows that
+        never land go to failed_rows."""
+        ok, retryable, detail = _post(chunk)
+        if ok:
+            return len(chunk)
+        if len(chunk) > MIN_BATCH:
+            splits[0] += 1
+            logger.warning(f"{label} {where} ({len(chunk)} rows): {detail}; splitting in half")
+            if retryable:
+                time.sleep(RETRY_PAUSES[0])
+            mid = len(chunk) // 2
+            return _send(chunk[:mid], where + "a") + _send(chunk[mid:], where + "b")
+        for pause in (RETRY_PAUSES if retryable else ()):
+            time.sleep(pause)
+            ok, retryable, detail = _post(chunk)
+            if ok:
+                return len(chunk)
+            if not retryable:
+                break
+        logger.warning(f"{label} {where} ({len(chunk)} rows) FAILED, continuing: {detail}")
+        failed_rows.extend(chunk)
+        return 0
+
+    # Probes never outnumber the abandon window, so a stopped clock cannot
+    # probe forever.
+    max_probes = -(-UPSERT_ABANDON_S // UPSERT_PROBE_PAUSE_S)
+    sent = 0
+    size, clean, dead_rows = BATCH, 0, 0
+    i = 0
+    while i < len(rows):
+        stalled = time.monotonic() - last_ok[0]
+        if dead_rows >= UPSERT_BREAKER_ROWS or (dead_rows and stalled >= UPSERT_PROBE_PAUSE_S):
+            logger.error(f"{label} PAUSED at row {i:,}: {dead_rows} rows in a row failed to land and "
+                         f"no write has succeeded for {stalled:.0f} s; probing with {MIN_BATCH} rows "
+                         f"every {UPSERT_PROBE_PAUSE_S} s, giving up after {UPSERT_ABANDON_S} s without one")
+            resumed, probes = False, 0
+            while (i < len(rows) and probes < max_probes
+                   and time.monotonic() - last_ok[0] < UPSERT_ABANDON_S):
+                time.sleep(UPSERT_PROBE_PAUSE_S)
+                probes += 1
+                piece = rows[i:i + MIN_BATCH]
+                ok, retryable, detail = _post(piece)
+                if ok:
+                    sent += len(piece)
+                    i += len(piece)
+                    resumed = True
+                    break
+                if not retryable:
+                    # The database answered and rejected this piece: record it
+                    # and probe with the next one, so one bad row cannot hold
+                    # the loop until the abandon limit.
+                    failed_rows.extend(piece)
+                    i += len(piece)
+                logger.warning(f"{label} probe {probes} failed: {detail}")
+            if resumed:
+                logger.warning(f"{label} RESUMED after {probes} probe(s); continuing from row {i:,} "
+                               f"at {MIN_BATCH} rows a batch")
+                size, clean, dead_rows = MIN_BATCH, 0, 0
+                continue
+            rest = rows[i:]
+            if rest:
+                failed_rows.extend(rest)
+                logger.error(f"{label} ABANDONED: no successful write for "
+                             f"{time.monotonic() - last_ok[0]:.0f} s ({probes} probes); "
+                             f"{len(rest):,} rows not attempted, left for the retry pass")
+            break
+        chunk = rows[i:i + size]
+        before = splits[0]
+        n = _send(chunk, f"batch {i}")
+        sent += n
+        i += len(chunk)
+        if splits[0] > before:
+            clean = 0
+            if size > MIN_BATCH:
+                size = max(MIN_BATCH, size // 2)
+                logger.warning(f"{label}: batch size down to {size}")
+        elif n == len(chunk):
+            clean += 1
+            if size < BATCH and clean >= 20:
+                size, clean = min(BATCH, size * 2), 0
+        else:
+            clean = 0
+        dead_rows = dead_rows + len(chunk) if n == 0 else 0
+    return sent, failed_rows
+
+
+def retry_failed_hospital_upsert() -> int:
+    """Re-POST LAST_UPSERT_FAILED once. scrape() calls this after the travel
+    side-flow, many minutes after the first pass: the delayed second chance
+    that scheduler Step 2's full re-upsert used to give, without sending
+    every row twice. Same split, retry and breaker as the first pass; no
+    alias, derive or QA gate (the first pass prepared these dicts in place)
+    and NO sweep: a system with a row missing from the first pass stays
+    unswept tonight, and Layer 4 still resets its seen rows. Returns rows
+    landed; LAST_UPSERT_FAILED keeps whatever still did not land."""
+    rows = list(LAST_UPSERT_FAILED)
+    if not rows:
+        return 0
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = (os.environ.get("SUPABASE_KEY", "")
+              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    if not sb_url or not sb_key:
+        logger.info("Hospital upsert retry: SUPABASE_URL/SUPABASE_KEY not set; no-op")
+        return 0
+    systems = {r.get("hospital_system") for r in rows if r.get("hospital_system")}
+    logger.info(f"Hospital upsert retry: re-sending {len(rows):,} rows from {len(systems)} system(s) "
+                f"that did not land in the first pass (no sweep)")
+    sent, still = _post_hospital_rows(rows, sb_url, sb_key, label="Hospital upsert retry")
+    LAST_UPSERT_FAILED[:] = still
+    msg = f"Hospital upsert retry: {sent:,} of {len(rows):,} rows landed"
+    if still:
+        logger.error(msg + f"; {len(still):,} still did not land (the next run sends them again)")
+    else:
+        logger.info(msg)
+    return sent
+
+
 # ── Hospital upsert + deactivation pass (added 2026-05-12) ─────────────────
 # Mirrors _upsert_travel_jobs_to_supabase. The hospital pipeline previously
 # had no deactivation step, so when a hospital filled or removed a posting it
@@ -12172,10 +12364,13 @@ def _qa_link_gate(rows: list[dict], run_started_iso: str, sb_url: str, sb_key: s
 #      gets is_active=false. Systems that produced fewer than DEACT_MIN rows
 #      this run get skipped — that protects them from being wiped on a bad
 #      run (e.g. when an ATS migrates or the proxy chain glitches).
-#   2026-09-24: batches of 100 that split, retry and continue; a system is
-#      swept only if every one of its rows landed, and only if it passes the
-#      yield guard shared with Layer 4 (retire_guard.py). Returns rows landed.
+#   2026-09-24: batches of 100 that split, retry and continue
+#      (_post_hospital_rows); a system is swept only if every one of its rows
+#      landed, and only if it passes the yield guard shared with Layer 4
+#      (retire_guard.py). Rows that did not land are kept in
+#      LAST_UPSERT_FAILED for scrape()'s one delayed retry. Returns rows landed.
 def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) -> int:
+    LAST_UPSERT_FAILED.clear()
     sb_url = os.environ.get("SUPABASE_URL", "")
     sb_key = (os.environ.get("SUPABASE_KEY", "")
               or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
@@ -12237,14 +12432,6 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # later fails. Non-fatal.
     _qa_link_gate(rows, run_started_iso, sb_url, sb_key)
 
-    url = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
-           f"?on_conflict=job_id,hospital_system")
-    headers = {
-        "apikey":        sb_key,
-        "Authorization": f"Bearer {sb_key}",
-        "Content-Type":  "application/json",
-        "Prefer":        "resolution=merge-duplicates,return=minimal",
-    }
     # Dedupe on the conflict key before batching (moved here from
     # database.upsert_jobs on 2026-09-24, when scheduler stopped re-sending
     # every row through it). finalize_jobs dedupes on (ats, system, job_id),
@@ -12263,96 +12450,10 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         logger.info(f"Hospital upsert: deduped {len(rows) - len(by_key)} duplicate (system, job_id) rows")
         rows = list(by_key.values())
 
-    # 2026-09-24: resilient batches. 500-row statements hit the role's 8 s
-    # statement_timeout (57014) on a 32-index table, and the loop used to stop
-    # at the first failure: the 09-24 HCA local push landed 6,500 of 17,153
-    # rows, and an incomplete nightly upsert skips the whole sweep (about 18k
-    # unseen rows of healthy systems were still live on 09-24). Now: 100-row
-    # batches; a failed batch is split in half (100, 50, 25) and the 25-row
-    # pieces are retried
-    # with backoff when the error is load-shaped (5xx, 57014, 408/429, network);
-    # a batch that still fails is recorded and the loop CONTINUES. A batch that
-    # had to be split halves the size of the batches after it (down to 25) and
-    # 20 clean batches double it back, so a database under pressure is not
-    # sent 100-row statements it cannot finish, 2,000 times a night. Only when
-    # UPSERT_BREAKER_ROWS rows in a row fail to land (the database is down, or
-    # every row is rejected: several minutes of failures) does the loop stop.
-    # Retrying is safe: the upsert is idempotent (merge-duplicates on
-    # job_id, hospital_system).
-    BATCH, MIN_BATCH = 100, 25
-    RETRY_PAUSES = (2, 5)      # seconds, before each retry of a MIN_BATCH piece
-    UPSERT_BREAKER_ROWS = 300
-    failed_rows: list[dict] = []
-    splits = [0]
-
-    def _post(chunk: list[dict]) -> tuple[bool, bool, str]:
-        """One POST. Returns (ok, retryable, detail)."""
-        rq = _urlreq.Request(url, data=json.dumps(chunk).encode(), headers=headers, method="POST")
-        try:
-            with _urlreq.urlopen(rq, timeout=60) as resp:
-                resp.read()
-            return True, False, ""
-        except _urlerr.HTTPError as e:
-            try:
-                err = e.read().decode()[:300]
-            except Exception:
-                err = ""
-            retryable = e.code >= 500 or e.code in (408, 429) or "57014" in err
-            return False, retryable, f"HTTP {e.code} {err}"
-        except Exception as e:   # URLError, socket timeout, connection reset
-            return False, True, f"{type(e).__name__}: {e}"
-
-    def _send(chunk: list[dict], label: str) -> int:
-        """Land as much of chunk as possible; returns rows landed. Rows that
-        never land go to failed_rows."""
-        ok, retryable, detail = _post(chunk)
-        if ok:
-            return len(chunk)
-        if len(chunk) > MIN_BATCH:
-            splits[0] += 1
-            logger.warning(f"Hospital upsert {label} ({len(chunk)} rows): {detail}; splitting in half")
-            if retryable:
-                time.sleep(RETRY_PAUSES[0])
-            mid = len(chunk) // 2
-            return _send(chunk[:mid], label + "a") + _send(chunk[mid:], label + "b")
-        for pause in (RETRY_PAUSES if retryable else ()):
-            time.sleep(pause)
-            ok, retryable, detail = _post(chunk)
-            if ok:
-                return len(chunk)
-            if not retryable:
-                break
-        logger.warning(f"Hospital upsert {label} ({len(chunk)} rows) FAILED, continuing: {detail}")
-        failed_rows.extend(chunk)
-        return 0
-
-    sent = 0
-    size, clean, dead_rows = BATCH, 0, 0
-    i = 0
-    while i < len(rows):
-        chunk = rows[i:i + size]
-        before = splits[0]
-        n = _send(chunk, f"batch {i}")
-        sent += n
-        i += len(chunk)
-        if splits[0] > before:
-            clean = 0
-            if size > MIN_BATCH:
-                size = max(MIN_BATCH, size // 2)
-                logger.warning(f"Hospital upsert: batch size down to {size}")
-        elif n == len(chunk):
-            clean += 1
-            if size < BATCH and clean >= 20:
-                size, clean = min(BATCH, size * 2), 0
-        else:
-            clean = 0
-        dead_rows = dead_rows + len(chunk) if n == 0 else 0
-        if dead_rows >= UPSERT_BREAKER_ROWS:
-            rest = rows[i:]
-            failed_rows.extend(rest)
-            logger.error(f"Hospital upsert STOPPED: {dead_rows} rows in a row failed to land "
-                         f"(through row {i:,}); {len(rest):,} rows not attempted")
-            break
+    # 2026-09-24: resilient batches with a time-based breaker; see
+    # _post_hospital_rows. What did not land is kept for the delayed retry.
+    sent, failed_rows = _post_hospital_rows(rows, sb_url, sb_key)
+    LAST_UPSERT_FAILED[:] = failed_rows
     logger.info(f"Hospital upsert: {sent}/{len(rows)} rows sent")
     if sent == 0:
         return 0
@@ -13475,6 +13576,16 @@ def scrape() -> list[dict]:
         _upsert_travel_jobs_to_supabase(travel_rows)
     except Exception as e:
         logger.warning(f"Travel jobs scrape failed (non-fatal): {e}")
+
+    # -- Delayed retry of the hospital rows that did not land (2026-09-24) --
+    # Runs after the travel flow, so a database brownout during the first
+    # pass has had many minutes to clear. Only the missed rows are re-sent,
+    # and nothing is swept: their systems stay unswept tonight.
+    if LAST_UPSERT_FAILED:
+        try:
+            retry_failed_hospital_upsert()
+        except Exception as e:
+            logger.warning(f"Hospital upsert retry failed (non-fatal): {e}")
 
     return hospital_jobs
 

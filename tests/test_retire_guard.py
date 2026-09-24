@@ -4,6 +4,7 @@
 # guard is pure, and the two wiring tests use a fake client / fake urlopen.
 import io
 import json
+import types
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -287,7 +288,8 @@ def test_upsert_splits_on_57014_continues_and_sweeps_only_landed_systems(monkeyp
     assert set(patches) == {"Big Board", "Small Board"}
 
 
-def test_upsert_stops_after_three_dead_batches_and_sweeps_nothing_unlanded(monkeypatch):
+def test_upsert_gives_up_on_a_dead_database_and_sweeps_nothing_unlanded(monkeypatch):
+    # sleep is a no-op and the real clock barely moves: the probe cap still ends the pause.
     import scraper
     down = (503, "service unavailable")
     rows = [_job("A Board", i) for i in range(100)] + [_job("B Board", i) for i in range(500)]
@@ -295,6 +297,8 @@ def test_upsert_stops_after_three_dead_batches_and_sweeps_nothing_unlanded(monke
     sent = scraper._upsert_hospital_jobs_to_supabase(rows, "2026-09-24T00:09:00.000000Z")
     assert sent == 100
     assert patches == ["A Board"]
+    assert len(scraper.LAST_UPSERT_FAILED) == 500
+    assert {r["hospital_system"] for r in scraper.LAST_UPSERT_FAILED} == {"B Board"}
 
 
 def test_upsert_dedupes_the_conflict_key_preferring_a_description(monkeypatch):
@@ -340,3 +344,184 @@ def test_sweep_guard_skips_a_partial_yield_system(monkeypatch):
                                count_header=lambda system, n: "0-0/100")
     scraper._upsert_hospital_jobs_to_supabase(rows, "2026-09-24T00:09:00.000000Z")
     assert patches == []
+
+
+# -- time-based breaker and the delayed retry (virtual clock) ----------------
+
+RUN = "2026-09-24T00:09:00.000000Z"
+
+
+class _Clock:
+    """Virtual clock: sleep() advances it, and the fake database charges each
+    POST its cost."""
+    def __init__(self):
+        self.t = 0.0
+
+    def sleep(self, s):
+        self.t += s
+
+    def monotonic(self):
+        return self.t
+
+
+def _use_clock(monkeypatch, clock):
+    import scraper
+    monkeypatch.setattr(scraper, "time", types.SimpleNamespace(sleep=clock.sleep, monotonic=clock.monotonic,
+                                                               time=clock.monotonic))
+
+
+def _brownout_db(monkeypatch, clock, down):
+    """Fake hospital_jobs on a virtual clock. down(t) is True while the
+    database answers every POST with an instant 503 (0.3 s); a POST that
+    lands costs 1 s. Returns a log of landed keys, failed attempts (start
+    time, keys) and swept systems."""
+    log = {"landed": [], "failed": [], "patches": []}
+
+    def urlopen(rq, timeout=None):
+        u, m = rq.full_url, rq.get_method()
+        assert u.startswith("https://fake.invalid/"), u
+        if "/qa_link_audit" in u:
+            return _Resp()
+        if m == "POST":
+            keys = [(r["hospital_system"], r["job_id"]) for r in json.loads(rq.data.decode())]
+            t0 = clock.t
+            if down(t0):
+                clock.t += 0.3
+                log["failed"].append((t0, keys))
+                raise urllib.error.HTTPError(u, 503, "err", {}, io.BytesIO(b"upstream connect error"))
+            clock.t += 1.0
+            log["landed"].extend(keys)
+            return _Resp()
+        system = urllib.parse.unquote(u.split("hospital_system=eq.")[1].split("&")[0])
+        if m == "GET":
+            return _Resp(f"0-0/{sum(1 for s, _ in log['landed'] if s == system)}")
+        log["patches"].append(system)
+        return _Resp("*/0")
+
+    monkeypatch.setenv("SUPABASE_URL", "https://fake.invalid")
+    monkeypatch.setenv("SUPABASE_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    _use_clock(monkeypatch, clock)
+    return log
+
+
+def _twelve_boards():
+    rows = [_job(f"Board {s:02d}", k) for s in range(12) for k in range(500)]
+    return rows, {(r["hospital_system"], r["job_id"]) for r in rows}
+
+
+def _missed():
+    import scraper
+    return {(r["hospital_system"], r["job_id"]) for r in scraper.LAST_UPSERT_FAILED}
+
+
+def test_upsert_rides_out_a_two_minute_brownout_and_the_retry_lands_the_rest(monkeypatch):
+    import scraper
+    clock = _Clock()
+    rows, keys = _twelve_boards()
+    log = _brownout_db(monkeypatch, clock, down=lambda t: 20 <= t < 140)
+    sent = scraper._upsert_hospital_jobs_to_supabase(rows, RUN)
+    missed = _missed()
+    # The breaker paused and probed instead of abandoning the other ~3,700
+    # rows: only rows tried inside the outage window are missing.
+    in_window = {k for t0, ks in log["failed"] if 20 <= t0 < 140 for k in ks}
+    assert missed and missed <= in_window and len(missed) <= 300
+    assert sent == len(set(log["landed"])) == len(keys) - len(missed)
+    assert set(log["landed"]) | missed == keys
+    # A system with a missed row is not swept; every other system is.
+    missed_systems = {s for s, _ in missed}
+    assert set(log["patches"]) == {f"Board {s:02d}" for s in range(12)} - missed_systems
+    # The delayed retry re-sends only the missed rows, lands them, sweeps nothing.
+    patches, landed = list(log["patches"]), len(log["landed"])
+    assert scraper.retry_failed_hospital_upsert() == len(missed)
+    assert scraper.LAST_UPSERT_FAILED == []
+    assert set(log["landed"]) == keys and len(log["landed"]) - landed == len(missed)
+    assert log["patches"] == patches
+
+
+def test_upsert_abandons_after_ten_minutes_without_a_write_and_leaves_the_rest_for_the_retry(monkeypatch):
+    import scraper
+    clock = _Clock()
+    rows, keys = _twelve_boards()
+    log = _brownout_db(monkeypatch, clock, down=lambda t: t >= 20)
+    sent = scraper._upsert_hospital_jobs_to_supabase(rows, RUN)
+    assert sent == 2000                                   # Boards 00-03 landed before the outage
+    missed = _missed()
+    assert missed == keys - set(log["landed"]) and len(missed) == 4000
+    # It kept probing with one 25-row piece every 90 s and gave up only once
+    # 10 minutes had passed since the last write (t = 20 s).
+    starts = [t0 for t0, _ in log["failed"]]
+    probes = [(t0, ks) for (t0, ks), prev in zip(log["failed"][1:], starts)
+              if t0 - prev >= scraper.UPSERT_PROBE_PAUSE_S]
+    assert len(probes) >= 5 and all(len(ks) == 25 for _, ks in probes)
+    assert (20 + scraper.UPSERT_ABANDON_S <= clock.t
+            <= 20 + scraper.UPSERT_ABANDON_S + scraper.UPSERT_PROBE_PAUSE_S + 5)
+    # Abandoned systems are never swept.
+    assert set(log["patches"]) == {"Board 00", "Board 01", "Board 02", "Board 03"}
+    # The retry cannot land them either: they stay missed, and nothing is swept.
+    assert scraper.retry_failed_hospital_upsert() == 0
+    assert _missed() == missed
+    assert set(log["patches"]) == {"Board 00", "Board 01", "Board 02", "Board 03"}
+
+
+def test_upsert_pauses_on_time_when_slow_failures_have_not_reached_the_row_limit(monkeypatch):
+    # 57014 timeouts that take 8 s each: 300 failed rows would take many
+    # minutes, so the pause comes from 90 s without a write instead.
+    import scraper
+    clock = _Clock()
+    rows = [_job("Slow Board", i) for i in range(1000)]
+    attempts = []
+
+    def urlopen(rq, timeout=None):
+        u, m = rq.full_url, rq.get_method()
+        if "/qa_link_audit" in u:
+            return _Resp()
+        if m == "POST":
+            attempts.append(clock.t)
+            if 3 <= clock.t < 200:
+                clock.t += 8.0
+                raise urllib.error.HTTPError(u, 500, "err", {}, io.BytesIO(b'{"code":"57014"}'))
+            clock.t += 1.0
+            return _Resp()
+        return _Resp("0-0/1000" if m == "GET" else "*/0")
+
+    monkeypatch.setenv("SUPABASE_URL", "https://fake.invalid")
+    monkeypatch.setenv("SUPABASE_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    _use_clock(monkeypatch, clock)
+    sent = scraper._upsert_hospital_jobs_to_supabase(rows, RUN)
+    gaps = [b - a for a, b in zip(attempts, attempts[1:])]
+    assert any(g >= scraper.UPSERT_PROBE_PAUSE_S for g in gaps)        # it paused
+    assert 0 < len(scraper.LAST_UPSERT_FAILED) < scraper.UPSERT_BREAKER_ROWS
+    assert sent == 1000 - len(scraper.LAST_UPSERT_FAILED)
+
+
+def test_scrape_retries_the_missed_rows_once_after_the_travel_flow(monkeypatch, tmp_path):
+    import scraper
+    monkeypatch.chdir(tmp_path)
+    calls = []
+    state = {"miss": True}
+
+    async def run_all():
+        return [_job("A Board", 1)]
+
+    async def run_all_travel():
+        calls.append("travel")
+        return []
+
+    def upsert(rows, iso):
+        calls.append("upsert")
+        scraper.LAST_UPSERT_FAILED[:] = rows if state["miss"] else []
+        return 0 if state["miss"] else len(rows)
+
+    monkeypatch.setattr(scraper, "run_all", run_all)
+    monkeypatch.setattr(scraper, "run_all_travel", run_all_travel)
+    monkeypatch.setattr(scraper, "_upsert_travel_jobs_to_supabase", lambda rows: calls.append("travel upsert"))
+    monkeypatch.setattr(scraper, "_upsert_hospital_jobs_to_supabase", upsert)
+    monkeypatch.setattr(scraper, "retry_failed_hospital_upsert", lambda: calls.append("retry") or 1)
+    scraper.scrape()
+    assert calls == ["upsert", "travel", "travel upsert", "retry"]
+    calls.clear()
+    state["miss"] = False
+    scraper.scrape()
+    assert calls == ["upsert", "travel", "travel upsert"]             # nothing missed: no retry

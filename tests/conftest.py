@@ -18,12 +18,15 @@ import scraper  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def _clean_module_state():
-    """Every test starts with no partial-run flags and no CMS lookup."""
+    """Every test starts with no partial-run flags, no CMS lookup and no
+    rows left over from an earlier upsert."""
     scraper.PARTIAL_SYSTEMS.clear()
     scraper.set_cms_lookup([])
+    scraper.LAST_UPSERT_FAILED.clear()
     yield
     scraper.PARTIAL_SYSTEMS.clear()
     scraper.set_cms_lookup([])
+    scraper.LAST_UPSERT_FAILED.clear()
 
 
 @pytest.fixture

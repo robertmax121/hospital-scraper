@@ -100,7 +100,8 @@ def upsert_jobs(jobs: list[dict]) -> dict:
     re-send every row scrape() had already upserted through
     scraper._upsert_hospital_jobs_to_supabase (the same dicts, already
     aliased and stamped), doubling the write load on a 32-index table. That
-    function now dedupes, splits and retries itself.
+    function now dedupes, splits and retries itself, and scrape() re-sends
+    only the rows it could not land (scraper.retry_failed_hospital_upsert).
     """
     db = client()
     # Dedupe on the conflict key BEFORE batching (2026-08-21). Two sources

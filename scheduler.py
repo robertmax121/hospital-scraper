@@ -9,7 +9,7 @@ Cron: 0 20 * * *  (8 PM nightly)
 import logging
 import os
 from datetime import datetime
-from scraper import scrape, PARTIAL_SYSTEMS, HOSPITAL_SYSTEM_ALIASES, proxies
+from scraper import scrape, PARTIAL_SYSTEMS, HOSPITAL_SYSTEM_ALIASES, LAST_UPSERT_FAILED, proxies
 from database import mark_inactive_jobs, get_stats
 
 logging.basicConfig(
@@ -51,8 +51,15 @@ def run():
     # every row (~225k) in 100-row batches each night, doubling the write
     # load on a 32-index table whose 8 s statement timeout is what failed the
     # first pass, and its continue-on-error loop hid those failures. The
-    # first pass now dedupes, splits failed batches, retries and continues.
+    # first pass now dedupes, splits failed batches, retries and continues,
+    # pauses and probes through a database brownout (abandoning only after
+    # 10 minutes without a write), and scrape() re-sends the rows that did
+    # not land once more after the travel flow (retry_failed_hospital_upsert),
+    # with no sweep. Their systems stay unswept tonight either way.
     logger.info(f"\n[ STEP 2 ] {len(jobs):,} jobs were upserted by scrape(); running Layer 4...")
+    if LAST_UPSERT_FAILED:
+        logger.warning(f"  {len(LAST_UPSERT_FAILED):,} hospital rows did not land after the retry; "
+                       f"their systems were not swept (Layer 4 still resets their seen rows)")
 
     # Layer 4: multi-run miss confirmation before deactivation.
     # A row needs to miss MISS_THRESHOLD consecutive scrapes before going
