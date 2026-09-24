@@ -424,6 +424,34 @@ PHENOM_DESC_BUDGET      = _DescBudget(PHENOM_DESC_MAX_PER_RUN)
 DETAIL_PRIORITY_STATES  = {"CA", "CO", "CT", "DC", "HI", "IL", "MD", "MN", "NJ", "NY", "VT", "WA"}
 DETAIL_MIN_CHARS        = int(os.getenv("DETAIL_MIN_CHARS", "1500"))  # shorter than this = a teaser, worth a detail fetch
 
+# 2026-09-24 (owner: rows show no qualifications although the posting lists
+# them): detail passes for the runners whose list carries no body at all.
+# Each gets a run-wide budget per platform, so a runner that finishes listing
+# late (the TalentBrew HTML runners page through 100-400 list pages first) is
+# not starved by the platform budgets the older passes already drain. Same
+# fair-share rule as every pass: one tenant takes at most
+# budget/DETAIL_TENANT_SHARE, except Houston Methodist and CHRISTUS, each the
+# only tenant on its budget. Houston Methodist is a Workday tenant, but
+# WD_DESC_BUDGET goes to whichever of ~99 tenants finish listing first (the
+# small ones sit at 100%, the large ones at 0%), so its 1,542 Texas rows
+# would rarely get any of it.
+TB_PAGE_DESC_MAX_PER_RUN   = int(os.getenv("TB_PAGE_DESC_MAX_PER_RUN", "3200"))   # Kaiser, UHG, Enhabit, Maxim: 800 each
+HM_DESC_MAX_PER_RUN        = int(os.getenv("HM_DESC_MAX_PER_RUN", "1600"))        # Houston Methodist CXS detail
+CUSTOM_DESC_MAX_PER_RUN    = int(os.getenv("CUSTOM_DESC_MAX_PER_RUN", "1000"))    # CHRISTUS job-page JSON-LD
+SR_DESC_MAX_PER_RUN        = int(os.getenv("SR_DESC_MAX_PER_RUN", "3000"))        # SmartRecruiters postings/{id}
+ADP_DESC_MAX_PER_RUN       = int(os.getenv("ADP_DESC_MAX_PER_RUN", "1600"))       # ADP WorkforceNow job-requisitions/{id}
+PAYCOR_DESC_MAX_PER_RUN    = int(os.getenv("PAYCOR_DESC_MAX_PER_RUN", "600"))     # Paycor JobIntroduction page
+PAYLOCITY_DESC_MAX_PER_RUN = int(os.getenv("PAYLOCITY_DESC_MAX_PER_RUN", "400"))  # Paylocity job-page JSON-LD
+WORKABLE_DESC_MAX_PER_RUN  = int(os.getenv("WORKABLE_DESC_MAX_PER_RUN", "300"))   # Workable v2 job detail
+TB_PAGE_DESC_BUDGET        = _DescBudget(TB_PAGE_DESC_MAX_PER_RUN)
+HM_DESC_BUDGET             = _DescBudget(HM_DESC_MAX_PER_RUN)
+CUSTOM_DESC_BUDGET         = _DescBudget(CUSTOM_DESC_MAX_PER_RUN)
+SR_DESC_BUDGET             = _DescBudget(SR_DESC_MAX_PER_RUN)
+ADP_DESC_BUDGET            = _DescBudget(ADP_DESC_MAX_PER_RUN)
+PAYCOR_DESC_BUDGET         = _DescBudget(PAYCOR_DESC_MAX_PER_RUN)
+PAYLOCITY_DESC_BUDGET      = _DescBudget(PAYLOCITY_DESC_MAX_PER_RUN)
+WORKABLE_DESC_BUDGET       = _DescBudget(WORKABLE_DESC_MAX_PER_RUN)
+
 # Hard stop for Workday list pagination. Replaces the old `offset >= total`
 # break, which truncated six large tenants at exactly 2,000 jobs because
 # Workday caps the REPORTED total at 2000 while still serving results beyond it
@@ -2314,6 +2342,177 @@ async def _phenom_detail(session, base_url: str, job) -> bool:
     return await _jsonld_detail(session, job)
 
 
+# ── Detail passes for the runners that had none (2026-09-24) ───────────────
+# Kaiser, UHG, Enhabit, Maxim, CHRISTUS, Houston Methodist, SmartRecruiters and
+# the Texas feeds (ADP, Paycor, Paylocity, Workable) listed titles only, so
+# their rows reached the job page with no description, qualifications,
+# benefits or schedule. Each now runs through _detail_pass on its platform
+# budget; the per-platform fetchers live next to their adapters.
+
+# employmentType values that say nothing about full / part time (Kaiser's
+# JSON-LD carries "Standard" on every posting; the page's "Job Schedule"
+# line has the real value).
+_JUNK_EMPLOYMENT_TYPES = {"standard", "regular", "other", "n/a", "na", "none", "not applicable"}
+
+
+def _us_state(region: str) -> str:
+    """Two-letter US state from an address region ("TX", "Oklahoma"), or ""."""
+    r = (region or "").strip()
+    if len(r) == 2 and r.upper() in _US_STATE_SET:
+        return r.upper()
+    return _US_STATE_CODES.get(r.lower(), "")
+
+
+def _fill_state(job, city: str, region: str, country: str = "") -> bool:
+    """Fill a blank state (and a blank city) from a detail page's address.
+    Never replaces a state the list gave, and ignores non-US addresses (UHG
+    lists India and Philippines postings). The enrichment trigger keeps a
+    stored two-letter state, so a state filled once stays on later nights."""
+    if re.match(r"^[A-Za-z]{2}$", (job.state or "").strip()):
+        return False
+    c = (country or "").strip().lower()
+    if c and c not in ("us", "usa", "united states", "united states of america"):
+        return False
+    st = _us_state(region)
+    if not st:
+        return False
+    job.state = st
+    if not (job.city or "").strip() and (city or "").strip():
+        job.city = city.strip()
+    job.location = f"{job.city}, {st}" if (job.city or "").strip() else st
+    return True
+
+
+def _posting_address(posting: dict) -> tuple[str, str, str]:
+    """(city, region, country) of a JSON-LD JobPosting's first jobLocation."""
+    loc = (posting or {}).get("jobLocation")
+    if isinstance(loc, list):
+        loc = loc[0] if loc else {}
+    addr = loc.get("address") if isinstance(loc, dict) else None
+    if isinstance(addr, list):
+        addr = addr[0] if addr else {}
+    if not isinstance(addr, dict):
+        return "", "", ""
+    country = addr.get("addressCountry")
+    if isinstance(country, dict):
+        country = country.get("name") or ""
+    return str(addr.get("addressLocality") or ""), str(addr.get("addressRegion") or ""), str(country or "")
+
+
+_DIV_TAG_RX = re.compile(r"<(/?)div\b[^>]*>", re.I)
+_TB_ATS_DESC_RX = re.compile(r'<div[^>]*class="[^"]*\bats-description\b[^"]*"[^>]*>', re.I)
+_TB_ATS_EXTRAS_RX = re.compile(r'<div[^>]*class="[^"]*\bats-extras\b[^"]*"[^>]*>', re.I)
+_TB_JOB_INFO_RX = re.compile(r'<span[^>]*class="job-info"[^>]*>\s*<strong>(.*?)</strong>(.*?)</span>', re.S | re.I)
+_TB_DD_RX = re.compile(r'<dd[^>]*class="[^"]*\bjob-detail-(location|date|category)[^"]*"[^>]*>(.*?)</dd>', re.S | re.I)
+
+
+def _div_inner(html: str, open_rx) -> str:
+    """Inner HTML of the first <div> that open_rx matches, nesting-aware."""
+    m = open_rx.search(html or "")
+    if not m:
+        return ""
+    depth = 1
+    for t in _DIV_TAG_RX.finditer(html, m.end()):
+        depth += -1 if t.group(1) else 1
+        if depth == 0:
+            return html[m.end():t.start()]
+    return ""
+
+
+async def _tb_page_detail(session, job) -> bool:
+    """TalentBrew job page for the HTML-list runners (Kaiser, UHG, Enhabit,
+    Maxim). Kaiser, UHG and Enhabit pages carry a JSON-LD JobPosting; Maxim's
+    has none, only the rendered ats-description block. The longer of the two
+    wins. Kaiser also prints schedule, shift, weekly hours and the pay range
+    in an ats-extras block outside both, which is appended so the facts
+    extractor sees them. A blank state is filled from the page's address
+    (the list gives only a city slug). Fetched direct, like the list."""
+    try:
+        async with req(session, "get", job.url, headers={**HEADERS, "Accept": "text/html,*/*"},
+                       ssl=False, timeout=aiohttp.ClientTimeout(total=45)) as r:
+            if r.status != 200:
+                return False
+            html = await r.text()
+    except Exception:
+        return False
+    before = len((job.description or "").strip())
+    extras: dict[str, str] = {}
+    for k, v in _TB_JOB_INFO_RX.findall(_div_inner(html, _TB_ATS_EXTRAS_RX)):
+        k, v = strip_html(k).strip().rstrip(":").strip(), strip_html(v).strip()
+        if k and v and k not in extras:
+            extras[k] = v
+    if extras.get("Job Schedule") and not (job.job_type or "").strip():
+        job.job_type = extras["Job Schedule"]
+    posting = _jobposting_from_html(html)
+    if posting:
+        p = dict(posting)
+        et = p.get("employmentType")
+        if isinstance(et, str) and et.strip().lower() in _JUNK_EMPLOYMENT_TYPES:
+            p.pop("employmentType", None)
+        _apply_posting(job, p)
+        _fill_state(job, *_posting_address(posting))
+    ats = strip_html(_div_inner(html, _TB_ATS_DESC_RX)).strip()
+    if len(ats) >= 200 and len(ats) > len((job.description or "").strip()):
+        job.description = ats
+    dd = {k.lower(): strip_html(v).strip() for k, v in _TB_DD_RX.findall(html)}
+    if dd.get("location"):
+        _fill_state(job, *parse_city_state(dd["location"]))
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})$", dd.get("date", ""))
+    if m and not re.match(r"^\d{4}-\d{2}-\d{2}", job.posted_date or ""):
+        job.posted_date = f"{m.group(3)}-{int(m.group(1)):02d}-{int(m.group(2)):02d}"
+    if extras and (job.description or "").strip():
+        facts = "\n".join(f"{k}: {v}" for k, v in extras.items() if k.lower() != "primary location")
+        if facts and facts.splitlines()[0] not in job.description:
+            job.description = f"{job.description.strip()}\n\n{facts}"[:8000]
+    desc = (job.description or "").strip()
+    return len(desc) >= 200 and len(desc) > before
+
+
+async def _tb_page_pass(session, system: str, jobs: list) -> None:
+    """Detail pass for one TalentBrew HTML-list runner on TB_PAGE_DESC_BUDGET."""
+    if not (DETAIL_FETCH and jobs):
+        return
+    try:
+        await _detail_pass(session, system, jobs, TB_PAGE_DESC_BUDGET,
+                           lambda j: _tb_page_detail(session, j), "TalentBrew page")
+    except Exception as e:
+        logger.info(f"{system}: detail pass failed ({e})")
+
+
+async def _detail_passes_by_system(session, jobs: list, budget, fetch_one, label: str,
+                                   in_flight: int = DETAIL_CONCURRENCY, skip=None) -> None:
+    """_detail_pass once per tenant, for runners whose tenants all sit on one
+    host (api.smartrecruiters.com, workforcenow.adp.com, recruitingbypaycor.com,
+    recruiting.paylocity.com, apply.workable.com). The tenants' passes run
+    together but share one gate of `in_flight` requests, with a short pause
+    before each slot is released, so the host sees the same few requests at a
+    time however many tenants are configured (Paylocity answers a burst with
+    429). Each tenant still takes at most its fair share of `budget`, in the
+    runner's order (transparency states first)."""
+    if not (DETAIL_FETCH and jobs):
+        return
+    gate = asyncio.Semaphore(max(1, in_flight))
+
+    async def gated(job):
+        async with gate:
+            try:
+                return await fetch_one(job)
+            finally:
+                await asyncio.sleep(random.uniform(0.3, 0.8))
+
+    by_system: dict[str, list] = {}
+    for j in jobs:
+        by_system.setdefault(j.hospital_system, []).append(j)
+
+    async def one(system, rows):
+        try:
+            await _detail_pass(session, system, rows, budget, gated, label, skip=skip)
+        except Exception as e:
+            logger.info(f"{label} {system}: detail pass failed ({e})")
+
+    await asyncio.gather(*[one(s, r) for s, r in by_system.items()], return_exceptions=True)
+
+
 # 2026-09-16 (NY coverage): Montefiore's Workday tenant lists postings by street
 # address, so parse_city_state() found no city and no state on all 444 rows.
 # Address prefix -> (facility marketing name, city); every unmatched address in
@@ -3702,7 +3901,9 @@ async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
 
 
 async def run_kaiser(session: aiohttp.ClientSession) -> list[Job]:
-    return await scrape_kaiser_html(session)
+    jobs = await scrape_kaiser_html(session)
+    await _tb_page_pass(session, "Kaiser Permanente", jobs)   # 2026-09-24: bodies from the job page
+    return jobs
 
 
 # ── UnitedHealth Group TalentBrew (dedicated HTML adapter) ──────────────────
@@ -3856,7 +4057,9 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
 
 
 async def run_uhg(session: aiohttp.ClientSession) -> list[Job]:
-    return await scrape_uhg_talentbrew(session)
+    jobs = await scrape_uhg_talentbrew(session)
+    await _tb_page_pass(session, "UnitedHealth Group", jobs)  # 2026-09-24: bodies + state from the job page
+    return jobs
 
 
 
@@ -3959,7 +4162,9 @@ async def scrape_enhabit_html(session: aiohttp.ClientSession) -> list[Job]:
 
 
 async def run_enhabit(session: aiohttp.ClientSession) -> list[Job]:
-    return await scrape_enhabit_html(session)
+    jobs = await scrape_enhabit_html(session)
+    await _tb_page_pass(session, "Enhabit Home Health", jobs)  # 2026-09-24: bodies + state from the job page
+    return jobs
 
 
 # ── Maxim Healthcare Services (dedicated HTML adapter) ──────────────────────
@@ -4057,7 +4262,9 @@ async def scrape_maxim_html(session: aiohttp.ClientSession) -> list[Job]:
 
 
 async def run_maxim(session: aiohttp.ClientSession) -> list[Job]:
-    return await scrape_maxim_html(session)
+    jobs = await scrape_maxim_html(session)
+    await _tb_page_pass(session, "Maxim Healthcare", jobs)    # 2026-09-24: bodies + state from the job page
+    return jobs
 
 
 # ── 2026-09-10 (Y-texas-build): iCIMS card-list portals ──────────────────
@@ -5127,6 +5334,52 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
             break
     return jobs
 
+# 2026-09-24: the postings list has no body; GET /v1/companies/{org}/postings/{id}
+# (public, no key) returns the job ad in sections. The job description comes
+# first and the company boilerplate last, so the 8,000-character cap trims
+# the boilerplate, not the posting.
+_SR_SECTIONS = (("jobDescription", "Job Description"), ("qualifications", "Qualifications"),
+                ("additionalInformation", "Additional Information"), ("companyDescription", "Company Description"))
+
+
+def _sr_posting_text(data: dict) -> str:
+    sections = ((data or {}).get("jobAd") or {}).get("sections") or {}
+    parts = []
+    for key, default_title in _SR_SECTIONS:
+        sec = sections.get(key) or {}
+        text = strip_html(str(sec.get("text") or "")).strip()
+        if not text:
+            continue
+        title = str(sec.get("title") or default_title).strip()
+        if title and not text.lower().startswith(title.lower()):
+            text = f"{title}\n{text}"
+        parts.append(text)
+    return "\n\n".join(parts)[:8000]
+
+
+async def _sr_detail(session, job) -> bool:
+    m = re.match(r"https://jobs\.smartrecruiters\.com/([^/]+)/([^/?#]+)", job.url or "")
+    if not m:
+        return False
+    api = f"https://api.smartrecruiters.com/v1/companies/{m.group(1)}/postings/{m.group(2)}"
+    async with req(session, "get", api, headers={**HEADERS, "Accept": "application/json"},
+                   ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+        if r.status != 200:
+            return False
+        data = await r.json(content_type=None)
+    desc = _sr_posting_text(data)
+    jt = str(((data or {}).get("typeOfEmployment") or {}).get("label") or "").strip()
+    if jt and not (job.job_type or "").strip():
+        job.job_type = jt
+    rel = str((data or {}).get("releasedDate") or "")[:10]
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", rel) and not (job.posted_date or "").strip():
+        job.posted_date = rel
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        return True
+    return False
+
+
 async def run_smartrecruiters(session) -> list[Job]:
     logger.info(f"SmartRecruiters: scraping {len(SMARTRECRUITERS_ORGS)} orgs...")
     results = await asyncio.gather(
@@ -5135,6 +5388,10 @@ async def run_smartrecruiters(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  SmartRecruiters: {len(jobs):,} jobs")
+    # 2026-09-24: every org is on api.smartrecruiters.com, so the tenants'
+    # detail passes share one gate of DETAIL_CONCURRENCY requests.
+    await _detail_passes_by_system(session, jobs, SR_DESC_BUDGET,
+                                   lambda j: _sr_detail(session, j), "SmartRecruiters")
     return jobs
 
 
@@ -6828,7 +7085,40 @@ async def run_adp(session) -> list[Job]:
     results = await _gather_by_host(session, orgs, scrape_adp, lambda v: _url_host(_ADP_API))
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  ADP total: {len(jobs):,} jobs")
+    # 2026-09-24: bodies from job-requisitions/{itemID}, HOST_CONCURRENCY in flight.
+    await _detail_passes_by_system(session, jobs, ADP_DESC_BUDGET,
+                                   lambda j: _adp_detail(session, j), "ADP",
+                                   in_flight=HOST_CONCURRENCY)
     return jobs
+
+
+async def _adp_detail(session, job) -> bool:
+    """ADP WorkforceNow: the list omits the body; the same public endpoint
+    with the itemID appended (job-requisitions/{itemID}?cid=&ccId=) returns
+    requisitionDescription (about 2-5k characters). cid, ccId and itemID are
+    all in the stored career-center URL."""
+    from urllib.parse import parse_qsl
+    q = dict(parse_qsl(urlsplit(job.url or "").query))
+    cid, cc_id, item = q.get("cid"), q.get("ccId"), q.get("jobId")
+    if not (cid and cc_id and item):
+        return False
+    async with req(session, "get", f"{_ADP_API}/{item}",
+                   params={"cid": cid, "ccId": cc_id, "lang": "en_US", "locale": "en_US",
+                           "timeStamp": str(int(time.time() * 1000))},
+                   headers={**HEADERS, "Referer": f"{_ADP_PORTAL}?cid={cid}&ccId={cc_id}&lang=en_US",
+                            "Accept": "application/json, text/plain, */*"},
+                   ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+        if r.status != 200:
+            return False
+        data = await r.json(content_type=None)
+    desc = strip_html(str((data or {}).get("requisitionDescription") or "")).strip()
+    posted = str((data or {}).get("postDate") or "")[:10]
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", posted) and not (job.posted_date or "").strip():
+        job.posted_date = posted
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        return True
+    return False
 
 
 ##############################################################################
@@ -9587,8 +9877,41 @@ async def run_playwright_scrapers() -> list[Job]:
 
         await browser.close()
 
+    await _playwright_detail_passes(jobs)
     logger.info(f"  Playwright total: {len(jobs):,} jobs")
     return jobs
+
+
+# 2026-09-24: Playwright tenants whose captured rows point at a job page with
+# a JSON-LD JobPosting: system -> URL fragment every such page has (rows that
+# fell back to the search-page URL are skipped and cost no budget). CHRISTUS
+# pages carry the full posting (about 1.4-4k characters), FULL_TIME / PART_TIME,
+# datePosted and the street address.
+PLAYWRIGHT_DETAIL_SYSTEMS = {
+    "CHRISTUS Health": "/opportunity/",
+}
+
+
+async def _playwright_detail_passes(jobs: list) -> None:
+    """JSON-LD detail pass for the Playwright tenants above, on
+    CUSTOM_DESC_BUDGET, over plain HTTP (the browser is closed by now). The
+    runner's aiohttp sessions are closed too, so this opens its own."""
+    if not DETAIL_FETCH:
+        return
+    groups = {s: [j for j in jobs if j.hospital_system == s] for s in PLAYWRIGHT_DETAIL_SYSTEMS}
+    if not any(groups.values()):
+        return
+    try:
+        async with aiohttp.ClientSession(headers=HEADERS) as s:
+            for system, rows in groups.items():
+                frag = PLAYWRIGHT_DETAIL_SYSTEMS[system]
+                if rows:
+                    await _detail_pass(s, system, rows, CUSTOM_DESC_BUDGET,
+                                       lambda j: _jsonld_detail(s, j), "Job page",
+                                       skip=lambda j, f=frag: f not in (j.url or ""),
+                                       share=max(50, CUSTOM_DESC_MAX_PER_RUN // max(1, len(PLAYWRIGHT_DETAIL_SYSTEMS))))
+    except Exception as e:
+        logger.info(f"Playwright detail pass failed ({e})")
 
 
 
@@ -9954,7 +10277,29 @@ async def run_paycor(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Paycor total: {len(jobs):,} jobs")
+    # 2026-09-24: bodies from each row's JobIntroduction page, 2 in flight.
+    await _detail_passes_by_system(session, jobs, PAYCOR_DESC_BUDGET,
+                                   lambda j: _paycor_detail(session, j), "Paycor", in_flight=2)
     return jobs
+
+
+async def _paycor_detail(session, job) -> bool:
+    """Paycor (Newton) JobIntroduction.action: server-rendered, the posting
+    sits in <td id="gnewtonJobDescriptionText">, which holds nested markup,
+    so the block runs to the apply-button cell that follows it."""
+    html = await _fetch_html(session, job.url, timeout=30)
+    i = html.find('id="gnewtonJobDescriptionText"')
+    if i < 0:
+        return False
+    i = html.find(">", i) + 1
+    j = html.find('id="gnewtonJobDescriptionBtn"', i)
+    seg = html[i:j if j > 0 else len(html)]
+    k = seg.rfind("</td>")
+    desc = strip_html(seg[:k] if k >= 0 else seg).strip()
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        return True
+    return False
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -10052,6 +10397,12 @@ async def run_paylocity(session) -> list[Job]:
                                     lambda cfg: "recruiting.paylocity.com")
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Paylocity total: {len(jobs):,} jobs")
+    # 2026-09-24: the list's pageData Description is a ~110-character company
+    # teaser on these boards; each /Recruiting/Jobs/Details/<id> page carries
+    # a JSON-LD JobPosting with the full text. 2 in flight, spaced, because
+    # of the 429s.
+    await _detail_passes_by_system(session, jobs, PAYLOCITY_DESC_BUDGET,
+                                   lambda j: _jsonld_detail(session, j), "Paylocity", in_flight=2)
     return jobs
 
 
@@ -10143,7 +10494,37 @@ async def run_workable(session) -> list[Job]:
     results = await asyncio.gather(*[scrape_workable(session, s_, cfg) for s_, cfg in ordered], return_exceptions=True)
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Workable total: {len(jobs):,} jobs")
+    # 2026-09-24: bodies from the v2 job endpoint, 2 in flight.
+    await _detail_passes_by_system(session, jobs, WORKABLE_DESC_BUDGET,
+                                   lambda j: _workable_detail(session, j), "Workable", in_flight=2)
     return jobs
+
+
+async def _workable_detail(session, job) -> bool:
+    """Workable: GET /api/v2/accounts/<account>/jobs/<shortcode> returns the
+    posting as description, requirements and benefits HTML (the v3 list
+    carries none of them)."""
+    m = re.match(r"https://apply\.workable\.com/([^/]+)/j/([^/?#]+)", job.url or "")
+    if not m:
+        return False
+    slug, code = m.group(1), m.group(2)
+    async with req(session, "get", f"https://apply.workable.com/api/v2/accounts/{slug}/jobs/{code}",
+                   headers={**HEADERS, "Accept": "application/json",
+                            "Referer": f"https://apply.workable.com/{slug}/"},
+                   ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+        if r.status != 200:
+            return False
+        data = await r.json(content_type=None)
+    parts = [strip_html(str((data or {}).get("description") or "")).strip()]
+    for key, title in (("requirements", "Requirements"), ("benefits", "Benefits")):
+        t = strip_html(str((data or {}).get(key) or "")).strip()
+        if t:
+            parts.append(t if t.lower().startswith(title.lower()) else f"{title}\n{t}")
+    desc = "\n\n".join(p for p in parts if p)[:8000]
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        return True
+    return False
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -10787,7 +11168,43 @@ async def run_houston_methodist() -> list[Job]:
         logger.info(f"  Houston Methodist: ERROR {e}")
         return []
     logger.info(f"  Houston Methodist: {len(jobs):,} jobs")
+    # 2026-09-24: the CXS list has no body. HM_DESC_BUDGET, not the shared
+    # Workday one, which the first tenants to finish listing drain (see
+    # HM_DESC_MAX_PER_RUN); the only tenant on it, so the budget is its share.
+    if DETAIL_FETCH and jobs:
+        try:
+            await _detail_pass(None, "Houston Methodist", jobs, HM_DESC_BUDGET,
+                               lambda j: asyncio.to_thread(_hm_detail_sync, j), "Workday",
+                               share=HM_DESC_MAX_PER_RUN)
+        except Exception as e:
+            logger.info(f"  Houston Methodist: detail pass failed ({e})")
     return jobs
+
+
+def _hm_detail_sync(job) -> bool:
+    """Blocking per-job CXS detail (worker thread; the wd12 edge wants browser
+    TLS, so curl_cffi). Same fields as _workday_fetch_details: the body, the
+    ISO startDate in place of the relative "Posted N Days Ago" label, and
+    timeType as the employment type. Raises on a failed fetch (the pass
+    counts it as no description)."""
+    url = job.url or ""
+    if not url.startswith(HM_PUBLIC_BASE + "/job/"):
+        return False
+    base = HM_CXS_URL[:-len("/jobs")]
+    r = _curl_fetch("get", base + url[len(HM_PUBLIC_BASE):], "chrome", timeout=30,
+                    headers={"Accept": "application/json"})
+    info = (r.json() or {}).get("jobPostingInfo") or {}
+    start = str(info.get("startDate") or "")[:10]
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", start):
+        job.posted_date = start
+    tt = str(info.get("timeType") or "").strip()
+    if tt and not (job.job_type or "").strip():
+        job.job_type = tt
+    desc = strip_html(str(info.get("jobDescription") or "")).strip()
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        return True
+    return False
 
 
 # ══════════════════════════════════════════════════════════════════════════
