@@ -7057,127 +7057,452 @@ async def run_recruitingcom(session) -> list[Job]:
 
 
 ##############################################################################
-#  INFOR CLOUDSUITE HCM — used by Faith Regional Health Services
-#  Public job board with REST API
+#  INFOR CLOUDSUITE HCM (Landmark "Candidate Experience" job boards)
+#  Rewritten 2026-09-24. The old adapter guessed three endpoints that do not
+#  exist (hcm/v1/Jobs, CandidateSelfService/controller.servlet and a
+#  $format=json JobsSearchPage), so every tenant logged "no JSON endpoint" and
+#  wrote 0 rows; its row builder also used an undefined `base_url`. The
+#  board's own front end makes two calls, reproduced here:
+#    1. GET {host}/hcm/Jobs/page/JobsHomePage?csk.JobBoard=..&csk.HROrganization=..
+#       bounces through /sso/SSOServlet and sets the session cookies. Without
+#       them the list call redirect-loops.
+#    2. GET {host}/hcm/Jobs/list/JobPosting.SearchForJobsResults?pageop=load
+#       &pagesize=500&sortOrderName=JobPosting.ByPostDateBeginSet&... returns
+#       JSON: dataViewSet.data[].fields (Description = title, LocationOfJob,
+#       LocationOfJobDescriptionForSort, WorkType, JobRequisition,
+#       PostingDateRange_prd_Begin, per-tenant JobRequisition_col_* columns);
+#       pagingInfo.hasNext and pagingUrls.nextPageUrl page it.
+#  Detail: {host}/hcm/Jobs/form/{resourceId}.JobPostingDisplay?navigation=
+#  {resourceId}.JobPostingDisplayNav&pageop=load&pagesize=1 carries the
+#  posting HTML (_op_PositionDescription...) and a formatted pay range.
+#  Apply link: /hcm/Jobs/navigation/{resourceId}.JobPostingDisplayNav, the
+#  shape Jackson Health's Phenom front already links to (734 live rows).
+#  Each tenant gets its OWN aiohttp session: the INFORTAM cookie is scoped to
+#  .inforcloudsuite.com, so tenants sharing one cookie jar would overwrite
+#  each other's session mid-crawl. Requests go direct, not through the proxy
+#  pool: the session is cookie-bound and was verified direct (2026-09-24).
 ##############################################################################
+from city_utils import is_plausible_city as _infor_city_ok
+
 INFOR_ORGS = {
-    # Format: "System": ("css-subdomain", "hr_org")
-    "Faith Regional Health":       ("css-faithregional-prd",             "100"),
-    # 2026-09-17 (coverage lever 3): css host and HROrganization from the careers pages.
-    "BayCare":                     ("css-baycarehs-prd",                 "1"),      # 16 FL hospitals
-    "Aspirus Health":              ("css-aspirus-prd",                   "10"),     # WI/MI
-    "Penn State Health":           ("css-pennstatehealth-prd",           "PSH"),
-    "Lee Health":                  ("css-leememorial-prd",               "1000"),   # Fort Myers FL
-    "CAMC":                        ("css-camc-prd",                      "CAMC"),
-    "Vandalia Health":             ("css-camc-prd",                      "CAMC"),   # Vandalia rebranded from CAMC — same system
-    "Ballad Health":               ("css-balladhealth-prd",              "1"),
-    "PH Healthcare":               ("css-phhealthcare-prd",              "1"),
-    "Carson Tahoe Health":         ("css-carsontahoehs-prd",             "1"),
-    "Middlesex Health":            ("css-middlesex-prd",                 "1"),
-    "Bay Health":                  ("css-bayhealth-prd",                 "1"),
-    "BayCare Health System":       ("css-baycarehs-prd",                 "1"),
-    "Lakeland Regional Health":    ("css-lakelandrmc-prd",               "LRH"),
-    "Tift Regional Health":        ("css-tiftregional-prd",              "1"),
-    "Eastern Maine Health":        ("css-emh-prd",                       "1"),
-    "Maury Regional Health":       ("css-mauryregionalhos-prd",          "MR"),
-    "Skagit Regional Health":      ("css-mnc4u622l854lnnt-prd",          "1"),
-    "DHR Health":                  ("css-pf7dmpe5vb7ydcw4-prd",          "1"),
+    # "System": ("css host", "HROrganization", "JobBoard", "default state")
+    # The HROrganization / JobBoard pair is the csk.* pair on the tenant's own
+    # careers-page link. A wrong pair still answers COMPLETED, with zero rows
+    # (Bay Health org 1, Maury "MR", Lakeland and Carson Tahoe on EXTERNAL,
+    # Northern Light org 1 all did). Default state fills rows whose location
+    # names no state (BayCare writes "City:Facility"). Trailing numbers are
+    # the rows the 2026-09-24 dry run returned.
+    "Faith Regional Health":     ("css-faithregional-prd",    "100",  "EXTERNAL",       "NE"),  # 114
+    "BayCare":                   ("css-baycarehs-prd",        "1",    "EXTERNAL",       "FL"),  # 1,765; duplicate "BayCare Health System" entry removed
+    "Aspirus Health":            ("css-aspirus-prd",          "10",   "EXTERNAL",       ""),    # 948, WI/MI/MN
+    "Penn State Health":         ("css-pennstatehealth-prd",  "PSH",  "EXTERNAL",       "PA"),  # 1,205
+    "Lee Health":                ("css-leememorial-prd",      "1000", "EXTERNAL",       "FL"),  # 511
+    "Vandalia Health":           ("css-camc-prd",             "CAMC", "EXTERNAL",       "WV"),  # 869; CAMC rebranded, duplicate "CAMC" entry removed
+    "Ballad Health":             ("css-balladhealth-prd",     "1",    "EXTERNAL",       ""),    # 835, TN/VA; street-address locations
+    "Penn Highlands Healthcare": ("css-phhealthcare-prd",     "1",    "EXTERNAL",       "PA"),  # 483; was "PH Healthcare", which never wrote a row
+    "Carson Tahoe Health":       ("css-carsontahoehs-prd",    "CTH",  "CTHEXTERNAL2.0", "NV"),  # 223
+    "Middlesex Health":          ("css-middlesex-prd",        "1",    "EXTERNAL",       "CT"),  # 290
+    "Bayhealth":                 ("css-bayhealth-prd",        "10",   "EXTERNAL",       "DE"),  # 430; was "Bay Health" on org 1
+    "Lakeland Regional Health":  ("css-lakelandrmc-prd",      "LRH",  "LRH_EXTERNAL",   "FL"),  # 180
+    "Tift Regional Health":      ("css-tiftregional-prd",     "1",    "EXTERNAL",       "GA"),  # 144
+    "Northern Light Health":     ("css-emh-prd",              "10",   "EXTERNAL",       "ME"),  # 791; was "Eastern Maine Health" on org 1
+    "Maury Regional Health":     ("css-mauryregionalhos-prd", "MRH",  "MRHEXTERNAL",    "TN"),  # 181
+    "Skagit Regional Health":    ("css-mnc4u622l854lnnt-prd", "1",    "EXTERNAL",       "WA"),  # 107
+    "DHR Health":                ("css-pf7dmpe5vb7ydcw4-prd", "1",    "EXTERNAL",       "TX"),  # 742, Edinburg TX (CCN 450869)
+    "UNC Health":                ("css-unchealthunc-prd",     "9999", "EXTERNAL",       "NC"),  # 1,652
+    "MaineHealth":               ("css-mh-prd",               "10",   "EXTERNAL",       ""),    # 1,325, ME + North Conway NH
+    # Not "Baptist Health": HOSPITAL_SYSTEM_ALIASES rewrites that name to the
+    # KY/IN system at upsert time.
+    "Baptist Health (AR)":       ("css-baptisthealth-prd",    "1",    "BAPTISTCAREERS", "AR"),  # 563
 }
 
-async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
-    org_id, hr_org = org_data
-    jobs = []
+# Tenants whose location value is a facility name with no city or state.
+INFOR_FACILITIES = {
+    "Maury Regional Health": {
+        "maury regional":            ("Maury Regional Medical Center",    "Columbia",   "TN"),
+        "marshall medical":          ("Marshall Medical Center",          "Lewisburg",  "TN"),
+        "lewis health":              ("Lewis Health Center",              "Hohenwald",  "TN"),
+        "wayne medical":             ("Wayne Medical Center",             "Waynesboro", "TN"),
+        "medical group":             ("Maury Regional Medical Group",     "Columbia",   "TN"),
+    },
+    "Vandalia Health": {
+        "greenbrier valley med ctr": ("Greenbrier Valley Medical Center", "Ronceverte", "WV"),
+        "plateau medical center":    ("Plateau Medical Center",           "Oak Hill",   "WV"),
+    },
+}
 
-    # Infor CloudSuite HCM — Lawson CandidateSelfService JSON API
-    base = f"https://{org_id}.inforcloudsuite.com"
+INFOR_PAGE_SIZE        = int(os.getenv("INFOR_PAGE_SIZE", "500"))    # the list endpoint serves 500 per page
+INFOR_MAX_PAGES        = int(os.getenv("INFOR_MAX_PAGES", "40"))
+INFOR_DESC_MAX_PER_RUN = int(os.getenv("INFOR_DESC_MAX_PER_RUN", "3000"))
+INFOR_DESC_BUDGET      = _DescBudget(INFOR_DESC_MAX_PER_RUN)
 
-    # Try multiple endpoint patterns
-    endpoints = [
-        # Newer OData v1
-        (f"{base}/hcm/v1/Jobs", {
-            "csk.JobBoard": "EXTERNAL",
-            "csk.HROrganization": hr_org,
-            "$format": "json",
-            "$top": 100,
-        }),
-        # Lawson CandidateSelfService with JSON output
-        (f"{base}/hcm/CandidateSelfService/controller.servlet", {
-            "context.session.key.HROrganization": hr_org,
-            "context.session.key.JobBoard": "EXTERNAL",
-            "context.dataarea": "hcm",
-            "dataarea": "lmghr",
-            "JobPost": "1",
-            "format": "json",
-        }),
-        # Alternative OData path
-        (f"{base}/hcm/Jobs/page/JobsSearchPage", {
-            "csk.JobBoard": "EXTERNAL",
-            "csk.HROrganization": hr_org,
-            "$format": "json",
-            "$top": 100,
-        }),
-    ]
+_INFOR_STATES = frozenset(
+    "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH "
+    "NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC PR".split())
+_INFOR_STATE_NAMES = {
+    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR", "california": "CA",
+    "colorado": "CO", "connecticut": "CT", "delaware": "DE", "florida": "FL", "georgia": "GA",
+    "hawaii": "HI", "idaho": "ID", "illinois": "IL", "indiana": "IN", "iowa": "IA",
+    "kansas": "KS", "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
+    "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
+    "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV", "new hampshire": "NH",
+    "new jersey": "NJ", "new mexico": "NM", "new york": "NY", "north carolina": "NC",
+    "north dakota": "ND", "ohio": "OH", "oklahoma": "OK", "oregon": "OR", "pennsylvania": "PA",
+    "rhode island": "RI", "south carolina": "SC", "south dakota": "SD", "tennessee": "TN",
+    "texas": "TX", "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
+    "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY",
+}
+_INFOR_COUNTRY = frozenset({"US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"})
+_INFOR_STREET  = frozenset("RD ROAD ST STREET AVE AV AVENUE BLVD BOULEVARD DR DRIVE PKWY PARKWAY HWY HIGHWAY "
+                           "LN LANE WAY CT COURT CIR CIRCLE PL PLACE PIKE TRL TRAIL TPKE TURNPIKE LOOP SQ "
+                           "PLZ PLAZA TER TERRACE CV COVE XING EXT".split())
+_INFOR_UNIT    = frozenset("SUITE STE BLDG BUILDING UNIT FL FLOOR RM ROOM MOB APT #".split())
+_INFOR_DIRS    = frozenset("N S E W NE NW SE SW NORTH SOUTH EAST WEST".split())
+_INFOR_GENERIC = frozenset({"", "main campus", "all locations", "other", "remote", "various", "multiple locations"})
+_INFOR_FACILITY_WORDS = frozenset({"medical", "med", "center", "centre", "ctr", "hospital", "clinic",
+                                   "campus", "main", "health", "office", "building"})
+_INFOR_FACILITY_RX = re.compile(
+    r"\b(hospital|medical center|medical ctr|med ctr|clinic|health center|cancer center|campus)\b", re.I)
+_INFOR_TITLE_PLACE_RX = re.compile(r"([A-Za-z][A-Za-z .'\-]*?),\s*([A-Z]{2})\s*$")
+# WorkType codes the job-type canon cannot read. Per diem: Baptist AR
+# DAILYBASE, Aspirus OCCASIONAL / SUPPLEMENTAL / SUPPLTIER1-3, Bayhealth RELIEF,
+# MaineHealth PD, Penn Highlands PRN/C / CPD / FPD. Blanked: CAMC's PRO-RATA .9
+# style FTE codes (36 hours can be full time) and site codes such as Lakeland
+# "A" / "AS", Maury "WE" / "3DWE", Penn Highlands "WOW3", MaineHealth "TE";
+# a blank falls back to the title and the detail pass's worded work type.
+_INFOR_WORKTYPE = {"DAILYBASE": "Per diem", "DAILY BASE": "Per diem", "OCCASIONAL": "Per diem",
+                   "SUPPLEMENTAL": "Per diem", "RELIEF": "Per diem", "CASUAL": "Per diem",
+                   "PD": "Per diem", "CPD": "Per diem", "FPD": "Per diem", "PRN/C": "Per diem"}
 
-    data = None
-    working_url = None
-    last_status = None
-    for json_api, params in endpoints:
-        try:
-            async with req(session, "get",
-                json_api,
-                params=params,
-                headers={**HEADERS, "Accept": "application/json"},
-                ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)
-            ) as r:
-                last_status = r.status
-                if r.status == 200:
-                    ct = r.headers.get("content-type", "")
-                    if "json" in ct:
-                        data = await r.json(content_type=None)
-                        working_url = json_api
-                        break
-                    else:
-                        # Got HTML back — this endpoint doesn't return JSON
-                        continue
-                # Don't log intermediate failures — final state logged below
-        except Exception:
-            # Suppress per-endpoint exceptions; final summary line below
+
+def _infor_worktype(raw) -> str:
+    w = re.sub(r"\s+", " ", str(raw or "")).strip()
+    u = w.upper()
+    if u in _INFOR_WORKTYPE:
+        return _INFOR_WORKTYPE[u]
+    if u.startswith("SUPPLTIER"):
+        return "Per diem"
+    if u.startswith("PRO-RATA") or (len(u) <= 4 and u not in ("FT", "PT", "PRN", "TEMP")):
+        return ""
+    return w
+
+
+def _infor_state(part) -> str:
+    p = str(part or "").strip()
+    if p.upper() in _INFOR_STATES:
+        return p.upper()
+    return _INFOR_STATE_NAMES.get(p.lower(), "")
+
+
+def _infor_case(s) -> str:
+    """"JOHNSON CITY" -> "Johnson City", "Camp HIll" -> "Camp Hill". Mixed
+    case such as "McAllen", "DuBois" or "LRH Medical Center" is kept."""
+    s = re.sub(r"\s+", " ", str(s or "").strip())
+    if not s:
+        return ""
+    def cap(w):
+        return "-".join(x[:1].upper() + x[1:] for x in w.lower().split("-"))
+    if s == s.upper() and any(ch.isalpha() for ch in s):
+        return " ".join(cap(w) for w in s.split(" "))
+    return " ".join(cap(w) if len(w) > 2 and w[:2].isupper() and not w.isupper() else w
+                    for w in s.split(" "))
+
+
+def _infor_colon(value) -> tuple[str, str, str]:
+    """(city, state, facility) from a colon location that names a state:
+    'US:ME:Bangor', 'USA:NH:North Conway', 'WI:Wausau:54401:333 PINE RIDGE BLVD',
+    'US:CT:Middletown:28 Crescent St', 'LRH Medical Center:Lakeland:FL',
+    'Butner:NC:27509', 'WV:Morgantown:Mon Health Medical Center',
+    'US:Florida:Largo:HomeCare Largo'. ('', '', '') when no part is a state."""
+    parts = [p.strip() for p in str(value or "").split(":") if p.strip()]
+    while parts and parts[0].upper() in _INFOR_COUNTRY:
+        parts.pop(0)
+    # A two-letter code beats a spelled-out name ("Washington:NC:27889").
+    idx = next((i for i, p in enumerate(parts) if p.upper() in _INFOR_STATES), -1)
+    if idx < 0:
+        idx = next((i for i, p in enumerate(parts) if _infor_state(p)), -1)
+    if idx < 0:
+        return "", "", ""
+    state = _infor_state(parts[idx])
+    after = parts[idx + 1:]
+    city = fac = ""
+    if after and not any(ch.isdigit() for ch in after[0]):
+        city = after[0]
+        # "ST:City:Facility" (CAMC); "ST:City:Zip:County" and street
+        # addresses carry digits or a third part and are not facilities.
+        if len(after) == 2 and not any(ch.isdigit() for ch in after[1]):
+            fac = after[1]
+    elif idx > 0 and not any(ch.isdigit() for ch in parts[idx - 1]):
+        city = parts[idx - 1]                      # "Facility:City:ST", "City:ST:Zip"
+        if idx >= 2:
+            fac = parts[idx - 2]
+    return city, state, fac
+
+
+def _infor_address(value) -> tuple[str, str]:
+    """(city, state) from a street address ending in a state code, as Ballad
+    writes them: '400 N STATE OF FRANKLIN RD JOHNSON CITY TN',
+    '1 MEDICAL PARK BLVD SUITE 210E BRISTOL TN', '100 15TH ST NW NORTON VA'."""
+    toks = re.sub(r"[.,]", " ", str(value or "")).upper().split()
+    if len(toks) < 4 or toks[-1] not in _INFOR_STATES or not toks[0][:1].isdigit():
+        return "", ""
+    body = toks[:-1]
+    for i in range(len(body) - 1, 1, -1):
+        if body[i] not in _INFOR_STREET:
             continue
+        if body[i] == "ST" and body[i - 1] in _INFOR_STREET:
+            continue                               # "... LN ST ALBANS": ST is the city's
+        rest = body[i + 1:]
+        while len(rest) > 1 and rest[0] in _INFOR_DIRS:
+            rest = rest[1:]
+        while rest and rest[0] in _INFOR_UNIT:
+            rest = rest[2:]                        # designator + its number: "SUITE 5", "MOB 2"
+        if rest and len(rest) <= 4 and all(re.fullmatch(r"[A-Z][A-Z'\-]*", t) for t in rest):
+            return _infor_case(" ".join(rest)), toks[-1]
+    return "", ""
 
-    if not data:
-        # Single line per org instead of 3+ — Infor as a platform is not currently
-        # producing data, so until we get a working endpoint pattern from a HAR,
-        # this is the cleanest way to keep run logs readable.
-        logger.info(f"Infor {system}: no JSON endpoint (last={last_status})")
-        return []
 
-    logger.info(f"Infor {system}: using {working_url}")
+def _infor_key(s) -> str:
+    """Lookup key for a city: lower case, dashes as spaces."""
+    return " ".join(re.sub(r"[-\u2013]", " ", str(s or "")).lower().split())
+
+
+def _infor_title_place(title, known: dict) -> tuple[str, str]:
+    """Ballad titles end in the place ('RN (7a-7p) Med/Surg - Johnson City, TN').
+    Used only for rows whose location fields are blank, and only when the
+    trailing words name a city this tenant's other rows already carry."""
+    m = _INFOR_TITLE_PLACE_RX.search(str(title or "").strip())
+    if not m or m.group(2) not in _INFOR_STATES:
+        return "", ""
+    words = _infor_key(m.group(1)).split()     # "Home Infusion -Johnson City" too
+    for k in (3, 2, 1):
+        if len(words) >= k:
+            hit = known.get(" ".join(words[-k:]))
+            if hit:
+                return hit, m.group(2)
+    return "", ""
+
+
+def _infor_location(system: str, f: dict, default_state: str = "") -> tuple[str, str, str]:
+    """(city, state, facility) for one list row. Tries, in order: a colon value
+    naming a state, 'City, ST' text, a street address, the tenant's facility
+    map, then a stateless 'City:Facility' value plus the tenant default."""
+    loj = str(f.get("LocationOfJob") or "").strip()
+    srt = str(f.get("LocationOfJobDescriptionForSort") or "").strip()
+    col = next((str(v).strip() for k, v in f.items()
+                if k.startswith("JobRequisition_col_") and "Location" in k
+                and isinstance(v, str) and v.strip()), "")
+    city = state = fac = ""
+    for v in (loj, srt):
+        if ":" in v:
+            city, state, fac = _infor_colon(v)
+            if state:
+                break
+    if state and ":" in srt and srt != loj:
+        c2, s2, f2 = _infor_colon(srt)             # LocationOfJob can be cut short
+        if (c2, s2) == (city, state) and len(f2) > len(fac):   # ("Stonewall Jackson Memoria")
+            fac = f2
+    if not state and "," in srt and ":" not in srt:
+        c, s = parse_city_state(srt)
+        if s in _INFOR_STATES:
+            city, state = c, s
+            head = srt.split(",")[0]
+            fac = head.rsplit(" - ", 1)[0] if " - " in head else ""
+    if not state:
+        city, state = _infor_address(srt or loj)
+    if not state:
+        fmap = INFOR_FACILITIES.get(system) or {}
+        for v in (loj, srt, col):
+            hit = next((fmap[p.strip().lower()] for p in v.split(":") if p.strip().lower() in fmap), None)
+            if hit:
+                fac, city, state = hit
+                break
+    if not state:
+        parts = [p.strip() for p in (loj or srt).split(":")
+                 if p.strip().lower() not in _INFOR_GENERIC and not _infor_state(p)
+                 and p.strip().upper() not in _INFOR_COUNTRY]
+        city = next((p for p in parts if _infor_city_ok(p) and not _INFOR_FACILITY_RX.search(p)), "")
+        fac = next((p for p in parts if p != city), "")
+        state = default_state or ""
+    # Facility: the tenant's own facility column wins; otherwise a sort value
+    # that names one ("Aspirus Wausau Hospital", "HOWARD YOUNG MEDICAL CENTER - WOODRUFF").
+    if col:
+        fac = col
+    elif not fac and srt and ":" not in srt and srt != loj and _INFOR_FACILITY_RX.search(srt):
+        fac = srt
+        if " - " in fac:
+            head, tail = fac.rsplit(" - ", 1)
+            if _infor_city_ok(tail) and len(tail.split()) <= 3:
+                fac = head
+    city = _infor_case(re.sub(r"^downtown\s+", "", city.strip(), flags=re.I))
+    if any(ch.isdigit() for ch in city) or city.lower() in _INFOR_GENERIC:
+        city = ""
+    fac = fac.strip()
+    if (any(ch.isdigit() for ch in fac) or fac.lower() in _INFOR_GENERIC or fac.lower() == city.lower()
+            or not set(re.findall(r"[a-z]+", fac.lower())) - _INFOR_FACILITY_WORDS):
+        fac = ""                                   # "Medical Center" alone names nothing
+    return city, (state or default_state or ""), _infor_case(fac)
+
+
+async def _infor_open(s, base: str, qs: str) -> bool:
+    """JobsHomePage: the SSO bounce that sets the board's session cookies."""
     try:
-        listings = data.get("value", data.get("d", {}).get("results", data.get("jobs", [])))
-        for j in listings:
-            _icity = j.get("City", "")
-            _istate = j.get("State", "") or j.get("StateProvince", "")
-            _, state = parse_city_state(f"{_icity}, {_istate}")
-            city  = _icity
-            state = state or _istate
-            jobs.append(Job(
-                title=j.get("JobTitle", j.get("Title", "")),
-                hospital_system=system,
-                hospital_name=j.get("Organization", system),
-                city=city, state=state,
-                location=f"{city}, {state}",
-                specialty=j.get("JobCategory", ""),
-                job_type=j.get("EmploymentType", ""),
-                url=base_url,
-                job_id=str(j.get("RequisitionId", j.get("JobId", ""))),
-                posted_date=str(j.get("PostingDate", ""))[:10],
-                description=strip_html(j.get("JobDescription", "")),
-                ats_platform="Infor",
-            ))
-    except Exception as e:
-        logger.info(f"Infor {system}: {e}")
+        async with s.get(f"{base}/page/JobsHomePage?{qs}", headers={**HEADERS, "Accept": "text/html,*/*"},
+                         timeout=aiohttp.ClientTimeout(total=45)) as r:
+            await r.read()
+            return r.status == 200
+    except Exception:
+        return False
 
-    logger.info(f"  Infor {system}: {len(jobs)} jobs")
+
+async def _infor_json(s, url: str, tries: int = 2):
+    for attempt in range(tries):
+        try:
+            async with s.get(url, headers={**HEADERS, "Accept": "application/json"},
+                             timeout=aiohttp.ClientTimeout(total=90)) as r:
+                if r.status == 200 and "json" in (r.headers.get("content-type") or ""):
+                    return await r.json(content_type=None)
+        except Exception:
+            pass
+        await asyncio.sleep(2 + 3 * attempt)
+    return None
+
+
+def _infor_apply_detail(job, data) -> bool:
+    """Posting HTML, pay range and worded work type from a JobPostingDisplay
+    form payload. Fills blanks only; True when a 200+ character body landed."""
+    fields = (data or {}).get("fields") or {}
+    def val(k):
+        v = fields.get(k)
+        return v.get("value") if isinstance(v, dict) else v
+    ok = False
+    desc = strip_html(str(val("_op_PositionDescription_spc_translation_cp_") or "")).strip()
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        ok = True
+    pay = str(val("_op_FormattedSalaryRangeAmountWithCurrencyCodeAndPayRate_spc_translation_cp_") or "")
+    nums = [float(x.replace(",", "")) for x in re.findall(r"\d[\d,]*(?:\.\d+)?", pay)]
+    if len(nums) >= 2 and job.wage_min is None:
+        got = _wage_pair(nums[0], nums[1])        # "0 - 0  per hour" means no posted pay
+        if got:
+            job.wage_min, job.wage_max, job.wage_unit = got
+    if not (job.job_type or "").strip():
+        lcw = str(val("_op_JobRequisitionLocationCategoryWorkType_spc_translation_cp_") or "").split("|")
+        if len(lcw) >= 3 and lcw[-1].strip():      # "US:NE:Norfolk | Support Services | Part Time No Benefits"
+            job.job_type = lcw[-1].strip()
+    return ok
+
+
+async def _infor_detail(s, base: str, qs: str, rid: str, job) -> bool:
+    url = (f"{base}/form/{rid}.JobPostingDisplay?navigation={rid}.JobPostingDisplayNav"
+           f"&{qs}&pageop=load&pagesize=1")
+    async with s.get(url, headers={**HEADERS, "Accept": "application/json"},
+                     timeout=aiohttp.ClientTimeout(total=30)) as r:
+        if r.status != 200 or "json" not in (r.headers.get("content-type") or ""):
+            return False
+        data = await r.json(content_type=None)
+    return _infor_apply_detail(job, data)
+
+
+def _infor_rows(data) -> list:
+    """(resourceId, {field: value}) for each row of one SearchForJobsResults page."""
+    out = []
+    for x in ((data or {}).get("dataViewSet") or {}).get("data") or []:
+        fl = {k: (v.get("value") if isinstance(v, dict) else v) for k, v in (x.get("fields") or {}).items()}
+        out.append((x.get("resourceId") or "", fl))
+    return out
+
+
+def _infor_jobs(system: str, org_data: tuple, rows: list) -> tuple[list, dict]:
+    """Job rows from list rows, one per requisition (the list is newest
+    first). Returns (jobs, {job_id: resourceId}) for the detail pass."""
+    host, org = org_data[0], org_data[1]
+    board = org_data[2] if len(org_data) > 2 and org_data[2] else "EXTERNAL"
+    default_state = org_data[3] if len(org_data) > 3 else ""
+    base = f"https://{host}.inforcloudsuite.com/hcm/Jobs"
+    parsed, seen = [], set()
+    for rid, fl in rows:
+        req_no = str(fl.get("JobRequisition") or "").strip()
+        title = re.sub(r"\s+", " ", str(fl.get("Description") or "")).strip()
+        if not rid.startswith("JobPosting[") or not req_no or req_no == "0" or not title or req_no in seen:
+            continue
+        seen.add(req_no)
+        parsed.append((rid, req_no, title, fl, _infor_location(system, fl, default_state)))
+    known = {_infor_key(c): c for _, _, _, _, (c, st, _) in parsed if c and st}
+    jobs, rid_of = [], {}
+    for rid, req_no, title, fl, (city, state, fac) in parsed:
+        if not city and state in ("", default_state):
+            c2, s2 = _infor_title_place(title, known)
+            if c2:
+                city, state = c2, s2
+        posted = str(fl.get("PostingDateRange_prd_Begin") or "").strip()
+        posted = f"{posted[:4]}-{posted[4:6]}-{posted[6:8]}" if re.fullmatch(r"20\d{6}", posted) else ""
+        rid_of[req_no] = rid
+        jobs.append(Job(
+            title=title,
+            hospital_system=system,
+            hospital_name=fac or system,
+            city=city, state=state,
+            location=", ".join(x for x in (city, state) if x),
+            specialty=str(fl.get("CategoryDescriptionForSort") or fl.get("Category") or "").strip(),
+            job_type=_infor_worktype(fl.get("WorkType")),
+            url=f"{base}/navigation/{rid}.JobPostingDisplayNav?csk.HROrganization={org}&csk.JobBoard={board}",
+            job_id=req_no,
+            posted_date=posted,
+            description="",
+            ats_platform="Infor",
+        ))
+    return jobs, rid_of
+
+
+async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
+    host, org = org_data[0], org_data[1]
+    board = org_data[2] if len(org_data) > 2 and org_data[2] else "EXTERNAL"
+    base = f"https://{host}.inforcloudsuite.com/hcm/Jobs"
+    qs = f"csk.JobBoard={board}&csk.HROrganization={org}"
+    jobs: list[Job] = []
+    # Own session per tenant (see the block comment): the cookie jar must not
+    # be shared with the other Infor tenants running concurrently.
+    async with aiohttp.ClientSession(headers=HEADERS, max_line_size=65536, max_field_size=65536) as s:
+        if not await _infor_open(s, base, qs):
+            await asyncio.sleep(3)
+            if not await _infor_open(s, base, qs):
+                logger.info(f"Infor {system}: job board did not open")
+                return []
+        url = (f"{base}/list/JobPosting.SearchForJobsResults?pageop=load&pagesize={INFOR_PAGE_SIZE}"
+               f"&sortOrderName=JobPosting.ByPostDateBeginSet&isAscending=false&{qs}")
+        rows, pages, partial = [], 0, False
+        while url and pages < INFOR_MAX_PAGES:
+            data = await _infor_json(s, url)
+            if data is None and await _infor_open(s, base, qs):   # cookies can lapse mid-crawl
+                data = await _infor_json(s, url)
+            if data is None:
+                partial = pages > 0
+                break
+            rows.extend(_infor_rows(data))
+            pages += 1
+            dv = data.get("dataViewSet") or {}
+            if not (dv.get("pagingInfo") or {}).get("hasNext"):
+                break
+            url = (dv.get("pagingUrls") or {}).get("nextPageUrl")
+            if not url:
+                partial = True
+            await asyncio.sleep(random.uniform(0.8, 1.6))
+        if pages >= INFOR_MAX_PAGES:
+            partial = True
+        if not pages:
+            logger.info(f"Infor {system}: list endpoint returned nothing")
+            return []
+        jobs, rid_of = _infor_jobs(system, org_data, rows)
+        if partial:
+            PARTIAL_SYSTEMS.add(system)       # the sweep must not retire what a cut-short crawl missed
+        if DETAIL_FETCH and jobs:
+            try:
+                await _detail_pass(s, system, jobs, INFOR_DESC_BUDGET,
+                                   lambda j: _infor_detail(s, base, qs, rid_of[j.job_id], j), "Infor")
+            except Exception as e:
+                logger.info(f"Infor {system}: detail pass failed ({e})")
+    logger.info(f"  Infor {system}: {len(jobs)} jobs ({pages} pages{', PARTIAL' if partial else ''})")
     return jobs
 
 async def run_infor(session) -> list[Job]:
@@ -7186,6 +7511,9 @@ async def run_infor(session) -> list[Job]:
         *[scrape_infor(session, s, o) for s, o in INFOR_ORGS.items()],
         return_exceptions=True
     )
+    for (s, _), r in zip(INFOR_ORGS.items(), results):
+        if isinstance(r, Exception):
+            logger.info(f"Infor {s}: {type(r).__name__}: {r}")
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Infor total: {len(jobs):,} jobs")
     return jobs

@@ -1,0 +1,595 @@
+{
+ "Ballad Health": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](1,40870,1)",
+     "fields": {
+      "Description": {
+       "value": "Medical Lab Technician/Medical Technologist (6a-230p) Johnson City, TN"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "400 N STATE OF FRANKLIN RD JOHNSON CITY TN"
+      },
+      "WorkType": {
+       "value": "FT"
+      },
+      "JobRequisition": {
+       "value": 40870
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260924"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Laboratory"
+      },
+      "JobRequisition_col_BHJobReqLocation": {
+       "value": "Johnson City Medical Center"
+      }
+     }
+    },
+    {
+     "resourceId": "JobPosting[JobPostingSet](1,40699,1)",
+     "fields": {
+      "Description": {
+       "value": "System Clinical Educator (8a-5p) Norton, VA"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "100 15TH ST NW NORTON VA"
+      },
+      "WorkType": {
+       "value": "FT"
+      },
+      "JobRequisition": {
+       "value": 40699
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260923"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "RNs"
+      },
+      "JobRequisition_col_BHJobReqLocation": {
+       "value": "Ballad Health Corporate"
+      }
+     }
+    },
+    {
+     "resourceId": "JobPosting[JobPostingSet](1,40335,1)",
+     "fields": {
+      "Description": {
+       "value": "Retail Pharmacist (9a-7p) - Johnson City, TN"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": ""
+      },
+      "WorkType": {
+       "value": "PRN"
+      },
+      "JobRequisition": {
+       "value": 40335
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260922"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Pharmacy"
+      },
+      "JobRequisition_col_BHJobReqLocation": {
+       "value": "Ballad Health Medical Associates"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "BayCare": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](1,173660,2)",
+     "fields": {
+      "Description": {
+       "value": "Audiologist"
+      },
+      "LocationOfJob": {
+       "value": "Tampa:St Josephs"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "Tampa:St Josephs"
+      },
+      "WorkType": {
+       "value": "FULLTIME"
+      },
+      "JobRequisition": {
+       "value": 173660
+      },
+      "JobPosting": {
+       "value": 2
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260924"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Clinical"
+      }
+     }
+    },
+    {
+     "resourceId": "JobPosting[JobPostingSet](1,174707,1)",
+     "fields": {
+      "Description": {
+       "value": "RN CVICU Seasonal 13-week assignment SRO"
+      },
+      "LocationOfJob": {
+       "value": "All Locations"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "All Locations"
+      },
+      "WorkType": {
+       "value": "POOL"
+      },
+      "JobRequisition": {
+       "value": 174707
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260924"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Nursing"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "Maury Regional Health": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](MRH,15944,1)",
+     "fields": {
+      "Description": {
+       "value": "Student Worker - Radiology Diagnostic"
+      },
+      "LocationOfJob": {
+       "value": "Marshall Medical:Main Campus"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "Marshall Medical:Main Campus"
+      },
+      "WorkType": {
+       "value": "TEMP"
+      },
+      "JobRequisition": {
+       "value": 15944
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260923"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Student Employment"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "Lakeland Regional Health": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](LRH,35569,2)",
+     "fields": {
+      "Description": {
+       "value": "Anesthesia Technician - Main OR Anesthesiology"
+      },
+      "LocationOfJob": {
+       "value": "LRH Medical Center:Lakeland:FL"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "LRH Medical Center - Lakeland, FL"
+      },
+      "WorkType": {
+       "value": "A"
+      },
+      "JobRequisition": {
+       "value": 35569
+      },
+      "JobPosting": {
+       "value": 2
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260924"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Patient Care Services & Support"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "Aspirus Health": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](10,129236,1)",
+     "fields": {
+      "Description": {
+       "value": "SURGICAL TECH INTERN - BIRTHING CENTER"
+      },
+      "LocationOfJob": {
+       "value": "WI:Wausau:54401:333 PINE RIDGE BLVD"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "Aspirus Wausau Hospital"
+      },
+      "WorkType": {
+       "value": "OCCASIONAL"
+      },
+      "JobRequisition": {
+       "value": 129236
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260924"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "SURG TECHS"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "MaineHealth": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](10,94647,1)",
+     "fields": {
+      "Description": {
+       "value": "Patient Access Associate - Hospital Registration"
+      },
+      "LocationOfJob": {
+       "value": "USA:NH:North Conway"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "USA:NH:North Conway"
+      },
+      "WorkType": {
+       "value": "PD"
+      },
+      "JobRequisition": {
+       "value": 94647
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260923"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Clerical/Administrative Support"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "UNC Health": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](9999,240950,1)",
+     "fields": {
+      "Description": {
+       "value": "Admin Coordinator - Youth Behavioral Health Facility"
+      },
+      "LocationOfJob": {
+       "value": "Butner:NC:27509"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "Butner:NC:27509"
+      },
+      "JobRequisition": {
+       "value": 240950
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260922"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Office Support/Clerical"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "Vandalia Health": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](CAMC,80201,1)",
+     "fields": {
+      "Description": {
+       "value": "CT Tech Level 2 -- CT Scan -- Greenbrier Valley Medical Center - 1320 Maplewood"
+      },
+      "LocationOfJob": {
+       "value": "Greenbrier Valley Med Ctr"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "Greenbrier Valley Med Ctr"
+      },
+      "WorkType": {
+       "value": "FULL TIME REGULAR"
+      },
+      "JobRequisition": {
+       "value": 80201
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260924"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Allied Health"
+      }
+     }
+    },
+    {
+     "resourceId": "JobPosting[JobPostingSet](CAMC,57072,1)",
+     "fields": {
+      "Description": {
+       "value": "Physician -- Mon Heath Surgical Care - Stonewall Jackson Memorial Hospital"
+      },
+      "LocationOfJob": {
+       "value": "WV:Weston:Stonewall Jackson Memoria"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "WV:Weston:Stonewall Jackson Memorial Hospital"
+      },
+      "WorkType": {
+       "value": "FULL TIME REGULAR"
+      },
+      "JobRequisition": {
+       "value": 57072
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20250815"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Physician\\Resident"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "Penn State Health": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](PSH,104101,1)",
+     "fields": {
+      "Description": {
+       "value": "Laboratory Assistant - Specimen Processing"
+      },
+      "LocationOfJob": {
+       "value": "US:PA:Camp HIll"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "US:PA: Camp Hill"
+      },
+      "WorkType": {
+       "value": "FT"
+      },
+      "JobRequisition": {
+       "value": 104101
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260924"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Laboratory"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "Middlesex Health": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](1,5244,2)",
+     "fields": {
+      "Description": {
+       "value": "Hospitalist"
+      },
+      "LocationOfJob": {
+       "value": "US:CT:Middletown:28 Crescent St"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "28 Crescent St. Middletown, CT"
+      },
+      "WorkType": {
+       "value": "PER DIEM"
+      },
+      "JobRequisition": {
+       "value": 5244
+      },
+      "JobPosting": {
+       "value": 2
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260807"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Clinical Professional"
+      }
+     }
+    },
+    {
+     "resourceId": "JobPosting[JobPostingSet](1,5244,1)",
+     "fields": {
+      "Description": {
+       "value": "Hospitalist"
+      },
+      "LocationOfJob": {
+       "value": "US:CT:Middletown:28 Crescent St"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "28 Crescent St. Middletown, CT"
+      },
+      "WorkType": {
+       "value": "PER DIEM"
+      },
+      "JobRequisition": {
+       "value": 5244
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260807"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Clinical Professional"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ },
+ "Baptist Health (AR)": {
+  "dataViewSet": {
+   "data": [
+    {
+     "resourceId": "JobPosting[JobPostingSet](1,64016,1)",
+     "fields": {
+      "Description": {
+       "value": "Registered Nurse IHA Job 1 | Fort Smith"
+      },
+      "LocationOfJob": {
+       "value": "US:AR:Fort Smith"
+      },
+      "LocationOfJobDescriptionForSort": {
+       "value": "US:AR:Fort Smith"
+      },
+      "WorkType": {
+       "value": "DAILYBASE"
+      },
+      "JobRequisition": {
+       "value": 64016
+      },
+      "JobPosting": {
+       "value": 1
+      },
+      "PostingDateRange_prd_Begin": {
+       "value": "20260924"
+      },
+      "CategoryDescriptionForSort": {
+       "value": "Nursing"
+      }
+     }
+    }
+   ],
+   "pagingInfo": {
+    "hasNext": false,
+    "pageSize": 500
+   },
+   "pagingUrls": {}
+  },
+  "status": "COMPLETED"
+ }
+}
