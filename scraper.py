@@ -16494,6 +16494,11 @@ def extract_requirements(text) -> dict:
                 # hiring incentive of up to $7,500 (ADN)" is not education)
                 if not _RQ_CUE_RX.search(c) or _RQ_BLOCK_END_RX.search(c):
                     continue
+                # (push3 integration) outside a block a duty stays a duty even
+                # when it names a licence: Oceans "Directs appropriate training
+                # activities ... as well as assurance of proper current licensure".
+                if _RQ_DUTY_RX.search(_RQ_ENUM_RX.sub("", c)):
+                    continue
                 types = _rq_types(c)
                 if "education" in types and not _RQ_EDU_STRONG_RX.search(c):
                     types.discard("education")

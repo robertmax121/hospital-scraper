@@ -141,5 +141,18 @@ def test_word_split_across_inline_tags_is_joined():
     assert scraper.strip_html("$<span>5,0</span><span>00</span> sign-on") == "$5,000 sign-on"
 
 
+# outside a block a duty is not a credential (push3/nobody2's Oceans body)
+
+def test_duty_naming_a_licence_outside_a_block_is_not_licensure():
+    with open(os.path.join(FIX, "nobody", "oceans_20443.html"), encoding="utf-8") as f:
+        posting = scraper._posting_with_requirements(scraper._jobposting_from_html(f.read()))
+    rq = scraper.extract_requirements(scraper.strip_html(posting["description"]))
+    assert not [x for x in _items(rq, "licensure") + _items(rq, "certifications") if x.startswith("Directs ")]
+    body = "About the role\nEnhances clinical skills by maintaining the Physician's certification and state licensure.\n"
+    assert scraper.extract_requirements(body)["licensure"] == []
+    # a requirement sentence outside a block still counts
+    assert scraper.extract_requirements("Must hold a current Texas RN license.")["licensure"]
+
+
 def test_facts_version_bumped_once_for_push3():
     assert scraper.FACTS_VERSION == 3
