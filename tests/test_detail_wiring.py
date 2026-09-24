@@ -65,7 +65,7 @@ def _fast(monkeypatch):
         await real_sleep(0)
     monkeypatch.setattr(scraper.asyncio, "sleep", no_sleep)
     monkeypatch.setattr(scraper, "DETAIL_FETCH", True)
-    for name in ("TB_PAGE", "CUSTOM", "SR", "ADP", "PAYCOR", "PAYLOCITY", "WORKABLE", "WD"):
+    for name in ("TB_PAGE", "HM", "CUSTOM", "SR", "ADP", "PAYCOR", "PAYLOCITY", "WORKABLE", "WD"):
         monkeypatch.setattr(scraper, f"{name}_DESC_BUDGET", scraper._DescBudget(1000))
 
 
@@ -228,7 +228,7 @@ def test_talentbrew_html_runners_run_the_page_pass(monkeypatch, runner, lister, 
     assert scraper.TB_PAGE_DESC_BUDGET.remaining == 0
 
 
-def test_houston_methodist_runner_spends_the_workday_budget(monkeypatch):
+def test_houston_methodist_runner_spends_its_own_budget(monkeypatch):
     rows = [_job(hospital_system="Houston Methodist", url=scraper.HM_PUBLIC_BASE + f"/job/x_JR-{i}", job_id=f"JR-{i}")
             for i in range(4)]
     monkeypatch.setattr(scraper, "curl_requests", object())
@@ -241,7 +241,7 @@ def test_houston_methodist_runner_spends_the_workday_budget(monkeypatch):
     monkeypatch.setattr(scraper, "_hm_detail_sync", fake_detail)
     assert asyncio.run(scraper.run_houston_methodist()) is rows
     assert sorted(fetched) == [f"JR-{i}" for i in range(4)]
-    assert scraper.WD_DESC_BUDGET.spent == 4
+    assert scraper.HM_DESC_BUDGET.spent == 4 and scraper.WD_DESC_BUDGET.spent == 0
 
 
 def test_smartrecruiters_runner_passes_per_tenant(monkeypatch):
@@ -303,5 +303,5 @@ def test_playwright_christus_pass_skips_search_page_rows(monkeypatch):
 
 
 def test_new_budgets_exist():
-    for name in ("TB_PAGE", "CUSTOM", "SR", "ADP", "PAYCOR", "PAYLOCITY", "WORKABLE"):
+    for name in ("TB_PAGE", "HM", "CUSTOM", "SR", "ADP", "PAYCOR", "PAYLOCITY", "WORKABLE"):
         assert getattr(scraper, f"{name}_DESC_MAX_PER_RUN") > 0

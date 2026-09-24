@@ -297,13 +297,17 @@ DETAIL_MIN_CHARS        = int(os.getenv("DETAIL_MIN_CHARS", "1500"))  # shorter 
 
 # 2026-09-24 (owner: rows show no qualifications although the posting lists
 # them): detail passes for the runners whose list carries no body at all.
-# Houston Methodist is a Workday tenant and spends WD_DESC_BUDGET. The others
-# get a run-wide budget per platform, so a runner that finishes listing late
-# (the TalentBrew HTML runners page through 100-400 list pages first) is not
-# starved by the platform budgets the older passes already drain. Same
+# Each gets a run-wide budget per platform, so a runner that finishes listing
+# late (the TalentBrew HTML runners page through 100-400 list pages first) is
+# not starved by the platform budgets the older passes already drain. Same
 # fair-share rule as every pass: one tenant takes at most
-# budget/DETAIL_TENANT_SHARE, except CHRISTUS, the only tenant on its budget.
+# budget/DETAIL_TENANT_SHARE, except Houston Methodist and CHRISTUS, each the
+# only tenant on its budget. Houston Methodist is a Workday tenant, but
+# WD_DESC_BUDGET goes to whichever of ~99 tenants finish listing first (the
+# small ones sit at 100%, the large ones at 0%), so its 1,542 Texas rows
+# would rarely get any of it.
 TB_PAGE_DESC_MAX_PER_RUN   = int(os.getenv("TB_PAGE_DESC_MAX_PER_RUN", "3200"))   # Kaiser, UHG, Enhabit, Maxim: 800 each
+HM_DESC_MAX_PER_RUN        = int(os.getenv("HM_DESC_MAX_PER_RUN", "1600"))        # Houston Methodist CXS detail
 CUSTOM_DESC_MAX_PER_RUN    = int(os.getenv("CUSTOM_DESC_MAX_PER_RUN", "1000"))    # CHRISTUS job-page JSON-LD
 SR_DESC_MAX_PER_RUN        = int(os.getenv("SR_DESC_MAX_PER_RUN", "3000"))        # SmartRecruiters postings/{id}
 ADP_DESC_MAX_PER_RUN       = int(os.getenv("ADP_DESC_MAX_PER_RUN", "1600"))       # ADP WorkforceNow job-requisitions/{id}
@@ -311,6 +315,7 @@ PAYCOR_DESC_MAX_PER_RUN    = int(os.getenv("PAYCOR_DESC_MAX_PER_RUN", "600"))   
 PAYLOCITY_DESC_MAX_PER_RUN = int(os.getenv("PAYLOCITY_DESC_MAX_PER_RUN", "400"))  # Paylocity job-page JSON-LD
 WORKABLE_DESC_MAX_PER_RUN  = int(os.getenv("WORKABLE_DESC_MAX_PER_RUN", "300"))   # Workable v2 job detail
 TB_PAGE_DESC_BUDGET        = _DescBudget(TB_PAGE_DESC_MAX_PER_RUN)
+HM_DESC_BUDGET             = _DescBudget(HM_DESC_MAX_PER_RUN)
 CUSTOM_DESC_BUDGET         = _DescBudget(CUSTOM_DESC_MAX_PER_RUN)
 SR_DESC_BUDGET             = _DescBudget(SR_DESC_MAX_PER_RUN)
 ADP_DESC_BUDGET            = _DescBudget(ADP_DESC_MAX_PER_RUN)
@@ -10781,12 +10786,14 @@ async def run_houston_methodist() -> list[Job]:
         logger.info(f"  Houston Methodist: ERROR {e}")
         return []
     logger.info(f"  Houston Methodist: {len(jobs):,} jobs")
-    # 2026-09-24: the CXS list has no body. A Workday tenant, so it spends
-    # WD_DESC_BUDGET under the same fair-share cap as run_workday's tenants.
+    # 2026-09-24: the CXS list has no body. HM_DESC_BUDGET, not the shared
+    # Workday one, which the first tenants to finish listing drain (see
+    # HM_DESC_MAX_PER_RUN); the only tenant on it, so the budget is its share.
     if DETAIL_FETCH and jobs:
         try:
-            await _detail_pass(None, "Houston Methodist", jobs, WD_DESC_BUDGET,
-                               lambda j: asyncio.to_thread(_hm_detail_sync, j), "Workday")
+            await _detail_pass(None, "Houston Methodist", jobs, HM_DESC_BUDGET,
+                               lambda j: asyncio.to_thread(_hm_detail_sync, j), "Workday",
+                               share=HM_DESC_MAX_PER_RUN)
         except Exception as e:
             logger.info(f"  Houston Methodist: detail pass failed ({e})")
     return jobs
