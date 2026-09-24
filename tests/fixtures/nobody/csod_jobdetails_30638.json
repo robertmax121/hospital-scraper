@@ -1,0 +1,40 @@
+{
+ "status": 0,
+ "timestamp": "2026-09-24T20:00:30.8913103Z",
+ "data": {
+  "displayTitle": "CT Tech- JPS Main- PRN",
+  "externalDescription": "<b>Job Summary: </b>The Rad Technologist I CT PRN utilizes Computed Tomography (CT) scanners to capture specific images ordered by a physician to aid in patient diagnosis.<p>Essential Job Functions &amp; Accountabilities: </p><ol><li>Follows a physician's instructions, prepares and operates Computed Tomography equipment, positions patients correctly and effectively records the requested diagnostic images. </li><br><li>Start-up and calibrate Computed Tomography system daily. </li><br><li>Reviews orders with Radiologist to determine proper protocol for each procedure. </li><br><li>Performs Computed Tomography procedures in an efficient and timely manner. </li><br><li>Administers IV contrast with proper dosage. Checks to see where dosage would be documented for a permanent record vs log book, which stays in Computed Tomography area. </li><br><li>Orders and restocks supplies. </li><br><li>Reports equipment failure to proper service organization and supervisor. Schedules service and preventive maintenance according to patient load and equipment availability when necessary. </li><br><li>Enters and completes orders in Radiology computer system. </li><br><li>Maintains QA records. </li><br><li>Performs other job related duties as required. </li><br><li>Job description is not an all-inclusive list of duties and may be subject to change with or without notice. Staff are expected to perform other duties as assigned. </li></ol>",
+  "ref": "46551",
+  "requisitionStatusId": 2,
+  "hiringManagerId": 156052,
+  "allowApply": true,
+  "primaryLocation": {
+   "title": "John Peter Smith Hospital",
+   "ref": "JPS-MAIN",
+   "city": "Fort Worth",
+   "state": "TX",
+   "country": "US",
+   "geocode": {
+    "latitude": 32.72726,
+    "longitude": -97.32724
+   },
+   "postalCode": "76104",
+   "line1": "1500 S. Main Street"
+  },
+  "defaultCultureId": 1,
+  "availableCultures": [
+   1
+  ],
+  "additionalLocations": [],
+  "owners": [
+   {
+    "ownerId": 124450,
+    "isPrimary": true
+   }
+  ],
+  "reviewers": [],
+  "openDate": "2026-09-18T00:00:00",
+  "companyApplyUrl": "https://jpshealthnet.csod.com/ux/ats/careersite/4/home/requisition/30638?c=jpshealthnet",
+  "positionOUId": 2805
+ }
+}
