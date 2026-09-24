@@ -14921,7 +14921,7 @@ def extract_posting_facts(text, job_type=None, title=None):
 # is empty when the text does not state it.
 _RQ_WORD = (r"(?:minimum|basic|required|preferred|desired|additional|job|position|typical|special|other|general|"
             r"and|&|/|of|the|your|our|or|for|this|role|a|an|plus|nice|to|have|essential|"
-            r"qualifications?|requirements?|education(?:al)?|experience|licens(?:e|es|ure|ures|ing)|certifications?|registrations?|"
+            r"qualifications?|requirements?|education(?:al)?|experience|licens(?:e|es|ure|ures|ing)|certifications?|certificates?|registrations?|"
             r"credentials?|knowledge|skills?|abilit(?:y|ies)|expectations|ksas?|training|professional|clinical|work|"
             r"background|competenc(?:y|ies))")
 _RQ_HEAD_RX = re.compile(r"^" + _RQ_WORD + r"(?:[\s/&,]+" + _RQ_WORD + r")*$", re.I)
@@ -14957,7 +14957,7 @@ _RQ_BOILER_RX = re.compile(
     # UHS, University of Rochester, Geisinger)
     r"at [A-Z][\w&.' ]{2,40},\s*we\b|we (?:value|believe|take pride|encourage|treasure|strive|constantly)\b|"
     r"notice\b|during the recruitment process|the recruiters? will not|all [A-Z]+ subsidiaries|"
-    r"in support of our values|this commitment extends|perhaps just as important)", re.I)
+    r"in support of our values|this commitment extends|perhaps just as important|we look for)", re.I)
 _RQ_CSS_RX = re.compile(r"[{}]|^[a-z-]+\s*:\s*[^:]{1,40};$", re.I)
 # A pay / compensation statement ends a requirements block wherever it sits
 # in the line (Sentara: "We provide market-competitive compensation packages
@@ -15049,7 +15049,8 @@ _RQ_CERT_RX = re.compile(
     r"CHT|MLS|MLT|NHA|CMAA|CPCT|EMT|AEMT|NREMT|CNL|NE-BC|RN-BC|FNP-BC|AGACNP|CCM|CHPN|CPHQ|CIC|ASCP)\b"
     r"|basic life support|advanced (?:cardiac|cardiovascular) life support|pediatric advanced life support|"
     r"neonatal resuscitation|trauma nursing core", re.I)
-_RQ_CERT_NOT_RX = re.compile(r"certified (?:unit|hospital|center|facility)|\bcertificate program\b", re.I)
+_RQ_CERT_NOT_RX = re.compile(r"certified (?:unit|hospital|center|facility)|\bcertificate program\b|"
+                             r"\bCRT (?:work|screens?|monitors?|terminals?)", re.I)
 _RQ_EDU_RX = re.compile(
     r"\bdegree\b|\bdiploma\b|\bGED\b|\bHSE\b|high school|\bgraduat(?:e|ed|ion) (?:of|from)\b|"
     r"\b(?:BSN|ADN|ASN|MSN|DNP|BSW|MSW|MHA|MPH|MBA|PhD|PharmD|DPT|OTD|PsyD|AuD)\b|"
@@ -15057,14 +15058,15 @@ _RQ_EDU_RX = re.compile(
     r"doctora(?:te|l)|\bcollege\b|universit|\bschool of\b|accredited (?:school|program|college|institution|university|nursing)|"
     r"(?:training|education(?:al)?|nursing|certificate|academic|residency|technical|vocational|degree) program|"
     r"program (?:in|of) |course of study|coursework|course work|\bequivalent (?:combination of )?education|equivalent combination|"
-    r"or (?:the )?equivalent\b|\bGPA\b|enrolled in|\baccredited\b[^.;]{0,50}\bprogram\b", re.I)
+    r"(?:diploma|degree|GED|educat\w*|school|graduat\w*|BSN|ADN|bachelor\w*|master\w*|associate\w*)[^.;]{0,40}\bor (?:the |an? )?equivalent\b|"
+    r"\bGPA\b|enrolled in|\baccredited\b[^.;]{0,50}\bprogram\b", re.I)
 # Inside an education block also "Completion of ... on-the-job training",
 # "completion of a course of study" (never outside one: "completion of BLS
 # course within 30 days" is a certification).
 _RQ_EDU_BLOCK_RX = re.compile(r"\bcompletion of\b[^.;]{0,60}\b(?:program|course|training|residency|fellowship|school)\b", re.I)
 _RQ_EDU_NOT_RX = re.compile(
     r"tuition|reimburse|continuing education|educational assistance|education assistance|patient education|"
-    r"\beducat(?:e|es|ing)\b|\bCEUs?\b|loan|"
+    r"\beducat(?:e|es|ing)\b|\bCEUs?\b|loan|^certified (?:by|through)\b|"
     # 2026-09-24 (reqfix, VITAS 2305630): "Equivalent experience or licensure
     # may be considered" states a substitute, not a required education.
     r"^(?:an? )?(?:equivalent|comparable)\b[^.;]{0,60}\bmay (?:be )?(?:considered|substitut\w*|accepted)|"
@@ -15088,7 +15090,7 @@ _RQ_HARD_STOP_RX = re.compile(
     r"^emotional\b|^activities\b|^mental/sensory|blood-?borne|exposure (?:category|risk)|age[- ]specific|"
     r"percentages? of time|personal protective|protective equipment|weekly hours|scheduled? hours|"
     r"hours per (?:week|pay period)|^job details$|(?:position|additional|other|job) information|travel requirements?|"
-    r"^unusual (?:physical|demands)|^(?:work )?schedule\b|^shift\b|you will be responsible for|^responsible for$", re.I)
+    r"^unusual (?:physical|demands)|you will be responsible for|^responsible for$", re.I)
 # Lines inside a block that are not a requirement but do not end it: a
 # heading value of "N/A" / "None" (Loma Linda "Licensures and
 # Certifications: None."), stock sentences about the list itself, schedule
@@ -15114,7 +15116,7 @@ _RQ_DUTY_RX = re.compile(
     r"^(?:is )?(?:responsible for|performs?|contributes|delegates|enhances|participates|assists|provides|runs|"
     r"coordinates|oversees|supervises|organizes|directs|develops|ensures|completes|documents|collaborates|educates|"
     r"reports to|promotes|designs|reviews|monitors|facilitates|manages|implements|identifies|leads|serves as|acts as|"
-    r"communicates|conducts?|models|in this role you will)\b", re.I)
+    r"communicates|conducts?|models|supports|in this role you will)\b", re.I)
 _RQ_HARD_CUE_RX = re.compile(
     r"\bcurrent(?:ly)? (?:\w+ ){0,3}(?:licen|certif|registr|BLS|ACLS|PALS|CPR)|\b(?:valid|active|unrestricted|required|must|mandatory|"
     r"within \d+)\b", re.I)
@@ -15124,7 +15126,8 @@ _RQ_HARD_CUE_RX = re.compile(
 # requirements end at the first one.
 _RQ_WORKCOND_RX = re.compile(
     r"\b(?:exposure to|exposed to|extreme temperature|repetitive motions?|protective equipment|"
-    r"tolera\w* (?:to )?(?:extreme|temperature|noise)|high stress environment|physically demanding)\b", re.I)
+    r"tolera\w* (?:to )?(?:extreme|temperature|noise)|high stress environment|physically demanding|"
+    r"(?:mental|visual|physical)(?:/\w+)? fatigue)\b", re.I)
 _RQ_ABBR_RX = re.compile(r"(?:\b(?:St|Dr|Mr|Mrs|Ms|Jr|Sr|No|Nos|vs|etc|Inc|Co|Corp|Ltd|approx|Ft|Mt|U\.S|e\.g|i\.e)|\b[A-Z])\.$")
 
 
@@ -15155,7 +15158,7 @@ def _rq_heading(line: str):
             return _rq_heading(bare + ":")
     if m and value and len(value) <= 120 and re.match(r"[A-Z]", value) and not _rq_is_req_label(label, True):
         inner = _rq_heading(value)
-        if inner and inner[0] != "stop" and not inner[2]:
+        if inner and inner[0] != "stop" and (not inner[2] or _RQ_STOP_HEAD_RX.search(label)):
             return inner
     # 2026-09-24 (reqfix): physical / working-conditions / schedule labels
     # end a block even with a value ("PHYSICAL REQUIREMENTS: Continually ...").
@@ -15218,7 +15221,9 @@ def _rq_heading(line: str):
     # 2026-09-24 (reqfix): an all-caps line naming no credential is a section
     # heading of another kind ("PEOPLE FIRST", "ADDITIONAL POSITION INFORMATION").
     if (not m and label.upper() == label and len(words) <= 5 and len(re.sub(r"[^A-Z]", "", label)) >= 6
-            and not re.search(r"\d", label) and not _rq_types(label) and not _RQ_KEEP_RX.search(label)):
+            and not re.search(r"\d", label) and not _rq_types(label) and not _RQ_KEEP_RX.search(label)
+            and not re.search(r"\b(?:RN|LPN|LVN|NURSE|NURSING|PHARMACIST|THERAPIST|TECHNOLOGIST|TECHNICIAN|PARAMEDIC|EMT|"
+                              r"PHYSICIAN|ASSISTANT|AIDE|SOCIAL WORKER)\b", label)):
         return ("stop", None, "")
     if m and value and len(words) <= 4 and _RQ_STOP_HEAD_RX.search(label) and not _RQ_CUE_RX.search(value):
         return ("stop", None, "")
@@ -15309,7 +15314,7 @@ def _rq_title_cut(m) -> str:
 # Heading words that may start right after a glued word of any case
 # ("No Degree or DiplomaAdditional Job Description:").
 _RQ_GLUED_TITLE_RX = re.compile(
-    r"(?<=[a-z%)])(?=(?:Additional Job Description|Job Description|Minimum Qualifications|Required Qualifications|"
+    r"(?<=[a-z%)])(?=(?:Additional Job Description|Job Description|Job Details|Minimum Qualifications|Required Qualifications|"
     r"Preferred Qualifications|Qualifications|Requirements|Education|Licensure|Certifications?|Responsibilities|Benefits)"
     r"(?:\b|(?=[A-Z])))")
 
@@ -15514,9 +15519,11 @@ def extract_requirements(text) -> dict:
             continue
         # 2026-09-24 (reqfix, hand check): not a requirement, the block goes on.
         words = s.split()
+        s_ = _RQ_ENUM_RX.sub("", s)
         if (_RQ_NONE_RX.match(s) or _RQ_SKIP_RX.search(s) or _RQ_SCHED_LINE_RX.match(s) or s.endswith("?")
-                or (_RQ_DUTY_RX.search(s) and not _RQ_HARD_CUE_RX.search(s))
-                or (len(words) == 1 and not _rq_types(s) and not _RQ_KEEP_RX.search(s)
+                or re.search(r"\b(?:will be|is|are) provided\b", s, re.I)
+                or (_RQ_DUTY_RX.search(s_) and not _RQ_HARD_CUE_RX.search(s_))
+                or (len(words) == 1 and "-" not in s and not _rq_types(s) and not _RQ_KEEP_RX.search(s)
                     and all(w[:1].isupper() or not w[:1].isalpha() for w in words))
                 or (len(s) <= 300 and _RQ_WORKCOND_RX.search(s) and not _rq_types(s))):
             continue
@@ -15565,12 +15572,15 @@ def extract_requirements(text) -> dict:
                     for f in sorted(_rq_types(c) & {"licensure", "certifications"}):
                         add(f, c, cp)
                 continue
-            for c in _rq_clauses(piece):
-                cp = _rq_pref(c, mode) if (_RQ_PREF_RX.search(c) or _RQ_REQ_RX.search(c)) else pref
+            clauses = _rq_clauses(piece)
+            for c in clauses:
+                cp = _rq_pref(c, mode) if (_RQ_PREF_RX.search(c) or _RQ_REQ_RX.search(c) or len(clauses) > 1) else pref
                 types = _rq_types(c)
-                if kind == "lic" and not types & {"licensure", "certifications"}:
+                if (kind == "lic" and not types & {"licensure", "certifications"}
+                        and not re.search(r"\bexperience\b|\byears?\b|\bskills?\b|knowledge|abilit|computer", c, re.I)):
                     types.add("licensure")
-                if kind in ("cert", "lic+cert") and not types & {"licensure", "certifications"} and not _RQ_DRIVER_RX.search(c):
+                if (kind in ("cert", "lic+cert") and not types & {"licensure", "certifications"} and not _RQ_DRIVER_RX.search(c)
+                        and not re.search(r"\bexperience\b|\byears?\b|\bskills?\b|knowledge|abilit|computer", c, re.I)):
                     types.add("certifications")
                 for f in sorted(types):
                     add(f, c, cp)
