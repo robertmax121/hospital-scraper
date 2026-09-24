@@ -14986,7 +14986,7 @@ _RQ_GENERIC_HEAD_RX = re.compile(
     r"to (?:ensure|be) success(?:ful)?(?: in this (?:role|position))?,? you (?:must|will|should) (?:have|bring)|"
     r"(?:required|preferred|minimum|additional|candidate|position|job|hiring) criteria|"
     r"(?:candidate|applicant|position|role) (?:qualifications?|requirements?)|"
-    r"qualifications? (?:for|of) (?:a |an |the )?[^:]{2,40}|"
+    r"(?:minimum |preferred |required |basic )?qualifications? (?:for|of) (?:a |an |the )?[^:]{2,50}|"
     r"[^:]{0,70}\b(?:required|needed) (?:for|of) (?:this|the) (?:role|position|job))$", re.I)
 # A label ENDING in requirements / qualifications / criteria is a heading only
 # when it reads as one: a "Label:" line or Title Case, at most eight words, not
@@ -15203,7 +15203,10 @@ def _rq_heading(line: str):
     words = label.split()
     low = label.lower()
     if _rq_is_req_label(label, bool(m)):
-        mode = "pref" if _RQ_PREF_RX.search(low) else ("req" if _RQ_HEAD_REQ_RX.search(low) else None)
+        # ("Minimum qualifications for the ideal future caregiver include:"
+        # is required although it says "ideal", Cleveland Clinic)
+        mode = ("req" if re.match(r"(?:minimum|required|basic)\b", low) else
+                "pref" if _RQ_PREF_RX.search(low) else ("req" if _RQ_HEAD_REQ_RX.search(low) else None))
         lic = bool(re.search(r"licen", low))
         cert = bool(re.search(r"certif|credential", low))
         edu = bool(re.search(r"educat|training", low))
@@ -15329,12 +15332,24 @@ _RQ_GLUED_TITLE_RX = re.compile(
     r"(?:\b|(?=[A-Z])))")
 
 
+_RQ_NBSP_ITEM_RX = re.compile(
+    r"(?<=[A-Za-z0-9)])\xa0(?=(?:Successful|Prior|Preferred|Required|Minimum|Current|Valid|Graduate|Bachelor|Associate|"
+    r"Master|High School|State|Basic|Must|Ability|Knowledge|Experience|Licensure|Certification)\b)")
+
+
+def _rq_nbsp_item(m) -> str:
+    before = m.string[:m.start()].rsplit(None, 1)
+    prev = before[-1].lower() if before else ""
+    return " " if prev in ("the", "a", "an", "of", "in", "and", "or", "for", "to", "by", "with", "our", "your") else "\n"
+
+
 def _rq_unglue(t: str) -> str:
     """Cut glued headings and glued sentences out of any body (the wall
     splitter does more, on one-line bodies only): all-caps heading runs,
     "preferredThe University ...", "annually.Essential"."""
     t = _RQ_CAPS_GLUED_RX.sub(lambda m: "\n" + m.group(1).strip() + "\n", t)
     t = _RQ_GLUED_TITLE_RX.sub("\n", t)
+    t = _RQ_NBSP_ITEM_RX.sub(_rq_nbsp_item, t)
     t = re.sub(r"(Abilities|Knowledge|Education|Experience|Licenses)N/?A(?=[A-Z]|\b)", "\\1\nN/A\n", t)
     t = re.sub(r"(?<=[A-Z][.!?])(?=(?:Licensure|Certifications?|Education|Experience|Required|Preferred)\b)", "\n", t)
     t = re.sub(r"(?<=[a-z]{3})(?=(?:The|This|We|Our|Prior|Must|Ability|Minimum|Preferred|Required|Valid|Current|Here|What|"

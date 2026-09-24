@@ -173,3 +173,17 @@ def test_physical_requirements_end_the_block():
 def test_abbreviation_does_not_split_a_clause():
     assert scraper._rq_clauses("Bachelor's degree for external applicants at metro hospitals and St. Francis. BLS required") == [
         "Bachelor's degree for external applicants at metro hospitals and St. Francis.", "BLS required"]
+
+
+def test_cleveland_nbsp_items_and_minimum_qualifications_for():
+    t = ("Assist in keeping patient rooms in order.\nMinimum qualifications for the ideal future caregiver include:\n"
+         "High School Diploma or GED Successful completion of Basic Life Support (BLS) through American Heart Association (AHA)"
+         " Prior job or educational experience providing basic computer knowledge and skills\n"
+         "Physical Requirements:\nMedium Work - Exerting 20 to 50 pounds of force occasionally\n"
+         "Join the Cleveland Clinic team in the State of Ohio.\n")
+    rq = scraper.extract_requirements(t)
+    assert rq["qualifications"]["required"][:2] == [
+        "High School Diploma or GED",
+        "Successful completion of Basic Life Support (BLS) through American Heart Association (AHA)"]
+    assert rq["education"] == [["High School Diploma or GED", False]]
+    assert not any("pounds" in x for x in rq["qualifications"]["required"])
