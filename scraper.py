@@ -9494,6 +9494,32 @@ _HCA_LOCATION_RE = re.compile(
     r'<div class="neu-text--caption neu-margin--bottom-10">(.*?)</div>', re.DOTALL
 )
 _HCA_TYPE_RE = re.compile(r'>work</i>\s*([^<&]+)')
+# 2026-09-24: the results header ("Showing 1-500 of 4561 results"); the site's
+# own count for the slice, checked against what the pages actually served.
+_HCA_TOTAL_RE = re.compile(r'\bof\s+([\d,]+)\s+results?\b', re.I)
+_HCA_CARD_MARK = "jobs-section__item-outer"   # one per card; _parse_hca_cards splits on it
+HCA_SHORTFALL_TOL = 0.03   # a finished slice may trail the listed total by max(10, 3%)
+
+
+def _hca_total(page_html: str) -> int | None:
+    """The 'of N results' figure on a search page, or None when absent."""
+    m = _HCA_TOTAL_RE.search(page_html or "")
+    return int(m.group(1).replace(",", "")) if m else None
+
+
+def _hca_is_challenge(page_html: str) -> bool:
+    """A Cloudflare interstitial served with HTTP 200. 2026-09-24: NOT the
+    'challenge-platform' substring: every normal page loads
+    /cdn-cgi/challenge-platform/scripts/jsd/main.js (Cloudflare's bot-detection
+    beacon), so that test flagged every empty past-the-end page as a challenge
+    and all 25 slices of the 09-23 home run as PARTIAL. A real block comes back
+    as a 403, which _curl_fetch already raises."""
+    return "Just a moment" in page_html or "cf-chl" in page_html
+
+
+def _hca_shortfall(got: int, total: int | None) -> bool:
+    """True when the site listed clearly more results than the slice served."""
+    return bool(total) and got + max(10, int(total * HCA_SHORTFALL_TOL)) < total
 
 
 def _parse_hca_cards(page_html: str) -> list[Job]:
@@ -9615,10 +9641,13 @@ def _hca_discover_state_slugs() -> list[str]:
 def _hca_fetch_slice(slug: str, q: str = "") -> tuple[list[Job], bool, bool]:
     """Blocking crawl of one state (optionally one keyword inside it).
     Returns (jobs, finished, capped): finished is False when a page failed
-    every retry, capped is True when the slice filled HCA_PAGE_CAP full pages
-    (the 10k ceiling; the caller re-slices by keyword)."""
+    every retry, came back as a Cloudflare challenge, or the listing ended
+    well short of the site's own 'of N results' total; capped is True when
+    the slice filled HCA_PAGE_CAP full pages (the 10k ceiling; the caller
+    re-slices by keyword). The slice ends on the first page holding fewer
+    than HCA_PAGE_SIZE cards."""
     out: list[Job] = []
-    page, errors, last_err = 1, 0, None
+    page, errors, last_err, total = 1, 0, None, None
     label = f"{slug}?q={q}" if q else slug
     while True:
         try:
@@ -9640,11 +9669,17 @@ def _hca_fetch_slice(slug: str, q: str = "") -> tuple[list[Job], bool, bool]:
             time.sleep(min(30, 3 * 2 ** errors))   # 6, 12, 24 s: outlasts a WAF burst window
             continue
         errors = 0
-        if not cards and ("Just a moment" in r.text or "cf-chl" in r.text or "challenge-platform" in r.text):
-            # 2026-09-16: a Cloudflare challenge page, not an empty state.
-            logger.info(f"  HCA {label}: page {page} is a Cloudflare challenge; slice marked PARTIAL")
-            return out, False, False
+        total = total or _hca_total(r.text)
         if not cards:
+            if _hca_is_challenge(r.text):
+                # 2026-09-16: a Cloudflare challenge page, not an empty state.
+                logger.info(f"  HCA {label}: page {page} is a Cloudflare challenge; slice marked PARTIAL")
+                return out, False, False
+            if _hca_shortfall(len(out), total):
+                logger.info(f"  HCA {label}: page {page} came back empty at {len(out)} of the {total} "
+                            f"results the site lists; slice marked PARTIAL")
+                return out, False, False
+            # Past the end (the inventory was an exact multiple of the page size).
             return out, True, False
         if page == 1 and not q:
             # 2026-09-10 (S-scraper-2 dry run): a slug the site does not know
@@ -9659,8 +9694,21 @@ def _hca_fetch_slice(slug: str, q: str = "") -> tuple[list[Job], bool, bool]:
                             f"(remove it from HCA_STATE_SLUGS)")
                 return [], True, False
         out.extend(cards)
+        # 2026-09-24: a page with fewer than a full page of cards is the last
+        # one; finish here instead of requesting the empty page past the end.
+        # Counted on the raw card containers, not the parsed jobs, so a card
+        # the parser skips cannot end a slice early. The site's own total is
+        # the cross-check: a short page well below it is a truncated crawl
+        # (per_page capped, parser regression), and a truncated slice must
+        # not finish, or the sweep would retire the pages it never read.
+        if r.text.count(_HCA_CARD_MARK) < HCA_PAGE_SIZE:
+            if _hca_shortfall(len(out), total):
+                logger.info(f"  HCA {label}: page {page} ended the listing at {len(out)} of the {total} "
+                            f"results the site lists; slice marked PARTIAL")
+                return out, False, False
+            return out, True, False
         if page >= HCA_PAGE_CAP:
-            return out, True, len(cards) >= HCA_PAGE_SIZE
+            return out, True, True
         page += 1
         time.sleep(0.6)  # polite pacing — keep the WAF happy
 
