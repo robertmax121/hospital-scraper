@@ -239,11 +239,28 @@ def strip_html(s):
 # per tenant, 4 in flight per tenant and WD_DESC_GLOBAL_CONCURRENCY in flight
 # overall (the ~99 tenants list in parallel, so a per-tenant limit alone
 # would allow hundreds of simultaneous detail requests).
+# 2026-09-24 (budget): 6,000 -> 10,000. Rows the database already holds a
+# body for no longer cost budget (_body_known), so every fetch now lands on a
+# row without one; 77k active Workday rows had no body. At the 12-in-flight
+# global gate (~12 requests a second) 10,000 fetches take ~14 minutes, about
+# the Workday listing time they overlap; the backlog clears in ~11 nights.
 WD_FETCH_DESCRIPTIONS = os.getenv("WD_FETCH_DESCRIPTIONS", "1") == "1"
-WD_DESC_MAX_PER_RUN   = int(os.getenv("WD_DESC_MAX_PER_RUN", "6000"))
+WD_DESC_MAX_PER_RUN   = int(os.getenv("WD_DESC_MAX_PER_RUN", "10000"))
 WD_DESC_CONCURRENCY   = int(os.getenv("WD_DESC_CONCURRENCY", "4"))
 WD_DESC_GLOBAL_CONCURRENCY = int(os.getenv("WD_DESC_GLOBAL_CONCURRENCY", "12"))
 _wd_detail_gate = None   # asyncio.Semaphore, created per run in run_workday()
+
+
+def _water_fill(wants: dict, pool: int) -> dict:
+    """Max-min fair split of `pool` among `wants` (name -> count): the smallest
+    wants are met in full and the rest share what is left equally."""
+    out = {}
+    items = sorted(wants.items(), key=lambda kv: kv[1])
+    for i, (k, w) in enumerate(items):
+        g = min(max(0, w), max(0, pool) // (len(items) - i))
+        out[k] = g
+        pool -= g
+    return out
 
 
 class _DescBudget:
@@ -254,16 +271,119 @@ class _DescBudget:
     opposite of the intended canary. This budget is shared across every tenant
     so WD_DESC_MAX_PER_RUN means what it says. asyncio is single-threaded and
     take() has no await inside it, so a plain int needs no lock.
+
+    FAIR SHARE (2026-09-24). Tenants list in parallel, and each used to take
+    up to total/DETAIL_TENANT_SHARE the moment it finished listing. Small
+    tenants finish in seconds, so they reserved the whole night's allowance
+    before any big tenant finished paging: after three nights every Oracle
+    tenant over ~1,000 rows (Lifepoint, Tenet, Encompass, Providence,
+    Brookdale, Baptist Memorial, Mount Sinai, Adventist, Mayo, WellSpan,
+    VITAS) had 0 bodies, while the small ones were re-fetched in full every
+    night. Now a runner names its tenants with expect() and reports each one
+    with done() however it ends. A tenant that finishes listing gets its
+    floor at once (total / tenants, at most DETAIL_TENANT_MAX): the floors
+    sum to the budget, so no tenant's floor depends on when it finished.
+    What tenants leave of their floors is split max-min fair (_water_fill)
+    among the tenants that want more, once every expected tenant has
+    reported or DETAIL_BARRIER_WAIT seconds have passed; a tenant still
+    listing then keeps an equal share in reserve. `claimed` holds the
+    (system, job_id) keys fetched this run, so two sites of one system
+    (Northwell's CX_1/CX_2/CX_3) never pay twice for one requisition.
+    A budget no runner called expect() on keeps the old first-come rule.
     """
     def __init__(self, total):
-        self.remaining = max(0, total)
+        self.total = max(0, total)
+        self.remaining = self.total
         self.spent = 0
+        self.expected: set = set()
+        self.leftover: dict = {}     # tenant -> fetches it still wants beyond its floor
+        self.granted: dict = {}      # tenant -> phase-two allotment, already taken
+        self.claimed: set = set()    # (canonical system, job_id) fetched this run
+        self._barrier = None         # asyncio.Event, created on first use
 
     def take(self, n):
         n = max(0, min(n, self.remaining))
         self.remaining -= n
         self.spent += n
         return n
+
+    def give_back(self, n):
+        n = max(0, min(n, self.spent))
+        self.remaining += n
+        self.spent -= n
+
+    def expect(self, names) -> None:
+        self.expected.update(names)
+
+    def floor(self) -> int:
+        return max(0, min(DETAIL_TENANT_MAX, self.total // max(1, len(self.expected))))
+
+    def claim(self, tenant, need: int, share: int | None = None) -> int:
+        """Phase one: how many of this tenant's `need` fetches it makes now."""
+        if share or not self.expected:
+            cap = share if share else max(50, self.total // max(1, DETAIL_TENANT_SHARE))
+            return self.take(min(need, cap))
+        n = self.take(min(need, self.floor()))
+        self.leftover[tenant] = max(0, min(need, DETAIL_TENANT_MAX) - n)
+        self._check()
+        return n
+
+    def done(self, tenant) -> None:
+        """The tenant's scrape has ended (or failed before its detail pass):
+        it wants nothing more, and an allotment it never collected goes back."""
+        if not self.expected:
+            return
+        self.leftover[tenant] = 0
+        if tenant in self.granted:
+            self.give_back(self.granted.pop(tenant))
+        self._check()
+
+    def _event(self):
+        if self._barrier is None:
+            self._barrier = asyncio.Event()
+        return self._barrier
+
+    def _check(self) -> None:
+        if self.expected and self.expected <= set(self.leftover):
+            self._event().set()
+
+    def _grant(self) -> None:
+        waiting = {t: w for t, w in self.leftover.items() if w > 0 and t not in self.granted}
+        unreported = self.expected - set(self.leftover)
+        # A tenant still listing keeps its floor, and an equal share of the
+        # pool is held back for it (it joins the split as a tenant that wants
+        # as much as it may have).
+        pool = self.remaining - len(unreported) * self.floor()
+        wants = dict(waiting)
+        wants.update({("__unreported__", u): DETAIL_TENANT_MAX for u in unreported})
+        for t, g in _water_fill(wants, pool).items():
+            if t in waiting:
+                self.granted[t] = self.take(g)
+
+    async def extra(self, tenant, want: int) -> int:
+        """Phase two: this tenant's share of what the others left unused."""
+        if not self.expected:
+            return 0
+        want = max(0, min(want, self.leftover.get(tenant, 0)))
+        self.leftover[tenant] = want
+        if want <= 0:
+            self._check()
+            return 0
+        if tenant not in self.granted:
+            ev = self._event()
+            if not ev.is_set():
+                try:
+                    await asyncio.wait_for(ev.wait(), timeout=DETAIL_BARRIER_WAIT)
+                except asyncio.TimeoutError:
+                    ev.set()
+            if tenant not in self.granted:
+                self._grant()
+        got = self.granted.pop(tenant, 0)
+        self.leftover[tenant] = 0
+        if got > want:
+            self.give_back(got - want)
+            got = want
+        return got
 
 
 WD_DESC_BUDGET = _DescBudget(WD_DESC_MAX_PER_RUN)
@@ -283,12 +403,21 @@ AYA_DESC_BUDGET        = _DescBudget(AYA_DESC_MAX_PER_RUN)
 # run-wide budget per platform, shuffled with transparency states first, and
 # the enrichment trigger keeps what a night fetched. On by default; DETAIL_FETCH=0
 # turns every pass off.
+# 2026-09-24 (budget): Oracle 8,000 -> 10,000 and Phenom 2,500 -> 4,000. With
+# known bodies skipped every fetch is new coverage: ~26.8k active Oracle rows
+# (870 new postings a night) clear in about 4 nights, Phenom's ~25.7k teasers
+# in about 8. DETAIL_TENANT_MAX caps one tenant's fetches per run (one host,
+# 4 in flight: ~6 minutes at the cap), and DETAIL_BARRIER_WAIT bounds how
+# long a tenant waits for the slowest sibling before the unused floors are
+# split (see _DescBudget).
 DETAIL_FETCH            = os.getenv("DETAIL_FETCH", "1") == "1"
 DETAIL_CONCURRENCY      = int(os.getenv("DETAIL_CONCURRENCY", "4"))
-ORACLE_DESC_MAX_PER_RUN = int(os.getenv("ORACLE_DESC_MAX_PER_RUN", "8000"))   # 2026-09-22: 3,000 -> 8,000 after a clean first night
+ORACLE_DESC_MAX_PER_RUN = int(os.getenv("ORACLE_DESC_MAX_PER_RUN", "10000"))  # 2026-09-22: 3,000 -> 8,000; 09-24: 10,000
 TB_DESC_MAX_PER_RUN     = int(os.getenv("TB_DESC_MAX_PER_RUN", "2500"))
-PHENOM_DESC_MAX_PER_RUN = int(os.getenv("PHENOM_DESC_MAX_PER_RUN", "2500"))
-DETAIL_TENANT_SHARE     = int(os.getenv("DETAIL_TENANT_SHARE", "4"))   # one tenant takes at most budget/SHARE per run
+PHENOM_DESC_MAX_PER_RUN = int(os.getenv("PHENOM_DESC_MAX_PER_RUN", "4000"))
+DETAIL_TENANT_SHARE     = int(os.getenv("DETAIL_TENANT_SHARE", "4"))   # unregistered budgets: one tenant takes at most budget/SHARE
+DETAIL_TENANT_MAX       = int(os.getenv("DETAIL_TENANT_MAX", "1500"))  # one tenant's fetches per run, floor + phase two
+DETAIL_BARRIER_WAIT     = float(os.getenv("DETAIL_BARRIER_WAIT", "1800"))
 ORACLE_DESC_BUDGET      = _DescBudget(ORACLE_DESC_MAX_PER_RUN)
 TB_DESC_BUDGET          = _DescBudget(TB_DESC_MAX_PER_RUN)
 PHENOM_DESC_BUDGET      = _DescBudget(PHENOM_DESC_MAX_PER_RUN)
@@ -663,6 +792,98 @@ def load_cms_lookup() -> int:
     n = set_cms_lookup(rows)
     logger.info(f"CMS lookup: {len(rows)} hospitals, {n} unique names")
     return n
+
+
+# ── Known bodies (2026-09-24, budget) ───────────────────────────────────────
+# The detail passes could not see which rows the database already holds a
+# body for (the enrichment trigger keeps it when a list-only night sends a
+# blank), so every night they spent their budget re-fetching rows they had
+# fetched before: the same small Oracle tenants took the whole 8,000 three
+# nights running while VITAS and ten other big tenants got nothing. One
+# read-only pass at run start now loads (canonical system, job_id) -> stored
+# body length for the detail platforms' active rows with a real body, and
+# _detail_candidates skips those rows at no budget cost.
+KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor", "PreloadState")
+KNOWN_BODY_PAGE      = 1000
+KNOWN_BODY_MAX_ROWS  = int(os.getenv("KNOWN_BODY_MAX_ROWS", "400000"))
+_KNOWN_BODIES: dict = {}
+
+
+def set_known_bodies(rows) -> int:
+    """Install the known-body map from rows of {hospital_system, job_id,
+    desc_len}; rows under 200 characters are not bodies and are ignored."""
+    global _KNOWN_BODIES
+    kb = {}
+    for r in rows or []:
+        try:
+            n = int(r.get("desc_len") or 0)
+        except (TypeError, ValueError, AttributeError):
+            continue
+        sysname, jid = r.get("hospital_system"), r.get("job_id")
+        if n >= 200 and sysname and jid not in (None, ""):
+            k = (str(sysname), str(jid))
+            kb[k] = max(n, kb.get(k, 0))
+    _KNOWN_BODIES = kb
+    return len(kb)
+
+
+def load_known_bodies() -> int:
+    """One read-only PostgREST pass (same SUPABASE_URL / key as the upsert),
+    keyset-paged on id so no page repeats a scan. Without credentials, or
+    with every detail pass off, the map stays empty and the passes behave as
+    before; a page that fails keeps the rows read so far."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = (os.environ.get("SUPABASE_KEY", "")
+              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    if not sb_url or not sb_key or not (DETAIL_FETCH or WD_FETCH_DESCRIPTIONS):
+        set_known_bodies([])
+        logger.info("Known bodies: not loaded (no credentials or detail passes off); every row without a body is a candidate")
+        return 0
+    import urllib.request as _urlreq
+    from urllib.parse import quote as _q
+    plats = _q(",".join(f'"{p}"' for p in KNOWN_BODY_PLATFORMS), safe=",")
+    rows, last = [], 0
+    try:
+        while len(rows) < KNOWN_BODY_MAX_ROWS:
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,desc_len"
+                 f"&is_active=is.true&desc_len=gte.200&ats_platform=in.({plats})"
+                 f"&id=gt.{last}&order=id.asc&limit={KNOWN_BODY_PAGE}")
+            rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            with _urlreq.urlopen(rq, timeout=60) as resp:
+                chunk = json.loads(resp.read().decode())
+            if not chunk:
+                break
+            rows.extend(chunk)
+            last = chunk[-1]["id"]
+    except Exception as e:
+        logger.warning(f"Known bodies: load stopped after {len(rows):,} rows ({e}); the rest are fetched as before")
+    n = set_known_bodies(rows)
+    logger.info(f"Known bodies: {n:,} active rows on {', '.join(KNOWN_BODY_PLATFORMS)} already hold a body")
+    return n
+
+
+def _canon_system(system: str) -> str:
+    return HOSPITAL_SYSTEM_ALIASES.get(system, system)
+
+
+def _body_known(system: str, job) -> bool:
+    """True when the database already holds a body for this posting that a
+    detail fetch would not improve on: a full one (DETAIL_MIN_CHARS+), or any
+    real body longer than what the list gave (only a detail pass stores one).
+    The list's shorter copy is then dropped, so the upsert sends a blank and
+    the enrichment trigger keeps the stored body; the wage, facts and type the
+    upsert parses from the text are blank too, and the trigger keeps theirs.
+    Without that, a Phenom teaser overwrote the full body fetched the night
+    before whenever the row was not fetched again."""
+    stored = _KNOWN_BODIES.get((_canon_system(system), str(job.job_id)), 0)
+    if stored < 200:
+        return False
+    cur = len((job.description or "").strip())
+    if stored < DETAIL_MIN_CHARS and stored <= cur:
+        return False
+    if cur < stored:
+        job.description = ""
+    return True
 
 
 def cms_location_for(*names):
@@ -1684,6 +1905,101 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
     return city.strip(), state.upper() if state else ""
 
 
+def _posted_age_days(posted) -> int | None:
+    """Days since posting from an ISO date or a Workday-style relative label
+    ("Posted Today", "Posted Yesterday", "Posted 3 Days Ago", "30+ Days Ago");
+    None when the text says neither."""
+    s = str(posted or "").strip()
+    m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})", s)
+    if m:
+        try:
+            d = datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), tzinfo=timezone.utc)
+            return max(0, (datetime.now(timezone.utc) - d).days)
+        except ValueError:
+            return None
+    low = s.lower()
+    if "today" in low or "just posted" in low:
+        return 0
+    if "yesterday" in low:
+        return 1
+    m = re.search(r"(\d+)\+?\s*days?\s+ago", low)
+    return int(m.group(1)) if m else None
+
+
+def _detail_rank(job) -> tuple:
+    """Fetch order inside one tenant: transparency states first (their bodies
+    carry posted pay 3-4x as often; owner, 2026-08-21), then the newest
+    postings, then undated rows (in shuffled order: the sort is stable)."""
+    age = _posted_age_days(job.posted_date)
+    return (0 if (job.state or "").strip().upper() in DETAIL_PRIORITY_STATES else 1,
+            age if age is not None else 10 ** 6)
+
+
+def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, eligible=None):
+    """Rows of one tenant worth a detail fetch, in fetch order, plus how many
+    were left out because the database already holds their body (_body_known,
+    free) or because another site of the same system fetched that job_id this
+    run. Returns (candidates, known, duplicates)."""
+    canon = _canon_system(system)
+    cands, known, dup = [], 0, 0
+    for it in items:
+        j = job_of(it)
+        if len((j.description or "").strip()) >= DETAIL_MIN_CHARS:
+            continue
+        if _body_known(system, j):
+            known += 1
+            continue
+        if eligible is not None and not eligible(it):
+            continue
+        if (canon, str(j.job_id)) in budget.claimed:
+            dup += 1
+            continue
+        cands.append(it)
+    random.shuffle(cands)
+    cands.sort(key=lambda it: _detail_rank(job_of(it)))
+    return cands, known, dup
+
+
+async def _fair_detail_fetch(budget, system: str, cands: list, run_batch, job_of=lambda it: it,
+                             share: int | None = None) -> tuple[int, int]:
+    """Fetch `cands` in order within this tenant's fair share of `budget`:
+    its floor now (phase one), then its part of what the other tenants left
+    once they have all reported (phase two; see _DescBudget). run_batch(list)
+    does the fetching. Returns (fetched, left for another night)."""
+    canon = _canon_system(system)
+
+    def key(it):
+        return (canon, str(job_of(it).job_id))
+
+    n1 = budget.claim(system, len(cands), share)
+    first = cands[:n1]
+    budget.claimed.update(key(it) for it in first)
+    if first:
+        await run_batch(first)
+    rest = [it for it in cands[n1:] if key(it) not in budget.claimed]
+    got = 0 if share else await budget.extra(system, len(rest))
+    # A sibling site may have fetched some of `rest` while this one waited.
+    rest = [it for it in rest if key(it) not in budget.claimed]
+    use = min(got, len(rest))
+    if got > use:
+        budget.give_back(got - use)
+    second = rest[:use]
+    budget.claimed.update(key(it) for it in second)
+    if second:
+        await run_batch(second)
+    return n1 + use, len(rest) - use
+
+
+async def _tenant_reporting(budget, name: str, coro):
+    """Await one tenant's scrape and, however it ends (no rows, an error, a
+    cancelled task), report the tenant to its detail budget so phase two
+    never waits on it (see _DescBudget)."""
+    try:
+        return await coro
+    finally:
+        budget.done(name)
+
+
 async def _workday_fetch_details(session, working_url, targets, system):
     """Fill description + ISO posted_date from Workday's per-job DETAIL endpoint.
 
@@ -1697,33 +2013,21 @@ async def _workday_fetch_details(session, working_url, targets, system):
     base = working_url[:-len("/jobs")] if working_url.endswith("/jobs") else working_url
 
     # 2026-09-22: a teaser under DETAIL_MIN_CHARS is a candidate too (the
-    # list endpoint sometimes carries a stub), and one tenant may take at most
-    # budget/DETAIL_TENANT_SHARE so the first tenants to finish listing do not
-    # drain the night's allowance.
-    candidates = [(j, p) for j, p in targets
-                  if p and len((j.description or "").strip()) < DETAIL_MIN_CHARS]
-    # SHUFFLE (2026-08-05): the scrape can't see which rows already carry a
-    # DB-side description (the preserve_scraped_enrichment trigger keeps those
-    # safe), so without shuffling the budget re-fetched the SAME first-N jobs
-    # every night and coverage never accumulated past one night's budget
-    # (measured: 4,931 -> 4,935 across a full run). Random order makes each
-    # night enrich a fresh slice; the trigger makes it stick.
-    random.shuffle(candidates)
-    # TRANSPARENCY-STATE PRIORITY (2026-08-21, Robert): jobs in states with
-    # mandatory pay disclosure get their descriptions fetched first — those
-    # descriptions carry posted wage ranges 60-80% of the time vs ~20%
-    # elsewhere, so each budget slot yields 3-4x the wage pills AND the
-    # indexable description either way. Stable sort preserves the shuffle
-    # within each group, so coverage still accumulates across nights.
-    TRANSPARENCY_STATES = {"CA", "CO", "CT", "DC", "HI", "IL", "MD", "MN", "NJ", "NY", "VT", "WA"}
-    candidates.sort(key=lambda t: 0 if (t[0].state or "").strip().upper() in TRANSPARENCY_STATES else 1)
-    # Draw from the RUN-WIDE budget, not a per-tenant one. Whichever tenants
-    # finish their listing pass first get the allowance; later tenants simply
-    # get none this run and pick it up on a subsequent night.
-    cap = max(50, (WD_DESC_BUDGET.remaining + WD_DESC_BUDGET.spent) // max(1, DETAIL_TENANT_SHARE))
-    allowed = WD_DESC_BUDGET.take(min(len(candidates), cap))
-    pending = candidates[:allowed]
-    if not pending:
+    # list endpoint sometimes carries a stub).
+    # 2026-09-24 (budget): rows the database already holds a body for are no
+    # longer candidates (_body_known; they used to be re-fetched every night
+    # because the scrape could not see them), the newest postings go first
+    # after the transparency states (_detail_rank; the 08-05 shuffle stays as
+    # the tie-break), and the tenant draws its fair share of WD_DESC_BUDGET
+    # (_fair_detail_fetch) instead of whatever the tenants that finished
+    # listing first had left.
+    candidates, known, dup = _detail_candidates(
+        system, targets, WD_DESC_BUDGET, job_of=lambda t: t[0], eligible=lambda t: bool(t[1]))
+    if not candidates:
+        WD_DESC_BUDGET.claim(system, 0)
+        if known or dup:
+            logger.info(f"  Workday {system}: details 0 needed; {known} already in the database, "
+                        f"{dup} fetched by a sibling site")
         return
 
     sem = asyncio.Semaphore(WD_DESC_CONCURRENCY)
@@ -1763,9 +2067,15 @@ async def _workday_fetch_details(session, working_url, targets, system):
             # rather than just staggering their completion.
             await asyncio.sleep(random.uniform(0.15, 0.45))
 
-    await asyncio.gather(*[one(j, p) for j, p in pending], return_exceptions=True)
-    logger.info(f"  Workday {system}: details {len(pending)} fetched -> "
-                f"{filled} descriptions, {dated} ISO dates, {typed} employment types")
+    async def run_batch(batch):
+        await asyncio.gather(*[one(j, p) for j, p in batch], return_exceptions=True)
+
+    fetched, left = await _fair_detail_fetch(WD_DESC_BUDGET, system, candidates, run_batch,
+                                             job_of=lambda t: t[0])
+    logger.info(f"  Workday {system}: details {fetched} fetched -> "
+                f"{filled} descriptions, {dated} ISO dates, {typed} employment types; "
+                f"{known} already in the database, {dup} fetched by a sibling site, "
+                f"{left} left for another night; budget left {WD_DESC_BUDGET.remaining}")
 
 
 # ── Detail helpers shared by the Oracle / TalentBrew / Phenom / HCA passes ──
@@ -1848,22 +2158,22 @@ async def _jsonld_detail(session, job) -> bool:
 
 
 async def _detail_pass(session, system: str, jobs: list, budget, fetch_one, label: str, skip=None, share: int | None = None) -> None:
-    """Shared driver: rows without a full body, shuffled, transparency states
-    first, at most a fair share of the platform budget per tenant, fetched
-    under a semaphore with a small pause. `skip(job)` excludes rows whose page
-    is known to carry nothing (Taleo, iCIMS behind a Phenom front) so they
-    cost no budget. Never raises."""
-    cands = [j for j in jobs if (j.url or "").startswith("http")
-             and len((j.description or "").strip()) < DETAIL_MIN_CHARS
-             and not (skip and skip(j))]
+    """Shared driver: rows without a full body that the database does not
+    already hold one for (_detail_candidates), transparency states then the
+    newest first, this tenant's fair share of the platform budget
+    (_fair_detail_fetch), fetched under a semaphore with a small pause.
+    `skip(job)` excludes rows whose page is known to carry nothing (Taleo,
+    iCIMS behind a Phenom front) so they cost no budget. `share` (tests)
+    caps the tenant outright with the old first-come rule. Never raises."""
+    def eligible(j):
+        return (j.url or "").startswith("http") and not (skip and skip(j))
+
+    cands, known, dup = _detail_candidates(system, jobs, budget, eligible=eligible)
     if not cands:
-        return
-    random.shuffle(cands)
-    cands.sort(key=lambda j: 0 if (j.state or "").strip().upper() in DETAIL_PRIORITY_STATES else 1)
-    cap = share if share else max(50, (budget.remaining + budget.spent) // max(1, DETAIL_TENANT_SHARE))
-    allowed = budget.take(min(len(cands), cap))
-    pending = cands[:allowed]
-    if not pending:
+        budget.claim(system, 0, share)
+        if known or dup:
+            logger.info(f"  {label} {system}: details 0 needed; {known} already in the database, "
+                        f"{dup} fetched by a sibling site")
         return
     sem = asyncio.Semaphore(DETAIL_CONCURRENCY)
     filled = 0
@@ -1878,9 +2188,13 @@ async def _detail_pass(session, system: str, jobs: list, budget, fetch_one, labe
                 pass
             await asyncio.sleep(random.uniform(0.15, 0.45))
 
-    await asyncio.gather(*[one(j) for j in pending], return_exceptions=True)
-    logger.info(f"  {label} {system}: details {len(pending)} fetched -> {filled} descriptions; "
-                f"{len(cands) - len(pending)} left for another night; budget left {budget.remaining}")
+    async def run_batch(batch):
+        await asyncio.gather(*[one(j) for j in batch], return_exceptions=True)
+
+    fetched, left = await _fair_detail_fetch(budget, system, cands, run_batch, share=share)
+    logger.info(f"  {label} {system}: details {fetched} fetched -> {filled} descriptions; "
+                f"{known} already in the database, {dup} fetched by a sibling site, "
+                f"{left} left for another night; budget left {budget.remaining}")
 
 
 def _oracle_posting_text(it: dict) -> tuple[str, str, str]:
@@ -2646,13 +2960,16 @@ async def run_workday(session) -> list[Job]:
                 f"(detail budget {WD_DESC_BUDGET.remaining:,}, {'on' if WD_FETCH_DESCRIPTIONS else 'off'})")
     # 2026-09-10 (S-scraper-2): transparency-state tenants first (state from
     # SYSTEM_LOCATION_DEFAULTS; tenants without one keep their order, last).
-    # gather() starts tasks in this order, so it is also the order the shared
-    # WD_DESC_BUDGET is spent in.
+    # 2026-09-24 (budget): the order no longer decides who gets the detail
+    # budget: every tenant is registered with WD_DESC_BUDGET and draws its
+    # fair share whenever it finishes listing (see _DescBudget).
     tenants = priority_states_first(
         list(WORKDAY_TENANTS.items()),
         lambda kv: (SYSTEM_LOCATION_DEFAULTS.get(kv[0].lower()) or ("", ""))[1])
+    if WD_FETCH_DESCRIPTIONS:
+        WD_DESC_BUDGET.expect(s for s, _ in tenants)
     results = await asyncio.gather(
-        *[scrape_workday(session, s, t) for s, t in tenants],
+        *[_tenant_reporting(WD_DESC_BUDGET, s, scrape_workday(session, s, t)) for s, t in tenants],
         return_exceptions=True
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
@@ -3230,6 +3547,8 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
 
 async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
     logger.info(f"TalentBrew: scraping {len(TALENTBREW_ORGS)} systems...")
+    if DETAIL_FETCH:
+        TB_DESC_BUDGET.expect(TALENTBREW_ORGS)
     async def _one(sys, url, rpp):
         jobs = await scrape_talentbrew(session, sys, url, rpp)
         # 2026-09-21: the detail pass lives here because scrape_talentbrew
@@ -3242,7 +3561,8 @@ async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
             except Exception as e:
                 logger.info(f"TalentBrew {sys}: detail pass failed ({e})")
         return jobs
-    tasks = [_one(sys, url, rpp) for sys, (url, rpp) in TALENTBREW_ORGS.items()]
+    tasks = [_tenant_reporting(TB_DESC_BUDGET, sys, _one(sys, url, rpp))
+             for sys, (url, rpp) in TALENTBREW_ORGS.items()]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     all_jobs = []
     total = 0
@@ -6287,8 +6607,10 @@ async def run_bsw(session) -> list[Job]:
 
 async def run_phenom(session) -> list[Job]:
     logger.info(f"Phenom: scraping {len(PHENOM_ORGS)} systems...")
+    if DETAIL_FETCH:
+        PHENOM_DESC_BUDGET.expect(PHENOM_ORGS)
     results = await asyncio.gather(
-        *[scrape_phenom(session, s, u) for s, u in PHENOM_ORGS.items()],
+        *[_tenant_reporting(PHENOM_DESC_BUDGET, s, scrape_phenom(session, s, u)) for s, u in PHENOM_ORGS.items()],
         return_exceptions=True
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
@@ -7556,8 +7878,10 @@ async def scrape_infor(session: aiohttp.ClientSession, system: str, org_data: tu
 
 async def run_infor(session) -> list[Job]:
     logger.info(f"Infor: scraping {len(INFOR_ORGS)} systems...")
+    if DETAIL_FETCH:
+        INFOR_DESC_BUDGET.expect(INFOR_ORGS)
     results = await asyncio.gather(
-        *[scrape_infor(session, s, o) for s, o in INFOR_ORGS.items()],
+        *[_tenant_reporting(INFOR_DESC_BUDGET, s, scrape_infor(session, s, o)) for s, o in INFOR_ORGS.items()],
         return_exceptions=True
     )
     for (s, _), r in zip(INFOR_ORGS.items(), results):
@@ -7993,8 +8317,14 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
 
 async def run_oracle(session) -> list[Job]:
     logger.info(f"Oracle HCM: scraping {len(ORACLE_ORGS)} systems...")
+    # 2026-09-24 (budget): every tenant is registered with the detail budget,
+    # so a tenant that pages for minutes (Lifepoint, 171 pages) still gets its
+    # share; it used to find the budget spent by the tenants that listed in
+    # seconds (see _DescBudget).
+    if DETAIL_FETCH:
+        ORACLE_DESC_BUDGET.expect(ORACLE_ORGS)
     results = await asyncio.gather(
-        *[scrape_oracle(session, s, o) for s, o in ORACLE_ORGS.items()],
+        *[_tenant_reporting(ORACLE_DESC_BUDGET, s, scrape_oracle(session, s, o)) for s, o in ORACLE_ORGS.items()],
         return_exceptions=True
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
@@ -8922,7 +9252,10 @@ async def run_preload(session) -> list[Job]:
             except Exception as e:
                 logger.info(f"Preload {sys}: detail pass failed ({e})")
         return jobs
-    results = await asyncio.gather(*[_one(s, c) for s, c in PRELOAD_SITES.items()], return_exceptions=True)
+    if DETAIL_FETCH:
+        TB_DESC_BUDGET.expect(PRELOAD_SITES)
+    results = await asyncio.gather(*[_tenant_reporting(TB_DESC_BUDGET, s, _one(s, c)) for s, c in PRELOAD_SITES.items()],
+                                   return_exceptions=True)
     out = [j for r in results if isinstance(r, list) for j in r]
     for (s, _), r in zip(PRELOAD_SITES.items(), results):
         if isinstance(r, Exception):
@@ -13457,17 +13790,30 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     2026-09-10 (S-scraper-2): exact dedupe on (ats, post-alias system,
     job_id), the telehealth rules, the cross-tenant family dedupe
     (SYSTEM_FAMILIES) and normalize_job (which does the CMS fill)."""
-    seen, unique = set(), []
-    family_seen: dict[tuple, str] = {}
-    family_dropped = 0
-    for job in all_jobs:
+    # 2026-09-24 (budget): of two copies of one key, the one with the longer
+    # body wins (ties: the first). Northwell's three Oracle sites list the
+    # same requisitions and the detail pass fetches each once, on whichever
+    # site claims it first; the first copy used to win with or without the
+    # body, so a body fetched on CX_1 was thrown away for CX_2's blank copy.
+    best: dict[str, int] = {}
+    for i, job in enumerate(all_jobs):
         if not job.job_id or not job.title:
             continue
         canon = HOSPITAL_SYSTEM_ALIASES.get(job.hospital_system, job.hospital_system)
         key = f"{job.ats_platform}::{canon}::{job.job_id}"
-        if key in seen:
+        b = best.get(key)
+        if b is None or len(job.description or "") > len(all_jobs[b].description or ""):
+            best[key] = i
+    unique = []
+    family_seen: dict[tuple, str] = {}
+    family_dropped = 0
+    for i, job in enumerate(all_jobs):
+        if not job.job_id or not job.title:
             continue
-        seen.add(key)
+        canon = HOSPITAL_SYSTEM_ALIASES.get(job.hospital_system, job.hospital_system)
+        key = f"{job.ats_platform}::{canon}::{job.job_id}"
+        if best.get(key) != i:
+            continue
         # 2026-09-10 (T2): telehealth gates + state-from-title before
         # normalize_job; None means the row is dropped.
         job = apply_employer_rules(job)
@@ -13496,7 +13842,9 @@ async def run_all() -> list[dict]:
     start = datetime.now()
     # 2026-09-10: CMS facility lookup for the blank-state fill (read-only,
     # no-op without credentials).
-    await asyncio.to_thread(load_cms_lookup)
+    # 2026-09-24 (budget): the known-body map loads alongside it, so the
+    # detail passes skip rows the database already holds a body for.
+    await asyncio.gather(asyncio.to_thread(load_cms_lookup), asyncio.to_thread(load_known_bodies))
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     proxy_connector  = aiohttp.TCPConnector(limit=30, ssl=False)
