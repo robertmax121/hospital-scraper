@@ -1938,6 +1938,22 @@ def _phenom_posting_text(jd: dict) -> tuple[str, str, str]:
 
 _ORACLE_PREVIEW_RE = re.compile(
     r"(https://[^/]+\.oraclecloud\.com/hcmUI/CandidateExperience/[a-z]{2}/sites/[^/]+)/jobs/preview/([0-9A-Za-z]+)")
+# 2026-09-24 (review): the preview -> /job/ rewrite in scrape_phenom is for
+# the Phenom fronts of Oracle Recruiting listed here (PHENOM_ORGS keys) and
+# no other tenant. CentraCare's Phenom rows also carry Oracle preview URLs
+# (313 active on 09-24); they are left exactly as they were before push 1.
+PHENOM_ORACLE_FRONTS = {"Ascension Health"}
+
+
+def _phenom_oracle_job_url(system: str, url: str) -> str:
+    """For a PHENOM_ORACLE_FRONTS tenant, Oracle's e-mail apply step
+    (.../sites/CX_1/jobs/preview/{id}/easy-apply/email) becomes the canonical
+    Oracle job page (.../sites/CX_1/job/{id}). Every other tenant's URL is
+    returned unchanged."""
+    if system not in PHENOM_ORACLE_FRONTS:
+        return url
+    m = _ORACLE_PREVIEW_RE.match(url or "")
+    return f"{m.group(1)}/job/{m.group(2)}" if m else url
 
 
 async def _phenom_detail(session, base_url: str, job) -> bool:
@@ -6067,9 +6083,8 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 # (.../sites/CX_1/jobs/preview/{id}/easy-apply/email). Store the
                 # canonical Oracle job page instead: it is a real posting page,
                 # and its "/job/" lets _phenom_detail call the jobDetail widget.
-                _orc = _ORACLE_PREVIEW_RE.match(url)
-                if _orc:
-                    url = f"{_orc.group(1)}/job/{_orc.group(2)}"
+                # Only PHENOM_ORACLE_FRONTS tenants are rewritten.
+                url = _phenom_oracle_job_url(system, url)
                 # multi_category is an array on recommendationJobsBrowsingHistory
                 multi_cat = doc.get("multi_category") or []
                 specialty_val = (

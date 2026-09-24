@@ -130,3 +130,19 @@ def test_hca_slice_stops_on_the_national_search_fallback(fixture_text, monkeypat
     jobs, finished, capped = scraper._hca_fetch_slice("ak-alaska")
     assert len(jobs) == 3 and finished and not capped
     assert [p for _, p in served] == ["1", "1"]
+
+
+# 2026-09-24 (review): the Oracle preview -> /job/ rewrite is Ascension's only.
+def test_oracle_preview_rewrite_is_scoped_to_ascension():
+    import scraper
+    asc = ("https://eeho.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+           "/jobs/preview/123456/easy-apply/email")
+    cen = "https://ebpp.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/jobs/preview/98765"
+    assert "Ascension Health" in scraper.PHENOM_ORGS and "CentraCare" in scraper.PHENOM_ORGS
+    assert scraper._phenom_oracle_job_url("Ascension Health", asc) == (
+        "https://eeho.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/123456")
+    assert scraper._phenom_oracle_job_url("CentraCare", cen) == cen
+    assert scraper._phenom_oracle_job_url("Duke Health", asc) == asc
+    plain = "https://jobs.ascension.org/us/en/job/ASCEUS123/RN"
+    assert scraper._phenom_oracle_job_url("Ascension Health", plain) == plain
+    assert scraper.PHENOM_ORACLE_FRONTS == {"Ascension Health"}
