@@ -567,6 +567,32 @@ UKG_DESC_BUDGET             = _DescBudget(UKG_DESC_MAX_PER_RUN)
 NEOGOV_DESC_BUDGET          = _DescBudget(NEOGOV_DESC_MAX_PER_RUN)
 CAREERPLUG_DESC_BUDGET      = _DescBudget(CAREERPLUG_DESC_MAX_PER_RUN)
 
+# 2026-09-24 (push 3, title-only boards): the boards below stored a title and
+# nothing else (about 5,200 active rows between them on 09-24: CHS 2,445,
+# Concentra 1,450, Oceans 412, ApplicantPro 366, CSOD 227, HCTS 212, and
+# Kronos 121 256-character teasers), so their job pages showed no body, no
+# qualifications and no licensure. Each now has a detail pass on the shared
+# framework: one run-wide budget per board, fair share per tenant, known
+# bodies skipped, 2 requests in flight per runner with a pause before each
+# slot frees (about 1.5 requests a second at most on one host). A board with
+# one tenant is also held to DETAIL_TENANT_MAX (1,500) a night, so CHS clears
+# its backlog in two nights. HealthcareSource needs no pass: its search API
+# already carries the whole posting in userArea.jobSummaryDisplay.
+CHS_DESC_MAX_PER_RUN          = int(os.getenv("CHS_DESC_MAX_PER_RUN", "1500"))        # careershealthcare.com job-page JSON-LD
+CONCENTRA_DESC_MAX_PER_RUN    = int(os.getenv("CONCENTRA_DESC_MAX_PER_RUN", "1500"))  # concentra.com job-page microdata
+OCEANS_DESC_MAX_PER_RUN       = int(os.getenv("OCEANS_DESC_MAX_PER_RUN", "500"))      # oceansjobboard.com job-page JSON-LD
+APPLICANTPRO_DESC_MAX_PER_RUN = int(os.getenv("APPLICANTPRO_DESC_MAX_PER_RUN", "400"))  # <org>.applicantpro.com JSON-LD
+CSOD_DESC_MAX_PER_RUN         = int(os.getenv("CSOD_DESC_MAX_PER_RUN", "400"))        # CSOD jobDetails API (career-site token)
+HCTS_DESC_MAX_PER_RUN         = int(os.getenv("HCTS_DESC_MAX_PER_RUN", "300"))        # hctsportals.com job page
+KRONOS_DESC_MAX_PER_RUN       = int(os.getenv("KRONOS_DESC_MAX_PER_RUN", "300"))      # UKG Ready job-requisitions/{id}
+CHS_DESC_BUDGET               = _DescBudget(CHS_DESC_MAX_PER_RUN)
+CONCENTRA_DESC_BUDGET         = _DescBudget(CONCENTRA_DESC_MAX_PER_RUN)
+OCEANS_DESC_BUDGET            = _DescBudget(OCEANS_DESC_MAX_PER_RUN)
+APPLICANTPRO_DESC_BUDGET      = _DescBudget(APPLICANTPRO_DESC_MAX_PER_RUN)
+CSOD_DESC_BUDGET              = _DescBudget(CSOD_DESC_MAX_PER_RUN)
+HCTS_DESC_BUDGET              = _DescBudget(HCTS_DESC_MAX_PER_RUN)
+KRONOS_DESC_BUDGET            = _DescBudget(KRONOS_DESC_MAX_PER_RUN)
+
 # Hard stop for Workday list pagination. Replaces the old `offset >= total`
 # break, which truncated six large tenants at exactly 2,000 jobs because
 # Workday caps the REPORTED total at 2000 while still serving results beyond it
@@ -951,9 +977,12 @@ def load_cms_lookup() -> int:
 # Paycor, Paylocity, Workable; Kaiser/UHG/Enhabit/Maxim are TalentBrew and
 # Houston Methodist is Workday). Without them here those passes re-fetched
 # every row they had already filled, night after night.
+# 2026-09-24 (push 3): the title-only boards' new passes store under their own
+# ats_platform too.
 KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor", "PreloadState",
                         "Custom", "SmartRecruiters", "ADP", "Paycor", "Paylocity", "Workable",
-                        "iCIMS", "UKG", "NeoGov", "CareerPlug")   # last four: push 3 teaser passes
+                        "iCIMS", "UKG", "NeoGov", "CareerPlug",   # push 3 teaser passes
+                        "WPJobBoard", "Concentra", "OceansJobBoard", "ApplicantPro", "CSOD", "HCTS", "Kronos")   # push 3 title-only boards
 KNOWN_BODY_PAGE      = 1000
 KNOWN_BODY_MAX_ROWS  = int(os.getenv("KNOWN_BODY_MAX_ROWS", "400000"))
 KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
@@ -3074,6 +3103,226 @@ def _host_gated(fetch_one, total: int, per_host: int | None = None, pause=(0.3, 
                                 f"skipping the rest of this tenant's pass tonight")
                 await asyncio.sleep(random.uniform(*pause))
     return gated
+
+# ── Title-only boards (2026-09-24, push 3) ──────────────────────────────────
+# CHS (WPJobBoard), Oceans and ApplicantPro job pages carry a complete JSON-LD
+# JobPosting (_jsonld_detail). Concentra's job page is schema.org microdata,
+# HCTS's is server-rendered HTML, and CSOD and UKG Ready (Kronos) answer a
+# per-requisition JSON API. Every fetcher fills blanks only, never raises,
+# and leaves the listed row exactly as the list gave it when the fetch fails;
+# the text goes through the same finalize_jobs / normalize_job /
+# extract_posting_facts path as every other body.
+_POSTING_REQ_FIELDS = (("qualifications", "Qualifications"), ("experienceRequirements", "Experience"),
+                       ("educationRequirements", "Education"), ("skills", "Skills"))
+
+
+def _posting_req_text(v) -> str:
+    """A schema.org requirement value (text, a list, or an object such as
+    OccupationalExperienceRequirements / EducationalOccupationalCredential)
+    as plain text."""
+    if isinstance(v, list):
+        return "\n".join(t for t in (_posting_req_text(x) for x in v) if t)
+    if isinstance(v, dict):
+        v = v.get("description") or v.get("name") or v.get("credentialCategory") or ""
+    return strip_html(str(v or "")).strip()
+
+
+def _posting_with_requirements(posting: dict) -> dict:
+    """The posting with experienceRequirements / educationRequirements /
+    skills folded into "qualifications", so _apply_posting appends them
+    under a Qualifications heading (the extractor keys on it). Oceans states
+    its licence and experience only in experienceRequirements. Text already
+    in the description is not repeated."""
+    desc = strip_html(str(posting.get("description") or ""))
+    parts = []
+    for key, head in _POSTING_REQ_FIELDS:
+        t = _posting_req_text(posting.get(key))
+        if t and t[:120] not in desc and all(t[:120] not in p for p in parts):
+            parts.append(t if key == "qualifications" else f"{head}\n{t}")
+    if not parts:
+        return posting
+    return {**posting, "qualifications": "\n\n".join(parts)}
+
+
+async def _jsonld_board_detail(session, job) -> bool:
+    """Job page -> JSON-LD JobPosting (requirement fields included) -> Job."""
+    posting = _jobposting_from_html(await _fetch_html(session, job.url))
+    return _apply_posting(job, _posting_with_requirements(posting)) if posting else False
+
+
+async def _board_detail_passes(session, jobs: list, budget, fetch_one, label: str, in_flight: int = 2) -> None:
+    """_detail_passes_by_system for the title-only boards, with a guard: the
+    list rows are returned whatever the pass does."""
+    try:
+        await _detail_passes_by_system(session, jobs, budget, fetch_one, label, in_flight=in_flight)
+    except Exception as e:
+        logger.info(f"{label}: detail pass failed ({e}); listed rows kept as listed")
+
+
+def _apply_body(job, text: str, job_type: str = "", posted: str = "") -> bool:
+    """Body + employment type + ISO date from a detail page onto a Job, blanks
+    only (the body only when it clears 200 characters and beats the list's).
+    True when a body landed."""
+    text = (text or "").strip()
+    ok = False
+    if len(text) >= 200 and len(text) > len((job.description or "").strip()):
+        job.description = text
+        ok = True
+    if job_type and not (job.job_type or "").strip():
+        job.job_type = job_type.strip()
+    if posted and re.match(r"^\d{4}-\d{2}-\d{2}$", posted) and not re.match(r"^\d{4}-\d{2}-\d{2}", job.posted_date or ""):
+        job.posted_date = posted
+    return ok
+
+
+_CONCENTRA_BODY_RX    = re.compile(r'itemprop="description"[^>]*>(.*?)(?:<div class="component social-media-share|job-detail-recruiter|<footer)',
+                                   re.S | re.I)
+_CONCENTRA_MORE_RX    = re.compile(r'<a[^>]+class="js-show-more[^"]*"[^>]*>.*?</a>', re.S | re.I)
+_CONCENTRA_EMPTYPE_RX = re.compile(r'field-emptype"[^>]*>\s*([^<]+?)\s*<', re.I)
+_CONCENTRA_POSTED_RX  = re.compile(r'itemprop="datePosted"[^>]*>\s*(\d{4})(\d{2})(\d{2})', re.I)
+
+
+def _concentra_posting(html: str) -> tuple[str, str, str]:
+    """(body, employment type, ISO posted date) from a Concentra job page. The
+    body is the itemprop="description" block: overview, then the "Essential
+    Duties", "Qualifications" and "Licensure" parts as <div class="label">
+    headings, which strip_html turns into their own lines."""
+    html = html or ""
+    m = _CONCENTRA_BODY_RX.search(html)
+    # The description, responsibilities and qualifications each sit in their
+    # own block with a hidden "Read more ..." link after it (dropped here).
+    body = strip_html(_CONCENTRA_MORE_RX.sub(" ", m.group(1))).strip() if m else ""
+    body = re.sub(r"^[\u200b\s]+", "", body)
+    et = _CONCENTRA_EMPTYPE_RX.search(html)
+    dp = _CONCENTRA_POSTED_RX.search(html)
+    return (body, _html_unescape(et.group(1)).strip() if et else "",
+            f"{dp.group(1)}-{dp.group(2)}-{dp.group(3)}" if dp else "")
+
+
+async def _curl_html(url: str, impersonate: str = "chrome", timeout: int = 25) -> str:
+    """A job page through curl_cffi (_curl_fetch: pool first, direct backup)
+    in a worker thread; "" on any failure or without curl_cffi."""
+    if curl_requests is None:
+        return ""
+    try:
+        r = await asyncio.to_thread(_curl_fetch, "get", url, impersonate, timeout)
+        return r.text or ""
+    except Exception:
+        return ""
+
+
+async def _concentra_detail(session, job) -> bool:
+    # Cloudflare answers aiohttp's TLS handshake on the job pages with a 403
+    # challenge (the SXA search API the list uses is not challenged), and a
+    # Chrome handshake through curl_cffi gets the page (verified 2026-09-24).
+    html = await _curl_html(job.url)
+    if "itemprop=\"description\"" not in html:
+        html = await _fetch_html(session, job.url)
+    body, et, posted = _concentra_posting(html)
+    return _apply_body(job, body, et, posted)
+
+
+_HCTS_COPY_RX = re.compile(r'class="job__details-copy[^"]*"[^>]*>(.*?)(?:<div[^>]+class="job__details-bottom-bar|<div[^>]+class="job__sidebar|</main>)',
+                           re.S | re.I)
+_HCTS_LI_RX   = re.compile(r"<li[^>]*>(.*?)</li>", re.S | re.I)
+
+
+def _hcts_posting(html: str) -> tuple[str, dict]:
+    """(body, sidebar fields) from an hctsportals.com job page. The sidebar
+    list is label -> value: Location, Facility, Department, "Schedule - Shift
+    - Hours", Job Category, Req #, Date Posted."""
+    html = html or ""
+    m = _HCTS_COPY_RX.search(html)
+    body = strip_html(m.group(1)).strip() if m else ""
+    fields: dict = {}
+    i = html.find('class="job__details-list')
+    if i >= 0:
+        e = html.find("</ul>", i)
+        for li in _HCTS_LI_RX.findall(html[i:e if e > 0 else len(html)]):
+            t = re.search(r'title="\s*([^"]+?)\s*"', li)
+            v = re.sub(r"\s+", " ", _html_unescape(re.sub(r"<[^>]+>", " ", li))).strip()
+            if t and v:
+                fields[re.sub(r"\s+", " ", t.group(1)).strip()] = v
+    return body, fields
+
+
+async def _hcts_detail(session, job) -> bool:
+    body, fields = _hcts_posting(await _fetch_html(session, job.url, timeout=30))
+    sched = fields.get("Schedule - Shift - Hours") or fields.get("Schedule") or ""
+    if body and sched and "Schedule:" not in body:
+        body = f"{body}\n\nSchedule: {sched}"
+    if fields.get("Job Category") and not (job.specialty or "").strip():
+        job.specialty = fields["Job Category"]
+    return _apply_body(job, body)
+
+
+def _kronos_detail_url(job) -> str:
+    """UKG Ready's per-requisition endpoint from the row's careers URL
+    (https://<host>/ta/<company>.careers?...ShowJob=<id>)."""
+    m = re.match(r"^(https://[^/]+)/ta/(\d+)\.careers\?.*?\bShowJob=(\d+)", job.url or "")
+    return (f"{m.group(1)}/ta/rest/ui/recruitment/companies/%7C{m.group(2)}/job-requisitions/{m.group(3)}"
+            if m else "")
+
+
+def _kronos_posting_text(d: dict) -> str:
+    """job_description (the list carries only its first 256 characters) plus
+    job_requirement, the part that states licensure and certifications."""
+    desc = strip_html(str((d or {}).get("job_description") or "")).strip()
+    reqs = strip_html(str((d or {}).get("job_requirement") or "")).strip()
+    if reqs and reqs[:120] not in desc:
+        head = "" if re.match(r"^(?:job\s+)?(?:requirements?|qualifications?)\b", reqs, re.I) else "Requirements\n"
+        desc = f"{desc}\n\n{head}{reqs}".strip()
+    return desc
+
+
+async def _kronos_detail(session, job) -> bool:
+    url = _kronos_detail_url(job)
+    if not url:
+        return False
+    try:
+        async with req(session, "get", url, params={"lang": "en-US"},
+                       headers={**HEADERS, "Accept": "application/json"}, ssl=False,
+                       proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+            if r.status != 200:
+                return False
+            data = await r.json(content_type=None)
+    except Exception:
+        return False
+    return _apply_body(job, _kronos_posting_text(data if isinstance(data, dict) else {}))
+
+
+# system -> (base, bearer token, Cookie header) from this run's career-site
+# home page (scrape_csod). The jobDetails API answers 401 without the home
+# page's session cookies, whatever the token.
+_CSOD_CTX: dict = {}
+
+
+def _csod_posting_text(d: dict) -> tuple[str, str]:
+    """(body, ISO open date) from a CSOD jobDetails payload."""
+    d = d or {}
+    body = strip_html(str(d.get("externalDescription") or "")).strip()
+    m = re.match(r"^(\d{4}-\d{2}-\d{2})", str(d.get("openDate") or ""))
+    return body, (m.group(1) if m else "")
+
+
+async def _csod_detail(session, job) -> bool:
+    ctx = _CSOD_CTX.get(job.hospital_system)
+    if not ctx:
+        return False
+    base, token, cookie = ctx
+    try:
+        async with req(session, "get", f"{base}/services/x/job-requisition/v2/requisitions/{job.job_id}/jobDetails",
+                       params={"cultureId": 1},
+                       headers={**HEADERS, "Accept": "application/json", "Authorization": f"Bearer {token}",
+                                **({"Cookie": cookie} if cookie else {})},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
+            if r.status != 200:
+                return False
+            data = await r.json(content_type=None)
+    except Exception:
+        return False
+    body, posted = _csod_posting_text((data or {}).get("data") if isinstance(data, dict) else {})
+    return _apply_body(job, body, "", posted)
 
 
 # 2026-09-16 (NY coverage): Montefiore's Workday tenant lists postings by street
@@ -6048,6 +6297,19 @@ _CONCENTRA_LOCATION_RE = re.compile(r'field-location">([^<]+)<', re.I)
 _CONCENTRA_CATEGORY_RE = re.compile(r'field-category[^"]*">([^<]+)<', re.I)
 _CONCENTRA_JOBID_RE    = re.compile(r'/(\d+)/?$')
 
+async def _concentra_curl_page(params: dict):
+    """One SXA search page through curl_cffi (Chrome TLS); None on failure."""
+    if curl_requests is None:
+        return None
+    try:
+        r = await asyncio.to_thread(_curl_fetch, "get", f"{CONCENTRA_BASE}//sxa/search/results/", "chrome", 30,
+                                    params=params, headers={"Accept": "application/json, text/javascript, */*; q=0.01",
+                                                            "X-Requested-With": "XMLHttpRequest"})
+        return r.json()
+    except Exception:
+        return None
+
+
 async def scrape_concentra(session: aiohttp.ClientSession) -> list[Job]:
     jobs: list[Job] = []
     offset, total = 0, None
@@ -6065,18 +6327,29 @@ async def scrape_concentra(session: aiohttp.ClientSession) -> list[Job]:
             "e": str(offset), "p": str(CONCENTRA_PAGE),
             "v": CONCENTRA_VARIANT,
         }
+        data = None
         try:
             async with req(session, "get",
                 f"{CONCENTRA_BASE}//sxa/search/results/",
                 params=params, headers=headers, ssl=False, proxy=proxies.get(),
                 timeout=aiohttp.ClientTimeout(total=30)) as r:
-                if r.status != 200:
+                if r.status == 200:
+                    data = await r.json(content_type=None)
+                elif r.status != 403:
                     logger.info(f"Concentra: HTTP {r.status} at offset {offset}")
                     break
-                data = await r.json(content_type=None)
         except Exception as e:
             logger.info(f"Concentra: {e} at offset {offset}")
             break
+        if data is None:
+            # 2026-09-24 (push 3): Cloudflare answers aiohttp's TLS handshake
+            # with a 403 challenge from some addresses (a home connection on
+            # 09-24; the nightly still got through), and a Chrome handshake
+            # through curl_cffi gets the same JSON. One retry that way.
+            data = await _concentra_curl_page(params)
+            if data is None:
+                logger.info(f"Concentra: HTTP 403 at offset {offset} (curl_cffi retry failed too)")
+                break
 
         if total is None:
             total = data.get("Count", 0) or 0
@@ -6124,6 +6397,9 @@ async def run_concentra(session) -> list[Job]:
     logger.info("Concentra: scraping Sitecore SXA career search...")
     jobs = await scrape_concentra(session)
     logger.info(f"  Concentra: {len(jobs):,} jobs")
+    # 2026-09-24 (push 3): bodies from each row's job page (microdata), 2 in flight.
+    await _board_detail_passes(session, jobs, CONCENTRA_DESC_BUDGET,
+                               lambda j: _concentra_detail(session, j), "Concentra")
     return jobs
 
 
@@ -9466,6 +9742,17 @@ def _hcs_job(hit: dict, system: str, tenant: str) -> Job | None:
     facility = sub if sub and not sub.isupper() and not re.search(r"\d", sub) else ""
     facility = facility or str(_dig(src_, "jobLocation", "name") or _dig(src_, "hiringOrganization", "name")
                                or src_.get("facilityName") or src_.get("facility") or "").strip()
+    # 2026-09-24 (push 3): the search hit already carries the whole posting
+    # as HTML in userArea.jobSummaryDisplay (duties, education, licensure,
+    # experience); the adapter read a top-level "description" that the index
+    # never has, so 5,980 of 6,711 rows had no body. jobSummary is the same
+    # text with its punctuation replaced by "#", so it is not used. No extra
+    # request: the per-job JobPostingV2 endpoint returns the same two fields.
+    ua = src_.get("userArea") if isinstance(src_.get("userArea"), dict) else {}
+    body = strip_html(str(ua.get("jobSummaryDisplay") or src_.get("description") or "")).strip()
+    sched = _schedule_line(_shift_words(str(ua.get("shift") or "")), str(src_.get("workHours") or "").strip())
+    if body and sched and "Schedule:" not in body:
+        body = f"{body}\n\n{sched}"
     return Job(
         title=title,
         hospital_system=system,
@@ -9477,7 +9764,7 @@ def _hcs_job(hit: dict, system: str, tenant: str) -> Job | None:
         url=f"https://pm.healthcaresource.com/cs/{tenant}#/job/{job_id}",
         job_id=job_id,
         posted_date=str(src_.get("datePosted") or src_.get("postedDate") or "")[:10],
-        description=strip_html(str(src_.get("description") or "")),
+        description=body,
         ats_platform="HealthcareSource",
     )
 
@@ -9929,6 +10216,11 @@ async def run_kronos(session) -> list[Job]:
         scrape_kronos, lambda o: _url_host(_kronos_base(o[0])))
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Kronos total: {len(jobs):,} jobs")
+    # 2026-09-24 (push 3): the list's job_description stops at 256
+    # characters; job-requisitions/{id} has the whole text and the
+    # requirements. 2 in flight across the UKG Ready hosts.
+    await _board_detail_passes(session, jobs, KRONOS_DESC_BUDGET,
+                               lambda j: _kronos_detail(session, j), "Kronos")
     return jobs
 
 
@@ -10424,6 +10716,9 @@ async def run_applicantpro(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  ApplicantPro total: {len(jobs):,} jobs")
+    # 2026-09-24 (push 3): bodies from each job page's JSON-LD, 2 in flight.
+    await _board_detail_passes(session, jobs, APPLICANTPRO_DESC_BUDGET,
+                               lambda j: _jsonld_board_detail(session, j), "ApplicantPro")
     return jobs
 
 
@@ -10744,11 +11039,13 @@ async def scrape_csod(session: aiohttp.ClientSession, system: str, base: str, si
                 logger.info(f"CSOD {system}: home HTTP {r.status}")
                 return []
             home = await r.text()
+            cookie = "; ".join(f"{k}={v.value}" for k, v in r.cookies.items())
         m = re.search(r'"token"\s*:\s*"([^"]+)"', home)
         if not m:
             logger.info(f"CSOD {system}: no csod.context.token on the home page")
             return []
         token = m.group(1)
+        _CSOD_CTX[system] = (base, token, cookie)
         page = 1
         while True:
             body = {"careerSiteId": int(site_id), "careerSitePageId": int(site_id), "pageNumber": page,
@@ -10791,6 +11088,10 @@ async def run_csod(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  CSOD total: {len(jobs):,} jobs")
+    # 2026-09-24 (push 3): bodies from the jobDetails API with the token and
+    # session cookies each tenant's home page gave this run, 2 in flight.
+    await _board_detail_passes(session, jobs, CSOD_DESC_BUDGET,
+                               lambda j: _csod_detail(session, j), "CSOD")
     return jobs
 
 
@@ -11493,6 +11794,9 @@ async def run_hcts(session) -> list[Job]:
     results = await asyncio.gather(*[scrape_hcts(session, s_, cfg) for s_, cfg in ordered], return_exceptions=True)
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  HCTS total: {len(jobs):,} jobs")
+    # 2026-09-24 (push 3): bodies from each row's job page, 2 in flight.
+    await _board_detail_passes(session, jobs, HCTS_DESC_BUDGET,
+                               lambda j: _hcts_detail(session, j), "HCTS")
     return jobs
 
 
@@ -12096,7 +12400,7 @@ def _oceans_fetch_all() -> list[Job]:
     return out
 
 
-async def run_oceans() -> list[Job]:
+async def run_oceans(session=None) -> list[Job]:
     if curl_requests is None:
         logger.warning("Oceans Healthcare: curl_cffi not installed — skipping")
         return []
@@ -12107,6 +12411,11 @@ async def run_oceans() -> list[Job]:
         logger.info(f"  Oceans Healthcare: ERROR {e}")
         return []
     logger.info(f"  Oceans Healthcare: {len(jobs):,} jobs")
+    # 2026-09-24 (push 3): the job-detail pages answer plain HTTP (only the
+    # list's LoadMore needs curl_cffi) and carry a JSON-LD JobPosting.
+    if session is not None:
+        await _board_detail_passes(session, jobs, OCEANS_DESC_BUDGET,
+                                   lambda j: _jsonld_board_detail(session, j), "Oceans")
     return jobs
 
 
@@ -12273,6 +12582,10 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
             break
 
     logger.info(f"  CHS: {len(jobs):,} total jobs")
+    # 2026-09-24 (push 3): every CHS job page carries a JSON-LD JobPosting;
+    # one tenant, so DETAIL_TENANT_MAX (1,500) a night, 2 in flight.
+    await _board_detail_passes(session, jobs, CHS_DESC_BUDGET,
+                               lambda j: _jsonld_board_detail(session, j), "CHS")
     return jobs
 
 
@@ -16412,7 +16725,7 @@ async def run_all() -> list[dict]:
             run_preload(proxy_session),    # window.__PRELOAD_STATE__ career sites: Harris Health System (added 2026-09-22)
             run_hca(direct_session),    # HCA Healthcare — browserless per-state crawl via curl_cffi Firefox TLS (rebuilt 2026-07-28)
             run_houston_methodist(),    # Workday wd12/GTI — curl_cffi; wd12 edge 403s non-browser TLS (added 2026-07-28)
-            run_oceans(),               # Oceans Behavioral — custom board at oceansjobboard.com via curl_cffi (added 2026-07-28)
+            run_oceans(proxy_session),  # Oceans Behavioral — custom board at oceansjobboard.com via curl_cffi (added 2026-07-28)
             run_chs(proxy_session),
             run_atrium(proxy_session),  # Atrium Health — Coveo HTML pagination via residential proxy
             return_exceptions=True,

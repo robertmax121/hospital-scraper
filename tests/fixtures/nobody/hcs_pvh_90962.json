@@ -1,0 +1,55 @@
+{
+ "hits": {
+  "total": {
+   "value": 1
+  },
+  "hits": [
+   {
+    "_id": "4747_90962",
+    "_source": {
+     "datePosted": "2025-12-17T00:00:00Z",
+     "documentId": "4747_90962",
+     "employmentType": "Part Time Benefit Eligible",
+     "hiringOrganization": {
+      "legalName": "Parkview Health ",
+      "name": "Parkview Health ",
+      "subOrganization": {
+       "legalName": "Parkview Regional Medical Center",
+       "name": "Parkview Regional Medical Center",
+       "subOrganization": {
+        "legalName": "Case Management",
+        "name": "Case Management"
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "Fort Wayne",
+       "addressRegion": "IN",
+       "postalCode": "46845",
+       "streetAddress": "11109 Parkview Plaza Drive",
+       "addressLocalityRegion": "Fort Wayne, IN"
+      },
+      "geoLocation": {
+       "lat": 41.187351,
+       "lon": -85.101105
+      }
+     },
+     "name": "Social Worker II",
+     "occupationalCategory": "Allied Health",
+     "title": "Social Worker II",
+     "workHours": "8:00am-8:00pm",
+     "userArea": {
+      "jobPostingID": 90962,
+      "requisitionNumber": "182806",
+      "shift": "Days",
+      "fTE": "0.6",
+      "salaryRange": "",
+      "jobSummary": "The Social Worker assesses patient/family needs and coping skills that support the patient#s unique cultural and spiritual beliefs. Provides holistic patient/family centered care. Provides education, interventions and community resources specific to the patient/family need. Provides crisis intervention, complex or long-term placement linkage to appropriate community resources. Participates in discharge planning and treatment planning. Coordinates with the care team and other coworkers to facilitate the patient#s goals and achievement of quality and cost-effective outcomes.Master Degree in Social Work required. Must have current Indiana LSW or LCSW license. # Minimum of 2 years professional experience working with patients/families with social complexities and cultural barriers to healthcare. Preferred additional discharge planning or medical social work experience. Preferred previous work experience in the hospital setting. # Demonstrates thorough working knowledge of social work process, community agencies, services, and resources available to assist patients and families in the resolution of emotional , social, and financial difficulties related to change in patient#s health status. Requires general knowledge of the normal growth, development, related behaviors, needs, comfort, and range of treatment appropriate to the age of the patient and diagnosis to support the provision of an individualized plan of care. Requires sound analytical and organizational skill to assess patient#s needs, plan and coordinate appropriate therapeutic intervention and to manage case load to achieve efficiency and productivity. Must have good verbal and written communication skills.",
+      "jobSummaryDisplay": "<div class=\"fieldValueText\">\r\n<div class=\"fieldValueText\">\r\n<div class=\"fieldValueText\">\r\n<div class=\"fieldValueText\">\r\n<p>The Social Worker assesses patient/family needs and coping skills that support the patient&rsquo;s unique cultural and spiritual beliefs. Provides holistic patient/family centered care. Provides education, interventions and community resources specific to the patient/family need. Provides crisis intervention, complex or long-term placement linkage to appropriate community resources. Participates in discharge planning and treatment planning. Coordinates with the care team and other coworkers to facilitate the patient&#39;s goals and achievement of quality and cost-effective outcomes.Master Degree in Social Work required.</p>\r\n\r\n<p>Must have current Indiana LSW or LCSW license.</p>\r\n\r\n<p>&nbsp;</p>\r\n\r\n<p>Minimum of 2 years professional experience working with patients/families with social complexities and cultural barriers to healthcare. Preferred additional discharge planning or medical social work experience. Preferred previous work experience in the hospital setting.</p>\r\n\r\n<p>&nbsp;</p>\r\n\r\n<p>Demonstrates thorough working knowledge of social work process, community agencies, services, and resources available to assist patients and families in the resolution of emotional , social, and financial difficulties related to change in patient&#39;s health status. Requires general knowledge of the normal growth, development, related behaviors, needs, comfort, and range of treatment appropriate to the age of the patient and diagnosis to support the provision of an individualized plan of care. Requires sound analytical and organizational skill to assess patient&#39;s needs, plan and coordinate appropriate therapeutic intervention and to manage case load to achieve efficiency and productivity. Must have good verbal and written communication skills.</p>\r\n</div>\r\n</div>\r\n</div>\r\n</div>\r\n"
+     }
+    }
+   }
+  ]
+ }
+}
