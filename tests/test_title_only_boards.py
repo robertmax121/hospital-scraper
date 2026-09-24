@@ -293,3 +293,30 @@ def test_runners_wire_their_passes(monkeypatch):
     assert len(asyncio.run(scraper.run_concentra(None))) == 4
     assert [(c[0], c[2]) for c in calls] == [("HCTS", 2), ("Kronos", 3), ("Concentra", 4)]
     assert calls[0][1] is scraper.HCTS_DESC_BUDGET and calls[2][1] is scraper.CONCENTRA_DESC_BUDGET
+
+
+def test_concentra_list_403_retries_through_curl(monkeypatch):
+    """A 403 challenge on the SXA search API is retried once through
+    curl_cffi; the rows parse as before. Anything else still ends the list."""
+    page = {"Count": 1, "Results": [{"Url": "/careers/job-search/tx/temple/physical-therapist/350203/", "Id": "x",
+                                     "Html": '<a href="#" title="Physical Therapist">x</a>'
+                                             '<div class="field-location">Temple, TX</div>'}]}
+    _serve(monkeypatch, [("/sxa/search/results/", 403, "Just a moment...")])
+    asked = []
+
+    async def fake_curl_page(params):
+        asked.append(params["e"])
+        return page
+    monkeypatch.setattr(scraper, "_concentra_curl_page", fake_curl_page)
+    jobs = asyncio.run(scraper.scrape_concentra(None))
+    assert asked == ["0"] and len(jobs) == 1
+    assert jobs[0].job_id == "350203" and jobs[0].state == "TX" and jobs[0].title == "Physical Therapist"
+
+    async def no_curl(params):
+        return None
+    monkeypatch.setattr(scraper, "_concentra_curl_page", no_curl)
+    assert asyncio.run(scraper.scrape_concentra(None)) == []
+    _serve(monkeypatch, [("/sxa/search/results/", 500, "")])
+    monkeypatch.setattr(scraper, "_concentra_curl_page", fake_curl_page)
+    asked.clear()
+    assert asyncio.run(scraper.scrape_concentra(None)) == [] and asked == []

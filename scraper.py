@@ -5983,6 +5983,19 @@ _CONCENTRA_LOCATION_RE = re.compile(r'field-location">([^<]+)<', re.I)
 _CONCENTRA_CATEGORY_RE = re.compile(r'field-category[^"]*">([^<]+)<', re.I)
 _CONCENTRA_JOBID_RE    = re.compile(r'/(\d+)/?$')
 
+async def _concentra_curl_page(params: dict):
+    """One SXA search page through curl_cffi (Chrome TLS); None on failure."""
+    if curl_requests is None:
+        return None
+    try:
+        r = await asyncio.to_thread(_curl_fetch, "get", f"{CONCENTRA_BASE}//sxa/search/results/", "chrome", 30,
+                                    params=params, headers={"Accept": "application/json, text/javascript, */*; q=0.01",
+                                                            "X-Requested-With": "XMLHttpRequest"})
+        return r.json()
+    except Exception:
+        return None
+
+
 async def scrape_concentra(session: aiohttp.ClientSession) -> list[Job]:
     jobs: list[Job] = []
     offset, total = 0, None
@@ -6000,18 +6013,29 @@ async def scrape_concentra(session: aiohttp.ClientSession) -> list[Job]:
             "e": str(offset), "p": str(CONCENTRA_PAGE),
             "v": CONCENTRA_VARIANT,
         }
+        data = None
         try:
             async with req(session, "get",
                 f"{CONCENTRA_BASE}//sxa/search/results/",
                 params=params, headers=headers, ssl=False, proxy=proxies.get(),
                 timeout=aiohttp.ClientTimeout(total=30)) as r:
-                if r.status != 200:
+                if r.status == 200:
+                    data = await r.json(content_type=None)
+                elif r.status != 403:
                     logger.info(f"Concentra: HTTP {r.status} at offset {offset}")
                     break
-                data = await r.json(content_type=None)
         except Exception as e:
             logger.info(f"Concentra: {e} at offset {offset}")
             break
+        if data is None:
+            # 2026-09-24 (push 3): Cloudflare answers aiohttp's TLS handshake
+            # with a 403 challenge from some addresses (a home connection on
+            # 09-24; the nightly still got through), and a Chrome handshake
+            # through curl_cffi gets the same JSON. One retry that way.
+            data = await _concentra_curl_page(params)
+            if data is None:
+                logger.info(f"Concentra: HTTP 403 at offset {offset} (curl_cffi retry failed too)")
+                break
 
         if total is None:
             total = data.get("Count", 0) or 0
