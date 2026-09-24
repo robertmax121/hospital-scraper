@@ -4060,6 +4060,15 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
     return jobs
 
 
+# 2026-09-24 (University Health San Antonio, 1,092 active jobs, 60 full
+# bodies): some of its job pages carry no JSON-LD JobPosting (100998069312),
+# so _jsonld_detail returned nothing; the posting sits in the page's
+# ats-description block. These tenants read the page with _tb_page_detail
+# (JSON-LD and the ats-description block, the longer wins, plus the
+# ats-extras schedule / date) on the same TB_DESC_BUDGET.
+TB_PAGE_DETAIL_ORGS = {"University Health (San Antonio)"}
+
+
 async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
     logger.info(f"TalentBrew: scraping {len(TALENTBREW_ORGS)} systems...")
     if DETAIL_FETCH:
@@ -4070,9 +4079,10 @@ async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
         # returns from inside its paging loop. Job pages carry a JSON-LD
         # JobPosting with the body, employment type, date and often pay.
         if DETAIL_FETCH and jobs:
+            fetch = _tb_page_detail if sys in TB_PAGE_DETAIL_ORGS else _jsonld_detail
             try:
                 await _detail_pass(session, sys, jobs, TB_DESC_BUDGET,
-                                   lambda j: _jsonld_detail(session, j), "TalentBrew")
+                                   lambda j: fetch(session, j), "TalentBrew")
             except Exception as e:
                 logger.info(f"TalentBrew {sys}: detail pass failed ({e})")
         return jobs
