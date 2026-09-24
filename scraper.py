@@ -857,7 +857,13 @@ def load_cms_lookup() -> int:
 # read-only pass at run start now loads (canonical system, job_id) -> stored
 # body length for the detail platforms' active rows with a real body, and
 # _detail_candidates skips those rows at no budget cost.
-KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor", "PreloadState")
+# 2026-09-24 (push 2 integration): the runners push2/wiring gave a detail pass
+# store under their own ats_platform (CHRISTUS "Custom", SmartRecruiters, ADP,
+# Paycor, Paylocity, Workable; Kaiser/UHG/Enhabit/Maxim are TalentBrew and
+# Houston Methodist is Workday). Without them here those passes re-fetched
+# every row they had already filled, night after night.
+KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor", "PreloadState",
+                        "Custom", "SmartRecruiters", "ADP", "Paycor", "Paylocity", "Workable")
 KNOWN_BODY_PAGE      = 1000
 KNOWN_BODY_MAX_ROWS  = int(os.getenv("KNOWN_BODY_MAX_ROWS", "400000"))
 _KNOWN_BODIES: dict = {}
@@ -2539,7 +2545,7 @@ async def _tb_page_detail(session, job) -> bool:
     if extras and (job.description or "").strip():
         facts = "\n".join(f"{k}: {v}" for k, v in extras.items() if k.lower() != "primary location")
         if facts and facts.splitlines()[0] not in job.description:
-            job.description = f"{job.description.strip()}\n\n{facts}"[:8000]
+            job.description = f"{job.description.strip()}\n\n{facts}"[:12000]
     desc = (job.description or "").strip()
     return len(desc) >= 200 and len(desc) > before
 
@@ -2563,8 +2569,13 @@ async def _detail_passes_by_system(session, jobs: list, budget, fetch_one, label
     together but share one gate of `in_flight` requests, with a short pause
     before each slot is released, so the host sees the same few requests at a
     time however many tenants are configured (Paylocity answers a burst with
-    429). Each tenant still takes at most its fair share of `budget`, in the
-    runner's order (transparency states first)."""
+    429). Each tenant takes its fair share of `budget`, in the runner's order
+    (transparency states first).
+    2026-09-24 (push 2 integration): every tenant is known before any pass
+    starts, so all are registered (expect) and each reports done however its
+    pass ends: a floor each, then what the small tenants leave is split among
+    the big ones (_DescBudget), instead of budget/DETAIL_TENANT_SHARE first
+    come."""
     if not (DETAIL_FETCH and jobs):
         return
     gate = asyncio.Semaphore(max(1, in_flight))
@@ -2579,12 +2590,15 @@ async def _detail_passes_by_system(session, jobs: list, budget, fetch_one, label
     by_system: dict[str, list] = {}
     for j in jobs:
         by_system.setdefault(j.hospital_system, []).append(j)
+    budget.expect(by_system)
 
     async def one(system, rows):
         try:
             await _detail_pass(session, system, rows, budget, gated, label, skip=skip)
         except Exception as e:
             logger.info(f"{label} {system}: detail pass failed ({e})")
+        finally:
+            budget.done(system)
 
     await asyncio.gather(*[one(s, r) for s, r in by_system.items()], return_exceptions=True)
 
@@ -5430,7 +5444,7 @@ def _sr_posting_text(data: dict) -> str:
         if title and not text.lower().startswith(title.lower()):
             text = f"{title}\n{text}"
         parts.append(text)
-    return "\n\n".join(parts)[:8000]
+    return "\n\n".join(parts)[:12000]
 
 
 async def _sr_detail(session, job) -> bool:
@@ -10596,7 +10610,7 @@ async def _workable_detail(session, job) -> bool:
         t = strip_html(str((data or {}).get(key) or "")).strip()
         if t:
             parts.append(t if t.lower().startswith(title.lower()) else f"{title}\n{t}")
-    desc = "\n\n".join(p for p in parts if p)[:8000]
+    desc = "\n\n".join(p for p in parts if p)[:12000]
     if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
         job.description = desc
         return True
