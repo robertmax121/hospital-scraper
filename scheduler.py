@@ -10,7 +10,7 @@ import logging
 import os
 from datetime import datetime
 from scraper import scrape, PARTIAL_SYSTEMS, HOSPITAL_SYSTEM_ALIASES, proxies
-from database import upsert_jobs, mark_inactive_jobs, get_stats
+from database import mark_inactive_jobs, get_stats
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,10 +43,16 @@ def run():
         logger.info(f"  Proxy pool: {len(proxies.proxies)} loaded, {len(proxies.retired)} retired, "
                     f"{proxies.fallbacks} proxied requests retried direct")
 
-    # ── Step 2: Push to database ──────────────────────────────────
-    logger.info(f"\n[ STEP 2 ] Pushing {len(jobs):,} jobs to Supabase...")
-    result = upsert_jobs(jobs)
-    logger.info(f"  Result: {result}")
+    # ── Step 2: Layer 4 (the rows are already in the database) ────
+    # 2026-09-24: this step used to call database.upsert_jobs(jobs) first.
+    # scrape() had already upserted these exact rows through
+    # scraper._upsert_hospital_jobs_to_supabase: the same dicts, aliased and
+    # stamped in place, on the same conflict key. The second pass re-sent
+    # every row (~225k) in 100-row batches each night, doubling the write
+    # load on a 32-index table whose 8 s statement timeout is what failed the
+    # first pass, and its continue-on-error loop hid those failures. The
+    # first pass now dedupes, splits failed batches, retries and continues.
+    logger.info(f"\n[ STEP 2 ] {len(jobs):,} jobs were upserted by scrape(); running Layer 4...")
 
     # Layer 4: multi-run miss confirmation before deactivation.
     # A row needs to miss MISS_THRESHOLD consecutive scrapes before going
@@ -56,6 +62,10 @@ def run():
     # this pass did not, and it was the engine deactivating HCA's rows).
     # HCA is maintained by hca_local_push.py from a residential IP unless the
     # nightly is explicitly told to crawl it (HCA_NIGHTLY=1).
+    # 2026-09-24: on top of these explicit exemptions, mark_inactive_jobs now
+    # applies the sweep's yield guard to every system (retire_guard.py): a
+    # system that yielded 0 rows, or under 80% of 20+ active rows, keeps its
+    # unseen rows' miss counts, with a 7-day scraped_at backstop.
     layer4_exempt = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS}
     if os.environ.get("HCA_NIGHTLY") != "1":
         layer4_exempt.add("HCA Healthcare")

@@ -8,6 +8,7 @@ import os
 import logging
 from datetime import datetime
 from supabase import create_client, Client
+from retire_guard import BACKSTOP_DAYS, plan_layer4
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +95,12 @@ def upsert_jobs(jobs: list[dict]) -> dict:
     row's mutable fields (including scraped_at). consecutive_scrape_misses
     is NOT reset here — mark_inactive_jobs handles that explicitly for
     found rows so the reset is symmetric with the miss-increment.
+
+    2026-09-24: the nightly no longer calls this. scheduler.run() used to
+    re-send every row scrape() had already upserted through
+    scraper._upsert_hospital_jobs_to_supabase (the same dicts, already
+    aliased and stamped), doubling the write load on a 32-index table. That
+    function now dedupes, splits and retries itself.
     """
     db = client()
     # Dedupe on the conflict key BEFORE batching (2026-08-21). Two sources
@@ -141,9 +148,20 @@ def mark_inactive_jobs(current_jobs: list[dict],
     HCA rows it maintains were reaching miss_threshold three nights after
     every local push (4,717 deactivated on 2026-09-16 alone).
 
+    2026-09-24: yield guard (retire_guard.py, the same numbers as the
+    sweep's guard). A system whose run yielded 0 rows, or under 80% of its
+    active rows when it has 20+, does not have its unseen rows bumped: they
+    keep their miss count. Seen rows are still reset. A row nobody has seen
+    for BACKSTOP_DAYS (scraped_at) loses that protection and is counted as
+    usual, so a system that is really gone still retires. On 09-24, 17
+    systems (4,279 rows, 26 CMS hospitals) had answered nothing and were one
+    or two runs from retirement although their boards were live.
+
     Per active row each scrape run:
       - Row's (system, job_id) IS in this scrape → reset misses to 0.
-      - Row's (system, job_id) NOT in this scrape → increment misses.
+      - Row's (system, job_id) NOT in this scrape → increment misses
+        (unless the system is yield-guarded and the row was seen within
+        BACKSTOP_DAYS).
       - On increment, if misses >= miss_threshold → deactivate.
 
     This replaces the previous strict-diff-on-first-miss approach. The
@@ -172,6 +190,9 @@ def mark_inactive_jobs(current_jobs: list[dict],
             reset_to_found:   rows confirmed present in this scrape
             current_keys:     count of (system, job_id) tuples in scrape
             active_before:    active rows before the pass
+            guarded_systems:  systems the yield guard held tonight
+            guard_held_rows:  their unseen rows kept at their miss count
+            guard_backstop_rows: their unseen rows past the backstop
     """
     db = client()
 
@@ -204,7 +225,7 @@ def mark_inactive_jobs(current_jobs: list[dict],
         for attempt in range(4):
             try:
                 resp = (db.table("hospital_jobs")
-                          .select("id,job_id,hospital_system,consecutive_scrape_misses")
+                          .select("id,job_id,hospital_system,consecutive_scrape_misses,scraped_at")
                           .eq("is_active", True)
                           .gt("id", last_id)
                           .order("id", desc=False)
@@ -235,28 +256,25 @@ def mark_inactive_jobs(current_jobs: list[dict],
                 "aborted": True}
     logger.info(f"  Layer 4: {len(active):,} active rows in DB")
 
-    # Categorize each active row.
-    found_ids: list[int] = []                    # Was in current scrape → reset misses to 0
-    deactivate_ids: list[int] = []               # Missed, new count >= threshold → deactivate
-    bump_by_new_count: dict[int, list[int]] = {} # Missed, not yet at threshold → set new miss count
-
-    excluded_n = 0
-    for r in active:
-        if exclude_systems and r["hospital_system"] in exclude_systems:
-            excluded_n += 1
-            continue
-        key = (r["hospital_system"], str(r["job_id"]))
-        if key in current_keys:
-            # Only emit a reset for rows whose previous miss count was non-zero.
-            # Avoids a no-op UPDATE on the (typical) majority of rows.
-            if int(r.get("consecutive_scrape_misses") or 0) > 0:
-                found_ids.append(r["id"])
-        else:
-            new_count = int(r.get("consecutive_scrape_misses") or 0) + 1
-            if new_count >= miss_threshold:
-                deactivate_ids.append(r["id"])
-            else:
-                bump_by_new_count.setdefault(new_count, []).append(r["id"])
+    # Categorize each active row (pure logic in retire_guard.plan_layer4):
+    # seen -> reset to 0; unseen -> bump, retire at the threshold; rows of
+    # exclude_systems untouched; unseen rows of a yield-guarded system (0
+    # rows tonight, or under 80% of 20+ active rows) keep their count unless
+    # nobody has seen them for BACKSTOP_DAYS.
+    plan = plan_layer4(active, current_keys, miss_threshold, exclude_systems)
+    found_ids: list[int] = plan["found_ids"]
+    deactivate_ids: list[int] = plan["deactivate_ids"]
+    bump_by_new_count: dict[int, list[int]] = plan["bump_by_new_count"]
+    excluded_n = plan["excluded_rows"]
+    guarded = plan["guarded"]
+    for system in sorted(guarded, key=lambda s: -guarded[s]["active"]):
+        g = guarded[system]
+        logger.warning(f"  LAYER4 GUARD {system}: {g['reason']} {g['yield']}/{g['active']} "
+                       f"(yield/active); {g['frozen']} unseen rows keep their miss count, "
+                       f"{g['backstop']} past the {BACKSTOP_DAYS}-day backstop counted as usual")
+    if guarded:
+        logger.warning(f"  Layer 4 yield guard: {len(guarded)} system(s), "
+                       f"{plan['frozen_rows']:,} rows held, {plan['backstop_rows']:,} past the backstop")
 
     # Helper for batched updates.
     def _batch_update(ids: list[int], patch: dict, label: str) -> int:
@@ -290,6 +308,9 @@ def mark_inactive_jobs(current_jobs: list[dict],
         "active_before":   len(active),
         "excluded_rows":   excluded_n,
         "excluded_systems": sorted(exclude_systems or []),
+        "guarded_systems": sorted(guarded),
+        "guard_held_rows": plan["frozen_rows"],
+        "guard_backstop_rows": plan["backstop_rows"],
     }
     logger.info(f"Layer 4 deactivation: {summary}")
     return summary
