@@ -15013,7 +15013,8 @@ _RQ_ENUM_RX = re.compile(r"^(?:\(?(?:[a-hA-H]|\d{1,2}|[ivx]{1,4})[.)]\s+)(?=[A-Z
 # well-being of our employees ... You can expect to see the following
 # benefits:").
 _RQ_BLOCK_END_RX = re.compile(
-    r"\bbenefits\b|\bwe (?:offer|invest in)\b|\bwhat we offer\b|\bbelieves? that our employees\b|"
+    r"\bbenefits\b|\bbenefit (?:platform|plans?|package|programs?)\b|\bwe (?:offer|invest in)\b|\bwhat we offer\b|"
+    r"\bbelieves? that our employees\b|\bhighly values\b|"
     r"\$\s?\d|\bshift differentials?\b|\bsign[- ]on bonus|"
     r"\bequal (?:employment )?opportunity\b|\bis an? (?:EEO|equal)\b", re.I)
 _RQ_KEEP_RX = re.compile(r"\byears?\b|\bexperience\b|\bdegree\b|\brequired\b|\bpreferred\b|licens|certif", re.I)
@@ -15090,25 +15091,34 @@ _RQ_HARD_STOP_RX = re.compile(
     r"^emotional\b|^activities\b|^mental/sensory|blood-?borne|exposure (?:category|risk)|age[- ]specific|"
     r"percentages? of time|personal protective|protective equipment|weekly hours|scheduled? hours|"
     r"hours per (?:week|pay period)|^job details$|(?:position|additional|other|job) information|travel requirements?|"
-    r"^unusual (?:physical|demands)|you will be responsible for|^responsible for$", re.I)
+    r"^unusual (?:physical|demands)|you will be responsible for|^responsible for$|^job details", re.I)
 # Lines inside a block that are not a requirement but do not end it: a
 # heading value of "N/A" / "None" (Loma Linda "Licensures and
 # Certifications: None."), stock sentences about the list itself, schedule
 # fields, percent-of-time rows, duties.
 _RQ_NONE_RX = re.compile(
     r"^(?:n/?a|none|not applicable|none required|no (?:minimum )?(?:experience|education|license|licensure|certification)?\s*"
-    r"(?:is )?required|no (?:degree|diploma)(?: or (?:degree|diploma))?(?: required)?)\.?$|"
+    r"(?:is )?required|no (?:degree|diploma)(?: or (?:degree|diploma))?(?: required)?|"
+    r"no (?:professional |additional |prior )?(?:certifications?|licenses?|licensure|experience|education)(?: is| are)? required)\.?$|"
     r"^[^:]{2,60}:\s*(?:n/?a|none|not applicable)\.?$", re.I)
 _RQ_SKIP_RX = re.compile(
     r"^(?:to perform this job successfully|applicants who do not meet|to be considered for this|"
     r"(?:job )?(?:opening|requisition|req) (?:id|number|#)|[A-Z]{4,}:\s*we\b|"
+    # 2026-09-24 (reqfix, third hand check): issuer rows of a Workday
+    # certification table, UF Health's driving fields, schedule rows,
+    # "Responsibilities include ...", "Expected Patient Load"
+    r"(?:american heart association|american red cross|military training network)\.?$|required tests for placement|"
+    r"motor vehicle operator|will not operate vehicles|responsibilities include|expected patient load|onsite labs?$|"
+    r"hours:\s*\w+$|"
     r"equivalent education and/or experience may substitute|the above (?:statements|list|is intended)|"
     r"(?:performs?|perform) (?:all )?other (?:related )?(?:duties|functions|tasks)|other duties as assigned|"
     r"(?:never|rarely|seldom|occasionally|frequently|constantly|continually)\s*\(\d)", re.I)
 _RQ_SCHED_LINE_RX = re.compile(
     r"^(?:days?|nights?|evenings?|weekends?|full[- ]time|part[- ]time|prn|per diem|variable|"
     r"(?:days?|nights?|evenings?) \(united states of america\)|rotating\b.{0,30}|every (?:other |third |fourth )?weekend.{0,20}|"
-    r"\d+ hours? (?:per|a|every) .{0,30}|this position will work.{0,60}|.{0,20}\bFTE\b.{0,60}\bhours\b.{0,60})$", re.I)
+    r"\d+ hours? (?:per|a|every) .{0,30}|this position will work.{0,60}|.{0,20}\bFTE\b.{0,60}\bhours\b.{0,60}|"
+    r".{0,12}\b(?:monday|mon)\b.{0,6}(?:-|–|through|to).{0,6}\b(?:friday|fri|sunday|sun)\b.{0,24}|"
+    r".{0,12}\d{1,2}(?::\d\d)?\s?(?:am|pm|a\.m\.|p\.m\.)\s?(?:-|–|to)\s?\d{1,2}(?::\d\d)?\s?(?:am|pm|a\.m\.|p\.m\.)?.{0,24})$", re.I)
 # A duty, not a requirement: third-person task lines inside a block (Essentia
 # "Responsible for organizing and providing nursing care", "Delegates aspects
 # of care ... based upon their licensure"), unless they carry a hard cue.
@@ -15116,7 +15126,7 @@ _RQ_DUTY_RX = re.compile(
     r"^(?:is )?(?:responsible for|performs?|contributes|delegates|enhances|participates|assists|provides|runs|"
     r"coordinates|oversees|supervises|organizes|directs|develops|ensures|completes|documents|collaborates|educates|"
     r"reports to|promotes|designs|reviews|monitors|facilitates|manages|implements|identifies|leads|serves as|acts as|"
-    r"communicates|conducts?|models|supports|in this role you will)\b", re.I)
+    r"communicates|conducts?|models|supports|guides|mentors|coaches|utilizes|expands|keeps abreast|in this role you will)\b", re.I)
 _RQ_HARD_CUE_RX = re.compile(
     r"\bcurrent(?:ly)? (?:\w+ ){0,3}(?:licen|certif|registr|BLS|ACLS|PALS|CPR)|\b(?:valid|active|unrestricted|required|must|mandatory|"
     r"within \d+)\b", re.I)
@@ -15125,7 +15135,7 @@ _RQ_HARD_CUE_RX = re.compile(
 # temperature changes ... Very frequent repetitive motions"): the paragraph's
 # requirements end at the first one.
 _RQ_WORKCOND_RX = re.compile(
-    r"\b(?:exposure to|exposed to|extreme temperature|repetitive motions?|protective equipment|"
+    r"\b(?:exposure to (?!patients)|exposed to (?!patients)|extreme temperature|repetitive motions?|protective equipment|"
     r"tolera\w* (?:to )?(?:extreme|temperature|noise)|high stress environment|physically demanding|"
     r"(?:mental|visual|physical)(?:/\w+)? fatigue)\b", re.I)
 _RQ_ABBR_RX = re.compile(r"(?:\b(?:St|Dr|Mr|Mrs|Ms|Jr|Sr|No|Nos|vs|etc|Inc|Co|Corp|Ltd|approx|Ft|Mt|U\.S|e\.g|i\.e)|\b[A-Z])\.$")
@@ -15325,6 +15335,8 @@ def _rq_unglue(t: str) -> str:
     "preferredThe University ...", "annually.Essential"."""
     t = _RQ_CAPS_GLUED_RX.sub(lambda m: "\n" + m.group(1).strip() + "\n", t)
     t = _RQ_GLUED_TITLE_RX.sub("\n", t)
+    t = re.sub(r"(Abilities|Knowledge|Education|Experience|Licenses)N/?A(?=[A-Z]|\b)", "\\1\nN/A\n", t)
+    t = re.sub(r"(?<=[A-Z][.!?])(?=(?:Licensure|Certifications?|Education|Experience|Required|Preferred)\b)", "\n", t)
     t = re.sub(r"(?<=[a-z]{3})(?=(?:The|This|We|Our|Prior|Must|Ability|Minimum|Preferred|Required|Valid|Current|Here|What|"
                r"Graduate)\b)", _rq_camel, t)
     return re.sub(r"(?<=[a-z0-9)][.!?])(?=[A-Z][a-z])", "\n", t)
@@ -15520,6 +15532,10 @@ def extract_requirements(text) -> dict:
         # 2026-09-24 (reqfix, hand check): not a requirement, the block goes on.
         words = s.split()
         s_ = _RQ_ENUM_RX.sub("", s)
+        if (re.match(r"(?:the|this|our) ", s, re.I) and not _RQ_HARD_CUE_RX.search(s) and not _rq_types(s)
+                and re.search(r"\b(?:offers|provides|is an? (?:dynamic|leading|exciting|unique|great)|"
+                              r"is a (?:[\w-]+,? ){0,3}(?:department|team|unit|hospital|organization|clinic|practice))\b", s, re.I)):
+            continue
         if (_RQ_NONE_RX.match(s) or _RQ_SKIP_RX.search(s) or _RQ_SCHED_LINE_RX.match(s) or s.endswith("?")
                 or re.search(r"\b(?:will be|is|are) provided\b", s, re.I)
                 or (_RQ_DUTY_RX.search(s_) and not _RQ_HARD_CUE_RX.search(s_))
@@ -15576,10 +15592,10 @@ def extract_requirements(text) -> dict:
             for c in clauses:
                 cp = _rq_pref(c, mode) if (_RQ_PREF_RX.search(c) or _RQ_REQ_RX.search(c) or len(clauses) > 1) else pref
                 types = _rq_types(c)
-                if (kind == "lic" and not types & {"licensure", "certifications"}
+                if (kind == "lic" and not types
                         and not re.search(r"\bexperience\b|\byears?\b|\bskills?\b|knowledge|abilit|computer", c, re.I)):
                     types.add("licensure")
-                if (kind in ("cert", "lic+cert") and not types & {"licensure", "certifications"} and not _RQ_DRIVER_RX.search(c)
+                if (kind in ("cert", "lic+cert") and not types and not _RQ_DRIVER_RX.search(c)
                         and not re.search(r"\bexperience\b|\byears?\b|\bskills?\b|knowledge|abilit|computer", c, re.I)):
                     types.add("certifications")
                 for f in sorted(types):
