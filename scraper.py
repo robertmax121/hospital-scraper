@@ -13,6 +13,9 @@ import re
 from html import unescape as _html_unescape   # 2026-09-10: Paycor / TaleoBE / HCTS parsers
 import time
 import os
+import weakref
+from email.utils import parsedate_to_datetime
+from urllib.parse import urlsplit
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
@@ -302,6 +305,106 @@ WD_MAX_OFFSET = int(os.getenv("WD_MAX_OFFSET", "20000"))
 
 
 
+# ── Direct-request retry + per-host pacing (2026-09-24, push 1) ─────────────
+# Railway runs with no proxy pool, and a direct request used to get exactly one
+# attempt: a 429 or a 5xx on the first page of a tenant returned it empty, and
+# three empty nights retire every row it had (Connally, Odessa, Crane, Lubbock
+# Heart, Shamrock, Nacogdoches and Rolling Plains all answer when fetched one at
+# a time, and each came back 0 on a Railway run between 09-22 and 09-24).
+# A direct request that answers one of DIRECT_RETRY_STATUSES is now retried up
+# to HTTP_RETRIES times: after the server's Retry-After when it sends one (a
+# wait longer than HTTP_RETRY_AFTER_CAP is not retried at all), otherwise after
+# exponential backoff with jitter (1-2 s, 3-6 s, 9-18 s at the default base).
+# Two per-host limits keep a dead host from eating the run: a host whose last
+# HTTP_RETRY_HOST_TRIP requests all failed after their retries gets no more
+# retries until one of its requests succeeds, and one host never sleeps more
+# than HTTP_RETRY_HOST_SLEEP_CAP seconds in retries per run. Transport errors
+# and timeouts are not retried here (they raise to the adapter as before).
+HTTP_RETRIES               = int(os.getenv("HTTP_RETRIES", "3"))
+HTTP_RETRY_BASE            = float(os.getenv("HTTP_RETRY_BASE", "2"))
+HTTP_RETRY_AFTER_CAP       = float(os.getenv("HTTP_RETRY_AFTER_CAP", "30"))
+HTTP_RETRY_HOST_SLEEP_CAP  = float(os.getenv("HTTP_RETRY_HOST_SLEEP_CAP", "240"))
+HTTP_RETRY_HOST_TRIP       = int(os.getenv("HTTP_RETRY_HOST_TRIP", "3"))
+# Tenants of one runner that share a host are scraped at most this many at a
+# time (run_paycom, run_paylocity, run_ukg, run_adp, run_healthcaresource and
+# run_kronos used to gather every tenant against one host at once, which is
+# the burst Paylocity answers with 429), with a short pause before the next
+# tenant on that host starts.
+HOST_CONCURRENCY           = int(os.getenv("HOST_CONCURRENCY", "2"))
+HOST_TENANT_SPACING        = (0.5, 1.5)
+
+
+class _PacingState:
+    """Per-event-loop retry bookkeeping. scrape() runs the hospital crawl and
+    the travel crawl in two asyncio.run() calls, and the tests run many, so
+    the state lives with the loop instead of the module and every run starts
+    clean."""
+    def __init__(self):
+        self.slept: dict[str, float] = {}       # host -> seconds slept in retries
+        self.fail_streak: dict[str, int] = {}   # host -> requests in a row that failed after retries
+        self.retries: dict[str, int] = {}       # host -> retry attempts made
+        self.recovered: dict[str, int] = {}     # host -> requests that succeeded on a retry
+        self.gave_up: dict[str, int] = {}       # host -> requests returned still failing
+
+
+_PACING_BY_LOOP = weakref.WeakKeyDictionary()
+_PACING_NO_LOOP = _PacingState()
+
+
+def _pacing() -> _PacingState:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return _PACING_NO_LOOP
+    st = _PACING_BY_LOOP.get(loop)
+    if st is None:
+        st = _PACING_BY_LOOP[loop] = _PacingState()
+    return st
+
+
+def _url_host(url) -> str:
+    try:
+        return (urlsplit(str(url)).hostname or "").lower()
+    except Exception:
+        return ""
+
+
+def _retry_after_seconds(resp) -> Optional[float]:
+    """Retry-After as seconds (delta-seconds or an HTTP date); None when absent
+    or unreadable."""
+    hdrs = getattr(resp, "headers", None)
+    raw = hdrs.get("Retry-After") if hdrs is not None else None
+    if raw is None:
+        return None
+    raw = str(raw).strip()
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(raw)
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
+    except Exception:
+        return None
+
+
+async def _retry_sleep(seconds: float) -> None:
+    """Indirection so the tests can record the waits instead of sleeping."""
+    await asyncio.sleep(seconds)
+
+
+def _retry_summary() -> str:
+    st = _pacing()
+    if not st.retries:
+        return "HTTP retries: none"
+    top = sorted(st.retries.items(), key=lambda kv: -kv[1])[:8]
+    return (f"HTTP retries: {sum(st.retries.values())} on {len(st.retries)} hosts; "
+            f"{sum(st.recovered.values())} requests recovered, {sum(st.gave_up.values())} still failing; "
+            + ", ".join(f"{h} {n}" for h, n in top))
+
+
 class _FallbackResponse:
     """Wrapper so we can use 'async with' syntax with fallback logic."""
     def __init__(self, session, method, url, proxy, kwargs):
@@ -322,33 +425,109 @@ class _FallbackResponse:
     # rest of the tenant.
     PROXY_RETRY_STATUSES = frozenset({402, 403, 407, 429, 500, 502, 503, 504,
                                       520, 521, 522, 523, 524, 525, 526, 530})
+    # Statuses a DIRECT attempt retries after a wait (2026-09-24): throttling
+    # and transient server or edge failures. 403 and 404 are answers, not
+    # hiccups; 525 / 526 / 530 are TLS or DNS misconfiguration that a retry
+    # will not fix.
+    DIRECT_RETRY_STATUSES = frozenset({429, 500, 502, 503, 504,
+                                       520, 521, 522, 523, 524})
 
     async def __aenter__(self):
         fn = getattr(self._s, self._method)
-        if not self._proxy:
+        if self._proxy:
+            try:
+                self._ctx = fn(self._url, proxy=self._proxy, **self._kw)
+                r = await self._ctx.__aenter__()
+            except Exception as e:
+                # Refused, reset, timed out, proxy auth: whatever the proxied
+                # attempt did, the direct attempt is the one that counts. The
+                # old rule only fell back on 502 / 407 / 402 text matches, so a
+                # timed-out proxy ended the tenant's pagination.
+                proxies.mark_bad(self._proxy, type(e).__name__)
+            else:
+                if r.status not in self.PROXY_RETRY_STATUSES:
+                    return r
+                proxies.mark_bad(self._proxy, f"HTTP {r.status}")
+                await self._ctx.__aexit__(None, None, None)
+        return await self._direct(fn)
+
+    async def _direct(self, fn):
+        """The direct attempt, retried on DIRECT_RETRY_STATUSES within the
+        per-host limits above. Returns the last response either way, so the
+        adapter sees the same status it always did when retries run out."""
+        host = _url_host(self._url)
+        st = _pacing()
+        attempt = 0
+        while True:
             self._ctx = fn(self._url, **self._kw)
-            return await self._ctx.__aenter__()
-        try:
-            self._ctx = fn(self._url, proxy=self._proxy, **self._kw)
             r = await self._ctx.__aenter__()
-        except Exception as e:
-            # Refused, reset, timed out, proxy auth: whatever the proxied
-            # attempt did, the direct attempt is the one that counts. The
-            # old rule only fell back on 502 / 407 / 402 text matches, so a
-            # timed-out proxy ended the tenant's pagination.
-            proxies.mark_bad(self._proxy, type(e).__name__)
-            self._ctx = fn(self._url, **self._kw)
-            return await self._ctx.__aenter__()
-        if r.status in self.PROXY_RETRY_STATUSES:
-            proxies.mark_bad(self._proxy, f"HTTP {r.status}")
+            if r.status not in self.DIRECT_RETRY_STATUSES:
+                st.fail_streak[host] = 0
+                if attempt:
+                    st.recovered[host] = st.recovered.get(host, 0) + 1
+                return r
+            delay = self._retry_delay(r, attempt, host, st)
+            if delay is None:
+                st.gave_up[host] = st.gave_up.get(host, 0) + 1
+                streak = st.fail_streak[host] = st.fail_streak.get(host, 0) + 1
+                if streak == HTTP_RETRY_HOST_TRIP:
+                    logger.info(f"HTTP retry: {host} failed {streak} requests in a row after retries; "
+                                f"no more retries on it until one of its requests succeeds")
+                return r
+            logger.info(f"HTTP {r.status} from {host}: retry {attempt + 1}/{HTTP_RETRIES} in {delay:.1f}s")
+            st.slept[host] = st.slept.get(host, 0.0) + delay
+            st.retries[host] = st.retries.get(host, 0) + 1
             await self._ctx.__aexit__(None, None, None)
-            self._ctx = fn(self._url, **self._kw)  # no proxy
-            r = await self._ctx.__aenter__()
-        return r
+            self._ctx = None
+            await _retry_sleep(delay)
+            attempt += 1
+
+    @staticmethod
+    def _retry_delay(r, attempt: int, host: str, st: "_PacingState") -> Optional[float]:
+        """Seconds to wait before the next attempt, or None for no retry."""
+        if attempt >= HTTP_RETRIES:
+            return None
+        if st.fail_streak.get(host, 0) >= HTTP_RETRY_HOST_TRIP:
+            return None
+        ra = _retry_after_seconds(r)
+        if ra is not None:
+            if ra > HTTP_RETRY_AFTER_CAP:
+                return None      # asked to wait longer than a run can afford: do not hit it early
+            delay = ra + random.uniform(0.2, 1.0)
+        else:
+            d = HTTP_RETRY_BASE * (3 ** attempt)
+            delay = random.uniform(d / 2, d)
+        if st.slept.get(host, 0.0) + delay > HTTP_RETRY_HOST_SLEEP_CAP:
+            return None
+        return delay
 
     async def __aexit__(self, *args):
         if self._ctx:
             await self._ctx.__aexit__(*args)
+
+
+async def _gather_by_host(session, items, scrape, host_of) -> list:
+    """asyncio.gather over (system, config) tenants with at most
+    HOST_CONCURRENCY of them in flight per host, and a short pause before the
+    next tenant on that host starts. Tenants on different hosts still run in
+    parallel. Same result shape as gather(..., return_exceptions=True)."""
+    gates: dict[str, asyncio.Semaphore] = {}
+    limit = max(1, HOST_CONCURRENCY)
+
+    async def one(system, cfg):
+        try:
+            host = host_of(cfg) or ""
+        except Exception:
+            host = ""
+        gate = gates.get(host)
+        if gate is None:
+            gate = gates[host] = asyncio.Semaphore(limit)
+        async with gate:
+            result = await scrape(session, system, cfg)
+            await asyncio.sleep(random.uniform(*HOST_TENANT_SPACING))
+            return result
+
+    return await asyncio.gather(*[one(s, c) for s, c in items], return_exceptions=True)
 
 
 def req(session, method, url, **kwargs):
@@ -6126,10 +6305,8 @@ async def run_adp(session) -> list[Job]:
     logger.info(f"ADP: scraping {len(ADP_ORGS)} systems...")
     orgs = priority_states_first(list(ADP_ORGS.items()),
                                  lambda kv: _adp_centers(kv[1])[0][2])
-    results = await asyncio.gather(
-        *[scrape_adp(session, s, v) for s, v in orgs],
-        return_exceptions=True
-    )
+    # 2026-09-24: every tenant is on workforcenow.adp.com; HOST_CONCURRENCY at a time.
+    results = await _gather_by_host(session, orgs, scrape_adp, lambda v: _url_host(_ADP_API))
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  ADP total: {len(jobs):,} jobs")
     return jobs
@@ -7022,10 +7199,9 @@ async def run_ukg(session) -> list[Job]:
     logger.info(f"UKG: scraping {len(UKG_ORGS)} systems...")
     orgs = priority_states_first(list(UKG_ORGS.items()),
                                  lambda kv: kv[1][2] if len(kv[1]) > 2 else "")
-    results = await asyncio.gather(
-        *[scrape_ukg(session, s, o) for s, o in orgs],
-        return_exceptions=True
-    )
+    # 2026-09-24: most boards share recruiting.ultipro.com / recruiting2.ultipro.com;
+    # HOST_CONCURRENCY at a time per host.
+    results = await _gather_by_host(session, orgs, scrape_ukg, lambda o: _url_host(o[0]))
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  UKG total: {len(jobs):,} jobs")
     return jobs
@@ -7431,10 +7607,9 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
 
 async def run_healthcaresource(session) -> list[Job]:
     logger.info(f"HealthcareSource: scraping {len(HEALTHCARESOURCE_ORGS)} systems...")
-    results = await asyncio.gather(
-        *[scrape_healthcaresource(session, s, o) for s, o in HEALTHCARESOURCE_ORGS.items()],
-        return_exceptions=True
-    )
+    # 2026-09-24: every tenant is on pm.healthcaresource.com; HOST_CONCURRENCY at a time.
+    results = await _gather_by_host(session, list(HEALTHCARESOURCE_ORGS.items()),
+                                    scrape_healthcaresource, lambda t: "pm.healthcaresource.com")
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  HealthcareSource total: {len(jobs):,} jobs")
     return jobs
@@ -7727,20 +7902,34 @@ def _kronos_wage(j: dict):
         return None
     return pair
 
+def _kronos_base(subdomain: str) -> str:
+    # 2026-09-10: a value carrying a full host ("secure7.saashr.com") is used
+    # as-is; the short form still maps to <subdomain>.mykronos.com.
+    return f"https://{subdomain}" if subdomain.endswith((".com", ".net")) else f"https://{subdomain}.mykronos.com"
+
+
+# 2026-09-24: UKG Ready's `offset` parameter is a 1-based PAGE NUMBER, not a
+# row offset. The loop used to add `size` to it, so the second request asked
+# for page 21, got an empty page, and every tenant stopped at its first 20
+# rows (09-24 run: Ridgeview 20 of 119, Kronos Hospital 3 20 of 97, Magruder
+# 20 of 40). offset=1&size=100 answers 100 rows, so pages are 100 wide and the
+# page number goes up by one; _paging.total ends the loop.
+_KRONOS_PAGE = 100
+_KRONOS_MAX_PAGES = 50
+
+
 async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     subdomain, company_id = org_data[0], org_data[1]
     default_state = org_data[2] if len(org_data) > 2 else ""
     jobs  = []
-    # 2026-09-10: a value carrying a full host ("secure7.saashr.com") is used
-    # as-is; the short form still maps to <subdomain>.mykronos.com.
-    base  = f"https://{subdomain}" if subdomain.endswith((".com", ".net")) else f"https://{subdomain}.mykronos.com"
+    base  = _kronos_base(subdomain)
     api   = f"{base}/ta/rest/ui/recruitment/companies/%7C{company_id}/job-requisitions"
-    offset = 1
-    size   = 20
+    page   = 1                 # sent as "offset": a page number (see above)
+    size   = _KRONOS_PAGE
     seen_ids: set[str] = set()
     while True:
         try:
-            params = {"offset": offset, "size": size, "sort": "desc",
+            params = {"offset": page, "size": size, "sort": "desc",
                       "ein_id": "", "lang": "en-US", "_": int(time.time()*1000)}
             async with req(session, "get", api, params=params,
                 headers={**HEADERS, "Accept": "application/json"},
@@ -7784,9 +7973,21 @@ async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: t
                     wage_max=wage[1] if wage else None,
                     wage_unit=wage[2] if wage else None,
                 ))
-            offset += size
-            if len(items) < size:
+            total = 0
+            if isinstance(data, dict):
+                try:
+                    total = int((data.get("_paging") or {}).get("total") or 0)
+                except (TypeError, ValueError, AttributeError):
+                    total = 0
+            if total:
+                if page * size >= total or len(seen_ids) >= total:
+                    break
+            elif len(items) < size:
                 break
+            if page >= _KRONOS_MAX_PAGES:
+                logger.info(f"Kronos {system}: stopped at page {page} ({len(seen_ids)} of {total or '?'} rows)")
+                break
+            page += 1
             await jitter()
         except Exception as e:
             logger.info(f"Kronos {system}: {e}")
@@ -7796,11 +7997,11 @@ async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: t
 
 async def run_kronos(session) -> list[Job]:
     logger.info(f"Kronos: scraping {len(KRONOS_ORGS)} systems...")
-    results = await asyncio.gather(
-        *[scrape_kronos(session, s, o) for s, o in
-          priority_states_first(list(KRONOS_ORGS.items()), lambda kv: kv[1][2] if len(kv[1]) > 2 else "")],
-        return_exceptions=True
-    )
+    # 2026-09-24: HOST_CONCURRENCY tenants at a time per UKG Ready host.
+    results = await _gather_by_host(
+        session,
+        priority_states_first(list(KRONOS_ORGS.items()), lambda kv: kv[1][2] if len(kv[1]) > 2 else ""),
+        scrape_kronos, lambda o: _url_host(_kronos_base(o[0])))
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Kronos total: {len(jobs):,} jobs")
     return jobs
@@ -8781,10 +8982,10 @@ async def scrape_paycom(session: aiohttp.ClientSession, system: str, client_key:
 
 async def run_paycom(session) -> list[Job]:
     logger.info(f"Paycom: scraping {len(PAYCOM_ORGS)} systems...")
-    results = await asyncio.gather(
-        *[scrape_paycom(session, s, k) for s, k in PAYCOM_ORGS.items()],
-        return_exceptions=True
-    )
+    # 2026-09-24: every client key is on paycomonline.net; HOST_CONCURRENCY at a
+    # time instead of all of them at once.
+    results = await _gather_by_host(session, list(PAYCOM_ORGS.items()), scrape_paycom,
+                                    lambda k: _url_host(_PAYCOM_LIST))
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Paycom total: {len(jobs):,} jobs")
     return jobs
@@ -8957,10 +9158,11 @@ async def run_paylocity(session) -> list[Job]:
         return []
     logger.info(f"Paylocity: scraping {len(PAYLOCITY_ORGS)} systems...")
     ordered = priority_states_first(list(PAYLOCITY_ORGS.items()), lambda kv: kv[1][2])
-    results = await asyncio.gather(
-        *[scrape_paylocity(session, s_, cfg) for s_, cfg in ordered],
-        return_exceptions=True
-    )
+    # 2026-09-24: Paylocity answers 429 to a burst, and this used to request
+    # every board at once; HOST_CONCURRENCY at a time, spaced, and a 429 is
+    # retried after its Retry-After (see _FallbackResponse).
+    results = await _gather_by_host(session, ordered, scrape_paylocity,
+                                    lambda cfg: "recruiting.paylocity.com")
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  Paylocity total: {len(jobs):,} jobs")
     return jobs
@@ -12543,6 +12745,8 @@ async def run_all() -> list[dict]:
             run_atrium(proxy_session),  # Atrium Health — Coveo HTML pagination via residential proxy
             return_exceptions=True,
         )
+
+    logger.info(_retry_summary())
 
     pw_jobs = await run_playwright_scrapers()
 
