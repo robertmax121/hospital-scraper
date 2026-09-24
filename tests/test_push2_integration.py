@@ -18,6 +18,7 @@ def _job(i, system="S", desc="", platform="SmartRecruiters"):
 @pytest.fixture(autouse=True)
 def _quiet(monkeypatch):
     scraper.set_known_bodies([])
+    monkeypatch.setattr(scraper, "DETAIL_REFRESH_PCT", 0)   # see test_known_body_refresh.py
     real_sleep = asyncio.sleep
 
     async def no_sleep(*a, **k):
