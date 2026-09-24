@@ -207,14 +207,40 @@ def strip_html(s):
     # of spaces collapse; the line breaks are what the parsers key on.
     if "<" in s:
         s = _BLOCK_TAG_RX.sub("\n", s)
+        # 2026-09-24: a figure split across inline tags stays one figure
+        # ("$<span>5,0</span><span>00</span>" read "$ 5,0 00" and the TriHealth
+        # sign-on amount was lost).
+        s = re.sub(r"(?<=[\d$,.])(?:<[^>]+>)+(?=[\d,.])", "", s)
         s = re.sub(r"<[^>]+>", " ", s)
-    if "&" in s:
-        s = htmllib.unescape(s)
-    s = s.replace("\xa0", " ")
+    # 2026-09-24 (facts audit): Houston Methodist's Workday bodies carry
+    # double-escaped entities ("&amp;#xa;"), so one unescape left a literal
+    # "&#xa;" in the text and the "Work Shift : 3 - Night" line never got its
+    # own line. A second pass runs only when an entity survived the first.
+    for _ in range(2):
+        if "&" not in s:
+            break
+        s2 = htmllib.unescape(s)
+        if s2 == s:
+            break
+        s = s2
+        if not _ENTITY_LEFT_RX.search(s):
+            break
+    s = s.replace("\xa0", " ").replace("\u2028", "\n")
     s = re.sub(r"[ \t\r\f\v]+", " ", s)
     s = re.sub(r" ?\n ?", "\n", s)
+    # Word-pasted bullet glyphs (U+2981 "⦁", U+00B7 "·", Symbol-font U+F0B7, "▪") at the start of a line
+    # become one bullet the site's parsers already strip (2026-09-24: Encompass
+    # and VITAS qualification lines reached the page as "⦁ CPR certification").
+    s = _LEAD_BULLET_RX.sub("\n• ", "\n" + s)[1:]
     s = re.sub(r"\n{3,}", "\n\n", s)
-    return s.strip()[:8000]
+    # 2026-09-24: 8,000 -> 12,000 (the facts extractors read 12,000). About
+    # 2.5k active bodies sat at 8,000 and lost their tail: Houston Methodist's
+    # "Work Shift : 3 - Night" line and most benefit lists sit there.
+    return s.strip()[:12000]
+
+
+_ENTITY_LEFT_RX = re.compile(r"&(?:#\d{1,6}|#x[0-9a-f]{1,6}|[a-z]{2,8});", re.I)
+_LEAD_BULLET_RX = re.compile("\n[ \t]*[\u00b7\u2981\u2022\u25aa\u25ab\u25e6\u25cf\u25cb\u25a0\u25a1\u2023\u2043\u2219\u27a2\u27a4\u25ba\u25b8\uf0b7\uf0a7\uf076\uf0d8\u2756\u2713\u2714]+[ \t]*")
 
 
 # ── Workday job descriptions (2026-08-03) ─────────────────────────────────
@@ -1883,21 +1909,68 @@ async def _detail_pass(session, system: str, jobs: list, budget, fetch_one, labe
                 f"{len(cands) - len(pending)} left for another night; budget left {budget.remaining}")
 
 
+def _shift_words(shift: str) -> str:
+    """"Day" -> "Day shift", "Shift1 - Night" -> "Shift1 - Night shift": a bare
+    ATS shift value reads as a shift to the facts extractor ("day shift")."""
+    shift = (shift or "").strip()
+    if re.search(r"\b(?:day|night|evening|rotating|swing|weekend)s?$", shift, re.I) and not re.search(r"shift$", shift, re.I):
+        return f"{shift} shift"
+    return shift
+
+
+def _schedule_line(*bits) -> str:
+    head = " · ".join(b for b in bits if b)
+    return f"Schedule: {head}" if head else ""
+
+
+# Section labels for the Oracle parts that arrive without one of their own.
+_ORACLE_PART_HEADS = {"ExternalResponsibilitiesStr": ("Responsibilities", r"(?:key |primary |job |essential )?(?:responsib|duties|essential|functions|what you(?:'|’)?ll do)"),
+                      "ExternalQualificationsStr": ("Qualifications", r"(?:minimum |required |preferred |basic |job )?(?:qualif|requir|education|what you(?:'|’)?ll need|licens|experience)")}
+
+
 def _oracle_posting_text(it: dict) -> tuple[str, str, str]:
     """(description, job_type, posted_date) from an Oracle requisition detail.
-    The schedule line comes first so the facts extractor sees hours and shift."""
+
+    2026-09-24 (facts audit, VITAS/Lifepoint/Encompass sample): the schedule
+    line used to open the body. The site reads a body's first lines as its
+    summary and its leading "Schedule: ..." as a metadata field, which ate the
+    first ~140 characters of the posting and left the summary empty on 26 of
+    39 Oracle bodies. It now closes the body, the shift reads "Day shift" so
+    the extractor sees it, a Responsibilities / Qualifications part that
+    arrives bare gets its heading, and the employer's corporate benefits list
+    (VITAS keeps it in CorporateDescriptionStr) is added under "Benefits" when
+    the posting has none of its own. Nothing else from the corporate text is
+    used: it is boilerplate and must not reach the qualifications box."""
     sched = str(it.get("JobSchedule") or "").strip()
-    shift = str(it.get("JobShift") or "").strip()
+    shift = _shift_words(str(it.get("JobShift") or ""))
     hours = it.get("WorkHours")
     days = str(it.get("WorkDays") or "").strip()
-    head = " · ".join(x for x in (sched, shift, f"{hours} hours per week" if hours else "", days) if x)
-    parts = [f"Schedule: {head}"] if head else []
+    parts = []
     for k in ("ExternalDescriptionStr", "ExternalResponsibilitiesStr", "ExternalQualificationsStr"):
         v = strip_html(str(it.get(k) or "")).strip()
-        if v:
-            parts.append(v)
+        if not v:
+            continue
+        head = _ORACLE_PART_HEADS.get(k)
+        if head and not re.match(r"^\s*" + head[1], v, re.I):     # the part opens with its own label
+            v = f"{head[0]}\n{v}"
+        parts.append(v)
+    body = "\n\n".join(parts)
+    corp = _corporate_benefits(it.get("CorporateDescriptionStr"), body)
+    if corp:
+        parts.append("Benefits\n" + "\n".join(f"• {b}" for b in corp))
+    line = _schedule_line(sched, shift, f"{hours} hours per week" if hours else "", days)
+    if line and parts:
+        parts.append(line)
     start = str(it.get("ExternalPostedStartDate") or "")[:10]
     return "\n\n".join(parts), sched, (start if re.match(r"^\d{4}-\d{2}-\d{2}$", start) else "")
+
+
+def _corporate_benefits(corporate_html, body: str) -> list:
+    """The benefit lines of an Oracle tenant's corporate boilerplate, when the
+    posting itself has no benefits list; [] otherwise."""
+    if not corporate_html or extract_benefit_lines(body):
+        return []
+    return extract_benefit_lines(strip_html(str(corporate_html)))
 
 
 async def _oracle_detail(session, base_url: str, site_number: str, job) -> bool:
@@ -1929,8 +2002,11 @@ def _phenom_posting_text(jd: dict) -> tuple[str, str, str]:
     """(description, job_type, posted_date) from a Phenom widgets jobDetail."""
     desc = strip_html(str(jd.get("description") or "")).strip()
     shift = str(jd.get("shift") or "").strip()
-    if shift and shift.lower() not in desc.lower()[:400]:
-        desc = f"Schedule: {shift}\n\n{desc}"
+    # 2026-09-24: the shift closes the body, as on Oracle (a leading
+    # "Schedule:" line was read by the site as a metadata field that swallowed
+    # the posting's first paragraph), and reads "Day shift" for the extractor.
+    if desc and shift and shift.lower() not in desc.lower()[:400]:
+        desc = f"{desc}\n\n{_schedule_line(_shift_words(shift))}"
     jt = str(jd.get("type") or jd.get("jobType") or "").strip()
     created = str(jd.get("dateCreated") or jd.get("postedDate") or "")[:10]
     return desc, jt, (created if re.match(r"^\d{4}-\d{2}-\d{2}$", created) else "")
@@ -12819,7 +12895,7 @@ def normalize_job(j: Job) -> dict:
     # Requirements chips (2026-08-24): certs/education/shift/experience from
     # the posting text. Null when nothing found; the enrichment trigger
     # preserves a stored value across list-only upserts.
-    d["posting_facts"] = extract_posting_facts(d.get("description"), d.get("job_type"))
+    d["posting_facts"] = extract_posting_facts(d.get("description"), d.get("job_type"), d.get("title"))
 
     return d
 
@@ -13012,7 +13088,7 @@ def _wage_pair(lo, hi):
 # job page key-facts box. Same honesty contract as the wage extractor:
 # nothing extractable => null => the row doesn't render.
 _FACT_CERTS = [
-    ("BLS",   r"\bBLS\b|basic life support"),
+    ("BLS",   r"\bBLS\b|\bBCLS\b|basic life support|basic cardiac life support"),
     ("ACLS",  r"\bACLS\b|advanced cardiac life support|advanced cardiovascular life support"),
     ("PALS",  r"\bPALS\b|pediatric advanced life support"),
     ("NRP",   r"\bNRP\b|neonatal resuscitation"),
@@ -13025,43 +13101,139 @@ _FACT_CERTS = [
     ("CST",   r"\bCST\b|certified surgical technologist"),
     ("RRT",   r"\bRRT\b|registered respiratory therapist"),
     ("NIHSS", r"\bNIHSS\b"),
-    ("RN license",      r"\bRN license\b|registered nurse licen|current.{0,20}\bRN\b.{0,20}licen|licensure as a registered nurse"),
-    ("Compact license", r"compact (?:state )?licen|multistate licen|\beNLC\b|\bNLC\b"),
-    ("LPN license",     r"\bLPN licen|licensed practical nurse licen"),
+    # 2026-09-24 (facts audit): "Registered Nurse (RN) with a valid state
+    # license" (VITAS), "RN - Registered Nurse - Texas State Licensure"
+    # (Houston Methodist), "Current State of Illinois Registered Professional
+    # Nurse" (Northwestern) and "licensed as a registered nurse" were missed.
+    # The RN-then-licence form stays inside one clause and never crosses an
+    # LPN/LVN mention ("supervised by an RN; LPN license required").
+    ("RN license",      r"\bRN license\b|registered nurse licen|current.{0,20}\bRN\b.{0,20}licen|licensure as a registered nurse"
+                        r"|(?:registered nurse|\bRN\b)\)?(?:(?!\bL[PV]N\b|practical|vocational)[^.;\n]){0,35}?\blicens(?:e|ure)\b"
+                        r"|licens(?:ed|ure)\s+(?:to practice\s+)?as\s+an?\s+(?:registered (?:professional )?nurse|RN)\b"
+                        r"|\b(?:current|valid|active|unrestricted|unencumbered)\b[^.;\n]{0,40}\bregistered (?:professional )?nurse\b(?!s)"),
+    ("Compact license", r"compact (?:state )?licen|multistate licen|\beNLC\b|\bNLC\b|\b(?:from|in) a compact state\b"),
+    # 2026-09-24: "Current licensure by the Michigan State Board of Nursing as
+    # a Licensed Practical Nurse" (Henry Ford), "Current Vocational Nurse
+    # licensure" (Kimble), LVN spellings.
+    ("LPN license",     r"\bL[PV]N licen|licensed (?:practical|vocational) nurse licen|(?:practical|vocational) nurse licen"
+                        r"|licens(?:ed|ure)\b[^.;\n]{0,50}\bas an? licensed (?:practical|vocational) nurse"),
 ]
+# "Associate (AAS)", "Bachelor's [Required]"; never "Access Associate (Full-time, Days)".
+_DEG_BRACKET = r"[\[(]\s*(?:required|preferred|A\.?A\.?S?|A\.?S\.?|ADN|ASN|B\.?A|B\.?S\.?N?|M\.?A|M\.?S\.?N?|MBA|MHA|MPH|MSW)\b"
 _FACT_EDU = [
-    ("BSN",       r"\bBSN\b|bachelor(?:'s|’s)? (?:of science )?(?:degree )?in nursing|baccalaureate.{0,15}nursing"),
+    ("BSN",       r"\bBSN\b|bachelor(?:'s|’s|s)? (?:of science )?(?:degree )?in nursing|baccalaureate.{0,15}nursing"),
     ("ADN/ASN",   r"\bADN\b|\bASN\b|associate(?:'s|’s)? degree in nursing|associate degree nursing"),
-    ("MSN",       r"\bMSN\b|master(?:'s|’s)? (?:of science )?in nursing"),
+    ("MSN",       r"\bMSN\b|master(?:'s|’s|s)? (?:of science )?(?:degree )?in nursing"),
     ("DNP",       r"\bDNP\b"),
     ("Nursing diploma", r"diploma (?:in|of) nursing|nursing diploma"),
     # 2026-09-22 (scoreboard): the list was nursing-only, so therapists, techs,
     # NPs and office roles got no education chip although the body named the
     # degree. Generic degrees come after the nursing ones; two chips at most.
     ("Doctorate",         r"doctora(?:te|l)\b|\bPhD\b|\bPharmD\b|\bDPT\b|\bPsyD\b|\bAuD\b|\bDScPT\b"),
-    ("Master's degree",   r"master(?:'s|’s)?\s*(?:degree|of\s+[A-Za-z]|in\s+[A-Za-z]|[\[(]|(?:required|preferred|or|from)\b)|\bMHA\b|\bMPH\b|\bMBA\b|\bMSW\b"),
-    ("Bachelor's degree", r"bachelor(?:'s|’s)?\s*(?:degree|of\s+[A-Za-z]|in\s+[A-Za-z]|[\[(]|(?:required|preferred|or|from)\b)|baccalaureate degree|\bB\.?S\.?\s+(?:degree|in\s)|\bB\.?A\.?\s+(?:degree|in\s)"),
-    ("Associate degree",  r"associate(?:'s|’s)?\s*(?:degree|of\s+(?:applied\s+)?science|in\s+[A-Za-z]|[\[(]|(?:required|preferred)\b)|associate(?:'s|’s)\s+(?:or|from)\b|\bA\.?A\.?S\.?\s+degree"),
+    # 2026-09-24 (facts audit): "Bachelors in Instructional Design" and
+    # "Masters of Social Work" (no apostrophe) were missed. "Associates" only
+    # counts before "degree" / "of ... science", since it is also the word
+    # for staff ("works with associates in the unit").
+    ("Master's degree",   r"master(?:'s|’s|s)?\s*(?:degree|of\s+[A-Za-z]|in\s+[A-Za-z]|" + _DEG_BRACKET + r"|(?:required|preferred|or|from)\b)|\bMHA\b|\bMPH\b|\bMBA\b|\bMSW\b"),
+    ("Bachelor's degree", r"bachelor(?:'s|’s|s)?\s*(?:degree|of\s+[A-Za-z]|in\s+[A-Za-z]|" + _DEG_BRACKET + r"|(?:required|preferred|or|from)\b)|baccalaureate degree|\bB\.?S\.?\s+(?:degree|in\s)|\bB\.?A\.?\s+(?:degree|in\s)"),
+    ("Associate degree",  r"associate(?:'s|’s)?\s*(?:degree|of\s+(?:applied\s+)?science|in\s+[A-Za-z]|" + _DEG_BRACKET + r"|(?:required|preferred)\b)|associate(?:'s|’s)\s+(?:or|from)\b|\bassociates\s+(?:degree|of\s+(?:applied\s+)?(?:science|arts))|\bA\.?A\.?S\.?\s+degree"),
     ("HS diploma/GED",    r"high school (?:diploma|grad|graduate|equivalen)|\bH\.?S\.?\s+diploma|\bGED\b"),
 ]
 # 2026-09-22 (scoreboard): "Full-Time Nights", "Shift: Nights", "Nights
 # 6:45pm - 7:15am" and a p.m.-to-a.m. span are night shifts; the mirror
 # forms are days. "may include nights and weekends" is not a shift.
+# 2026-09-24 (facts audit): a labelled shift line ("Work Shift :\n3 - Night"
+# on every Houston Methodist posting, "Shift: 2:00 PM-10:30 PM"), first /
+# second / third shift, and a p.m.-to-p.m. span are shifts too. A bare
+# "evenings" is no longer one: it was always an availability clause ("shifts
+# during non-business hours such as evenings, weekends and holidays").
+_SHIFT_LABEL = r"\bshift\s*:\s*(?:\d\s*[-–]\s*)?"
 _FACT_SHIFT = [
-    ("Nights",   r"\bnight shift\b|\b7p\s*-?\s*7a\b|overnight|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*nights?\b|\bshift:\s*nights?\b|\bnights?\s*\(?\s*\d{1,2}(?::\d{2})?\s*[ap]\.?m|\b\d{1,2}(?::\d{2})?\s*p\.?m?\.?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*a\.?m\b"),
-    ("Days",     r"\bday shift\b|\b7a\s*-?\s*7p\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*days?\b|\bshift:\s*days?\b|\bdays?\s*\(?\s*\d{1,2}(?::\d{2})?\s*[ap]\.?m|\b\d{1,2}(?::\d{2})?\s*a\.?m?\.?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*p\.?m\b"),
-    ("Evenings", r"\bevening shift\b|\bevenings\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*evenings?\b|\bshift:\s*evenings?\b"),
-    ("Rotating", r"\brotating shift|shift rotation"),
+    ("Nights",   r"\bnight\s*shift\b|\b7p\s*-?\s*7a\b|\bovernight(?:s|\s+shift)?\b(?!\s+(?:travel|stays?|trips?))|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*nights?\b|" + _SHIFT_LABEL + r"nights?\b|\b(?<!\btheir )(?<!\byour )(?<!\bthe )(?<!\bher )(?<!\bhis )(?<!\bmy )(?<!\ba )(?<!\bone )(?:3rd|third) shift\b|\bnights?\s*\(?\s*\d{1,2}(?::\d{2})?\s*[ap]\.?m|\b\d{1,2}(?::\d{2})?\s*p\.?m?\.?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*a\.?m\b"),
+    ("Days",     r"\bday\s*shift\b|\b7a\s*-?\s*7p\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*days?\b|" + _SHIFT_LABEL + r"days?\b|\b(?<!\btheir )(?<!\byour )(?<!\bthe )(?<!\bher )(?<!\bhis )(?<!\bmy )(?<!\ba )(?<!\bone )(?:1st|first) shift\b|\bdays?\s*\(?\s*\d{1,2}(?::\d{2})?\s*[ap]\.?m|\b\d{1,2}(?::\d{2})?\s*a\.?m?\.?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*p\.?m\b"),
+    ("Evenings", r"\bevening\s*shift\b|\bswing shift\b|\b(?<!\btheir )(?<!\byour )(?<!\bthe )(?<!\bher )(?<!\bhis )(?<!\bmy )(?<!\ba )(?<!\bone )(?:2nd|second) shift\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*evenings?\b|" + _SHIFT_LABEL + r"evenings?\b|\bevenings?\s*\(?\s*\d{1,2}(?::\d{2})?\s*p\.?m|\b[2-5](?::[0-5]\d)?\s*p\.?m?\.?\s*(?:-|–|—|to)\s*(?:9|1[01])(?::[0-5]\d)?\s*p\.?m\b"),
+    ("Rotating", r"\brotating (?:shift|schedule)|shift rotation|" + _SHIFT_LABEL + r"rotating\b"),
     ("Weekends", r"\bweekend(?:s| option| program| coverage| shifts?| rotation)\b|every other weekend"),
     ("3x12s",    r"\b3\s*x\s*12|three 12s|\b12[- ]hour shifts"),
     ("PRN",      r"\bPRN\b|per diem"),
 ]
+# A shift word inside an availability or a negated clause is not the job's
+# shift: "willing to work ... weekends or rotating shifts", "Flexibility to
+# work various shifts, including weekends", "May be required to work ...
+# evenings and/or night shifts if needed", "(no weekends or evenings)".
+# ("as needed" is not one: "Work hours: PRN (As needed) - Monday-Friday 7:00am-5:30pm" is a day job.)
+_SHIFT_AVAIL_RX = re.compile(r"\b(?:willing|flexib\w*|availab\w*|able to work|ability to work|if needed|when needed|such as|occasional\w*|may\b[^.;\n]{0,30}\b(?:include|work|require|need|be required|rotate))\b", re.I)
+_SHIFT_AVAIL_HEAD_RX = re.compile(r"availab|may include|may vary|opportunit|options|flexib|if needed", re.I)
+_SHIFT_NEG_RX = re.compile(r"\b(?:no|not|without|never|excluding|except)\b[^.;\n]{0,14}$", re.I)
+# Title shift words (2026-09-24): "Registered Nurse RN NIGHTS", "LVN - Hospital
+# Full-Time Nightshift", "RN Nights (7 on/7off)". Used only with a body, so a
+# title-only facts object never replaces facts stored from a body.
+_TITLE_SHIFT = [
+    ("Nights",   re.compile(r"\bnights?\b|\bnight\s*shift|\bnightshift\b|\bnoc\b|\bovernights?\b|\b7p\s*-?\s*7a\b", re.I)),
+    ("Days",     re.compile(r"\bdays\b|\bday\s*shift\b|\bdayshift\b|\b7a\s*-?\s*7p\b|(?:[-–(,]|\bfull[\s-]*time|\bpart[\s-]*time|\bprn)\s*day\s*(?:\)|$)", re.I)),
+    ("Evenings", re.compile(r"\bevenings?\b|\bevening\s*shift", re.I)),
+    ("Rotating", re.compile(r"\brotating\b", re.I)),
+    ("Weekends", re.compile(r"\bweekends?\b", re.I)),
+]
+_SHIFT_TIER = {"Nights": 0, "Days": 0, "Evenings": 0, "Rotating": 0, "3x12s": 1, "Weekends": 2, "PRN": 3}
+_SHIFT_FIELD_RXS = [(lab, re.compile(r"\b(?:work\s+|job\s+)?shift\s*:\s*(?:\d\s*[-–]\s*)?" + w + r"\b", re.I))
+                    for lab, w in (("Nights", r"nights?"), ("Days", r"days?"), ("Evenings", r"evenings?"), ("Rotating", r"rotating"))]
+
+
+def title_shift(title) -> list:
+    return [label for label, rx in _TITLE_SHIFT if rx.search(str(title or ""))]
+
+
 _FACT_EXP_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
                    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+# 2026-09-24 (facts audit): "a minimum of (2) years experience", "two (2)
+# years", "3-4 years’ customer service experience", "At least2years of
+# ultrasound/sonography experience" were missed; the filler between the
+# figure and the noun now allows "/", "-" and ",", but never a hiring clock
+# ("within 2 years of hire, obtain ... nursing certification").
 _FACT_EXP_RX = re.compile(
-    r"(?:minimum of\s+|at least\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*"
-    r"(?:\+|or more|plus)?\s*(?:-|to\s+)?\s*(\d+)?\s*years?(?:'|s)?\s*(?:of\s+)?"
-    r"(?:[a-z ]{0,25}?)(experience|clinical|nursing|\bRN\b|acute care|bedside)", re.I)
+    r"(?:minimum of\s*|at least\s*)?(?<![\d.,])(\d{1,2})\s*(?:\+|or more|plus)?\s*(?:(?:-|–|to)\s*(\d{1,2}))?\s*\+?[\s-]*"
+    r"y(?:ea)?rs?(?:['’]|s)?\s*(?:of\s+)?"
+    r"(?:(?!hire\b|hiring|employ|start|obtain|month|age\b|old\b|degree|diploma|program|school|college)[a-z /,&\-]){0,40}?"
+    r"(experience|exp\b|clinical|nursing|\bRN\b|acute care|bedside|practice|professional|progressive|leadership|management|supervisory|related|relevant|post[- ]graduate)", re.I)
+_EXP_NUM_WORDS_RX = re.compile(r"\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|twelve|eighteen|twenty-four|thirty-six)\b(?:\s*\(\s*\d{1,2}\s*\))?", re.I)
+_EXP_PAREN_NUM_RX = re.compile(r"\(\s*(\d{1,2})\s*\)")
+_EXP_MONTHS_RX = re.compile(r"\b(12|24|36|48|60)\s*months?\b", re.I)
+
+
+def _exp_text(s: str) -> str:
+    """Numbers as digits for the experience matcher: "two (2) years" and
+    "(2) years" -> "2 years", "Zero (0) to two (2)" -> "0 to 2", "Twelve
+    months ... experience" -> "1 year ..." (whole years only)."""
+    words = dict(_FACT_EXP_WORDS, zero=0, twelve=12, eighteen=18, **{"twenty-four": 24, "thirty-six": 36})
+    s = _EXP_NUM_WORDS_RX.sub(lambda m: str(words[m.group(1).lower()]), s)
+    s = _EXP_PAREN_NUM_RX.sub(r"\1", s)
+    return _EXP_MONTHS_RX.sub(lambda m: f"{int(m.group(1)) // 12} years", s)
+
+
+def _experience_from(s: str):
+    """(label, text, match) for the first minimum-experience figure in one
+    sentence ("2+ years" | "3-5 years"), or None. A range that starts at
+    zero, or a figure after "within"/"last"/"every", is no minimum. `text` is
+    the sentence with its numbers as digits; `match` indexes into it."""
+    x = _exp_text(s)
+    for m in _FACT_EXP_RX.finditer(x):
+        if re.search(r"\b(?:within|after|last|past|every|per|for the|additional)\s*$", x[max(0, m.start() - 14):m.start()], re.I):
+            continue
+        lo = int(m.group(1))
+        if not (0 < lo <= 15):
+            continue
+        hi = m.group(2)
+        if hi and not (lo < int(hi) <= 20):
+            hi = None
+        return (f"{lo}-{hi} years" if hi else f"{lo}+ years"), x, m
+    return None
+
+
+# Required / preferred markers (2026-09-24): "highly recommended" (Kimble:
+# "ACLS, highly recommended") and "desired" mark preferred items too.
+_PREF_WORD_RX = re.compile(r"prefer|desired|desirable|highly recommended|\brecommended\b|a plus\b|nice to have", re.I)
+_REQ_WORD_RX = re.compile(r"requir|\bmust\b|mandatory", re.I)
 
 
 # 2026-09-21 (owner, job page v2): schedule summary, hours per week, sign-on
@@ -13095,16 +13267,59 @@ _BENEFIT_ITEMS = [
     ("Shift differentials",        r"shift differential|differential pay"),
     ("Wellness and mental health resources", r"wellness program|employee assistance program|\bEAP\b|mental health (?:resources|support|benefits)"),
     ("Childcare support",          r"child ?care"),
-    ("Continuing education",       r"continuing education|\bCEU|professional development|\bCME\b"),
+    # 2026-09-24 (facts audit): "professional development" is a benefit only
+    # when something is offered ("opportunities for", "supports your", "...
+    # support", "Professional Development :"); on its own it was a duty
+    # heading ("c. Professional Development") or a task ("complete ongoing
+    # professional development"). See _BENEFIT_VETO for "continuing education".
+    ("Continuing education",       r"continuing education|\bCEU|(?:opportunit\w*|support\w*|offer\w*|provid\w*|invest\w*|access|fund\w*|stipend|allowance|assistance)\b[^.\n]{0,25}\bprofessional development|professional development\s*(?:(?:and|&)\s+\w+\s+)?(?:support|opportunit\w*|stipend|fund\w*|allowance|program|budget|:)|\bCME\b"),
     # 2026-09-22 (Charlie Health lesson): items behavioral-health and clinic
     # employers list that the hospital vocabulary had no label for.
-    ("Malpractice insurance",       r"malpractice|liability (?:insurance|coverage)"),
+    # "required liability insurance" (VITAS: the nurse's own car insurance) is
+    # not malpractice cover; "professional liability" and "... coverage" are.
+    ("Malpractice insurance",       r"malpractice|professional liability|liability coverage"),
     ("License reimbursement",      r"licens\w*\s+(?:fees?\s+)?(?:reimburse|paid for)|reimburse\w*\s+(?:for\s+)?(?:new\s+|state\s+)?licens"),
     ("Wellness stipend",           r"wellness (?:stipend|allowance|reimbursement)"),
     ("Flexible scheduling",        r"flexible schedul|flexible hours|self[- ]scheduling"),
     ("Employee discounts",         r"employee discount|discount program"),
 ]
 _BENEFIT_RXS = [(label, re.compile(rx, re.I)) for label, rx in _BENEFIT_ITEMS]
+# 2026-09-24 (facts audit): a benefit word inside a duty or a demand on the
+# employee is not an offer: "seeks continuing education opportunities",
+# "Maintain certifications and continuing education requirements", "Is
+# willing to work on flexible schedule", "Values flexible scheduling". The
+# clause before the match (same line, 45 characters) decides.
+_BENEFIT_VETO = {
+    "Continuing education": (re.compile(r"\b(?:seeks?|pursue\w*|participat\w*|maintain\w*|complet\w*|own|attend\w*|recogni\w*|support|responsib\w*|obtain\w*|foster\w*|promot\w*|encourag\w*|performance and)\b", re.I),
+                             re.compile(r"^\s*(?:requirements?|credits? required|units? required|hours? required|as required|standpoint|activities|goals|plan\b|- board)", re.I)),
+    "Flexible scheduling":  (re.compile(r"\b(?:willing|values?|able to work|ability to work|must|work on a|available for)\b", re.I), None),
+    "Malpractice insurance": (re.compile(r"\b(?:must|required|maintain\w*|own|proof of|auto|vehicle)\b", re.I), None),
+}
+
+
+_PERK_NEAR_RX = re.compile(r"paid time off|\bPTO\b|401\s?\(?k|403\s?\(?b|tuition|dental|retirement|perks|benefits|insurance|wellness|reimburse", re.I)
+
+
+def _benefit_hit(label: str, rx, t: str) -> bool:
+    veto = _BENEFIT_VETO.get(label)
+    hits = list(rx.finditer(t))
+    # A bare "Professional Development" item inside a perks list ("Paid Time
+    # Off (PTO). Professional Development. For more information...") counts
+    # when other perks sit within 150 characters of it.
+    if label == "Continuing education":
+        hits += [m for m in re.finditer(r"\bprofessional development\b", t, re.I)
+                 if _PERK_NEAR_RX.search(t[max(0, m.start() - 150):m.end() + 150])]
+    for m in hits:
+        if not veto:
+            return True
+        before = t[max(0, m.start() - 45):m.start()].rsplit("\n", 1)[-1]
+        before = re.split(r"[.;!?]\s", before)[-1]
+        if veto[0].search(before):
+            continue
+        if veto[1] is not None and veto[1].search(t[m.end():m.end() + 30]):
+            continue
+        return True
+    return False
 
 
 def _money_amount(num: str, k: str):
@@ -13190,7 +13405,7 @@ def extract_benefits(text: str) -> list:
     t = (text or "")[:20000]
     out = []
     for label, rx in _BENEFIT_RXS:
-        if rx.search(t):
+        if _benefit_hit(label, rx, t):
             if label == "401(k)" and any(o.startswith("401(k)") for o in out):
                 continue
             out.append(label)
@@ -13205,15 +13420,37 @@ def extract_benefits(text: str) -> list:
 # posting has its own "Benefits" list, keep those lines verbatim as well:
 # the short lines under a benefits heading, until the next heading, a prose
 # line or a colon-terminated label. Pay lines (a "$") are not benefits.
-_SIGNON_MENTION_RX = re.compile(r"sign[- ]?(?:on|ing)\s+bonus", re.I)
+_SIGNON_MENTION_RX = re.compile(r"sign[- ]?(?:on|ing)(?:\s+(?:and|&)\s+\w+)?\s+bonus", re.I)   # "sign-on and productivity bonuses" (Houston Methodist physicians)
+# 2026-09-24 (facts audit): Northwestern's boilerplate on every posting says
+# "If sign-on bonus is included in a job posting ... are not eligible for the
+# sign-on bonus" or "Sign-on Bonus Eligibility (if sign-on bonus offered for
+# position): ...". A conditional, negated or eligibility-rule mention is not
+# an offer.
+_SIGNON_VETO_RX = re.compile(r"\b(?:if|not|ineligible|whether|no)\b[^.;\n]{0,25}$", re.I)
+_SIGNON_AFTER_VETO_RX = re.compile(r"^\W{0,3}(?:eligibility|\(?\s*if\b|is included)", re.I)
+
+
+def _signon_offered(t: str) -> bool:
+    for m in _SIGNON_MENTION_RX.finditer(t):
+        if _SIGNON_VETO_RX.search(t[max(0, m.start() - 40):m.start()]):
+            continue
+        if _SIGNON_AFTER_VETO_RX.search(t[m.end():m.end() + 30]):
+            continue
+        return True
+    return False
+
+
 _BENEFIT_HEAD_RX = re.compile(
-    r"^\s*(?:(?:our|the|your|employee|full)\s+)?(?:benefits?(?:\s+(?:and|&)\s+perks)?|perks(?:\s+(?:and|&)\s+benefits)?|"
+    r"^\s*(?:(?:our|the|your|employee|full|excellent|comprehensive|competitive|generous|great)\s+)?(?:benefits?(?:\s+(?:and|&)\s+perks)?|perks(?:\s+(?:and|&)\s+benefits)?|"
     r"what we offer|benefits?\s+(?:include|package|highlights|summary|offered)|compensation\s+(?:and|&)\s+benefits|"
+    r"benefits?\s+(?:package\s+)?(?:including|includes)|what you(?:'|’)ll (?:get|receive|enjoy)|"
+    r"(?:starting\s+)?perks\s+(?:and|&)\s+benefits|benefits\s+(?:that|tailored|designed|built)\b[^.:]{0,30}|"
     r"total rewards|why work (?:with|for) us)\s*[:!]?\s*$", re.I)
 _BENEFIT_STOP_RX = re.compile(
     r"^\s*(?:about\b|responsibilit|qualifications?\b|requirements?\b|duties\b|what you|who you|position\b|"
     r"job (?:summary|description|duties)|education\b|experience\b|schedule\b|compensation\b|pay\b|salary\b|"
-    r"equal opportunity|eeo\b|the (?:role|position)\b|apply\b|how to apply)", re.I)
+    r"equal opportunity|eeo\b|eoe\b|the (?:role|position)\b|apply\b|how to apply|special instructions|"
+    r"background check|additional information)", re.I)
 
 
 def extract_benefit_lines(text: str) -> list:
@@ -13226,9 +13463,18 @@ def extract_benefit_lines(text: str) -> list:
             s = re.sub(r"^[\s•\-\*·–—>]+", "", raw).strip()
             if not s:
                 continue
-            if s.endswith(":") or len(s) > 90 or _BENEFIT_STOP_RX.match(s) or _BENEFIT_HEAD_RX.match(s):
+            # 2026-09-24: a second benefits heading inside the block ("What
+            # You'll Get:" ... "Excellent benefits package including:") opens
+            # more items instead of ending the list; an all-caps line ("SPECIAL
+            # INSTRUCTIONS TO CANDIDATE") and a hashtag ("#LI-MS1") never are items.
+            if _BENEFIT_HEAD_RX.match(s):
+                continue
+            if not out and s.endswith(":") and len(s) <= 200 and not _BENEFIT_STOP_RX.match(s):
+                continue        # the list's own intro ("... you will have access to:", Encompass)
+            letters = re.sub(r"[^A-Za-z]", "", s)
+            if s.endswith(":") or len(s) > 90 or _BENEFIT_STOP_RX.match(s) or (len(letters) >= 5 and letters.isupper()):
                 break
-            if "$" in s or len(s) < 4:
+            if "$" in s or len(s) < 4 or s.startswith("#"):
                 continue
             out.append(s.rstrip(".;, "))
             if len(out) == 12:
@@ -13295,84 +13541,261 @@ def job_type_from_text(text) -> str:
             hits = [h for h in hits if h != "Per diem"]
         if len(set(hits)) == 1:
             return hits[0]
-    return ""
+    # 2026-09-24 (facts audit): prose that names this posting's own type
+    # ("This full-time role offers", "HIRING for a PRN/POOL (as needed)
+    # position", "on a PRN basis"). A line that names two types ("HIRING
+    # FULL-TIME NIGHTS and PRN all shifts!") is skipped; so is a posting whose
+    # prose names two.
+    found = set()
+    for m in _JOB_TYPE_PROSE_RX.finditer(t):
+        a = t.rfind("\n", 0, m.start()) + 1
+        b = t.find("\n", m.end())
+        line = t[a:b if b >= 0 else len(t)]
+        kinds = {label for label, rx in _JOB_TYPE_STRICT if rx.search(line)}
+        if len(kinds) == 1:
+            found |= kinds
+        elif kinds:
+            return ""
+    return found.pop() if len(found) == 1 else ""
 
 
-def extract_posting_facts(text, job_type=None):
+_JOB_TYPE_STRICT = [("Full time", re.compile(r"full[\s-]*time", re.I)),
+                    ("Part time", re.compile(r"part[\s-]*time", re.I)),
+                    ("Per diem", re.compile(r"\bPRN\b|per[\s-]*diem|as[\s-]needed", re.I))]
+_JOB_TYPE_PROSE_RX = re.compile(
+    r"\bthis\s+(?:is\s+an?\s+)?(?:full[\s-]*time|part[\s-]*time|PRN|per[\s-]*diem)\b|"
+    r"\bhiring\s+(?:for\s+)?(?:an?\s+)?(?:full[\s-]*time|part[\s-]*time|PRN|per[\s-]*diem)\b|"
+    r"\bon\s+an?\s+(?:PRN|per[\s-]*diem|as[\s-]needed|part[\s-]*time|full[\s-]*time)\s+basis\b", re.I)
+
+
+# ── Heading context for required / preferred (2026-09-24, facts audit) ─────
+# strip_html keeps one list item per line, but the extractor used to split
+# sentences on punctuation only, so an unpunctuated list ran together: one
+# "Preferred" item made every certification in the block preferred (Houston
+# Methodist's "LICENSES AND CERTIFICATIONS / Required / RN ... / BLS ... /
+# Preferred / CAPA"), and a posting's all-caps QUALIFICATIONS heading with
+# plain lines under it carried no signal. Lines are now units of their own,
+# and a heading line sets the mode for the lines under it.
+_FACT_HEAD_KNOWN_RX = re.compile(
+    r"^(?:(?:minimum|basic|required|preferred|desired|additional|job|position|special)\s+)?"
+    r"(?:qualifications?|requirements?|education|experience|skills?|licens\w*|certifications?|credentials|"
+    r"benefits|responsibilities|duties|summary|overview|additional information|description|required|preferred|nice to have|"
+    r"what you(?:'|’)ll (?:need|do|bring)|who you are|what we(?:'|’)re looking for|what we offer)"
+    r"(?:\s*(?:and|&|/|,)\s*[a-z]+){0,3}$", re.I)
+_FACT_HEAD_PREF_RX = re.compile(r"prefer|desired|nice to have|a plus", re.I)
+_FACT_HEAD_REQ_RX = re.compile(r"requir|minimum|\bmust\b|basic qualif|what you(?:'|’)ll need", re.I)
+_FACT_HEAD_QUAL_RX = re.compile(r"qualif|who you are|what we(?:'|’)re looking for", re.I)
+_FACT_HEAD_KEEP_RX = re.compile(r"educat|experien|licen|certif|credential|skill|abilit|knowledge|training", re.I)
+
+
+def _fact_heading(line: str):
+    """None for an ordinary line; for a heading, how it sets the mode:
+    'pref', 'req', 'qual' (a fresh qualifications block), 'keep' (a
+    sub-heading such as EDUCATION inside one) or 'reset'."""
+    s = line.strip().strip("•*-–—>·").strip()
+    if not s or len(s) > 60:
+        return None
+    bare = s.rstrip(":").strip()
+    letters = re.sub(r"[^A-Za-z]", "", bare)
+    if not ((s.endswith(":") and not re.search(r"[.!?]\s", s))
+            or (len(letters) >= 4 and letters.isupper())
+            or _FACT_HEAD_KNOWN_RX.match(bare)):
+        return None
+    if _FACT_HEAD_PREF_RX.search(bare):
+        return "pref"
+    if _FACT_HEAD_REQ_RX.search(bare):
+        return "req"
+    if _FACT_HEAD_QUAL_RX.search(bare):
+        return "qual"
+    if _FACT_HEAD_KEEP_RX.search(bare):
+        return "keep"
+    return "reset"
+
+
+def _item_pref(s: str, end: int, start: int, mode) -> bool:
+    """Required-or-preferred for one item in one sentence or line. A marker
+    right after the item decides ("BLS (required), ACLS (preferred)": the
+    first marker wins, so BLS stays required); then a marker elsewhere in the
+    sentence, outside parentheses ("Minimum 2 years of nursing experience
+    (hospice ... preferred)" is required), the nearer one before the item
+    when there are both; then the heading the line sits under."""
+    after = s[end:end + 40]
+    marker = "(?:" + _PREF_WORD_RX.pattern + "|" + _REQ_WORD_RX.pattern + ")"
+    mk = re.match(r"^[\s,:\-–(\[]*(?:(?:is|are|highly|strongly|very|also)\s+)*" + marker, after, re.I)
+    if not mk:
+        # the marker must belong to this item: "Associate Degree in Nursing,
+        # RN licensure with BSN preferred" is a required ADN and a required
+        # licence; the window ends where the next item starts.
+        after = re.split(r"[,;]|\s(?:with|and|or|plus)\s", re.sub(r"\([^)]*\)?", " ", after), maxsplit=1)[0]
+        mk = re.search(marker, after, re.I)
+    if mk:
+        return bool(_PREF_WORD_RX.search(mk.group(0)))
+    bare = re.sub(r"\([^)]*\)", lambda m: " " * len(m.group(0)), s)
+    p = [m.start() for m in _PREF_WORD_RX.finditer(bare)]
+    r = [m.start() for m in _REQ_WORD_RX.finditer(bare)]
+    if p and not r:
+        return True
+    if r and not p:
+        return False
+    if p and r:
+        before_p = [x for x in p if x < start]
+        before_r = [x for x in r if x < start]
+        if before_p or before_r:
+            return max(before_p or [-1]) > max(before_r or [-1])
+        return min(p) < min(r)
+    return mode == "pref"
+
+
+_CERT_NEG_RX = re.compile(r"\b(?:not|no|without|never)\b[^.;\n]{0,20}$", re.I)
+# 2026-09-24 (facts audit): "Currently licensed to practice nursing in the
+# state where the VITAS program is located", "Current unencumbered license to
+# practice by the State Board of Nursing". The licence is the title's: an RN
+# posting needs an RN licence, an LPN/LVN posting an LPN licence. Used only
+# when the text names neither.
+_NURSE_LICENSE_RX = re.compile(
+    r"licens\w*\s+to\s+practice\s+(?:professional\s+)?nursing|licen[sc]e\s+to\s+practice\b[^.;\n]{0,40}\bboard of nursing|"
+    r"\bnursing licens(?:e|ure)\b|licens(?:e|ure)\s+(?:issued\s+)?by\s+the\s+(?:[A-Za-z]+\s+){0,4}board of nursing", re.I)
+
+
+def _title_nurse_kind(title):
+    t = str(title or "")
+    if re.search(r"\bL[PV]N\b|licensed (?:practical|vocational)", t, re.I):
+        return "LPN license"
+    if re.search(r"\bRN\b|registered nurse", t, re.I) and not re.search(r"\b(?:CNA|nurse aide|nursing assistant|nurse assistant)\b", t, re.I):
+        return "RN license"
+    return None
+
+
+def _shift_hits(s: str):
+    """Shift labels a sentence states for the job itself."""
+    out = []
+    for label, rx in _FACT_SHIFT:
+        for m in re.finditer(rx, s, re.I):
+            before = s[max(0, m.start() - 60):m.start()]
+            if _SHIFT_AVAIL_RX.search(before) or _SHIFT_NEG_RX.search(before):
+                continue
+            out.append(label)
+            break
+    return out
+
+
+def extract_posting_facts(text, job_type=None, title=None):
     """{'certs': [[label, pref_bool]...], 'education': [...], 'shift': [...],
     'experience': [label, pref_bool] | None, 'schedule': str | None,
     'hours': number | None, 'signon': int | None, 'signon_offered': bool,
     'relocation': int | None, 'benefits': [str...], 'benefit_lines': [str...]}
     or None when nothing found. job_type (canonical) picks between figures a
-    posting lists per employment type."""
+    posting lists per employment type. title (2026-09-24) adds the shift a
+    title states ("RN NIGHTS"); it is read only when there is a body."""
     if not text:
         return None
     # Dotted abbreviations would split a sentence in two ("H.S. Diploma",
     # "B.S. in", "Ph.D."), so they lose their dots first (2026-09-22).
-    t = re.sub(r"\b([A-Za-z])\.([A-Za-z])\.(?=[\s,;:)]|$)", r"\1\2", text[:12000])
+    # Non-breaking and figure hyphens read as "-" ("$10,000 sign‑on bonus").
+    # Stored bodies from before the 2026-09-24 strip_html fix still carry
+    # entities ("2&#43; years", "License&nbsp;"); they decode here as well.
+    t = text[:12000]
+    if "&" in t:
+        t = htmllib.unescape(htmllib.unescape(t))
+    t = re.sub("[\u2010\u2011\u2012]", "-", t).replace("\xa0", " ")
+    # "$ 5,0 00" (a figure split by inline tags in a stored body) -> "$ 5,000"
+    t = re.sub(r"(?<=\d),(\d{1,2}) (\d{1,2})\b", lambda m: "," + m.group(1) + m.group(2) if len(m.group(1) + m.group(2)) == 3 else m.group(0), t)
+    t = re.sub(r"\b([A-Za-z])\.([A-Za-z])\.(?=[\s,;:)]|$)", r"\1\2", t)
     t = re.sub(r"\bPh\.D\.", "PhD", t)
+    t = re.sub(r"\bC\.F\.R\.", "CFR", t)
     t = re.sub(r"([.!?;])(?=[A-Z(])", r"\1 ", t)
-    sents = re.split(r"(?<=[.!?;])\s+", t)
+    # Units: every line, then every sentence in it, each with the mode of
+    # the heading it sits under (see _fact_heading).
+    # A heading that offers a menu of shifts ("Available RN Shifts:", "Shifts
+    # may include:", "Opportunities are available for:") marks the lines under
+    # it as availability, not the job's shift.
+    units = []
+    mode, avail = None, False
+    for line in t.split("\n"):
+        if not line.strip():
+            continue
+        h = _fact_heading(line)
+        if h in ("pref", "req"):
+            mode = h
+        elif h in ("qual", "reset"):
+            mode = None
+        if h is not None:
+            avail = bool(_SHIFT_AVAIL_HEAD_RX.search(line))
+        for s in re.split(r"(?<=[.!?;])\s+", line.strip()):
+            if s:
+                units.append((s, mode, avail))
     out = {"certs": [], "education": [], "shift": [], "experience": None}
     seen = set()
-    edu_pos = {}
+    edu_pos, edu_span = {}, {}
     offset = 0
-    for s in sents:
-        offset = t.find(s, offset)
-        pref = bool(re.search(r"prefer", s, re.I))
-
-        def item_pref(m):
-            # "[Required] Associate [Preferred] Bachelor's [Preferred]": the
-            # marker after the item decides; otherwise the sentence does,
-            # unless "required" follows the item (2026-09-22).
-            after = s[m.end():m.end() + 40]
-            if re.search(r"prefer", after, re.I):
-                return True
-            return pref and not re.search(r"requir", after, re.I)
-
+    for s, mode, avail in units:
+        offset = max(offset, t.find(s, offset))
+        bare = re.sub(r"\([^)]*\)", " ", s)
+        pref = bool(_PREF_WORD_RX.search(bare)) or (mode == "pref" and not _REQ_WORD_RX.search(bare))
         for label, rx in _FACT_CERTS:
             if label not in seen:
-                m = re.search(rx, s, re.I)
+                # "... does not hold a Michigan RN license" is no requirement
+                m = next((m for m in re.finditer(rx, s, re.I)
+                          if not _CERT_NEG_RX.search(s[max(0, m.start() - 30):m.start()])
+                          and not re.search(r"\b(?:not|never|without)\b", m.group(0), re.I)), None)
                 if m:
                     seen.add(label)
-                    out["certs"].append([label, item_pref(m)])
+                    out["certs"].append([label, _item_pref(s, m.end(), m.start(), mode)])
+        if "nurse licence" not in seen and not ({"RN license", "LPN license"} & seen):
+            m = _NURSE_LICENSE_RX.search(s)
+            kind = _title_nurse_kind(title) if m else None
+            if kind:
+                seen.update({"nurse licence", kind})
+                out["certs"].append([kind, _item_pref(s, m.end(), m.start(), mode)])
         for label, rx in _FACT_EDU:
             k = "e:" + label
             if k not in seen:
                 m = re.search(rx, s, re.I)
                 if m:
                     seen.add(k)
-                    out["education"].append([label, item_pref(m)])
+                    out["education"].append([label, _item_pref(s, m.end(), m.start(), mode)])
                     edu_pos[label] = offset + m.start()
-        for label, rx in _FACT_SHIFT:
+                    edu_span[label] = (offset + m.start(), offset + m.end())
+        for label in ([] if avail else _shift_hits(s)):
             k = "s:" + label
-            if k not in seen and re.search(rx, s, re.I):
+            if k not in seen:
                 seen.add(k)
                 out["shift"].append([label, pref])
         if out["experience"] is None:
-            m = _FACT_EXP_RX.search(s)
-            if m:
-                lo = _FACT_EXP_WORDS.get(m.group(1).lower())
-                if lo is None:
-                    try:
-                        lo = int(m.group(1))
-                    except ValueError:
-                        lo = None
-                if lo is not None and 0 < lo <= 15:
-                    hi = m.group(2)
-                    out["experience"] = [f"{lo}-{hi} years" if hi else f"{lo}+ years", pref]
+            got = _experience_from(s)
+            if got:
+                label, x, m = got
+                out["experience"] = [label, _item_pref(x, m.end(), m.start(), mode)]
     # BLS implies CPR — drop the redundant chip.
     if any(c[0] == "BLS" for c in out["certs"]):
         out["certs"] = [c for c in out["certs"] if c[0] != "CPR"]
     out["certs"] = out["certs"][:5]
+    # 2026-09-24: "Bachelor's degree in nursing preferred" is one BSN, not a
+    # BSN chip and a Bachelor's degree chip (likewise ADN, MSN).
+    for nurse, generic in (("BSN", "Bachelor's degree"), ("ADN/ASN", "Associate degree"), ("MSN", "Master's degree")):
+        a, b = edu_span.get(nurse), edu_span.get(generic)
+        if a and b and a[0] < b[1] and b[0] < a[1]:
+            out["education"] = [e for e in out["education"] if e[0] != generic]
     out["education"] = sorted(out["education"], key=lambda e: edu_pos.get(e[0], 0))[:2]   # the posting's own order, so the required level leads
-    out["shift"] = out["shift"][:2]
+    # 2026-09-24: the title's shift joins the body's, and a time-of-day label
+    # (the one the card and the schedule chip show) leads a 3x12s / Weekends /
+    # PRN one; two at most.
+    # A labelled shift field is the ATS's own value and outranks prose; it may
+    # sit on two lines ("Work Shift :\n3 - Night (United States of America)"
+    # on every Houston Methodist posting), so it is read from the whole text.
+    labelled = [lab for lab, rx in _SHIFT_FIELD_RXS if rx.search(t)]
+    shifts = []
+    for lab in title_shift(title) + labelled:
+        if lab not in [x[0] for x in shifts]:
+            shifts.append([lab, False])
+    shifts += [x for x in out["shift"] if x[0] not in [y[0] for y in shifts]]
+    out["shift"] = sorted(shifts, key=lambda x: _SHIFT_TIER.get(x[0], 9))[:2]
     # 2026-09-21: schedule summary, hours, bonus amounts, benefits.
     out["schedule"], out["hours"] = extract_schedule(t, [x[0] for x in out["shift"]], job_type)
     out["signon"] = _first_amount(t, _BONUS_RXS)
     # 2026-09-22: "Signing Bonuses!" / "sign-on bonus available" with no
     # amount is still a fact worth a pill; the site shows it without a figure.
-    out["signon_offered"] = bool(out["signon"] is None and _SIGNON_MENTION_RX.search(t))
+    out["signon_offered"] = bool(out["signon"] is None and _signon_offered(t))
     out["relocation"] = _first_amount(t, _RELO_RXS)
     out["benefits"] = extract_benefits(t)
     out["benefit_lines"] = extract_benefit_lines(text)
