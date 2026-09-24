@@ -32,8 +32,9 @@ VITAS = {
 def test_vitas_reported_posting_fills_the_boxes():
     desc, sched, start = _oracle_posting_text(VITAS)
     assert sched == "Full time" and start == "2026-05-09"
-    # the posting's own text leads; the schedule closes it; no entity noise
-    assert desc.startswith("WHO WE ARE") and desc.endswith("Schedule: Full time")
+    # the posting's own text leads; the schedule closes it, before the
+    # corporate benefits block (review fix); no entity noise
+    assert desc.startswith("WHO WE ARE") and "EOE/AA M/F/D/V\n\nSchedule: Full time\n\nBenefits\n" in desc
     assert "&nbsp;" not in desc and re.search(r"QUALIFICATIONS\n+Currently licensed to practice nursing", desc)
     # only the corporate benefits list is taken, never its prose (the "day or
     # night shifts, weekdays or weekends" line would have become a shift chip)
@@ -207,3 +208,46 @@ def test_job_type_from_prose():
     assert job_type_from_text("Join us on a PRN basis, where your skills matter.") == "Per diem"
     assert job_type_from_text("HIRING FULL-TIME NIGHTS and PRN all shifts!") == ""
     assert job_type_from_text("Benefits for a full-time position include medical.") == ""
+
+
+# ── push 2 final review fixes (2026-09-24) ──────────────────────────────────
+
+def test_strip_html_joins_only_a_split_figure():
+    # the split figures the join was written for still join
+    assert strip_html("<p>Sign-On Bonus: $<span>5,0</span><span>00</span></p>") == "Sign-On Bonus: $5,000"
+    assert strip_html("<p>Bonus $<b>5,</b><span>0</span><span>00</span> paid</p>") == "Bonus $5,000 paid"
+    assert strip_html("<p>Pay: $<span>25.</span>50/hour</p>") == "Pay: $25.50/hour"
+    assert strip_html("<p>Up to $10<span>,000</span></p>") == "Up to $10,000"
+    # cells, footnotes and two whole numbers side by side stay apart
+    assert strip_html("<table><tr><td>$25.00</td><td>38.50</td></tr></table>") == "$25.00 38.50"
+    assert strip_html("<p><span>36</span><span>12-hour shifts</span></p>") == "36 12-hour shifts"
+    assert strip_html("<p>$25.00<sup>1</sup> per hour</p>") == "$25.00 1 per hour"
+    assert strip_html("<p>$25.00<span>38.50</span></p>") == "$25.00 38.50"
+    assert strip_html("<p>Hours: 3,<span>12-hour shifts</span></p>") == "Hours: 3, 12-hour shifts"
+
+
+def test_rn_as_one_option_is_no_required_rn_license():
+    f = extract_posting_facts
+    for s in ("Current LPN or registered nurse license in the state of Ohio.",
+              "Current Registered Nurse or LPN license required.",
+              "Active RN/LPN license required.",
+              "Valid EMT, Paramedic or Registered Nurse license required."):
+        got = f(s) or {"certs": []}
+        assert "RN license" not in [c[0] for c in got["certs"]], s
+    # a plain RN requirement is still one
+    assert f("Current registered nurse license in Texas or a compact state.")["certs"] == [["RN license", False]]
+    assert f("Registered Nurse (RN) with a valid state license.")["certs"] == [["RN license", False]]
+    assert f("RN license required. Experience as an LPN or CNA is a plus.")["certs"] == [["RN license", False]]
+
+
+def test_oracle_schedule_line_stays_inside_the_facts_window():
+    long_desc = "<p>" + "Provide compassionate hospice care to patients and families. " * 150 + "</p>"
+    it = dict(VITAS, JobShift="Night", WorkHours=36, ExternalDescriptionStr=long_desc,
+              ExternalQualificationsStr="<ul><li>BLS required</li></ul>" + "<p>" + "Other duties as assigned. " * 180 + "</p>")
+    desc, _, _ = _oracle_posting_text(it)
+    assert len(desc) > 12000
+    line = "Schedule: Full time · Night shift · 36 hours per week"
+    assert 0 < desc.index(line) and desc.index(line) + len(line) <= 12000
+    assert desc.index(line) < desc.index("Benefits\n• Competitive compensation")
+    f = extract_posting_facts(desc, "Full time")
+    assert f["shift"][0][0] == "Nights" and f["hours"] == 36

@@ -210,8 +210,12 @@ def strip_html(s):
         s = _BLOCK_TAG_RX.sub("\n", s)
         # 2026-09-24: a figure split across inline tags stays one figure
         # ("$<span>5,0</span><span>00</span>" read "$ 5,0 00" and the TriHealth
-        # sign-on amount was lost).
-        s = re.sub(r"(?<=[\d$,.])(?:<[^>]+>)+(?=[\d,.])", "", s)
+        # sign-on amount was lost). Review fix: only inline formatting tags
+        # join, and only a figure that is visibly unfinished on the left ("$",
+        # a thousands group short of three digits, "$25." short of its cents).
+        # Table cells, footnotes and two whole numbers side by side stay apart
+        # ("$25.00</td><td>38.50", "36</span><span>12-hour shifts").
+        s = _SPLIT_FIG_TAGS_RX.sub(_join_split_figure, s)
         s = re.sub(r"<[^>]+>", " ", s)
     # 2026-09-24 (facts audit): Houston Methodist's Workday bodies carry
     # double-escaped entities ("&amp;#xa;"), so one unescape left a literal
@@ -238,6 +242,33 @@ def strip_html(s):
     # 2.5k active bodies sat at 8,000 and lost their tail: Houston Methodist's
     # "Work Shift : 3 - Night" line and most benefit lists sit there.
     return s.strip()[:12000]
+
+
+_SPLIT_FIG_TAGS_RX = re.compile(r"(?:</?(?:span|font|b|strong|i|em|u)\b[^>]*>)+", re.I)
+_SPLIT_FIG_LEFT_GROUP_RX = re.compile(r"\d,(\d{0,2})$")
+_SPLIT_FIG_LEFT_CENTS_RX = re.compile(r"\$\s?\d[\d,]*\.(\d?)$")
+_SPLIT_FIG_RIGHT_RX = re.compile(r"^(\d+)(<?)")
+
+
+def _join_split_figure(m):
+    """"" when the inline tags in m split one figure, else a space (see
+    strip_html). The left side is read with its own tags removed, so a
+    figure split twice ("5,</span><span>0</span><span>00") still joins."""
+    left = re.sub(r"<[^>]*>", "", m.string[max(0, m.start() - 80):m.start()])
+    right = m.string[m.end():m.end() + 20]
+    if left.endswith("$") and right[:1].isdigit():
+        return ""
+    if left[-1:].isdigit() and re.match(r"[,.]\d", right):
+        return ""
+    r = _SPLIT_FIG_RIGHT_RX.match(right)
+    if r:
+        for rx, width in ((_SPLIT_FIG_LEFT_GROUP_RX, 3), (_SPLIT_FIG_LEFT_CENTS_RX, 2)):
+            g = rx.search(left)
+            if g:
+                n = len(g.group(1)) + len(r.group(1))
+                if n == width or (r.group(2) and n < width):
+                    return ""
+    return " "
 
 
 _ENTITY_LEFT_RX = re.compile(r"&(?:#\d{1,6}|#x[0-9a-f]{1,6}|[a-z]{2,8});", re.I)
@@ -2454,6 +2485,9 @@ def _schedule_line(*bits) -> str:
     return f"Schedule: {head}" if head else ""
 
 
+# What extract_posting_facts / extract_posted_wage / extract_requirements read of a body.
+_FACTS_WINDOW = 12000
+
 # Section labels for the Oracle parts that arrive without one of their own.
 _ORACLE_PART_HEADS = {"ExternalResponsibilitiesStr": ("Responsibilities", r"(?:key |primary |job |essential )?(?:responsib|duties|essential|functions|what you(?:'|’)?ll do)"),
                       "ExternalQualificationsStr": ("Qualifications", r"(?:minimum |required |preferred |basic |job )?(?:qualif|requir|education|what you(?:'|’)?ll need|licens|experience)")}
@@ -2487,11 +2521,20 @@ def _oracle_posting_text(it: dict) -> tuple[str, str, str]:
         parts.append(v)
     body = "\n\n".join(parts)
     corp = _corporate_benefits(it.get("CorporateDescriptionStr"), body)
-    if corp:
-        parts.append("Benefits\n" + "\n".join(f"• {b}" for b in corp))
+    # 2026-09-24 (review): the schedule line closes the posting's own text,
+    # before the corporate benefits block, and always inside the 12,000
+    # characters the facts extractors read: on a longer body it moves up to
+    # the last part boundary that keeps it there (the very top only when the
+    # first part alone fills the window). After the benefits block it fell
+    # past 12,000 on long bodies and the shift and hours were lost.
     line = _schedule_line(sched, shift, f"{hours} hours per week" if hours else "", days)
     if line and parts:
-        parts.append(line)
+        i = len(parts)
+        while i > 0 and len("\n\n".join(parts[:i] + [line])) > _FACTS_WINDOW:
+            i -= 1
+        parts.insert(i, line)
+    if corp:
+        parts.append("Benefits\n" + "\n".join(f"• {b}" for b in corp))
     start = str(it.get("ExternalPostedStartDate") or "")[:10]
     return "\n\n".join(parts), sched, (start if re.match(r"^\d{4}-\d{2}-\d{2}$", start) else "")
 
@@ -14640,6 +14683,23 @@ _NURSE_LICENSE_RX = re.compile(
     r"\bnursing licens(?:e|ure)\b|licens(?:e|ure)\s+(?:issued\s+)?by\s+the\s+(?:[A-Za-z]+\s+){0,4}board of nursing", re.I)
 
 
+# 2026-09-24 (review): "current LPN or registered nurse license", "RN/LPN
+# license", "EMT, Paramedic or Registered Nurse": RN is one option of several,
+# so no RN licence is required and the RN-license chip must not be added.
+_RN_WORD = r"(?:registered (?:professional )?nurse|\bRN\b)"
+_RN_ALT_WORD = (r"(?:\bL[PV]Ns?\b|licensed (?:practical|vocational) nurse|\b(?:practical|vocational) nurse|\bparamedic|"
+                r"\bEMT(?:-P)?\b|\bCNA\b|certified nurs(?:e|ing) assistant|respiratory therapist|\bRRT\b|\bCRT\b)")
+_RN_OPTION_RX = re.compile(
+    _RN_ALT_WORD + r"[^.;\n]{0,30}?(?:\bor\b|/)[^.;\n]{0,12}?" + _RN_WORD
+    + r"|" + _RN_WORD + r"[^.;\n]{0,12}?(?:\bor\b|/)[^.;\n]{0,30}?" + _RN_ALT_WORD, re.I)
+
+
+def _rn_is_an_option(s, m):
+    """True when the RN-license match m in sentence s names RN as one option
+    of an "or" list with another licence or credential."""
+    return bool(_RN_OPTION_RX.search(s[max(0, m.start() - 45):m.end() + 45]))
+
+
 def _title_nurse_kind(title):
     t = str(title or "")
     if re.search(r"\bL[PV]N\b|licensed (?:practical|vocational)", t, re.I):
@@ -14739,7 +14799,8 @@ def extract_posting_facts(text, job_type=None, title=None):
                 # "... does not hold a Michigan RN license" is no requirement
                 m = next((m for m in rx.finditer(s)
                           if not _CERT_NEG_RX.search(s[max(0, m.start() - 30):m.start()])
-                          and not _IN_MATCH_NEG_RX.search(m.group(0))), None)
+                          and not _IN_MATCH_NEG_RX.search(m.group(0))
+                          and not (label == "RN license" and _rn_is_an_option(s, m))), None)
                 if m:
                     seen.add(label)
                     out["certs"].append([label, _item_pref(s, m.end(), m.start(), mode)])
