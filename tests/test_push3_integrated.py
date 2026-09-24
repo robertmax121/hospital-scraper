@@ -154,5 +154,26 @@ def test_duty_naming_a_licence_outside_a_block_is_not_licensure():
     assert scraper.extract_requirements("Must hold a current Texas RN license.")["licensure"]
 
 
+# a heading label is never an item; a misspelled duties heading still ends the block
+
+def test_heading_label_left_as_an_item_is_dropped():
+    body = ("Education/Training Bachelor's degree from an approved program in occupational therapy. Licensure/Certification\n"
+            "Licensure/Certification\n"
+            "Maintains current Occupational Therapist license in the State of Florida.\n"
+            "Required\n")
+    rq = scraper.extract_requirements("Qualifications\n" + body)
+    everything = _quals(rq) + _items(rq, "certifications") + _items(rq, "licensure") + _items(rq, "education")
+    assert "Licensure/Certification" not in everything and "Required" not in everything
+    assert any("Occupational Therapist license in the State of Florida" in x for x in _items(rq, "licensure"))
+
+
+def test_misspelled_responsibilities_heading_ends_the_block():
+    body = ("Qualifications\nValid Florida state license.\nBLS/Healthcare Provider certification required.\n"
+            "Responsabilities\nApplies principles of radiation safety to minimize exposure to patients, self, and others.\n"
+            "Assesses the patient's physical condition and age specific needs.\n")
+    rq = scraper.extract_requirements(body)
+    assert rq["qualifications"]["required"] == ["Valid Florida state license.", "BLS/Healthcare Provider certification required."]
+
+
 def test_facts_version_bumped_once_for_push3():
     assert scraper.FACTS_VERSION == 3

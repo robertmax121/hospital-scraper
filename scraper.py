@@ -15716,7 +15716,7 @@ _RQ_PHRASE_HEAD_RX = re.compile(
     r"(?:hire|hiring|start(?:ing)?|employment))\b[^.]{0,30}$", re.I)
 # Headings that end a block. Searched on short lines only (see _rq_heading).
 _RQ_STOP_HEAD_RX = re.compile(
-    r"\b(?:responsibilit\w*|duties|essential functions?|job functions?|benefits?|perks|about\b|overview|summary|"
+    r"\b(?:respons[ai]bilit\w*|duties|essential functions?|job functions?|benefits?|perks|about\b|overview|summary|"
     r"description|purpose|what you(?:'|’)ll do|what you will do|day in the life|schedule|shift|hours|pay\b|"
     r"compensation|salary|location|department|our commitment|commitment|why join|why work|who we are|"
     r"equal opportunity|eeo|physical demands|working conditions|work environment|additional information|"
@@ -16202,7 +16202,7 @@ _RQ_WALL_HEADS = (
     r"|Experience(?:\s+Requirements?)?|Licensure(?:\s*(?:/|&|and|,)\s*Certifications?)?(?:\s+Requirements?)?"
     r"|Licenses?(?:\s*(?:/|&|and|,)\s*Certifications?)?|Certifications?(?:\s*(?:/|&|and|,)\s*Licensure)?"
     r"|Qualifications?|Requirements?|Knowledge,?\s+Skills,?\s+(?:and|&)\s+Abilities|Skills\s+(?:and|&)\s+Abilities"
-    r"|Essential\s+(?:Functions?|Duties|Job Functions)|(?:Key\s+|Job\s+|Primary\s+)?Responsibilities|(?:Job\s+)?Duties"
+    r"|Essential\s+(?:Functions?|Duties|Job Functions)|(?:Key\s+|Job\s+|Primary\s+)?Respons[ai]bilities|(?:Job\s+)?Duties"
     r"|Position\s+Summary|Job\s+Summary|Summary|Overview|Benefits|What\s+We\s+Offer|Why\s+Join\s+Us|About\s+Us"
     r"|Schedule|Shift|Pay\s+Range|Compensation|Physical\s+(?:Demands|Requirements)|Working\s+Conditions|Work\s+Environment"
     r"|Additional\s+Information|Equal\s+Opportunity\s+Employer")
@@ -16240,7 +16240,7 @@ _RQ_TITLE_HEADS = (
     r"|Education(?:\s*(?:,|/|&|and)\s*(?:Experience|Training|Licensure|Certifications?|Licenses?))*"
     r"|Experience|Licensure(?:\s*(?:/|&|and|,)\s*Certifications?)?|Licenses?(?:\s*(?:/|&|and|,)\s*Certifications?)?"
     r"|Certifications?(?:\s+Summary)?(?:\s*(?:/|&|and|,)\s*Licensure)?|Knowledge,?\s+Skills,?\s+(?:and|&)\s+Abilities"
-    r"|Job\s+Responsibilities|Responsibilities|Other\s+Related\s+Functions|Benefits\s+Beyond\s+the\s+Expected")
+    r"|Job\s+Respons[ai]bilities|Respons[ai]bilities|Other\s+Related\s+Functions|Benefits\s+Beyond\s+the\s+Expected")
 _RQ_TITLE_WALL_RX = re.compile(
     r"(?:(?<=[.!?:;)\]] )|(?<=[a-z] )|(?<=N/A ))(" + _RQ_TITLE_HEADS + r")"
     r"(?= (?!Assistance|Reimbursement|Program|Benefits?|Opportunit|Credits?|Center|Department|Fund|Services)[A-Z0-9])")
@@ -16414,6 +16414,16 @@ def extract_requirements(text) -> dict:
     def add(field, s, pref):
         s = s.strip().rstrip(" ;,")[:300]
         if len(s) < 3:
+            return
+        # (push3 integration) a heading label left over as an item is not one:
+        # Orlando Health "Licensure/Certification", HCTS "License/Registration/
+        # Certification", Workday table cells "Required" / "Preferred" / "AND".
+        # Only a label that reads as one (a colon, a slash, one word, or Title
+        # Case); "Clinical license preferred" is an item.
+        lab = re.sub(r"\s*:$", "", s).strip()
+        if len(s) <= 60 and _RQ_HEAD_RX.match(lab) and (
+                s.endswith(":") or "/" in lab or len(lab.split()) == 1
+                or all(w[:1].isupper() or w.lower() in _RQ_SMALL_WORDS or not w[:1].isalpha() for w in lab.split())):
             return
         key = s.lower()
         if key in seen[field]:
