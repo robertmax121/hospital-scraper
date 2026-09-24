@@ -14680,6 +14680,57 @@ _RQ_PAY_END_RX = re.compile(
     r"\b(?:pay range|base pay|pay rate|hourly rate|salary range|compensation (?:package|range|may|within)|"
     r"we (?:provide|offer) (?:a |an )?(?:market|competitive|comprehensive))", re.I)
 
+# 2026-09-24 (headings audit, 6,384 stored bodies): phrase headings the
+# closed word list above does not spell, several of which the stop rule
+# ("a short label with no value") used to read as the END of a block:
+# "What qualifications you will need:" (HCA), "Here's what you need:" (Texas
+# Health), "You are:" / "If you are:" / "To ensure success in this role, you
+# must have:" (RadNet), "This job is for you if you have:" / "A wow if you
+# have:" (Pullman), "Education, Licenses, and Experiences Required for this
+# Role:" (One Medical), "Required Criteria" / "Preferred Criteria" (NYP),
+# "Qualifications for a Registered Nurse (RN):" (BAYADA), "Candidate
+# Qualifications" (IU Health), "About You" (Galileo), "Education, Certification,
+# Computer and Training Requirements:" (CityMD).
+_RQ_GENERIC_HEAD_RX = re.compile(
+    r"^(?:(?:this (?:job|role|position) is for you|a wow|bonus points?|extra points?|it(?:'|’)s a (?:plus|bonus)|"
+    r"(?:it would be )?(?:great|nice|even better)) if you(?: also)? have|"
+    r"(?:if )?you (?:are|have|bring)|about you|who you are|you(?:'|’)re|"
+    r"here(?:'|’)s what you(?:'|’)?(?:ll)? need|what (?:qualifications|skills|experience|you) (?:you (?:will|would) |you(?:'|’)ll |do you |will you |)need|"
+    r"qualified (?:candidates|applicants)(?: (?:will|must|should) have)?|"
+    r"to (?:ensure|be) success(?:ful)?(?: in this (?:role|position))?,? you (?:must|will|should) (?:have|bring)|"
+    r"(?:required|preferred|minimum|additional|candidate|position|job|hiring) criteria|"
+    r"(?:candidate|applicant|position|role) (?:qualifications?|requirements?)|"
+    r"qualifications? (?:for|of) (?:a |an |the )?[^:]{2,40}|"
+    r"[^:]{0,70}\b(?:required|needed) (?:for|of) (?:this|the) (?:role|position|job))$", re.I)
+# A label ENDING in requirements / qualifications / criteria is a heading only
+# when it reads as one: a "Label:" line or Title Case, at most eight words, not
+# a duty or a sentence ("Follow dietary modifications and special meal
+# requirements", "This range is an estimate, based on potential employee
+# qualifications: ...", "Knowledge of third-party reimbursement programs and
+# requirements").
+_RQ_GENERIC_END_RX = re.compile(r"^[\w’',&/() -]{0,60}\b(?:requirements?|qualifications?|criteria)$", re.I)
+_RQ_GENERIC_END_NOT_RX = re.compile(
+    r"^(?:knowledge|ability|abilities to|understanding|familiar|follow|ensure|evaluate|meet|maintain|compl[yi]|adhere|"
+    r"perform|assist|review|monitor|manage|coordinate|provide|support|this|the|these|our|we|all|any|must|will|may)\b"
+    r"|\b(?:range|estimate|based on|and requirements|with requirements|regulatory|billing|reimbursement|meal|dietary)\b", re.I)
+_RQ_SMALL_WORDS = {"a", "an", "and", "or", "of", "for", "the", "this", "to", "in", "&", "/", "with", "at", "on"}
+# ...but never these: a physical-demands or travel section, or a label naming
+# duties / benefits / schedule ("Physical Requirements", "Travel Requirements").
+_RQ_GENERIC_NOT_RX = re.compile(
+    r"physical|travel|schedul|weekend|holiday|on-?call|overtime|attendance|dress|uniform|system|equipment|respons|dut(?:y|ies)|benefit|perks|offer|summary|"
+    r"overview|function|compensation|salary|pay\b|shift|hours|about (?:us|the|our)|posting|apply|application", re.I)
+# "a. Education:" / "1) Experience:" / "(b) Licensure:" (Odessa): the
+# enumerator is not part of the heading.
+_RQ_ENUM_RX = re.compile(r"^(?:\(?(?:[a-hA-H]|\d{1,2}|[ivx]{1,4})[.)]\s+)(?=[A-Za-z])")
+# A line that opens the benefits / EEO part ends a requirements block even
+# with no heading of its own (Akumin: "At Akumin, we invest in the
+# well-being of our employees ... You can expect to see the following
+# benefits:").
+_RQ_BLOCK_END_RX = re.compile(
+    r"\bbenefits\b|\bwe (?:offer|invest in)\b|\bwhat we offer\b|\bbelieves? that our employees\b|"
+    r"\$\s?\d|\bshift differentials?\b|\bsign[- ]on bonus|"
+    r"\bequal (?:employment )?opportunity\b|\bis an? (?:EEO|equal)\b", re.I)
+_RQ_KEEP_RX = re.compile(r"\byears?\b|\bexperience\b|\bdegree\b|\brequired\b|\bpreferred\b|licens|certif", re.I)
 _RQ_PREF_RX = re.compile(r"prefer|desired|desirable|a plus\b|nice to have|\bideal(?:ly)?\b|highly recommended", re.I)
 _RQ_REQ_RX = re.compile(r"requir|\bmust\b|mandatory", re.I)
 _RQ_HEAD_REQ_RX = re.compile(r"requir|\bmust\b|mandatory|minimum|basic", re.I)
@@ -14736,21 +14787,33 @@ def _rq_heading(line: str):
     kind: 'qual' | 'edu' | 'lic' | 'cert' | 'lic+cert' | 'mode' | 'stop'.
     mode: 'req' | 'pref' | None. value: the text after "Label:" when the
     line is a label with its own content ("Education: Bachelor's degree")."""
-    s = line.strip().strip("*").strip()
-    if not s or len(s) > 300 or s.endswith((".", "!", "?")):
-        return None                      # a sentence is never a heading
+    s = _RQ_ENUM_RX.sub("", line.strip().strip("*").strip())
+    if not s or len(s) > 2000:
+        return None
     label, value = s, ""
-    m = re.match(r"^([^:]{2,60}?)\s*:\s*(.*)$", s)
+    m = re.match(r"^([^:]{2,70}?)\s*:\s*(.*)$", s)
     if m:
         label, value = m.group(1).strip().strip("*").strip(), m.group(2).strip()
-    elif len(s) > 90:
-        return None
     label = re.sub(r"\s+", " ", label).rstrip(" :.-–")
+    # A long line is a heading only as "Requirements label: value" (Loma
+    # Linda's "Knowledge and Skills: ..." runs 983 characters).
+    if len(s) > 300 and not (m and value and _rq_is_req_label(label, True)):
+        return None
+    # 2026-09-24 (headings audit): "Education and Experience: Associate's
+    # Degree ... preferred. Minimum one year ... required." is a heading with
+    # its value although the line ends in a period (Loma Linda, UC Health,
+    # Silver Cross, Jackson Hospital: 180 of 6,384 bodies). Only a label that
+    # is itself a requirements heading may carry a sentence; any other line
+    # ending in . ! ? is a sentence, never a heading.
+    if s.endswith((".", "!", "?")) and not (m and value and _rq_is_req_label(label)):
+        return None
+    if not m and len(s) > 90:
+        return None
     if not label:
         return None
     words = label.split()
     low = label.lower()
-    if (_RQ_HEAD_RX.match(label) or _RQ_PHRASE_HEAD_RX.match(label)) and len(words) <= 8:
+    if _rq_is_req_label(label, bool(m)):
         mode = "pref" if _RQ_PREF_RX.search(low) else ("req" if _RQ_HEAD_REQ_RX.search(low) else None)
         lic = bool(re.search(r"licen", low))
         cert = bool(re.search(r"certif|credential", low))
@@ -14778,6 +14841,67 @@ def _rq_heading(line: str):
     if m and value and len(words) <= 4 and _RQ_STOP_HEAD_RX.search(label) and not _RQ_CUE_RX.search(value):
         return ("stop", None, "")
     return None
+
+
+def _rq_is_req_label(label: str, colon: bool = True) -> bool:
+    """A requirements heading: the closed word list, the known phrases, or
+    (2026-09-24) a generic phrase ending in requirements / qualifications /
+    criteria or addressing the candidate ("You are:", "About You"), never a
+    physical / travel / duties / benefits label."""
+    words = label.split()
+    if (_RQ_HEAD_RX.match(label) or _RQ_PHRASE_HEAD_RX.match(label)) and len(words) <= 8:
+        return True
+    if _RQ_GENERIC_NOT_RX.search(label):
+        return False
+    if len(words) <= 12 and _RQ_GENERIC_HEAD_RX.match(label):
+        return True
+    if len(words) <= 8 and _RQ_GENERIC_END_RX.match(label) and not _RQ_GENERIC_END_NOT_RX.search(label):
+        title = all(w[:1].isupper() or not w[:1].isalpha() or w.lower() in _RQ_SMALL_WORDS for w in words)
+        return colon or title
+    return False
+
+
+# Headings the wall splitter (_rq_unwall) cuts out of a body stored as one
+# line. Requirement headings open a block; the others end it.
+_RQ_WALL_HEADS = (
+    r"(?:Minimum|Required|Preferred|Basic|Additional|Other|Desired|Special|Job|Position|Candidate)\s+"
+    r"(?:Qualifications?|Requirements?|Criteria|Education|Experience|Licensure|Licenses?|Certifications?|Skills)"
+    r"|Education(?:al)?(?:\s*(?:,|/|&|and)\s*(?:Experience|Training|Licensure|Certifications?|Licenses?))*(?:\s+Requirements?)?"
+    r"|Experience(?:\s+Requirements?)?|Licensure(?:\s*(?:/|&|and|,)\s*Certifications?)?(?:\s+Requirements?)?"
+    r"|Licenses?(?:\s*(?:/|&|and|,)\s*Certifications?)?|Certifications?(?:\s*(?:/|&|and|,)\s*Licensure)?"
+    r"|Qualifications?|Requirements?|Knowledge,?\s+Skills,?\s+(?:and|&)\s+Abilities|Skills\s+(?:and|&)\s+Abilities"
+    r"|Essential\s+(?:Functions?|Duties|Job Functions)|(?:Key\s+|Job\s+|Primary\s+)?Responsibilities|(?:Job\s+)?Duties"
+    r"|Position\s+Summary|Job\s+Summary|Summary|Overview|Benefits|What\s+We\s+Offer|Why\s+Join\s+Us|About\s+Us"
+    r"|Schedule|Shift|Pay\s+Range|Compensation|Physical\s+(?:Demands|Requirements)|Working\s+Conditions|Work\s+Environment"
+    r"|Additional\s+Information|Equal\s+Opportunity\s+Employer")
+_RQ_WALL_HEAD_RX = re.compile(
+    # before: line start, a sentence end, a word glued on ("annually.Essential",
+    # "FunctionsAll"), or a run of spaces / no-break spaces; after: a colon,
+    # a capital glued on, or a run of spaces.
+    r"(?:(?<=[.!?:;)\]])|(?<=[a-z])|(?<=\s\s)|(?<=\xa0)|^)\s*(" + _RQ_WALL_HEADS + r")"
+    r"(?=\s*:|[A-Z][a-z]|[ \xa0]{2,}|\xa0)")
+
+
+def _rq_unwall(t: str) -> str:
+    """2026-09-24 (headings audit): 1,165 of 6,384 stored full bodies (18%;
+    Prisma, Akumin, Children's Healthcare ATL, St. Charles, Orlando, Summit
+    BHC, UHS, Shriners, Virtua, Wellstar, Geisinger...) are one line: the
+    list's HTML lost its block breaks, so "Position Requirements:\xa0High
+    School Diploma ...\xa0\xa0Preferred Requirements:" and "annually.Essential
+    FunctionsAll team members" sit inside a single line and no heading is
+    ever read. A body with fewer than one line break per 800 characters is
+    split at bullets, at runs of spaces / no-break spaces, at sentence ends
+    glued to the next word, and around the headings above. Bodies with real
+    line breaks are returned unchanged."""
+    if t.count("\n") >= max(4, len(t) // 800):
+        return t
+    s = re.sub(r"\s*[•·●▪■◦➢►]\s*", "\n", t)
+    s = _RQ_WALL_HEAD_RX.sub(lambda m: "\n" + m.group(1) + "\n", s)
+    s = re.sub(r"\n\s*:\s*", ":\n", s)                          # "Heading\n: value" -> "Heading:\nvalue"
+    s = re.sub(r"(?:[ \t]*\xa0[ \t\xa0]*){2,}|[ \t]{3,}", "\n", s)  # runs of no-break / plain spaces
+    s = re.sub(r"(?<=[a-z0-9)][.!?])(?=[A-Z][a-z])", "\n", s)       # "annually.Essential"
+    s = re.sub(r"(?<=[a-z]{3})(?=[A-Z][a-z]{2,}\b)", "\n", s)       # "injectionPrior experience"
+    return s
 
 
 def _rq_pref(s: str, mode) -> bool:
@@ -14819,7 +14943,7 @@ def extract_requirements(text) -> dict:
            "certifications": [], "licensure": [], "education": []}
     if not text:
         return out
-    t = str(text)[:12000].replace("\r", "")
+    t = _rq_unwall(str(text)[:12000].replace("\r", ""))
     seen = {k: set() for k in ("q", "certifications", "licensure", "education")}
 
     def add(field, s, pref):
@@ -14872,7 +14996,10 @@ def extract_requirements(text) -> dict:
                     add(f, c, _rq_pref(c, None))
             continue
         # Inside a requirements block.
-        if _RQ_BOILER_RX.search(s) or _RQ_PAY_END_RX.search(s):
+        # (a requirement that names benefits, "5 years of experience in
+        # benefits administration", does not end the block)
+        if (_RQ_BOILER_RX.search(s) or _RQ_PAY_END_RX.search(s)
+                or (_RQ_BLOCK_END_RX.search(s) and not _RQ_KEEP_RX.search(s))):
             kind, mode, last_stop, stem = None, None, "pay" if _RQ_PAY_END_RX.search(s) else "about", ""
             continue
         # A stem line ("Ability to") heads the lower-case items under it
@@ -14885,7 +15012,16 @@ def extract_requirements(text) -> dict:
             s = f"{stem} {s}"
         else:
             stem = ""
+        # 2026-09-24 (headings audit): a long paragraph with no requirement
+        # cue is the employer's closing prose (HCA: "Los Robles Regional
+        # Medical Center is a 380+ bed ... We are the only Level II Trauma
+        # Center ..."), not one more qualification: it ends the block.
+        if len(s) > 300 and not (h and h[2]) and not _RQ_CUE_RX.search(s) and not _rq_types(s):
+            kind, mode, last_stop, stem = None, None, "about", ""
+            continue
         for piece in ([s] if len(s) <= 300 else _rq_clauses(s)):
+            if len(s) > 300 and (_RQ_BOILER_RX.search(piece) or _RQ_BLOCK_END_RX.search(piece)):
+                continue
             pref = _rq_pref(piece, mode)
             add("q", piece, pref)
             if kind == "edu":
