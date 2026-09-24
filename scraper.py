@@ -529,6 +529,33 @@ PAYCOR_DESC_BUDGET         = _DescBudget(PAYCOR_DESC_MAX_PER_RUN)
 PAYLOCITY_DESC_BUDGET      = _DescBudget(PAYLOCITY_DESC_MAX_PER_RUN)
 WORKABLE_DESC_BUDGET       = _DescBudget(WORKABLE_DESC_MAX_PER_RUN)
 
+# 2026-09-24 (push 3, teasers): detail passes for the list sources that carry
+# only a teaser. Active rows on 2026-09-24: the classic iCIMS portals 14,270
+# rows under DETAIL_MIN_CHARS (Select Medical 4,231 at a median 775
+# characters, Prime 3,862 at 523, Emory 1,345, Catholic Health LI 1,128,
+# Covenant 1,210 with no body at all, OHSU 550, Kettering 527, Legacy 483,
+# ARH 424, Methodist Hospitals 196, OakBend 167, Midland 102, Tuality 49);
+# UKG 5,697 (every row, median 196); NeoGov 403 (median 737); CareerPlug 421
+# with no body (its old inline pass re-fetched the newest 300 every night, so
+# the older postings never got one). Paycom needs no pass: its detail was
+# already fetched, only its separate qualifications field was dropped (see
+# _paycom_job). Each pass runs on the budget framework (fair share per
+# tenant, skip-known, refresh share) with at most DETAIL_HOST_IN_FLIGHT
+# requests in flight per host and a runner-wide cap, so the shared
+# connection pool (limit 30) keeps room for the list pages.
+ICIMS_DESC_MAX_PER_RUN      = int(os.getenv("ICIMS_DESC_MAX_PER_RUN", "6000"))      # iCIMS job page JSON-LD (in_iframe=1)
+UKG_DESC_MAX_PER_RUN        = int(os.getenv("UKG_DESC_MAX_PER_RUN", "3000"))        # UKG Pro OpportunityDetail JSON
+NEOGOV_DESC_MAX_PER_RUN     = int(os.getenv("NEOGOV_DESC_MAX_PER_RUN", "500"))      # governmentjobs.com job page JSON-LD
+CAREERPLUG_DESC_MAX_PER_RUN = int(os.getenv("CAREERPLUG_DESC_MAX_PER_RUN", "500"))  # CareerPlug apply page
+DETAIL_HOST_IN_FLIGHT       = int(os.getenv("DETAIL_HOST_IN_FLIGHT", "2"))          # one host, one runner
+ICIMS_DETAIL_IN_FLIGHT      = int(os.getenv("ICIMS_DETAIL_IN_FLIGHT", "6"))         # all iCIMS hosts together
+UKG_DETAIL_IN_FLIGHT        = int(os.getenv("UKG_DETAIL_IN_FLIGHT", "4"))           # all UKG hosts together
+DETAIL_BREAKER_TRIES        = int(os.getenv("DETAIL_BREAKER_TRIES", "30"))          # a tenant's fetches that may all fail before its pass stops
+ICIMS_DESC_BUDGET           = _DescBudget(ICIMS_DESC_MAX_PER_RUN)
+UKG_DESC_BUDGET             = _DescBudget(UKG_DESC_MAX_PER_RUN)
+NEOGOV_DESC_BUDGET          = _DescBudget(NEOGOV_DESC_MAX_PER_RUN)
+CAREERPLUG_DESC_BUDGET      = _DescBudget(CAREERPLUG_DESC_MAX_PER_RUN)
+
 # Hard stop for Workday list pagination. Replaces the old `offset >= total`
 # break, which truncated six large tenants at exactly 2,000 jobs because
 # Workday caps the REPORTED total at 2000 while still serving results beyond it
@@ -914,7 +941,8 @@ def load_cms_lookup() -> int:
 # Houston Methodist is Workday). Without them here those passes re-fetched
 # every row they had already filled, night after night.
 KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor", "PreloadState",
-                        "Custom", "SmartRecruiters", "ADP", "Paycor", "Paylocity", "Workable")
+                        "Custom", "SmartRecruiters", "ADP", "Paycor", "Paylocity", "Workable",
+                        "iCIMS", "UKG", "NeoGov", "CareerPlug")   # last four: push 3 teaser passes
 KNOWN_BODY_PAGE      = 1000
 KNOWN_BODY_MAX_ROWS  = int(os.getenv("KNOWN_BODY_MAX_ROWS", "400000"))
 KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
@@ -2827,6 +2855,52 @@ async def _detail_passes_by_system(session, jobs: list, budget, fetch_one, label
             budget.done(system)
 
     await asyncio.gather(*[one(s, r) for s, r in by_system.items()], return_exceptions=True)
+
+
+def _host_gated(fetch_one, total: int, per_host: int | None = None, pause=(0.3, 0.8)):
+    """Wrap a detail pass's fetch_one so one runner never has more than
+    `per_host` (DETAIL_HOST_IN_FLIGHT) requests in flight on one host, nor
+    `total` across all its hosts, with a short pause before each slot is
+    released. For runners whose tenants sit on many hosts (iCIMS: a portal per
+    tenant, Emory on three; UKG: recruiting.ultipro.com, recruiting2.ultipro.com
+    and a rec.pro.ukg.net subdomain per tenant). 2026-09-24 (push 3).
+    Breaker: once a tenant's first DETAIL_BREAKER_TRIES fetches have filled
+    nothing (a WAF challenge page, a changed page, a board whose postings are
+    all short), the rest of its fetches return False without a request, so a
+    dead tenant costs a few seconds, not its whole share of the night."""
+    per = max(1, per_host if per_host is not None else DETAIL_HOST_IN_FLIGHT)
+    gate = asyncio.Semaphore(max(1, total))
+    hosts: dict[str, asyncio.Semaphore] = {}
+    tries: dict[str, int] = {}
+    hits: dict[str, int] = {}
+
+    def tripped(t: str) -> bool:
+        return DETAIL_BREAKER_TRIES > 0 and tries.get(t, 0) >= DETAIL_BREAKER_TRIES and not hits.get(t)
+
+    async def gated(job):
+        t = job.hospital_system
+        if tripped(t):
+            return False
+        host = _url_host(job.url)
+        hs = hosts.get(host)
+        if hs is None:
+            hs = hosts[host] = asyncio.Semaphore(per)
+        async with hs, gate:
+            if tripped(t):
+                return False
+            ok = False
+            try:
+                ok = bool(await fetch_one(job))
+                return ok
+            finally:
+                tries[t] = tries.get(t, 0) + 1
+                if ok:
+                    hits[t] = hits.get(t, 0) + 1
+                elif tripped(t) and tries[t] == DETAIL_BREAKER_TRIES:
+                    logger.info(f"  {t}: first {DETAIL_BREAKER_TRIES} detail fetches filled nothing; "
+                                f"skipping the rest of this tenant's pass tonight")
+                await asyncio.sleep(random.uniform(*pause))
+    return gated
 
 
 # 2026-09-16 (NY coverage): Montefiore's Workday tenant lists postings by street
@@ -4901,10 +4975,68 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
             break
     return jobs
 
+# 2026-09-24 (push 3, teasers): the classic portals' list carries a card
+# teaser (Select Medical median 775 characters, Prime 523, Emory 240) or
+# nothing (Covenant Health). The job page itself is a frame wrapper with no
+# posting; with in_iframe=1 it is the posting, and its JSON-LD JobPosting
+# holds the whole body (Overview, Responsibilities, Qualifications,
+# Additional Data), the posted date, the employment type and, on some
+# postings, a pay figure. Measured 2026-09-24: 0.3-0.5 s a page, 35-115 KB.
+_ICIMS_JOB_URL_RX = re.compile(r"^https?://[^/]+\.icims\.com/jobs/\d+", re.I)
+
+
+_ICIMS_TYPES_KEPT = frozenset({"FULL_TIME", "PART_TIME", "PER_DIEM", "TEMPORARY"})
+
+
+def _icims_detail_url(url: str) -> str:
+    u = (url or "").split("#")[0]
+    if re.search(r"[?&]in_iframe=1(?:&|$)", u):
+        return u
+    return u + ("&" if "?" in u else "?") + "in_iframe=1"
+
+
+def _icims_apply_page(job, html: str) -> bool:
+    """iCIMS job page (in_iframe=1) -> Job: the JSON-LD body, type, date and
+    pay (_apply_posting), and a blank state from the posting's address."""
+    posting = _jobposting_from_html(html)
+    if not posting:
+        return False
+    before = job.job_type
+    ok = _apply_posting(job, posting)
+    # iCIMS fills employmentType with OTHER or CONTRACTOR on staff postings
+    # (Select Medical, Covenant, a Prime staff RN: 2026-09-24); only the
+    # schema.org values that name a schedule are taken.
+    if job.job_type != before and str(job.job_type).upper() not in _ICIMS_TYPES_KEPT:
+        job.job_type = before
+    _fill_state(job, *_posting_address(posting))
+    return ok
+
+
+async def _icims_detail(session, job) -> bool:
+    return _icims_apply_page(job, await _fetch_html(session, _icims_detail_url(job.url)))
+
+
+async def _icims_tenant(session, system: str, domain: str, fetch_one) -> list[Job]:
+    """One portal: the list (scrape_icims, unchanged), then the detail pass on
+    ICIMS_DESC_BUDGET. A failed pass leaves the listed rows as they were."""
+    jobs = await scrape_icims(session, system, domain)
+    if DETAIL_FETCH and jobs:
+        try:
+            await _detail_pass(session, system, jobs, ICIMS_DESC_BUDGET, fetch_one, "iCIMS",
+                               skip=lambda j: not _ICIMS_JOB_URL_RX.match(j.url or ""))
+        except Exception as e:
+            logger.info(f"iCIMS {system}: detail pass failed ({e})")
+    return jobs
+
+
 async def run_icims(session) -> list[Job]:
     logger.info(f"iCIMS: scraping {len(ICIMS_ORGS)} systems...")
+    fetch_one = _host_gated(lambda j: _icims_detail(session, j), ICIMS_DETAIL_IN_FLIGHT)
+    if DETAIL_FETCH:
+        ICIMS_DESC_BUDGET.expect(ICIMS_ORGS)
     results = await asyncio.gather(
-        *[scrape_icims(session, s, o) for s, o in ICIMS_ORGS.items()],
+        *[_tenant_reporting(ICIMS_DESC_BUDGET, s, _icims_tenant(session, s, o, fetch_one))
+          for s, o in ICIMS_ORGS.items()],
         return_exceptions=True
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
@@ -6029,11 +6161,9 @@ CAREERPLUG_ORGS = {
 }
 # 2026-09-15 (owner backlog): a budgeted detail pass. The job link 302s to
 # /jobs/<id>/apps/new, whose <div class="job-description-container"> holds the
-# posting (benefits list, duties, requirements). CP_DESC_BUDGET fetches per
-# run, newest first; the DB trigger preserve_scraped_enrichment keeps a
-# description once a row has one, so the whole board fills in over a few
-# nights without re-fetching.
-CP_DESC_BUDGET = 300
+# posting (benefits list, duties, requirements). 2026-09-24: fetched by the
+# budgeted pass in run_careerplug (CAREERPLUG_DESC_BUDGET), not a fixed
+# first-300 loop.
 _CP_DESC_RX = re.compile(r'<div[^>]+class="[^"]*job-description-container[^"]*"[^>]*>(.*?)<(?:form|div class="apply-page|div class="account_description)', re.S | re.I)
 
 
@@ -6142,16 +6272,18 @@ async def scrape_careerplug(session: aiohttp.ClientSession, system: str, slug: s
         if new == 0:
             break
         await jitter()
-    # 2026-09-15: detail pass within the budget (newest posted first).
-    spent = 0
-    for j in sorted(jobs, key=lambda x: x.posted_date or "", reverse=True):
-        if spent >= CP_DESC_BUDGET:
-            break
-        await jitter()
-        j.description = await _careerplug_detail(session, j.url)
-        spent += 1
-    logger.info(f"  CareerPlug {system}: {len(jobs)} jobs, {sum(1 for j in jobs if j.description)} with descriptions ({spent} fetched)")
+    logger.info(f"  CareerPlug {system}: {len(jobs)} jobs")
     return jobs
+
+
+async def _careerplug_fetch(session, job) -> bool:
+    """Detail pass fetch_one: the apply page's description when it is longer
+    than what the row has."""
+    text = await _careerplug_detail(session, job.url)
+    if text and len(text) > len((job.description or "").strip()):
+        job.description = text
+        return len(text) >= 200
+    return False
 
 
 async def run_careerplug(session) -> list[Job]:
@@ -6162,6 +6294,14 @@ async def run_careerplug(session) -> list[Job]:
     )
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  CareerPlug: {len(jobs):,} jobs")
+    # 2026-09-24 (push 3): the 09-15 pass fetched the 300 newest postings every
+    # night, bodies it already had included, so the 421 older ones never got
+    # one. Now it is a budgeted pass like the others: rows the database holds
+    # a body for are skipped (CareerPlug is in KNOWN_BODY_PLATFORMS), the rest
+    # go transparency states and newest first, two requests in flight.
+    await _detail_passes_by_system(session, jobs, CAREERPLUG_DESC_BUDGET,
+                                   _host_gated(lambda j: _careerplug_fetch(session, j), DETAIL_HOST_IN_FLIGHT),
+                                   "CareerPlug", in_flight=10 ** 6)
     return jobs
 
 
@@ -8668,7 +8808,102 @@ async def run_ukg(session) -> list[Job]:
     results = await _gather_by_host(session, orgs, scrape_ukg, lambda o: _url_host(o[0]))
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  UKG total: {len(jobs):,} jobs")
+    # 2026-09-24 (push 3): BriefDescription is a teaser on every board (median
+    # 196 characters); the OpportunityDetail page embeds the whole posting.
+    # UKG_DETAIL_IN_FLIGHT across the runner, DETAIL_HOST_IN_FLIGHT per host
+    # (15 boards share recruiting.ultipro.com, 5 recruiting2.ultipro.com).
+    await _detail_passes_by_system(session, jobs, UKG_DESC_BUDGET,
+                                   _host_gated(lambda j: _ukg_detail(session, j), UKG_DETAIL_IN_FLIGHT),
+                                   "UKG", in_flight=10 ** 6)
     return jobs
+
+
+# UKG Pro Recruiting's OpportunityDetail page (the row's own URL) renders from
+# `new US.Opportunity.CandidateOpportunityDetail({...})`: Description (HTML),
+# FullTime, HoursPerWeek, PostedDate, RequisitionNumber, the Education /
+# LicenseAndCertification / WorkExperience / Skill criteria lists (each item
+# with Required true/false), PayRange {PayRangeMinimum, PayRangeMaximum} shown
+# when PayRangeVisible, and CompensationHourly/Annual Minimum/Maximum.
+# Measured 2026-09-24: 0.5-0.9 s a page, 85-95 KB, Description 2,364-8,634
+# characters where the list had 110-521.
+_UKG_DETAIL_RX = re.compile(r"new\s+US\.Opportunity\.CandidateOpportunityDetail\(")
+_UKG_CRITERIA = (("EducationCriteria", "Education"),
+                 ("LicenseAndCertificationCriteria", "Licenses and Certifications"),
+                 ("WorkExperienceCriteria", "Experience"),
+                 ("SkillCriteria", "Skills"))
+
+
+def _ukg_detail_data(html: str):
+    m = _UKG_DETAIL_RX.search(html or "")
+    if not m:
+        return None
+    try:
+        obj, _ = json.JSONDecoder().raw_decode(html, m.end())
+    except Exception:
+        return None
+    return obj if isinstance(obj, dict) else None
+
+
+def _ukg_criterion(c) -> str:
+    """One criteria item -> "Registered Nurse (RN) (required)"; the item keys
+    differ by list, so the first name-like text is used."""
+    if not isinstance(c, dict):
+        return ""
+    name = ""
+    for k, v in c.items():
+        if isinstance(v, str) and v.strip() and (k.endswith("Name") or k.endswith("Description")) \
+                and not k.startswith("MinimumScale"):
+            name = strip_html(v).strip()
+            break
+    if not name:
+        return ""
+    req_ = c.get("Required")
+    return f"{name} ({'required' if req_ else 'preferred'})" if isinstance(req_, bool) else name
+
+
+def _ukg_apply_detail(job, d: dict) -> bool:
+    """CandidateOpportunityDetail -> Job: the full body (+ the criteria lists
+    as their own sections), and type, date and pay when the list had none.
+    True when a body of 200+ characters longer than the list's landed."""
+    if not isinstance(d, dict):
+        return False
+    parts = [strip_html(str(d.get("Description") or "")).strip()]
+    for key, head in _UKG_CRITERIA:
+        items = [x for x in (_ukg_criterion(c) for c in (d.get(key) or [])) if x]
+        if items:
+            parts.append(head + "\n" + "\n".join(items))
+    desc = "\n\n".join(p for p in parts if p).strip()
+    ok = False
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        ok = True
+    if not (job.job_type or "").strip() and isinstance(d.get("FullTime"), bool):
+        job.job_type = "Full time" if d["FullTime"] else "Part time"
+    dp = str(d.get("PostedDate") or "")[:10]
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", dp) and not re.match(r"^\d{4}-\d{2}-\d{2}$", job.posted_date or ""):
+        job.posted_date = dp
+    if job.wage_min is None:
+        pr = d.get("PayRange") if isinstance(d.get("PayRange"), dict) else {}
+        cands = []
+        if d.get("PayRangeVisible"):
+            cands.append((pr.get("PayRangeMinimum"), pr.get("PayRangeMaximum")))
+        cands += [(d.get("CompensationHourlyMinimum"), d.get("CompensationHourlyMaximum")),
+                  (d.get("CompensationAnnualMinimum"), d.get("CompensationAnnualMaximum"))]
+        for lo, hi in cands:
+            try:
+                lo = float(lo) if lo not in (None, "") else None
+                hi = float(hi) if hi not in (None, "") else lo
+            except (TypeError, ValueError):
+                continue
+            got = _wage_pair(lo, hi) if lo and hi else None
+            if got:
+                job.wage_min, job.wage_max, job.wage_unit = got
+                break
+    return ok
+
+
+async def _ukg_detail(session, job) -> bool:
+    return _ukg_apply_detail(job, _ukg_detail_data(await _fetch_html(session, job.url, timeout=25)))
 
 
 ##############################################################################
@@ -9882,6 +10117,13 @@ async def run_neogov(session) -> list[Job]:
             logger.info(f"NeoGov {system}: {e}")
         await jitter()
     logger.info(f"  NeoGov total: {len(jobs):,} jobs")
+    # 2026-09-24 (push 3): a card carries a ~740-character excerpt; the job
+    # page's JSON-LD JobPosting holds the whole bulletin (9-29 KB raw:
+    # duties, minimum requirements, licence, special requirements), its
+    # posted date and pay. One request in flight, like the list.
+    await _detail_passes_by_system(session, jobs, NEOGOV_DESC_BUDGET,
+                                   _host_gated(lambda j: _jsonld_detail(session, j), 1, per_host=1),
+                                   "NeoGov", in_flight=10 ** 6)
     return jobs
 
 
@@ -10417,6 +10659,24 @@ def _paycom_job(prev: dict, detail: dict | None, system: str, client_key: str, d
         st = st or m.group(2)
     st = (st or default_state).upper()
     desc = str(det.get("description") or det.get("jobDescription") or prev.get("description") or "")
+    # 2026-09-24 (push 3): the detail keeps the requirements in their own
+    # field (qualifications, under qualificationsTitle), which was dropped:
+    # 378 rows stored the ~300-700 character duty paragraph alone, without
+    # the education, licence and certification lines.
+    quals = str(det.get("qualifications") or "").strip()
+    if quals and _paycom_clean(quals):
+        qhead = _paycom_clean(str(det.get("qualificationsTitle") or "")) or "Qualifications"
+        desc = f"{desc}\n\n<p>{qhead}</p>\n{quals}"
+    extras = []
+    for key, label in (("jobShift", "Shift"), ("educationLevel", "Education")):
+        val = det.get(key)
+        if isinstance(val, dict):
+            val = val.get("name") or val.get("label") or val.get("value") or ""
+        val = _paycom_clean(str(val or ""))
+        if val and val.lower() not in ("n/a", "none", "not applicable"):
+            extras.append(f"{label}: {val}")
+    if extras:
+        desc = f"{desc}\n\n" + "\n".join(f"<p>{x}</p>" for x in extras)
     pay = str(det.get("salaryRange") or "").strip()
     if pay:
         desc = f"Pay: {pay}\n\n{desc}"
