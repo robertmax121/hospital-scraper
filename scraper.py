@@ -850,8 +850,10 @@ WORKDAY_TENANTS = {
     # Validated 2026-06-18: aah.wd5 / site "External" returns total ~2,000.
     "Advocate Health":           ("aah",                "5",  "External"),
     # 2026-09-24 configs: Allegheny Health Network posts on the Highmark
-    # Health tenant (Pittsburgh, Natrona Heights, Erie); Beth Israel Lahey on
-    # its own (facility names such as Anna Jaques and Lahey in locationsText).
+    # Health tenant (Pittsburgh, Natrona Heights, Erie), which also carries
+    # Highmark Inc. insurer and corporate jobs: WD_TENANT_FACETS keeps the
+    # crawl to the AHN Facility facet. Beth Israel Lahey is on its own tenant
+    # (facility names such as Anna Jaques and Lahey in locationsText).
     "Allegheny Health Network":  ("highmarkhealth",     "1",  "highmark"),
     "Beth Israel Lahey Health":  ("bilh",               "1",  "External"),
     # ── 2026-09-10 Texas block C (Y-texas-build): four children's tenants.
@@ -1094,6 +1096,30 @@ WORKDAY_TENANTS = {
     "SimonMed Imaging":          ("sim", "3", "External"),              # 98 jobs, imaging
     # Akumin: outpatient imaging + oncology, ~130 centers.
     "Akumin":                    ("akumincorp", "5", "akumincareers"),  # 260 jobs, imaging
+}
+
+# 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
+# that are not the system. scrape_workday sends them on the first sweep, the
+# limit-1 facet probe and every facet slice. The Highmark Health tenant
+# returned 1,898 postings unfiltered, 1,510 inside the "AHN Facility" facet
+# (locationHierarchy1); the rest were Highmark Inc. insurer and corporate
+# jobs (actuarial, claims, sales; Camp Hill PA, Buffalo and Latham NY,
+# Wilmington DE, Kansas City MO, "Working at Home" in 50 states) that were
+# being filed as Allegheny Health Network. About 16 nursing postings outside
+# the facet (likely Highmark nurse reviewers) drop with them. The ids are
+# Allegheny Clinic, Allegheny General, Allegheny Valley, Canonsburg, Forbes,
+# Grove City, Jefferson, Saint Vincent, Westfield, West Penn and Wexford. If
+# Workday re-keys the facet the tenant returns 0 rows and a warning says so;
+# the zero-yield guards keep its inventory from being retired meanwhile.
+WD_TENANT_FACETS: dict[str, dict[str, list[str]]] = {
+    "Allegheny Health Network": {"locationHierarchy1": [
+        "fd55ee6c34ac0152d812814ea7018729", "fd55ee6c34ac017db2336a6ca701782a",
+        "1f1a79f42c93013094672369a701683b", "fd55ee6c34ac0167521d9753a701c729",
+        "fd55ee6c34ac011320151965a701202a", "1f1a79f42c93015e1c42805ca701c53a",
+        "1f1a79f42c93011c67f20661a7011e3b", "1f1a79f42c930196fc780359a701953a",
+        "1f1a79f42c9301b6c8d9ec73a701bf3b", "1f1a79f42c930126d6ad0f70a701a93b",
+        "1f1a79f42c9301f56b0f9e77a701e83b",
+    ]},
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -2185,7 +2211,7 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "Samaritan Health NY":     ("Watertown", "NY"),
     "Duly Health and Care":    ("Downers Grove", "IL"),
     "Wellstar Health (Providers)": ("Marietta", "GA"),
-    "Allegheny Health Network": ("Pittsburgh", "PA"),   # 2026-09-24: "51 Locations"-style rows
+    "Allegheny Health Network": ("Pittsburgh", "PA"),   # 2026-09-24: AHN rows with no town or state
     "Beth Israel Lahey Health": ("Boston", "MA"),       # 2026-09-24: clinics missing from WD_FACILITY_MAP
 }
 
@@ -2535,7 +2561,15 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                 logger.info(f"Workday {system}: {e}")
                 return False
 
-    hit_window = await _crawl()
+    # 2026-09-24 (review): a tenant shared with another employer is crawled
+    # inside its fixed facet (WD_TENANT_FACETS), including the probe and the
+    # slices below.
+    base_facets = WD_TENANT_FACETS.get(system) or {}
+    hit_window = await _crawl(base_facets or None)
+    if base_facets and not jobs:
+        logger.warning(f"Workday {system}: 0 rows inside its fixed facet {sorted(base_facets)}; "
+                       f"the facet ids may have changed (check the tenant's facets before "
+                       f"reading this as an empty board)")
 
     # ── Facet-sliced recovery (2026-08-04) ────────────────────────────────
     # Only fires when the plain sweep filled the whole 2,000-result window,
@@ -2548,7 +2582,7 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     if hit_window:
         try:
             async with req(session, "post", working_url,
-                json={"limit": 1, "offset": 0, "searchText": "", "appliedFacets": {}},
+                json={"limit": 1, "offset": 0, "searchText": "", "appliedFacets": dict(base_facets)},
                 headers={**HEADERS, "Content-Type": "application/json"},
                 ssl=False, proxy=proxies.get(),
                 timeout=aiohttp.ClientTimeout(total=25)) as r:
@@ -2563,7 +2597,7 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
             before = len(jobs)
             truncated_slices = 0
             for vid in facets[slice_param]:
-                if await _crawl({slice_param: [vid]}):
+                if await _crawl({**base_facets, slice_param: [vid]}):
                     truncated_slices += 1
                 await jitter()
             logger.info(f"  Workday {system}: window hit — facet-sliced by {slice_param} "
