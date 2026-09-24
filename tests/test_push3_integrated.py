@@ -207,3 +207,59 @@ def test_misspelled_responsibilities_heading_ends_the_block():
 
 def test_facts_version_bumped_once_for_push3():
     assert scraper.FACTS_VERSION == 3
+
+
+# review: a benefits sentence or a long no-cue line ends a block only when
+# nothing after it in the same block states a requirement
+
+def test_iu_health_benefits_sentence_inside_the_block_keeps_the_credentials():
+    # Oracle template: "Preferred Skills" ... "IU Health also offers a substantial
+    # benefits package, PTO Program, 401k match ..." ... "- Requires graduation
+    # from an accredited academic program ... Requires current license in the
+    # State of Indiana ..." (live 3b74770 filed all three fields)
+    rq = _rq("integrated", "oracle_iuhealth_ot_benefits_22200155.txt")
+    assert any("accredited academic program in occupational therapy" in x for x in _items(rq, "education"))
+    assert "Requires current license in the State of Indiana." in _items(rq, "licensure")
+    assert "Requires Basic Life Support certification through the AHA." in _items(rq, "certifications")
+    assert not [x for x in _quals(rq) if BOILER.search(x)], _quals(rq)
+    rq = _rq("integrated", "oracle_iuhealth_pt_benefits_22200149.txt")
+    assert "Requires graduation from an accredited academic program in physical therapy." in _items(rq, "education")
+    assert "Requires current Physical Therapist license in the State of Indiana." in _items(rq, "licensure")
+    assert "Requires Basic Life Support certification through the AHA." in _items(rq, "certifications")
+    assert not [x for x in _quals(rq) if BOILER.search(x)], _quals(rq)
+
+
+def test_benefits_list_after_the_requirements_still_ends_the_block():
+    # HCA: "Savings and retirement resources, including a 401(k) Plan ... (based
+    # on years of service)" names years but is a benefit, not a requirement
+    rq = _rq("integrated", "talemetry_hca_benefits_list_13441212.txt")
+    q = _quals(rq)
+    assert not [x for x in q if re.search(r"(?i)401\s?\(?k|savings and retirement|tuition|paid family leave|World.s Most Ethical", x)], q
+    assert "Basic Cardiac Life Support must be obtained within 30 days of employment start date" in q
+    body = ("Qualifications\nCurrent BLS certification required.\n"
+            "We offer excellent benefits, including tuition assistance and a 401(k) match.\n"
+            "Our hospital has served the community for 50 years and holds Magnet designation.\n")
+    assert scraper.extract_requirements(body)["qualifications"]["required"] == ["Current BLS certification required."]
+
+
+def test_long_line_without_a_cue_does_not_drop_the_credentials_after_it():
+    # Norton: a 300+ character "Desired:" experience line, then "Associate Degree"
+    rq = _rq("integrated", "norton_eeg_long_desired_30675551.txt")
+    assert _items(rq, "education") == ["Associate Degree"]
+    assert any(x.startswith("Three (3) years' experience in Electroencephalography") for x in rq["qualifications"]["preferred"])
+    long_line = ("Three (3) years' experience in Electroencephalography with training of subdural grid implant intraoperative, "
+                 "and postoperatively including, but not limited to: electrode set-up, montage creation/verification, "
+                 "troubleshooting, and hook-up; and/or three (3) years of experience in SPECT injection, NCS, Evoked Potential and OCT.")
+    assert len(long_line) > 300
+    body = ("Qualifications\n\nRequired:\n\nOne (1) year experience in a healthcare setting.\n\nDesired:\n\n"
+            + long_line + "\n\nAssociate Degree\n\nCurrent BLS certification")
+    rq = scraper.extract_requirements(body)
+    assert _items(rq, "education") == ["Associate Degree"]
+    assert _items(rq, "certifications") == ["Current BLS certification"]
+    # closing prose with nothing after it still ends the block (HCA Los Robles)
+    prose = ("Los Robles Regional Medical Center is a 380+ bed acute care hospital serving the Conejo Valley. We are the only "
+             "Level II Trauma Center in the county and our teams are recognized for outstanding patient care, for a culture "
+             "of teamwork and for the growth opportunities our colleagues enjoy across the region every single day.")
+    assert len(prose) > 300
+    rq = scraper.extract_requirements("Qualifications\nCurrent BLS certification\n" + prose + "\nGreat place to grow\n")
+    assert _quals(rq) == ["Current BLS certification"]

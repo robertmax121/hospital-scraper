@@ -16405,6 +16405,58 @@ def _rq_clauses(s: str) -> list:
     return parts or [s]
 
 
+# 2026-09-24 (push3 integration, review): a benefits sentence or a long
+# paragraph with no requirement cue ends a block only when nothing after it in
+# the same block states a requirement. IU Health's Oracle template puts "IU
+# Health also offers a substantial benefits package, PTO Program, 401k match
+# ..." between "Preferred Skills" and the credential lines ("Requires
+# graduation from an accredited academic program ... Requires current license
+# in the State of Indiana ..."), and a Norton "Desired:" list runs a 326-
+# character experience line before "Associate Degree" / "Current BLS
+# certification"; ending the block there lost education, licensure and
+# certifications that live 3b74770 filed. The look-ahead stops at the next
+# heading and at closing boilerplate, pay or the legal tail, so the UHS /
+# AdventHealth tails (benefit highlights, EEO, background-screening notice)
+# still end the block.
+_RQ_AHEAD_LINES = 40
+# what a look-ahead line must name beside its cue ("required" alone is not
+# enough: Texas Health "In addition to the required qualifications, a
+# successful Ultrasonographer II will")
+_RQ_AHEAD_KEEP_RX = re.compile(r"\byears?\b|\bexperience\b|\bdegree\b|licens|certif", re.I)
+
+
+def _rq_req_ahead(rows, i: int) -> bool:
+    """True when a line after rows[i], in the same requirements block, states
+    a requirement: a clause with a cue (_RQ_CUE_RX) and a credential,
+    schooling or experience word, or a bare credential line ("Associate
+    Degree"). Benefits and perks lines, the employer's own voice ("We hold
+    the only Level III NICU", "We offer a variety of shifts") and anything
+    after the next heading, boilerplate, pay or the legal tail do not count."""
+    n = 0
+    for raw in rows[i + 1:]:
+        s = _rq_clean(raw)
+        if not s or _RQ_CSS_RX.search(s):
+            continue
+        n += 1
+        if n > _RQ_AHEAD_LINES or _rq_heading(s):
+            return False
+        mt = _RQ_TAIL_RX.search(s)
+        if mt:
+            s = s[:mt.start()]             # "Current BLS certification EEO Statement ..."
+        stop = bool(mt or _RQ_BOILER_RX.search(s) or _RQ_PAY_END_RX.search(s))
+        if not stop and not _RQ_BLOCK_END_RX.search(s) and not _PERK_NEAR_RX.search(s):
+            for c in ([s] if len(s) <= 300 else _rq_clauses(s)):
+                if re.match(r"(?:we|our|they|you)\b", c, re.I):
+                    continue
+                if _RQ_CUE_RX.search(c) and (_rq_types(c) or _RQ_AHEAD_KEEP_RX.search(c)):
+                    return True
+            if len(s) <= 60 and not s.endswith(".") and _rq_types(s) and not _RQ_DUTY_RX.search(s):
+                return True
+        if stop:
+            return False
+    return False
+
+
 def extract_requirements(text) -> dict:
     """The four requirement fields (see the block comment above); every key
     is always present, empty when the posting does not state it."""
@@ -16454,7 +16506,8 @@ def extract_requirements(text) -> dict:
     implicit, prev_bullet, hlabel = False, False, ""
     force = False                                          # heading stood alone: its lines are credentials
     tail_end = False                                       # the last line ran into the legal tail
-    for raw in t.split("\n"):
+    rows = t.split("\n")
+    for ix, raw in enumerate(rows):
         if tail_end:
             kind, mode, last_stop, stem, implicit, tail_end = None, None, "about", "", False, False
         s = _rq_clean(raw)
@@ -16558,6 +16611,13 @@ def extract_requirements(text) -> dict:
         if (_RQ_BOILER_RX.search(s) or _RQ_PAY_END_RX.search(s)
                 or (_RQ_BLOCK_END_RX.search(s) and not _RQ_KEEP_RX.search(s)
                     and not re.match(r"(?:knowledge|abilit|able to|understand|skill|familiar|proficien|competen)", s, re.I))):
+            # (review: a benefits sentence with requirements after it in the
+            # same block, IU Health, is skipped and the block goes on; never
+            # an EEO statement, boilerplate or pay)
+            if (not _RQ_BOILER_RX.search(s) and not _RQ_PAY_END_RX.search(s)
+                    and not re.search(r"\bequal (?:employment )?opportunity\b|\bis an? (?:EEO|equal)\b", s, re.I)
+                    and _rq_req_ahead(rows, ix)):
+                continue
             kind, mode, last_stop, stem = None, None, "pay" if _RQ_PAY_END_RX.search(s) else "about", ""
             continue
         # 2026-09-24 (reqfix, hand check): not a requirement, the block goes on.
@@ -16591,12 +16651,22 @@ def extract_requirements(text) -> dict:
         # cue is the employer's closing prose (HCA: "Los Robles Regional
         # Medical Center is a 380+ bed ... We are the only Level II Trauma
         # Center ..."), not one more qualification: it ends the block.
+        # (review: unless a later line in the block states a requirement,
+        # Norton's 326-character "Three (3) years' experience in
+        # Electroencephalography ..." before "Associate Degree"; then only the
+        # paragraph's clauses naming years, experience, a degree, a licence or a
+        # certification stay, never Great River's run-on duty list)
+        thin = False
         if len(s) > 300 and not (h and h[2]) and not _RQ_CUE_RX.search(s) and not _rq_types(s):
-            kind, mode, last_stop, stem = None, None, "about", ""
-            continue
+            if not _rq_req_ahead(rows, ix):
+                kind, mode, last_stop, stem = None, None, "about", ""
+                continue
+            thin = True                         # only its experience / degree clauses stay
         # the heading's own value ("Education: High school"), not "Training: Diet Knowledge, ..."
         own = bool(h and h[2]) and bool(re.search(r"educat|degree|school", hlabel, re.I))
         for piece in ([s] if len(s) <= 300 else _rq_clauses(s)):
+            if thin and not _RQ_AHEAD_KEEP_RX.search(piece):
+                continue
             if len(s) > 300 and (_RQ_BOILER_RX.search(piece) or _RQ_BLOCK_END_RX.search(piece)):
                 continue
             if len(s) > 300 and _RQ_WORKCOND_RX.search(piece):
