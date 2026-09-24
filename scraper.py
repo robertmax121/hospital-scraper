@@ -717,11 +717,12 @@ HOSPITAL_SYSTEM_ALIASES = {
     "Cone Health":                 "ConeHealth",
     "Baptist Health (FL)":         "Baptist Health South Florida",
     # 2026-05-27: catch any stragglers labeled with the ambiguous "Baptist
-    # Health" or with the old Billings Clinic mislabel, canonicalize them
-    # to the disambiguated KY/IN label. Applied at upsert time so the
-    # next scrape cycle self-heals any legacy rows.
+    # Health", canonicalize them to the disambiguated KY/IN label. Applied at
+    # upsert time so the next scrape cycle self-heals any legacy rows.
+    # 2026-09-24: the "Billings Clinic" -> KY/IN alias is gone: Billings
+    # Clinic (MT/WY) is scraped under its own name now (CSOD_ORGS), and the
+    # alias would have filed every Billings row under Baptist KY/IN.
     "Baptist Health":              "Baptist Health (KY/IN)",
-    "Billings Clinic":             "Baptist Health (KY/IN)",
     "Samaritan Health NY":         "Samaritan Health",
     "Texas Health Resources":      "Texas Health",
     "Freeman Health System":       "Freeman Health",
@@ -730,7 +731,6 @@ HOSPITAL_SYSTEM_ALIASES = {
     # Round 2 (2026-05-26): smaller wins after the big-ones canonicalization
     "HSHS Hospitals":              "HSHS",
     "MultiCare Health":            "MultiCare",
-    "Trinity Health (Oregon)":     "Trinity Health",
     "Erlanger Health System":      "Erlanger",
     "Guthrie Health":              "Guthrie",
     "Southwest Health":            "Southwest Healthcare",
@@ -849,6 +849,11 @@ WORKDAY_TENANTS = {
     # Advocate Health (Advocate Aurora + Atrium) — Workday tenant 'aah'.
     # Validated 2026-06-18: aah.wd5 / site "External" returns total ~2,000.
     "Advocate Health":           ("aah",                "5",  "External"),
+    # 2026-09-24 configs: Allegheny Health Network posts on the Highmark
+    # Health tenant (Pittsburgh, Natrona Heights, Erie); Beth Israel Lahey on
+    # its own (facility names such as Anna Jaques and Lahey in locationsText).
+    "Allegheny Health Network":  ("highmarkhealth",     "1",  "highmark"),
+    "Beth Israel Lahey Health":  ("bilh",               "1",  "External"),
     # ── 2026-09-10 Texas block C (Y-texas-build): four children's tenants.
     # Site names read from each careers page's "view openings" link on
     # 2026-09-10; row counts from the same day's dry run are in
@@ -1307,6 +1312,13 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     # campus ("UMC Main Campus", "Health & Wellness Hospital"); every site is in Lubbock.
     "umc health system":          ("Lubbock",          "TX"),
     "university health (san antonio)": ("San Antonio", "TX"),   # 2026-09-22: TalentBrew cards carry no location
+    # 2026-09-24: UTHealth Houston's Phenom board writes "Texas Medical
+    # Center-Houston" (blanked by clean_city) or just "Texas" on about 70%
+    # of its 452 rows; the campus is in Houston.
+    "uthealth houston":           ("Houston",           "TX"),
+    # 2026-09-24: BILH's corporate and multi-site rows ("2 Locations",
+    # "Beth Israel Lahey Health") after WD_FACILITY_MAP and the tenant default.
+    "beth israel lahey health":   ("Boston",            "MA"),
     # 2026-09-17 (blank states): single-market systems whose boards carry no
     # location at all (iCIMS card lists at Covenant / OHSU, Workday tenants
     # with facility names). Both the adapter label and the canonical label.
@@ -1898,6 +1910,10 @@ def _phenom_posting_text(jd: dict) -> tuple[str, str, str]:
     return desc, jt, (created if re.match(r"^\d{4}-\d{2}-\d{2}$", created) else "")
 
 
+_ORACLE_PREVIEW_RE = re.compile(
+    r"(https://[^/]+\.oraclecloud\.com/hcmUI/CandidateExperience/[a-z]{2}/sites/[^/]+)/jobs/preview/([0-9A-Za-z]+)")
+
+
 async def _phenom_detail(session, base_url: str, job) -> bool:
     """Phenom rows point at three kinds of page: the Phenom job page (legacy
     tenants answer the widgets jobDetail call), a Workday job page (Corewell,
@@ -1923,6 +1939,16 @@ async def _phenom_detail(session, base_url: str, job) -> bool:
                             job.job_type = jt
                         if created and not (job.posted_date or "").strip():
                             job.posted_date = created
+                        # 2026-09-24: Oracle-backed tenants (Ascension) carry
+                        # structured pay here; 0.0 means "not stated".
+                        if job.wage_min is None:
+                            try:
+                                got = _wage_pair(float(jd.get("minSalaryNew") or 0) or None,
+                                                 float(jd.get("maxSalaryNew") or 0) or None)
+                            except (TypeError, ValueError):
+                                got = None
+                            if got:
+                                job.wage_min, job.wage_max, job.wage_unit = got
                         if ok:
                             return True
         except Exception:
@@ -2111,6 +2137,38 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "freeman fort scott": ("Freeman Fort Scott", "Fort Scott", "KS"),
         "freeman neosho": ("Freeman Neosho Hospital", "Neosho", "MO"),
     },
+    # 2026-09-24 configs: BILH's locationsText is the facility ("Anna Jaques
+    # Hospital", "Lahey Clinic, Peabody") with no state, read from the tenant's
+    # locations facet (160 values). The hospitals take their own names and
+    # towns; Exeter and the "Core" practices are New Hampshire; everything
+    # else falls to the tenant default (Boston MA).
+    "Beth Israel Lahey Health": {
+        "beth israel deaconess medical center": ("Beth Israel Deaconess Medical Center", "Boston", "MA"),
+        "bidmc east campus": ("Beth Israel Deaconess Medical Center", "Boston", "MA"),
+        "bidmc west campus": ("Beth Israel Deaconess Medical Center", "Boston", "MA"),
+        "beth israel deaconess hospital milton": ("Beth Israel Deaconess Hospital-Milton", "Milton", "MA"),
+        "beth israel deaconess hospital needham": ("Beth Israel Deaconess Hospital-Needham", "Needham", "MA"),
+        "beth israel deaconess hospital plymouth": ("Beth Israel Deaconess Hospital-Plymouth", "Plymouth", "MA"),
+        "bid plymouth hospital": ("Beth Israel Deaconess Hospital-Plymouth", "Plymouth", "MA"),
+        "lahey hospital and medical center": ("Lahey Hospital & Medical Center", "Burlington", "MA"),
+        "lahey clinic": ("Lahey Hospital & Medical Center", "Burlington", "MA"),
+        "lahey medical center peabody": ("Lahey Medical Center, Peabody", "Peabody", "MA"),
+        "lahey medical center": ("Lahey Hospital & Medical Center", "Burlington", "MA"),
+        "lahey med. ctr.": ("Lahey Hospital & Medical Center", "Burlington", "MA"),
+        "addison gilbert hospital": ("Addison Gilbert Hospital", "Gloucester", "MA"),
+        "anna jaques hospital": ("Anna Jaques Hospital", "Newburyport", "MA"),
+        "bayridge hospital": ("BayRidge Hospital", "Lynn", "MA"),
+        "beverly hospital": ("Beverly Hospital", "Beverly", "MA"),
+        "mount auburn hospital": ("Mount Auburn Hospital", "Cambridge", "MA"),
+        "new england baptist hospital": ("New England Baptist Hospital", "Boston", "MA"),
+        "nebh hospital": ("New England Baptist Hospital", "Boston", "MA"),
+        "winchester hospital": ("Winchester Hospital", "Winchester", "MA"),
+        "exeter hospital": ("Exeter Hospital", "Exeter", "NH"),
+        "core ": (None, "Exeter", "NH"),
+        "bidhc salem nh": (None, "Salem", "NH"),
+        "bidhc seabrook": (None, "Seabrook", "NH"),
+        "beth israel lahey health": (None, "Boston", "MA"),
+    },
 }
 
 # Single-market tenants: rows still without a state after the map and the
@@ -2127,7 +2185,37 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "Samaritan Health NY":     ("Watertown", "NY"),
     "Duly Health and Care":    ("Downers Grove", "IL"),
     "Wellstar Health (Providers)": ("Marietta", "GA"),
+    "Allegheny Health Network": ("Pittsburgh", "PA"),   # 2026-09-24: "51 Locations"-style rows
+    "Beth Israel Lahey Health": ("Boston", "MA"),       # 2026-09-24: clinics missing from WD_FACILITY_MAP
 }
+
+# 2026-09-24: tenants whose locationsText leads with "City ST" and no comma
+# between them ("Pittsburgh PA, 15212, 320 E N Ave."). parse_city_state
+# reads "Pittsburgh PA" as the city, so the AHN dry run came back with 1,833
+# of 1,896 states blank. Scoped to the listed tenants so no other board's
+# parse changes.
+WD_CITY_SPACE_STATE = {"Allegheny Health Network"}
+_WD_CITY_SPACE_ST_RE = re.compile(r"^([A-Za-z][A-Za-z .'-]*?[A-Za-z.])\s+([A-Z]{2})(?:\s+\d{5}(?:-\d{4})?)?$")
+_WD_MULTI_LOC_RE = re.compile(r"^\d+\s+Locations?$", re.I)
+_WD_REMOTE_CITY_RE = re.compile(r"^(?:working at home|work from|remote)\b", re.I)
+
+
+def _wd_city_space_state(loc: str, city: str, state: str) -> tuple[str, str]:
+    """(city, state) for a locationsText that leads with "City ST"; "N
+    Locations" clears the city so the tenant default fills it, and a remote
+    row ("Working at Home - Ohio", "Work From Anywhere") keeps its state but
+    no town."""
+    text = (loc or "").strip()
+    if not state:
+        m = _WD_CITY_SPACE_ST_RE.match(text.split(",")[0].strip())
+        if m and m.group(2) in _STATE_CODE_BY_NAME.values():
+            return m.group(1).strip(), m.group(2)
+        if _WD_MULTI_LOC_RE.match(text):
+            return "", ""
+    if _WD_REMOTE_CITY_RE.match(city or ""):
+        return "", state
+    return city, state
+
 
 _STATE_CODE_BY_NAME = {
     "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR", "california": "CA",
@@ -2165,6 +2253,11 @@ def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | No
     if hit is None:
         return None, city, state
     facility, fc, fs = hit
+    # 2026-09-24: with no comma and no state, parse_city_state hands the whole
+    # facility string back as the "city" ("Anna Jaques Hospital"). When the
+    # map knows the town, the town wins over that echo.
+    if fc and not state and re.sub(r"\s+", " ", (city or "")).strip().lower() in (key, re.sub(r"\s+", " ", loc or "").strip().lower()):
+        city = ""
     return facility, (city or fc), (state or fs)
 
 
@@ -2387,6 +2480,8 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                 for j in listings:
                     loc = j.get("locationsText", "")
                     _city, _state = parse_city_state(loc)
+                    if system in WD_CITY_SPACE_STATE:
+                        _city, _state = _wd_city_space_state(loc, _city, _state)
                     _facility = system
                     if tenant == "montefiore":
                         _facility, _city, _state = _montefiore_loc(loc, _city, _state)
@@ -2628,7 +2723,8 @@ ICIMS_ORGS = {
     # JIBE_SITES the same day: their icims.com portals redirect to Jibe
     # fronts (careers.garnethealth.org, jobs.bassett.org, careers.maimo.org)
     # and the classic portal answers with an empty page or a login gate.
-    "MedStar Health":         "careers.medstarhealth.org",
+    # MedStar Health moved to JIBE_SITES 2026-09-24: careers.medstarhealth.org
+    # is a Jibe front and this entry never wrote a row.
     "Kettering Health":       "careers-ketteringhealth.icims.com",
     "Loma Linda University":  "careers-lluh.icims.com",
     # "Texas Health Resources" moved to FINDLY_CWS_ORGS — uses Findly/m-cloud.io, not iCIMS
@@ -3992,6 +4088,11 @@ JIBE_SITES = {
     # bodies). location_name is the facility ("UT Health Tyler", "BAPTIST
     # CAMPUS", "Seton Harker Heights"), linked to CMS through sql/45.
     "Ardent Health":             "https://jobs.ardenthealth.com",
+    # ── 2026-09-24 configs: /api/jobs totalCount probed live (Piedmont 1,727
+    # GA; MedStar 1,270 MD/DC, replacing a dead iCIMS entry; UCI 431 CA).
+    "Piedmont Healthcare":       "https://join.piedmont.org",
+    "MedStar Health":            "https://careers.medstarhealth.org",
+    "UCI Health":                "https://jobs.uci.edu",
 }
 
 # Jibe feeds whose location_name is a facility (not a street or a region):
@@ -4280,6 +4381,25 @@ FINDLY_GOOGLE_ORGS = {
         "06f73e7c-038e-4e98-9022-c43f1967ae9c",
         [],
         "https://jobs.utsouthwestern.edu",
+    ),
+    # ── 2026-09-24 configs: the same WordPress cws plugin (org id read from
+    # each site's cws_opts). UPMC's Phenom entry never wrote a row; its Taleo
+    # external section redirects to this site. Totals probed live: UPMC
+    # 2,857 (PA/MD/NY), University Hospitals 1,229 (OH), UCLA Health 717 (CA).
+    "UPMC": (
+        "4c0b87d3-a9b3-4243-b9c7-2ad12c533ab3",
+        [],
+        "https://careers.upmc.com",
+    ),
+    "University Hospitals": (
+        "d424c10c-7f7e-4b63-8d01-0c03089366bb",
+        [],
+        "https://careers.uhhospitals.org",
+    ),
+    "UCLA Health": (
+        "616bdbc8-cf62-4430-b498-12e49fc71b12",
+        [],
+        "https://www.uclahealthcareers.org",
     ),
 }
 
@@ -4585,8 +4705,11 @@ SMARTRECRUITERS_ORGS = {
     # (2026-08-28 resurrection; totalFound=1,689 validated live).
     "Henry Ford Health":    "HenryFordHealth1",
     # IORA Health removed — acquired by One Medical (Amazon)
-    # ── Added from scraper1.xlsx expansion ──
-    "University of Maryland Medical System": "UniversityOfMarylandMedicalSystem",
+    # University of Maryland Medical System moved to PHENOM_ORGS 2026-09-24:
+    # this company page lists 0 jobs; careers.umms.org is Phenom.
+    # 2026-09-24 configs: Munson Healthcare (Traverse City MI), totalFound 660;
+    # its Phenom entry never wrote a row.
+    "Munson Healthcare":    "MunsonHealthcare1",
     # ── Added 2026-05-29: Phase 3 non-acute expansion (verified SR API 200) ──
     # totalFound validated live 2026-05-29 via probe_ats.py.
     "US Physical Therapy":  "usphysicaltherapy2",   # 1,075 jobs, outpatient PT (~600 clinics)
@@ -5366,6 +5489,8 @@ PHENOM_ORG_CODES = {
     "Corewell Health":   "SPHEUS",      # confirmed from cdn.phenompeople.com/CareerConnectResources/SPHEUS/
     "Temple Health":     "TUHTUHUS",   # confirmed from widgets intercept refNum
     "DaVita":            "DAVIUS",     # confirmed from careers.davita.com 2026-05-27
+    "UTHealth Houston":  "UHHUHHUS",   # 2026-09-24, widgets refNum on careers.uth.tmc.edu
+    "University of Maryland Medical System": "UOJUOMUS",   # 2026-09-24, widgets refNum on careers.umms.org
 }
 
 PHENOM_ORGS = {
@@ -5390,7 +5515,6 @@ PHENOM_ORGS = {
     # 2026-09-17 (coverage lever 3): search-results pages report 1,979 and 840 hits.
     "Corewell Health":              "https://careers.corewellhealth.org",
     "LCMC Health":                  "https://careers.lcmchealth.org",
-    "Munson Healthcare":            "https://careers.munsonhealthcare.org",
     "Bryan Health":                 "https://careers.bryanhealth.com",
     "PeaceHealth":                  "https://careers.peacehealth.org",
     "Roper St. Francis Healthcare": "https://careers.rsfh.com",
@@ -5400,7 +5524,6 @@ PHENOM_ORGS = {
     # "Atrium Health":              "https://careers.atriumhealth.org",
     "ECU Health":                   "https://careers.ecuhealth.org",
     "Penn Medicine":                "https://careers.pennmedicine.org",
-    "UPMC":                         "https://careers.upmc.com",
     # ── Added from scraper1.xlsx expansion ──
     "Bon Secours Mercy":            "https://careers.bsmhealth.org",
     "Hoag Health":                  "https://careers.hhsys.org",
@@ -5435,6 +5558,16 @@ PHENOM_ORGS = {
     # /us/en path), verified live. Apply step is iCIMS but listings come from
     # the Phenom widgets API like Ascension's.
     "Acadia Healthcare":            "https://www.acadiacareers.com",
+    # ── 2026-09-24 configs. UTHealth Houston (refNum UHHUHHUS) posts Harris
+    # County Psychiatric Center jobs; it lives on careers.uth.tmc.edu, not
+    # go.uth.edu. UMMS moved here from SmartRecruiters (that company page
+    # shows 0 jobs; careers.umms.org is Phenom, refNum UOJUOMUS; its apply
+    # links are SmartRecruiters postings). Dry run: UTHealth 452 rows, all
+    # TX; UMMS 1,563, MD.
+    # Munson (now SmartRecruiters) and UPMC (now Findly-Google) left this
+    # table the same day: neither Phenom entry ever wrote a row.
+    "UTHealth Houston":             "https://careers.uth.tmc.edu",
+    "University of Maryland Medical System": "https://careers.umms.org",
     # HCA Healthcare — REMOVED 2026-07-28. It was never Phenom (that 2026-06-18
     # web-research note was wrong): careers.hcahealthcare.com is Talemetry, and
     # this entry just burned a nightly 403. Covered by the rebuilt run_hca().
@@ -5895,6 +6028,14 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     doc.get("applyUrl", "") or doc.get("jobUrl", "") or
                     doc.get("url", "") or f"{base_url}/job/{job_id}"
                 )
+                # 2026-09-24: Ascension's Phenom front (Oracle Recruiting behind
+                # it) hands out Oracle's e-mail apply step
+                # (.../sites/CX_1/jobs/preview/{id}/easy-apply/email). Store the
+                # canonical Oracle job page instead: it is a real posting page,
+                # and its "/job/" lets _phenom_detail call the jobDetail widget.
+                _orc = _ORACLE_PREVIEW_RE.match(url)
+                if _orc:
+                    url = f"{_orc.group(1)}/job/{_orc.group(2)}"
                 # multi_category is an array on recommendationJobsBrowsingHistory
                 multi_cat = doc.get("multi_category") or []
                 specialty_val = (
@@ -6141,6 +6282,13 @@ ADP_ORGS = {
         ("f159ab44-676f-4e8e-aee4-ed91de0cda16", "19000101_000001", "TX"),
     "Palo Pinto General Hospital":
         ("c66c3f90-0bcf-49e7-a8ce-6eb2974431ee", "19000101_000001", "TX", "Palo Pinto General Hospital"),
+    # 2026-09-24 Texas configs: one career center for Nexus Health Systems'
+    # children's hospitals (Healthbridge Houston, Nexus Dallas) and its
+    # Shenandoah campus; hospital_name left blank so the facility comes from
+    # requisitionLocations, as for Legent. 109 rows in the dry run, all TX
+    # (Houston 29, Dallas 26, Shenandoah 24, Conroe 14, San Antonio 12).
+    "Nexus Health Systems":
+        ("be1c5b46-8cdd-4d8c-8447-b37057486176", "19000101_000001", "TX"),
     # 2026-09-14 (W-urgentcare): FastMed's ATS was unidentified in the T2
     # report. It is a plain WorkforceNow career center — fastmed.com/careers
     # embeds the recruitment.html link carrying this cid — so no new adapter
@@ -6341,6 +6489,9 @@ ADPCX_ORGS = {
     # "System": ("career-site domain", default_state)
     # NextCare: ~170 urgent-care clinics in 11 states (nextcare.com "170+").
     "NextCare": ("nextcare", ""),
+    # 2026-09-24 Texas configs: Hunt Regional Healthcare (Greenville TX),
+    # myjobs.adp.com/huntregional; 114 rows in the dry run, all with bodies.
+    "Hunt Regional Healthcare": ("huntregional", "TX"),
 }
 _ADPCX_SITE    = "https://myjobs.adp.com/public/staffing/v1/career-site/{domain}"
 _ADPCX_API     = "https://my.adp.com/myadp_prefix/mycareer/public/staffing/v1/job-requisitions"
@@ -7063,7 +7214,13 @@ UKG_ORGS = {
     "Lubbock Heart & Surgical Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY",   "b20e37c3-0c12-41c6-a16d-381589bf39b0", "TX"),   # 15
     "The Physicians Centre Hospital":    ("https://recruiting.ultipro.com/SUR1004SRGY",   "67c3533b-0e5c-446c-8a5c-28a8d13de3df", "TX"),   # 17, Bryan
     "Odessa Regional Medical Center":    ("https://recruiting2.ultipro.com/QHC1000QHCS",  "3734377e-6308-45d0-b97a-c6f17d82c5e2", "TX"),   # 71
-    "Quorum Health":                ("https://recruiting2.ultipro.com/QHC1000QHCS",      "c304f8f7-4638-4bc5-8567-18580345a749"),
+    # 2026-09-24 Texas configs, dry-run counts in the comments (all TX, with
+    # bodies). Big Bend has its own board on the QHC tenant; the old
+    # "Quorum Health" board (c304f8f7) answered 0 and was removed.
+    "North Texas Medical Center":        ("https://chc1996.rec.pro.ukg.net/BAP1004BHST",  "552e4b54-4518-49d6-8877-99604ad0c8cc", "TX"),   # 27, Gainesville
+    "South Texas Spine & Surgical Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "ea3a4692-77b7-4cea-96ad-69072d0a99f4", "TX"),  # 9, San Antonio
+    "Goodall-Witcher Healthcare":        ("https://recruiting2.ultipro.com/GOO1036GDWH",  "4a69c263-bfc3-4e3e-b725-bbb1535d1cff", "TX"),   # 10, Clifton
+    "Big Bend Regional Medical Center":  ("https://recruiting2.ultipro.com/QHC1000QHCS",  "b3394170-e409-475c-a2dd-95d53697602f", "TX"),   # 20, Alpine
     "Granite Hills Medical":        ("https://recruiting.ultipro.com/GRE1050GNHP",       "2b67ecb4-00fb-4863-931a-7bf0ebcb493a"),
     "Medical Associates":           ("https://recruiting.ultipro.com/MEA1004MEVM",       "d561e1d3-aa5e-4c1b-bcf5-5319c6abdcac"),
     "Excela Health":                ("https://recruiting.ultipro.com/EXC1005EXCEH",      "a00363e2-39d4-4408-a790-fbd62f4846d8"),
@@ -7253,7 +7410,13 @@ ORACLE_ORGS = {
     "EvergreenHealth":           ("https://erym.fa.us6.oraclecloud.com",                      "CX_1"),
     "Valley Health (NV)":        ("https://fa-eveq-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),
     "Mount Nittany Health":      ("https://mnh-ibosjb.fa.ocs.oraclecloud.com",               "MountNittanyHealthCareers"),
-    "Trinity Health (Oregon)":   ("https://ertr.fa.us2.oraclecloud.com",                      "CX_3001"),
+    # ertr/CX_3001 was labelled "Trinity Health (Oregon)" (aliased to Trinity
+    # Health), but every row it wrote is in Oklahoma: it is INTEGRIS Health
+    # (673 active OK rows on 2026-09-24, Oklahoma City, Edmond, Enid...).
+    # Renamed 2026-09-24; the old rows need a one-shot relabel (post-push SQL).
+    "INTEGRIS Health":           ("https://ertr.fa.us2.oraclecloud.com",                      "CX_3001"),
+    # 2026-09-24 configs: UCSF Health, TotalJobsCount 820 probed live.
+    "UCSF Health":               ("https://iazuqy.fa.ocs.oraclecloud.com",                    "CX_1"),
     "Memorial Hospital":         ("https://wearememorial-ibrkjb.fa.ocs.oraclecloud.com",      "Careers"),
     # ecvz/CX_1 was mislabeled "Cape Cod Healthcare" — its 1,421 banked rows
     # sit in CA/HI/OR and careers.adventisthealth.org redirects here: this is
@@ -7880,6 +8043,8 @@ KRONOS_ORGS = {
     # host; a value with a full host name is used as-is. 12 rows, all Vernon
     # TX, with base_pay_from/frequency (mapped to posted pay below).
     "Wilbarger General Hospital": ("secure7.saashr.com", "6215251", "TX"),
+    # 2026-09-24 Texas configs: Coryell Health (Gatesville), same UKG Ready API.
+    "Coryell Health": ("secure6.saashr.com", "6034202", "TX"),   # 20 (Gatesville 16, Waco 4)
 }
 
 
@@ -8725,6 +8890,8 @@ CSOD_ORGS = {
     "JPS Health Network": ("https://jpshealthnet.csod.com", "4"),
     # ── Added from scraper1.xlsx expansion ──
     "Singing River Health System": ("https://singingriverhealthsystem.csod.com", "1"),
+    # 2026-09-24 configs: Billings Clinic (MT/WY), career site 1.
+    "Billings Clinic": ("https://billingsclinic.csod.com", "1"),
 }
 
 def _csod_job(rq: dict, system: str, base: str, site_id: str, corp: str) -> Job | None:
@@ -8849,6 +9016,8 @@ PAYCOM_ORGS = {
     "Reagan Memorial Hospital":          "D4C72F026DE938686F749E27665CEBE1",   # 5
     "Family Hospital Systems":           "D9DFA45B3E3394DFD6AF110856BDF669",   # 56 (Brushy Creek Family Hospital + sister campuses)
     "Hemphill County Hospital":          "BA0F97E1F0BBEA0363815A42D822FDF2",   # 20
+    # 2026-09-24 Texas configs.
+    "Texas Institute for Surgery":       "6613B1554FEB2852B28AB89172680E60",   # 8, Dallas
     # ── Added from scraper1.xlsx expansion ──
     "Paycom Hospital 2": "4863CB61AD1B2555F37E9E5884626947",
     "Paycom Hospital 3": "C48961799EBD231096CE8423D325C34C",
@@ -8992,10 +9161,15 @@ async def run_paycom(session) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  PAYCOR — Titus Regional Medical Center (TX)
+#  PAYCOR — Texas rural hospitals (Townsen, Coon, Hereford)
 # ══════════════════════════════════════════════════════════════════════════
 PAYCOR_ORGS = {
-    "Titus Regional Medical Center": "8a7883d0655a8a10016567ff244174f7",
+    # Titus Regional removed 2026-09-24: its board reads "no open jobs" since
+    # CHRISTUS took the hospital over (CHRISTUS Mount Pleasant, covered by alias).
+    # 2026-09-24 Texas configs: Hereford's careers page embeds its clientId
+    # through a newton.newtonsoftware.com iframe.
+    "Coon Memorial Hospital":           "8a7883c69297218301929c1072ca01b5",   # 22, Dalhart
+    "Hereford Regional Medical Center": "8a7883c65f99acc5015fc5bb4d5073ef",   # 15, Hereford
     # 2026-09-10 (Z-texas-acute-D): townsenmemorial.com/careers links this
     # clientId ("Click To See Our Career Opportunities").
     "Townsen Memorial Hospital": "8a7883d090b87b970190e27961ce11c4",
@@ -9105,6 +9279,9 @@ PAYLOCITY_ORGS = {
     "Schleicher County Medical Center": ("a6bb2c61-8ed5-4bd9-99d7-8aa25c93983f", "Schleicher-County-Medical-Center", "TX"),     # 5
     "Altus Community Healthcare":       ("071ad9aa-36cc-453e-baad-b9aed49da904", "Altus-Community-Healthcare", "TX"),           # 86
     "Graham Regional Medical Center":   ("b5e3394e-0c3f-46b1-831d-54975f36e6aa", "Graham-Hospital-District", "TX"),             # 22
+    # 2026-09-24 Texas configs.
+    "Reeves Regional Health":           ("107b349f-7b56-40e0-9ffc-18913ca2343c", "Reeves-Regional-Health", "TX"),               # 24, Pecos
+    "Muleshoe Area Medical Center":     ("31daf266-5e69-4889-9acf-8a5cd298b4b0", "Muleshoe-Area-Hospital-District", "TX"),      # 10, Muleshoe
 }
 _PAYLOCITY_PAGEDATA_RE = re.compile(r"window\.pageData\s*=\s*(\{)")
 
@@ -9184,6 +9361,10 @@ WORKABLE_ORGS = {
     # 2026-09-22 Texas resume (dry-run counts): both boards answer the v3 API.
     "Houston Behavioral Healthcare Hospital": ("houston-behavioral-healthcare-hospital", "TX"),   # 11
     "Yoakum Community Hospital":              ("yoakum-community", "TX"),                         # 10
+    # 2026-09-24 Texas configs: three Signature Healthcare behavioral hospitals.
+    "San Antonio Behavioral Healthcare Hospital": ("sanantoniobehavioral", "TX"),                     # 22
+    "Georgetown Behavioral Health Institute":     ("georgetown-behavioral-health-institute", "TX"),   # 28
+    "Dallas Behavioral Healthcare Hospital":      ("dbhh", "TX"),                                     # 26, De Soto
 }
 _WORKABLE_TYPES = {"full": "Full time", "part": "Part time", "contract": "Contract", "temporary": "Temporary"}
 
@@ -12078,6 +12259,11 @@ def normalize_job(j: Job) -> dict:
     hosp_system = (d.get("hospital_system") or "").strip().lower()
     city_lower  = city.lower()
     if city_lower and (city_lower == hosp_name or city_lower == hosp_system):
+        city = ""
+    # 2026-09-24: a "city" that is only its own state's name ("Texas, TX" on
+    # 82 UTHealth Houston rows) is a region, not a city; the fallback below
+    # refills it. New York, NY is a real city and stays.
+    if city_lower and state and state != "NY" and _STATE_CODE_BY_NAME.get(city_lower) == state:
         city = ""
 
     # 2026-09-17: bare city with a known state for this system (ProMedica's
