@@ -14652,7 +14652,12 @@ _RQ_PHRASE_HEAD_RX = re.compile(
     r"^(?:what you(?:'|’)ll need|what you (?:need|bring)|what you(?:'|’)ll bring|who you are|"
     r"(?:what )?we(?:'|’)re looking for|what we look for|you have|you(?:'|’)ll have|"
     r"must haves?|nice to haves?|to be successful|position requirements?|job requirements?|"
-    r"(?:minimum|preferred|required) (?:job )?(?:qualifications?|requirements?))\b[^.]{0,30}$", re.I)
+    r"(?:minimum|preferred|required) (?:job )?(?:qualifications?|requirements?)|"
+    # 2026-09-24 (owner, Sentara JR-105919): "Required at time of hire:" read
+    # as a stop heading, so its lines (degree, years of experience) were lost.
+    # UF Health, GoHealth, Loma Linda, HealthPartners use it too.
+    r"(?:required|preferred|requirements?|qualifications?)(?: (?:at|upon|prior to|before|by))? (?:the )?(?:time of )?"
+    r"(?:hire|hiring|start(?:ing)?|employment))\b[^.]{0,30}$", re.I)
 # Headings that end a block. Searched on short lines only (see _rq_heading).
 _RQ_STOP_HEAD_RX = re.compile(
     r"\b(?:responsibilit\w*|duties|essential functions?|job functions?|benefits?|perks|about\b|overview|summary|"
@@ -14668,6 +14673,12 @@ _RQ_BOILER_RX = re.compile(
     r"to learn more|for more information|note:|\*?please note|this (?:job|position) (?:description|is not)|"
     r"[A-Z][\w&.,' ]{2,60} is an equal opportunity)", re.I)
 _RQ_CSS_RX = re.compile(r"[{}]|^[a-z-]+\s*:\s*[^:]{1,40};$", re.I)
+# A pay / compensation statement ends a requirements block wherever it sits
+# in the line (Sentara: "We provide market-competitive compensation packages
+# ... The base pay range ... is $150,300.80 - $231,379.20 annually.").
+_RQ_PAY_END_RX = re.compile(
+    r"\b(?:pay range|base pay|pay rate|hourly rate|salary range|compensation (?:package|range|may|within)|"
+    r"we (?:provide|offer) (?:a |an )?(?:market|competitive|comprehensive))", re.I)
 
 _RQ_PREF_RX = re.compile(r"prefer|desired|desirable|a plus\b|nice to have|\bideal(?:ly)?\b|highly recommended", re.I)
 _RQ_REQ_RX = re.compile(r"requir|\bmust\b|mandatory", re.I)
@@ -14861,8 +14872,8 @@ def extract_requirements(text) -> dict:
                     add(f, c, _rq_pref(c, None))
             continue
         # Inside a requirements block.
-        if _RQ_BOILER_RX.search(s):
-            kind, mode, last_stop, stem = None, None, "about", ""
+        if _RQ_BOILER_RX.search(s) or _RQ_PAY_END_RX.search(s):
+            kind, mode, last_stop, stem = None, None, "pay" if _RQ_PAY_END_RX.search(s) else "about", ""
             continue
         # A stem line ("Ability to") heads the lower-case items under it
         # (Sutter: "Ability to" / "-prioritize assignments ..."): each item

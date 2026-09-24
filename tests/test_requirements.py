@@ -36,6 +36,13 @@ STATED = {
         "licensure": [],
         "education": [("High School Diploma", False), ("course of study", False), ("on-the-job training", False)],
     },
+    # 2026-09-24 (owner): Sentara's "Required at time of hire:" block.
+    "workday_sentara_JR-105919.json": {
+        "q_required": 4, "q_preferred": 0,
+        "certifications": [],
+        "licensure": [],
+        "education": [("Bachelor level degree", False)],
+    },
     "workday_trinity_00694866.json": {
         "q_required": 3, "q_preferred": 0,
         "certifications": [("AHA BLS", False)],
