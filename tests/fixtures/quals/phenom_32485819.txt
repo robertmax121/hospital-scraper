@@ -1,0 +1,102 @@
+a {
+text-decoration: none;
+color: #464feb;
+}
+tr th, tr td {
+border: 1px solid #e6e6e6;
+}
+tr th {
+background-color: #f5f5f5;
+}
+
+Licensed Practical Nurse (LPN) Charge Nurse
+
+Schedule: Weekends
+
+Location PruittHealth - Marietta
+
+Join the PruittHealth family, where the health and safety of our workforce is our top priority!
+
+We're not only committed to your career, we're committed to the health and safety of all our nurses. Now is a great time to make a change and join one of the leading providers of post-acute care.
+
+PruittHealth will help you conquer your career goals. At PruittHealth, we are searching for nurses who are committed to serving our residents with care and compassion, and in return, we are committed to supporting your nursing career through annual merit increases, career growth programs, preceptorship, and more.
+
+Investing in Our Employee-Partners with Benefits
+
+• Advance pay option
+
+• Annual merit increases
+
+• Relocation opportunities
+
+• Paid onboarding & orientation
+
+• Preceptorship Program & hands-on training
+
+• 24 / 7 direct hotline support
+
+• Nurse Career Growth Program
+
+• Employee Referral Bonus Program
+
+• Access to PruittHealth Foundation & PruittHealth University resources
+
+• Comprehensive health plans
+
+a {
+text-decoration: none;
+color: #464feb;
+}
+tr th, tr td {
+border: 1px solid #e6e6e6;
+}
+tr th {
+background-color: #f5f5f5;
+}
+
+Responsibilities
+
+Lead and support nursing staff to deliver exceptional resident care.
+
+Administer medications and treatments in accordance with physician orders and company policies.
+
+Monitor resident condition and promptly communicate changes to physicians and the care team.
+
+Supervise and assist CNAs and other clinical team members during assigned shifts.
+
+Ensure accurate documentation and compliance with nursing standards and regulations.
+
+Collaborate with physicians, nurses, therapists, and interdisciplinary care teams.
+
+Promote a culture of compassion, teamwork, and clinical excellence.
+
+a {
+text-decoration: none;
+color: #464feb;
+}
+tr th, tr td {
+border: 1px solid #e6e6e6;
+}
+tr th {
+background-color: #f5f5f5;
+}
+
+Qualifications
+
+Active, current, unrestricted Licensed Practical Nurse (LPN) license in the state of practice.
+
+Graduate of an accredited Practical Nursing program.
+
+Previous Charge Nurse, Team Lead, or nursing leadership experience preferred.
+
+Experience in skilled nursing, long-term care, rehabilitation, or post-acute care preferred.
+
+Strong clinical assessment, medication administration, and documentation skills.
+
+Ability to lead, coach, and support nursing assistants and clinical team members.
+
+Strong communication, critical thinking, and organizational skills
+
+Family Makes Us Stronger. Our family, your family, one family. Committed to loving, giving, and caring. United in making a difference.
+
+We are eager to connect with you! Apply Now to get started at PruittHealth!
