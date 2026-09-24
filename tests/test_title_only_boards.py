@@ -245,6 +245,9 @@ def test_pass_driver_error_is_contained(monkeypatch):
 
 
 def test_budget_caps_fetches_and_known_bodies_are_skipped(monkeypatch):
+    # The refresh share is off here (as in the other budget tests): with it on,
+    # row "0" is re-read on the one night in DETAIL_REFRESH_DAYS its slot falls.
+    monkeypatch.setattr(scraper, "DETAIL_REFRESH_PCT", 0)
     monkeypatch.setattr(scraper, "CHS_DESC_BUDGET", scraper._DescBudget(3))
     scraper.set_known_bodies([{"hospital_system": "CHS", "job_id": "0", "desc_len": 4000}])
     jobs = _rows(6)
@@ -320,3 +323,35 @@ def test_concentra_list_403_retries_through_curl(monkeypatch):
     monkeypatch.setattr(scraper, "_concentra_curl_page", fake_curl_page)
     asked.clear()
     assert asyncio.run(scraper.scrape_concentra(None)) == [] and asked == []
+
+
+def test_board_passes_share_the_known_body_refresh(monkeypatch):
+    """On the live base (ddd01ee) a title-only board's stored bodies are not
+    skipped forever: bodies whose facts come from older rules are re-read in
+    the tenant's refresh share (DETAIL_REFRESH_PCT % of its floor), ahead of
+    new rows; the rest keep their stored body, and so does a re-read row the
+    fetch did not refill (the list copy is dropped)."""
+    monkeypatch.setattr(scraper, "DETAIL_REFRESH_PCT", 5)
+    monkeypatch.setattr(scraper, "CHS_DESC_BUDGET", scraper._DescBudget(40))   # floor 40 -> share 2
+    monkeypatch.setattr(scraper, "_refresh_slot", lambda canon, jid: False)
+    old = scraper.FACTS_VERSION - 1
+    scraper.set_known_bodies([{"hospital_system": "CHS", "job_id": str(i), "desc_len": 4000, "fv": old}
+                              for i in range(3)])
+    jobs = _rows(6)
+    for j in jobs:
+        j.description = "List teaser."
+    fetched = []
+
+    async def fetch(job):
+        fetched.append(job.job_id)
+        if job.job_id == "0":
+            return False                                   # the page gave nothing this night
+        job.description = "Body " * 100
+        return True
+
+    asyncio.run(scraper._board_detail_passes(None, jobs, scraper.CHS_DESC_BUDGET, fetch, "CHS"))
+    stale = [x for x in fetched if x in ("0", "1", "2")]
+    assert len(stale) == 2 and fetched[:2] == stale        # the refresh share, first
+    assert set(fetched[2:]) == {"3", "4", "5"}             # then every row with no body
+    for j in jobs[:3]:                                     # stored body kept unless a fetch refilled it
+        assert j.description == ("" if j.job_id == "0" or j.job_id not in stale else "Body " * 100)
