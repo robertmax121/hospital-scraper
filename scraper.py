@@ -487,17 +487,28 @@ AYA_DESC_BUDGET        = _DescBudget(AYA_DESC_MAX_PER_RUN)
 # 4 in flight: ~6 minutes at the cap), and DETAIL_BARRIER_WAIT bounds how
 # long a tenant waits for the slowest sibling before the unused floors are
 # split (see _DescBudget).
+# 2026-09-24 (push 3, Phenom): 4,000 -> 10,000 and a Phenom tenant may take
+# 2,000 (PHENOM_DESC_TENANT_MAX). The pass now reaches every Phenom row (the
+# widget answers by jobId whatever the apply link; Workday-backed tenants read
+# the CXS), so the 25,684 teasers of 09-24 plus BSW are all candidates: about
+# 3 nights at 10,000 (DaVita's 3,750 in 2), then ~900 new postings a night.
+# Measured 09-24 (dry runs, 111 fetches on 19 tenants, 111 bodies): widget
+# 0.10-0.22 s a request, Workday CXS 0.3-0.8 s. One tenant host sees at most
+# 4 in flight with a 0.15-0.45 s pause per slot (~8 requests a second on the
+# widget, ~4 on the CXS); a tenant at the 2,000 cap takes ~4 minutes on the
+# widget and ~9 on the CXS, in parallel with the other runners.
 DETAIL_FETCH            = os.getenv("DETAIL_FETCH", "1") == "1"
 DETAIL_CONCURRENCY      = int(os.getenv("DETAIL_CONCURRENCY", "4"))
 ORACLE_DESC_MAX_PER_RUN = int(os.getenv("ORACLE_DESC_MAX_PER_RUN", "10000"))  # 2026-09-22: 3,000 -> 8,000; 09-24: 10,000
 TB_DESC_MAX_PER_RUN     = int(os.getenv("TB_DESC_MAX_PER_RUN", "2500"))
-PHENOM_DESC_MAX_PER_RUN = int(os.getenv("PHENOM_DESC_MAX_PER_RUN", "4000"))
+PHENOM_DESC_MAX_PER_RUN = int(os.getenv("PHENOM_DESC_MAX_PER_RUN", "10000"))  # push 3: 4,000 -> 10,000
+PHENOM_DESC_TENANT_MAX  = int(os.getenv("PHENOM_DESC_TENANT_MAX", "2000"))
 DETAIL_TENANT_SHARE     = int(os.getenv("DETAIL_TENANT_SHARE", "4"))   # unregistered budgets: one tenant takes at most budget/SHARE
 DETAIL_TENANT_MAX       = int(os.getenv("DETAIL_TENANT_MAX", "1500"))  # one tenant's fetches per run, floor + phase two
 DETAIL_BARRIER_WAIT     = float(os.getenv("DETAIL_BARRIER_WAIT", "1800"))
 ORACLE_DESC_BUDGET      = _DescBudget(ORACLE_DESC_MAX_PER_RUN)
 TB_DESC_BUDGET          = _DescBudget(TB_DESC_MAX_PER_RUN)
-PHENOM_DESC_BUDGET      = _DescBudget(PHENOM_DESC_MAX_PER_RUN)
+PHENOM_DESC_BUDGET      = _DescBudget(PHENOM_DESC_MAX_PER_RUN, PHENOM_DESC_TENANT_MAX)
 DETAIL_PRIORITY_STATES  = {"CA", "CO", "CT", "DC", "HI", "IL", "MD", "MN", "NJ", "NY", "VT", "WA"}
 DETAIL_MIN_CHARS        = int(os.getenv("DETAIL_MIN_CHARS", "1500"))  # shorter than this = a teaser, worth a detail fetch
 
@@ -2603,7 +2614,16 @@ async def _oracle_detail(session, base_url: str, site_number: str, job) -> bool:
 def _phenom_posting_text(jd: dict) -> tuple[str, str, str]:
     """(description, job_type, posted_date) from a Phenom widgets jobDetail."""
     desc = strip_html(str(jd.get("description") or "")).strip()
-    shift = str(jd.get("shift") or "").strip()
+    # 2026-09-24 (push 3): some tenants (Acadia) also carry the posting's
+    # responsibilities and qualifications as fields of their own; one that the
+    # description does not already hold is added under its heading, so the
+    # requirements extractor sees it.
+    for key, head in (("responsibilities", "Responsibilities"), ("qualifications", "Qualifications")):
+        part = strip_html(str(jd.get(key) or "")).strip()
+        if len(part) >= 40 and part[:120] not in desc:
+            desc = f"{desc}\n\n{head}\n{part}".strip()
+    shift = str(jd.get("shift") or jd.get("jobShift") or jd.get("postedShift") or "").strip()
+    shift = re.sub(r"^shift\s*:\s*", "", shift, flags=re.I)
     # 2026-09-24: the shift closes the body, as on Oracle (a leading
     # "Schedule:" line was read by the site as a metadata field that swallowed
     # the posting's first paragraph), and reads "Day shift" for the extractor.
@@ -2644,48 +2664,191 @@ def _phenom_oracle_job_url(system: str, url: str) -> str:
     return f"{m.group(1)}/job/{m.group(2)}" if m else url
 
 
-async def _phenom_detail(session, base_url: str, job) -> bool:
-    """Phenom rows point at three kinds of page: the Phenom job page (legacy
-    tenants answer the widgets jobDetail call), a Workday job page (Corewell,
-    SSM, LCMC: the Phenom front is a skin) or Taleo (nothing to read). Try the
-    widget, then the page's JSON-LD."""
-    if "/job/" in (job.url or "") and "myworkdayjobs" not in job.url and "taleo" not in job.url:
+# ── Phenom detail (2026-09-24, push 3) ────────────────────────────────────
+# Phenom stored teasers: 25,684 active rows with a median body of 320
+# characters. Three causes, all fixed here:
+#  1. The jobDetail widget was only called for rows whose URL held "/job/".
+#     Jackson Health (Infor apply links), Hendrick (HealthcareSource),
+#     Children's Health (Infor short URLs) and CentraCare (Oracle preview
+#     links) never matched, so their pass fell through to reading JSON-LD off
+#     the apply page, which has none: "0 descriptions" on 09-22. The widget
+#     answers by Phenom jobId whatever the apply link is (verified 09-24 on all
+#     four, 5-10k character bodies), so it is now called for every row.
+#     Taleo and iCIMS rows (Baptist Health South Florida, Temple, Children's
+#     Minnesota, Acadia) were skipped outright for the same reason; they are
+#     candidates now too.
+#  2. Workday-backed tenants (DaVita, Bon Secours Mercy, Corewell, SSM, Cone,
+#     Franciscan, LCMC, CHOA, Roper, St. Charles) link to the Workday apply
+#     step. Their rows now store the Workday job page (trailing /apply
+#     stripped, _workday_job_url) and fetch the body from Workday's CXS
+#     detail, the source the Phenom copy is pulled from (the CXS body also
+#     keeps the weekly hours and shift lines Phenom drops); the widget is the
+#     fallback when the CXS answers 403/404 (a posting Workday no longer
+#     shows, or one scheduled to open later).
+#  3. Baylor Scott & White (run_bsw) had no detail pass at all.
+# Every fetch runs inside _detail_pass (fair share of PHENOM_DESC_BUDGET,
+# known bodies skipped, transparency states and newest first) and the body
+# goes through finalize_jobs like any list body. A failed fetch leaves the row
+# exactly as listed.
+_WD_JOB_HOST_RE = re.compile(r"^https://[^/]+\.(?:myworkdayjobs|myworkdaysite)\.com/", re.I)
+_WD_CXS_JOBS_RE = re.compile(
+    r"^https://([^./]+)\.(wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([^/?#]+)(/job/[^?#]+)")
+_WD_CXS_SITE_RE = re.compile(
+    r"^https://(wd\d+)\.myworkdaysite\.com/(?:[a-z]{2}-[A-Z]{2}/)?recruiting/([^/?#]+)/([^/?#]+)(/job/[^?#]+)")
+PHENOM_WD_HOST_CONCURRENCY   = int(os.getenv("PHENOM_WD_HOST_CONCURRENCY", str(DETAIL_CONCURRENCY)))
+PHENOM_WD_GLOBAL_CONCURRENCY = int(os.getenv("PHENOM_WD_GLOBAL_CONCURRENCY", "8"))
+_DETAIL_GATES_BY_LOOP = weakref.WeakKeyDictionary()
+
+
+def _workday_job_url(url: str) -> str:
+    """A Workday job URL without its apply step: ".../job/{loc}/{slug}/apply"
+    (or ".../apply/applyManually") becomes the job page ".../job/{loc}/{slug}".
+    Anything that is not a Workday job URL is returned unchanged."""
+    u = url or ""
+    if not _WD_JOB_HOST_RE.match(u) or "/job/" not in u:
+        return u
+    parts = urlsplit(u)
+    path = re.sub(r"/apply(?:/[^/]*)?/?$", "", parts.path)
+    if path == parts.path:
+        return u
+    return parts._replace(path=path).geturl()
+
+
+def _workday_cxs_url(url: str) -> str:
+    """The CXS detail endpoint for a Workday job page or apply URL
+    (myworkdayjobs.com tenant hosts and the shared myworkdaysite.com hosts),
+    or "" when the URL is not one."""
+    u = _workday_job_url(url or "")
+    m = _WD_CXS_JOBS_RE.match(u)
+    if m:
+        tenant, wd, site, path = m.groups()
+        return f"https://{tenant}.{wd}.myworkdayjobs.com/wday/cxs/{tenant}/{site}{path}"
+    m = _WD_CXS_SITE_RE.match(u)
+    if m:
+        wd, tenant, site, path = m.groups()
+        return f"https://{wd}.myworkdaysite.com/wday/cxs/{tenant}/{site}{path}"
+    return ""
+
+
+def _detail_gate(key: str, n: int) -> asyncio.Semaphore:
+    """One semaphore per (event loop, key): caps requests in flight to a host
+    shared by several tenants (wd5.myworkdaysite.com serves Bon Secours Mercy,
+    Franciscan and Roper), whatever tenant's pass sends them."""
+    loop = asyncio.get_running_loop()
+    gates = _DETAIL_GATES_BY_LOOP.get(loop)
+    if gates is None:
+        gates = _DETAIL_GATES_BY_LOOP[loop] = {}
+    g = gates.get(key)
+    if g is None:
+        g = gates[key] = asyncio.Semaphore(max(1, n))
+    return g
+
+
+def _apply_wd_posting_info(job, info: dict) -> bool:
+    """Workday CXS jobPostingInfo -> Job. Fills blanks only (type, date); the
+    description lands when it is 200+ characters and longer than the row's."""
+    desc = strip_html(str((info or {}).get("jobDescription") or "")).strip()
+    ok = False
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        ok = True
+    tt = str((info or {}).get("timeType") or "").strip()
+    if tt and not (job.job_type or "").strip():
+        job.job_type = tt
+    start = str((info or {}).get("startDate") or "")[:10]
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", start) and not (job.posted_date or "").strip():
+        job.posted_date = start
+    return ok
+
+
+async def _phenom_workday_detail(session, cxs_url: str, job) -> bool:
+    host = (urlsplit(cxs_url).hostname or "").lower()
+    async with _detail_gate("phenom-wd:" + host, PHENOM_WD_HOST_CONCURRENCY), \
+               _detail_gate("phenom-wd:*", PHENOM_WD_GLOBAL_CONCURRENCY):
+        async with req(session, "get", cxs_url, headers={**HEADERS, "Accept": "application/json"},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=20)) as r:
+            ok = r.status == 200
+            data = await r.json(content_type=None) if ok else None
+        # The pause is held inside the gates: a Workday host shared by
+        # several tenants sees at most PHENOM_WD_HOST_CONCURRENCY requests at
+        # a time and ~4-5 a second, as on the Workday runner's own pass.
+        await asyncio.sleep(random.uniform(0.15, 0.45))
+    if not ok:
+        return False
+    return _apply_wd_posting_info(job, (data or {}).get("jobPostingInfo") or {})
+
+
+async def _phenom_widget_detail(session, base_url: str, job, widget_id: str) -> bool:
+    body = {"lang": "en_us", "deviceType": "desktop", "country": "us", "pageName": "job-page",
+            "ddoKey": "jobDetail", "jobId": str(widget_id)}
+    async with req(session, "post", f"{base_url}/widgets", json=body,
+                   headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
+                   ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=20)) as r:
+        if r.status != 200 or "json" not in (r.headers.get("content-type") or ""):
+            return False
+        data = await r.json(content_type=None)
+    jd = (((data or {}).get("jobDetail") or {}).get("data") or {}).get("job") or {}
+    if not jd:
+        return False
+    desc, jt, created = _phenom_posting_text(jd)
+    ok = False
+    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
+        job.description = desc
+        ok = True
+    if jt and not (job.job_type or "").strip():
+        job.job_type = jt
+    if created and not (job.posted_date or "").strip():
+        job.posted_date = created
+    # 2026-09-24: Oracle-backed tenants (Ascension) carry structured pay
+    # here; 0.0 means "not stated".
+    if job.wage_min is None:
         try:
-            body = {"lang": "en_us", "deviceType": "desktop", "country": "us", "pageName": "job-page",
-                    "ddoKey": "jobDetail", "jobId": str(job.job_id)}
-            async with req(session, "post", f"{base_url}/widgets", json=body,
-                           headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json"},
-                           ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=20)) as r:
-                if r.status == 200 and "json" in (r.headers.get("content-type") or ""):
-                    data = await r.json(content_type=None)
-                    jd = (((data or {}).get("jobDetail") or {}).get("data") or {}).get("job") or {}
-                    if jd:
-                        desc, jt, created = _phenom_posting_text(jd)
-                        ok = False
-                        if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
-                            job.description = desc
-                            ok = True
-                        if jt and not (job.job_type or "").strip():
-                            job.job_type = jt
-                        if created and not (job.posted_date or "").strip():
-                            job.posted_date = created
-                        # 2026-09-24: Oracle-backed tenants (Ascension) carry
-                        # structured pay here; 0.0 means "not stated".
-                        if job.wage_min is None:
-                            try:
-                                got = _wage_pair(float(jd.get("minSalaryNew") or 0) or None,
-                                                 float(jd.get("maxSalaryNew") or 0) or None)
-                            except (TypeError, ValueError):
-                                got = None
-                            if got:
-                                job.wage_min, job.wage_max, job.wage_unit = got
-                        if ok:
-                            return True
+            got = _wage_pair(float(jd.get("minSalaryNew") or 0) or None,
+                             float(jd.get("maxSalaryNew") or 0) or None)
+        except (TypeError, ValueError):
+            got = None
+        if got:
+            job.wage_min, job.wage_max, job.wage_unit = got
+    return ok
+
+
+def _same_host(a: str, b: str) -> bool:
+    try:
+        return bool(a and b) and (urlsplit(a).hostname or "").lower() == (urlsplit(b).hostname or "").lower()
+    except ValueError:
+        return False
+
+
+def _phenom_url_job_id(url: str) -> str:
+    """The Phenom jobId in a Phenom job-page URL (".../us/en/job/26007805/..."),
+    or "". BSW stores jobSeqNo as job_id; the widget wants the jobId."""
+    m = re.search(r"/job/([^/?#]+)", url or "")
+    return m.group(1) if m else ""
+
+
+async def _phenom_detail(session, base_url: str, job, widget_id: str | None = None) -> bool:
+    """Body for one Phenom row: Workday CXS when the row links to Workday,
+    else (or when that fails) the tenant's jobDetail widget by Phenom jobId
+    (`widget_id`, default the row's job_id), else the JSON-LD of the row's
+    page when it is the tenant's own Phenom job page. Never raises."""
+    cxs = _workday_cxs_url(job.url)
+    if cxs:
+        try:
+            if await _phenom_workday_detail(session, cxs, job):
+                return True
         except Exception:
             pass
-    if "taleo" in (job.url or ""):
-        return False
-    return await _jsonld_detail(session, job)
+    try:
+        if await _phenom_widget_detail(session, base_url, job, widget_id or job.job_id):
+            return True
+    except Exception:
+        pass
+    if _same_host(job.url, base_url):
+        try:
+            return await _jsonld_detail(session, job)
+        except Exception:
+            return False
+    return False
 
 
 # ── Detail passes for the runners that had none (2026-09-24) ───────────────
@@ -7135,9 +7298,15 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 # it) hands out Oracle's e-mail apply step
                 # (.../sites/CX_1/jobs/preview/{id}/easy-apply/email). Store the
                 # canonical Oracle job page instead: it is a real posting page,
-                # and its "/job/" lets _phenom_detail call the jobDetail widget.
+                # and the jobDetail widget gives its body (_phenom_detail).
                 # Only PHENOM_ORACLE_FRONTS tenants are rewritten.
                 url = _phenom_oracle_job_url(system, url)
+                # 2026-09-24 (push 3): the Workday-backed tenants (DaVita's
+                # 3,750 rows, Bon Secours Mercy, Corewell, SSM, ...) hand out
+                # the Workday apply step (".../job/{loc}/{slug}/apply"). Store
+                # the Workday job page, which shows the posting; its detail
+                # comes from the CXS (_phenom_detail).
+                url = _workday_job_url(url)
                 # multi_category is an array on recommendationJobsBrowsingHistory
                 multi_cat = doc.get("multi_category") or []
                 specialty_val = (
@@ -7188,9 +7357,10 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
 
     if DETAIL_FETCH and jobs:
         try:
+            # 2026-09-24 (push 3): Taleo and iCIMS rows are no longer skipped;
+            # the jobDetail widget answers by jobId whatever the apply link.
             await _detail_pass(session, system, jobs, PHENOM_DESC_BUDGET,
-                               lambda j: _phenom_detail(session, base_url, j), "Phenom",
-                               skip=lambda j: bool(re.search(r"taleo\.net|icims\.com", j.url or "")))
+                               lambda j: _phenom_detail(session, base_url, j), "Phenom")
         except Exception as e:
             logger.info(f"Phenom {system}: detail pass failed ({e})")
     logger.info(f"  Phenom {system}: {len(jobs)} jobs")
@@ -7212,7 +7382,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
 # state (full name), country, postalCode, category, multi_category_array, type,
 # postedDate, dateCreated, applyUrl, externalApply, jobShift,
 # location (e.g. "Waxahachie, Texas, United States"), descriptionTeaser.
-async def run_bsw(session) -> list[Job]:
+async def _scrape_bsw(session) -> list[Job]:
     logger.info("BSW: scraping Baylor Scott & White via Phenom refineSearch...")
     base_url   = "https://jobs.bswhealth.com"
     widgets    = f"{base_url}/widgets"
@@ -7334,8 +7504,30 @@ async def run_bsw(session) -> list[Job]:
             break
         await jitter()
 
+    # 2026-09-24 (push 3): BSW had no detail pass, so its 2,287 rows kept the
+    # 200-character descriptionTeaser. Same pass and budget as PHENOM_ORGS;
+    # the widget wants the jobId from the page URL (job_id is the jobSeqNo).
+    if DETAIL_FETCH and out:
+        try:
+            await _detail_pass(session, BSW_SYSTEM, out, PHENOM_DESC_BUDGET,
+                               lambda j: _phenom_detail(session, base_url, j,
+                                                        widget_id=_phenom_url_job_id(j.url) or None),
+                               "Phenom")
+        except Exception as e:
+            logger.info(f"BSW: detail pass failed ({e})")
     logger.info(f"  BSW: {len(out):,} jobs (totalHits={total_hits})")
     return out
+
+
+BSW_SYSTEM = "Baylor Scott & White"
+
+
+async def run_bsw(session) -> list[Job]:
+    """BSW listing + detail, reported to PHENOM_DESC_BUDGET as one more
+    tenant of that budget (expected before any tenant can claim)."""
+    if DETAIL_FETCH:
+        PHENOM_DESC_BUDGET.expect([BSW_SYSTEM])
+    return await _tenant_reporting(PHENOM_DESC_BUDGET, BSW_SYSTEM, _scrape_bsw(session))
 
 
 async def run_phenom(session) -> list[Job]:
