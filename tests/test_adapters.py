@@ -125,7 +125,8 @@ def test_hca_slice_stops_on_the_national_search_fallback(fixture_text, monkeypat
     monkeypatch.setattr(scraper.time, "sleep", lambda *_: None)
     # A slug the site does not know answers with other states' cards: stop.
     assert scraper._hca_fetch_slice("ms-mississippi") == ([], True, False)
-    # The real state pages through to the empty page and finishes.
+    # The real state finishes on its short first page (3 cards of a 500-card
+    # page); since 2026-09-24 no request goes to the empty page past the end.
     jobs, finished, capped = scraper._hca_fetch_slice("ak-alaska")
     assert len(jobs) == 3 and finished and not capped
-    assert [p for _, p in served] == ["1", "1", "2"]
+    assert [p for _, p in served] == ["1", "1"]
