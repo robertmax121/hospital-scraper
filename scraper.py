@@ -13300,25 +13300,29 @@ _BENEFIT_VETO = {
 _PERK_NEAR_RX = re.compile(r"paid time off|\bPTO\b|401\s?\(?k|403\s?\(?b|tuition|dental|retirement|perks|benefits|insurance|wellness|reimburse", re.I)
 
 
+_PRO_DEV_RX = re.compile(r"\bprofessional development\b", re.I)
+
+
 def _benefit_hit(label: str, rx, t: str) -> bool:
     veto = _BENEFIT_VETO.get(label)
-    hits = list(rx.finditer(t))
+    if not veto:
+        return bool(rx.search(t))
+
+    def accepted(m) -> bool:
+        before = t[max(0, m.start() - 45):m.start()].rsplit("\n", 1)[-1]
+        before = re.split(r"[.;!?]\s", before)[-1]
+        if veto[0].search(before):
+            return False
+        return not (veto[1] is not None and veto[1].search(t[m.end():m.end() + 30]))
+
+    if any(accepted(m) for m in rx.finditer(t)):
+        return True
     # A bare "Professional Development" item inside a perks list ("Paid Time
     # Off (PTO). Professional Development. For more information...") counts
     # when other perks sit within 150 characters of it.
     if label == "Continuing education":
-        hits += [m for m in re.finditer(r"\bprofessional development\b", t, re.I)
-                 if _PERK_NEAR_RX.search(t[max(0, m.start() - 150):m.end() + 150])]
-    for m in hits:
-        if not veto:
-            return True
-        before = t[max(0, m.start() - 45):m.start()].rsplit("\n", 1)[-1]
-        before = re.split(r"[.;!?]\s", before)[-1]
-        if veto[0].search(before):
-            continue
-        if veto[1] is not None and veto[1].search(t[m.end():m.end() + 30]):
-            continue
-        return True
+        return any(accepted(m) for m in _PRO_DEV_RX.finditer(t)
+                   if _PERK_NEAR_RX.search(t[max(0, m.start() - 150):m.end() + 150]))
     return False
 
 
@@ -13666,11 +13670,30 @@ def _title_nurse_kind(title):
     return None
 
 
+# Compiled once: the extractor runs over ~100k bodies a night, a line at a time.
+_FACT_CERTS_C = [(label, re.compile(rx, re.I)) for label, rx in _FACT_CERTS]
+_FACT_EDU_C = [(label, re.compile(rx, re.I)) for label, rx in _FACT_EDU]
+_FACT_SHIFT_C = [(label, re.compile(rx, re.I)) for label, rx in _FACT_SHIFT]
+_IN_MATCH_NEG_RX = re.compile(r"\b(?:not|never|without)\b", re.I)
+# Cheap gates: most lines are duties that name no certification, degree or
+# shift, and skip the per-label patterns.
+_CERT_GATE_RX = re.compile(r"BLS|BCLS|ACLS|PALS|NRP|TNCC|CCRN|CNOR|\bCEN\b|CPR|ARRT|\bCST\b|RRT|NIHSS|licen|life support|resuscitation|"
+                           r"surgical technologist|respiratory therapist|compact|multistate|NLC|registered|\bRN\b|L[PV]N|practical|vocational", re.I)
+_EDU_GATE_RX = re.compile(r"BSN|ADN|ASN|MSN|DNP|diploma|doctora|PhD|PharmD|DPT|DScPT|PsyD|AuD|master|bachelor|baccalaureate|associate|"
+                          r"MHA|MPH|MBA|MSW|\bB\.?[SA]\b|\bA\.?A\.?S|GED|high school|\bH\.?S\b", re.I)
+_SHIFT_GATE_RX = re.compile(r"night|\bday|evening|swing|shift|overnight|\b7[ap]|\bprn\b|per diem|weekend|rotat|12[- ]hour|"
+                            r"3\s*x\s*12|three 12|\d\s*[ap]\.?m", re.I)
+
+
 def _shift_hits(s: str):
     """Shift labels a sentence states for the job itself."""
     out = []
-    for label, rx in _FACT_SHIFT:
-        for m in re.finditer(rx, s, re.I):
+    if not _SHIFT_GATE_RX.search(s):
+        return out
+    for label, rx in _FACT_SHIFT_C:
+        if not rx.search(s):
+            continue
+        for m in rx.finditer(s):
             before = s[max(0, m.start() - 60):m.start()]
             if _SHIFT_AVAIL_RX.search(before) or _SHIFT_NEG_RX.search(before):
                 continue
@@ -13732,12 +13755,12 @@ def extract_posting_facts(text, job_type=None, title=None):
         offset = max(offset, t.find(s, offset))
         bare = re.sub(r"\([^)]*\)", " ", s)
         pref = bool(_PREF_WORD_RX.search(bare)) or (mode == "pref" and not _REQ_WORD_RX.search(bare))
-        for label, rx in _FACT_CERTS:
-            if label not in seen:
+        for label, rx in (_FACT_CERTS_C if _CERT_GATE_RX.search(s) else ()):
+            if label not in seen and rx.search(s):
                 # "... does not hold a Michigan RN license" is no requirement
-                m = next((m for m in re.finditer(rx, s, re.I)
+                m = next((m for m in rx.finditer(s)
                           if not _CERT_NEG_RX.search(s[max(0, m.start() - 30):m.start()])
-                          and not re.search(r"\b(?:not|never|without)\b", m.group(0), re.I)), None)
+                          and not _IN_MATCH_NEG_RX.search(m.group(0))), None)
                 if m:
                     seen.add(label)
                     out["certs"].append([label, _item_pref(s, m.end(), m.start(), mode)])
@@ -13747,10 +13770,10 @@ def extract_posting_facts(text, job_type=None, title=None):
             if kind:
                 seen.update({"nurse licence", kind})
                 out["certs"].append([kind, _item_pref(s, m.end(), m.start(), mode)])
-        for label, rx in _FACT_EDU:
+        for label, rx in (_FACT_EDU_C if _EDU_GATE_RX.search(s) else ()):
             k = "e:" + label
             if k not in seen:
-                m = re.search(rx, s, re.I)
+                m = rx.search(s)
                 if m:
                     seen.add(k)
                     out["education"].append([label, _item_pref(s, m.end(), m.start(), mode)])
