@@ -11,6 +11,9 @@ import pytest
 import scraper
 from scraper import Job
 
+# the facts version a stored row carries: current rules, and the rules before them
+CUR, OLD = str(scraper.FACTS_VERSION), str(scraper.FACTS_VERSION - 1)
+
 TEASER = "Registered Nurse RN NIGHTS. Currently licensed to practice nursing. " * 5     # 339 characters once stripped
 
 
@@ -39,17 +42,17 @@ def _known(rows):
 
 def test_known_kind():
     _known([("VITAS Healthcare", "1", 8000, None),     # cut at the old cap, never re-read
-            ("VITAS Healthcare", "2", 8000, "2"),      # read under the 12,000 cap: a real 8,000-character body
+            ("VITAS Healthcare", "2", 8000, CUR),      # read under the 12,000 cap: a real 8,000-character body
             ("VITAS Healthcare", "3", 7995, None),     # the sanitizer shaved a few characters off the cut
-            ("VITAS Healthcare", "4", 3000, "1"),      # facts from older rules
-            ("VITAS Healthcare", "5", 3000, "2"),
+            ("VITAS Healthcare", "4", 3000, OLD),      # facts from older rules
+            ("VITAS Healthcare", "5", 3000, CUR),
             ("VITAS Healthcare", "6", 3000, None),     # unstamped (null facts, or facts from before the stamp)
             ("VITAS Healthcare", "7", 300, None),      # teaser: the list sends as much again
-            ("VITAS Healthcare", "8", 900, "1")])      # a detail body under 1,500 over a 339 teaser: never "stale"
+            ("VITAS Healthcare", "8", 900, OLD)])      # a detail body under 1,500 over a 339 teaser: never "stale"
     kinds = {i: scraper._known_kind("VITAS Healthcare", _job(i, desc=TEASER if i in (7, 8) else ""))
              for i in range(1, 10)}
     assert kinds == {1: "cut", 2: "known", 3: "cut", 4: "stale", 5: "known", 6: "known", 7: None, 8: "known", 9: None}
-    assert scraper._KNOWN_FACTS_V[("VITAS Healthcare", "4")] == 1
+    assert scraper._KNOWN_FACTS_V[("VITAS Healthcare", "4")] == scraper.FACTS_VERSION - 1
 
 
 def test_frozen_repro_old_cap_row_is_fetched_again_and_settled(monkeypatch):
@@ -75,7 +78,7 @@ def test_frozen_repro_old_cap_row_is_fetched_again_and_settled(monkeypatch):
 
 def test_refresh_share_is_capped_and_goes_first(monkeypatch):
     monkeypatch.setattr(scraper, "_refresh_slot", lambda canon, jid: True)
-    rows = [("Tenet", str(i), 3000, "2") for i in range(100)] + [("Tenet", str(i), 3000, "1") for i in range(100, 103)]
+    rows = [("Tenet", str(i), 3000, CUR) for i in range(100)] + [("Tenet", str(i), 3000, OLD) for i in range(100, 103)]
     _known(rows)
     jobs = [_job(i, "Tenet", desc=TEASER) for i in range(110)]
     b = scraper._DescBudget(4000)
@@ -94,7 +97,7 @@ def test_refresh_share_is_capped_and_goes_first(monkeypatch):
 
 
 def test_refresh_share_off_and_slot_off(monkeypatch):
-    _known([("Tenet", str(i), 3000, "2") for i in range(20)])
+    _known([("Tenet", str(i), 3000, CUR) for i in range(20)])
     jobs = [_job(i, "Tenet") for i in range(20)]
     monkeypatch.setattr(scraper, "_refresh_slot", lambda canon, jid: False)
     held = []
@@ -119,7 +122,7 @@ def test_slot_visits_every_posting_once_a_cycle(monkeypatch):
 def test_detail_pass_settles_what_the_fetch_did_not_refill(monkeypatch):
     monkeypatch.setattr(scraper, "_refresh_slot", lambda canon, jid: True)
     monkeypatch.setattr(scraper, "DETAIL_FETCH", True)
-    _known([("Mayo Clinic", "1", 3000, "2"), ("Mayo Clinic", "2", 3000, "2"), ("Mayo Clinic", "3", 8000, None)])
+    _known([("Mayo Clinic", "1", 3000, CUR), ("Mayo Clinic", "2", 3000, CUR), ("Mayo Clinic", "3", 8000, None)])
     jobs = [_job(i, "Mayo Clinic", desc=TEASER) for i in (1, 2, 3, 4)]
     body = "Qualifications: Current RN license. BLS required. " * 40
 

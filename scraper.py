@@ -258,6 +258,12 @@ def _join_split_figure(m):
     right = m.string[m.end():m.end() + 20]
     if left.endswith("$") and right[:1].isdigit():
         return ""
+    # (push3 integration) a word split across inline tags stays one word, as the
+    # browser shows it: HCA 32557542 "<span>Mu</span><span>st be licensed"
+    # read "Mu st be licensed". Only lower-case letters touching the tags on
+    # both sides; table cells and block tags never reach here.
+    if m.start() and "a" <= m.string[m.start() - 1] <= "z" and "a" <= right[:1] <= "z":
+        return ""
     if left[-1:].isdigit() and re.match(r"[,.]\d", right):
         return ""
     r = _SPLIT_FIG_RIGHT_RX.match(right)
@@ -1012,7 +1018,7 @@ _KNOWN_FACTS_V: dict = {}         # same keys -> posting_facts "v" of the stored
 # The stored facts are re-derived in bulk by the one-time backfill
 # (tools/facts_backfill.py, owner-approved); the refresh share then keeps
 # them current.
-FACTS_VERSION       = 2
+FACTS_VERSION       = 3            # 3: push 3 requirements rules (2026-09-24)
 OLD_BODY_CAP        = (7990, 8000)
 DETAIL_REFRESH_PCT  = int(os.getenv("DETAIL_REFRESH_PCT", "5"))
 DETAIL_REFRESH_DAYS = int(os.getenv("DETAIL_REFRESH_DAYS", "30"))
@@ -15698,9 +15704,10 @@ _RQ_PHRASE_HEAD_RX = re.compile(
     r"(?:licensure|licenses?|certifications?|credentials?)(?: ?(?:and|&|/) ?(?:licensure|licenses?|certifications?|registration))* summary|"
     r"(?:what )?we(?:'|’)re looking for|what we look for|you have|you(?:'|’)ll have|"
     r"must haves?|nice to haves?|to be successful|position requirements?|job requirements?|"
-    # 2026-09-24 (push3/license): "Qualified Candidates", "The ideal candidate",
-    # "Candidate Requirements" (audit merge: kept beside the 0db6f08 hire headings)
-    r"qualified candidates?|(?:the )?ideal candidates?|candidate requirements?|"
+    # 2026-09-24 (push3/license): "Qualified Candidates", "Candidate Requirements"
+    # (audit merge: kept beside the 0db6f08 hire headings; "The ideal candidate"
+    # moved to _RQ_GENERIC_HEAD_RX, where a heading must be the whole label)
+    r"qualified candidates?|candidate requirements?|"
     r"(?:minimum|preferred|required) (?:job )?(?:qualifications?|requirements?)|"
     # 2026-09-24 (owner, Sentara JR-105919): "Required at time of hire:" read
     # as a stop heading, so its lines (degree, years of experience) were lost.
@@ -15733,6 +15740,32 @@ _RQ_CSS_RX = re.compile(r"[{}]|^[a-z-]+\s*:\s*[^:]{1,40};$", re.I)
 _RQ_PAY_END_RX = re.compile(
     r"\b(?:pay range|base pay|pay rate|hourly rate|salary range|compensation (?:package|range|may|within)|"
     r"we (?:provide|offer) (?:a |an )?(?:market|competitive|comprehensive))", re.I)
+# 2026-09-24 (push3 integration, audit item a): the legal / EEO / corporate
+# tail of a posting, wherever it sits in a line. The wall splitter now reads
+# the one-line UHS iCIMS bodies, and their EEO statement, "World's Most Admired
+# Companies by Fortune", search-firm disclaimer and "BENEFIT HIGHLIGHTS" list
+# ran on inside the last qualification line ("Current BLS certification EEO
+# Statement All UHS subsidiaries are committed ..."); AdventHealth closes with
+# the Florida background-screening notice and the Clearinghouse link (boilerplate
+# lines per 3,000 bodies went 287 -> 543). The line is cut where the tail
+# starts and the block ends there.
+_RQ_TAIL_RX = re.compile(
+    r"\bEEO Statement\b|\bAll [A-Z]{2,6} subsidiaries\b|\bcommitted to providing an environment of mutual respect\b|"
+    r"\b(?:is|are) an? equal (?:employment )?opportunity\b|\bequal (?:employment )?opportunit(?:y|ies) (?:employer|are available)\b|"
+    r"\bMost Admired Compan|\bFortune (?:500|Media|World)|\branked #\d+ on the Fortune\b|\bForbes ranking\b|"
+    r"\bsearch firms?\b|\bunsolicited (?:assistance|resumes?)\b|\bAny employment referenced in this website\b|"
+    r"\bBENEFIT HIGHLIGHTS\b|\b(?:opportunity|position|role) (?:provides|offers) the following\b|\bfirst-class organization offering\b|"
+    r"\bChallenging and rewarding work environment\b|\bCompetitive Compensation (?:&|and) Generous Paid Time Off\b|"
+    r"\bExcellent Medical, Dental\b|\b401\s?\(?k\)? with (?:company|employer) match\b|"
+    r"\bHeadquartered in\b|\bSince our founding in \d{4}\b|\bPlease,? no phone calls\b|\bAll rights reserved\b|"
+    r"\bCertain positions are subject to\b[^.]{0,60}\bbackground screening\b|\bApplicants may review general information\b|"
+    r"\bBackground Screening Clearinghouse\b|\bflclearinghouse\b|\bLearn more about the city of\b|"
+    r"\bRecruitment Scams?\b|\bWe are aware of a scam\b|\bBeware of anyone requesting\b", re.I)
+# A link with its lead-in ("Please visit the following link for more
+# information: https://...") is dropped from the line; the rest stays.
+_RQ_URL_NOTE_RX = re.compile(
+    r"(?:(?:please )?(?:visit|see|go to|click)\b[^.:]{0,80}:?\s*|for (?:more|additional) information[^.:]{0,40}:?\s*)?"
+    r"https?://\S+", re.I)
 
 # 2026-09-24 (headings audit, 6,384 stored bodies): phrase headings the
 # closed word list above does not spell, several of which the stop rule
@@ -15751,6 +15784,9 @@ _RQ_GENERIC_HEAD_RX = re.compile(
     r"(?:if )?you (?:are|have|bring)|about you|who you are|you(?:'|’)re|"
     r"here(?:'|’)s what you(?:'|’)?(?:ll)? need|what (?:qualifications|skills|experience|you) (?:you (?:will|would) |you(?:'|’)ll |do you |will you |)need|"
     r"qualified (?:candidates|applicants)(?: (?:will|must|should) have)?|"
+    # (push3 integration, from _RQ_PHRASE_HEAD_RX: there "[^.]{0,30}" let a
+    # sentence opening "The ideal candidate ..." read as a heading)
+    r"(?:the |our )?ideal candidates?(?: (?:will|would|should|must) (?:have|possess|bring|be))?|"
     r"to (?:ensure|be) success(?:ful)?(?: in this (?:role|position))?,? you (?:must|will|should) (?:have|bring)|"
     r"(?:required|preferred|minimum|additional|candidate|position|job|hiring) criteria|"
     r"(?:candidate|applicant|position|role) (?:qualifications?|requirements?)|"
@@ -15946,7 +15982,10 @@ _RQ_EDU_RX = re.compile(
     r"(?:training|education(?:al)?|nursing|certificate|academic|residency|technical|vocational|degree) program|"
     r"program (?:in|of) |course of study|coursework|course work|\bequivalent (?:combination of )?education|equivalent combination|"
     r"(?:diploma|degree|GED|educat\w*|school|graduat\w*|BSN|ADN|bachelor\w*|master\w*|associate\w*)[^.;]{0,40}\bor (?:the |an? )?equivalent\b|"
-    r"\bGPA\b|enrolled in|\baccredited\b[^.;]{0,50}\bprogram\b", re.I)
+    r"\bGPA\b|enrolled in|\baccredited\b[^.;]{0,50}\bprogram\b|"
+    # (push3 integration) "BS in Occupational Therapy", "MS in Nursing", "B.A. in
+    # Social Work": the abbreviation is case-sensitive, so "as in" / "ms in" stay out.
+    r"(?-i:\b(?:BS|BA|MS|MA|BSc|MSc|AAS|B\.S\.|B\.A\.|M\.S\.|M\.A\.)\s+(?:in|of)\s+(?:the\s+)?[A-Z])", re.I)
 # Inside an education block also "Completion of ... on-the-job training",
 # "completion of a course of study" (never outside one: "completion of BLS
 # course within 30 days" is a certification).
@@ -16062,6 +16101,13 @@ def _rq_heading(line: str):
     if label and _RQ_HARD_STOP_RX.search(label) and (
             (m and nw <= 14) or (not m and nw <= 8 and not s.endswith(".")
                                  and not re.match(r"(?:must|able|ability|willing|requires?)\b", label, re.I))):
+        return ("stop", None, "")
+    # (push3 integration) a duties label with its prose on the same line ends
+    # the block: WVU Medicine "CORE DUTIES AND RESPONSIBILITIES: The statements
+    # described here ..." sat under "EDUCATION, CERTIFICATION, AND/OR
+    # LICENSURE:" and its duty lines were filed as certifications.
+    if (m and value and nw <= 6 and not _rq_is_req_label(label, True)
+            and re.search(r"\b(?:responsibilit\w*|duties|essential (?:job )?functions?|job functions?)\b", label, re.I)):
         return ("stop", None, "")
     # "What is Required?" (Elara): a requirements phrase asked as a question.
     if not m and s.endswith("?"):
@@ -16237,6 +16283,9 @@ def _rq_unglue(t: str) -> str:
     t = _RQ_GLUED_TITLE_RX.sub("\n", t)
     t = _RQ_NBSP_ITEM_RX.sub(_rq_nbsp_item, t)
     t = re.sub(r"(Abilities|Knowledge|Education|Experience|Licenses)N/?A(?=[A-Z]|\b)", "\\1\nN/A\n", t)
+    # (push3 integration) a count glued to the word before it starts a new
+    # item: "Must be Board Certified/Board Eligible2 years of experience preferred".
+    t = re.sub(r"(?<=[a-z]{3})(?=\d{1,2}\+?\s*(?:-\s*\d{1,2}\s*)?(?:years?|yrs?|months?)\b)", "\n", t)
     t = re.sub(r"(?<=[A-Z][.!?])(?=(?:Licensure|Certifications?|Education|Experience|Required|Preferred)\b)", "\n", t)
     t = re.sub(r"(?<=[a-z]{3})(?=(?:The|This|We|Our|Prior|Must|Ability|Minimum|Preferred|Required|Valid|Current|Here|What|"
                r"Graduate)\b)", _rq_camel, t)
@@ -16382,7 +16431,10 @@ def extract_requirements(text) -> dict:
     kind, mode, last_stop, stem = None, None, "", ""      # kind None = outside any block
     implicit, prev_bullet, hlabel = False, False, ""
     force = False                                          # heading stood alone: its lines are credentials
+    tail_end = False                                       # the last line ran into the legal tail
     for raw in t.split("\n"):
+        if tail_end:
+            kind, mode, last_stop, stem, implicit, tail_end = None, None, "about", "", False, False
         s = _rq_clean(raw)
         bullet = bool(re.match(r"^\s*[-•*·●▪■◦➢►–]\s", raw))
         was_bullet, prev_bullet = prev_bullet, (bullet if s else prev_bullet)
@@ -16413,6 +16465,14 @@ def extract_requirements(text) -> dict:
             if len(s) > 600:
                 # 2026-09-24 (push3/license): a body stored as one long line
                 # used to be skipped whole; its licence sentences count.
+                # (push3 integration: kept after measuring it against the wall
+                # splitter alone. On the audit's 3,000 bodies, with reqfix's
+                # _rq_unwall in, it still adds real licences no split reaches:
+                # "Active Georgia RN license or Multi-State RN license", "valid
+                # state of IL EMT or Paramedic license", "Board Certification in
+                # Cardiology"; without it these lines fall through to the clause
+                # rule below and file 61 certifications and 25 education lines
+                # from hospital prose: Magnet status, Joint Commission, schools.)
                 for c in _rq_clauses(s):
                     span = _rq_lic_span(c) if _RQ_CUE_RX.search(c) else None
                     if span:
@@ -16441,6 +16501,28 @@ def extract_requirements(text) -> dict:
                     add(f, c, _rq_pref(c, None))
             continue
         # Inside a requirements block.
+        # (push3 integration) a link and its lead-in leave the line; the
+        # legal / corporate tail (_RQ_TAIL_RX) cuts the line where it starts
+        # and ends the block after the requirement before it.
+        if "://" in s:
+            s = re.sub(r"\s{2,}", " ", _RQ_URL_NOTE_RX.sub(" ", s)).strip()
+            if len(s) < 3:
+                continue
+        mt = _RQ_TAIL_RX.search(s)
+        if mt:
+            # what precedes the tail stays only when it reads as a requirement
+            # ("Current BLS certification"), never a sentence the tail cut in
+            # half ("During the year, UHS was again recognized as one of the
+            # World's", "OSF HealthCare"), and without a dangling opener ("This").
+            head = s[:mt.start()]
+            k = max(head.rfind(". "), head.rfind("! "), head.rfind("? "), head.rfind(": "))
+            if k >= 0 and not (_RQ_CUE_RX.search(head[k + 2:]) or _rq_types(head[k + 2:]) or _RQ_KEEP_RX.search(head[k + 2:])):
+                head = head[:k + 1]
+            s = re.sub(r"(?:\s+(?:This|The|Our|We|It|All|At|As|In|For|Please|Since|Through|During|Growing))+$", "",
+                       head.rstrip(" ,;:-–(")).rstrip(" ,;:-–(")
+            tail_end = True
+            if len(s) < 3 or not (_RQ_CUE_RX.search(s) or _rq_types(s) or _RQ_KEEP_RX.search(s)):
+                continue
         # (a requirement that names benefits, "5 years of experience in
         # benefits administration", does not end the block)
         # ("Knowledge of principles and methods for transporting individuals
@@ -16459,7 +16541,10 @@ def extract_requirements(text) -> dict:
                               r"is a (?:[\w-]+,? ){0,3}(?:department|team|unit|hospital|organization|clinic|practice))\b", s, re.I)):
             continue
         if (_RQ_NONE_RX.match(s) or _RQ_SKIP_RX.search(s) or _RQ_SCHED_LINE_RX.match(s) or s.endswith("?")
-                or re.search(r"\b(?:will be|is|are) provided\b", s, re.I)
+                # (push3 integration: never a licence line, WVU Medicine "Current
+                # Registered Nurse license issued by the state in which services
+                # will be provided ...")
+                or (re.search(r"\b(?:will be|is|are) provided\b", s, re.I) and not _rq_lic(s))
                 or (_RQ_DUTY_RX.search(s_) and not _RQ_HARD_CUE_RX.search(s_))
                 or (len(words) == 1 and "-" not in s and not _rq_types(s) and not _RQ_KEEP_RX.search(s)
                     and all(w[:1].isupper() or not w[:1].isalpha() for w in words))
@@ -16526,7 +16611,10 @@ def extract_requirements(text) -> dict:
                 if (kind == "lic" and force and not types
                         and _rq_credential_line(c) and not _rq_skillish):
                     types.add("licensure")
-                elif (kind in ("lic", "lic+cert") and force and not types & {"licensure", "education"}
+                # (push3 integration: also under a heading with its own value,
+                # Paycom "Licenses/Certification: Registered Nurse in the State.
+                # Current BLS." was filed as a certification only)
+                elif (kind in ("lic", "lic+cert") and not types & {"licensure", "education"}
                         and _RQ_LIC_LINE_RX.search(c) and _rq_credential_line(c, 300) and not _rq_skillish):
                     types.add("licensure")
                 if (kind in ("cert", "lic+cert") and not types and not _RQ_DRIVER_RX.search(c)
