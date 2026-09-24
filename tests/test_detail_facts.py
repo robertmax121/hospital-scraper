@@ -52,14 +52,19 @@ def test_oracle_posting_text():
           "ExternalQualificationsStr": "<p>Minimum Education: High School Diploma or GED Required</p>",
           "ExternalPostedStartDate": "2026-09-11T16:48:53+00:00"}
     desc, sched, start = _oracle_posting_text(it)
-    assert desc.startswith("Schedule: Full time · Shift1 - Day · 36 hours per week")
+    # 2026-09-24: the schedule line closes the body (the site read a leading
+    # one as a metadata field that swallowed the first paragraph)
+    assert desc.startswith("Schedule\n\nFull Time: 36 hours per week")
+    assert desc.endswith("Schedule: Full time · Shift1 - Day shift · 36 hours per week")
     assert "Essential Functions" in desc and "Minimum Education" in desc
     assert sched == "Full time" and start == "2026-09-11"
+    assert extract_posting_facts(desc)["shift"][0][0] == "Days"
 
 
 def test_phenom_posting_text():
     desc, jt, created = _phenom_posting_text({"description": "<p>" + "Care for residents. " * 20 + "</p>", "shift": "Day", "type": "Full-time", "dateCreated": "2026-06-16T09:52:43.962+0000"})
-    assert desc.startswith("Schedule: Day") and jt == "Full-time" and created == "2026-06-16"
+    assert desc.startswith("Care for residents.") and desc.endswith("Schedule: Day shift")
+    assert jt == "Full-time" and created == "2026-06-16"
 
 
 TEXT = ("Full Time: 36 hours per week; 3 12 hour shifts (7:30 AM - 8:30 pm) with weekend rotation, Friday - Sunday. "
