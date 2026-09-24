@@ -270,10 +270,24 @@ _LEAD_BULLET_RX = re.compile("\n[ \t]*[\u00b7\u2981\u2022\u25aa\u25ab\u25e6\u25c
 # row without one; 77k active Workday rows had no body. At the 12-in-flight
 # global gate (~12 requests a second) 10,000 fetches take ~14 minutes, about
 # the Workday listing time they overlap; the backlog clears in ~11 nights.
+# 2026-09-24 (owner: Sutter shows no qualifications, licensure or education;
+# 63 of its 1,454 rows had a body): 10,000 -> 26,000 a night, 16 in flight
+# overall, and a Workday tenant may take 3,000 (WD_DESC_TENANT_MAX; the
+# shared DETAIL_TENANT_MAX of 1,500 left Trinity's 7,057 body-less rows five
+# nights out). Per host nothing changes: 4 in flight per tenant, each slot
+# pausing 0.15-0.45 s after its request. Measured 2026-09-24 on the CXS
+# detail endpoint (Sutter, Trinity, Advocate, Sanford, Cleveland Clinic):
+# ~0.6 s a request, so a slot turns over in ~0.9 s: ~4.4 requests a second
+# per tenant host and ~18 a second overall. 26,000 fetches take ~25 minutes
+# of the Workday stage (10,000 took ~12), i.e. ~13 minutes more a night
+# while the backlog lasts. 76,879 active Workday rows had no body on
+# 2026-09-24: ~3 nights at 26,000 (Trinity, the largest, 3 nights at 3,000),
+# after which a night fetches only its new postings and the pass shrinks.
 WD_FETCH_DESCRIPTIONS = os.getenv("WD_FETCH_DESCRIPTIONS", "1") == "1"
-WD_DESC_MAX_PER_RUN   = int(os.getenv("WD_DESC_MAX_PER_RUN", "10000"))
+WD_DESC_MAX_PER_RUN   = int(os.getenv("WD_DESC_MAX_PER_RUN", "26000"))
 WD_DESC_CONCURRENCY   = int(os.getenv("WD_DESC_CONCURRENCY", "4"))
-WD_DESC_GLOBAL_CONCURRENCY = int(os.getenv("WD_DESC_GLOBAL_CONCURRENCY", "12"))
+WD_DESC_GLOBAL_CONCURRENCY = int(os.getenv("WD_DESC_GLOBAL_CONCURRENCY", "16"))
+WD_DESC_TENANT_MAX    = int(os.getenv("WD_DESC_TENANT_MAX", "3000"))
 _wd_detail_gate = None   # asyncio.Semaphore, created per run in run_workday()
 
 
@@ -317,8 +331,9 @@ class _DescBudget:
     (Northwell's CX_1/CX_2/CX_3) never pay twice for one requisition.
     A budget no runner called expect() on keeps the old first-come rule.
     """
-    def __init__(self, total):
+    def __init__(self, total, tenant_max: int | None = None):
         self.total = max(0, total)
+        self._tenant_max = tenant_max    # None = DETAIL_TENANT_MAX (read at call time)
         self.remaining = self.total
         self.spent = 0
         self.expected: set = set()
@@ -341,8 +356,12 @@ class _DescBudget:
     def expect(self, names) -> None:
         self.expected.update(names)
 
+    @property
+    def tenant_max(self) -> int:
+        return DETAIL_TENANT_MAX if self._tenant_max is None else self._tenant_max
+
     def floor(self) -> int:
-        return max(0, min(DETAIL_TENANT_MAX, self.total // max(1, len(self.expected))))
+        return max(0, min(self.tenant_max, self.total // max(1, len(self.expected))))
 
     def claim(self, tenant, need: int, share: int | None = None) -> int:
         """Phase one: how many of this tenant's `need` fetches it makes now."""
@@ -350,7 +369,7 @@ class _DescBudget:
             cap = share if share else max(50, self.total // max(1, DETAIL_TENANT_SHARE))
             return self.take(min(need, cap))
         n = self.take(min(need, self.floor()))
-        self.leftover[tenant] = max(0, min(need, DETAIL_TENANT_MAX) - n)
+        self.leftover[tenant] = max(0, min(need, self.tenant_max) - n)
         self._check()
         return n
 
@@ -381,7 +400,7 @@ class _DescBudget:
         # as much as it may have).
         pool = self.remaining - len(unreported) * self.floor()
         wants = dict(waiting)
-        wants.update({("__unreported__", u): DETAIL_TENANT_MAX for u in unreported})
+        wants.update({("__unreported__", u): self.tenant_max for u in unreported})
         for t, g in _water_fill(wants, pool).items():
             if t in waiting:
                 self.granted[t] = self.take(g)
@@ -412,7 +431,7 @@ class _DescBudget:
         return got
 
 
-WD_DESC_BUDGET = _DescBudget(WD_DESC_MAX_PER_RUN)
+WD_DESC_BUDGET = _DescBudget(WD_DESC_MAX_PER_RUN, WD_DESC_TENANT_MAX)
 
 # Aya description pass (2026-08-04) — same containment contract as Workday's:
 # off by default, run-wide budget, throttled. Aya's per-job JSON endpoint is
@@ -14586,10 +14605,291 @@ def extract_posting_facts(text, job_type=None, title=None):
     out["relocation"] = _first_amount(t, _RELO_RXS)
     out["benefits"] = extract_benefits(t)
     out["benefit_lines"] = extract_benefit_lines(text)
+    # 2026-09-24 (owner): qualifications / certifications / licensure /
+    # education as the posting states them (extract_requirements).
+    out["requirements"] = extract_requirements(text)
+    rq = out["requirements"]
     if not (out["certs"] or out["education"] or out["shift"] or out["experience"]
             or out["schedule"] or out["hours"] or out["signon"] or out["signon_offered"]
-            or out["relocation"] or out["benefits"] or out["benefit_lines"]):
+            or out["relocation"] or out["benefits"] or out["benefit_lines"]
+            or rq["qualifications"]["required"] or rq["qualifications"]["preferred"]
+            or rq["certifications"] or rq["licensure"] or rq["education"]):
         return None
+    return out
+
+
+# ── Requirements: qualifications / certifications / licensure / education ──
+# 2026-09-24 (owner: "all scraper events should be looking for those 4
+# things"). The closed-vocabulary chips above (certs, education, experience)
+# name a dozen labels; a Medical Assistant's "Completion of a course of study
+# ... specified by the Medical Board of California", a "PA RN License" or a
+# "Registered Nurse license issued by the state in which the teammate
+# practices" never reached the page. These four fields keep the posting's own
+# lines, verbatim, under posting_facts["requirements"]:
+#   qualifications  {"required": [line...], "preferred": [line...]}: every
+#                   line of the qualification block(s), in the posting's order
+#   certifications  [[line, preferred]...]: BLS/ACLS/CMA/"... certification"
+#   licensure       [[line, preferred]...]: RN/LPN/state licence, "licensed
+#                   in", compact/NLC, DEA, board certified/eligible
+#   education       [[line, preferred]...]: degree, diploma, GED, program,
+#                   school, "or equivalent experience"
+# The block is found by its heading (Qualifications, Minimum / Preferred
+# Qualifications, Requirements, Required Experience, Licensure/Certification,
+# Education/Experience, Knowledge Skills and Abilities, all-caps forms,
+# Workday bold paragraphs, "Education: ..." label lines) and runs until a
+# heading of another kind (Responsibilities, Benefits, About, Schedule...).
+# Outside a block only a clause with a requirement cue ("required", "must",
+# "current", "valid", "graduate of"...) and a specific pattern counts, and
+# never one under Benefits / About / EEO / pay. Nothing is generated: a field
+# is empty when the text does not state it.
+_RQ_WORD = (r"(?:minimum|basic|required|preferred|desired|additional|job|position|typical|special|other|general|"
+            r"and|&|/|of|the|your|our|or|for|this|role|a|an|plus|nice|to|have|essential|"
+            r"qualifications?|requirements?|education(?:al)?|experience|licens(?:e|es|ure|ing)|certifications?|"
+            r"credentials?|knowledge|skills?|abilities|expectations|ksas?|training|professional|clinical|work|"
+            r"background|competenc(?:y|ies))")
+_RQ_HEAD_RX = re.compile(r"^" + _RQ_WORD + r"(?:[\s/&,]+" + _RQ_WORD + r")*$", re.I)
+_RQ_PHRASE_HEAD_RX = re.compile(
+    r"^(?:what you(?:'|’)ll need|what you (?:need|bring)|what you(?:'|’)ll bring|who you are|"
+    r"(?:what )?we(?:'|’)re looking for|what we look for|you have|you(?:'|’)ll have|"
+    r"must haves?|nice to haves?|to be successful|position requirements?|job requirements?|"
+    r"(?:minimum|preferred|required) (?:job )?(?:qualifications?|requirements?))\b[^.]{0,30}$", re.I)
+# Headings that end a block. Searched on short lines only (see _rq_heading).
+_RQ_STOP_HEAD_RX = re.compile(
+    r"\b(?:responsibilit\w*|duties|essential functions?|job functions?|benefits?|perks|about\b|overview|summary|"
+    r"description|purpose|what you(?:'|’)ll do|what you will do|day in the life|schedule|shift|hours|pay\b|"
+    r"compensation|salary|location|department|our commitment|commitment|why join|why work|who we are|"
+    r"equal opportunity|eeo|physical demands|working conditions|work environment|additional information|"
+    r"special instructions|disclaimer|status|unions?|posting|apply|contact|organization|unit)\b", re.I)
+# Lines that are never a requirement even inside a block: the posting's
+# closing boilerplate, calls to apply, CSS that leaked through a template.
+_RQ_BOILER_RX = re.compile(
+    r"^(?:we are|we're|we’re|our |join |apply|about |family makes|equal opportunit|eoe\b|pay range|"
+    r"the (?:compensation|pay|salary|base pay)|compensation|salary|#|click|employees of|if you|interested|"
+    r"to learn more|for more information|note:|\*?please note|this (?:job|position) (?:description|is not)|"
+    r"[A-Z][\w&.,' ]{2,60} is an equal opportunity)", re.I)
+_RQ_CSS_RX = re.compile(r"[{}]|^[a-z-]+\s*:\s*[^:]{1,40};$", re.I)
+
+_RQ_PREF_RX = re.compile(r"prefer|desired|desirable|a plus\b|nice to have|\bideal(?:ly)?\b|highly recommended", re.I)
+_RQ_REQ_RX = re.compile(r"requir|\bmust\b|mandatory", re.I)
+_RQ_HEAD_REQ_RX = re.compile(r"requir|\bmust\b|mandatory|minimum|basic", re.I)
+_RQ_CUE_RX = re.compile(
+    r"requir|\bmust\b|minimum|prefer|current|valid\b|active\b|unrestricted|unencumbered|eligib|graduat|"
+    r"completion of|obtain|\bhold\b|possess|\bneeded\b|licensed (?:as|in|to|by)|certified (?:in|as|by|through)|"
+    r"within \d+ (?:days|months)|upon hire|prior to (?:hire|start)", re.I)
+
+# Professional licensure. A driver's licence is a qualification, not
+# licensure; "378 licensed beds" and "level of licensure" are neither.
+_RQ_DRIVER_RX = re.compile(r"driv\w*(?:['’]s)?\s+licen\w*|\bCDL\b|licen\w*\s+to\s+drive|auto(?:mobile)? insurance", re.I)
+_RQ_LIC_RX = re.compile(
+    r"\b(?:RN|LPN|LVN|APRN|CRNA|CNM|NP|PA-?C?|RRT|CRT|PT|PTA|OT|OTA|SLP|LCSW|LMSW|LPC|LMFT|LCPC|LICSW|MD|DO|DDS|RPh|PharmD|"
+    r"nurs\w*|state|professional|compact|multi-?state|practice|medical|pharmacy|pharmacist|physician|therap\w*|"
+    r"social work\w*|counsel\w*|board|independent|clinical|dental|radiolog\w*|vocational|practical)\b[^.;\n]{0,45}?\blicens(?:e|es|ed|ure)\b"
+    r"|\blicens(?:e|es|ed|ure)\b[^.;\n]{0,45}?\b(?:RN|LPN|LVN|APRN|nurse|nursing|to practice|in the state|state of|by the state|"
+    r"issued|board|compact|multi-?state|NLC|as an?)\b"
+    r"|\b(?:current|valid|active|unrestricted|unencumbered|permanent)\b[^.;\n]{0,30}\blicens(?:e|ed|ure)\b"
+    r"|\bNLC\b|\beNLC\b|\bnurse licensure compact\b|\bDEA\b|\bCDS (?:license|registration)\b"
+    r"|\bboard[- ](?:certified|certification|eligible|eligibility)\b|\bBC/BE\b|\bBE/BC\b"
+    r"|licensed (?:in|by) (?:the )?(?:state|commonwealth)|\bstate licen", re.I)
+_RQ_LIC_NOT_RX = re.compile(r"licensed beds|level of licensure|scope of (?:practice|licensure)|licensure level|within (?:the )?(?:scope|limits)", re.I)
+_RQ_CERT_RX = re.compile(
+    r"\bcertif(?:ied|ication|ications|icate)\b|\bcredential(?:ed|s)?\b|\bregistry\b|\bregistered (?:with|through|by)\b"
+    r"|\b(?:BLS|BCLS|ACLS|PALS|NRP|TNCC|ENPC|CCRN|PCCN|CNOR|CEN|CPEN|CPN|OCN|CAPA|CPAN|CRRN|WOCN|CWOCN|CPR|NIHSS|"
+    r"ARRT|RDMS|RDCS|RVT|RCIS|CST|CSFA|RRT|CRT|CMA|RMA|CCMA|NCMA|CNA|CPhT|PTCB|CPC|CCS|RHIT|RHIA|CHES|CDE|CDCES|"
+    r"CHT|MLS|MLT|NHA|CMAA|CPCT|EMT|AEMT|NREMT|CNL|NE-BC|RN-BC|FNP-BC|AGACNP|CCM|CHPN|CPHQ|CIC|ASCP)\b"
+    r"|basic life support|advanced (?:cardiac|cardiovascular) life support|pediatric advanced life support|"
+    r"neonatal resuscitation|trauma nursing core", re.I)
+_RQ_CERT_NOT_RX = re.compile(r"certified (?:unit|hospital|center|facility)|\bcertificate program\b", re.I)
+_RQ_EDU_RX = re.compile(
+    r"\bdegree\b|\bdiploma\b|\bGED\b|\bHSE\b|high school|\bgraduat(?:e|ed|ion) (?:of|from)\b|"
+    r"\b(?:BSN|ADN|ASN|MSN|DNP|BSW|MSW|MHA|MPH|MBA|PhD|PharmD|DPT|OTD|PsyD|AuD)\b|"
+    r"bachelor|baccalaureate|master(?:'s|’s|s)?\s+(?:degree|of|in)\b|associate(?:'s|’s)?\s+(?:degree|of|in)\b|associates\s+degree|"
+    r"doctora(?:te|l)|\bcollege\b|universit|\bschool of\b|accredited (?:school|program|college|institution|university|nursing)|"
+    r"(?:training|education(?:al)?|nursing|certificate|academic|residency|technical|vocational|degree) program|"
+    r"program (?:in|of) |course of study|coursework|course work|\bequivalent (?:experience|combination|education)|"
+    r"or (?:the )?equivalent\b|\bGPA\b|enrolled in", re.I)
+_RQ_EDU_NOT_RX = re.compile(
+    r"tuition|reimburse|continuing education|educational assistance|education assistance|patient education|"
+    r"\beducat(?:e|es|ing)\b|\bCEUs?\b|loan", re.I)
+# Outside a block, "education" needs a credential word, not just "program".
+_RQ_EDU_STRONG_RX = re.compile(
+    r"degree|diploma|\bGED\b|graduat|\b(?:BSN|ADN|ASN|MSN|DNP)\b|bachelor|master|associate|school|equivalent", re.I)
+
+
+def _rq_clean(line: str) -> str:
+    s = re.sub(r"^[\s•\-\*·–—>●○■□▪◦‣⁃∙➢➤►▸✓✔]+", "", line).strip()
+    return re.sub(r"\*\*$", "", s).strip()
+
+
+def _rq_heading(line: str):
+    """(kind, mode, value) for a heading line, else None.
+    kind: 'qual' | 'edu' | 'lic' | 'cert' | 'lic+cert' | 'mode' | 'stop'.
+    mode: 'req' | 'pref' | None. value: the text after "Label:" when the
+    line is a label with its own content ("Education: Bachelor's degree")."""
+    s = line.strip().strip("*").strip()
+    if not s or len(s) > 300 or s.endswith((".", "!", "?")):
+        return None                      # a sentence is never a heading
+    label, value = s, ""
+    m = re.match(r"^([^:]{2,60}?)\s*:\s*(.*)$", s)
+    if m:
+        label, value = m.group(1).strip().strip("*").strip(), m.group(2).strip()
+    elif len(s) > 90:
+        return None
+    label = re.sub(r"\s+", " ", label).rstrip(" :.-–")
+    if not label:
+        return None
+    words = label.split()
+    low = label.lower()
+    if (_RQ_HEAD_RX.match(label) or _RQ_PHRASE_HEAD_RX.match(label)) and len(words) <= 8:
+        mode = "pref" if _RQ_PREF_RX.search(low) else ("req" if _RQ_HEAD_REQ_RX.search(low) else None)
+        lic = bool(re.search(r"licen", low))
+        cert = bool(re.search(r"certif|credential", low))
+        edu = bool(re.search(r"educat|training", low))
+        other = bool(re.search(r"qualif|requir|experien|skill|knowledge|abilit|ksa|competenc|need|bring|looking|have|who you|success", low))
+        if lic and cert:
+            kind = "lic+cert"
+        elif lic and not (edu or other):
+            kind = "lic"
+        elif cert and not (edu or other):
+            kind = "cert"
+        elif edu and not (lic or cert or other):
+            kind = "edu"
+        elif re.fullmatch(r"(?:(?:minimum|basic|required|preferred|desired|additional|other|general|special|nice to have|plus|and|or|/)\s*)+", low):
+            kind = "mode"                # "Preferred:", "Other:" keep the block they sit in
+        else:
+            kind = "qual"
+        return (kind, mode, value)
+    # Not a requirements heading: a short label of another kind ends the
+    # block ("Job Shift:", "Benefits:", "Essential Functions").
+    if m and not value and len(words) <= 5:
+        return ("stop", None, "")
+    if not m and len(words) <= 6 and not re.search(r"[.!?]$", label) and _RQ_STOP_HEAD_RX.search(label):
+        return ("stop", None, "")
+    if m and value and len(words) <= 4 and _RQ_STOP_HEAD_RX.search(label) and not _RQ_CUE_RX.search(value):
+        return ("stop", None, "")
+    return None
+
+
+def _rq_pref(s: str, mode) -> bool:
+    """A line's own marker decides; a line naming both is a requirement with a
+    preference attached ("one year required, pediatric preferred"); otherwise
+    the heading it sits under."""
+    p, r = _RQ_PREF_RX.search(s), _RQ_REQ_RX.search(s)
+    if p and not r:
+        return True
+    if r:
+        return False
+    return mode == "pref"
+
+
+def _rq_types(s: str) -> set:
+    """Which of licensure / certifications / education one clause states."""
+    out = set()
+    lic_s = _RQ_DRIVER_RX.sub(" ", s)
+    if _RQ_LIC_RX.search(lic_s) and not _RQ_LIC_NOT_RX.search(lic_s):
+        out.add("licensure")
+    if _RQ_CERT_RX.search(s) and not _RQ_CERT_NOT_RX.search(s):
+        out.add("certifications")
+    if _RQ_EDU_RX.search(s) and not _RQ_EDU_NOT_RX.search(s):
+        out.add("education")
+    return out
+
+
+def _rq_clauses(s: str) -> list:
+    # one list line can hold two facts: "Florida RN license or compact
+    # license includes FL; BLS certification from the American Heart Association"
+    parts = [p.strip() for p in re.split(r";\s+|(?<=[A-Za-z0-9)][.!?])\s+(?=[A-Z])", s) if p.strip()]
+    return parts or [s]
+
+
+def extract_requirements(text) -> dict:
+    """The four requirement fields (see the block comment above); every key
+    is always present, empty when the posting does not state it."""
+    out = {"qualifications": {"required": [], "preferred": []},
+           "certifications": [], "licensure": [], "education": []}
+    if not text:
+        return out
+    t = str(text)[:12000].replace("\r", "")
+    seen = {k: set() for k in ("q", "certifications", "licensure", "education")}
+
+    def add(field, s, pref):
+        s = s.strip().rstrip(" ;,")[:300]
+        if len(s) < 3:
+            return
+        key = s.lower()
+        if key in seen[field]:
+            return
+        if field == "q":
+            lst = out["qualifications"]["preferred" if pref else "required"]
+            if len(lst) < (12 if pref else 20):
+                seen[field].add(key)
+                lst.append(s)
+            return
+        if len(out[field]) < 8:
+            seen[field].add(key)
+            out[field].append([s, pref])
+
+    kind, mode, last_stop, stem = None, None, "", ""      # kind None = outside any block
+    for raw in t.split("\n"):
+        s = _rq_clean(raw)
+        if not s or _RQ_CSS_RX.search(s):
+            continue
+        h = _rq_heading(s)
+        if h:
+            hk, hm, value = h
+            if hk == "stop":
+                kind, mode, last_stop = None, None, s.lower()
+                continue
+            if hk == "mode":
+                kind, mode = (kind or "qual"), (hm or mode)
+            else:
+                kind, mode = hk, hm
+            if not value:
+                continue
+            s = value
+        if kind is None:
+            # Outside a block: a clause with a requirement cue and a specific
+            # pattern, never under benefits / about / pay / EEO.
+            if re.search(r"benefit|perks|about|pay|compensation|salary|equal|eeo|commitment|why", last_stop) or len(s) > 600:
+                continue
+            for c in _rq_clauses(s):
+                if not _RQ_CUE_RX.search(c):
+                    continue
+                types = _rq_types(c)
+                if "education" in types and not _RQ_EDU_STRONG_RX.search(c):
+                    types.discard("education")
+                for f in sorted(types):
+                    add(f, c, _rq_pref(c, None))
+            continue
+        # Inside a requirements block.
+        if _RQ_BOILER_RX.search(s):
+            kind, mode, last_stop, stem = None, None, "about", ""
+            continue
+        # A stem line ("Ability to") heads the lower-case items under it
+        # (Sutter: "Ability to" / "-prioritize assignments ..."): each item
+        # is stored whole, "Ability to prioritize assignments ...".
+        if len(s) <= 40 and re.search(r"\b(?:to|of|in|with)$|:$", s):
+            stem = s.rstrip(":")
+            continue
+        if stem and s[:1].islower():
+            s = f"{stem} {s}"
+        else:
+            stem = ""
+        for piece in ([s] if len(s) <= 300 else _rq_clauses(s)):
+            pref = _rq_pref(piece, mode)
+            add("q", piece, pref)
+            if kind == "edu":
+                if not _RQ_EDU_NOT_RX.search(piece):
+                    add("education", piece, pref)
+                continue
+            for c in _rq_clauses(piece):
+                cp = _rq_pref(c, mode) if (_RQ_PREF_RX.search(c) or _RQ_REQ_RX.search(c)) else pref
+                types = _rq_types(c)
+                if kind == "lic" and not types & {"licensure", "certifications"}:
+                    types.add("licensure")
+                if kind in ("cert", "lic+cert") and not types & {"licensure", "certifications"}:
+                    types.add("certifications")
+                for f in sorted(types):
+                    add(f, c, cp)
     return out
 
 
