@@ -20,6 +20,9 @@ def _job(i, system="T", desc="", state="", posted="", url=None):
 @pytest.fixture(autouse=True)
 def _no_known_bodies(monkeypatch):
     scraper.set_known_bodies([])
+    # These tests pin the budget arithmetic; the nightly re-read of stored
+    # bodies has its own tests (test_known_body_refresh.py).
+    monkeypatch.setattr(scraper, "DETAIL_REFRESH_PCT", 0)
     # The pass pauses 0.15-0.45 s after each fetch; not here.
     monkeypatch.setattr(scraper.random, "uniform", lambda a, b: 0.0)
     yield

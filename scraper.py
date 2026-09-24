@@ -14,6 +14,7 @@ from html import unescape as _html_unescape   # 2026-09-10: Paycor / TaleoBE / H
 import time
 import os
 import weakref
+import zlib
 from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 from dataclasses import dataclass, asdict, field
@@ -866,14 +867,52 @@ KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor"
                         "Custom", "SmartRecruiters", "ADP", "Paycor", "Paylocity", "Workable")
 KNOWN_BODY_PAGE      = 1000
 KNOWN_BODY_MAX_ROWS  = int(os.getenv("KNOWN_BODY_MAX_ROWS", "400000"))
+KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
 _KNOWN_BODIES: dict = {}
+_KNOWN_FACTS_V: dict = {}         # same keys -> posting_facts "v" of the stored row (None = unstamped)
+
+# ── A known body is not known forever (2026-09-24, review of push 2) ─────────
+# Skipping every stored body left three holes: (1) facts, pay and type are
+# parsed only from text read that night, so the 53.5k stored bodies never got
+# push2/facts' rules (RN licence, title shift, experience, benefits); (2) an
+# employer's edit (new pay range, changed qualifications) was never read again
+# while the posting stayed up; (3) ~1,100 bodies cut at the old 8,000-character
+# cap stayed cut although strip_html now keeps 12,000. So:
+#   * posting_facts carries the rules version it was built with ("v",
+#     FACTS_VERSION, stamped by posting_facts_for). Bump FACTS_VERSION whenever
+#     the facts rules change: every full stored body built with older rules
+#     is then first in line for its tenant's refresh share ("stale").
+#   * An unstamped body of 7,990-8,000 characters was cut at the old cap. It is
+#     a candidate again ("cut"), after the rows with no body; once re-read it
+#     carries a stamp and drops out on its own.
+#   * Every other known body is due once every DETAIL_REFRESH_DAYS nights (a
+#     fixed slot per posting, so nothing is re-read twice in a cycle).
+#   * Re-reads cost at most DETAIL_REFRESH_PCT % of a tenant's floor a night
+#     (_refresh_quota), taken ahead of its new rows; the rest of the floor still
+#     goes to rows with no body, so the big Oracle backlogs (VITAS, Tenet...)
+#     keep ~95% of their pace.
+# The stored facts are re-derived in bulk by the one-time backfill
+# (tools/facts_backfill.py, owner-approved); the refresh share then keeps
+# them current.
+FACTS_VERSION       = 2
+OLD_BODY_CAP        = (7990, 8000)
+DETAIL_REFRESH_PCT  = int(os.getenv("DETAIL_REFRESH_PCT", "5"))
+DETAIL_REFRESH_DAYS = int(os.getenv("DETAIL_REFRESH_DAYS", "30"))
+
+
+def _facts_version(v):
+    try:
+        return int(str(v).strip())
+    except (TypeError, ValueError):
+        return None
 
 
 def set_known_bodies(rows) -> int:
     """Install the known-body map from rows of {hospital_system, job_id,
-    desc_len}; rows under 200 characters are not bodies and are ignored."""
-    global _KNOWN_BODIES
-    kb = {}
+    desc_len, fv}; fv is posting_facts->>'v' (absent or null = unstamped).
+    Rows under 200 characters are not bodies and are ignored."""
+    global _KNOWN_BODIES, _KNOWN_FACTS_V
+    kb, fv = {}, {}
     for r in rows or []:
         try:
             n = int(r.get("desc_len") or 0)
@@ -882,8 +921,10 @@ def set_known_bodies(rows) -> int:
         sysname, jid = r.get("hospital_system"), r.get("job_id")
         if n >= 200 and sysname and jid not in (None, ""):
             k = (str(sysname), str(jid))
-            kb[k] = max(n, kb.get(k, 0))
-    _KNOWN_BODIES = kb
+            if n >= kb.get(k, 0):
+                kb[k] = n
+                fv[k] = _facts_version(r.get("fv"))
+    _KNOWN_BODIES, _KNOWN_FACTS_V = kb, fv
     return len(kb)
 
 
@@ -891,7 +932,10 @@ def load_known_bodies() -> int:
     """One read-only PostgREST pass (same SUPABASE_URL / key as the upsert),
     keyset-paged on id so no page repeats a scan. Without credentials, or
     with every detail pass off, the map stays empty and the passes behave as
-    before; a page that fails keeps the rows read so far."""
+    before. A page is tried KNOWN_BODY_RETRIES times (2026-09-24: one failed
+    page used to end the load, and every row after it was fetched again and
+    its teaser sent over the stored body); a page that still fails keeps the
+    rows read so far."""
     sb_url = os.environ.get("SUPABASE_URL", "")
     sb_key = (os.environ.get("SUPABASE_KEY", "")
               or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
@@ -905,12 +949,20 @@ def load_known_bodies() -> int:
     rows, last = [], 0
     try:
         while len(rows) < KNOWN_BODY_MAX_ROWS:
-            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,desc_len"
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,desc_len,"
+                 f"fv:posting_facts-%3E%3Ev"
                  f"&is_active=is.true&desc_len=gte.200&ats_platform=in.({plats})"
                  f"&id=gt.{last}&order=id.asc&limit={KNOWN_BODY_PAGE}")
             rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
-            with _urlreq.urlopen(rq, timeout=60) as resp:
-                chunk = json.loads(resp.read().decode())
+            for attempt in range(KNOWN_BODY_RETRIES):
+                try:
+                    with _urlreq.urlopen(rq, timeout=60) as resp:
+                        chunk = json.loads(resp.read().decode())
+                    break
+                except Exception:
+                    if attempt + 1 >= KNOWN_BODY_RETRIES:
+                        raise
+                    time.sleep(3 * (attempt + 1))
             if not chunk:
                 break
             rows.extend(chunk)
@@ -926,24 +978,93 @@ def _canon_system(system: str) -> str:
     return HOSPITAL_SYSTEM_ALIASES.get(system, system)
 
 
-def _body_known(system: str, job) -> bool:
-    """True when the database already holds a body for this posting that a
-    detail fetch would not improve on: a full one (DETAIL_MIN_CHARS+), or any
-    real body longer than what the list gave (only a detail pass stores one).
-    The list's shorter copy is then dropped, so the upsert sends a blank and
-    the enrichment trigger keeps the stored body; the wage, facts and type the
-    upsert parses from the text are blank too, and the trigger keeps theirs.
-    Without that, a Phenom teaser overwrote the full body fetched the night
-    before whenever the row was not fetched again."""
-    stored = _KNOWN_BODIES.get((_canon_system(system), str(job.job_id)), 0)
+def _known_kind(system: str, job):
+    """What the database holds for this posting, for a detail pass:
+      None     no body, or only the teaser the list sends again: a candidate
+      "cut"    an unstamped body cut at the old 8,000 cap: a candidate after
+               the rows with no body
+      "stale"  a full body whose facts come from older rules (v < FACTS_VERSION):
+               first in line for the tenant's refresh share
+      "known"  a body a detail fetch would not improve on: a full one
+               (DETAIL_MIN_CHARS+), or any real body longer than what the list
+               gave (only a detail pass stores one); due for the refresh
+               share on its slot (_refresh_slot)
+    Leaves the job unchanged."""
+    key = (_canon_system(system), str(job.job_id))
+    stored = _KNOWN_BODIES.get(key, 0)
     if stored < 200:
-        return False
+        return None
     cur = len((job.description or "").strip())
     if stored < DETAIL_MIN_CHARS and stored <= cur:
-        return False
-    if cur < stored:
+        return None
+    v = _KNOWN_FACTS_V.get(key)
+    if v is None and OLD_BODY_CAP[0] <= stored <= OLD_BODY_CAP[1]:
+        return "cut"
+    if v is not None and v < FACTS_VERSION and stored >= DETAIL_MIN_CHARS:
+        return "stale"
+    return "known"
+
+
+def _keep_stored_body(system: str, job) -> None:
+    """Drop the list's copy when it is shorter than the stored body, so the
+    upsert sends a blank and the enrichment trigger keeps the stored body; the
+    wage, facts and type the upsert parses from the text are blank too, and the
+    trigger keeps theirs. Without that, a Phenom teaser overwrote the full body
+    fetched the night before whenever the row was not fetched again."""
+    stored = _KNOWN_BODIES.get((_canon_system(system), str(job.job_id)), 0)
+    if len((job.description or "").strip()) < stored:
         job.description = ""
+
+
+def _body_known(system: str, job) -> bool:
+    """True when the database holds a body for this posting (_known_kind is
+    not None); the list's shorter copy is then dropped (_keep_stored_body).
+    The detail passes use _detail_candidates, which also re-reads some of
+    these rows (see "A known body is not known forever")."""
+    if _known_kind(system, job) is None:
+        return False
+    _keep_stored_body(system, job)
     return True
+
+
+def _run_day() -> int:
+    return datetime.now(timezone.utc).toordinal()
+
+
+def _refresh_slot(canon: str, job_id: str) -> bool:
+    """True on the one night in DETAIL_REFRESH_DAYS that this posting's stored
+    body is due to be read again (a fixed slot per posting)."""
+    days = max(1, DETAIL_REFRESH_DAYS)
+    return zlib.crc32(f"{canon}|{job_id}".encode("utf-8")) % days == _run_day() % days
+
+
+def _refresh_quota(budget) -> int:
+    """Stored bodies one tenant may re-read a night: DETAIL_REFRESH_PCT % of
+    its floor (at least one), 0 when DETAIL_REFRESH_PCT is 0."""
+    if DETAIL_REFRESH_PCT <= 0:
+        return 0
+    base = budget.floor() if budget.expected else max(50, budget.total // max(1, DETAIL_TENANT_SHARE))
+    return max(1, base * DETAIL_REFRESH_PCT // 100) if base > 0 else 0
+
+
+def _held_note(held) -> str:
+    """Log fragment: how many stored bodies this pass put back in line."""
+    n = {}
+    for _, _, kind in held or ():
+        n[kind] = n.get(kind, 0) + 1
+    if not n:
+        return ""
+    return (f"{n.get('refresh', 0) + n.get('stale', 0)} stored bodies re-read ({n.get('stale', 0)} with older facts), "
+            f"{n.get('cut', 0)} cut at the old 8,000 cap queued, ")
+
+
+def _settle_held(system: str, held, job_of=lambda it: it) -> None:
+    """After a detail pass: a cut or refreshed row that no fetch gave a new
+    body keeps the stored one, exactly as a known row does."""
+    for it, before, *_ in held or ():
+        j = job_of(it)
+        if j.description == before:
+            _keep_stored_body(system, j)
 
 
 def cms_location_for(*names):
@@ -1995,29 +2116,64 @@ def _detail_rank(job) -> tuple:
             age if age is not None else 10 ** 6)
 
 
-def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, eligible=None):
+def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, eligible=None, held=None):
     """Rows of one tenant worth a detail fetch, in fetch order, plus how many
-    were left out because the database already holds their body (_body_known,
-    free) or because another site of the same system fetched that job_id this
-    run. Returns (candidates, known, duplicates)."""
+    were left out because the database already holds their body (free) or
+    because another site of the same system fetched that job_id this run.
+    Returns (candidates, known, duplicates).
+
+    With a `held` list (2026-09-24, review) the stored bodies are not skipped
+    forever (see "A known body is not known forever"): up to _refresh_quota
+    stored bodies go first ("stale" facts, then those whose slot is tonight),
+    then the rows with no body (transparency states, then the newest), then
+    bodies cut at the old 8,000 cap. Each re-read or cut row is appended to
+    `held` as (item, list text, kind); the caller hands `held` to _settle_held
+    after fetching, so a row no fetch refilled keeps its stored body. Without
+    `held` every stored body is skipped, as before."""
     canon = _canon_system(system)
     cands, known, dup = [], 0, 0
+    tier, stale, due = {}, [], []
     for it in items:
         j = job_of(it)
         if len((j.description or "").strip()) >= DETAIL_MIN_CHARS:
             continue
-        if _body_known(system, j):
+        kind = _known_kind(system, j)
+        if kind is not None and held is None:
+            _keep_stored_body(system, j)
             known += 1
             continue
-        if eligible is not None and not eligible(it):
+        ok = eligible is None or eligible(it)
+        claimed = (canon, str(j.job_id)) in budget.claimed
+        if kind in ("known", "stale"):
+            if ok and not claimed and (kind == "stale" or _refresh_slot(canon, str(j.job_id))):
+                (stale if kind == "stale" else due).append(it)
+            else:
+                _keep_stored_body(system, j)
+                known += 1
             continue
-        if (canon, str(j.job_id)) in budget.claimed:
-            dup += 1
+        if not ok or claimed:
+            if kind is not None:
+                _keep_stored_body(system, j)
+                known += 1
+            elif ok:
+                dup += 1
             continue
+        tier[id(it)] = 1 if kind == "cut" else 0
         cands.append(it)
     random.shuffle(cands)
-    cands.sort(key=lambda it: _detail_rank(job_of(it)))
-    return cands, known, dup
+    cands.sort(key=lambda it: (tier[id(it)], _detail_rank(job_of(it))))
+    random.shuffle(stale)
+    random.shuffle(due)
+    q = _refresh_quota(budget) if held is not None else 0
+    refresh = (stale + due)[:q]
+    for it in (stale + due)[q:]:
+        _keep_stored_body(system, job_of(it))
+        known += 1
+    if held is not None:
+        stale_ids = {id(it) for it in stale}
+        held.extend((it, job_of(it).description, "stale" if id(it) in stale_ids else "refresh") for it in refresh)
+        held.extend((it, job_of(it).description, "cut") for it in cands if tier[id(it)] == 1)
+    return refresh + cands, known, dup
 
 
 async def _fair_detail_fetch(budget, system: str, cands: list, run_batch, job_of=lambda it: it,
@@ -2081,8 +2237,9 @@ async def _workday_fetch_details(session, working_url, targets, system):
     # the tie-break), and the tenant draws its fair share of WD_DESC_BUDGET
     # (_fair_detail_fetch) instead of whatever the tenants that finished
     # listing first had left.
+    held = []
     candidates, known, dup = _detail_candidates(
-        system, targets, WD_DESC_BUDGET, job_of=lambda t: t[0], eligible=lambda t: bool(t[1]))
+        system, targets, WD_DESC_BUDGET, job_of=lambda t: t[0], eligible=lambda t: bool(t[1]), held=held)
     if not candidates:
         WD_DESC_BUDGET.claim(system, 0)
         if known or dup:
@@ -2130,11 +2287,14 @@ async def _workday_fetch_details(session, working_url, targets, system):
     async def run_batch(batch):
         await asyncio.gather(*[one(j, p) for j, p in batch], return_exceptions=True)
 
-    fetched, left = await _fair_detail_fetch(WD_DESC_BUDGET, system, candidates, run_batch,
-                                             job_of=lambda t: t[0])
+    try:
+        fetched, left = await _fair_detail_fetch(WD_DESC_BUDGET, system, candidates, run_batch,
+                                                 job_of=lambda t: t[0])
+    finally:
+        _settle_held(system, held, job_of=lambda t: t[0])
     logger.info(f"  Workday {system}: details {fetched} fetched -> "
                 f"{filled} descriptions, {dated} ISO dates, {typed} employment types; "
-                f"{known} already in the database, {dup} fetched by a sibling site, "
+                f"{known} already in the database, {_held_note(held)}{dup} fetched by a sibling site, "
                 f"{left} left for another night; budget left {WD_DESC_BUDGET.remaining}")
 
 
@@ -2228,7 +2388,8 @@ async def _detail_pass(session, system: str, jobs: list, budget, fetch_one, labe
     def eligible(j):
         return (j.url or "").startswith("http") and not (skip and skip(j))
 
-    cands, known, dup = _detail_candidates(system, jobs, budget, eligible=eligible)
+    held = []
+    cands, known, dup = _detail_candidates(system, jobs, budget, eligible=eligible, held=held)
     if not cands:
         budget.claim(system, 0, share)
         if known or dup:
@@ -2251,9 +2412,12 @@ async def _detail_pass(session, system: str, jobs: list, budget, fetch_one, labe
     async def run_batch(batch):
         await asyncio.gather(*[one(j) for j in batch], return_exceptions=True)
 
-    fetched, left = await _fair_detail_fetch(budget, system, cands, run_batch, share=share)
+    try:
+        fetched, left = await _fair_detail_fetch(budget, system, cands, run_batch, share=share)
+    finally:
+        _settle_held(system, held)
     logger.info(f"  {label} {system}: details {fetched} fetched -> {filled} descriptions; "
-                f"{known} already in the database, {dup} fetched by a sibling site, "
+                f"{known} already in the database, {_held_note(held)}{dup} fetched by a sibling site, "
                 f"{left} left for another night; budget left {budget.remaining}")
 
 
@@ -13659,9 +13823,41 @@ def normalize_job(j: Job) -> dict:
     # Requirements chips (2026-08-24): certs/education/shift/experience from
     # the posting text. Null when nothing found; the enrichment trigger
     # preserves a stored value across list-only upserts.
-    d["posting_facts"] = extract_posting_facts(d.get("description"), d.get("job_type"), d.get("title"))
+    # 2026-09-24 (review): built by posting_facts_for, which stamps the rules
+    # version and keeps title-only facts off teasers.
+    d["posting_facts"] = posting_facts_for(d.get("description"), d.get("job_type"), d.get("title"))
 
     return d
+
+
+def posting_facts_for(text, job_type=None, title=None):
+    """posting_facts as the upsert stores them (2026-09-24, review of push 2):
+    extract_posting_facts, plus
+      * "v": FACTS_VERSION, so the next run can tell facts built with older
+        rules and re-read those bodies (see "A known body is not known forever");
+      * a full body (DETAIL_MIN_CHARS+) that states no facts stores
+        {"v": FACTS_VERSION}, not null: null would let the enrichment trigger
+        keep chips older rules read into the same body (mostly false shift and
+        benefit chips, push2/facts), and the stamp keeps the row off the
+        "stale" list. The site reads every key defensively, so the object
+        shows nothing. The enrichment trigger never puts back an older body
+        over one of 1,500+ characters, so the stamp always sits with the body
+        it was read from;
+      * a teaser (under DETAIL_MIN_CHARS) whose only facts come from the title
+        ("RN NIGHTS" -> Nights) stores null, as before push2/facts: when a
+        stored full body exists the trigger puts that body back over the
+        teaser, and a non-null title-only object would replace its certs,
+        education and experience (sql/55 keeps the body, not the facts)."""
+    t = text or ""
+    n = len(t.strip())
+    f = extract_posting_facts(t, job_type, title)
+    if f and n < DETAIL_MIN_CHARS and not f.get("certs") and extract_posting_facts(t, job_type, None) is None:
+        f = None
+    if f:
+        f = dict(f)
+        f["v"] = FACTS_VERSION
+        return f
+    return {"v": FACTS_VERSION} if n >= DETAIL_MIN_CHARS else None
 
 
 # ── Posted-wage extraction (2026-08-08) ────────────────────────────────────
