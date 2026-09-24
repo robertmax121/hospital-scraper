@@ -3,6 +3,7 @@ requirement false positives found in the 40-posting hand check, one-line
 bodies of the still-low systems, and the small misfiles (Licensures, VITAS
 "equivalent experience or licensure", Phenom schedule line inside 12,000)."""
 import asyncio
+import re
 import os
 
 import scraper
@@ -80,3 +81,95 @@ def test_university_health_uses_tb_page_detail(monkeypatch):
     assert ("page", "University Health (San Antonio)") in used
     assert ("jsonld", "ScionHealth") in used
     assert ("jsonld", "University Health (San Antonio)") not in used
+
+
+QUALS = os.path.join(FIX, "quals")
+
+
+def _rq(name):
+    return scraper.extract_requirements(open(os.path.join(QUALS, name), encoding="utf-8").read())
+
+
+def _all(rq):
+    return (rq["qualifications"]["required"] + rq["qualifications"]["preferred"]
+            + [x[0] for f in ("certifications", "licensure", "education") for x in rq[f]])
+
+
+def test_licensures_none_stores_nothing():
+    rq = scraper.extract_requirements("Qualifications\nLicensures and Certifications: None.\nEducation: None.\n")
+    assert _all(rq) == []
+
+
+def test_vitas_equivalent_experience_is_not_education():
+    t = ("QUALIFICATIONS\nCurrently licensed to practice nursing in the state where the VITAS program is located.\n"
+         "A minimum of two years of nursing experience in hospice, home health, or community health in the last five years.\n"
+         "Equivalent experience or licensure may be considered\n")
+    rq = scraper.extract_requirements(t)
+    assert rq["education"] == []
+    assert rq["licensure"] and len(rq["qualifications"]["required"]) == 3
+
+
+def test_phenom_schedule_line_inside_facts_window():
+    long_desc = "<p>" + "Provide compassionate care to patients and families every day. " * 60 + "</p>"
+    jd = {"description": long_desc * 5, "shift": "Night", "type": "Full time"}
+    desc, jt, _ = scraper._phenom_posting_text(jd)
+    line = "Schedule: Night shift"
+    assert line in desc and desc.index(line) + len(line) <= 12000
+    f = scraper.extract_posting_facts(desc, jt)
+    assert f["shift"] and f["shift"][0][0] == "Nights"
+
+
+def test_choa_single_space_headings():
+    rq = _rq("wall_choa_903635.txt")
+    assert any("Master" in e[0] for e in rq["education"])
+    assert rq["certifications"] and rq["licensure"]
+    assert not any(x.startswith("N/A") or x.startswith("No minimum") for x in _all(rq))
+
+
+def test_st_charles_caps_headings_and_na():
+    rq = _rq("wall_stcharles_905128.txt")
+    assert rq["education"][0][0].startswith("High school graduate or GED")
+    assert any("Basic Life Support" in c[0] for c in rq["certifications"])
+    assert not any("N/A" in x for x in _all(rq))
+    assert not any("driver" in c[0].lower() for c in rq["certifications"])       # a driver's licence is not a certification
+
+
+def test_halifax_headless_bullets():
+    rq = _rq("bullets_halifax_581830.txt")
+    assert rq["licensure"] == [["RN – State of Florida", False]]
+    assert rq["education"] and rq["education"][0][1] is True                     # "bachelor degree preferred"
+    assert not any(x.startswith(("Reports to work", "Maintains", "Administers")) for x in _all(rq))
+
+
+def test_franciscan_working_conditions_and_training_are_not_education():
+    rq = _rq("oracle_franciscan_29196482.txt")
+    assert [e[0] for e in rq["education"]] == ["High school or equivalent"]
+    assert not any(re.search(r"exposure|temperature|repetitive|stoop|daily operator", x, re.I) for x in _all(rq))
+
+
+def test_great_river_knowledge_of_benefits_keeps_the_block():
+    rq = _rq("workday_greatriver_3697322.txt")
+    certs = " ".join(c[0] for c in rq["certifications"])
+    assert "Advanced Cardiac Life Support" in certs and "Neonatal Resuscitation" in certs
+
+
+def test_glued_caps_headings_entities_and_names():
+    t = ("Performs other duties as assigned.REQUIRED QUALIFICATIONSA Diagnostic Medical Sonographer Certificate OR "
+         "Bachelor&#39;s Degree in Ultrasound is required for all new hires.\nPREFERRED QUALIFICATIONS\nBLS Certification\n"
+         "Work at MultiCare and AdventHealth.\n")
+    rq = scraper.extract_requirements(t)
+    assert rq["qualifications"]["required"] == [
+        "A Diagnostic Medical Sonographer Certificate OR Bachelor's Degree in Ultrasound is required for all new hires."]
+    assert "MultiCare" in scraper._rq_unwall(scraper._rq_unglue("Join MultiCare and AdventHealth today"), True)
+
+
+def test_physical_requirements_end_the_block():
+    t = ("Qualifications\nCurrent RN license required.\nPHYSICAL REQUIREMENTS: Continually (75% or more): Standing and walking.\n"
+         "Never (0%): Climbing ladder.\nRarely (10%): Climbing stairs.\n")
+    rq = scraper.extract_requirements(t)
+    assert rq["qualifications"]["required"] == ["Current RN license required."]
+
+
+def test_abbreviation_does_not_split_a_clause():
+    assert scraper._rq_clauses("Bachelor's degree for external applicants at metro hospitals and St. Francis. BLS required") == [
+        "Bachelor's degree for external applicants at metro hospitals and St. Francis.", "BLS required"]

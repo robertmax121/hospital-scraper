@@ -75,7 +75,7 @@ STATED = {
         "education": [("Practical Nursing program", False)],
     },
     "talentbrew_32495146.txt": {
-        "q_required": 11, "q_preferred": 4,
+        "q_required": 10, "q_preferred": 4,   # 2026-09-24 reqfix: "Performs other related duties as assigned." is not a requirement
         "certifications": [("Basic Life Support (BCLS)", False), ("Advanced Cardiac Life Support", True)],
         "licensure": [("State Licensure and/or Compact", False)],
         "education": [("accredited school of nursing", False), ("Bachelor’s Degree in Nursing", True)],
