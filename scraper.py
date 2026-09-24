@@ -15990,6 +15990,18 @@ _RQ_EDU_RX = re.compile(
 # "completion of a course of study" (never outside one: "completion of BLS
 # course within 30 days" is a certification).
 _RQ_EDU_BLOCK_RX = re.compile(r"\bcompletion of\b[^.;]{0,60}\b(?:program|course|training|residency|fellowship|school)\b", re.I)
+# Inside an education block also a line that starts with a degree level:
+# AdventHealth "Education:" / "Associate [Required]" / "Master's [Required]"
+# (19004264, 17341304) / "Technical/Vocational School [Required]".
+# _RQ_EDU_RX takes "bachelor" and "doctora" alone but wants "associate(s)
+# degree/of/in" and "master's degree/of/in", so these levels fell out of
+# education. Block only, and never a role or an experience line ("Associate
+# Director experience", "Master Electrician"), which is not a degree.
+_RQ_EDU_LEVEL_RX = re.compile(
+    r"^(?!.*\b(?:experience|years?)\b)(?:"
+    r"(?:associate|master)(?:'s|’s|s)?\b"
+    r"(?!\s+(?:director|manager|scheduler|planner|electrician|plumber|technician|mechanic)\b)"
+    r"|(?:technical|vocational|trade)\b[^.;]{0,25}\bschool\b)", re.I)
 _RQ_EDU_NOT_RX = re.compile(
     r"tuition|reimburse|continuing education|educational assistance|education assistance|patient education|"
     r"\beducat(?:e|es|ing)\b|\bCEUs?\b|loan|^certified (?:by|through)\b|"
@@ -16601,7 +16613,8 @@ def extract_requirements(text) -> dict:
                 # only, and a licence or certification in it (Inova "Board
                 # eligible or board certified in OB/GYN") keeps its own field.
                 if not _RQ_EDU_NOT_RX.search(piece) and ((own and len(s) <= 300) or _RQ_EDU_RX.search(piece)
-                                                          or _RQ_EDU_BLOCK_RX.search(piece)):
+                                                          or _RQ_EDU_BLOCK_RX.search(piece)
+                                                          or _RQ_EDU_LEVEL_RX.match(piece)):
                     add("education", piece, pref)
                 # (audit merge) push3/license: "EDUCATION: ... Current appropriate State
                 # licensure." counts as licensure even in a clause that also names

@@ -109,6 +109,36 @@ def test_bs_and_ms_in_a_field_are_education():
     assert "education" not in scraper._rq_types("THIS ROLE IS AS IN THE PAST")   # nor all-caps prose
 
 
+# (c2) AdventHealth degree levels under an "Education:" heading are education
+# (live 3b74770 kept them; the reqfix narrowing of the education block lost
+# "Associate" and "Master's" because _RQ_EDU_RX wants "degree/of/in" after them)
+
+def test_adventhealth_associate_under_education_heading_is_education():
+    rq = _rq("integrated", "findly_adventhealth_associate_19004264.txt")
+    assert rq["education"] == [["Associate [Required]", False]]
+    assert "Basic Life Support - CPR Cert (BLS) [Required]" in _items(rq, "certifications")
+
+
+def test_adventhealth_masters_under_education_heading_is_education():
+    rq = _rq("integrated", "findly_adventhealth_masters_17341304.txt")
+    assert rq["education"] == [["Master's [Required]", False]]
+    assert "Basic Life Support - CPR Cert (BLS) [Required]" in _items(rq, "certifications")
+
+
+def test_degree_level_line_is_education_only_inside_an_education_block():
+    for line, pref in (("Associate [Preferred]", True), ("Associate's [Required]", False), ("Associates [Preferred]", True),
+                       ("Master’s [Preferred]", True), ("Masters Social Work required", False),
+                       ("Technical/Vocational School [Required]", False)):
+        rq = scraper.extract_requirements(f"Education:\n\n{line}\n\nWork Experience:\n\n1+ years [Preferred]")
+        assert rq["education"] == [[line, pref]], (line, rq["education"])
+    # a role or an experience line under the heading is not a degree
+    rq = scraper.extract_requirements("Education:\n\nAssociate Director experience in a hospital [Preferred]")
+    assert rq["education"] == []
+    # outside an education block a bare level word is not education
+    rq = scraper.extract_requirements("Qualifications\nMaster scheduler experience required\nAssociate [Required]")
+    assert rq["education"] == []
+
+
 # (d) "Board Eligible2 years" glue
 
 def test_count_glued_to_the_previous_item_is_split():
