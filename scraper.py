@@ -15385,6 +15385,9 @@ _RQ_PHRASE_HEAD_RX = re.compile(
     r"(?:licensure|licenses?|certifications?|credentials?)(?: ?(?:and|&|/) ?(?:licensure|licenses?|certifications?|registration))* summary|"
     r"(?:what )?we(?:'|’)re looking for|what we look for|you have|you(?:'|’)ll have|"
     r"must haves?|nice to haves?|to be successful|position requirements?|job requirements?|"
+    # 2026-09-24 (push3/license): "Qualified Candidates", "The ideal candidate",
+    # "Candidate Requirements" (audit merge: kept beside the 0db6f08 hire headings)
+    r"qualified candidates?|(?:the )?ideal candidates?|candidate requirements?|"
     r"(?:minimum|preferred|required) (?:job )?(?:qualifications?|requirements?)|"
     # 2026-09-24 (owner, Sentara JR-105919): "Required at time of hire:" read
     # as a stop heading, so its lines (degree, years of experience) were lost.
@@ -15480,21 +15483,139 @@ _RQ_CUE_RX = re.compile(
 
 # Professional licensure. A driver's licence is a qualification, not
 # licensure; "378 licensed beds" and "level of licensure" are neither.
-_RQ_DRIVER_RX = re.compile(r"driv\w*(?:['’]s)?\s+licen\w*|\bCDL\b|licen\w*\s+to\s+drive|auto(?:mobile)? insurance", re.I)
+# 2026-09-24 (push3/license): the vocabulary covered nursing and little
+# else. It now names the licensed professions themselves (pharmacist,
+# pharmacy technician, PT/PTA, OT/COTA, SLP, respiratory care practitioner,
+# LCSW/LMSW/LPC/LMFT/LMHC and the other behavioural-health licences,
+# physician MD/DO, psychologist, paramedic/EMT, CNA/HHA state certification,
+# radiologic technologist, dental assistant/hygienist, clinical laboratory
+# scientist), US state names and codes ("Virginia license", "NYS LPN
+# License"), licensing boards ("Texas Medical Board", "State Board of
+# Pharmacy", "Board of Healing Arts"), state registries and state
+# certification ("State Nurse Aide Registry", "Georgia Paramedic
+# certification", "certificate in state of practice"), DEA / controlled
+# substance registration and PSYPACT. A veto only blocks the match it
+# overlaps ("licensed and unlicensed staff", "the facility is licensed",
+# "experience as a Licensed Practical Nurse", "licence reimbursement"), so a
+# line that also says "within the scope of practice" keeps its real licence.
+_RQ_DRIVER_RX = re.compile(r"driv\w*(?:['’]s)?\s+licen\w*|\bCDL\b|licen\w*\s+to\s+drive|auto(?:mobile)? insurance|\(DL\)", re.I)
+_US_STATES = (r"Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|"
+              r"Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|"
+              r"Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|"
+              r"Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|"
+              r"West Virginia|Wisconsin|Wyoming|District of Columbia|Puerto Rico")
+_US_CODES = (r"AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NYS|NC|ND|"
+             r"OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC")
+# Licence designations: each names a licence (or a state registration /
+# certification that works as one) by itself.
+_RQ_LIC_ABBR = (r"RN|LPN|LVN|APRN|ARNP|APN|CRNA|CNM|NP|PA-C|RPh|PT|PTA|OT|OTA|OTR|COTA|SLP|CCC-SLP|RRT|CRT|RCP|"
+                r"LCSW|LMSW|LICSW|LISW|LSW|LCSW-C|LPC|LPCC|LPC-S|LMFT|LMHC|LCPC|LCADC|LADC|LCDC|LAC|"
+                r"CNA|HHA|CHHA|STNA|GNA|EMT|EMT-[A-Z]+|CLS|MD|DO|DDS|DMD|DPM|PharmD")
+# Licensed professions, as a posting names them.
+_RQ_LIC_PROF = (r"registered (?:professional )?nurse|nurse practitioner|(?:licensed )?(?:practical|vocational) nurse|nurse anesthetist|"
+                r"nurse[- ]midwife|midwife|physician assistant|physician|psychiatrist|psychologist|pharmacist|pharmacy (?:technician|intern)|"
+                r"physical therap(?:ist|y) assistant|physical therapist|occupational therap(?:ist|y) assistant|occupational therapist|"
+                r"occupation therapist|speech[- ](?:language )?patholog(?:ist|y)|audiologist|respiratory care practitioner|"
+                r"respiratory therapist|(?:clinical |master |advanced |independent )*social worker(?: associate)?|"
+                r"(?:professional|mental health|clinical|agency affiliated|alcohol and drug|substance (?:abuse|use)) counselor|"
+                r"marriage (?:and|&) family therapist|mental health therapist|dietitian|nutritionist|paramedic|"
+                r"emergency medical tech\w*|radiologic technologist|radiographer|radiology tech\w*|sonographer|"
+                r"nuclear medicine technologist|radiation therapist|(?:clinical )?laboratory scientist|"
+                r"clinical (?:chemist|microbiologist|toxicologist|cytogeneticist|histocompatibility|histocompatability) scientist|"
+                r"genetic molecular biologist scientist|dental (?:assistant|hygienist)|hygienist|dentist|optometrist|chiropractor|"
+                r"podiatrist|athletic trainer|home health aide|nurse aide|nurs(?:e|ing) assistant|medication aide|perfusionist|"
+                r"registered technologist")
 _RQ_LIC_RX = re.compile(
-    r"\b(?:RN|LPN|LVN|APRN|CRNA|CNM|NP|PA-?C?|RRT|CRT|PT|PTA|OT|OTA|SLP|LCSW|LMSW|LPC|LMFT|LCPC|LICSW|MD|DO|DDS|RPh|PharmD|"
-    r"nurs\w*|state|professional|compact|multi-?state|practice|medical|pharmacy|pharmacist|physician|therap\w*|"
-    r"social work\w*|counsel\w*|board|independent|clinical|dental|radiolog\w*|vocational|practical)\b[^.;\n]{0,45}?\blicens(?:e|es|ed|ure)\b"
-    r"|\blicens(?:e|es|ed|ure)\b[^.;\n]{0,45}?\b(?:RN|LPN|LVN|APRN|nurse|nursing|to practice|in the state|state of|by the state|"
-    r"issued|board|compact|multi-?state|NLC|as an?)\b"
-    r"|\b(?:current|valid|active|unrestricted|unencumbered|permanent)\b[^.;\n]{0,30}\blicens(?:e|ed|ure)\b"
-    r"|\bNLC\b|\beNLC\b|\bnurse licensure compact\b|\bDEA\b|\bCDS (?:license|registration)\b"
+    # "<designation / profession / state / board ...> ... licence"
+    r"\b(?:" + _RQ_LIC_ABBR + r"|" + _RQ_LIC_PROF + r"|" + _US_STATES + r"|nurs\w*|state|professional|compact|multi-?state|"
+    r"practice|medical|medicine|pharmacy|therap\w*|social work\w*|counsel\w*|board|independent|clinical|dental|radiolog\w*|"
+    r"vocational|practical|fluoroscopy|radiation|x-?ray|psycholog\w*|laboratory|respiratory)\b[^.;\n]{0,45}?\blicens(?:e|es|ure|ures)\b"
+    # "licence ... <designation / profession / state phrase>"
+    r"|\blicens(?:e|es|ure|ures)\b[^.;\n]{0,45}?\b(?:" + _RQ_LIC_ABBR + r"|" + _RQ_LIC_PROF + r"|" + _US_STATES + r"|nurse|nursing|"
+    r"to practice|in the state|state of|by the state|issued|board|compact|multi-?state|NLC|as an?|in good standing)\b"
+    r"|\b(?:current|valid|active|unrestricted|unencumbered|permanent|full|temporary|interim)\b[^.;\n]{0,30}\blicens(?:e|ed|ure|ures)\b"
+    r"|\blicensed\s+(?:as|in|to|by|per|with|through|under)\b|\blicensed,?\s+(?:and\s+)?(?:unrestricted|unencumbered|in good standing)"
+    r"|\blicensed\s+(?:[\w/-]+\s+){0,3}?(?:" + _RQ_LIC_PROF + r"|therapists?|psychiatrists?|clinicians?)"
+    r"|\bindependently licensed\b|\bfully licensed\b"
+    r"|\bNLC\b|\beNLC\b|\bnurse licensure compact\b|\bDEA\b|\bdrug enforcement (?:agency|administration)\b|\bPSYPACT\b"
+    r"|\bcontrolled substances? (?:license|registration|certificate|permit)|\bCDS (?:license|registration)\b"
     r"|\bboard[- ](?:certified|certification|eligible|eligibility)\b|\bBC/BE\b|\bBE/BC\b"
-    r"|licensed (?:in|by) (?:the )?(?:state|commonwealth)|\bstate licen"
+    r"|\bstate licen|\bstate[- ]specific (?:certification|registration)"
+    # licensing bodies
+    r"|\bstate board of \w+|\b(?:" + _US_STATES + r")\s+(?:state\s+)?board of \w+"
+    r"|\bboard of (?:registered |vocational |practical )?(?:nursing|nurses|pharmacy|medicine|medical examiners|"
+    r"osteopathic medicine|healing arts|dental examiners)\b"
+    r"|\b(?:" + _US_STATES + r")\s+(?:state\s+)?(?:medical|nursing|pharmacy|dental) board\b"
+    r"|\bdepartment of state health services\b"
+    # state registration / certification that works as a licence
+    r"|\b(?:state|" + _US_STATES + r")\b[^.;\n]{0,40}?\b(?:registration|registry|paramedic certification|"
+    r"(?:respiratory care )?practitioner certification)\b"
+    r"|\b(?:nurse aide|nursing assistant|CNA|HHA|caregiver)\b[^.;\n]{0,40}?\b(?:registry|registration)\b"
+    r"|\b(?:paramedic|EMT(?:-[A-Z]+)?|emergency medical tech\w*)\b[^.;\n]{0,40}?\b(?:certification|certificate|cert|licens\w*)\b"
+    r"|\b(?:licensed|certified|state) paramedic\b|\bEMT-State\b"
+    r"|\b(?:certification|certificate|registration)\s+(?:in|by|with|from)\s+(?:the\s+)?(?:state|commonwealth|" + _US_STATES + r")\b"
+    r"|\b(?:in|by) (?:the )?state of (?:" + _US_STATES + r")\b(?=[^.;\n]{0,40}\b(?:certif|licens|registr|eligible))"
     # 2026-09-24 (reqfix, Halifax): "RN – State of Florida", "LPN - Florida"
     r"|^(?:RN|LPN|LVN|APRN|ARNP|CRNA|PA-?C|RRT|CRT|PTA?|OTR?|OTA|SLP|LCSW|LMHC|LMFT|RPh|Pharmacist|Registered Nurse|"
     r"Licensed Practical Nurse|Paramedic)\s*[-–—,:]\s*(?:the )?(?:State of [A-Z]|Florida|Georgia|Texas|compact|multi-?state)", re.I)
-_RQ_LIC_NOT_RX = re.compile(r"licensed beds|level of licensure|scope of (?:practice|licensure)|licensure level|within (?:the )?(?:scope|limits)", re.I)
+# State codes are case-sensitive ("VA License", "NYS license", "PA RN License").
+_RQ_LIC_CODE_RX = re.compile(r"\b(?:" + _US_CODES + r")\b(?:\s+[A-Za-z/-]+){0,3}?\s+(?i:licens(?:e|es|ure))\b|(?<![\w-])LIC-")
+# A veto blocks only the match it overlaps.
+_RQ_LIC_NOT_RX = re.compile(
+    r"licensed beds|level of licensure|licensure level|"
+    r"(?:within|under|to|at) (?:the )?(?:full )?(?:scope|limits|top)\b[^.;\n]{0,140}|scope of (?:practice|licensure)|"
+    r"\bin accordance with\b[^.;\n]{0,80}|\b(?:composed of|team of|consisting of|such as)\b[^.;\n]{0,80}|"
+    r"\b(?:facility|hospital|center|agency|provider|organization|program|clinic|company|we are|is a)\s+(?:is\s+|are\s+)?(?:fully\s+)?licensed\b|"
+    r"accredited, regulated, certified, and licensed|licensed (?:and|or|&|/) (?:non-?|un)licensed|\b(?:non-?|un)licensed\b|"
+    r"\blicensed (?:staff|personnel|team members?|providers?|nurses? (?:to|in accordance|who)|independent (?:practitioner|provider)s?|"
+    r"clinicians? (?:who|to|and|with)|mental health therapists? to|professionals? (?:who|to))|\bLIPs?\b|"
+    r"\blicens\w*\s+(?:fees?|reimbursement|renewal|verification|type)|provider license type|"
+    r"(?:reimburse\w*|pay(?:s|ment)? for|cost of|costs of|allowance and)\s+(?:\w+\s+){0,3}licens\w*|"
+    r"experience (?:as|working as|in the role of) an? (?:licensed|registered)\b[^.;\n]{0,30}|"
+    r"\bDEA (?:regulations?|guidelines|requirements|rules|laws|standards)|(?:regulations?|laws?) (?:set forth )?by the (?:state and )?DEA|"
+    r"licensing (?:and|or) regulatory|licensing agenc\w*|licensing authorit\w*|licensing standards|hospitals? licens\w*|"
+    r"under license\b|used under licen[sc]e|if you do not possess|indicate (?:your|\")", re.I)
+# In a Licensure / Licenses-and-Certifications block, a bare credential
+# line ("Registered Nurse (RN) [Required]", "Licensed Pharmacist (RPH)",
+# "RCP - Respiratory Care Practitioner upon hire") is a licence even
+# without the word. It must start with the profession, so "Critical Care
+# Registered Nurse (CCRN)" or "Stroke Certified Registered Nurse" stay
+# certifications.
+_RQ_LIC_LINE_RX = re.compile(
+    r"^(?:(?:state|current|valid|active|licensed|registered|certified|temporary|provisional)\s+)*(?:"
+    + _RQ_LIC_PROF + r"|(?-i:(?:" + _RQ_LIC_ABBR + r"|O\.T\.|P\.T\.))(?=[\s,:(\-–]|$))", re.I)
+
+
+def _rq_lic_span(s: str):
+    """(start, end) of the first professional licence this clause states
+    (see above), else None."""
+    s = _RQ_DRIVER_RX.sub(lambda m: " " * len(m.group(0)), s)
+    bad = [m.span() for m in _RQ_LIC_NOT_RX.finditer(s)]
+    hits = []
+    for rx in (_RQ_LIC_RX, _RQ_LIC_CODE_RX):
+        for m in rx.finditer(s):
+            if not any(a < m.end() and m.start() < b for a, b in bad):
+                hits.append(m.span())
+                break
+    return min(hits) if hits else None
+
+
+def _rq_lic(s: str) -> bool:
+    return _rq_lic_span(s) is not None
+
+
+def _rq_window(s: str, span, width: int = 300) -> str:
+    """A long run-on clause (a body stored as one line) cut to the part
+    around its licence, starting at a word."""
+    if len(s) <= width:
+        return s
+    a = max(0, span[0] - 120)
+    if a:
+        sp = s.find(" ", a)
+        a = sp + 1 if 0 <= sp < span[0] else a
+    return s[a:a + width]
+
+
 _RQ_CERT_RX = re.compile(
     r"\bcertif(?:ied|ication|ications|icate)\b|\bcredential(?:ed|s)?\b|\bregistry\b|\bregistered (?:with|through|by)\b"
     r"|\b(?:BLS|BCLS|ACLS|PALS|NRP|TNCC|ENPC|CCRN|PCCN|CNOR|CEN|CPEN|CPN|OCN|CAPA|CPAN|CRRN|WOCN|CWOCN|CPR|NIHSS|"
@@ -15659,7 +15780,7 @@ def _rq_heading(line: str):
         # is required although it says "ideal", Cleveland Clinic)
         mode = ("req" if re.match(r"(?:minimum|required|basic)\b", low) else
                 "pref" if _RQ_PREF_RX.search(low) else ("req" if _RQ_HEAD_REQ_RX.search(low) else None))
-        lic = bool(re.search(r"licen", low))
+        lic = bool(re.search(r"licen|registration", low))
         cert = bool(re.search(r"certif|credential", low))
         edu = bool(re.search(r"educat|training", low))
         other = bool(re.search(r"qualif|requir|experien|skill|knowledge|abilit|ksa|competenc|need|bring|looking|have|who you|success", low))
@@ -15874,14 +15995,24 @@ def _rq_pref(s: str, mode) -> bool:
 def _rq_types(s: str) -> set:
     """Which of licensure / certifications / education one clause states."""
     out = set()
-    lic_s = _RQ_DRIVER_RX.sub(" ", s)
-    if _RQ_LIC_RX.search(lic_s) and not _RQ_LIC_NOT_RX.search(lic_s):
+    if _rq_lic(s):
         out.add("licensure")
     if _RQ_CERT_RX.search(s) and not _RQ_CERT_NOT_RX.search(s):
         out.add("certifications")
     if _RQ_EDU_RX.search(s) and not _RQ_EDU_NOT_RX.search(s):
         out.add("education")
     return out
+
+
+def _rq_credential_line(s: str, width: int = 120) -> bool:
+    """A line under a Licensure heading that reads as a credential, not a
+    duty, an experience line, another label or "N/A"."""
+    if len(s) > width or (width <= 120 and len(s.split()) > 14) or _RQ_DRIVER_RX.search(s):
+        return False
+    if re.match(r"^(?:n/?a|none|see below|tbd)\b", s, re.I) or re.match(r"^[^:]{2,40}:\s", s):
+        return False
+    return not re.search(r"experien|abilit|knowledge|skill|\byears?\b|^(?:this|these|it|we|you|our|the)\b|"
+                         r"\b(?:exhibits|performs|refers|explains|coordinates|questions|maintains|includes|submitting)\b", s, re.I)
 
 
 def _rq_clauses(s: str) -> list:
@@ -15937,6 +16068,7 @@ def extract_requirements(text) -> dict:
 
     kind, mode, last_stop, stem = None, None, "", ""      # kind None = outside any block
     implicit, prev_bullet, hlabel = False, False, ""
+    force = False                                          # heading stood alone: its lines are credentials
     for raw in t.split("\n"):
         s = _rq_clean(raw)
         bullet = bool(re.match(r"^\s*[-•*·●▪■◦➢►–]\s", raw))
@@ -15956,13 +16088,23 @@ def extract_requirements(text) -> dict:
                 kind, mode = (kind or "qual"), (hm or mode)
             else:
                 kind, mode = hk, hm
+                force = not value
             if not value or _RQ_NONE_RX.match(value):
                 continue
             hlabel, s = s, value
         if kind is None:
             # Outside a block: a clause with a requirement cue and a specific
             # pattern, never under benefits / about / pay / EEO.
-            if re.search(r"benefit|perks|about|pay|compensation|salary|equal|eeo|commitment|why", last_stop) or len(s) > 600:
+            if re.search(r"benefit|perks|about|pay|compensation|salary|equal|eeo|commitment|why", last_stop):
+                continue
+            if len(s) > 600:
+                # 2026-09-24 (push3/license): a body stored as one long line
+                # used to be skipped whole; its licence sentences count.
+                for c in _rq_clauses(s):
+                    span = _rq_lic_span(c) if _RQ_CUE_RX.search(c) else None
+                    if span:
+                        w = _rq_window(c, span)
+                        add("licensure", w, _rq_pref(w, None))
                 continue
             # 2026-09-24 (reqfix, Halifax): a body with no requirement
             # heading at all lists them as the first bullets under the
@@ -16048,9 +16190,14 @@ def extract_requirements(text) -> dict:
                 if not _RQ_EDU_NOT_RX.search(piece) and ((own and len(s) <= 300) or _RQ_EDU_RX.search(piece)
                                                           or _RQ_EDU_BLOCK_RX.search(piece)):
                     add("education", piece, pref)
+                # (audit merge) push3/license: "EDUCATION: ... Current appropriate State
+                # licensure." counts as licensure even in a clause that also names
+                # schooling; reqfix: such a clause adds no certification.
                 for c in _rq_clauses(piece):
                     cp = _rq_pref(c, mode) if (_RQ_PREF_RX.search(c) or _RQ_REQ_RX.search(c)) else pref
                     if _RQ_EDU_RX.search(c):
+                        if _rq_lic(c):
+                            add("licensure", c, cp)
                         continue                # "Postsecondary certificate, diploma ..." is schooling
                     for f in sorted(_rq_types(c) & {"licensure", "certifications"}):
                         add(f, c, cp)
@@ -16059,8 +16206,15 @@ def extract_requirements(text) -> dict:
             for c in clauses:
                 cp = _rq_pref(c, mode) if (_RQ_PREF_RX.search(c) or _RQ_REQ_RX.search(c) or len(clauses) > 1) else pref
                 types = _rq_types(c)
-                if (kind == "lic" and not types
-                        and not re.search(r"\bexperience\b|\byears?\b|\bskills?\b|knowledge|abilit|computer", c, re.I)):
+                # (audit merge) push3/license: only under a bare Licensure heading and only
+                # a credential line; reqfix d119802: never an experience / skill line;
+                # reqfix a847c34: never a line that already names anything (education).
+                _rq_skillish = re.search(r"\bexperience\b|\byears?\b|\bskills?\b|knowledge|abilit|computer", c, re.I)
+                if (kind == "lic" and force and not types
+                        and _rq_credential_line(c) and not _rq_skillish):
+                    types.add("licensure")
+                elif (kind in ("lic", "lic+cert") and force and not types & {"licensure", "education"}
+                        and _RQ_LIC_LINE_RX.search(c) and _rq_credential_line(c, 300) and not _rq_skillish):
                     types.add("licensure")
                 if (kind in ("cert", "lic+cert") and not types and not _RQ_DRIVER_RX.search(c)
                         and not re.search(r"\bexperience\b|\byears?\b|\bskills?\b|knowledge|abilit|computer", c, re.I)):
