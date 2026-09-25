@@ -1785,8 +1785,13 @@ WORKDAY_TENANTS = {
     "St. Elizabeth Healthcare":  ("stelizabeth",         "115", "StElizabethExternalCareerSite"),  # 382, KY/IN
     "Baystate Health":           ("baystatehealth",      "12",  "External_Careers"),               # 361, MA
     "Nebraska Medicine":         ("nebraskamed",         "5",   "NM"),                             # 237, NE
-    "Phoebe Putney Health":      ("phoebehealth",        "503", "phoebehealth"),                   # 244, GA
     "Adventist HealthCare (MD)": ("adventisthealthcare", "1",   "AdventistHealthCareCareers"),     # 425, MD; not Adventist Health (CA)
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Silver Hill Hospital": ("silverhillhospital", "108", "careers"),   # 16, New Canaan CT
+    "Pine Rest Christian Mental Health Services": ("pinerest", "5", "PineRest"),   # 84, Grand Rapids MI
+    "Hospital for Special Surgery": ("hss", "1", "HSS_Careers"),   # 213, New York NY
+    "Whitman Hospital and Medical Center": ("whmc", "501", "careers"),   # 25, Colfax WA
+    "Rogers Behavioral Health": ("rogersbh", "1", "RBHCareer"),   # 201, Oconomowoc WI
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -2252,6 +2257,82 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "davita":                     ("Denver",            "CO"),
     # AdventHealth — Findly Google CTS (added 2026-04-24)
     "adventhealth":               ("Altamonte Springs", "FL"),
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): each board's CMS city and state, for rows that carry none.
+    "AHMC Healthcare": ("Alhambra", "CA"),
+    "Alvarado Parkway Institute": ("La Mesa", "CA"),
+    "Aurora Charter Oak Hospital": ("Covina", "CA"),
+    "Aurora Vista del Mar Hospital": ("Ventura", "CA"),
+    "Baptist Health Care (Pensacola)": ("Pensacola", "FL"),
+    "Barrett Hospital & HealthCare": ("Dillon", "MT"),
+    "Bear Valley Community Hospital": ("Big Bear Lake", "CA"),
+    "Blythedale Children's Hospital": ("Valhalla", "NY"),
+    "Boulder City Hospital": ("Boulder City", "NV"),
+    "Bowen Center": ("Pierceton", "IN"),
+    "Brattleboro Retreat": ("Brattleboro", "VT"),
+    "Casa Colina Hospital": ("Pomona", "CA"),
+    "Catalina Island Medical Center": ("Avalon", "CA"),
+    "Chapman Global Medical Center": ("Orange", "CA"),
+    "North Star Health Alliance": ("Ogdensburg", "NY"),
+    "Coalinga Regional Medical Center": ("Coalinga", "CA"),
+    "Columbia Memorial Hospital": ("Astoria", "OR"),
+    "Community First Medical Center": ("Chicago", "IL"),
+    "Community Hospital (Grand Junction)": ("Grand Junction", "CO"),
+    "DeSoto Memorial Hospital": ("Arcadia", "FL"),
+    "Decatur County Memorial Hospital": ("Greensburg", "IN"),
+    "Ellenville Regional Hospital": ("Ellenville", "NY"),
+    "Evanston Regional Hospital": ("Evanston", "WY"),
+    "Fulton County Health Center": ("Wauseon", "OH"),
+    "Gateways Hospital and Mental Health Center": ("Los Angeles", "CA"),
+    "Gibson Community Hospital": ("Gibson City", "IL"),
+    "Grace Cottage Hospital": ("Townshend", "VT"),
+    "Greene County General Hospital": ("Linton", "IN"),
+    "Gritman Medical Center": ("Moscow", "ID"),
+    "Gunnison Valley Hospital": ("Gunnison", "UT"),
+    "Health Care District of Palm Beach County": ("West Palm Beach", "FL"),
+    "Hendry Regional Medical Center": ("Clewiston", "FL"),
+    "Henry County Hospital (Napoleon)": ("Napoleon", "OH"),
+    "Hollywood Presbyterian Medical Center": ("Los Angeles", "CA"),
+    "Hospital for Special Surgery": ("New York", "NY"),
+    "Jefferson County Health Center": ("Fairfield", "IA"),
+    "Jerold Phelps Community Hospital": ("Garberville", "CA"),
+    "Johnson Memorial Hospital": ("Franklin", "IN"),
+    "Lake Butler Hospital": ("Lake Butler", "FL"),
+    "Lewis County General Hospital": ("Lowville", "NY"),
+    "LifeStream Behavioral Center": ("Leesburg", "FL"),
+    "Lompoc Valley Medical Center": ("Lompoc", "CA"),
+    "Marion Health": ("Marion", "IN"),
+    "Mary Greeley Medical Center": ("Ames", "IA"),
+    "Mayers Memorial Hospital": ("Fall River Mills", "CA"),
+    "Mile Bluff Medical Center": ("Mauston", "WI"),
+    "Monadnock Community Hospital": ("Peterborough", "NH"),
+    "Neosho Memorial Regional Medical Center": ("Chanute", "KS"),
+    "NeuroPsychiatric Hospitals": ("Bremen", "IN"),
+    "North Carolina Specialty Hospital": ("Durham", "NC"),
+    "North Country Hospital and Health Center": ("Newport", "VT"),
+    "Northeastern Center": ("Auburn", "IN"),
+    "Northeastern Vermont Regional Hospital": ("Saint Johnsbury", "VT"),
+    "Northern Inyo Hospital": ("Bishop", "CA"),
+    "Odessa Memorial Healthcare Center": ("Odessa", "WA"),
+    "Orchard Hospital": ("Gridley", "CA"),
+    "Pacifica Hospital of the Valley": ("Sun Valley", "CA"),
+    "Pine Rest Christian Mental Health Services": ("Grand Rapids", "MI"),
+    "Pomerene Hospital": ("Millersburg", "OH"),
+    "Putnam County Hospital": ("Greencastle", "IN"),
+    "Ridgecrest Regional Hospital": ("Ridgecrest", "CA"),
+    "Rogers Behavioral Health": ("Oconomowoc", "WI"),
+    "Rush Memorial Hospital": ("Rushville", "IN"),
+    "San Gorgonio Memorial Hospital": ("Banning", "CA"),
+    "Santiam Hospital & Clinics": ("Stayton", "OR"),
+    "Seneca Healthcare District": ("Chester", "CA"),
+    "Sheridan Memorial Hospital": ("Sheridan", "WY"),
+    "Silver Hill Hospital": ("New Canaan", "CT"),
+    "Spanish Peaks Regional Health Center": ("Walsenburg", "CO"),
+    "Sullivan County Community Hospital": ("Sullivan", "IN"),
+    "Valor Health": ("Emmett", "ID"),
+    "Watsonville Community Hospital": ("Watsonville", "CA"),
+    "Western Missouri Medical Center": ("Warrensburg", "MO"),
+    "Whitman Hospital and Medical Center": ("Colfax", "WA"),
+    "Woman's Hospital": ("Baton Rouge", "LA"),
 }
 
 # Normalize system keys to lowercase
@@ -3819,7 +3900,6 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "UAMS Health": ("Little Rock", "AR"),
     "UMC Health System": ("Lubbock", "TX"),   # 2026-09-22 Texas resume: every UMC site is in Lubbock
     "ThedaCare":               ("Appleton", "WI"),   # 2026-09-25 B1: all 434 dry-run rows had no parsed location
-    "Phoebe Putney Health":    ("Albany", "GA"),     # 2026-09-25 B1: all 244 dry-run rows had no parsed location
     "WVU Medicine":            ("Morgantown", "WV"),
     "University of Rochester": ("Rochester", "NY"),
     "MultiCare Health":        ("Tacoma", "WA"),
@@ -4465,6 +4545,10 @@ ICIMS_ORGS = {
     "Dartmouth Health":       "careers-dartmouth-hitchcock.icims.com",   # Lebanon NH + VT
     "Huntsville Hospital Health System": "careers-hhsys.icims.com",   # AL; careers.hhsys.org is its Phenom front
     "Northside Hospital":     "careers-mynorthsidecareer.icims.com",    # Atlanta GA
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "AHMC Healthcare": "careers-ahmchealth.icims.com",   # 425, Alhambra CA
+    "NeuroPsychiatric Hospitals": "careers-nph.icims.com",   # 41, Bremen IN
+    "Blythedale Children's Hospital": "careers-blythedale.icims.com",   # 22, Valhalla NY
 }
 
 
@@ -5874,7 +5958,6 @@ JIBE_SITES = {
     "UCI Health":                "https://jobs.uci.edu",
     # ── 2026-09-25 (push5/systems, B1)
     "Carle Health":     "https://careers.carlehealth.org",       # 746, Urbana IL
-    "Tanner Health":    "https://careers.tanner.org",            # 202, Carrollton GA
     "Infirmary Health": "https://careers.infirmaryhealth.org",   # 276, Mobile AL
 }
 
@@ -6394,6 +6477,8 @@ GREENHOUSE_ORGS = {
     # "Pediatrix Medical Group":   "pediatrix",           # 404
     # "RadNet":                    "radnet",              # 404
     # Re-add only after confirming via curl https://boards-api.greenhouse.io/v1/boards/{slug}/jobs
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Lewis County General Hospital": "lewiscountygeneralhospital",   # 47, Lowville NY
 }
 
 # 2026-09-22 (Charlie Health lesson): every Greenhouse row was stamped
@@ -8236,6 +8321,19 @@ ADP_ORGS = {
     "ADP Health System 10": "5ffc5741-7db3-4aa8-a16a-e19abed9677e",
     "ADP Health System 11": "58af5ddf-316e-4ac8-bc2f-471750cda3c7",
     "ADP Health System 12": "bb661c48-7edc-400c-adfb-40f8f7743374",
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Bear Valley Community Hospital": ("623d6b00-0ac6-45cb-9f80-96cd30ac65ea", "19000101_000001", "CA", "Bear Valley Community Hospital"),   # 7, Big Bear Lake CA
+    "Catalina Island Medical Center": ("000c35c7-aac0-47bb-b34d-e0366b957c9d", "19000101_000001", "CA", "Catalina Island Medical Center"),   # 18, Avalon CA
+    "Chapman Global Medical Center": ("a45074b6-b45e-424e-9e71-c45a4d73c34b", "19000101_000001", "CA", "Chapman Global Medical Center"),   # 239, Orange CA
+    "Hollywood Presbyterian Medical Center": ("5d0945d2-39da-4a4c-88e4-b8c167c5a4f2", "19000101_000001", "CA", "Hollywood Presbyterian Medical Center"),   # 138, Los Angeles CA
+    "Northern Inyo Hospital": ("6fa6d2e5-a3ca-49c9-86f1-49e7d152cd55", "19000101_000001", "CA", "Northern Inyo Hospital"),   # 22, Bishop CA
+    "Watsonville Community Hospital": ("1dc6b9d0-c77c-49e5-bf72-a60615cda53e", "19000101_000001", "CA", "Watsonville Community Hospital"),   # 24, Watsonville CA
+    "Hendry Regional Medical Center": ("a2acf020-8087-4a0f-9d9a-c6c37069b240", "19000101_000001", "FL", "Hendry Regional Medical Center"),   # 19, Clewiston FL
+    "Johnson Memorial Hospital": ("d07382ad-75f8-46fc-9b01-15158582ac94", "19000101_000001", "IN", "Johnson Memorial Hospital"),   # 66, Franklin IN
+    "Northeastern Center": ("632344bf-a9aa-43b1-a5f1-f2c0b9ca1976", "19000101_000001", "IN", "Northeastern Center"),   # 30, Auburn IN
+    "Sullivan County Community Hospital": ("572fe51f-5066-48e0-8a34-d004ee2ad6d5", "19000101_000001", "IN", "Sullivan County Community Hospital"),   # 43, Sullivan IN
+    "Boulder City Hospital": ("4cd83be9-0114-42e8-a339-fe7788450331", "19000101_000001", "NV", "Boulder City Hospital"),   # 13, Boulder City NV
+    "Pomerene Hospital": ("dbfe9ed8-f973-4510-9f4b-5fb09d0441fb", "19000101_000001", "OH", "Pomerene Hospital"),   # 16, Millersburg OH
 }
 _ADP_API = "https://workforcenow.adp.com/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions"
 _ADP_PORTAL = "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html"
@@ -9533,6 +9631,15 @@ UKG_ORGS = {
     # opportunity carries none). Springhill's board was found by web search
     # (the hospital's own careers page 403s every crawler, WebFetch included).
     "Springhill Medical Center":    ("https://springhill.rec.pro.ukg.net/SPR1500SHSL", "a6346066-8a35-4fb0-b665-fc48587cb154", "AL"),
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Community Hospital (Grand Junction)": ("https://recruiting2.ultipro.com/COL1038CWHS", "bce41eed-c3ed-4bce-93b3-51ec9c5cdabb", "CO"),   # 114, Grand Junction CO
+    "Gritman Medical Center": ("https://recruiting2.ultipro.com/GRI1010GMDI", "4415c034-d355-4d78-b128-b62aa4c5ae5c", "ID"),   # 34, Moscow ID
+    "Bowen Center": ("https://recruiting.ultipro.com/OTI1001TORB", "f3a04afe-cb8a-4bbf-845c-b5aad1662bca", "IN"),   # 39, Pierceton IN
+    "Woman's Hospital": ("https://recruiting2.ultipro.com/WOM1000WHF", "2f4bcf30-0e2d-4c6d-82e3-d7e885e672ea", "LA"),   # 29, Baton Rouge LA
+    "North Carolina Specialty Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "cd530ca6-1520-456d-a53d-44839a9ed42f", "NC"),   # 39, Durham NC
+    "Monadnock Community Hospital": ("https://recruiting.ultipro.com/MON1013", "a9bc7bc9-10fa-190f-a05e-e7fc4e84d763", "NH"),   # 72, Peterborough NH
+    "Henry County Hospital (Napoleon)": ("https://recruiting.ultipro.com/HEN1007HCHI", "ccbfb32e-0999-44b9-90b0-7ceab704caa5", "OH"),   # 26, Napoleon OH
+    "Evanston Regional Hospital": ("https://recruiting2.ultipro.com/QHC1000QHCS", "c93596e3-71e0-4eca-9683-6cd9b263ef57", "WY"),   # 11, Evanston WY
 }
 
 _UKG_PAGE = 50
@@ -9848,7 +9955,9 @@ ORACLE_ORGS = {
     # ── 2026-09-25 (push5/systems, B1): AHRQ systems with no rows; totals that day.
     "Cedars-Sinai":              ("https://hdkk.fa.us6.oraclecloud.com",                      "CX_1"),     # 868, Los Angeles CA
     "Adena Health":              ("https://eord.fa.us2.oraclecloud.com",                      "CX_1001"),  # 174, Chillicothe OH
-    "UVA Health":                ("https://fa-euzb-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),     # 257, Charlottesville VA
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Baptist Health Care (Pensacola)": ("https://fa-etrr-saasfaprod1.fa.ocs.oraclecloud.com", "CX_1"),   # 280, Pensacola FL
+    "Health Care District of Palm Beach County": ("https://fa-ewje-saasfaprod1.fa.ocs.oraclecloud.com", "CX_1001"),   # 34, West Palm Beach FL
 }
 
 # 2026-09-16 (NY coverage): Mount Sinai site names in requisition titles ->
@@ -10066,6 +10175,24 @@ HEALTHCARESOURCE_ORGS = {
     "Cheshire Medical Center":           "cheshire",       # Keene NH (Dartmouth Health)
     "Mt. Ascutney Hospital":             "dhamtascutney",  # Windsor VT (Dartmouth Health)
     "Southwestern Vermont Medical Center": "svhealthcare", # Bennington VT (Dartmouth Health)
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Casa Colina Hospital": "casacolina",   # 26, Pomona CA
+    "Lompoc Valley Medical Center": "lompocvmc",   # 52, Lompoc CA
+    "Orchard Hospital": "orchardhospital",   # 26, Gridley CA
+    "Pacifica Hospital of the Valley": "pacificahospital",   # 110, Sun Valley CA
+    "Ridgecrest Regional Hospital": "rrh",   # 43, Ridgecrest CA
+    "San Gorgonio Memorial Hospital": "sgmh",   # 62, Banning CA
+    "Jefferson County Health Center": "jeffersoncountyhealthcenter",   # 30, Fairfield IA
+    "Mary Greeley Medical Center": "mgmc",   # 74, Ames IA
+    "Decatur County Memorial Hospital": "dcmh",   # 13, Greensburg IN
+    "Greene County General Hospital": "greenecountyhospital",   # 32, Linton IN
+    "Marion Health": "mgh",   # 119, Marion IN
+    "Neosho Memorial Regional Medical Center": "nmrmc",   # 20, Chanute KS
+    "North Star Health Alliance": "claxtonhepburn",   # 81, Ogdensburg NY
+    "Columbia Memorial Hospital": "columbiamemorial",   # 80, Astoria OR
+    "North Country Hospital and Health Center": "northcountry",   # 43, Newport VT
+    "Northeastern Vermont Regional Hospital": "dhanortheasternvt",   # 56, Saint Johnsbury VT
+    "Sheridan Memorial Hospital": "sheridanhospital",   # 80, Sheridan WY
 }
 
 def _dig(d, *path, default=""):
@@ -11308,6 +11435,8 @@ APPLICANTPRO_ORGS = {
     # component reads /core/jobs/<domainId>?getParams=<json> (domainId from the
     # page's bootstrapVue config; a bare /core/jobs/<id> answers a PHP error).
     "Elite Hospital Kingwood": ("elitekingwood", "9514"),
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Mile Bluff Medical Center": ("milebluff", ""),   # 48, Mauston WI
 }
 _APPLICANTPRO_PARAMS = {"cityUrl": "", "countryAbbreviation": "", "stateAbbreviation": "", "isInternal": 0}
 
@@ -11799,6 +11928,28 @@ PAYCOM_ORGS = {
     "Paycom Hospital 4": "0FD7E535C5AC57A6144B389ACAA1998B",
     "Paycom Hospital 5": "8236C138F02B1587E10CAE245C2E6EE6",
     "Paycom Hospital 6": "BA896DB60A5046DD23CC67AB5801923F",
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Gateways Hospital and Mental Health Center": "0E4AC8A6FD7D2375CD64614217F0D1D9",   # 25, Los Angeles CA
+    "Mayers Memorial Hospital": "95C2AB5FD27B9847E71410D7DBC9CD20",   # 14, Fall River Mills CA
+    "Seneca Healthcare District": "48CFB8CACCA025474421452FDE93C515",   # 25, Chester CA
+    "LifeStream Behavioral Center": "C8EA08D51FCCA2BC08C6BF42B9F7AFF2",   # 73, Leesburg FL
+    "Valor Health": "E15F8E1013FD0EF4CE4F590F405D0B20",   # 15, Emmett ID
+    "Gibson Community Hospital": "86544B3A788944CC5FE1B2A0C5DF2AE5",   # 66, Gibson City IL
+    "Putnam County Hospital": "4F981A4CF96241333A14A004376D840C",   # 27, Greencastle IN
+    "Santiam Hospital & Clinics": "8A60330E4601A7C93B62D516356235C3",   # 27, Stayton OR
+}
+
+# 2026-09-25 (B2): Paycom boards outside Texas; a preview whose location has no
+# state takes this instead of the adapter's TX default.
+PAYCOM_DEFAULT_STATE = {
+    "Gateways Hospital and Mental Health Center": "CA",
+    "Gibson Community Hospital": "IL",
+    "LifeStream Behavioral Center": "FL",
+    "Mayers Memorial Hospital": "CA",
+    "Putnam County Hospital": "IN",
+    "Santiam Hospital & Clinics": "OR",
+    "Seneca Healthcare District": "CA",
+    "Valor Health": "ID",
 }
 
 _PAYCOM_LIST = "https://www.paycomonline.net/v4/ats/web.php/jobs"
@@ -11934,7 +12085,7 @@ async def scrape_paycom(session: aiohttp.ClientSession, system: str, client_key:
                     await asyncio.sleep(random.uniform(0.3, 0.9))
                 except Exception as e:
                     logger.info(f"Paycom {system}: detail {prev.get('jobId')}: {e}")
-            job = _paycom_job(prev, detail, system, client_key)
+            job = _paycom_job(prev, detail, system, client_key, PAYCOM_DEFAULT_STATE.get(system, "TX"))
             if job:
                 jobs.append(job)
     except Exception as e:
@@ -12097,6 +12248,23 @@ PAYLOCITY_ORGS = {
     # 2026-09-24 Texas configs.
     "Reeves Regional Health":           ("107b349f-7b56-40e0-9ffc-18913ca2343c", "Reeves-Regional-Health", "TX"),               # 24, Pecos
     "Muleshoe Area Medical Center":     ("31daf266-5e69-4889-9acf-8a5cd298b4b0", "Muleshoe-Area-Hospital-District", "TX"),      # 10, Muleshoe
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Alvarado Parkway Institute": ("a74fd35f-7c7e-4381-8d2c-d2652a1fdf04", "Alvarado-Parkway-Institute", "CA"),   # 12, La Mesa CA
+    "Coalinga Regional Medical Center": ("9b5815f4-e631-4e30-9ec0-1475ebab6c76", "Coalinga-Regional-Medical-Center", "CA"),   # 29, Coalinga CA
+    "Jerold Phelps Community Hospital": ("821bea56-e7f0-49e7-bfa5-c54cba0d9e9f", "Southern-Humboldt-Community-Healthcare-District", "CA"),   # 12, Garberville CA
+    "Spanish Peaks Regional Health Center": ("a66c6ef5-63f2-437b-b36c-dcc6c055d7f6", "Spanish-Peaks-Regional-Health-Center", "CO"),   # 22, Walsenburg CO
+    "DeSoto Memorial Hospital": ("d51bd0bb-683f-40f5-8a17-9b5c6c98895e", "Tampa-General-Hospital-DeSoto", "FL"),   # 5, Arcadia FL
+    "Lake Butler Hospital": ("fbe6a3ad-fddd-4354-b034-ce68d840b19c", "Medlink-Management-Services-Inc", "FL"),   # 16, Lake Butler FL
+    "Community First Medical Center": ("01960687-f6e2-40cc-bb44-152b08daa454", "Community-First-Healthcare-of-Illinois", "IL"),   # 31, Chicago IL
+    "Rush Memorial Hospital": ("d84f8ae1-03a8-4c3e-a372-d4949f1c300e", "Rush-Memorial-Hospital", "IN"),   # 24, Rushville IN
+    "Western Missouri Medical Center": ("852c4934-0bf3-4e35-9c11-38a5fd6fd353", "Western-Missouri-Medical-Center", "MO"),   # 74, Warrensburg MO
+    "Barrett Hospital & HealthCare": ("f905c009-7524-4310-82a4-fb9e1606c9ce", "Barrett-Hospital-HealthCare", "MT"),   # 16, Dillon MT
+    "Ellenville Regional Hospital": ("dc1dcad2-8d96-4917-9b28-f8348e28f4b4", "Ellenville-Regional-Hospital", "NY"),   # 13, Ellenville NY
+    "Fulton County Health Center": ("8700f8d0-d826-4b64-b23d-ec1b9d2d5d3a", "Fulton-County-Health-Center", "OH"),   # 30, Wauseon OH
+    "Gunnison Valley Hospital": ("3da4ac0d-ec21-431b-995d-c8bd121d27ad", "Gunnison-Valley-Hospital", "UT"),   # 5, Gunnison UT
+    "Brattleboro Retreat": ("c13b8a1e-da34-4331-af36-4e2efa4582bd", "Brattleboro-Retreat", "VT"),   # 32, Brattleboro VT
+    "Grace Cottage Hospital": ("c7df1c31-85f2-409b-9089-9d18fe70a550", "Grace-Cottage-Family-Health-Hospital", "VT"),   # 17, Townshend VT
+    "Odessa Memorial Healthcare Center": ("2c7a5474-14e9-41ce-ac6a-02af4ddc4513", "Lincoln-County-Public-Hospital-District-1", "WA"),   # 16, Odessa WA
 }
 _PAYLOCITY_PAGEDATA_RE = re.compile(r"window\.pageData\s*=\s*(\{)")
 
@@ -12186,6 +12354,9 @@ WORKABLE_ORGS = {
     "San Antonio Behavioral Healthcare Hospital": ("sanantoniobehavioral", "TX"),                     # 22
     "Georgetown Behavioral Health Institute":     ("georgetown-behavioral-health-institute", "TX"),   # 28
     "Dallas Behavioral Healthcare Hospital":      ("dbhh", "TX"),                                     # 26, De Soto
+    # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
+    "Aurora Charter Oak Hospital": ("aurora-behavioral-charter-oak", "CA"),   # 9, Covina CA
+    "Aurora Vista del Mar Hospital": ("vista-del-mar-hospital", "CA"),   # 5, Ventura CA
 }
 _WORKABLE_TYPES = {"full": "Full time", "part": "Part time", "contract": "Contract", "temporary": "Temporary"}
 

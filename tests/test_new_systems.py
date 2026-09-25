@@ -133,7 +133,10 @@ def test_configs_added_and_dead_entries_retired():
                 "Baystate Health", "Nebraska Medicine", "Phoebe Putney Health", "Adventist HealthCare (MD)"):
         t = scraper.WORKDAY_TENANTS[lab]
         assert len(t) == 3 and t[1].isdigit(), lab
-    for lab in ("Cedars-Sinai", "Adena Health", "UVA Health"):
+    # UVA Health runs on Phenom (push5/gov, with its non-health drop rule); its Phenom rows
+    # already point at this Oracle tenant, so a second Oracle entry would re-add the dropped rows.
+    assert "UVA Health" not in scraper.ORACLE_ORGS
+    for lab in ("Cedars-Sinai", "Adena Health"):
         base, site = scraper.ORACLE_ORGS[lab]
         assert base.startswith("https://") and site.startswith("CX_")
     for lab in ("Carle Health", "Tanner Health", "Infirmary Health"):
@@ -158,3 +161,16 @@ def test_blank_location_defaults_for_new_systems():
     for lab, st in (("Northside Hospital", "GA"), ("ThedaCare", "WI"), ("Phoebe Putney Health", "GA"),
                     ("Nebraska Medicine", "NE"), ("Dartmouth Health", "NH")):
         assert scraper.SYSTEM_LOCATION_DEFAULTS[lab.lower()][1] == st
+
+
+def test_push5_lanes_configure_each_new_label_once():
+    """push5/gov, push5/systems and push5/standalone merged: no board label may be
+    listed on two platforms (duplicate fetches, and a second platform bypasses
+    per-platform drop rules such as PHENOM_DROP_EMPLOYERS)."""
+    boards = [scraper.WORKDAY_TENANTS, scraper.PHENOM_ORGS, scraper.JIBE_SITES, scraper.CSOD_ORGS,
+              scraper.ICIMS_ORGS, scraper.ORACLE_ORGS, scraper.INFOR_ORGS, scraper.HEALTHCARESOURCE_ORGS,
+              scraper.TALEMETRY_SITES, scraper.SF_RMK_BOARDS, scraper.HCTS_PORTALS, scraper.PAYCOM_ORGS]
+    for label in ("UVA Health", "Tanner Health", "Phoebe Putney Health", "Broward Health",
+                  "Ohio State Wexner Medical Center", "Cedars-Sinai", "AHMC Healthcare",
+                  "Baptist Health Care (Pensacola)", "Northside Hospital", "RWJBarnabas Health"):
+        assert sum(label in b for b in boards) == 1, label
