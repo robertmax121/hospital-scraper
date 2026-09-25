@@ -1486,6 +1486,30 @@ def derive_job_type(title, raw_job_type):
 
 
 WORKDAY_TENANTS = {
+    # 2026-09-25 push 5 / gov: Denver Health and Hospital Authority (state-
+    # chartered public authority, one CMS hospital). Tenant and site read off
+    # the "Search jobs" links on denverhealth.org/for-professionals/careers.
+    "Denver Health":             ("denverhealth",       "1",   "DHHA-Main"),
+    # Public hospital authorities / state university hospitals, same day;
+    # each tenant read off the system's own careers page and answered the
+    # CXS list call (totals on 2026-09-25 in brackets).
+    "Palomar Health":            ("palomarhealth",      "5",   "PH"),              # Escondido / Poway CA district [288]
+    "Phoebe Putney Health":      ("phoebehealth",       "503", "phoebehealth"),    # Albany GA hospital authority [244]
+    "Baptist Health (Alabama)":  ("baptistfirst",       "12",  "baptistfirst"),    # Montgomery AL healthcare authority [518]
+    "University of Mississippi Medical Center": ("ummc", "5",  "UMCCareers"),      # state (IHL) [535]
+    # Statewide boards, cut to the state hospitals by WD_TENANT_FACETS
+    # (agency / location) and, for Georgia, WD_TITLE_FACILITY.
+    "Georgia DBHDD":             ("georgia",            "5",   "TGC"),             # Team Georgia Careers, DBHDD agency [235]
+    "Oregon State Hospital":     ("oregon",             "5",   "SOR_External_Career_Site"),  # OSH Salem + Junction City [12]
+    "Ohio State Wexner Medical Center": ("osu",         "1",   "OSUCareers"),      # university board cut to the medical center's locations
+    "Southeast Health (Dothan)": ("seh",                "503", "SoutheastHealth"), # Houston County AL healthcare authority
+    "MarinHealth":               ("mymarinhealth",      "5",   "MHCareers"),       # Marin Healthcare District, Greenbrae CA
+    "Altru Health System":       ("altru",              "503", "careers"),         # Grand Forks ND [162]
+    "Terrebonne General Health System": ("tgmc",        "5",   "TGHS"),            # Terrebonne Parish hospital service district, Houma LA [105]
+    "CGH Medical Center":        ("cghmc",              "1",   "Search"),          # Sterling-Rock Falls IL hospital district [79]
+    "El Camino Health":          ("ech",                "5",   "ech"),             # El Camino Healthcare District, Mountain View / Los Gatos CA
+    "St. Tammany Health System": ("stph",               "5",   "STPH"),            # St. Tammany Parish Hospital Service District 1, Covington LA
+    "UAMS Health":               ("uasys",              "5",   "UAMS_All_Careers"),  # University of Arkansas for Medical Sciences (state) [319]
     # 2026-09-22 Texas resume: UMC Health System, Lubbock (422 beds). 131
     # postings in the dry run, bodies and dates from the detail pass; the
     # board carries no state, see SYSTEM_LOCATION_DEFAULTS / WD_FACILITY_MAP.
@@ -1770,6 +1794,30 @@ WORKDAY_TENANTS = {
 # Workday re-keys the facet the tenant returns 0 rows and a warning says so;
 # the zero-yield guards keep its inventory from being retired meanwhile.
 WD_TENANT_FACETS: dict[str, dict[str, list[str]]] = {
+    # 2026-09-25 push 5 / gov: statewide tenants cut to one agency / one
+    # hospital's locations (ids read off the tenants' facet lists that day).
+    "Georgia DBHDD": {"hiringCompany": ["3f907d8292e51000cddbc10cc6a80000"]},
+    "Oregon State Hospital": {"locations": ["47688ccd4cac014b9648158fc523bcf8",     # Salem | OHA | Oregon State Hospital
+                                            "47688ccd4cac017c6ad4558fc52304f9"]},   # Junction City | OHA | Oregon State Hospital
+    # The Ohio State University board (1,042 postings) cut to the Wexner
+    # Medical Center hospitals and campus; College of Medicine research,
+    # the health plan and the rest of the university stay out.
+    "Ohio State Wexner Medical Center": {"locations": [
+        "65fe018a8c111001b17b9afdfb7d0000",   # University Hospital
+        "cfeaeb92ccbc014a34398eab65019626",   # University Hospital - Doan Hall (0089)
+        "df3a0195f22b01f0cf00fa6c6501bf14",   # University Hospital - Pavilion (0372)
+        "4636ab80487a01e3f8fc11376601b425",   # University Hospital - Rhodes Hall (0354)
+        "1b170d8806031001b13738493fa30000",   # East Hospital
+        "67612469e2ea01cce54c69e664017d16",   # East Hospital - Main (0398)
+        "cfeaeb92ccbc012e62f018c765019d29",   # East Hospital - Tower (0397)
+        "d1f4f9955cee1001b1662e892dbd0000",   # James Cancer Hospital and Solove Research Institute
+        "c77f1ce87652012bde73322d6501fa13",   # James Cancer Hospital (0375)
+        "fa093bd469e01001b15c10a16a3c0000",   # Ross Heart Hospital
+        "c77f1ce8765201a1974b4f2b6501cd13",   # Ross Heart Hospital (0353)
+        "fa093bd469e01001b10676bbac490000",   # Dodd Rehabilitation Hospital
+        "e18a59cd58401001b128e63704360000",   # Harding Hospital
+        "819c1ab743bd0130a44a99006501a2b6",   # Medical Center Campus
+    ]},
     "Allegheny Health Network": {"locationHierarchy1": [
         "fd55ee6c34ac0152d812814ea7018729", "fd55ee6c34ac017db2336a6ca701782a",
         "1f1a79f42c93013094672369a701683b", "fd55ee6c34ac0167521d9753a701c729",
@@ -3524,6 +3572,51 @@ _WD_REQ_ID_RE = re.compile(r"^[A-Za-z]{0,12}[-_ ]?\d{3,}[A-Za-z0-9._-]*$")
 # trailing "(CODE)" stripped; a key also matches as a prefix. Value =
 # (facility label or None to keep the system name, city, state).
 WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
+    # 2026-09-25 push 5 / gov: both boards give the campus, never a town or
+    # state ("Baptist Medical Center South", "Sumter Campus"); the hospital
+    # campuses take the CMS names, everything else the tenant default.
+    "Baptist Health (Alabama)": {
+        "baptist medical center south": ("Baptist Medical Center South", "Montgomery", "AL"),
+        "baptist medical center east": ("Baptist Medical Center East", "Montgomery", "AL"),
+        "prattville baptist hospital": ("Prattville Baptist Hospital", "Prattville", "AL"),
+    },
+    # Ohio State: the location is a building ("University Hospital",
+    # "James Cancer Hospital (0375)"); all of them are in Columbus and all
+    # bill under one CMS number (360085), so the town is what matters.
+    "Ohio State Wexner Medical Center": {
+        "university hospital": ("Ohio State University Hospital", "Columbus", "OH"),
+        "east hospital": ("Ohio State East Hospital", "Columbus", "OH"),
+        "james cancer hospital and solove research institute": ("James Cancer Hospital", "Columbus", "OH"),
+        "james cancer hospital": ("James Cancer Hospital", "Columbus", "OH"),
+        "ross heart hospital": ("Ross Heart Hospital", "Columbus", "OH"),
+        "dodd rehabilitation hospital": ("Dodd Rehabilitation Hospital", "Columbus", "OH"),
+        "harding hospital": ("Harding Hospital", "Columbus", "OH"),
+        "medical center campus": (None, "Columbus", "OH"),
+    },
+    # CGH and Terrebonne give a site code or a street address, never a town.
+    "CGH Medical Center": {
+        "loc001 hospital": ("CGH Medical Center", "Sterling", "IL"),
+        "loc": (None, "Sterling", "IL"),
+        "all clinic locations": (None, "Sterling", "IL"),
+        "day care & patient accounts": (None, "Sterling", "IL"),
+    },
+    "Terrebonne General Health System": {
+        "8166 main st": ("Terrebonne General Medical Center", "Houma", "LA"),
+        "pmc 218 corporate drive": (None, "Houma", "LA"),
+        "gcsc 402 dunn st": (None, "Houma", "LA"),
+        "1020 school st": (None, "Houma", "LA"),
+    },
+    "Oregon State Hospital": {
+        "salem | oha | oregon state hospital": ("Oregon State Hospital", "Salem", "OR"),
+        "junction city | oha | oregon state hospital": ("Oregon State Hospital", "Junction City", "OR"),
+    },
+    "Phoebe Putney Health": {
+        "phoebe putney memorial hospital": ("Phoebe Putney Memorial Hospital", "Albany", "GA"),
+        "phoebe north campus": ("Phoebe Putney Memorial Hospital", "Albany", "GA"),
+        "phoebe putney trauma & critical care tower": ("Phoebe Putney Memorial Hospital", "Albany", "GA"),
+        "sumter campus": ("Phoebe Sumter Medical Center", "Americus", "GA"),
+        "worth campus": ("Phoebe Worth Medical Center", "Sylvester", "GA"),
+    },
     # 2026-09-22 Texas resume: the two campuses that are hospitals take the
     # CMS names; clinics and offices keep the system name (SYSTEM_LOCATION_DEFAULTS gives Lubbock TX).
     "UMC Health System": {
@@ -3694,6 +3787,18 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
 # Intermountain, Sunrise) are deliberately absent: a wrong state is worse than
 # none, and the state facet covers them where the tenant exposes one.
 WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
+    "Denver Health": ("Denver", "CO"),   # 2026-09-25 push 5 / gov: every campus and clinic is in Denver
+    "Baptist Health (Alabama)": ("Montgomery", "AL"),   # same day: clinics and offices, all in the Montgomery area
+    "Phoebe Putney Health": ("Albany", "GA"),
+    "Palomar Health": ("Escondido", "CA"),
+    "University of Mississippi Medical Center": ("Jackson", "MS"),
+    "Southeast Health (Dothan)": ("Dothan", "AL"),      # the board never carries a town
+    "MarinHealth": ("Greenbrae", "CA"),
+    "Ohio State Wexner Medical Center": ("Columbus", "OH"),   # locations are building names
+    "Altru Health System": ("Grand Forks", "ND"),
+    "Terrebonne General Health System": ("Houma", "LA"),       # locations are street addresses
+    "CGH Medical Center": ("Sterling", "IL"),                  # locations are "LOC001 Hospital" codes
+    "UAMS Health": ("Little Rock", "AR"),
     "UMC Health System": ("Lubbock", "TX"),   # 2026-09-22 Texas resume: every UMC site is in Lubbock
     "WVU Medicine":            ("Morgantown", "WV"),
     "University of Rochester": ("Rochester", "NY"),
@@ -3777,6 +3882,33 @@ def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | No
     if fc and not state and re.sub(r"\s+", " ", (city or "")).strip().lower() in (key, re.sub(r"\s+", " ", loc or "").strip().lower()):
         city = ""
     return facility, (city or fc), (state or fs)
+
+
+# 2026-09-25 push 5 / gov: a statewide board's rows name the facility only
+# in the title ("Food Service Worker Lead - East Central Regional Hospital",
+# "Psychiatrist - GRHA"); the town column is the agency's office town, so
+# community-program jobs in Augusta or Columbus must not become hospital
+# rows. For a system listed here a posting is kept only when its title names
+# one of the hospitals, and takes that hospital's name, CMS town and state.
+WD_TITLE_FACILITY: dict[str, tuple[tuple[re.Pattern, str, str, str], ...]] = {
+    "Georgia DBHDD": (
+        (re.compile(r"East Central Regional Hospital|\bECRH\b|Gracewood", re.I),
+         "East Central Regional Hospital", "Augusta", "GA"),
+        (re.compile(r"Georgia Regional Hospital(?: at| -)? Atlanta|\bGRHA\b", re.I),
+         "Georgia Regional Hospital at Atlanta", "Decatur", "GA"),
+        (re.compile(r"Georgia Regional Hospital(?: at| -)? Savannah|\bGRHS\b", re.I),
+         "Georgia Regional Hospital at Savannah", "Savannah", "GA"),
+        (re.compile(r"West Central Georgia Regional Hospital|\bWCGRH\b", re.I),
+         "West Central Georgia Regional Hospital", "Columbus", "GA"),
+    ),
+}
+
+
+def _wd_title_facility(system: str, title: str) -> tuple[str, str, str] | None:
+    for rx, name, city, state in WD_TITLE_FACILITY.get(system, ()):
+        if rx.search(title or ""):
+            return name, city, state
+    return None
 
 
 WD_FACET_BUDGET = int(os.getenv("WD_FACET_BUDGET", "600"))   # requests per tenant for the location passes
@@ -4007,6 +4139,11 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         _fac, _city, _state = _wd_facility(system, loc, _city, _state)
                         if _fac:
                             _facility = _fac
+                    if system in WD_TITLE_FACILITY:
+                        _tf = _wd_title_facility(system, j.get("title", ""))
+                        if _tf is None:
+                            continue   # statewide board: only postings that name a CMS hospital
+                        _facility, _city, _state = _tf
                     # job_id (2026-05-29): first digit-bearing bulletField is the
                     # req number (some tenants put the state in [0]); fall back to
                     # the always-unique externalPath.
@@ -4255,6 +4392,8 @@ ICIMS_ORGS = {
     # MedStar Health moved to JIBE_SITES 2026-09-24: careers.medstarhealth.org
     # is a Jibe front and this entry never wrote a row.
     "Kettering Health":       "careers-ketteringhealth.icims.com",
+    # Same day, public hospital authorities / districts, from their careers pages.
+    "DCH Health System":      "careers-dchsystem.icims.com",     # Tuscaloosa AL healthcare authority
     "Loma Linda University":  "careers-lluh.icims.com",
     # "Texas Health Resources" moved to FINDLY_CWS_ORGS — uses Findly/m-cloud.io, not iCIMS
     # "Cone Health" REMOVED 2026-05-29: HAR analysis proved careers.conehealth.com is
@@ -5674,6 +5813,14 @@ JIBE_SITES = {
     "Universal Health Services": "https://jobs.uhsinc.com",
     "OSF HealthCare":          "https://www.osfcareers.org",
     "WakeMed":                 "https://jobs.wakemed.org",
+    # 2026-09-25 push 5 / gov: Tanner Health (hospital authority, Carrollton
+    # GA and Wedowee AL); tanner.org/careers links this careers-home front.
+    "Tanner Health":           "https://careers.tanner.org",
+    "Norman Regional Health System": "https://careers.normanregional.com",   # Norman OK hospital authority
+    # USA Health (University of South Alabama, state-owned): its icims.com
+    # portal answers the classic API with nothing; the careers-home front
+    # serves /api/jobs (349 on 2026-09-25).
+    "USA Health":              "https://careers.usahealthsystem.com",
     # ── 2026-09-16 New York coverage: the icims.com portals we first
     # configured redirect here. Validated live: Garnet 112 (Middletown +
     # Catskills campuses), Maimonides 175, Bassett 336 (Cooperstown, Fox,
@@ -7186,6 +7333,16 @@ PHENOM_ORG_CODES = {
     "University of Maryland Medical System": "UOJUOMUS",   # 2026-09-24, widgets refNum on careers.umms.org
 }
 
+# 2026-09-25 push 5 / gov: boards that also carry a parent university's
+# non-health jobs. careers.uvahealth.org lists every University of Virginia
+# posting; the entity field (hospital_name) says which employer. "The Rector
+# & Visitors of the University of Virginia" (faculty, research, athletics,
+# custodial pools) and the College at Wise are dropped before the detail
+# pass; UVA Medical Center, UVA Community Health and the Physicians Group stay.
+PHENOM_DROP_EMPLOYERS = {
+    "UVA Health": re.compile(r"^The Rector (?:&|and) Visitors|College at Wise", re.I),
+}
+
 PHENOM_ORGS = {
     # CommonSpirit moved to TalentBrew — see run_talentbrew
     # Baylor Scott & White moved to Playwright — session-based Phenom
@@ -7213,6 +7370,12 @@ PHENOM_ORGS = {
     "Roper St. Francis Healthcare": "https://careers.rsfh.com",
     "ScionHealth":                  "https://jobs.scionhealth.com",
     "Temple Health":                "https://careers.templehealth.org",
+    # 2026-09-25 push 5 / gov: state university hospitals on Phenom, read off
+    # their careers pages (jobs.virginia.edu -> careers.uvahealth.org, CDN
+    # org UOVUOVUS; muhealth.org/careers -> careers.muhealth.org).
+    "UVA Health":                   "https://careers.uvahealth.org",
+    "MU Health Care":               "https://careers.muhealth.org",
+    "Broward Health":               "https://careers.browardhealth.org",   # North Broward Hospital District
     # Atrium Health is on Coveo (not Phenom) — handled by run_atrium() below.
     # "Atrium Health":              "https://careers.atriumhealth.org",
     "ECU Health":                   "https://careers.ecuhealth.org",
@@ -7781,6 +7944,12 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         except Exception as e:
             logger.info(f"Phenom {system}: {e}")
             break
+
+    drop_rx = PHENOM_DROP_EMPLOYERS.get(system)
+    if drop_rx and jobs:
+        before = len(jobs)
+        jobs = [j for j in jobs if not drop_rx.search(j.hospital_name or "")]
+        logger.info(f"  Phenom {system}: {before - len(jobs)} rows of non-health employers dropped")
 
     if DETAIL_FETCH and jobs:
         try:
@@ -9560,6 +9729,9 @@ ORACLE_ORGS = {
     # validated live: TotalJobsCount=1286 on this endpoint). NY's largest
     # private employer; expect this to grow as their sites are enumerated.
     "Northwell Health":          ("https://eppr.fa.us2.oraclecloud.com",                      "CX_2"),
+    # 2026-09-25 push 5 / gov: Southwest Mississippi Regional Medical Center
+    # (McComb, county-owned); smrmc.com/careers links this candidate site.
+    "Southwest Mississippi Regional Medical Center": ("https://fa-evlp-saasfaprod1.fa.ocs.oraclecloud.com", "CX_1"),
     # Northwell runs several CE sites on the same instance (enumerated
     # 2026-08-04: CX_1=367, CX_2=1291, CX_3=1370 — pools overlap heavily).
     # Both alias back to "Northwell Health" and the (job_id, hospital_system)
@@ -9818,6 +9990,7 @@ async def run_oracle(session) -> list[Job]:
 ##############################################################################
 HEALTHCARESOURCE_ORGS = {
     "Ellis Medicine":           "ellishospital",   # 2026-09-16 (NY coverage), pm.healthcaresource.com/cs/ellishospital
+    "North Kansas City Hospital": "nkch",          # 2026-09-25 push 5 / gov: city-owned, pm.healthcaresource.com/cs/nkch
     "Parkview Health":          "pvh",             # 2026-09-17 (lever 3), Fort Wayne IN
     "Renown Health":            "renownhealth",    # 2026-09-17 (lever 3), Reno NV
     "Central Valley Medical":   "centralvalleymedicalcenter",
@@ -10640,6 +10813,304 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
     return jobs
 
 
+##############################################################################
+#  STATE GOVERNMENT BOARDS (2026-09-25, push 5 / gov). State psychiatric and
+#  state-run hospitals post on their state's own careers site, not on the
+#  hospital's. Two public, robots-allowed sources cover 38 CMS hospitals:
+#
+#  1. New York State Jobs (statejobs.ny.gov). One GET of
+#     /public/vacancyTable.cfm returns every open state vacancy (~1,850 rows,
+#     ~0.8 MB) as a plain table: item #, title, grade, posted, deadline,
+#     agency, county. Office of Mental Health titles name the facility
+#     ("..., Manhattan Psychiatric Center, P28042"); Helen Hayes Hospital is
+#     in the agency column ("Health, Department of - Helen Hayes Hospital").
+#     Rows are kept only when the title or agency names a CMS hospital in
+#     NY_STATEJOBS_FACILITIES; that hospital's name and CMS city are stamped.
+#  2. SAP SuccessFactors career sites (Recruiting Marketing, "/search/"):
+#     Texas HHS, Illinois (jobs2web) and Florida (PeopleFirst). The search
+#     page is plain HTML, 25 tiles a page (startrow), each with the title,
+#     the job link, "City, ST" and the posted date, but no facility. So each
+#     hospital is one quoted phrase search, and a tile is kept only when its
+#     city is that hospital's city ("Austin State Hospital" also appears in
+#     HHSC jobs located in Kerrville or Terrell; those are dropped). The
+#     robots.txt of these sites disallows /services/ (the RSS feeds), which
+#     this adapter never calls.
+#  Both are list-only (no description body), like the UHG / Kaiser adapters.
+#  www.governmentjobs.com (NeoGov) is NOT used for new boards: its robots.txt
+#  disallows every crawler but a named few (checked 2026-09-25).
+##############################################################################
+NY_STATEJOBS_URL = "https://statejobs.ny.gov/public/vacancyTable.cfm"
+NY_STATEJOBS_SYSTEM = "New York State Office of Mental Health"
+NY_STATEJOBS_DOH_SYSTEM = "New York State Department of Health"
+# (regex on title + agency, hospital name, CMS city, system label). Order
+# matters only where one name contains another (Rockland Children's first).
+NY_STATEJOBS_FACILITIES = (
+    (r"\bBronx Psychiatric Center", "Bronx Psychiatric Center", "Bronx", NY_STATEJOBS_SYSTEM),
+    (r"\bBuffalo Psychiatric Center", "Buffalo Psychiatric Center", "Buffalo", NY_STATEJOBS_SYSTEM),
+    (r"\bCapital Distr?ic?t? Psychiatric Center", "Capital District Psychiatric Center", "Albany", NY_STATEJOBS_SYSTEM),
+    (r"\bCreedmoor\b", "Creedmoor Psychiatric Center", "Queens Village", NY_STATEJOBS_SYSTEM),
+    (r"\bElmira Psychiatric Center", "Elmira Psychiatric Center", "Elmira", NY_STATEJOBS_SYSTEM),
+    (r"\bGreater Binghamton Health Center", "Greater Binghamton Health Center", "Binghamton", NY_STATEJOBS_SYSTEM),
+    (r"\bHutchings Psychiatric Center", "Hutchings Psychiatric Center", "Syracuse", NY_STATEJOBS_SYSTEM),
+    (r"\bKingsboro Psychiatric Center", "Kingsboro Psychiatric Center", "Brooklyn", NY_STATEJOBS_SYSTEM),
+    (r"\bKirby Forensic Psychiatric Center", "Kirby Forensic Psychiatric Center", "New York", NY_STATEJOBS_SYSTEM),
+    (r"\bManhattan Psychiatric Center", "Manhattan Psychiatric Center", "New York", NY_STATEJOBS_SYSTEM),
+    (r"\b(?:Mid[- ])?Hudson Forensic Psychiatric Center", "Mid-Hudson Forensic Psychiatric Center", "New Hampton", NY_STATEJOBS_SYSTEM),
+    (r"\bMohawk Valley Psychiatric Center", "Mohawk Valley Psychiatric Center", "Utica", NY_STATEJOBS_SYSTEM),
+    (r"\bNew York City Children[\u2019']?s (?:Psychiatric )?Center", "New York City Children's Center", "Bellerose", NY_STATEJOBS_SYSTEM),
+    (r"\bNew York State Psychiatric Institute", "New York State Psychiatric Institute", "New York", NY_STATEJOBS_SYSTEM),
+    (r"\bPilgrim Psychiatric Center", "Pilgrim Psychiatric Center", "West Brentwood", NY_STATEJOBS_SYSTEM),
+    (r"\bRochester Psychiatric Center", "Rochester Psychiatric Center", "Rochester", NY_STATEJOBS_SYSTEM),
+    (r"\bRockland Children[\u2019']?s Psychiatric Center", "Rockland Children's Psychiatric Center", "Orangeburg", NY_STATEJOBS_SYSTEM),
+    (r"\bRockland Psychiatric Center", "Rockland Psychiatric Center", "Orangeburg", NY_STATEJOBS_SYSTEM),
+    (r"\bSagamore Children[\u2019']?s Psychiatric Center", "Sagamore Children's Psychiatric Center", "Dix Hills", NY_STATEJOBS_SYSTEM),
+    (r"\bSouth Beach Psychiatric Center", "South Beach Psychiatric Center", "Staten Island", NY_STATEJOBS_SYSTEM),
+    (r"\bSt\.? ?La(?:w|we)rence Psychiatric Center", "St. Lawrence Psychiatric Center", "Ogdensburg", NY_STATEJOBS_SYSTEM),
+    (r"\bWestern New York Children[\u2019']?s? Psychiatric Center", "Western New York Children's Psychiatric Center", "West Seneca", NY_STATEJOBS_SYSTEM),
+    (r"\bHelen Hayes Hospital", "Helen Hayes Hospital", "West Haverstraw", NY_STATEJOBS_DOH_SYSTEM),
+)
+_NY_FACILITY_RX = tuple((re.compile(p, re.I), name, city, system) for p, name, city, system in NY_STATEJOBS_FACILITIES)
+_NY_ROW_RX = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S)
+_NY_TD_RX = re.compile(r"<td[^>]*>(.*?)</td>", re.S)
+_NY_HREF_RX = re.compile(r'href="(vacancyDetailsView\.cfm\?id=(\d+))"')
+
+
+def _ny_date(s: str) -> str:
+    """'09/25/26' -> '2026-09-25'; anything else -> ''."""
+    m = re.fullmatch(r"(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})", (s or "").strip())
+    if not m:
+        return ""
+    yr = int(m.group(3))
+    yr = yr + 2000 if yr < 100 else yr
+    try:
+        return datetime(yr, int(m.group(1)), int(m.group(2))).strftime("%Y-%m-%d")
+    except ValueError:
+        return ""
+
+
+def _parse_ny_statejobs(page_html: str) -> list[Job]:
+    """Rows of the NY State Jobs vacancy table that name a CMS hospital."""
+    tbody = page_html or ""
+    i = tbody.find("<tbody")
+    if i >= 0:
+        tbody = tbody[i:]
+    jobs: list[Job] = []
+    for row in _NY_ROW_RX.findall(tbody):
+        tds = _NY_TD_RX.findall(row)
+        if len(tds) < 7:
+            continue
+        hm = _NY_HREF_RX.search(tds[1])
+        if not hm:
+            continue
+        title = _ng_text(tds[1])
+        agency = _ng_text(tds[5])
+        hay = f"{title} | {agency}"
+        hit = next(((name, city, system) for rx, name, city, system in _NY_FACILITY_RX if rx.search(hay)), None)
+        if not hit:
+            continue
+        name, city, system = hit
+        grade = _ng_text(tds[2])
+        deadline = _ny_date(_ng_text(tds[4]))
+        desc = f"{agency}, {name}."
+        if grade:
+            desc += f" Salary grade {grade}."
+        if deadline:
+            desc += f" Apply by {deadline}."
+        jobs.append(Job(
+            title=title,
+            hospital_system=system,
+            hospital_name=name,
+            city=city, state="NY",
+            location=f"{city}, NY",
+            specialty="",
+            job_type="",
+            url=f"https://statejobs.ny.gov/public/{hm.group(1)}",
+            job_id=hm.group(2),
+            posted_date=_ny_date(_ng_text(tds[3])),
+            description=desc,
+            ats_platform="NYStateJobs",
+        ))
+    return jobs
+
+
+async def run_ny_statejobs(session) -> list[Job]:
+    """One request a night: the whole vacancy table."""
+    try:
+        async with req(session, "get", NY_STATEJOBS_URL, headers={**HEADERS, "Accept": "text/html,*/*;q=0.8"},
+                       proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=90)) as r:
+            if r.status != 200:
+                logger.info(f"NY State Jobs: HTTP {r.status}")
+                return []
+            page = await r.text()
+    except Exception as e:
+        logger.info(f"NY State Jobs: {e}")
+        return []
+    jobs = _parse_ny_statejobs(page)
+    logger.info(f"  NY State Jobs: {len(jobs)} hospital rows kept "
+                f"({len({j.hospital_name for j in jobs})} hospitals)")
+    return jobs
+
+
+# SuccessFactors Recruiting Marketing boards.
+# "System": (site root, state, ((phrase, hospital name, (cities...)), ...))
+SF_RMK_BOARDS = {
+    "Texas Health and Human Services": ("https://careers.hhs.texas.gov/hhscjobs", "TX", (
+        ("Austin State Hospital", "Austin State Hospital", ("Austin",)),
+        ("Big Spring State Hospital", "Big Spring State Hospital", ("Big Spring",)),
+        ("El Paso Psychiatric Center", "El Paso Psychiatric Center", ("El Paso",)),
+        ("North Texas State Hospital", "North Texas State Hospital", ("Wichita Falls", "Vernon")),
+        ("NTSH", "North Texas State Hospital", ("Wichita Falls", "Vernon")),
+        ("Rio Grande State Center", "Rio Grande State Center", ("Harlingen",)),
+        ("Rusk State Hospital", "Rusk State Hospital", ("Rusk",)),
+        ("San Antonio State Hospital", "San Antonio State Hospital", ("San Antonio",)),
+        ("Terrell State Hospital", "Terrell State Hospital", ("Terrell",)),
+    )),
+    "Illinois Department of Human Services": ("https://illinois.jobs2web.com", "IL", (
+        ("Alton Mental Health Center", "Alton Mental Health Center", ("Alton",)),
+        ("Chicago-Read", "Chicago-Read Mental Health Center", ("Chicago",)),
+        ("Elgin Mental Health Center", "Elgin Mental Health Center", ("Elgin",)),
+        ("Madden Mental Health", "Madden Mental Health Center", ("Hines",)),
+    )),
+    "Florida Department of Children and Families": ("https://jobs.myflorida.com", "FL", (
+        ("Florida State Hospital", "Florida State Hospital", ("Chattahoochee",)),
+        ("Northeast Florida State Hospital", "Northeast Florida State Hospital", ("Macclenny",)),
+    )),
+    # ARCareers (table layout, like Florida): 23 hits for the phrase on 2026-09-25.
+    "Arkansas Department of Human Services": ("https://arcareers.arkansas.gov", "AR", (
+        ("Arkansas State Hospital", "Arkansas State Hospital", ("Little Rock",)),
+    )),
+}
+SF_RMK_MAX_PAGES = int(os.getenv("SF_RMK_MAX_PAGES", "8"))   # 25 tiles a page, per phrase
+SF_RMK_PAGE_GAP = (1.1, 2.5)   # seconds between pages: at most one request a second per board
+_RMK_TILE_RX = re.compile(r'<li class="job-tile job-id-(\d+)[^"]*"\s+data-url="([^"]+)"(.*?)(?=<li class="job-tile |</ul>)', re.S)
+_RMK_TITLE_RX = re.compile(r'class="jobTitle-link[^"]*"[^>]*>(.*?)</a>', re.S)
+_RMK_FIELD_RX = r'<div id="job-\d+-desktop-section-{0}-value"[^>]*>(.*?)</div>'
+_RMK_LOC_RX = re.compile(_RMK_FIELD_RX.format("location"), re.S)
+_RMK_DATE_RX = re.compile(_RMK_FIELD_RX.format("date"), re.S)
+# The older table layout (jobs.myflorida.com): <tr class="data-row"> with
+# the link, <td class="colLocation"> and <td class="colDate">.
+_RMK_ROW_RX = re.compile(r'<tr class="data-row">(.*?)</tr>', re.S)
+_RMK_ROW_LINK_RX = re.compile(r'<a href="(/[^"]*/(\d+)/)" class="jobTitle-link">(.*?)</a>', re.S)
+_RMK_ROW_LOC_RX = re.compile(r'<td class="colLocation[^"]*"[^>]*>\s*<span class="jobLocation">(.*?)</span>', re.S)
+_RMK_ROW_DATE_RX = re.compile(r'<td class="colDate[^"]*"[^>]*>\s*<span class="jobDate">(.*?)</span>', re.S)
+
+
+def _rmk_date(s: str) -> str:
+    s = (s or "").strip()
+    for fmt in ("%b %d, %Y", "%m/%d/%Y", "%B %d, %Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return ""
+
+
+def _rmk_tile(job_id: str, path: str, title: str, loc: str, date: str, origin: str) -> dict | None:
+    title = _ng_text(title)
+    if not title:
+        return None
+    parts = [p.strip() for p in _ng_text(loc).split(",")]
+    city = parts[0].title() if parts and parts[0] else ""
+    state = parts[1].upper() if len(parts) > 1 and re.fullmatch(r"[A-Za-z]{2}", parts[1]) else ""
+    return {"job_id": job_id, "url": origin + htmllib.unescape(path), "title": title,
+            "city": city, "state": state, "posted": _rmk_date(_ng_text(date))}
+
+
+def _parse_rmk_tiles(page_html: str, base: str) -> list[dict]:
+    """[{job_id, url, title, city, state, posted}] from one /search/ page,
+    tile layout (Texas HHS, Illinois) or table layout (Florida)."""
+    root = urlsplit(base)
+    origin = f"{root.scheme}://{root.netloc}"
+    out = []
+    for job_id, path, body in _RMK_TILE_RX.findall(page_html or ""):
+        tm, lm, dm = _RMK_TITLE_RX.search(body), _RMK_LOC_RX.search(body), _RMK_DATE_RX.search(body)
+        t = _rmk_tile(job_id, path, tm.group(1) if tm else "", lm.group(1) if lm else "",
+                      dm.group(1) if dm else "", origin)
+        if t:
+            out.append(t)
+    if out:
+        return out
+    for body in _RMK_ROW_RX.findall(page_html or ""):
+        km = _RMK_ROW_LINK_RX.search(body)
+        if not km:
+            continue
+        lm, dm = _RMK_ROW_LOC_RX.search(body), _RMK_ROW_DATE_RX.search(body)
+        t = _rmk_tile(km.group(2), km.group(1), km.group(3), lm.group(1) if lm else "",
+                      dm.group(1) if dm else "", origin)
+        if t:
+            out.append(t)
+    return out
+
+
+def _rmk_jobs(tiles: list[dict], system: str, state: str, hospital: str, cities: tuple) -> list[Job]:
+    """Tiles located in one of the hospital's cities (and its state)."""
+    want = {c.lower() for c in cities}
+    jobs = []
+    for t in tiles:
+        if t["city"].lower() not in want or (t["state"] and t["state"] != state):
+            continue
+        jobs.append(Job(
+            title=t["title"],
+            hospital_system=system,
+            hospital_name=hospital,
+            city=t["city"], state=state,
+            location=f"{t['city']}, {state}",
+            specialty="",
+            job_type="",
+            url=t["url"],
+            job_id=t["job_id"],
+            posted_date=t["posted"],
+            description="",
+            ats_platform="SuccessFactorsRMK",
+        ))
+    return jobs
+
+
+async def scrape_sf_rmk(session: aiohttp.ClientSession, system: str, cfg: tuple) -> list[Job]:
+    base, state, facilities = cfg
+    seen: dict[str, Job] = {}
+    for phrase, hospital, cities in facilities:
+        kept = 0
+        for page in range(SF_RMK_MAX_PAGES):
+            try:
+                async with req(session, "get", f"{base}/search/",
+                               params={"q": f'"{phrase}"', "sortColumn": "referencedate",
+                                       "sortDirection": "desc", "startrow": str(page * 25)},
+                               headers={**HEADERS, "Accept": "text/html,*/*;q=0.8"},
+                               proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=40)) as r:
+                    if r.status != 200:
+                        logger.info(f"SF RMK {system}: HTTP {r.status} ({phrase}, page {page + 1})")
+                        break
+                    tiles = _parse_rmk_tiles(await r.text(), base)
+            except Exception as e:
+                logger.info(f"SF RMK {system}: {phrase}: {e}")
+                break
+            for j in _rmk_jobs(tiles, system, state, hospital, cities):
+                if j.job_id not in seen:
+                    seen[j.job_id] = j
+                    kept += 1
+            await asyncio.sleep(random.uniform(*SF_RMK_PAGE_GAP))
+            if len(tiles) < 25:
+                break
+        logger.info(f"  SF RMK {system}: {phrase}: {kept} kept")
+    return list(seen.values())
+
+
+async def run_sf_rmk(session) -> list[Job]:
+    """One board at a time per host (each board is its own host), jitter
+    between pages: never more than one request in flight to a board."""
+    results = await asyncio.gather(*[scrape_sf_rmk(session, s, c) for s, c in SF_RMK_BOARDS.items()],
+                                   return_exceptions=True)
+    out = []
+    for (s, _), r in zip(SF_RMK_BOARDS.items(), results):
+        if isinstance(r, Exception):
+            logger.info(f"  SF RMK {s}: ERROR {r}")
+        else:
+            out.extend(r)
+    logger.info(f"  SF RMK total: {len(out):,} jobs")
+    return out
+
+
 # ══════════════════════════════════════════════════════════════════════════
 #  PRELOAD-STATE career sites (2026-09-22, Texas resume). jobs.harrishealth.org
 #  renders each listing page with
@@ -11141,6 +11612,9 @@ CSOD_ORGS = {
     "Singing River Health System": ("https://singingriverhealthsystem.csod.com", "1"),
     # 2026-09-24 configs: Billings Clinic (MT/WY), career site 1.
     "Billings Clinic": ("https://billingsclinic.csod.com", "1"),
+    # 2026-09-25 push 5 / gov: UI Health (University of Illinois Hospital,
+    # state-owned), career site 2 linked from hospital.uillinois.edu.
+    "UI Health": ("https://uic.csod.com", "2"),
 }
 
 def _csod_job(rq: dict, system: str, base: str, site_id: str, corp: str) -> Job | None:
@@ -11250,6 +11724,10 @@ async def run_csod(session) -> list[Job]:
 #  PAYCOM — Small Texas hospitals
 # ══════════════════════════════════════════════════════════════════════════
 PAYCOM_ORGS = {
+    # 2026-09-25 push 5 / gov: Regional One Health (Shelby County TN hospital
+    # authority, Memphis); client key from regionalonehealth.org/job-postings.
+    "Regional One Health": "E208574E271D180B27F578654032D107",
+    "Cullman Regional Medical Center": "560B0CFC7C69A1F00AEF9E03E31BD397",   # Cullman AL healthcare authority
     "Connally Memorial Medical Center": "772E59A3981B29A14463EC6C3223083C",
     # ── 2026-09-10 Texas block D (Y-texas-build): client keys read from each
     # hospital's careers page. The adapter was rebuilt the same day against
@@ -11781,6 +12259,9 @@ TALEO_BE_ORGS = {
     # Format: "System": (base up to the instance path, org code, cws number, default state)
     # bhset.net/careers links phf02/ats/careers/v2/jobSearch?act=redirectCwsV2&cws=38&org=BHST.
     "Baptist Hospitals of Southeast Texas": ("https://phf.tbe.taleo.net/phf02", "BHST", "38", "TX"),
+    # 2026-09-25 push 5 / gov: Comanche County Memorial Hospital (Lawton OK,
+    # county hospital authority); ccmhonline.com/careers links cws 37.
+    "Comanche County Memorial Hospital": ("https://phg.tbe.taleo.net/phg04", "COMACOUN", "37", "OK"),
 }
 _TBE_NS = {"taleo": "urn:TBERss"}
 
@@ -11866,10 +12347,15 @@ async def run_taleo_be(session) -> list[Job]:
 HCTS_PORTALS = {
     # Format: "System": (subdomain, default state)
     "University Medical Center of El Paso": ("umcelpasocareers", "TX"),
+    # 2026-09-25 push 5 / gov: East Alabama Health (EAMC Opelika, EAMC-Lanier
+    # Valley; healthcare authority), eamc.org/careers redirects here.
+    "East Alabama Health": ("alabamahealth", "AL"),
 }
 HCTS_MAX_PAGES = int(os.getenv("HCTS_MAX_PAGES", "40"))
 _HCTS_ITEM_RE = re.compile(r'class="jobs-section__item[\s"]')
-_HCTS_TITLE_RE = re.compile(r'<h2>\s*<a[^>]+href="([^"]*?/jobs/(\d+)[^"]*)"[^>]*>(.*?)</a>', re.S)
+# 2026-09-25 push 5 / gov: the East Alabama Health portal titles its cards
+# with <h4>, UMC El Paso with <h2>.
+_HCTS_TITLE_RE = re.compile(r'<h[2-4]>\s*<a[^>]+href="([^"]*?/jobs/(\d+)[^"]*)"[^>]*>(.*?)</a>', re.S)
 
 
 def _hcts_field(seg: str, label: str) -> str:
@@ -17096,6 +17582,8 @@ async def run_all() -> list[dict]:
             run_lifepoint(proxy_session),
             run_kronos(proxy_session),
             run_neogov(proxy_session),  # NeoGov / governmentjobs.com county hospital boards (added 2026-09-10)
+            run_ny_statejobs(proxy_session),  # statejobs.ny.gov vacancy table: OMH psychiatric centers + Helen Hayes (added 2026-09-25)
+            run_sf_rmk(proxy_session),        # SuccessFactors RMK state boards: TX HHS, IL DHS, FL state hospitals (added 2026-09-25)
             run_applicantpro(proxy_session),
             run_csod(proxy_session),
             run_paycom(proxy_session),
