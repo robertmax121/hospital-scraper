@@ -4,6 +4,8 @@ Fixed API endpoints + verbose error logging to diagnose 0-job issues.
 """
 
 import asyncio
+import contextvars
+import functools
 import aiohttp
 import html as htmllib
 import json
@@ -901,6 +903,73 @@ def req(session, method, url, **kwargs):
     """Drop-in for 'async with session.get/post(...)' with proxy fallback."""
     proxy = kwargs.pop("proxy", None)
     return _FallbackResponse(session, method, url, proxy, kwargs)
+
+
+# ── List pages keep a share of the pool (2026-09-25) ────────────────────────
+# run_all gives each session one connection pool shared by every runner's list
+# pages and every detail pass. A detail pass runs DETAIL_CONCURRENCY fetches
+# per tenant on top of the runner-wide gates, so with a few dozen tenants in
+# their passes at once the detail fetches can hold all 30 connections, and a
+# list page then waits behind hundreds of them (5728a15 stopped that wait from
+# timing the page out; this stops the wait). A request sent from inside a
+# detail pass (_detail_scope) now takes a connection only while fewer than
+# DETAIL_POOL_SHARE detail requests hold one; the other connections are left
+# to list pages, probes and facet passes, which may still use the whole pool
+# when no detail fetch wants it. Nothing sends more than before: the pool's
+# limit and every per-host and per-runner gate are unchanged, and detail
+# fetches only lose the connections they used to take from list pages.
+DETAIL_POOL_SHARE = int(os.getenv("DETAIL_POOL_SHARE", "20"))   # of each session's 30
+_IN_DETAIL = contextvars.ContextVar("wp_in_detail_pass", default=False)
+
+
+def _detail_scope(fn):
+    """Mark every request a detail-pass coroutine sends (and the tasks it
+    starts) as a detail request for _ListFirstConnector."""
+    @functools.wraps(fn)
+    async def wrapper(*args, **kwargs):
+        token = _IN_DETAIL.set(True)
+        try:
+            return await fn(*args, **kwargs)
+        finally:
+            _IN_DETAIL.reset(token)
+    return wrapper
+
+
+class _ListFirstConnector(aiohttp.TCPConnector):
+    """TCPConnector whose detail requests hold at most `detail_limit` of its
+    `limit` connections at a time. A detail request waits for a detail slot
+    BEFORE it joins the pool's queue, so the pool never has more than
+    `detail_limit` detail requests holding or queued for a connection, and a
+    list request always finds at least limit - detail_limit connections that
+    no detail request can take. The slot is freed when the connection is
+    released or closed (Connection callbacks), or collected unreleased."""
+
+    def __init__(self, *args, detail_limit: int = DETAIL_POOL_SHARE, **kwargs):
+        super().__init__(*args, **kwargs)
+        cap = detail_limit
+        if self.limit:
+            cap = min(cap, self.limit - 1)
+        self._detail_slots = asyncio.Semaphore(max(1, cap))
+
+    async def connect(self, req, traces, timeout):
+        if not _IN_DETAIL.get():
+            return await super().connect(req, traces, timeout)
+        await self._detail_slots.acquire()
+        try:
+            conn = await super().connect(req, traces, timeout)
+        except BaseException:
+            self._detail_slots.release()
+            raise
+        freed = [False]
+        slots = self._detail_slots
+
+        def free():
+            if not freed[0]:
+                freed[0] = True
+                slots.release()
+        conn.add_callback(free)
+        weakref.finalize(conn, free)
+        return conn
 
 
 
@@ -2403,6 +2472,7 @@ async def _tenant_reporting(budget, name: str, coro):
         budget.done(name)
 
 
+@_detail_scope
 async def _workday_fetch_details(session, working_url, targets, system):
     """Fill description + ISO posted_date from Workday's per-job DETAIL endpoint.
 
@@ -2564,6 +2634,7 @@ async def _jsonld_detail(session, job) -> bool:
     return _apply_posting(job, posting) if posting else False
 
 
+@_detail_scope
 async def _detail_pass(session, system: str, jobs: list, budget, fetch_one, label: str, skip=None, share: int | None = None) -> None:
     """Shared driver: rows without a full body that the database does not
     already hold one for (_detail_candidates), transparency states then the
@@ -16917,8 +16988,10 @@ async def run_all() -> list[dict]:
     await asyncio.gather(asyncio.to_thread(load_cms_lookup), asyncio.to_thread(load_known_bodies))
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
-    proxy_connector  = aiohttp.TCPConnector(limit=30, ssl=False)
-    direct_connector = aiohttp.TCPConnector(limit=30)
+    # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool
+    # (_ListFirstConnector), so list pages are never queued behind them.
+    proxy_connector  = _ListFirstConnector(limit=30, ssl=False)
+    direct_connector = _ListFirstConnector(limit=30)
 
     # max_line_size raised to 64 KB — Tenet's Set-Cookie headers exceed the 8 KB default
     async with aiohttp.ClientSession(connector=proxy_connector,  headers=HEADERS,
