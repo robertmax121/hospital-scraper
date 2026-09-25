@@ -4719,7 +4719,7 @@ KAISER_CITY_STATE = {
 async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
     """Paginate Kaiser's /search-jobs?p=N and parse jobs out of the rendered HTML."""
     SYSTEM = "Kaiser Permanente"
-    MAX_PAGES = 100                  # 510 jobs / 15 per page = 34, but real total ~900+; cap high
+    MAX_PAGES = 300                  # 2026-09-25: was 100 = 1,500 rows, the exact yield of the 09-22 and 09-25 runs (2,185 active); the end checks below stop it
     EXPECTED_PER_PAGE = 15
     jobs: list[Job] = []
     seen_ids: set[str] = set()
@@ -7245,7 +7245,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     # ── Phase 0: Establish session cookies ────────────────────────────────
     for cookie_url in [f"{base_url}/us/en/search-results", base_url]:
         try:
-            async with session.get(
+            async with req(session, "get",
                 cookie_url,
                 headers={**HEADERS, "Accept": "text/html"},
                 proxy=proxies.get(), ssl=False,
@@ -7296,7 +7296,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     )
                     req_kwargs = {"params": params}
 
-                async with getattr(session, method)(
+                async with req(session, method,
                     ep, **req_kwargs,
                     headers=probe_headers,
                     proxy=proxies.get(), ssl=False,
@@ -7337,7 +7337,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         ]
         for probe_url in html_probe_urls:
             try:
-                async with session.get(
+                async with req(session, "get",
                     probe_url,
                     headers={**HEADERS,
                         "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -7443,7 +7443,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         for payload in widget_payloads:
             ddo_key = payload.get("ddoKey", "unknown")
             try:
-                async with session.post(
+                async with req(session, "post",
                     widgets_url,
                     json=payload,
                     headers={
@@ -7536,11 +7536,11 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 payload["from"] = offset
                 payload["size"] = 50
                 fetch_kwargs = {"json": payload}
-                http_method = session.post
+                http_method = "post"
             elif use_post:
                 fetch_kwargs = {"json": {"from": offset, "size": 50, "language": "en_US",
                                          "query": "", "location": ""}}
-                http_method = session.post
+                http_method = "post"
             else:
                 fetch_params = (
                     {"from": offset, "size": 50, "language": "en_US"}
@@ -7548,9 +7548,9 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     else {"start": offset, "num": 50, "size": 50, "from": offset, "language": "en_US"}
                 )
                 fetch_kwargs = {"params": fetch_params}
-                http_method = session.get
+                http_method = "get"
 
-            async with http_method(
+            async with req(session, http_method,
                 api_url, **fetch_kwargs,
                 headers=fetch_headers,
                 proxy=proxies.get(), ssl=False,
