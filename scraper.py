@@ -622,8 +622,10 @@ WD_MAX_OFFSET = int(os.getenv("WD_MAX_OFFSET", "20000"))
 # Two per-host limits keep a dead host from eating the run: a host whose last
 # HTTP_RETRY_HOST_TRIP requests all failed after their retries gets no more
 # retries until one of its requests succeeds, and one host never sleeps more
-# than HTTP_RETRY_HOST_SLEEP_CAP seconds in retries per run. Transport errors
-# and timeouts are not retried here (they raise to the adapter as before).
+# than HTTP_RETRY_HOST_SLEEP_CAP seconds in retries per run.
+# 2026-09-25: a timeout or a dropped connection on the direct attempt is now
+# retried the same way (it used to raise to the adapter at once, which ended
+# that tenant's pagination); a refused or unresolvable host is not.
 HTTP_RETRIES               = int(os.getenv("HTTP_RETRIES", "3"))
 HTTP_RETRY_BASE            = float(os.getenv("HTTP_RETRY_BASE", "2"))
 HTTP_RETRY_AFTER_CAP       = float(os.getenv("HTTP_RETRY_AFTER_CAP", "30"))
@@ -709,6 +711,36 @@ def _retry_summary() -> str:
             + ", ".join(f"{h} {n}" for h, n in top))
 
 
+def _queue_proof_timeout(kwargs: dict) -> dict:
+    """A request's ClientTimeout(total=T), rewritten so the time it waits for a
+    free connection in the session's pool does not count against T.
+
+    2026-09-25 (the 09-25 run: 51 systems held by the yield guard, 37,012
+    rows): the hospital crawl shares one TCPConnector(limit=30) per session
+    between every runner's list pages and every detail pass. aiohttp's
+    `total` starts before the pool hands out a connection, so once the detail
+    passes fill the pool a list page that waited 25 s in the queue timed out
+    without sending a byte, and the adapter stopped paging on the spot: exact
+    page multiples (Sutter and NewYork-Presbyterian 20, the Phenom tenants
+    200, Prime 50) and zeros for the tenants whose one big request queued
+    (BAYADA's 2,600-posting Greenhouse board). Measured locally with the
+    3b74770 adapters on a session whose pool is held by slow requests: BAYADA
+    0 in 25.4 s, with the pool free 2,579 in 3.2 s.
+    Now T bounds the connect (sock_connect) and every read (sock_read), so a
+    dead or stalled host still fails in T, but a request only waiting its
+    turn in the pool waits. Only a bare total=T is rewritten; a timeout that
+    already sets other fields, or none at all, is left as it is."""
+    t = kwargs.get("timeout")
+    if not isinstance(t, aiohttp.ClientTimeout) or t.total is None:
+        return kwargs
+    if any(v is not None for v in (t.connect, t.sock_connect, t.sock_read)):
+        return kwargs
+    out = dict(kwargs)
+    out["timeout"] = aiohttp.ClientTimeout(total=None, connect=None,
+                                           sock_connect=t.total, sock_read=t.total)
+    return out
+
+
 class _FallbackResponse:
     """Wrapper so we can use 'async with' syntax with fallback logic."""
     def __init__(self, session, method, url, proxy, kwargs):
@@ -736,8 +768,19 @@ class _FallbackResponse:
     DIRECT_RETRY_STATUSES = frozenset({429, 500, 502, 503, 504,
                                        520, 521, 522, 523, 524})
 
+    # Transport failures a DIRECT attempt retries (2026-09-25): a timeout and a
+    # connection the server dropped mid-request. A refused or unresolvable host
+    # (ClientConnectorError) is an answer and is not retried.
+    @staticmethod
+    def _retryable_exc(e) -> bool:
+        if isinstance(e, aiohttp.ClientConnectorError):
+            return False
+        return isinstance(e, (asyncio.TimeoutError, aiohttp.ServerDisconnectedError,
+                              aiohttp.ClientOSError))
+
     async def __aenter__(self):
         fn = getattr(self._s, self._method)
+        self._kw = _queue_proof_timeout(self._kw)
         if self._proxy:
             try:
                 self._ctx = fn(self._url, proxy=self._proxy, **self._kw)
@@ -764,7 +807,27 @@ class _FallbackResponse:
         attempt = 0
         while True:
             self._ctx = fn(self._url, **self._kw)
-            r = await self._ctx.__aenter__()
+            try:
+                r = await self._ctx.__aenter__()
+            except Exception as e:
+                # 2026-09-25: a timed-out or dropped page used to end the
+                # tenant's pagination at once (Sutter 20 of 1,473, Prime 50
+                # of 3,912 on the 09-25 run). Retried like a 5xx, within the
+                # same per-host caps; re-raised as before when they run out.
+                self._ctx = None
+                if not self._retryable_exc(e):
+                    raise
+                delay = self._retry_delay(None, attempt, host, st)
+                if delay is None:
+                    st.gave_up[host] = st.gave_up.get(host, 0) + 1
+                    st.fail_streak[host] = st.fail_streak.get(host, 0) + 1
+                    raise
+                logger.info(f"{type(e).__name__} from {host}: retry {attempt + 1}/{HTTP_RETRIES} in {delay:.1f}s")
+                st.slept[host] = st.slept.get(host, 0.0) + delay
+                st.retries[host] = st.retries.get(host, 0) + 1
+                await _retry_sleep(delay)
+                attempt += 1
+                continue
             if r.status not in self.DIRECT_RETRY_STATUSES:
                 st.fail_streak[host] = 0
                 if attempt:
