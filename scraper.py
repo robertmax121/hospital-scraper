@@ -2521,22 +2521,16 @@ async def _workday_fetch_details(session, working_url, targets, system):
                     data = await r.json()
             except Exception:
                 return
-            info = (data or {}).get("jobPostingInfo") or {}
-            desc = strip_html(str(info.get("jobDescription") or ""))
             # Only accept a description that clears the sitemap bar and beats
             # what the list gave us; a shorter one adds storage and churn.
-            if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
-                job.description = desc
+            # (2026-09-25: the one jobPostingInfo reader, _apply_wd_posting_info,
+            # also sets the ISO startDate over the list's relative label and
+            # the employment type when the list had none.)
+            was_date, was_type = job.posted_date, job.job_type
+            if _apply_wd_posting_info(job, (data or {}).get("jobPostingInfo") or {}):
                 filled += 1
-            start = str(info.get("startDate") or "")[:10]
-            if re.match(r"^\d{4}-\d{2}-\d{2}$", start):
-                job.posted_date = start
-                dated += 1
-            # 2026-09-22: employment type from the detail when the list had none.
-            tt = str(info.get("timeType") or "").strip()
-            if tt and not (job.job_type or "").strip():
-                job.job_type = tt
-                typed += 1
+            dated += job.posted_date != was_date
+            typed += job.job_type != was_type
             # Throttle inside the semaphore so this genuinely paces requests
             # rather than just staggering their completion.
             await asyncio.sleep(random.uniform(0.15, 0.45))
@@ -2913,19 +2907,36 @@ def _detail_gate(key: str, n: int) -> asyncio.Semaphore:
     return g
 
 
+_ISO_DATE_RX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
 def _apply_wd_posting_info(job, info: dict) -> bool:
-    """Workday CXS jobPostingInfo -> Job. Fills blanks only (type, date); the
-    description lands when it is 200+ characters and longer than the row's."""
-    desc = strip_html(str((info or {}).get("jobDescription") or "")).strip()
+    """Workday CXS jobPostingInfo -> Job, for every pass that reads it (the
+    Workday runner, Phenom rows that link to Workday, Houston Methodist).
+    The description lands when it is 200+ characters and longer than the
+    row's (True then); timeType fills a blank employment type.
+
+    2026-09-25 (push4/cleanup): one posted_date rule. The runner and Houston
+    Methodist overwrote posted_date with startDate, the Phenom path filled only
+    a blank. Now startDate (the ISO date the posting went up on Workday)
+    replaces whatever is not already an ISO date: the list's relative
+    "Posted 3 Days Ago" / "Posted 30+ Days Ago" label (every Workday runner and
+    Houston Methodist row) or a blank, exactly as before on those paths; an
+    ISO date the list already gave (Phenom's postedDate) is a real posting
+    date from the tenant's own board and is kept, as the Phenom path did, so
+    the stored date does not flip between two sources on the nights a row's
+    body is (or is not) fetched."""
+    info = info or {}
+    desc = strip_html(str(info.get("jobDescription") or "")).strip()
     ok = False
     if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
         job.description = desc
         ok = True
-    tt = str((info or {}).get("timeType") or "").strip()
+    tt = str(info.get("timeType") or "").strip()
     if tt and not (job.job_type or "").strip():
         job.job_type = tt
-    start = str((info or {}).get("startDate") or "")[:10]
-    if re.match(r"^\d{4}-\d{2}-\d{2}$", start) and not (job.posted_date or "").strip():
+    start = str(info.get("startDate") or "")[:10]
+    if _ISO_DATE_RX.match(start) and not _ISO_DATE_RX.match(str(job.posted_date or "").strip()[:10]):
         job.posted_date = start
     return ok
 
@@ -12425,18 +12436,7 @@ def _hm_detail_sync(job) -> bool:
     base = HM_CXS_URL[:-len("/jobs")]
     r = _curl_fetch("get", base + url[len(HM_PUBLIC_BASE):], "chrome", timeout=30,
                     headers={"Accept": "application/json"})
-    info = (r.json() or {}).get("jobPostingInfo") or {}
-    start = str(info.get("startDate") or "")[:10]
-    if re.match(r"^\d{4}-\d{2}-\d{2}$", start):
-        job.posted_date = start
-    tt = str(info.get("timeType") or "").strip()
-    if tt and not (job.job_type or "").strip():
-        job.job_type = tt
-    desc = strip_html(str(info.get("jobDescription") or "")).strip()
-    if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
-        job.description = desc
-        return True
-    return False
+    return _apply_wd_posting_info(job, (r.json() or {}).get("jobPostingInfo") or {})
 
 
 # ══════════════════════════════════════════════════════════════════════════
