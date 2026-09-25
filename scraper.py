@@ -2004,6 +2004,15 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     # 2026-09-22 Texas resume: UMC Lubbock's Workday board writes only the
     # campus ("UMC Main Campus", "Health & Wellness Hospital"); every site is in Lubbock.
     "umc health system":          ("Lubbock",          "TX"),
+    # 2026-09-25 B1: blank-location rows in the new systems' dry runs (Northside: all 1,411).
+    "northside hospital":         ("Atlanta",          "GA"),
+    "thedacare":                  ("Appleton",         "WI"),
+    "phoebe putney health":       ("Albany",           "GA"),
+    "nebraska medicine":          ("Omaha",            "NE"),
+    "st. elizabeth healthcare":   ("Edgewood",         "KY"),
+    "dartmouth health":           ("Lebanon",          "NH"),
+    "adventist healthcare (md)":  ("Rockville",        "MD"),
+    "infirmary health":           ("Mobile",           "AL"),
     "university health (san antonio)": ("San Antonio", "TX"),   # 2026-09-22: TalentBrew cards carry no location
     # 2026-09-24: UTHealth Houston's Phenom board writes "Texas Medical
     # Center-Houston" (blanked by clean_city) or just "Texas" on about 70%

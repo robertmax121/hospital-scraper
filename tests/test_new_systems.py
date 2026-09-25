@@ -152,3 +152,9 @@ def test_run_talemetry_is_scheduled():
     src = inspect.getsource(scraper)
     assert "run_talemetry(proxy_session)" in src
     assert '("MUSC Health",                   "https://musc.career-pages.com/jobs/search")' not in src
+
+
+def test_blank_location_defaults_for_new_systems():
+    for lab, st in (("Northside Hospital", "GA"), ("ThedaCare", "WI"), ("Phoebe Putney Health", "GA"),
+                    ("Nebraska Medicine", "NE"), ("Dartmouth Health", "NH")):
+        assert scraper.SYSTEM_LOCATION_DEFAULTS[lab.lower()][1] == st
