@@ -1778,6 +1778,15 @@ WORKDAY_TENANTS = {
     "SimonMed Imaging":          ("sim", "3", "External"),              # 98 jobs, imaging
     # Akumin: outpatient imaging + oncology, ~130 centers.
     "Akumin":                    ("akumincorp", "5", "akumincareers"),  # 260 jobs, imaging
+    # ── 2026-09-25 (push5/systems, B1): AHRQ systems with no rows, found on their careers pages; totals that day.
+    "ThedaCare":                 ("thedacare",           "5",   "ThedaCare_Career_Site1"),         # 434, WI
+    "MUSC Health":               ("musc",                "1",   "MUSC"),                           # 2,000+, SC
+    "Presbyterian Healthcare Services": ("phsorg",       "1",   "Careers"),                        # 603, NM
+    "St. Elizabeth Healthcare":  ("stelizabeth",         "115", "StElizabethExternalCareerSite"),  # 382, KY/IN
+    "Baystate Health":           ("baystatehealth",      "12",  "External_Careers"),               # 361, MA
+    "Nebraska Medicine":         ("nebraskamed",         "5",   "NM"),                             # 237, NE
+    "Phoebe Putney Health":      ("phoebehealth",        "503", "phoebehealth"),                   # 244, GA
+    "Adventist HealthCare (MD)": ("adventisthealthcare", "1",   "AdventistHealthCareCareers"),     # 425, MD; not Adventist Health (CA)
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -2043,6 +2052,15 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     # 2026-09-22 Texas resume: UMC Lubbock's Workday board writes only the
     # campus ("UMC Main Campus", "Health & Wellness Hospital"); every site is in Lubbock.
     "umc health system":          ("Lubbock",          "TX"),
+    # 2026-09-25 B1: blank-location rows in the new systems' dry runs (Northside: all 1,411).
+    "northside hospital":         ("Atlanta",          "GA"),
+    "thedacare":                  ("Appleton",         "WI"),
+    "phoebe putney health":       ("Albany",           "GA"),
+    "nebraska medicine":          ("Omaha",            "NE"),
+    "st. elizabeth healthcare":   ("Edgewood",         "KY"),
+    "dartmouth health":           ("Lebanon",          "NH"),
+    "adventist healthcare (md)":  ("Rockville",        "MD"),
+    "infirmary health":           ("Mobile",           "AL"),
     "university health (san antonio)": ("San Antonio", "TX"),   # 2026-09-22: TalentBrew cards carry no location
     # 2026-09-24: UTHealth Houston's Phenom board writes "Texas Medical
     # Center-Houston" (blanked by clean_city) or just "Texas" on about 70%
@@ -3800,6 +3818,8 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "CGH Medical Center": ("Sterling", "IL"),                  # locations are "LOC001 Hospital" codes
     "UAMS Health": ("Little Rock", "AR"),
     "UMC Health System": ("Lubbock", "TX"),   # 2026-09-22 Texas resume: every UMC site is in Lubbock
+    "ThedaCare":               ("Appleton", "WI"),   # 2026-09-25 B1: all 434 dry-run rows had no parsed location
+    "Phoebe Putney Health":    ("Albany", "GA"),     # 2026-09-25 B1: all 244 dry-run rows had no parsed location
     "WVU Medicine":            ("Morgantown", "WV"),
     "University of Rochester": ("Rochester", "NY"),
     "MultiCare Health":        ("Tacoma", "WA"),
@@ -4441,6 +4461,10 @@ ICIMS_ORGS = {
     # Genesis HealthCare: 250+ skilled nursing facilities. Confirmed via
     # genesiscareers.jobs → "Returning Candidate Login" points to careers-genesishcc.icims.com.
     "Genesis HealthCare":               "careers-genesishcc.icims.com",
+    # ── 2026-09-25 (push5/systems, B1)
+    "Dartmouth Health":       "careers-dartmouth-hitchcock.icims.com",   # Lebanon NH + VT
+    "Huntsville Hospital Health System": "careers-hhsys.icims.com",   # AL; careers.hhsys.org is its Phenom front
+    "Northside Hospital":     "careers-mynorthsidecareer.icims.com",    # Atlanta GA
 }
 
 
@@ -5848,6 +5872,10 @@ JIBE_SITES = {
     "Piedmont Healthcare":       "https://join.piedmont.org",
     "MedStar Health":            "https://careers.medstarhealth.org",
     "UCI Health":                "https://jobs.uci.edu",
+    # ── 2026-09-25 (push5/systems, B1)
+    "Carle Health":     "https://careers.carlehealth.org",       # 746, Urbana IL
+    "Tanner Health":    "https://careers.tanner.org",            # 202, Carrollton GA
+    "Infirmary Health": "https://careers.infirmaryhealth.org",   # 276, Mobile AL
 }
 
 # Jibe feeds whose location_name is a facility (not a street or a region):
@@ -7366,7 +7394,8 @@ PHENOM_ORGS = {
     "Corewell Health":              "https://careers.corewellhealth.org",
     "LCMC Health":                  "https://careers.lcmchealth.org",
     "Bryan Health":                 "https://careers.bryanhealth.com",
-    "PeaceHealth":                  "https://careers.peacehealth.org",
+    # PeaceHealth and Penn Medicine left Phenom for Jobvite Engage sites (2026-09-25): see TALEMETRY_SITES.
+    "Froedtert Health":             "https://jobs.froedtert.com",   # 2026-09-25 B1: 1,027 WI rows in the dry run, facility per row
     "Roper St. Francis Healthcare": "https://careers.rsfh.com",
     "ScionHealth":                  "https://jobs.scionhealth.com",
     "Temple Health":                "https://careers.templehealth.org",
@@ -7379,7 +7408,6 @@ PHENOM_ORGS = {
     # Atrium Health is on Coveo (not Phenom) — handled by run_atrium() below.
     # "Atrium Health":              "https://careers.atriumhealth.org",
     "ECU Health":                   "https://careers.ecuhealth.org",
-    "Penn Medicine":                "https://careers.pennmedicine.org",
     # ── Added from scraper1.xlsx expansion ──
     "Bon Secours Mercy":            "https://careers.bsmhealth.org",
     "Hoag Health":                  "https://careers.hhsys.org",
@@ -9039,6 +9067,9 @@ INFOR_ORGS = {
     # Not "Baptist Health": HOSPITAL_SYSTEM_ALIASES rewrites that name to the
     # KY/IN system at upsert time.
     "Baptist Health (AR)":       ("css-baptisthealth-prd",    "1",    "BAPTISTCAREERS", "AR"),  # 563
+    # ── 2026-09-25 (push5/systems, B1): csk pairs from each tenant's careers link.
+    "Hawaii Health Systems":     ("css-hhsc-prd",             "7",    "EXTERNAL",       "HI"),
+    "Hawaii Pacific Health":     ("css-jdzyl6hzmy2pe28d-prd", "10",   "EXTERNAL",       "HI"),
 }
 
 # Tenants whose location value is a facility name with no city or state.
@@ -9814,6 +9845,10 @@ ORACLE_ORGS = {
     # Mayo Clinic: was a broken TalentBrew HTML scrape (~14 jobs); Mayo runs on
     # Oracle HCM now. fa-euwp-saasfaprod1/Mayo-US → TotalJobsCount=1,318.
     "Mayo Clinic":               ("https://fa-euwp-saasfaprod1.fa.ocs.oraclecloud.com",       "Mayo-US"),
+    # ── 2026-09-25 (push5/systems, B1): AHRQ systems with no rows; totals that day.
+    "Cedars-Sinai":              ("https://hdkk.fa.us6.oraclecloud.com",                      "CX_1"),     # 868, Los Angeles CA
+    "Adena Health":              ("https://eord.fa.us2.oraclecloud.com",                      "CX_1001"),  # 174, Chillicothe OH
+    "UVA Health":                ("https://fa-euzb-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),     # 257, Charlottesville VA
 }
 
 # 2026-09-16 (NY coverage): Mount Sinai site names in requisition titles ->
@@ -10024,6 +10059,13 @@ HEALTHCARESOURCE_ORGS = {
     # links on shannonhealth.com/careers and mchodessa.com/careers.
     "Shannon Medical Center":   "shannonhealth",
     "Medical Center Health System (Odessa)": "medicalcenterhealth",
+    # ── 2026-09-25 (push5/systems, B1): Salina KS and Dartmouth Health member hospitals
+    "Salina Regional Health Center":     "srhc",           # Salina KS
+    "RWJBarnabas Health":                "rwjbarnabashealth_i",   # 2,278 NJ, facility per row (the tenant rwjbh.org links to)
+    "Alice Peck Day Memorial Hospital":  "alicepeckday",   # Lebanon NH (Dartmouth Health)
+    "Cheshire Medical Center":           "cheshire",       # Keene NH (Dartmouth Health)
+    "Mt. Ascutney Hospital":             "dhamtascutney",  # Windsor VT (Dartmouth Health)
+    "Southwestern Vermont Medical Center": "svhealthcare", # Bennington VT (Dartmouth Health)
 }
 
 def _dig(d, *path, default=""):
@@ -11376,7 +11418,7 @@ async def run_playwright_scrapers() -> list[Job]:
         # LIFEPOINT — rebuilt on WordPress 2025
         ("LifePoint Health",              "https://jobs.lifepointhealth.net/jobs/"),
         # CUSTOM ATS
-        ("MUSC Health",                   "https://musc.career-pages.com/jobs/search"),
+        # MUSC Health moved to WORKDAY_TENANTS (musc.wd1, 2026-09-25): this page wrote 0 rows.
         ("University of Vermont Health",  "https://www.uvmhealthnetworkcareers.org/jobs/"),
     ]
 
@@ -12243,6 +12285,137 @@ async def _workable_detail(session, job) -> bool:
         job.description = desc
         return True
     return False
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  JOBVITE ENGAGE (Talemetry) CAREER SITES (added 2026-09-25, push5/systems).
+#  careers.<system>.org answers GET /jobs/search.json?page=N&per_page=100 with
+#  {"current_page", "per_page", "total_entries", "entries": [{"id", "permalink",
+#  "title", "location": {"street", "locality", "region_abbr", "postal_code",
+#  "name"}}]}; per_page is capped at 100 by the site. The job page
+#  (<base>/jobs/<id>-<permalink>) carries a JSON-LD JobPosting; UCHealth and
+#  PeaceHealth emit invalid backslash escapes in it (_talemetry_posting repairs
+#  them). PeaceHealth and Penn Medicine sat in PHENOM_ORGS and wrote 0 rows:
+#  both left Phenom for these sites. Trailing numbers: 2026-09-25 totals.
+#  Rows carry ats_platform "Jobvite" (HCA's own Talemetry crawl keeps
+#  "Talemetry" and its own code path).
+# ══════════════════════════════════════════════════════════════════════════
+TALEMETRY_SITES = {
+    "UCHealth":      "https://careers.uchealth.org",       # 1,279, CO + Cheyenne/Laramie WY
+    "PeaceHealth":   "https://careers.peacehealth.org",    # ~800, WA/OR/AK
+    "Penn Medicine": "https://careers.pennmedicine.org",   # 1,710, PA/NJ
+}
+TALEMETRY_PER_PAGE = 100
+TALEMETRY_PAGE_CAP = int(os.getenv("TALEMETRY_PAGE_CAP", "60"))
+TALEMETRY_IMPERSONATE = "chrome"
+TALEMETRY_DESC_MAX_PER_RUN = int(os.getenv("TALEMETRY_DESC_MAX_PER_RUN", "1500"))   # job-page JSON-LD
+TALEMETRY_DESC_BUDGET = _DescBudget(TALEMETRY_DESC_MAX_PER_RUN)
+_TALEMETRY_BAD_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
+
+
+def _talemetry_job(e: dict, system: str, base: str) -> Job | None:
+    """One search.json entry -> Job, or None without an id or title."""
+    jid = str((e or {}).get("id") or (e or {}).get("talemetry_job_id") or "").strip()
+    title = _html_unescape(str((e or {}).get("title") or "")).strip()
+    if not jid or not title:
+        return None
+    loc = (e or {}).get("location") or {}
+    city = clean_city(str(loc.get("locality") or "").strip())
+    state = str(loc.get("region_abbr") or "").strip().upper()
+    if not re.fullmatch(r"[A-Z]{2}", state):
+        state = ""
+    facility = _html_unescape(str(loc.get("name") or "")).strip()
+    slug = str((e or {}).get("permalink") or "").strip()
+    return Job(
+        title=title,
+        hospital_system=system,
+        hospital_name=facility or system,
+        city=city, state=state,
+        location=f"{city}, {state}" if city and state else city or state,
+        specialty="", job_type="",
+        url=f"{base}/jobs/{jid}-{slug}" if slug else f"{base}/jobs/{jid}",
+        job_id=jid,
+        posted_date="",
+        description="",
+        ats_platform="Jobvite",
+    )
+
+
+async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
+    base = base_url.rstrip("/")
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    page, total = 1, None
+    while page <= TALEMETRY_PAGE_CAP:
+        # curl_cffi with a Chrome TLS profile: UCHealth answers aiohttp with 403.
+        try:
+            r = await asyncio.to_thread(
+                _curl_fetch, "get", f"{base}/jobs/search.json", TALEMETRY_IMPERSONATE, 40,
+                params={"page": str(page), "per_page": str(TALEMETRY_PER_PAGE)},
+                headers={"Accept": "application/json", "Referer": f"{base}/jobs/search"})
+            data = r.json()
+        except Exception as e:
+            logger.info(f"Talemetry {system}: page {page}: {e}")
+            break
+        entries = (data or {}).get("entries") or []
+        if total is None:
+            try:
+                total = int((data or {}).get("total_entries") or 0)
+            except (TypeError, ValueError):
+                total = 0
+        for e in entries:
+            job = _talemetry_job(e, system, base)
+            if job and job.job_id not in seen:
+                seen.add(job.job_id)
+                jobs.append(job)
+        if not entries or len(entries) < TALEMETRY_PER_PAGE or (total and len(seen) >= total):
+            break
+        page += 1
+        await jitter()
+    logger.info(f"  Talemetry {system}: {len(jobs)} jobs (site total {total})")
+    return jobs
+
+
+def _talemetry_posting(html: str):
+    """The page's JSON-LD JobPosting; a second try with each stray backslash
+    (one before a hyphen, ampersand or apostrophe) doubled, which json.loads
+    otherwise rejects."""
+    posting = _jobposting_from_html(html)
+    if posting is None and html:
+        posting = _jobposting_from_html(_TALEMETRY_BAD_ESCAPE.sub(r"\\\\", html))
+    return posting
+
+
+async def _talemetry_detail(session, job) -> bool:
+    posting = _talemetry_posting(await _curl_html(job.url, TALEMETRY_IMPERSONATE))
+    return _apply_posting(job, _posting_with_requirements(posting)) if posting else False
+
+
+async def run_talemetry(session) -> list[Job]:
+    if not TALEMETRY_SITES:
+        return []
+    logger.info(f"Talemetry: scraping {len(TALEMETRY_SITES)} career sites...")
+
+    async def _one(sys_, base):
+        jobs = await scrape_talemetry(session, sys_, base)
+        if DETAIL_FETCH and jobs:
+            try:
+                await _detail_pass(session, sys_, jobs, TALEMETRY_DESC_BUDGET,
+                                   lambda j: _talemetry_detail(session, j), "Talemetry")
+            except Exception as e:
+                logger.info(f"Talemetry {sys_}: detail pass failed ({e}); listed rows kept")
+        return jobs
+
+    if DETAIL_FETCH:
+        TALEMETRY_DESC_BUDGET.expect(TALEMETRY_SITES)
+    results = await asyncio.gather(*[_tenant_reporting(TALEMETRY_DESC_BUDGET, s, _one(s, b))
+                                     for s, b in TALEMETRY_SITES.items()], return_exceptions=True)
+    out = [j for r in results if isinstance(r, list) for j in r]
+    for s, r in zip(TALEMETRY_SITES, results):
+        if isinstance(r, Exception):
+            logger.info(f"  Talemetry {s}: ERROR {r}")
+    logger.info(f"  Talemetry total: {len(out):,} jobs")
+    return out
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -17590,6 +17763,7 @@ async def run_all() -> list[dict]:
             run_paycor(proxy_session),
             run_paylocity(proxy_session),  # Paylocity pageData boards: White Rock Medical Center (added 2026-09-10)
             run_workable(proxy_session),   # Workable v3 accounts API: Huntsville Memorial (added 2026-09-10)
+            run_talemetry(proxy_session),  # Jobvite Engage (Talemetry) search.json: UCHealth, PeaceHealth, Penn Medicine (added 2026-09-25)
             run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
             run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)
             run_tam(proxy_session),        # The Applicant Manager HTML board: Bayou Bend Health System (added 2026-09-15)
