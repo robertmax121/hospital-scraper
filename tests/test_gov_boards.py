@@ -258,3 +258,39 @@ def test_ohio_state_buildings_take_columbus():
     assert fac(s, "James Cancer Hospital (0375)", "James Cancer Hospital (0375)", "")[1:] == ("Columbus", "OH")
     assert fac(s, "Medical Center Campus", "Medical Center Campus", "") == (None, "Columbus", "OH")
     assert len(scraper.WD_TENANT_FACETS[s]["locations"]) == 14
+
+
+def test_batch2_public_hospital_configs():
+    assert scraper.WORKDAY_TENANTS["Altru Health System"] == ("altru", "503", "careers")
+    assert scraper.WORKDAY_TENANTS["Terrebonne General Health System"] == ("tgmc", "5", "TGHS")
+    assert scraper.WORKDAY_TENANTS["CGH Medical Center"] == ("cghmc", "1", "Search")
+    for system, town in (("Altru Health System", ("Grand Forks", "ND")), ("Terrebonne General Health System", ("Houma", "LA")),
+                         ("CGH Medical Center", ("Sterling", "IL"))):
+        assert scraper.WD_TENANT_DEFAULT[system] == town
+    assert scraper.PAYCOM_ORGS["Cullman Regional Medical Center"] == "560B0CFC7C69A1F00AEF9E03E31BD397"
+    assert scraper.TALEO_BE_ORGS["Comanche County Memorial Hospital"] == (
+        "https://phg.tbe.taleo.net/phg04", "COMACOUN", "37", "OK")
+    base, site = scraper.ORACLE_ORGS["Southwest Mississippi Regional Medical Center"]
+    assert base.endswith(".oraclecloud.com") and site == "CX_1"
+    labels = ("Altru Health System", "Terrebonne General Health System", "CGH Medical Center",
+              "Cullman Regional Medical Center", "Comanche County Memorial Hospital",
+              "Southwest Mississippi Regional Medical Center")
+    boards = [scraper.WORKDAY_TENANTS, scraper.PAYCOM_ORGS, scraper.TALEO_BE_ORGS, scraper.ORACLE_ORGS,
+              scraper.PHENOM_ORGS, scraper.JIBE_SITES, scraper.ICIMS_ORGS, scraper.CSOD_ORGS, scraper.HCTS_PORTALS]
+    for label in labels:
+        assert sum(label in b for b in boards) == 1, label
+
+
+def test_batch3_public_hospital_configs():
+    wd = scraper.WORKDAY_TENANTS
+    assert wd["El Camino Health"] == ("ech", "5", "ech")
+    assert wd["St. Tammany Health System"] == ("stph", "5", "STPH")
+    assert wd["UAMS Health"] == ("uasys", "5", "UAMS_All_Careers")
+    assert scraper.WD_TENANT_DEFAULT["UAMS Health"] == ("Little Rock", "AR")
+    assert scraper.HEALTHCARESOURCE_ORGS["North Kansas City Hospital"] == "nkch"
+    assert "UNM Hospital" not in scraper.TALENTBREW_ORGS   # its cards do not parse yet (see report)
+    fac = scraper._wd_facility
+    assert fac("CGH Medical Center", "LOC016 Warehouse", "LOC016 Warehouse", "") == (None, "Sterling", "IL")
+    assert fac("CGH Medical Center", "LOC001 Hospital", "LOC001 Hospital", "")[0] == "CGH Medical Center"
+    assert fac("Terrebonne General Health System", "8166 Main St", "8166 Main St", "") == (
+        "Terrebonne General Medical Center", "Houma", "LA")

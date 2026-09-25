@@ -1504,6 +1504,12 @@ WORKDAY_TENANTS = {
     "Ohio State Wexner Medical Center": ("osu",         "1",   "OSUCareers"),      # university board cut to the medical center's locations
     "Southeast Health (Dothan)": ("seh",                "503", "SoutheastHealth"), # Houston County AL healthcare authority
     "MarinHealth":               ("mymarinhealth",      "5",   "MHCareers"),       # Marin Healthcare District, Greenbrae CA
+    "Altru Health System":       ("altru",              "503", "careers"),         # Grand Forks ND [162]
+    "Terrebonne General Health System": ("tgmc",        "5",   "TGHS"),            # Terrebonne Parish hospital service district, Houma LA [105]
+    "CGH Medical Center":        ("cghmc",              "1",   "Search"),          # Sterling-Rock Falls IL hospital district [79]
+    "El Camino Health":          ("ech",                "5",   "ech"),             # El Camino Healthcare District, Mountain View / Los Gatos CA
+    "St. Tammany Health System": ("stph",               "5",   "STPH"),            # St. Tammany Parish Hospital Service District 1, Covington LA
+    "UAMS Health":               ("uasys",              "5",   "UAMS_All_Careers"),  # University of Arkansas for Medical Sciences (state) [319]
     # 2026-09-22 Texas resume: UMC Health System, Lubbock (422 beds). 131
     # postings in the dry run, bodies and dates from the detail pass; the
     # board carries no state, see SYSTEM_LOCATION_DEFAULTS / WD_FACILITY_MAP.
@@ -3587,6 +3593,19 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "harding hospital": ("Harding Hospital", "Columbus", "OH"),
         "medical center campus": (None, "Columbus", "OH"),
     },
+    # CGH and Terrebonne give a site code or a street address, never a town.
+    "CGH Medical Center": {
+        "loc001 hospital": ("CGH Medical Center", "Sterling", "IL"),
+        "loc": (None, "Sterling", "IL"),
+        "all clinic locations": (None, "Sterling", "IL"),
+        "day care & patient accounts": (None, "Sterling", "IL"),
+    },
+    "Terrebonne General Health System": {
+        "8166 main st": ("Terrebonne General Medical Center", "Houma", "LA"),
+        "pmc 218 corporate drive": (None, "Houma", "LA"),
+        "gcsc 402 dunn st": (None, "Houma", "LA"),
+        "1020 school st": (None, "Houma", "LA"),
+    },
     "Oregon State Hospital": {
         "salem | oha | oregon state hospital": ("Oregon State Hospital", "Salem", "OR"),
         "junction city | oha | oregon state hospital": ("Oregon State Hospital", "Junction City", "OR"),
@@ -3776,6 +3795,10 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "Southeast Health (Dothan)": ("Dothan", "AL"),      # the board never carries a town
     "MarinHealth": ("Greenbrae", "CA"),
     "Ohio State Wexner Medical Center": ("Columbus", "OH"),   # locations are building names
+    "Altru Health System": ("Grand Forks", "ND"),
+    "Terrebonne General Health System": ("Houma", "LA"),       # locations are street addresses
+    "CGH Medical Center": ("Sterling", "IL"),                  # locations are "LOC001 Hospital" codes
+    "UAMS Health": ("Little Rock", "AR"),
     "UMC Health System": ("Lubbock", "TX"),   # 2026-09-22 Texas resume: every UMC site is in Lubbock
     "WVU Medicine":            ("Morgantown", "WV"),
     "University of Rochester": ("Rochester", "NY"),
@@ -9706,6 +9729,9 @@ ORACLE_ORGS = {
     # validated live: TotalJobsCount=1286 on this endpoint). NY's largest
     # private employer; expect this to grow as their sites are enumerated.
     "Northwell Health":          ("https://eppr.fa.us2.oraclecloud.com",                      "CX_2"),
+    # 2026-09-25 push 5 / gov: Southwest Mississippi Regional Medical Center
+    # (McComb, county-owned); smrmc.com/careers links this candidate site.
+    "Southwest Mississippi Regional Medical Center": ("https://fa-evlp-saasfaprod1.fa.ocs.oraclecloud.com", "CX_1"),
     # Northwell runs several CE sites on the same instance (enumerated
     # 2026-08-04: CX_1=367, CX_2=1291, CX_3=1370 — pools overlap heavily).
     # Both alias back to "Northwell Health" and the (job_id, hospital_system)
@@ -9964,6 +9990,7 @@ async def run_oracle(session) -> list[Job]:
 ##############################################################################
 HEALTHCARESOURCE_ORGS = {
     "Ellis Medicine":           "ellishospital",   # 2026-09-16 (NY coverage), pm.healthcaresource.com/cs/ellishospital
+    "North Kansas City Hospital": "nkch",          # 2026-09-25 push 5 / gov: city-owned, pm.healthcaresource.com/cs/nkch
     "Parkview Health":          "pvh",             # 2026-09-17 (lever 3), Fort Wayne IN
     "Renown Health":            "renownhealth",    # 2026-09-17 (lever 3), Reno NV
     "Central Valley Medical":   "centralvalleymedicalcenter",
@@ -11700,6 +11727,7 @@ PAYCOM_ORGS = {
     # 2026-09-25 push 5 / gov: Regional One Health (Shelby County TN hospital
     # authority, Memphis); client key from regionalonehealth.org/job-postings.
     "Regional One Health": "E208574E271D180B27F578654032D107",
+    "Cullman Regional Medical Center": "560B0CFC7C69A1F00AEF9E03E31BD397",   # Cullman AL healthcare authority
     "Connally Memorial Medical Center": "772E59A3981B29A14463EC6C3223083C",
     # ── 2026-09-10 Texas block D (Y-texas-build): client keys read from each
     # hospital's careers page. The adapter was rebuilt the same day against
@@ -12231,6 +12259,9 @@ TALEO_BE_ORGS = {
     # Format: "System": (base up to the instance path, org code, cws number, default state)
     # bhset.net/careers links phf02/ats/careers/v2/jobSearch?act=redirectCwsV2&cws=38&org=BHST.
     "Baptist Hospitals of Southeast Texas": ("https://phf.tbe.taleo.net/phf02", "BHST", "38", "TX"),
+    # 2026-09-25 push 5 / gov: Comanche County Memorial Hospital (Lawton OK,
+    # county hospital authority); ccmhonline.com/careers links cws 37.
+    "Comanche County Memorial Hospital": ("https://phg.tbe.taleo.net/phg04", "COMACOUN", "37", "OK"),
 }
 _TBE_NS = {"taleo": "urn:TBERss"}
 
