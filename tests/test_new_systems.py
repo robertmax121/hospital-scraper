@@ -174,3 +174,16 @@ def test_push5_lanes_configure_each_new_label_once():
                   "Ohio State Wexner Medical Center", "Cedars-Sinai", "AHMC Healthcare",
                   "Baptist Health Care (Pensacola)", "Northside Hospital", "RWJBarnabas Health"):
         assert sum(label in b for b in boards) == 1, label
+
+
+def test_single_state_workday_tenants_default_their_state():
+    """Presbyterian (NM), MUSC (SC) and Baystate (MA) are single-state systems; rows the
+    board leaves without a state take it, so the 61d aliases can count them."""
+    for lab, st in (("Presbyterian Healthcare Services", "NM"), ("MUSC Health", "SC"), ("Baystate Health", "MA")):
+        assert lab in scraper.WORKDAY_TENANTS
+        assert scraper.WD_TENANT_DEFAULT[lab][1] == st
+    class J:
+        city = ""; state = ""
+    j = J()
+    scraper._wd_apply_locations([j], {}, {}, {}, scraper.WD_TENANT_DEFAULT["Presbyterian Healthcare Services"])
+    assert (j.city, j.state) == ("Albuquerque", "NM")

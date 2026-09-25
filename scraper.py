@@ -3900,6 +3900,9 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "UAMS Health": ("Little Rock", "AR"),
     "UMC Health System": ("Lubbock", "TX"),   # 2026-09-22 Texas resume: every UMC site is in Lubbock
     "ThedaCare":               ("Appleton", "WI"),   # 2026-09-25 B1: all 434 dry-run rows had no parsed location
+    "Presbyterian Healthcare Services": ("Albuquerque", "NM"),   # 2026-09-25 push5 integration: 602 of 603 dry-run rows had no state; every PHS hospital is in NM
+    "MUSC Health":             ("Charleston", "SC"),   # same day: single-state system; its B1 dry run timed out before states were read
+    "Baystate Health":         ("Springfield", "MA"),  # same day: single-state system; same timeout
     "WVU Medicine":            ("Morgantown", "WV"),
     "University of Rochester": ("Rochester", "NY"),
     "MultiCare Health":        ("Tacoma", "WA"),
