@@ -10640,6 +10640,300 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
     return jobs
 
 
+##############################################################################
+#  STATE GOVERNMENT BOARDS (2026-09-25, push 5 / gov). State psychiatric and
+#  state-run hospitals post on their state's own careers site, not on the
+#  hospital's. Two public, robots-allowed sources cover 38 CMS hospitals:
+#
+#  1. New York State Jobs (statejobs.ny.gov). One GET of
+#     /public/vacancyTable.cfm returns every open state vacancy (~1,850 rows,
+#     ~0.8 MB) as a plain table: item #, title, grade, posted, deadline,
+#     agency, county. Office of Mental Health titles name the facility
+#     ("..., Manhattan Psychiatric Center, P28042"); Helen Hayes Hospital is
+#     in the agency column ("Health, Department of - Helen Hayes Hospital").
+#     Rows are kept only when the title or agency names a CMS hospital in
+#     NY_STATEJOBS_FACILITIES; that hospital's name and CMS city are stamped.
+#  2. SAP SuccessFactors career sites (Recruiting Marketing, "/search/"):
+#     Texas HHS, Illinois (jobs2web) and Florida (PeopleFirst). The search
+#     page is plain HTML, 25 tiles a page (startrow), each with the title,
+#     the job link, "City, ST" and the posted date, but no facility. So each
+#     hospital is one quoted phrase search, and a tile is kept only when its
+#     city is that hospital's city ("Austin State Hospital" also appears in
+#     HHSC jobs located in Kerrville or Terrell; those are dropped). The
+#     robots.txt of these sites disallows /services/ (the RSS feeds), which
+#     this adapter never calls.
+#  Both are list-only (no description body), like the UHG / Kaiser adapters.
+#  www.governmentjobs.com (NeoGov) is NOT used for new boards: its robots.txt
+#  disallows every crawler but a named few (checked 2026-09-25).
+##############################################################################
+NY_STATEJOBS_URL = "https://statejobs.ny.gov/public/vacancyTable.cfm"
+NY_STATEJOBS_SYSTEM = "New York State Office of Mental Health"
+NY_STATEJOBS_DOH_SYSTEM = "New York State Department of Health"
+# (regex on title + agency, hospital name, CMS city, system label). Order
+# matters only where one name contains another (Rockland Children's first).
+NY_STATEJOBS_FACILITIES = (
+    (r"\bBronx Psychiatric Center", "Bronx Psychiatric Center", "Bronx", NY_STATEJOBS_SYSTEM),
+    (r"\bBuffalo Psychiatric Center", "Buffalo Psychiatric Center", "Buffalo", NY_STATEJOBS_SYSTEM),
+    (r"\bCapital Distr?ic?t? Psychiatric Center", "Capital District Psychiatric Center", "Albany", NY_STATEJOBS_SYSTEM),
+    (r"\bCreedmoor\b", "Creedmoor Psychiatric Center", "Queens Village", NY_STATEJOBS_SYSTEM),
+    (r"\bElmira Psychiatric Center", "Elmira Psychiatric Center", "Elmira", NY_STATEJOBS_SYSTEM),
+    (r"\bGreater Binghamton Health Center", "Greater Binghamton Health Center", "Binghamton", NY_STATEJOBS_SYSTEM),
+    (r"\bHutchings Psychiatric Center", "Hutchings Psychiatric Center", "Syracuse", NY_STATEJOBS_SYSTEM),
+    (r"\bKingsboro Psychiatric Center", "Kingsboro Psychiatric Center", "Brooklyn", NY_STATEJOBS_SYSTEM),
+    (r"\bKirby Forensic Psychiatric Center", "Kirby Forensic Psychiatric Center", "New York", NY_STATEJOBS_SYSTEM),
+    (r"\bManhattan Psychiatric Center", "Manhattan Psychiatric Center", "New York", NY_STATEJOBS_SYSTEM),
+    (r"\b(?:Mid[- ])?Hudson Forensic Psychiatric Center", "Mid-Hudson Forensic Psychiatric Center", "New Hampton", NY_STATEJOBS_SYSTEM),
+    (r"\bMohawk Valley Psychiatric Center", "Mohawk Valley Psychiatric Center", "Utica", NY_STATEJOBS_SYSTEM),
+    (r"\bNew York City Children[\u2019']?s (?:Psychiatric )?Center", "New York City Children's Center", "Bellerose", NY_STATEJOBS_SYSTEM),
+    (r"\bNew York State Psychiatric Institute", "New York State Psychiatric Institute", "New York", NY_STATEJOBS_SYSTEM),
+    (r"\bPilgrim Psychiatric Center", "Pilgrim Psychiatric Center", "West Brentwood", NY_STATEJOBS_SYSTEM),
+    (r"\bRochester Psychiatric Center", "Rochester Psychiatric Center", "Rochester", NY_STATEJOBS_SYSTEM),
+    (r"\bRockland Children[\u2019']?s Psychiatric Center", "Rockland Children's Psychiatric Center", "Orangeburg", NY_STATEJOBS_SYSTEM),
+    (r"\bRockland Psychiatric Center", "Rockland Psychiatric Center", "Orangeburg", NY_STATEJOBS_SYSTEM),
+    (r"\bSagamore Children[\u2019']?s Psychiatric Center", "Sagamore Children's Psychiatric Center", "Dix Hills", NY_STATEJOBS_SYSTEM),
+    (r"\bSouth Beach Psychiatric Center", "South Beach Psychiatric Center", "Staten Island", NY_STATEJOBS_SYSTEM),
+    (r"\bSt\.? ?La(?:w|we)rence Psychiatric Center", "St. Lawrence Psychiatric Center", "Ogdensburg", NY_STATEJOBS_SYSTEM),
+    (r"\bWestern New York Children[\u2019']?s? Psychiatric Center", "Western New York Children's Psychiatric Center", "West Seneca", NY_STATEJOBS_SYSTEM),
+    (r"\bHelen Hayes Hospital", "Helen Hayes Hospital", "West Haverstraw", NY_STATEJOBS_DOH_SYSTEM),
+)
+_NY_FACILITY_RX = tuple((re.compile(p, re.I), name, city, system) for p, name, city, system in NY_STATEJOBS_FACILITIES)
+_NY_ROW_RX = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S)
+_NY_TD_RX = re.compile(r"<td[^>]*>(.*?)</td>", re.S)
+_NY_HREF_RX = re.compile(r'href="(vacancyDetailsView\.cfm\?id=(\d+))"')
+
+
+def _ny_date(s: str) -> str:
+    """'09/25/26' -> '2026-09-25'; anything else -> ''."""
+    m = re.fullmatch(r"(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})", (s or "").strip())
+    if not m:
+        return ""
+    yr = int(m.group(3))
+    yr = yr + 2000 if yr < 100 else yr
+    try:
+        return datetime(yr, int(m.group(1)), int(m.group(2))).strftime("%Y-%m-%d")
+    except ValueError:
+        return ""
+
+
+def _parse_ny_statejobs(page_html: str) -> list[Job]:
+    """Rows of the NY State Jobs vacancy table that name a CMS hospital."""
+    tbody = page_html or ""
+    i = tbody.find("<tbody")
+    if i >= 0:
+        tbody = tbody[i:]
+    jobs: list[Job] = []
+    for row in _NY_ROW_RX.findall(tbody):
+        tds = _NY_TD_RX.findall(row)
+        if len(tds) < 7:
+            continue
+        hm = _NY_HREF_RX.search(tds[1])
+        if not hm:
+            continue
+        title = _ng_text(tds[1])
+        agency = _ng_text(tds[5])
+        hay = f"{title} | {agency}"
+        hit = next(((name, city, system) for rx, name, city, system in _NY_FACILITY_RX if rx.search(hay)), None)
+        if not hit:
+            continue
+        name, city, system = hit
+        grade = _ng_text(tds[2])
+        deadline = _ny_date(_ng_text(tds[4]))
+        desc = f"{agency}, {name}."
+        if grade:
+            desc += f" Salary grade {grade}."
+        if deadline:
+            desc += f" Apply by {deadline}."
+        jobs.append(Job(
+            title=title,
+            hospital_system=system,
+            hospital_name=name,
+            city=city, state="NY",
+            location=f"{city}, NY",
+            specialty="",
+            job_type="",
+            url=f"https://statejobs.ny.gov/public/{hm.group(1)}",
+            job_id=hm.group(2),
+            posted_date=_ny_date(_ng_text(tds[3])),
+            description=desc,
+            ats_platform="NYStateJobs",
+        ))
+    return jobs
+
+
+async def run_ny_statejobs(session) -> list[Job]:
+    """One request a night: the whole vacancy table."""
+    try:
+        async with req(session, "get", NY_STATEJOBS_URL, headers={**HEADERS, "Accept": "text/html,*/*;q=0.8"},
+                       proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=90)) as r:
+            if r.status != 200:
+                logger.info(f"NY State Jobs: HTTP {r.status}")
+                return []
+            page = await r.text()
+    except Exception as e:
+        logger.info(f"NY State Jobs: {e}")
+        return []
+    jobs = _parse_ny_statejobs(page)
+    logger.info(f"  NY State Jobs: {len(jobs)} hospital rows kept "
+                f"({len({j.hospital_name for j in jobs})} hospitals)")
+    return jobs
+
+
+# SuccessFactors Recruiting Marketing boards.
+# "System": (site root, state, ((phrase, hospital name, (cities...)), ...))
+SF_RMK_BOARDS = {
+    "Texas Health and Human Services": ("https://careers.hhs.texas.gov/hhscjobs", "TX", (
+        ("Austin State Hospital", "Austin State Hospital", ("Austin",)),
+        ("Big Spring State Hospital", "Big Spring State Hospital", ("Big Spring",)),
+        ("El Paso Psychiatric Center", "El Paso Psychiatric Center", ("El Paso",)),
+        ("North Texas State Hospital", "North Texas State Hospital", ("Wichita Falls", "Vernon")),
+        ("NTSH", "North Texas State Hospital", ("Wichita Falls", "Vernon")),
+        ("Rio Grande State Center", "Rio Grande State Center", ("Harlingen",)),
+        ("Rusk State Hospital", "Rusk State Hospital", ("Rusk",)),
+        ("San Antonio State Hospital", "San Antonio State Hospital", ("San Antonio",)),
+        ("Terrell State Hospital", "Terrell State Hospital", ("Terrell",)),
+    )),
+    "Illinois Department of Human Services": ("https://illinois.jobs2web.com", "IL", (
+        ("Alton Mental Health Center", "Alton Mental Health Center", ("Alton",)),
+        ("Chicago-Read", "Chicago-Read Mental Health Center", ("Chicago",)),
+        ("Elgin Mental Health Center", "Elgin Mental Health Center", ("Elgin",)),
+        ("Madden Mental Health", "Madden Mental Health Center", ("Hines",)),
+    )),
+    "Florida Department of Children and Families": ("https://jobs.myflorida.com", "FL", (
+        ("Florida State Hospital", "Florida State Hospital", ("Chattahoochee",)),
+        ("Northeast Florida State Hospital", "Northeast Florida State Hospital", ("Macclenny",)),
+    )),
+}
+SF_RMK_MAX_PAGES = int(os.getenv("SF_RMK_MAX_PAGES", "8"))   # 25 tiles a page, per phrase
+SF_RMK_PAGE_GAP = (1.1, 2.5)   # seconds between pages: at most one request a second per board
+_RMK_TILE_RX = re.compile(r'<li class="job-tile job-id-(\d+)[^"]*"\s+data-url="([^"]+)"(.*?)(?=<li class="job-tile |</ul>)', re.S)
+_RMK_TITLE_RX = re.compile(r'class="jobTitle-link[^"]*"[^>]*>(.*?)</a>', re.S)
+_RMK_FIELD_RX = r'<div id="job-\d+-desktop-section-{0}-value"[^>]*>(.*?)</div>'
+_RMK_LOC_RX = re.compile(_RMK_FIELD_RX.format("location"), re.S)
+_RMK_DATE_RX = re.compile(_RMK_FIELD_RX.format("date"), re.S)
+# The older table layout (jobs.myflorida.com): <tr class="data-row"> with
+# the link, <td class="colLocation"> and <td class="colDate">.
+_RMK_ROW_RX = re.compile(r'<tr class="data-row">(.*?)</tr>', re.S)
+_RMK_ROW_LINK_RX = re.compile(r'<a href="(/[^"]*/(\d+)/)" class="jobTitle-link">(.*?)</a>', re.S)
+_RMK_ROW_LOC_RX = re.compile(r'<td class="colLocation[^"]*"[^>]*>\s*<span class="jobLocation">(.*?)</span>', re.S)
+_RMK_ROW_DATE_RX = re.compile(r'<td class="colDate[^"]*"[^>]*>\s*<span class="jobDate">(.*?)</span>', re.S)
+
+
+def _rmk_date(s: str) -> str:
+    s = (s or "").strip()
+    for fmt in ("%b %d, %Y", "%m/%d/%Y", "%B %d, %Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return ""
+
+
+def _rmk_tile(job_id: str, path: str, title: str, loc: str, date: str, origin: str) -> dict | None:
+    title = _ng_text(title)
+    if not title:
+        return None
+    parts = [p.strip() for p in _ng_text(loc).split(",")]
+    city = parts[0].title() if parts and parts[0] else ""
+    state = parts[1].upper() if len(parts) > 1 and re.fullmatch(r"[A-Za-z]{2}", parts[1]) else ""
+    return {"job_id": job_id, "url": origin + htmllib.unescape(path), "title": title,
+            "city": city, "state": state, "posted": _rmk_date(_ng_text(date))}
+
+
+def _parse_rmk_tiles(page_html: str, base: str) -> list[dict]:
+    """[{job_id, url, title, city, state, posted}] from one /search/ page,
+    tile layout (Texas HHS, Illinois) or table layout (Florida)."""
+    root = urlsplit(base)
+    origin = f"{root.scheme}://{root.netloc}"
+    out = []
+    for job_id, path, body in _RMK_TILE_RX.findall(page_html or ""):
+        tm, lm, dm = _RMK_TITLE_RX.search(body), _RMK_LOC_RX.search(body), _RMK_DATE_RX.search(body)
+        t = _rmk_tile(job_id, path, tm.group(1) if tm else "", lm.group(1) if lm else "",
+                      dm.group(1) if dm else "", origin)
+        if t:
+            out.append(t)
+    if out:
+        return out
+    for body in _RMK_ROW_RX.findall(page_html or ""):
+        km = _RMK_ROW_LINK_RX.search(body)
+        if not km:
+            continue
+        lm, dm = _RMK_ROW_LOC_RX.search(body), _RMK_ROW_DATE_RX.search(body)
+        t = _rmk_tile(km.group(2), km.group(1), km.group(3), lm.group(1) if lm else "",
+                      dm.group(1) if dm else "", origin)
+        if t:
+            out.append(t)
+    return out
+
+
+def _rmk_jobs(tiles: list[dict], system: str, state: str, hospital: str, cities: tuple) -> list[Job]:
+    """Tiles located in one of the hospital's cities (and its state)."""
+    want = {c.lower() for c in cities}
+    jobs = []
+    for t in tiles:
+        if t["city"].lower() not in want or (t["state"] and t["state"] != state):
+            continue
+        jobs.append(Job(
+            title=t["title"],
+            hospital_system=system,
+            hospital_name=hospital,
+            city=t["city"], state=state,
+            location=f"{t['city']}, {state}",
+            specialty="",
+            job_type="",
+            url=t["url"],
+            job_id=t["job_id"],
+            posted_date=t["posted"],
+            description="",
+            ats_platform="SuccessFactorsRMK",
+        ))
+    return jobs
+
+
+async def scrape_sf_rmk(session: aiohttp.ClientSession, system: str, cfg: tuple) -> list[Job]:
+    base, state, facilities = cfg
+    seen: dict[str, Job] = {}
+    for phrase, hospital, cities in facilities:
+        kept = 0
+        for page in range(SF_RMK_MAX_PAGES):
+            try:
+                async with req(session, "get", f"{base}/search/",
+                               params={"q": f'"{phrase}"', "sortColumn": "referencedate",
+                                       "sortDirection": "desc", "startrow": str(page * 25)},
+                               headers={**HEADERS, "Accept": "text/html,*/*;q=0.8"},
+                               proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=40)) as r:
+                    if r.status != 200:
+                        logger.info(f"SF RMK {system}: HTTP {r.status} ({phrase}, page {page + 1})")
+                        break
+                    tiles = _parse_rmk_tiles(await r.text(), base)
+            except Exception as e:
+                logger.info(f"SF RMK {system}: {phrase}: {e}")
+                break
+            for j in _rmk_jobs(tiles, system, state, hospital, cities):
+                if j.job_id not in seen:
+                    seen[j.job_id] = j
+                    kept += 1
+            await asyncio.sleep(random.uniform(*SF_RMK_PAGE_GAP))
+            if len(tiles) < 25:
+                break
+        logger.info(f"  SF RMK {system}: {phrase}: {kept} kept")
+    return list(seen.values())
+
+
+async def run_sf_rmk(session) -> list[Job]:
+    """One board at a time per host (each board is its own host), jitter
+    between pages: never more than one request in flight to a board."""
+    results = await asyncio.gather(*[scrape_sf_rmk(session, s, c) for s, c in SF_RMK_BOARDS.items()],
+                                   return_exceptions=True)
+    out = []
+    for (s, _), r in zip(SF_RMK_BOARDS.items(), results):
+        if isinstance(r, Exception):
+            logger.info(f"  SF RMK {s}: ERROR {r}")
+        else:
+            out.extend(r)
+    logger.info(f"  SF RMK total: {len(out):,} jobs")
+    return out
+
+
 # ══════════════════════════════════════════════════════════════════════════
 #  PRELOAD-STATE career sites (2026-09-22, Texas resume). jobs.harrishealth.org
 #  renders each listing page with
@@ -17096,6 +17390,8 @@ async def run_all() -> list[dict]:
             run_lifepoint(proxy_session),
             run_kronos(proxy_session),
             run_neogov(proxy_session),  # NeoGov / governmentjobs.com county hospital boards (added 2026-09-10)
+            run_ny_statejobs(proxy_session),  # statejobs.ny.gov vacancy table: OMH psychiatric centers + Helen Hayes (added 2026-09-25)
+            run_sf_rmk(proxy_session),        # SuccessFactors RMK state boards: TX HHS, IL DHS, FL state hospitals (added 2026-09-25)
             run_applicantpro(proxy_session),
             run_csod(proxy_session),
             run_paycom(proxy_session),
