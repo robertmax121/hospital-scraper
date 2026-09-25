@@ -1486,6 +1486,24 @@ def derive_job_type(title, raw_job_type):
 
 
 WORKDAY_TENANTS = {
+    # 2026-09-25 push 5 / gov: Denver Health and Hospital Authority (state-
+    # chartered public authority, one CMS hospital). Tenant and site read off
+    # the "Search jobs" links on denverhealth.org/for-professionals/careers.
+    "Denver Health":             ("denverhealth",       "1",   "DHHA-Main"),
+    # Public hospital authorities / state university hospitals, same day;
+    # each tenant read off the system's own careers page and answered the
+    # CXS list call (totals on 2026-09-25 in brackets).
+    "Palomar Health":            ("palomarhealth",      "5",   "PH"),              # Escondido / Poway CA district [288]
+    "Phoebe Putney Health":      ("phoebehealth",       "503", "phoebehealth"),    # Albany GA hospital authority [244]
+    "Baptist Health (Alabama)":  ("baptistfirst",       "12",  "baptistfirst"),    # Montgomery AL healthcare authority [518]
+    "University of Mississippi Medical Center": ("ummc", "5",  "UMCCareers"),      # state (IHL) [535]
+    # Statewide boards, cut to the state hospitals by WD_TENANT_FACETS
+    # (agency / location) and, for Georgia, WD_TITLE_FACILITY.
+    "Georgia DBHDD":             ("georgia",            "5",   "TGC"),             # Team Georgia Careers, DBHDD agency [235]
+    "Oregon State Hospital":     ("oregon",             "5",   "SOR_External_Career_Site"),  # OSH Salem + Junction City [12]
+    "Ohio State Wexner Medical Center": ("osu",         "1",   "OSUCareers"),      # university board cut to the medical center's locations
+    "Southeast Health (Dothan)": ("seh",                "503", "SoutheastHealth"), # Houston County AL healthcare authority
+    "MarinHealth":               ("mymarinhealth",      "5",   "MHCareers"),       # Marin Healthcare District, Greenbrae CA
     # 2026-09-22 Texas resume: UMC Health System, Lubbock (422 beds). 131
     # postings in the dry run, bodies and dates from the detail pass; the
     # board carries no state, see SYSTEM_LOCATION_DEFAULTS / WD_FACILITY_MAP.
@@ -1770,6 +1788,30 @@ WORKDAY_TENANTS = {
 # Workday re-keys the facet the tenant returns 0 rows and a warning says so;
 # the zero-yield guards keep its inventory from being retired meanwhile.
 WD_TENANT_FACETS: dict[str, dict[str, list[str]]] = {
+    # 2026-09-25 push 5 / gov: statewide tenants cut to one agency / one
+    # hospital's locations (ids read off the tenants' facet lists that day).
+    "Georgia DBHDD": {"hiringCompany": ["3f907d8292e51000cddbc10cc6a80000"]},
+    "Oregon State Hospital": {"locations": ["47688ccd4cac014b9648158fc523bcf8",     # Salem | OHA | Oregon State Hospital
+                                            "47688ccd4cac017c6ad4558fc52304f9"]},   # Junction City | OHA | Oregon State Hospital
+    # The Ohio State University board (1,042 postings) cut to the Wexner
+    # Medical Center hospitals and campus; College of Medicine research,
+    # the health plan and the rest of the university stay out.
+    "Ohio State Wexner Medical Center": {"locations": [
+        "65fe018a8c111001b17b9afdfb7d0000",   # University Hospital
+        "cfeaeb92ccbc014a34398eab65019626",   # University Hospital - Doan Hall (0089)
+        "df3a0195f22b01f0cf00fa6c6501bf14",   # University Hospital - Pavilion (0372)
+        "4636ab80487a01e3f8fc11376601b425",   # University Hospital - Rhodes Hall (0354)
+        "1b170d8806031001b13738493fa30000",   # East Hospital
+        "67612469e2ea01cce54c69e664017d16",   # East Hospital - Main (0398)
+        "cfeaeb92ccbc012e62f018c765019d29",   # East Hospital - Tower (0397)
+        "d1f4f9955cee1001b1662e892dbd0000",   # James Cancer Hospital and Solove Research Institute
+        "c77f1ce87652012bde73322d6501fa13",   # James Cancer Hospital (0375)
+        "fa093bd469e01001b15c10a16a3c0000",   # Ross Heart Hospital
+        "c77f1ce8765201a1974b4f2b6501cd13",   # Ross Heart Hospital (0353)
+        "fa093bd469e01001b10676bbac490000",   # Dodd Rehabilitation Hospital
+        "e18a59cd58401001b128e63704360000",   # Harding Hospital
+        "819c1ab743bd0130a44a99006501a2b6",   # Medical Center Campus
+    ]},
     "Allegheny Health Network": {"locationHierarchy1": [
         "fd55ee6c34ac0152d812814ea7018729", "fd55ee6c34ac017db2336a6ca701782a",
         "1f1a79f42c93013094672369a701683b", "fd55ee6c34ac0167521d9753a701c729",
@@ -3524,6 +3566,38 @@ _WD_REQ_ID_RE = re.compile(r"^[A-Za-z]{0,12}[-_ ]?\d{3,}[A-Za-z0-9._-]*$")
 # trailing "(CODE)" stripped; a key also matches as a prefix. Value =
 # (facility label or None to keep the system name, city, state).
 WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
+    # 2026-09-25 push 5 / gov: both boards give the campus, never a town or
+    # state ("Baptist Medical Center South", "Sumter Campus"); the hospital
+    # campuses take the CMS names, everything else the tenant default.
+    "Baptist Health (Alabama)": {
+        "baptist medical center south": ("Baptist Medical Center South", "Montgomery", "AL"),
+        "baptist medical center east": ("Baptist Medical Center East", "Montgomery", "AL"),
+        "prattville baptist hospital": ("Prattville Baptist Hospital", "Prattville", "AL"),
+    },
+    # Ohio State: the location is a building ("University Hospital",
+    # "James Cancer Hospital (0375)"); all of them are in Columbus and all
+    # bill under one CMS number (360085), so the town is what matters.
+    "Ohio State Wexner Medical Center": {
+        "university hospital": ("Ohio State University Hospital", "Columbus", "OH"),
+        "east hospital": ("Ohio State East Hospital", "Columbus", "OH"),
+        "james cancer hospital and solove research institute": ("James Cancer Hospital", "Columbus", "OH"),
+        "james cancer hospital": ("James Cancer Hospital", "Columbus", "OH"),
+        "ross heart hospital": ("Ross Heart Hospital", "Columbus", "OH"),
+        "dodd rehabilitation hospital": ("Dodd Rehabilitation Hospital", "Columbus", "OH"),
+        "harding hospital": ("Harding Hospital", "Columbus", "OH"),
+        "medical center campus": (None, "Columbus", "OH"),
+    },
+    "Oregon State Hospital": {
+        "salem | oha | oregon state hospital": ("Oregon State Hospital", "Salem", "OR"),
+        "junction city | oha | oregon state hospital": ("Oregon State Hospital", "Junction City", "OR"),
+    },
+    "Phoebe Putney Health": {
+        "phoebe putney memorial hospital": ("Phoebe Putney Memorial Hospital", "Albany", "GA"),
+        "phoebe north campus": ("Phoebe Putney Memorial Hospital", "Albany", "GA"),
+        "phoebe putney trauma & critical care tower": ("Phoebe Putney Memorial Hospital", "Albany", "GA"),
+        "sumter campus": ("Phoebe Sumter Medical Center", "Americus", "GA"),
+        "worth campus": ("Phoebe Worth Medical Center", "Sylvester", "GA"),
+    },
     # 2026-09-22 Texas resume: the two campuses that are hospitals take the
     # CMS names; clinics and offices keep the system name (SYSTEM_LOCATION_DEFAULTS gives Lubbock TX).
     "UMC Health System": {
@@ -3694,6 +3768,14 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
 # Intermountain, Sunrise) are deliberately absent: a wrong state is worse than
 # none, and the state facet covers them where the tenant exposes one.
 WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
+    "Denver Health": ("Denver", "CO"),   # 2026-09-25 push 5 / gov: every campus and clinic is in Denver
+    "Baptist Health (Alabama)": ("Montgomery", "AL"),   # same day: clinics and offices, all in the Montgomery area
+    "Phoebe Putney Health": ("Albany", "GA"),
+    "Palomar Health": ("Escondido", "CA"),
+    "University of Mississippi Medical Center": ("Jackson", "MS"),
+    "Southeast Health (Dothan)": ("Dothan", "AL"),      # the board never carries a town
+    "MarinHealth": ("Greenbrae", "CA"),
+    "Ohio State Wexner Medical Center": ("Columbus", "OH"),   # locations are building names
     "UMC Health System": ("Lubbock", "TX"),   # 2026-09-22 Texas resume: every UMC site is in Lubbock
     "WVU Medicine":            ("Morgantown", "WV"),
     "University of Rochester": ("Rochester", "NY"),
@@ -3777,6 +3859,33 @@ def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | No
     if fc and not state and re.sub(r"\s+", " ", (city or "")).strip().lower() in (key, re.sub(r"\s+", " ", loc or "").strip().lower()):
         city = ""
     return facility, (city or fc), (state or fs)
+
+
+# 2026-09-25 push 5 / gov: a statewide board's rows name the facility only
+# in the title ("Food Service Worker Lead - East Central Regional Hospital",
+# "Psychiatrist - GRHA"); the town column is the agency's office town, so
+# community-program jobs in Augusta or Columbus must not become hospital
+# rows. For a system listed here a posting is kept only when its title names
+# one of the hospitals, and takes that hospital's name, CMS town and state.
+WD_TITLE_FACILITY: dict[str, tuple[tuple[re.Pattern, str, str, str], ...]] = {
+    "Georgia DBHDD": (
+        (re.compile(r"East Central Regional Hospital|\bECRH\b|Gracewood", re.I),
+         "East Central Regional Hospital", "Augusta", "GA"),
+        (re.compile(r"Georgia Regional Hospital(?: at| -)? Atlanta|\bGRHA\b", re.I),
+         "Georgia Regional Hospital at Atlanta", "Decatur", "GA"),
+        (re.compile(r"Georgia Regional Hospital(?: at| -)? Savannah|\bGRHS\b", re.I),
+         "Georgia Regional Hospital at Savannah", "Savannah", "GA"),
+        (re.compile(r"West Central Georgia Regional Hospital|\bWCGRH\b", re.I),
+         "West Central Georgia Regional Hospital", "Columbus", "GA"),
+    ),
+}
+
+
+def _wd_title_facility(system: str, title: str) -> tuple[str, str, str] | None:
+    for rx, name, city, state in WD_TITLE_FACILITY.get(system, ()):
+        if rx.search(title or ""):
+            return name, city, state
+    return None
 
 
 WD_FACET_BUDGET = int(os.getenv("WD_FACET_BUDGET", "600"))   # requests per tenant for the location passes
@@ -4007,6 +4116,11 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         _fac, _city, _state = _wd_facility(system, loc, _city, _state)
                         if _fac:
                             _facility = _fac
+                    if system in WD_TITLE_FACILITY:
+                        _tf = _wd_title_facility(system, j.get("title", ""))
+                        if _tf is None:
+                            continue   # statewide board: only postings that name a CMS hospital
+                        _facility, _city, _state = _tf
                     # job_id (2026-05-29): first digit-bearing bulletField is the
                     # req number (some tenants put the state in [0]); fall back to
                     # the always-unique externalPath.
@@ -4255,6 +4369,8 @@ ICIMS_ORGS = {
     # MedStar Health moved to JIBE_SITES 2026-09-24: careers.medstarhealth.org
     # is a Jibe front and this entry never wrote a row.
     "Kettering Health":       "careers-ketteringhealth.icims.com",
+    # Same day, public hospital authorities / districts, from their careers pages.
+    "DCH Health System":      "careers-dchsystem.icims.com",     # Tuscaloosa AL healthcare authority
     "Loma Linda University":  "careers-lluh.icims.com",
     # "Texas Health Resources" moved to FINDLY_CWS_ORGS — uses Findly/m-cloud.io, not iCIMS
     # "Cone Health" REMOVED 2026-05-29: HAR analysis proved careers.conehealth.com is
@@ -5674,6 +5790,14 @@ JIBE_SITES = {
     "Universal Health Services": "https://jobs.uhsinc.com",
     "OSF HealthCare":          "https://www.osfcareers.org",
     "WakeMed":                 "https://jobs.wakemed.org",
+    # 2026-09-25 push 5 / gov: Tanner Health (hospital authority, Carrollton
+    # GA and Wedowee AL); tanner.org/careers links this careers-home front.
+    "Tanner Health":           "https://careers.tanner.org",
+    "Norman Regional Health System": "https://careers.normanregional.com",   # Norman OK hospital authority
+    # USA Health (University of South Alabama, state-owned): its icims.com
+    # portal answers the classic API with nothing; the careers-home front
+    # serves /api/jobs (349 on 2026-09-25).
+    "USA Health":              "https://careers.usahealthsystem.com",
     # ── 2026-09-16 New York coverage: the icims.com portals we first
     # configured redirect here. Validated live: Garnet 112 (Middletown +
     # Catskills campuses), Maimonides 175, Bassett 336 (Cooperstown, Fox,
@@ -7186,6 +7310,16 @@ PHENOM_ORG_CODES = {
     "University of Maryland Medical System": "UOJUOMUS",   # 2026-09-24, widgets refNum on careers.umms.org
 }
 
+# 2026-09-25 push 5 / gov: boards that also carry a parent university's
+# non-health jobs. careers.uvahealth.org lists every University of Virginia
+# posting; the entity field (hospital_name) says which employer. "The Rector
+# & Visitors of the University of Virginia" (faculty, research, athletics,
+# custodial pools) and the College at Wise are dropped before the detail
+# pass; UVA Medical Center, UVA Community Health and the Physicians Group stay.
+PHENOM_DROP_EMPLOYERS = {
+    "UVA Health": re.compile(r"^The Rector (?:&|and) Visitors|College at Wise", re.I),
+}
+
 PHENOM_ORGS = {
     # CommonSpirit moved to TalentBrew — see run_talentbrew
     # Baylor Scott & White moved to Playwright — session-based Phenom
@@ -7213,6 +7347,12 @@ PHENOM_ORGS = {
     "Roper St. Francis Healthcare": "https://careers.rsfh.com",
     "ScionHealth":                  "https://jobs.scionhealth.com",
     "Temple Health":                "https://careers.templehealth.org",
+    # 2026-09-25 push 5 / gov: state university hospitals on Phenom, read off
+    # their careers pages (jobs.virginia.edu -> careers.uvahealth.org, CDN
+    # org UOVUOVUS; muhealth.org/careers -> careers.muhealth.org).
+    "UVA Health":                   "https://careers.uvahealth.org",
+    "MU Health Care":               "https://careers.muhealth.org",
+    "Broward Health":               "https://careers.browardhealth.org",   # North Broward Hospital District
     # Atrium Health is on Coveo (not Phenom) — handled by run_atrium() below.
     # "Atrium Health":              "https://careers.atriumhealth.org",
     "ECU Health":                   "https://careers.ecuhealth.org",
@@ -7781,6 +7921,12 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
         except Exception as e:
             logger.info(f"Phenom {system}: {e}")
             break
+
+    drop_rx = PHENOM_DROP_EMPLOYERS.get(system)
+    if drop_rx and jobs:
+        before = len(jobs)
+        jobs = [j for j in jobs if not drop_rx.search(j.hospital_name or "")]
+        logger.info(f"  Phenom {system}: {before - len(jobs)} rows of non-health employers dropped")
 
     if DETAIL_FETCH and jobs:
         try:
@@ -10802,6 +10948,10 @@ SF_RMK_BOARDS = {
         ("Florida State Hospital", "Florida State Hospital", ("Chattahoochee",)),
         ("Northeast Florida State Hospital", "Northeast Florida State Hospital", ("Macclenny",)),
     )),
+    # ARCareers (table layout, like Florida): 23 hits for the phrase on 2026-09-25.
+    "Arkansas Department of Human Services": ("https://arcareers.arkansas.gov", "AR", (
+        ("Arkansas State Hospital", "Arkansas State Hospital", ("Little Rock",)),
+    )),
 }
 SF_RMK_MAX_PAGES = int(os.getenv("SF_RMK_MAX_PAGES", "8"))   # 25 tiles a page, per phrase
 SF_RMK_PAGE_GAP = (1.1, 2.5)   # seconds between pages: at most one request a second per board
@@ -11435,6 +11585,9 @@ CSOD_ORGS = {
     "Singing River Health System": ("https://singingriverhealthsystem.csod.com", "1"),
     # 2026-09-24 configs: Billings Clinic (MT/WY), career site 1.
     "Billings Clinic": ("https://billingsclinic.csod.com", "1"),
+    # 2026-09-25 push 5 / gov: UI Health (University of Illinois Hospital,
+    # state-owned), career site 2 linked from hospital.uillinois.edu.
+    "UI Health": ("https://uic.csod.com", "2"),
 }
 
 def _csod_job(rq: dict, system: str, base: str, site_id: str, corp: str) -> Job | None:
@@ -11544,6 +11697,9 @@ async def run_csod(session) -> list[Job]:
 #  PAYCOM — Small Texas hospitals
 # ══════════════════════════════════════════════════════════════════════════
 PAYCOM_ORGS = {
+    # 2026-09-25 push 5 / gov: Regional One Health (Shelby County TN hospital
+    # authority, Memphis); client key from regionalonehealth.org/job-postings.
+    "Regional One Health": "E208574E271D180B27F578654032D107",
     "Connally Memorial Medical Center": "772E59A3981B29A14463EC6C3223083C",
     # ── 2026-09-10 Texas block D (Y-texas-build): client keys read from each
     # hospital's careers page. The adapter was rebuilt the same day against
@@ -12160,10 +12316,15 @@ async def run_taleo_be(session) -> list[Job]:
 HCTS_PORTALS = {
     # Format: "System": (subdomain, default state)
     "University Medical Center of El Paso": ("umcelpasocareers", "TX"),
+    # 2026-09-25 push 5 / gov: East Alabama Health (EAMC Opelika, EAMC-Lanier
+    # Valley; healthcare authority), eamc.org/careers redirects here.
+    "East Alabama Health": ("alabamahealth", "AL"),
 }
 HCTS_MAX_PAGES = int(os.getenv("HCTS_MAX_PAGES", "40"))
 _HCTS_ITEM_RE = re.compile(r'class="jobs-section__item[\s"]')
-_HCTS_TITLE_RE = re.compile(r'<h2>\s*<a[^>]+href="([^"]*?/jobs/(\d+)[^"]*)"[^>]*>(.*?)</a>', re.S)
+# 2026-09-25 push 5 / gov: the East Alabama Health portal titles its cards
+# with <h4>, UMC El Paso with <h2>.
+_HCTS_TITLE_RE = re.compile(r'<h[2-4]>\s*<a[^>]+href="([^"]*?/jobs/(\d+)[^"]*)"[^>]*>(.*?)</a>', re.S)
 
 
 def _hcts_field(seg: str, label: str) -> str:

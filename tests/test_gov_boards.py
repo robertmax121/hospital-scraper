@@ -154,3 +154,107 @@ def test_ny_curly_apostrophe_matches():
     hay = "Nutrition Services Administrator 1, Rockland Children\u2019s Psychiatric Center, P28031"
     hit = next(name for rx, name, _, _ in scraper._NY_FACILITY_RX if rx.search(hay))
     assert hit == "Rockland Children's Psychiatric Center"
+
+
+# ── Public hospital authorities / state university hospitals (configs) ────
+def test_gov_configs_present_and_shaped():
+    wd = scraper.WORKDAY_TENANTS
+    for system, tenant in (("Denver Health", "denverhealth"), ("Palomar Health", "palomarhealth"),
+                           ("Phoebe Putney Health", "phoebehealth"), ("Baptist Health (Alabama)", "baptistfirst"),
+                           ("University of Mississippi Medical Center", "ummc")):
+        t, wdn, site = wd[system]
+        assert t == tenant and wdn.isdigit() and site
+    assert scraper.WD_TENANT_DEFAULT["Denver Health"] == ("Denver", "CO")
+    for system in ("UVA Health", "MU Health Care", "Broward Health"):
+        assert scraper.PHENOM_ORGS[system].startswith("https://careers.")
+    assert scraper.JIBE_SITES["Tanner Health"] == "https://careers.tanner.org"
+    assert scraper.CSOD_ORGS["UI Health"] == ("https://uic.csod.com", "2")
+    assert scraper.JIBE_SITES["USA Health"] == "https://careers.usahealthsystem.com" and "USA Health" not in scraper.ICIMS_ORGS
+    base, state, fac = scraper.SF_RMK_BOARDS["Arkansas Department of Human Services"]
+    assert base == "https://arcareers.arkansas.gov" and state == "AR"
+    assert fac == (("Arkansas State Hospital", "Arkansas State Hospital", ("Little Rock",)),)
+
+
+def test_new_labels_do_not_collide_with_existing_systems():
+    new = {"Denver Health", "Palomar Health", "Phoebe Putney Health", "Baptist Health (Alabama)",
+           "University of Mississippi Medical Center", "UVA Health", "MU Health Care", "Broward Health",
+           "Tanner Health", "UI Health", "USA Health", "Arkansas Department of Human Services",
+           "DCH Health System", "Southeast Health (Dothan)", "MarinHealth", "Norman Regional Health System",
+           "Regional One Health", "East Alabama Health", "Georgia DBHDD", "Oregon State Hospital"}
+    boards = [scraper.WORKDAY_TENANTS, scraper.PHENOM_ORGS, scraper.JIBE_SITES, scraper.CSOD_ORGS,
+              scraper.ICIMS_ORGS, scraper.SF_RMK_BOARDS, scraper.NEOGOV_AGENCIES, scraper.HCTS_PORTALS,
+              scraper.PAYCOM_ORGS]
+    for label in new:
+        assert sum(label in b for b in boards) == 1, label
+
+
+def test_uva_drop_rule_keeps_health_entities():
+    rx = scraper.PHENOM_DROP_EMPLOYERS["UVA Health"]
+    assert rx.search("The Rector & Visitors of the University of Virginia")
+    assert rx.search("The University of Virginia's College at Wise")
+    for keep in ("UVA Medical Center", "UVA Community Health", "University of Virginia Physicians Group", ""):
+        assert not rx.search(keep), keep
+    assert "MU Health Care" not in scraper.PHENOM_DROP_EMPLOYERS
+
+
+def test_georgia_title_rule_keeps_only_named_state_hospitals():
+    f = scraper._wd_title_facility
+    assert f("Georgia DBHDD", "Food Service Worker Lead - East Central Regional Hospital") == (
+        "East Central Regional Hospital", "Augusta", "GA")
+    assert f("Georgia DBHDD", "Health Aide, Gracewood Campus, East Central Regional Hospital")[0] == "East Central Regional Hospital"
+    assert f("Georgia DBHDD", "Dentist - ECRH - Mobile Unit")[0] == "East Central Regional Hospital"
+    assert f("Georgia DBHDD", "Psychiatrist - GRHA") == ("Georgia Regional Hospital at Atlanta", "Decatur", "GA")
+    assert f("Georgia DBHDD", "Hospital Chaplain - GRHS, Savannah, GA")[0] == "Georgia Regional Hospital at Savannah"
+    assert f("Georgia DBHDD", "RN - West Central Georgia Regional Hospital")[1] == "Columbus"
+    # community programs, HQ, and Central State Hospital (no CMS target) drop
+    for t in ("Behavioral Health Counselor- Community Integration Home- Columbus", "NTP Surveyor- Atlanta",
+              "Clinical Director - Psychiatrist - Central State Hospital", "Charge Nurse", "Grhapple"):
+        assert f("Georgia DBHDD", t) is None, t
+    assert f("Denver Health", "Psychiatrist - GRHA") is None      # rule is scoped to its board
+
+
+def test_statewide_tenants_are_cut_by_facets():
+    assert scraper.WD_TENANT_FACETS["Georgia DBHDD"] == {"hiringCompany": ["3f907d8292e51000cddbc10cc6a80000"]}
+    assert len(scraper.WD_TENANT_FACETS["Oregon State Hospital"]["locations"]) == 2
+    assert scraper._wd_facility("Oregon State Hospital", "Junction City | OHA | Oregon State Hospital",
+                                "Junction City | OHA | Oregon State Hospital", "") == (
+        "Oregon State Hospital", "Junction City", "OR")
+
+
+def test_campus_boards_map_to_cms_hospitals():
+    fac = scraper._wd_facility
+    assert fac("Baptist Health (Alabama)", "Prattville Baptist Hospital", "Prattville Baptist Hospital", "") == (
+        "Prattville Baptist Hospital", "Prattville", "AL")
+    assert fac("Baptist Health (Alabama)", "Baptist Medical Center East", "", "")[0] == "Baptist Medical Center East"
+    assert fac("Phoebe Putney Health", "Sumter Campus", "Sumter Campus", "") == ("Phoebe Sumter Medical Center", "Americus", "GA")
+    assert fac("Phoebe Putney Health", "Phoebe North Campus", "", "")[0] == "Phoebe Putney Memorial Hospital"
+    assert fac("Phoebe Putney Health", "Albany Meredyth", "Albany Meredyth", "")[0] is None
+    for system in ("Baptist Health (Alabama)", "Phoebe Putney Health", "Palomar Health", "Southeast Health (Dothan)",
+                   "MarinHealth", "University of Mississippi Medical Center", "Denver Health"):
+        assert len(scraper.WD_TENANT_DEFAULT[system]) == 2
+
+
+def test_hcts_h4_card_parses():
+    # East Alabama Health card shape (alabamahealth.hctsportals.com, 2026-09-25), trimmed.
+    seg = ('<div class="jobs-section__item p-3"><div class="row"><div class="col-12">'
+           '<h4><a href="https://alabamahealth.hctsportals.com/jobs/2199490-rn-cardiac-cath-lab">RN - CARDIAC CATH LAB</a>'
+           '</h4></div></div><div class="row"><div class="col-xs-12 col-sm-6">'
+           '<i class="fas fa-map-marker hide-for-large text-muted" aria-hidden="true" data-toggle="tooltip" '
+           'data-placement="top" title="Location"></i>&nbsp;\n      OPELIKA, AL, United States\n   </div></div></div>')
+    jobs = scraper._parse_hcts_page(seg, "East Alabama Health", "alabamahealth", "AL")
+    assert len(jobs) == 1
+    j = jobs[0]
+    assert j.job_id == "2199490" and j.title == "RN - CARDIAC CATH LAB" and j.state == "AL"
+    assert j.city.lower() == "opelika"
+    assert j.url == "https://alabamahealth.hctsportals.com/jobs/2199490-rn-cardiac-cath-lab"
+    assert scraper.HCTS_PORTALS["East Alabama Health"] == ("alabamahealth", "AL")
+
+
+def test_ohio_state_buildings_take_columbus():
+    fac = scraper._wd_facility
+    s = "Ohio State Wexner Medical Center"
+    assert fac(s, "University Hospital - Doan Hall (0089)", "University Hospital - Doan Hall", "") == (
+        "Ohio State University Hospital", "Columbus", "OH")
+    assert fac(s, "James Cancer Hospital (0375)", "James Cancer Hospital (0375)", "")[1:] == ("Columbus", "OH")
+    assert fac(s, "Medical Center Campus", "Medical Center Campus", "") == (None, "Columbus", "OH")
+    assert len(scraper.WD_TENANT_FACETS[s]["locations"]) == 14
