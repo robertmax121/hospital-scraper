@@ -5185,8 +5185,14 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                 # job-companyName span, the pay in a job-salary span, and no
                 # location at all (the city is the URL slug; the state comes
                 # from SYSTEM_LOCATION_DEFAULTS at normalize time).
+                # 2026-10-04 coverage round 3: Hackensack Meridian's cards put
+                # a "Save for Later" <button> between the anchor and the
+                # <h2>, so the title group read "" and every card (15 a page,
+                # 1,695 jobs) was dropped as untitled. The optional button is
+                # skipped and the heading may carry attributes.
                 card_matches = re.finditer(
-                    r'href="(/job/[^"]+)"[^>]*data-job-id="(\d+)"[^>]*>\s*(?:<h2>)?([^<]*)'
+                    r'href="(/job/[^"]+)"[^>]*data-job-id="(\d+)"[^>]*>\s*'
+                    r'(?:<button[^>]*>[^<]*</button>\s*)?(?:<h2[^>]*>)?([^<]*)'
                     r'(.*?)(?=<a class="search-results-list__job-link"|<li>\s*<a href="/job/|\Z)',
                     results_html, re.S
                 )
@@ -5200,7 +5206,7 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     if not title:
                         continue
 
-                    fac_m = (re.search(r'job-facility">\s*([^<]*?)\s*</li>', tail)
+                    fac_m = (re.search(r'job-facility">\s*([^<]*?)\s*</(?:li|span)>', tail)
                              or re.search(r'job-companyName">\s*([^<]*?)\s*</span>', tail))
                     loc_m = re.search(r'job-location">\s*([^<]*?)\s*</(?:li|span)>', tail)
                     sal_m = re.search(r'job-salary">\s*\$?\s*([\d,]+(?:\.\d+)?)\s*(?:-|–|—|to)\s*\$?\s*([\d,]+(?:\.\d+)?)', tail)
@@ -13128,11 +13134,28 @@ TALEO_BE_ORGS = {
 _TBE_NS = {"taleo": "urn:TBERss"}
 
 
+_XML_BAD_CTRL_RX = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F￾￿]")
+_XML_CHAR_REF_RX = re.compile(r"&#(x[0-9A-Fa-f]{1,6}|[0-9]{1,7});")
+
+
+def _xml_sanitize(text: str) -> str:
+    """Drop the characters XML 1.0 forbids, raw or as numeric character
+    references (2026-10-04: the TMC Healthcare feed carries "&#11;" inside a
+    posting body, and ElementTree refuses the whole document: "reference to
+    invalid character number", 0 rows from 356 items)."""
+    def _ref(m):
+        tok = m.group(1)
+        cp = int(tok[1:], 16) if tok[0] in "xX" else int(tok)
+        ok = cp in (0x9, 0xA, 0xD) or 0x20 <= cp <= 0xD7FF or 0xE000 <= cp <= 0xFFFD or 0x10000 <= cp <= 0x10FFFF
+        return m.group(0) if ok else ""
+    return _XML_BAD_CTRL_RX.sub("", _XML_CHAR_REF_RX.sub(_ref, text))
+
+
 def _parse_taleo_be_rss(xml_text: str, system: str, base: str, org: str, cws: str, default_state: str) -> list[Job]:
     import xml.etree.ElementTree as ET
     from email.utils import parsedate_to_datetime
     jobs: list[Job] = []
-    root = ET.fromstring(xml_text)
+    root = ET.fromstring(_xml_sanitize(xml_text))
     for it in root.iter("item"):
         def t(tag, ns=None):
             el = it.find(f"taleo:{tag}", _TBE_NS) if ns else it.find(tag)

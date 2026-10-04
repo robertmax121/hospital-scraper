@@ -156,6 +156,49 @@ def test_taleo_be_tmc_rss_strips_the_us_prefix():
     assert scraper.TALEO_BE_ORGS["TMC Healthcare"] == ("https://phe.tbe.taleo.net/phe01", "TMCAZ", "38", "AZ")
 
 
+def test_talentbrew_hmh_cards_with_a_save_button_keep_their_titles(monkeypatch):
+    """Integrator smoke 2026-10-04: jobs.hackensackmeridianhealth.org answered
+    1,695 jobs, 15 cards a page, but every card parsed with an empty title
+    (a "Save for Later" <button> sits between the anchor and the <h2>) and
+    the tenant kept 0 rows. Two live cards; the Section 6 names answer empty
+    so the generic-name retry serves them."""
+    html = _read("talentbrew_hmh_cards.html")
+
+    def answer(method, url, kw):
+        p = kw.get("params") or {}
+        if url.endswith("/results"):
+            if p.get("SearchResultsModuleName") == "Search Results":
+                return (json.dumps({"results": html, "hasJobs": True, "hasContent": True}), 200)
+            return (json.dumps({"results": "", "hasJobs": False, "hasContent": False}), 200)
+        return ("", 200)
+
+    calls = _fake_req(monkeypatch, answer)
+    jobs = asyncio.run(scraper.scrape_talentbrew(None, "Hackensack Meridian Health",
+                                                 "https://jobs.hackensackmeridianhealth.org/search-jobs", 15))
+    assert [(j.title, j.hospital_name, j.city, j.state, j.job_id) for j in jobs] == [
+        ("Endocrinologist", "HMHMG SPECIALTY CARE 570", "North Bergen", "NJ", "95340279344"),
+        ("Endocrinologist", "HACKENSACK UNIV. MEDICAL GROUP", "Hackensack", "NJ", "88618122928"),
+    ]
+    assert jobs[0].url == "https://jobs.hackensackmeridianhealth.org/job/north-bergen/endocrinologist/19511/95340279344"
+    assert [c[2].get("SearchResultsModuleName") for c in calls if c[1].endswith("/results")] == \
+        ["Section 6 - Search Results List", "Search Results"]
+
+
+def test_taleo_be_rss_survives_invalid_xml_character_references():
+    """The live TMC feed (2026-10-04 integrator smoke) carries "&#11;" in a
+    body: ElementTree raised "reference to invalid character number" and the
+    tenant banked 0 of 356 items. Bad references and raw control characters
+    are dropped; valid ones (tab, &#65; = "A", &#x2019;) survive."""
+    xml = _read("taleo_be_tmc_rss.xml")
+    poisoned = re.sub(r"(<item>\s*<title>[^<]*)", lambda m: m.group(1) + " &#11;&#x1;\x0b&#65;&#x2019;", xml, count=1)
+    assert "&#11;" in poisoned
+    jobs = scraper._parse_taleo_be_rss(poisoned, "TMC Healthcare",
+                                       "https://phe.tbe.taleo.net/phe01", "TMCAZ", "38", "AZ")
+    assert len(jobs) == 2
+    assert jobs[0].title.endswith("A’") and "\x0b" not in jobs[0].title
+    assert scraper._xml_sanitize("a\tb&#9;&#1114111;&#1114112;&#xD800;") == "a\tb&#9;&#1114111;"
+
+
 # ── Jibe: facility from a tags list ─────────────────────────────────────────
 def test_jibe_facility_tag_and_site_code_location_name():
     rows = json.loads(_read("jibe_cne_yale_rows.json"))
