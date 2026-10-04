@@ -592,6 +592,8 @@ OCEANS_DESC_MAX_PER_RUN       = int(os.getenv("OCEANS_DESC_MAX_PER_RUN", "500"))
 APPLICANTPRO_DESC_MAX_PER_RUN = int(os.getenv("APPLICANTPRO_DESC_MAX_PER_RUN", "400"))  # <org>.applicantpro.com JSON-LD
 CSOD_DESC_MAX_PER_RUN         = int(os.getenv("CSOD_DESC_MAX_PER_RUN", "400"))        # CSOD jobDetails API (career-site token)
 HCTS_DESC_MAX_PER_RUN         = int(os.getenv("HCTS_DESC_MAX_PER_RUN", "300"))        # hctsportals.com job page
+PEOPLESOFT_DESC_MAX_PER_RUN   = int(os.getenv("PEOPLESOFT_DESC_MAX_PER_RUN", "400"))  # PeopleSoft HRS_APP_JBPST_FL posting page (2026-10-04)
+SF_DESC_MAX_PER_RUN           = int(os.getenv("SF_DESC_MAX_PER_RUN", "600"))          # SuccessFactors career?career_ns=job_listing page (2026-10-04)
 KRONOS_DESC_MAX_PER_RUN       = int(os.getenv("KRONOS_DESC_MAX_PER_RUN", "300"))      # UKG Ready job-requisitions/{id}
 CHS_DESC_BUDGET               = _DescBudget(CHS_DESC_MAX_PER_RUN)
 CONCENTRA_DESC_BUDGET         = _DescBudget(CONCENTRA_DESC_MAX_PER_RUN)
@@ -599,6 +601,8 @@ OCEANS_DESC_BUDGET            = _DescBudget(OCEANS_DESC_MAX_PER_RUN)
 APPLICANTPRO_DESC_BUDGET      = _DescBudget(APPLICANTPRO_DESC_MAX_PER_RUN)
 CSOD_DESC_BUDGET              = _DescBudget(CSOD_DESC_MAX_PER_RUN)
 HCTS_DESC_BUDGET              = _DescBudget(HCTS_DESC_MAX_PER_RUN)
+PEOPLESOFT_DESC_BUDGET        = _DescBudget(PEOPLESOFT_DESC_MAX_PER_RUN)
+SF_DESC_BUDGET                = _DescBudget(SF_DESC_MAX_PER_RUN)
 KRONOS_DESC_BUDGET            = _DescBudget(KRONOS_DESC_MAX_PER_RUN)
 
 # Hard stop for Workday list pagination. Replaces the old `offset >= total`
@@ -2233,6 +2237,10 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "sutter health":              ("Sacramento",        "CA"),
     "unc health":                 ("Chapel Hill",       "NC"),
     "unitypoint health":          ("West Des Moines",   "IA"),
+    # 2026-10-04 cov3: the PeopleSoft / SuccessFactors boards (home market for the rows that name no site).
+    "nyc health + hospitals":     ("New York",          "NY"),
+    "the queen's health systems": ("Honolulu",          "HI"),
+    "johns hopkins health system": ("Baltimore",        "MD"),
     "ut southwestern medical":    ("Dallas",            "TX"),
     "vcu health":                 ("Richmond",          "VA"),
     "wakemed":                    ("Raleigh",           "NC"),
@@ -6780,18 +6788,10 @@ async def run_findly_google(session) -> list[Job]:
     return jobs
 
 
-# ══════════════════════════════════════════════════════════════════════════
-#  MAJOR HEALTH SYSTEM CAREER PORTALS (formerly "SuccessFactors")
-#  These orgs use custom career portals — scraped via Playwright
-#  They are added to CUSTOM_SITES in run_playwright_scrapers()
-# ══════════════════════════════════════════════════════════════════════════
-SUCCESSFACTORS_ORGS: dict = {}  # Handled via Playwright — see CUSTOM_SITES
-
-async def scrape_successfactors(session, system, org_data) -> list[Job]:
-    return []  # These orgs scraped via Playwright
-
-async def run_successfactors(session) -> list[Job]:
-    return []  # No-op — these orgs handled by Playwright
+# SAP SuccessFactors career sites: SUCCESSFACTORS_ORGS / run_successfactors
+# live with the other cov3 adapter families (PeopleSoft, LiquidCompass) below
+# the HCTS portals (2026-10-04). The empty "handled via Playwright" stub that
+# sat here wrote nothing.
 
 
 
@@ -13292,6 +13292,844 @@ async def run_hcts(session) -> list[Job]:
     return jobs
 
 
+from urllib.parse import quote as _url_quote, unquote as _url_unquote   # 2026-10-04 cov3: SuccessFactors DWR
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  PEOPLESOFT HCM FLUID CANDIDATE GATEWAY (added 2026-10-04, cov3).
+#  <host>/psc/<site>/EMPLOYEE/HRMS/c/HRS_HRAM_FL.HRS_CG_SEARCH_FL.GBL. The
+#  search page itself only renders a search box, but the job list is a plain
+#  GET of ?Page=HRS_APP_SCHJOB_FL&Action=U once the site's cookies are held:
+#  50 rows a chunk, each row a set of <span class='ps_box-value' id='FIELD$N'>
+#  values (SCH_JOB_TITLE, HRS_APP_JBSCH_I_HRS_JOB_OPENING_ID, LOCATION,
+#  HRS_BU_DESCR on NYC H+H, SCH_OPENED), and the grid's "more" control posts
+#  ICAction=HRS_AGNT_RSLT_I$hdown$0 (ICAJAX=1, the page's hidden IC fields,
+#  ICStateNum read back from each reply) for the next 50. The list stops at
+#  500 rows ("1918 jobs found. Only the first 500 jobs can be displayed." at
+#  NYC H+H), so a site over the cap is crawled per Location facet (the
+#  oj-tree-view HRS_RECR_LOC_ALL: selecting a node posts ICAction=
+#  PTS_TREEFACETCHG with PTS_TREEFACETCHG="<tree>.<tree>:<text><path>>"), and
+#  a facet still over the cap per "Job Posted In" month, each partition in a
+#  fresh session. Posting page: ?Page=HRS_APP_JBPST_FL&Action=U&FOCUS=
+#  Applicant&SiteId=1&JobOpeningId=<id>&PostingSeq=1 (body in the
+#  HRS_SCH_PSTDSC scroll area, Full/Part Time in HRS_SCH_WRK_HRS_FULL_PART_TIME).
+#  2026-10-04 counts: NYC H+H 1,918 (Manhattan 819, Bronx 409, Brooklyn 385,
+#  the rest Queens / Staten Island / Coler), Queen's 319.
+# ══════════════════════════════════════════════════════════════════════════
+PEOPLESOFT_SITES = {
+    # Format: "System": (component URL, default state)
+    "NYC Health + Hospitals":     ("https://careers.nychhc.org/psc/hrtam/EMPLOYEE/HRMS/c/HRS_HRAM_FL.HRS_CG_SEARCH_FL.GBL", "NY"),   # 1,918
+    "The Queen's Health Systems": ("https://hrweb.queens.org/psc/careers/EMPLOYEE/HRMS/c/HRS_HRAM_FL.HRS_CG_SEARCH_FL.GBL", "HI"),   # 319
+}
+# Facility labels: the list row's Business Unit (NYC H+H) or Location
+# (Queen's, whose Location column IS the facility) -> (hospital name as the
+# CMS table spells it, so the coverage refresh matches by name, city). Keys
+# are upper-cased with the leading asterisk and apostrophes dropped
+# (_ps_key). An unmapped value is title-cased as the board gives it.
+PEOPLESOFT_FACILITIES: dict[str, dict[str, tuple[str, str]]] = {
+    "NYC Health + Hospitals": {
+        "BELLEVUE":                     ("Bellevue Hospital Center", "New York"),
+        "ELMHURST":                     ("Elmhurst Hospital Center", "Elmhurst"),
+        "HARLEM":                       ("Harlem Hospital Center", "New York"),
+        "JACOBI":                       ("Jacobi Medical Center", "Bronx"),
+        "KINGS COUNTY":                 ("Kings County Hospital Center", "Brooklyn"),
+        "LINCOLN":                      ("Lincoln Medical & Mental Health Center", "Bronx"),
+        "METROPOLITAN":                 ("Metropolitan Hospital Center", "New York"),
+        "NORTH CENTRAL BRONX":          ("North Central Bronx Hospital", "Bronx"),
+        "QUEENS":                       ("Queens Hospital Center", "Jamaica"),
+        "SOUTH BROOKLYN HEALTH":        ("South Brooklyn Health", "Brooklyn"),
+        "CONEY ISLAND":                 ("South Brooklyn Health", "Brooklyn"),
+        "WOODHULL":                     ("Woodhull Medical & Mental Health Center", "Brooklyn"),
+        "CARTER":                       ("Henry J. Carter Specialty Hospital", "New York"),
+        "HENRY J. CARTER":              ("Henry J. Carter Specialty Hospital", "New York"),
+        "COLER":                        ("Coler Rehabilitation and Nursing Care Center", "New York"),
+        "MCKINNEY":                     ("Dr. Susan Smith McKinney Nursing and Rehabilitation Center", "Brooklyn"),
+        "SEA VIEW":                     ("Sea View Hospital Rehabilitation Center", "Staten Island"),
+        "GOUVERNEUR":                   ("Gouverneur Health", "New York"),
+        "CENTRAL OFFICE":               ("NYC Health + Hospitals", "New York"),
+        "HH SPECIAL OPERATIONS":        ("NYC Health + Hospitals", "New York"),
+        "METROPLUS HEALTH PLAN":        ("MetroPlus Health Plan", "New York"),
+        "CORRECTIONAL HEALTH SERVICES": ("Correctional Health Services", "New York"),
+        "CERTIFIED HOME HEALTH AGENCY": ("Certified Home Health Agency", "New York"),
+    },
+    "The Queen's Health Systems": {
+        "QUEENS MEDICAL CTR-HONOLULU":   ("The Queens Medical Center", "Honolulu"),
+        "QUEENS MEDICAL CTR-WEST":       ("The Queens Medical Center - West Oahu", "Ewa Beach"),
+        "THE QUEENS MED CTR-KAHI":       ("Kahi Mohala", "Ewa Beach"),
+        "THE QUEENS MED CTR-WAHIAWA":    ("The Queens Medical Center - Wahiawa", "Wahiawa"),
+        "NORTH HAWAII COMMUNITY HOSP":   ("North Hawaii Community Hospital", "Kamuela"),
+        "MOLOKAI GENERAL HOSPITAL":      ("Molokai General Hospital", "Kaunakakai"),
+        "QUEENS HEALTH SYSTEMS":         ("The Queen's Health Systems", "Honolulu"),
+        "DIAGNOSTIC LABORATORY SERVICES": ("Diagnostic Laboratory Services", "Honolulu"),
+        "CARE RESOURCE HAWAII - OAHU":   ("Care Resource Hawaii", "Honolulu"),
+        "QUEENS DEV CORP-OAHU":          ("Queen's Development Corp", "Honolulu"),
+    },
+}
+# Sites whose Location column is a district, not a town (NYC H+H: the borough).
+PEOPLESOFT_CITIES: dict[str, dict[str, str]] = {
+    "NYC Health + Hospitals": {"MANHATTAN": "New York", "COLER": "New York"},
+}
+PEOPLESOFT_LIST_CAP = 500                                                # the site's own display ceiling
+PEOPLESOFT_CHUNK_CAP = int(os.getenv("PEOPLESOFT_CHUNK_CAP", "60"))     # "more" loads per partition (50 rows each)
+PEOPLESOFT_IMPERSONATE = "chrome"
+PEOPLESOFT_LIST_PAGE = "?Page=HRS_APP_SCHJOB_FL&Action=U"
+_PS_HIDDEN_RX = re.compile(r"<input type='hidden' name='([^']+)' id='[^']*' value='([^']*)'")
+_PS_VALUE_RX = re.compile(r"id='([A-Z][A-Z0-9_]*)\$(\d+)' >(.*?)</span>", re.S)
+_PS_STATE_RX = re.compile(r"ICStateNum\.value=(\d+)")
+_PS_FOUND_RX = re.compile(r"(\d[\d,]*)\s*(?:<[^>]+>\s*)*jobs found", re.I)   # "<b>1918</b> jobs found. Only the first <b>500</b> ..."
+_PS_ROWCNT_RX = re.compile(r"rowcnt\$0'><span class='ps-text'>(\d[\d,]*) rows")
+_PS_TREE_RX = re.compile(r'<oj-tree-view id="([^"]+)"[^>]*aria-label="([^"]*)"')
+_PS_TREE_DATA_RX = re.compile(r"var (\w+)_data=\s*(\[.*?\])\s*;?\s*</script>", re.S)
+_PS_MORE = "$hdown$0"
+_PS_BODY_RX = re.compile(r"id='win0divHRS_SCH_PSTDSC\$0'>(.*?)<[A-Za-z]+[^>]*id='(?:win0divHRS_SCH_WRK_HRS_APPLY_PB|PT_FOOTER|win0divPT_FOOTER)", re.S)
+_PS_FPT_RX = re.compile(r"id='HRS_SCH_WRK_HRS_FULL_PART_TIME' >([^<]*)</span>")
+
+
+def _ps_key(raw: str) -> str:
+    s = _html_unescape(raw or "").replace("’", "").replace("'", "").strip().lstrip("*")
+    return re.sub(r"\s+", " ", s).strip().upper()
+
+
+def _ps_title(raw: str) -> str:
+    """A board's upper-case label ('SOUTH BROOKLYN HEALTH') in title case,
+    small words lowered, '&' and hyphens kept."""
+    s = _html_unescape(raw or "").strip().lstrip("*")
+    if not s:
+        return ""
+    if s != s.upper():
+        return s
+    words = []
+    for i, w in enumerate(re.split(r"(\s+)", s)):
+        if w.strip() and i and w.lower() in ("of", "and", "the", "for", "at"):
+            words.append(w.lower())
+        else:
+            words.append("-".join(p[:1].upper() + p[1:].lower() for p in w.split("-")))
+    return "".join(words)
+
+
+def _ps_hidden(html: str) -> dict:
+    return dict(_PS_HIDDEN_RX.findall(html or ""))
+
+
+def _ps_rows(html: str) -> list[dict]:
+    """The job rows of a list page or an ICAJAX reply: {FIELD: text} per row
+    index, in page order, only rows with a numeric job id and a title."""
+    rows: dict[int, dict] = {}
+    for field, n, val in _PS_VALUE_RX.findall(html or ""):
+        rows.setdefault(int(n), {})[field] = _html_unescape(re.sub(r"<[^>]+>", "", val)).strip()
+    out = []
+    for n in sorted(rows):
+        r = rows[n]
+        if (r.get("HRS_APP_JBSCH_I_HRS_JOB_OPENING_ID") or "").isdigit() and r.get("SCH_JOB_TITLE"):
+            out.append(r)
+    return out
+
+
+def _ps_total(html: str) -> tuple[int, bool]:
+    """(the site's count, whether it is the real total). The 'N jobs found'
+    banner is the real total; without it the grid's 'N rows' figure stands,
+    which is the display cap when the site truncated the list."""
+    m = _PS_FOUND_RX.search(html or "")
+    if m:
+        return int(m.group(1).replace(",", "")), True
+    m = _PS_ROWCNT_RX.search(html or "")
+    if m:
+        n = int(m.group(1).replace(",", ""))
+        return n, n < PEOPLESOFT_LIST_CAP
+    return 0, False
+
+
+def _ps_facets(html: str) -> list[tuple[str, str, list]]:
+    """[(tree id, label, nodes)] for every tree facet on the page, in page
+    order; a node is {"path", "text", "count", "children": [...]}."""
+    labels = dict(_PS_TREE_RX.findall(html or ""))
+    out = []
+    for tree, data in _PS_TREE_DATA_RX.findall(html or ""):
+        try:
+            nodes = json.loads(data)
+        except Exception:
+            continue
+
+        def conv(n):
+            text = str(n.get("text") or "")
+            m = re.search(r"\((\d[\d,]*)\)\s*$", text)
+            return {"path": str(n.get("path") or ""), "text": text,
+                    "count": int(m.group(1).replace(",", "")) if m else 0,
+                    "children": [conv(c) for c in (n.get("children") or []) if isinstance(c, dict)]}
+        out.append((tree, labels.get(tree, tree), [conv(n) for n in nodes if isinstance(n, dict)]))
+    return out
+
+
+def _ps_partition_nodes(nodes: list, leaves: bool) -> list:
+    """Top-level nodes, or (second level) the leaves: the Location tree's
+    top nodes are the sites, the Posted-In tree's year node holds every
+    month, so the second cut goes by leaf."""
+    if not leaves:
+        return [n for n in nodes if n["count"]]
+    out = []
+
+    def walk(n):
+        if n["children"]:
+            for c in n["children"]:
+                walk(c)
+        elif n["count"]:
+            out.append(n)
+    for n in nodes:
+        walk(n)
+    return out
+
+
+def _ps_job(row: dict, system: str, base: str, default_state: str) -> Job | None:
+    jid = (row.get("HRS_APP_JBSCH_I_HRS_JOB_OPENING_ID") or "").strip()
+    title = (row.get("SCH_JOB_TITLE") or "").strip()
+    if not jid or not title:
+        return None
+    bu = (row.get("HRS_BU_DESCR") or "").strip()
+    loc = (row.get("LOCATION") or "").strip()
+    raw = bu or loc
+    facility, city = PEOPLESOFT_FACILITIES.get(system, {}).get(_ps_key(raw), (None, ""))
+    if facility is None:
+        facility = _ps_title(raw) or system
+    if not city and loc:
+        city = PEOPLESOFT_CITIES.get(system, {}).get(_ps_key(loc), "")
+        if not city and bu:
+            # the Location column is a town only when the facility came from the Business Unit
+            city = clean_city(_ps_title(loc))
+    posted = ""
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})$", (row.get("SCH_OPENED") or "").strip())
+    if m:
+        posted = f"{m.group(3)}-{int(m.group(1)):02d}-{int(m.group(2)):02d}"
+    state = default_state.upper()
+    return Job(
+        title=title, hospital_system=system, hospital_name=facility,
+        city=city, state=state, location=f"{city}, {state}" if city else state,
+        specialty="", job_type="",
+        url=f"{base}?Page=HRS_APP_JBPST_FL&Action=U&FOCUS=Applicant&SiteId=1&JobOpeningId={jid}&PostingSeq=1",
+        job_id=jid, posted_date=posted, description="",
+        ats_platform="PeopleSoft",
+    )
+
+
+def _ps_pause() -> None:
+    """Between two posts of one session (worker thread, so a plain sleep)."""
+    time.sleep(random.uniform(0.8, 2.5))
+
+
+class _PSSession:
+    """One PeopleSoft list session: the site's cookies and the page's hidden
+    IC fields, with ICStateNum followed through every ICAJAX reply."""
+    def __init__(self, base: str, proxy: str | None):
+        self.base = base
+        self.s = curl_requests.Session(impersonate=PEOPLESOFT_IMPERSONATE)
+        if proxy:
+            self.s.proxies = {"http": proxy, "https": proxy}
+        self.fields: dict = {}
+
+    def get_list(self) -> str:
+        r = self.s.get(self.base + PEOPLESOFT_LIST_PAGE, timeout=60)
+        if r.status_code != 200:
+            raise RuntimeError(f"HTTP {r.status_code}")
+        html = r.text or ""
+        self.fields = _ps_hidden(html)
+        if "ICSID" not in self.fields:
+            raise RuntimeError("no ICSID on the list page")
+        return html
+
+    def post(self, action: str, extra: dict | None = None) -> str:
+        data = {**self.fields, "ICAction": action, "ICAJAX": "1", "ICNAVTYPEDROPDOWN": "0", **(extra or {})}
+        r = self.s.post(self.base, data=data, timeout=60,
+                        headers={"Referer": self.base + PEOPLESOFT_LIST_PAGE, "X-Requested-With": "XMLHttpRequest",
+                                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"})
+        if r.status_code != 200:
+            raise RuntimeError(f"HTTP {r.status_code} on {action}")
+        text = r.text or ""
+        m = _PS_STATE_RX.search(text)
+        if m:
+            self.fields["ICStateNum"] = m.group(1)
+        return text
+
+
+def _ps_open(base: str) -> tuple:
+    """A list session with its first page: the webshare pool first, direct
+    as the backup (the same order _curl_fetch keeps)."""
+    proxy = proxies.get()
+    last = None
+    for p in ([proxy, None] if proxy else [None]):
+        try:
+            sess = _PSSession(base, p)
+            return sess, sess.get_list()
+        except Exception as e:
+            last = e
+    raise last
+
+
+def _ps_crawl(system: str, base: str, selections: tuple = (), depth: int = 0) -> tuple[dict, bool]:
+    """Rows ({job id: row}) for one facet selection chain, and whether the
+    site served the whole set. A list over the display cap is cut by the
+    next tree facet, each piece in a session of its own."""
+    sess, html = _ps_open(base)
+    for tree, text, path in selections:
+        _ps_pause()
+        html = sess.post("PTS_TREEFACETCHG", {"PTS_TREEFACETCHG": f"{tree}.{tree}:{text}<{path}>>"})
+    total, exact = _ps_total(html)
+    label = " / ".join(t for _, t, _ in selections) or "all"
+    if (total > PEOPLESOFT_LIST_CAP or (not exact and total >= PEOPLESOFT_LIST_CAP)) and depth < 2:
+        facets = _ps_facets(html)
+        if depth < len(facets):
+            tree, name, nodes = facets[depth]
+            parts = _ps_partition_nodes(nodes, leaves=depth >= 1)
+            if parts:
+                logger.info(f"  PeopleSoft {system}: {label}: {total} jobs, over the {PEOPLESOFT_LIST_CAP}-row cap; "
+                            f"cutting by {name} ({len(parts)} values)")
+                rows: dict = {}
+                complete = True
+                for n in parts:
+                    sub, ok = _ps_crawl(system, base, selections + ((tree, n["text"], n["path"]),), depth + 1)
+                    rows.update(sub)
+                    complete = complete and ok
+                return rows, complete
+    rows = {}
+
+    def take(h):
+        new = 0
+        for r in _ps_rows(h):
+            k = r["HRS_APP_JBSCH_I_HRS_JOB_OPENING_ID"]
+            if k not in rows:
+                rows[k] = r
+                new += 1
+        return new
+    take(html)
+    loads = 0
+    while _PS_MORE in html and loads < PEOPLESOFT_CHUNK_CAP:
+        _ps_pause()
+        html = sess.post("HRS_AGNT_RSLT_I" + _PS_MORE)
+        loads += 1
+        if take(html) == 0:
+            break
+    complete = total <= PEOPLESOFT_LIST_CAP and (not total or len(rows) >= total)
+    logger.info(f"  PeopleSoft {system}: {label}: {len(rows)} rows of {total}{'' if exact else '+'}")
+    return rows, complete
+
+
+async def scrape_peoplesoft(session, system: str, cfg: tuple) -> list[Job]:
+    base, default_state = cfg
+    try:
+        rows, complete = await asyncio.to_thread(_ps_crawl, system, base)
+    except Exception as e:
+        logger.info(f"PeopleSoft {system}: {e}")
+        return []
+    jobs = [j for j in (_ps_job(r, system, base, default_state) for r in rows.values()) if j]
+    if not complete:
+        PARTIAL_SYSTEMS.add(system)
+        logger.info(f"  PeopleSoft {system}: PARTIAL, the site withheld rows past its cap")
+    logger.info(f"  PeopleSoft {system}: {len(jobs)} jobs")
+    return jobs
+
+
+def _ps_posting(html: str) -> tuple[str, str]:
+    """(body, employment type) from a posting page: the HRS_SCH_PSTDSC scroll
+    area's sections (About, Work Shifts, Duties & Responsibilities, Minimum
+    Qualifications ... as their own lines) and the Full/Part Time field."""
+    m = _PS_BODY_RX.search(html or "")
+    body = strip_html(m.group(1)).strip() if m else ""
+    body = re.sub(r"[ \t ]+\n", "\n", re.sub(r"\n{3,}", "\n\n", body)).strip()
+    f = _PS_FPT_RX.search(html or "")
+    return body, (_html_unescape(f.group(1)).strip() if f else "")
+
+
+async def _peoplesoft_detail(session, job) -> bool:
+    body, et = _ps_posting(await _curl_html(job.url, PEOPLESOFT_IMPERSONATE, 40))
+    return _apply_body(job, body, et)
+
+
+async def run_peoplesoft(session) -> list[Job]:
+    if not PEOPLESOFT_SITES or curl_requests is None:
+        return []
+    logger.info(f"PeopleSoft: scraping {len(PEOPLESOFT_SITES)} sites...")
+
+    async def _one(sys_, cfg):
+        jobs = await scrape_peoplesoft(session, sys_, cfg)
+        if DETAIL_FETCH and jobs:
+            try:
+                await _detail_pass(session, sys_, jobs, PEOPLESOFT_DESC_BUDGET,
+                                   lambda j: _peoplesoft_detail(session, j), "PeopleSoft")
+            except Exception as e:
+                logger.info(f"PeopleSoft {sys_}: detail pass failed ({e}); listed rows kept")
+        return jobs
+
+    if DETAIL_FETCH:
+        PEOPLESOFT_DESC_BUDGET.expect(PEOPLESOFT_SITES)
+    results = await asyncio.gather(*[_tenant_reporting(PEOPLESOFT_DESC_BUDGET, s, _one(s, c))
+                                     for s, c in PEOPLESOFT_SITES.items()], return_exceptions=True)
+    out = [j for r in results if isinstance(r, list) for j in r]
+    for s, r in zip(PEOPLESOFT_SITES, results):
+        if isinstance(r, Exception):
+            logger.info(f"  PeopleSoft {s}: ERROR {r}")
+    logger.info(f"  PeopleSoft total: {len(out):,} jobs")
+    return out
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  LIQUIDCOMPASS CAREER SITES (added 2026-10-04, cov3). careers.<system>.org
+#  is an Angular app whose jobSearchSvc calls GET https://www.liquidcompass.com
+#  /v1/search?partner=<url_path>&paged=N&update_results=true (per_page is
+#  ignored: 20 results a page, total_count / page_count in the envelope). A
+#  result carries id, raw_title, detail_url (the partner's /job/<id>/<slug>),
+#  posted_at, city / state, location_name (the facility), employment_type,
+#  and the full posting HTML in description, so no detail pass is needed.
+#  The partner's url_path comes from /v1/partner/config?url_path=<host>.
+#  2026-10-04: UnityPoint 1,693 (IA/IL/WI, a few SD clinics).
+# ══════════════════════════════════════════════════════════════════════════
+LIQUIDCOMPASS_SITES = {
+    # Format: "System": (partner url_path, default state)
+    "UnityPoint Health": ("unitypoint", "IA"),   # 1,693 on 2026-10-04; careers.unitypoint.org
+}
+LIQUIDCOMPASS_API = "https://www.liquidcompass.com/v1/search"
+LIQUIDCOMPASS_PAGE_CAP = int(os.getenv("LIQUIDCOMPASS_PAGE_CAP", "120"))   # 20 rows a page
+LIQUIDCOMPASS_IMPERSONATE = "chrome"
+# location_name as the board abbreviates it (lower-cased) -> the hospital as
+# the CMS table names it. Everything else goes through _lc_facility's
+# abbreviation expansion.
+LIQUIDCOMPASS_FACILITIES: dict[str, dict[str, str]] = {
+    "UnityPoint Health": {
+        "marshalltown unitypoint health": "UnityPoint Health - Marshalltown",
+        "sc downtown hospital":           "St Lukes Regional Medical Center",    # Sioux City
+        "cedar rapids st lukes":          "St Lukes Hospital",
+        "rock island trinity west hosp":  "Trinity Rock Island",
+        "madison meriter hospital":       "UnityPoint Health - Meriter",
+        "muscatine trinity hospital":     "Trinity Muscatine",
+        "grinnell reg med cntr corp":     "Grinnell Regional Medical Center",
+        "sioux city st lukes medical":    "St Lukes Regional Medical Center",
+        "des moines lutheran hosp main":  "Iowa Lutheran Hospital",
+        "des moines lutheran hosp":       "Iowa Lutheran Hospital",
+        "des moines methodist hosp main": "Iowa Methodist Medical Center",
+        "des moines methodist hosp":      "Iowa Methodist Medical Center",
+        "waterloo allen hospital":        "Allen Hospital",
+        "waterloo allen hosp":            "Allen Hospital",
+    },
+}
+_LC_ABBR = {"hosp": "Hospital", "med": "Medical", "ctr": "Center", "cntr": "Center", "reg": "Regional",
+            "ucc": "Urgent Care", "spe": "Specialists", "int": "Internal", "corp": "", "main": ""}
+
+
+def _lc_facility(system: str, name: str, city: str = "") -> str:
+    name = _html_unescape(name or "").strip()
+    if not name:
+        return system
+    mapped = LIQUIDCOMPASS_FACILITIES.get(system, {}).get(name.lower())
+    if mapped:
+        return mapped
+    words = [(_LC_ABBR[w.lower()] if w.lower() in _LC_ABBR else w) for w in name.split()]
+    out = re.sub(r"\s+", " ", " ".join(w for w in words if w)).strip()
+    return out or name
+
+
+def _liquidcompass_job(r: dict, system: str, default_state: str) -> Job | None:
+    jid = str((r or {}).get("id") or "").strip()
+    title = _html_unescape(str(r.get("raw_title") or r.get("title") or "")).strip()
+    if not jid or not title or r.get("is_active") is False:
+        return None
+    city = clean_city(str(r.get("city") or "").strip())
+    state = str(r.get("state") or "").strip().upper()
+    if not re.fullmatch(r"[A-Z]{2}", state):
+        state = default_state.upper()
+    et = str(r.get("employment_type") or "").strip()
+    posted = str(r.get("posted_at") or "")[:10]
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", posted):
+        posted = ""
+    url = str(r.get("detail_url") or "").strip()
+    if not url.startswith("http"):
+        url = str(((r.get("data") or {}).get("originalObject") or {}).get("portalUrl") or "").strip()
+    if not url.startswith("http"):
+        return None
+    return Job(
+        title=title, hospital_system=system,
+        hospital_name=_lc_facility(system, str(r.get("location_name") or ""), city),
+        city=city, state=state, location=f"{city}, {state}" if city else state,
+        specialty="", job_type="" if et.lower() == "not stated" else et,
+        url=url, job_id=jid, posted_date=posted,
+        description=strip_html(str(r.get("description") or ""))[:12000],
+        ats_platform="LiquidCompass",
+    )
+
+
+async def scrape_liquidcompass(session, system: str, cfg: tuple) -> list[Job]:
+    path, default_state = cfg
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    page, pages, total = 1, None, None
+    while page <= LIQUIDCOMPASS_PAGE_CAP:
+        try:
+            r = await asyncio.to_thread(
+                _curl_fetch, "get", LIQUIDCOMPASS_API, LIQUIDCOMPASS_IMPERSONATE, 60,
+                params={"partner": path, "paged": str(page), "update_results": "true"},
+                headers={"Accept": "application/json", "Referer": "https://www.liquidcompass.com/"})
+            data = r.json()
+        except Exception as e:
+            logger.info(f"LiquidCompass {system}: page {page}: {e}")
+            break
+        results = (data or {}).get("results") or []
+        if total is None:
+            try:
+                total = int((data or {}).get("total_count") or 0)
+                pages = int((data or {}).get("page_count") or 0)
+            except (TypeError, ValueError):
+                total, pages = 0, 0
+        for it in results:
+            job = _liquidcompass_job(it, system, default_state)
+            if job and job.job_id not in seen:
+                seen.add(job.job_id)
+                jobs.append(job)
+        if not results or (pages and page >= pages):
+            break
+        page += 1
+        await jitter()
+    if total and len(jobs) < total and page > LIQUIDCOMPASS_PAGE_CAP:
+        PARTIAL_SYSTEMS.add(system)
+    logger.info(f"  LiquidCompass {system}: {len(jobs)} jobs (site total {total})")
+    return jobs
+
+
+async def run_liquidcompass(session) -> list[Job]:
+    if not LIQUIDCOMPASS_SITES or curl_requests is None:
+        return []
+    logger.info(f"LiquidCompass: scraping {len(LIQUIDCOMPASS_SITES)} sites...")
+    results = await asyncio.gather(*[scrape_liquidcompass(session, s, c) for s, c in LIQUIDCOMPASS_SITES.items()],
+                                   return_exceptions=True)
+    out = [j for r in results if isinstance(r, list) for j in r]
+    for s, r in zip(LIQUIDCOMPASS_SITES, results):
+        if isinstance(r, Exception):
+            logger.info(f"  LiquidCompass {s}: ERROR {r}")
+    logger.info(f"  LiquidCompass total: {len(out):,} jobs")
+    return out
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  SAP SUCCESSFACTORS CAREER SITES (added 2026-10-04, cov3; the empty
+#  "handled via Playwright" stub this replaces wrote nothing). career4
+#  .successfactors.com/career?company=<id>&career_ns=job_listing_summary
+#  renders the list client-side through DWR: the page's form action carries
+#  the CSRF token (_s.crb), and POST /xi/ajax/remoting/call/plaincall/
+#  careerJobSearchControllerProxy.<method>.dwr?_s.crb=<token> (text/plain
+#  body in DWR's c0-param format, httpSessionId = the JSESSIONID cookie)
+#  answers in DWR script: "var s7={};...s9.postings=s38;..." ending in
+#  _remoteHandleCallback(...,{payload:s7}). getInitialJobSearchData seeds the
+#  session's search and returns payload.results.options.pagination
+#  .totalCount; search(options) with pagination.pageSize=100 pages the same
+#  search (pageSize 10 on the page). A posting is {id, title, postingDate
+#  "MM/DD/YYYY", otherValues: [[{fieldId, shortVal}...]...]} where the
+#  tenant's custom filters name the hospital (filter2 at Hopkins) and the
+#  "City, ST" location (filter7). Posting page: /career?career_ns=job_listing
+#  &company=<id>&...&career_job_req_id=<id> (body in div.joqReqDescription).
+#  2026-10-04: Johns Hopkins 1,007.
+# ══════════════════════════════════════════════════════════════════════════
+SUCCESSFACTORS_ORGS = {
+    # Format: "System": (career-site origin, company id, default state, facility filter field)
+    "Johns Hopkins Health System": ("https://career4.successfactors.com", "SFHUP", "MD", "filter2"),   # 1,007; MD/DC/FL
+}
+SF_PAGE_SIZE = 100
+SF_PAGE_CAP = int(os.getenv("SF_PAGE_CAP", "60"))
+# The list cuts a facility value at 40 characters and appends "..."
+# ("Johns Hopkins Howard County Medical C..."): the full names those cuts
+# stand for, matched by prefix in _sf_job.
+SF_FACILITY_NAMES = ("Johns Hopkins Howard County Medical Center", "Johns Hopkins All Children's Hospital",
+                     "Johns Hopkins Bayview Medical Center")
+SF_IMPERSONATE = "chrome"
+SF_PROXY_NAME = "careerJobSearchControllerProxy"
+# dwr.engine._origScriptSessionId in SF's engine.js; the server does not
+# bind it to the HTTP session, three random digits are appended as the
+# engine does.
+SF_SCRIPT_SESSION = "80A8BD291A8E635A37D57F13E5D1F423"
+_SF_CRB_RX = re.compile(r'name="careerform" action="/career\?_s\.crb=([^"]+)"')
+_SF_BODY_RX = re.compile(r'class="joqReqDescription"[^>]*>(.*?)(?:<div class="button_row|<div class="sfpanel_wrapper|</form>)', re.S)
+_DWR_DECL_RX = re.compile(r"\bvar (s\d+)=(\{\}|\[\]);")
+_DWR_ASSIGN_RX = re.compile(
+    r"\b(s\d+)(?:\.([A-Za-z_$][\w$]*)|\[(\d+)\]|\['((?:[^'\\]|\\.)*)'\])="
+    r"(\"(?:[^\"\\]|\\.)*\"|true|false|null|-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?|s\d+);")
+_DWR_CALLBACK_RX = re.compile(r"_remoteHandleCallback\('[^']*','[^']*',(\{[^}]*\}|s\d+|null|\"(?:[^\"\\]|\\.)*\")\);")
+_DWR_EXC_RX = re.compile(r"_remoteHandleException\('[^']*','[^']*',(\{.*?\})\);", re.S)
+
+
+class _DwrCall:
+    """One DWR call body, serialised the way dwr.engine does: every nested
+    value its own c0-eN entry, objects as Object_Object:{k:reference:c0-eN}."""
+    def __init__(self, method: str, page: str, http_session_id: str):
+        self.lines = ["callCount=1", "nextReverseAjaxIndex=0", f"c0-scriptName={SF_PROXY_NAME}",
+                      f"c0-methodName={method}", "c0-id=0"]
+        self.n = 0
+        self.params = 0
+        self.page = page
+        self.jsid = http_session_id
+
+    @staticmethod
+    def _prim(v) -> str:
+        if v is None:
+            return "null:null"
+        if isinstance(v, bool):
+            return f"boolean:{'true' if v else 'false'}"
+        if isinstance(v, (int, float)):
+            return f"number:{v}"
+        return "string:" + _url_quote(str(v), safe="")
+
+    def _entry(self, v) -> str:
+        if isinstance(v, dict):
+            inner = ", ".join(f"{k}:{self._ref(x)}" for k, x in v.items())
+            return "Object_Object:{" + inner + "}"
+        if isinstance(v, (list, tuple)):
+            return "Array:[" + ",".join(self._ref(x) for x in v) + "]"
+        return self._prim(v)
+
+    def _ref(self, v) -> str:
+        entry = self._entry(v)
+        self.n += 1
+        name = f"c0-e{self.n}"
+        self.lines.append(f"{name}={entry}")
+        return f"reference:{name}"
+
+    def param(self, v) -> "_DwrCall":
+        entry = self._entry(v)
+        self.lines.append(f"c0-param{self.params}={entry}")
+        self.params += 1
+        return self
+
+    def body(self) -> str:
+        return "\n".join(self.lines + [
+            "batchId=0", "instanceId=0",
+            "page=" + _url_quote(self.page, safe=""),
+            "httpSessionId=" + self.jsid,
+            "scriptSessionId=" + SF_SCRIPT_SESSION + str(random.randint(100, 999)),
+            "windowName=",
+        ])
+
+
+def _dwr_value(tok: str, objs: dict):
+    if tok.startswith('"'):
+        try:
+            return json.loads(tok.replace("\\'", "'"))   # DWR escapes the apostrophe, JSON does not allow it
+        except Exception:
+            return tok[1:-1].replace('\\"', '"').replace("\\'", "'").replace("\\/", "/").replace("\\\\", "\\")
+    if tok == "true":
+        return True
+    if tok == "false":
+        return False
+    if tok == "null":
+        return None
+    if tok.startswith("s"):
+        return objs.setdefault(tok, {})
+    try:
+        return int(tok)
+    except ValueError:
+        return float(tok)
+
+
+def _dwr_parse(text: str):
+    """A DWR reply script -> the callback's argument (a dict for {payload:s7});
+    raises on a _remoteHandleException reply."""
+    text = text or ""
+    exc = _DWR_EXC_RX.search(text)
+    if exc:
+        msg = re.search(r'"message":"((?:[^"\\]|\\.)*)"', exc.group(1))
+        raise RuntimeError(f"DWR exception: {msg.group(1)[:200] if msg else exc.group(1)[:200]}")
+    objs: dict = {}
+    for name, kind in _DWR_DECL_RX.findall(text):
+        objs[name] = [] if kind == "[]" else {}
+    for name, attr, idx, key, tok in _DWR_ASSIGN_RX.findall(text):
+        target = objs.setdefault(name, [] if idx else {})
+        value = _dwr_value(tok, objs)
+        if idx:
+            if not isinstance(target, list):
+                continue
+            i = int(idx)
+            while len(target) <= i:
+                target.append(None)
+            target[i] = value
+        elif isinstance(target, dict):
+            target[attr or key.replace("\\'", "'")] = value
+    m = _DWR_CALLBACK_RX.search(text)
+    if not m:
+        raise RuntimeError("DWR reply without a callback")
+    arg = m.group(1)
+    if arg.startswith("{"):
+        return {k: _dwr_value(v, objs) for k, v in re.findall(r"([A-Za-z_$][\w$]*)\s*:\s*(s\d+|true|false|null|-?\d+|\"(?:[^\"\\]|\\.)*\")", arg)}
+    return _dwr_value(arg, objs)
+
+
+def _sf_job(p: dict, system: str, host: str, company: str, default_state: str, facility_field: str) -> Job | None:
+    jid = str((p or {}).get("id") or "").strip()
+    title = _html_unescape(str(p.get("title") or "")).strip()
+    if not jid or not title:
+        return None
+    vals: dict[str, str] = {}
+    for group in p.get("otherValues") or []:
+        for f in group or []:
+            if isinstance(f, dict) and f.get("fieldId"):
+                vals[str(f["fieldId"])] = _html_unescape(str(f.get("shortVal") or "")).strip()
+    facility = vals.get(facility_field) or system
+    if facility.endswith("..."):
+        # the list cuts a long facility value at 40 characters
+        cut = facility[:-3].rstrip()
+        facility = next((full for full in SF_FACILITY_NAMES if full.startswith(cut)), cut)
+    city = state = ""
+    for v in vals.values():
+        m = re.fullmatch(r"(.+?),\s*([A-Z]{2})", v)
+        if m:
+            city, state = clean_city(m.group(1)), m.group(2)
+            break
+    job_type = next((v for v in vals.values()
+                     if re.search(r"\b(?:full|part)[ -]?time\b|\bPRN\b|per diem|\bcasual\b|\btemporary\b", v, re.I)), "")
+    posted = ""
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})", str(p.get("postingDate") or ""))
+    if m:
+        posted = f"{m.group(3)}-{int(m.group(1)):02d}-{int(m.group(2)):02d}"
+    state = state or default_state.upper()
+    return Job(
+        title=title, hospital_system=system, hospital_name=facility,
+        city=city, state=state, location=f"{city}, {state}" if city else state,
+        specialty="", job_type=job_type,
+        url=(f"{host}/career?career_ns=job_listing&company={company}&navBarLevel=JOB_SEARCH"
+             f"&rcm_site_locale=en_US&career_job_req_id={jid}&selected_lang=en_US"),
+        job_id=jid, posted_date=posted, description="",
+        ats_platform="SuccessFactors",
+    )
+
+
+def _sf_pause() -> None:
+    time.sleep(random.uniform(0.8, 2.5))
+
+
+def _sf_open(host: str, company: str) -> tuple:
+    """(curl session, CSRF token, JSESSIONID, the page param) from the
+    listing page, the webshare pool first and direct as the backup."""
+    page_path = f"/career?company={company}&career_ns=job_listing_summary&navBarLevel=JOB_SEARCH"
+    proxy = proxies.get()
+    last = None
+    for p in ([proxy, None] if proxy else [None]):
+        try:
+            s = curl_requests.Session(impersonate=SF_IMPERSONATE)
+            if p:
+                s.proxies = {"http": p, "https": p}
+            r = s.get(host + page_path, timeout=60)
+            if r.status_code != 200:
+                raise RuntimeError(f"HTTP {r.status_code}")
+            m = _SF_CRB_RX.search(r.text or "")
+            if not m:
+                raise RuntimeError("no _s.crb token on the listing page")
+            crb = _url_unquote(m.group(1))
+            jsid = s.cookies.get("JSESSIONID") or ""
+            return s, crb, jsid, page_path + "&_s.crb=" + crb
+        except Exception as e:
+            last = e
+    raise last
+
+
+def _sf_call(sess, host: str, crb: str, jsid: str, page: str, method: str, *params):
+    call = _DwrCall(method, page, jsid)
+    for p in params:
+        call.param(p)
+    r = sess.post(f"{host}/xi/ajax/remoting/call/plaincall/{SF_PROXY_NAME}.{method}.dwr?_s.crb={_url_quote(crb, safe='')}",
+                  data=call.body(), timeout=90,
+                  headers={"Content-Type": "text/plain", "viewId": "/ui/rcmcareer/pages/careersite/career.jsp.xhtml",
+                           "Referer": host + page.split("&_s.crb=")[0], "Origin": host,
+                           "X-Requested-With": "XMLHttpRequest"})
+    if r.status_code != 200:
+        raise RuntimeError(f"HTTP {r.status_code} on {method}")
+    return _dwr_parse(r.text or "")
+
+
+def _sf_results(reply) -> dict:
+    """The results object of a reply: getInitialJobSearchData answers
+    {payload:{filters, results}}, search answers {filters, results}."""
+    reply = reply if isinstance(reply, dict) else {}
+    res = reply.get("results")
+    if not isinstance(res, dict):
+        res = (reply.get("payload") or {}).get("results") if isinstance(reply.get("payload"), dict) else None
+    return res if isinstance(res, dict) else {}
+
+
+def _sf_list(system: str, host: str, company: str, default_state: str, facility_field: str) -> tuple[list, int]:
+    """Every posting of the company's search, 100 a page; (jobs, site total)."""
+    sess, crb, jsid, page = _sf_open(host, company)
+    init = _sf_call(sess, host, crb, jsid, page, "getInitialJobSearchData",
+                    {"filterOnly": "", "jobAlertId": "", "returnToList": False, "browserTimeZone": "America/New_York"})
+    results = _sf_results(init)
+    options = results.get("options") or {}
+    try:
+        total = int(((options.get("pagination") or {}).get("totalCount")) or 0)
+    except (TypeError, ValueError):
+        total = 0
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    pages = max(1, -(-total // SF_PAGE_SIZE)) if total else 1
+    for n in range(1, min(pages, SF_PAGE_CAP) + 1):
+        _sf_pause()
+        opts = {"pagination": {"currentPage": n, "endRow": n * SF_PAGE_SIZE, "increaseCandSummaryPagination": False,
+                               "pageSize": SF_PAGE_SIZE, "startRow": (n - 1) * SF_PAGE_SIZE + 1, "totalCount": total},
+                "sortByColumn": options.get("sortByColumn") or "JOB_POSTING_DATE",
+                "sortOrder": options.get("sortOrder") or "DESC"}
+        res = _sf_call(sess, host, crb, jsid, page, "search", opts)
+        postings = _sf_results(res).get("postings") or []
+        new = 0
+        for p in postings:
+            job = _sf_job(p, system, host, company, default_state, facility_field)
+            if job and job.job_id not in seen:
+                seen.add(job.job_id)
+                jobs.append(job)
+                new += 1
+        if not postings or (new == 0 and n > 1):
+            break
+    return jobs, total
+
+
+async def scrape_successfactors(session, system: str, cfg: tuple) -> list[Job]:
+    host, company, default_state, facility_field = cfg
+    try:
+        jobs, total = await asyncio.to_thread(_sf_list, system, host.rstrip("/"), company, default_state, facility_field)
+    except Exception as e:
+        logger.info(f"SuccessFactors {system}: {e}")
+        return []
+    if total and len(jobs) + max(5, total // 50) < total:
+        PARTIAL_SYSTEMS.add(system)
+        logger.info(f"  SuccessFactors {system}: PARTIAL, {len(jobs)} of {total}")
+    logger.info(f"  SuccessFactors {system}: {len(jobs)} jobs (site total {total})")
+    return jobs
+
+
+def _sf_posting_body(html: str) -> str:
+    m = _SF_BODY_RX.search(html or "")
+    return strip_html(m.group(1)).strip() if m else ""
+
+
+async def _successfactors_detail(session, job) -> bool:
+    return _apply_body(job, _sf_posting_body(await _curl_html(job.url, SF_IMPERSONATE, 40)))
+
+
+async def run_successfactors(session) -> list[Job]:
+    if not SUCCESSFACTORS_ORGS or curl_requests is None:
+        return []
+    logger.info(f"SuccessFactors: scraping {len(SUCCESSFACTORS_ORGS)} career sites...")
+
+    async def _one(sys_, cfg):
+        jobs = await scrape_successfactors(session, sys_, cfg)
+        if DETAIL_FETCH and jobs:
+            try:
+                await _detail_pass(session, sys_, jobs, SF_DESC_BUDGET,
+                                   lambda j: _successfactors_detail(session, j), "SuccessFactors")
+            except Exception as e:
+                logger.info(f"SuccessFactors {sys_}: detail pass failed ({e}); listed rows kept")
+        return jobs
+
+    if DETAIL_FETCH:
+        SF_DESC_BUDGET.expect(SUCCESSFACTORS_ORGS)
+    results = await asyncio.gather(*[_tenant_reporting(SF_DESC_BUDGET, s, _one(s, c))
+                                     for s, c in SUCCESSFACTORS_ORGS.items()], return_exceptions=True)
+    out = [j for r in results if isinstance(r, list) for j in r]
+    for s, r in zip(SUCCESSFACTORS_ORGS, results):
+        if isinstance(r, Exception):
+            logger.info(f"  SuccessFactors {s}: ERROR {r}")
+    logger.info(f"  SuccessFactors total: {len(out):,} jobs")
+    return out
+
+
 # ══════════════════════════════════════════════════════════════════════════
 #  HCA HEALTHCARE — browserless Talemetry crawl via curl_cffi (rebuilt 2026-07-28)
 #
@@ -18590,6 +19428,9 @@ async def run_all() -> list[dict]:
             run_talemetry(proxy_session),  # Jobvite Engage (Talemetry) search.json: UCHealth, PeaceHealth, Penn Medicine (added 2026-09-25)
             run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
             run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)
+            run_peoplesoft(proxy_session),     # PeopleSoft HCM Fluid candidate gateway, curl_cffi sessions: NYC H+H, Queen's (added 2026-10-04)
+            run_liquidcompass(proxy_session),  # LiquidCompass v1/search JSON: UnityPoint (added 2026-10-04)
+            run_successfactors(proxy_session), # SAP SuccessFactors career4 DWR search: Johns Hopkins (added 2026-10-04)
             run_tam(proxy_session),        # The Applicant Manager HTML board: Bayou Bend Health System (added 2026-09-15)
             run_preload(proxy_session),    # window.__PRELOAD_STATE__ career sites: Harris Health System (added 2026-09-22)
             run_hca(direct_session),    # HCA Healthcare — browserless per-state crawl via curl_cffi Firefox TLS (rebuilt 2026-07-28)
