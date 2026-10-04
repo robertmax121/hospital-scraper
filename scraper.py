@@ -1792,6 +1792,23 @@ WORKDAY_TENANTS = {
     "Hospital for Special Surgery": ("hss", "1", "HSS_Careers"),   # 213, New York NY
     "Whitman Hospital and Medical Center": ("whmc", "501", "careers"),   # 25, Colfax WA
     "Rogers Behavioral Health": ("rogersbh", "1", "RBHCareer"),   # 201, Oconomowoc WI
+    # ── 2026-10-04 coverage round 3 (cov3/workday-oracle-infor): AHRQ systems with no
+    # rows, tenant and site read off each system's own careers page; CXS totals that
+    # day in brackets. Labels follow public.ahrq_system_label where a row exists
+    # ("North Mississippi Medical", "Memorial Health System"); the rest use the
+    # system's own name. Towns for facility-only locations: WD_FACILITY_MAP; single-
+    # market fallbacks: WD_TENANT_DEFAULT.
+    "North Mississippi Medical": ("nmhs",                "108", "NMHS"),                              # [531] Tupelo MS + Hamilton AL; was the mislabelled NOR1041NAHO UKG board (now Humboldt Park Health)
+    "Memorial Health System":    ("memorialhealth",      "108", "Memorial_Health_External_Career_Site"),  # [407] Springfield IL; the FL rows under this label come from memorialhealthcare.wd1 (req ids "JR-nnnnn" vs "JRnnnnnn" here)
+    "Valley Health (VA)":        ("valleyhealthlink",    "115", "valleyhealthcareers"),               # [341] Winchester VA + Romney / Berkeley Springs WV; not "Valley Health (NV)" (Catawba Valley, NC)
+    "Brown University Health":   ("brownhealth",         "12",  "External_Careers"),                  # [1,531] Lifespan RI + ex-Steward Morton / Saint Anne's MA
+    "Keck Medicine of USC":      ("usc",                 "5",   "ExternalUSCCareers"),                # [733 university-wide; ~490 inside WD_TENANT_FACETS] Health Sciences Campus, Verdugo Hills, Arcadia, Pasadena
+    "Mercyhealth":               ("mercyhealth",         "1",   "mercyhealthcareers"),                # [560] Janesville / Lake Geneva WI, Rockford / Harvard / Crystal Lake IL
+    "Benefis Health System":     ("benefis",             "1",   "BHS"),                               # [253] Great Falls MT
+    "Concord Hospital":          ("crhc",                "1",   "Concord_Careers"),                   # [370] Concord / Laconia / Franklin NH
+    "Nationwide Children's Hospital": ("nationwidechildrens", "5", "NCHCareers"),                     # [561] Columbus OH
+    "SolutionHealth":            ("solutionhealth",      "1",   "Careers"),                           # [535] Elliot (Manchester) + Southern NH (Nashua)
+    "ChristianaCare":            ("christianacare",      "5",   "CCHS"),                              # [315] Newark / Wilmington DE + Union Hospital Elkton MD
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -1831,6 +1848,18 @@ WD_TENANT_FACETS: dict[str, dict[str, list[str]]] = {
         "fa093bd469e01001b10676bbac490000",   # Dodd Rehabilitation Hospital
         "e18a59cd58401001b128e63704360000",   # Harding Hospital
         "819c1ab743bd0130a44a99006501a2b6",   # Medical Center Campus
+    ]},
+    # 2026-10-04 cov3: the USC board (733 postings) is the whole university;
+    # Keck Medicine is the Health Sciences Campus (Keck Hospital, Norris),
+    # Glendale (USC Verdugo Hills Hospital), Arcadia (USC Arcadia Hospital)
+    # and Pasadena. University Park, Las Vegas and the rest stay out. Ids
+    # read off the tenant's "locations" facet that day (counts in brackets).
+    "Keck Medicine of USC": {"locations": [
+        "e4488bbdc40210fcf92084f5fba8f5a6",   # Los Angeles, CA - Health Sciences Campus [315]
+        "e4488bbdc40210fcf920c28abbb7f5c0",   # Glendale, CA [48]
+        "e4488bbdc40210fcf920bd7f93fff5be",   # Arcadia, CA [102]
+        "e546c65ec8f2102233f963af16220000",   # ARH Arcadia Hospital [13]
+        "e4488bbdc40210fcf9207fe4efe3f5a4",   # Pasadena, CA [12]
     ]},
     "Allegheny Health Network": {"locationHierarchy1": [
         "fd55ee6c34ac0152d812814ea7018729", "fd55ee6c34ac017db2336a6ca701782a",
@@ -2066,6 +2095,14 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "dartmouth health":           ("Lebanon",          "NH"),
     "adventist healthcare (md)":  ("Rockville",        "MD"),
     "infirmary health":           ("Mobile",           "AL"),
+    # 2026-10-04 cov3: single-market Oracle tenants, the relabelled Catawba
+    # board, and Bryan Health (25 Phenom rows with a blank state; every Bryan
+    # hospital is in NE).
+    "mosaic life care":           ("Saint Joseph",     "MO"),
+    "uchicago medicine":          ("Chicago",          "IL"),
+    "inspira health network":     ("Vineland",         "NJ"),
+    "catawba valley health system": ("Hickory",        "NC"),
+    "bryan health":               ("Lincoln",          "NE"),
     "university health (san antonio)": ("San Antonio", "TX"),   # 2026-09-22: TalentBrew cards carry no location
     # 2026-09-24: UTHealth Houston's Phenom board writes "Texas Medical
     # Center-Houston" (blanked by clean_city) or just "Texas" on about 70%
@@ -2189,7 +2226,10 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "mainegeneral health":        ("Augusta",           "ME"),
     "mary washington healthcare": ("Fredericksburg",    "VA"),
     "mass general brigham":       ("Boston",            "MA"),
-    "memorial health system":     ("Savannah",          "GA"),
+    # "memorial health system" (Savannah GA) removed 2026-10-04 (cov3): no
+    # Savannah tenant writes under that label (HCA's Memorial Health is HCA),
+    # and the label now spans FL, IL, OH and WV boards; a wrong town is worse
+    # than a blank one.
     "methodist health system":    ("Dallas",            "TX"),
     "methodist le bonheur":       ("Memphis",           "TN"),
     "montefiore":                 ("Bronx",             "NY"),
@@ -3676,6 +3716,115 @@ _WD_REQ_ID_RE = re.compile(r"^[A-Za-z]{0,12}[-_ ]?\d{3,}[A-Za-z0-9._-]*$")
 # trailing "(CODE)" stripped; a key also matches as a prefix. Value =
 # (facility label or None to keep the system name, city, state).
 WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
+    # ── 2026-10-04 cov3: boards whose location is a facility or a "Town -
+    # Facility" string (every value read off each tenant's locations facet
+    # that day). Hospital campuses take their CMS-facing names; clinics and
+    # offices keep the system name and get their town.
+    "North Mississippi Medical": {
+        "tupelo - north ms medical center":   ("North Mississippi Medical Center", "Tupelo", "MS"),
+        "nmmc - tupelo emergency services":   ("North Mississippi Medical Center", "Tupelo", "MS"),
+        "tupelo - north ms health services":  (None, "Tupelo", "MS"),
+        "tupelo":                             (None, "Tupelo", "MS"),
+        "amory - monroe health services":     ("North Mississippi Medical Center - Gilmore Amory", "Amory", "MS"),
+        "amory":                              (None, "Amory", "MS"),
+        "baldwyn":                            (None, "Baldwyn", "MS"),
+        "chickasaw":                          (None, "Houston", "MS"),
+        "clay county medical center":         ("Clay County Medical Center", "West Point", "MS"),
+        "clay county - medical center":       ("Clay County Medical Center", "West Point", "MS"),
+        "west point":                         (None, "West Point", "MS"),
+        "eupora - webster health services":   ("Webster General Hospital", "Eupora", "MS"),
+        "fulton":                             (None, "Fulton", "MS"),
+        "iuka":                               (None, "Iuka", "MS"),
+        "maben":                              (None, "Maben", "MS"),
+        "medical clinic of oxford":           (None, "Oxford", "MS"),
+        "pontotoc - health services":         ("Pontotoc Health Services", "Pontotoc", "MS"),
+        "starkville":                         (None, "Starkville", "MS"),
+        "tishomingo - health services":       ("Tishomingo Health Services", "Iuka", "MS"),
+        "hamilton, al - marion regional medical center": ("Marion Regional Medical Center", "Hamilton", "AL"),
+        "marion regional medical center":     ("Marion Regional Medical Center", "Hamilton", "AL"),
+        "hamilton, al":                       (None, "Hamilton", "AL"),
+        "south marion winfield":              (None, "Winfield", "AL"),
+    },
+    "Memorial Health System": {
+        "springfield memorial hospital":      ("Springfield Memorial Hospital", "Springfield", "IL"),
+        "mmc":                                ("Springfield Memorial Hospital", "Springfield", "IL"),
+        "decatur memorial hospital":          ("Decatur Memorial Hospital", "Decatur", "IL"),
+        "memorial cancer care of decatur":    (None, "Decatur", "IL"),
+        "jacksonville memorial hospital":     ("Jacksonville Memorial Hospital", "Jacksonville", "IL"),
+        "memorial care- jacksonville":        (None, "Jacksonville", "IL"),
+        "lincoln memorial hospital":          ("Abraham Lincoln Memorial Hospital", "Lincoln", "IL"),
+        "mps - lincoln":                      (None, "Lincoln", "IL"),
+        "taylorville memorial hospital":      ("Taylorville Memorial Hospital", "Taylorville", "IL"),
+        "memorial care- chatham":             (None, "Chatham", "IL"),
+        "memorial care- forsyth":             (None, "Forsyth", "IL"),
+        "memorial care- petersburg":          (None, "Petersburg", "IL"),
+    },
+    "Brown University Health": {
+        "rhode island hospital":              ("Rhode Island Hospital", "Providence", "RI"),
+        "hasbro":                             ("Hasbro Children's Hospital", "Providence", "RI"),
+        "the miriam hospital":                ("The Miriam Hospital", "Providence", "RI"),
+        "newport hospital":                   ("Newport Hospital", "Newport", "RI"),
+        "bradley hospital":                   ("Emma Pendleton Bradley Hospital", "East Providence", "RI"),
+        "bradley schools":                    (None, "East Providence", "RI"),
+        "east providence":                    (None, "East Providence", "RI"),
+        "morton hospital":                    ("Morton Hospital", "Taunton", "MA"),
+        "saint annes hospital":               ("Saint Anne's Hospital", "Fall River", "MA"),
+        "hawthorn medical associates":        (None, "North Dartmouth", "MA"),
+        "593 eddy street":                    (None, "Providence", "RI"),
+        "pawtucket":                          (None, "Pawtucket", "RI"),
+    },
+    "Keck Medicine of USC": {
+        "glendale, ca":                       ("USC Verdugo Hills Hospital", "Glendale", "CA"),
+        "arcadia, ca":                        ("USC Arcadia Hospital", "Arcadia", "CA"),
+        "arh arcadia hospital":               ("USC Arcadia Hospital", "Arcadia", "CA"),
+    },
+    "Mercyhealth": {
+        # Illinois sites, so the WI tenant default never reaches them.
+        "javon bea hospital":                 ("Javon Bea Hospital", "Rockford", "IL"),
+        "mercyhealth perryville":             (None, "Rockford", "IL"),
+        "at home-rockford":                   (None, "Rockford", "IL"),
+        "mercyhealth hospital and medical center - harvard": ("Mercyhealth Hospital and Medical Center - Harvard", "Harvard", "IL"),
+        "mercyhealth hospital and physician clinic - crystal lake": ("Mercyhealth Hospital and Physician Clinic - Crystal Lake", "Crystal Lake", "IL"),
+        "mercyhealth freeport hospital":      ("Mercyhealth Freeport Hospital", "Freeport", "IL"),
+        "crystal lake":                       (None, "Crystal Lake", "IL"),
+        "remote-illinois":                    (None, "", "IL"),
+        # Wisconsin hospitals and the Janesville campus buildings.
+        "mercyhealth hospital and trauma center - janesville": ("Mercyhealth Hospital and Trauma Center - Janesville", "Janesville", "WI"),
+        "mercyhealth hospital and trauma center emergency north": (None, "Janesville", "WI"),
+        "mercyhealth hospital and medical center - lake geneva": ("Mercyhealth Hospital and Medical Center - Lake Geneva", "Lake Geneva", "WI"),
+        "mercyhealth hospital and medical center - walworth": ("Mercyhealth Hospital and Medical Center - Lake Geneva", "Lake Geneva", "WI"),
+        "mercyhealth physician clinic - walworth": (None, "Walworth", "WI"),
+        "mercyhealth sports medicine and rehabilitation center - janesville": (None, "Janesville", "WI"),
+        "mercycare building":                 (None, "Janesville", "WI"),
+        "mercyhealth east":                   (None, "Janesville", "WI"),
+        "mercyhealth mall":                   (None, "Janesville", "WI"),
+    },
+    "SolutionHealth": {
+        "manchester - elliot hospital":       ("Elliot Hospital", "Manchester", "NH"),
+        "manchester":                         (None, "Manchester", "NH"),
+        "nashua":                             (None, "Nashua", "NH"),
+        "bedford":                            (None, "Bedford", "NH"),
+        "hooksett":                           (None, "Hooksett", "NH"),
+        "londonderry":                        (None, "Londonderry", "NH"),
+        "derry":                              (None, "Derry", "NH"),
+        "dover":                              (None, "Dover", "NH"),
+        "portsmouth":                         (None, "Portsmouth", "NH"),
+        "stratham":                           (None, "Stratham", "NH"),
+    },
+    "ChristianaCare": {
+        "christiana hospital":                ("Christiana Hospital", "Newark", "DE"),
+        "christiana - finance location":      (None, "Newark", "DE"),
+        "wilmington hospital":                ("Wilmington Hospital", "Wilmington", "DE"),
+        "avenue north blvd":                  (None, "Wilmington", "DE"),
+        "satellite - wellness center wilm":   (None, "Wilmington", "DE"),
+        "union hospital":                     ("Union Hospital of Cecil County", "Elkton", "MD"),
+        "elkton maryland":                    (None, "Elkton", "MD"),
+        "middletown health services building": (None, "Middletown", "DE"),
+        "cc primary milford":                 (None, "Milford", "DE"),
+        "cc primary rehoboth beach":          (None, "Rehoboth Beach", "DE"),
+        "kennett square":                     (None, "Kennett Square", "PA"),
+        "30 lawrence broomall":               (None, "Broomall", "PA"),
+    },
     # 2026-09-25 push 5 / gov: both boards give the campus, never a town or
     # state ("Baptist Medical Center South", "Sumter Campus"); the hospital
     # campuses take the CMS names, everything else the tenant default.
@@ -3918,6 +4067,20 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "Wellstar Health (Providers)": ("Marietta", "GA"),
     "Allegheny Health Network": ("Pittsburgh", "PA"),   # 2026-09-24: AHN rows with no town or state
     "Beth Israel Lahey Health": ("Boston", "MA"),       # 2026-09-24: clinics missing from WD_FACILITY_MAP
+    # 2026-10-04 cov3: home markets for the round-3 tenants; multi-state ones
+    # (Valley Health VA/WV, Brown RI/MA, Mercyhealth WI/IL, ChristianaCare
+    # DE/MD) have their out-of-state sites in WD_FACILITY_MAP first.
+    "North Mississippi Medical": ("Tupelo", "MS"),
+    "Memorial Health System":    ("Springfield", "IL"),   # the tenant key, not the FL tenant ("Memorial Healthcare System")
+    "Valley Health (VA)":        ("Winchester", "VA"),
+    "Brown University Health":   ("Providence", "RI"),
+    "Keck Medicine of USC":      ("Los Angeles", "CA"),
+    "Mercyhealth":               ("Janesville", "WI"),
+    "Benefis Health System":     ("Great Falls", "MT"),
+    "Concord Hospital":          ("Concord", "NH"),
+    "Nationwide Children's Hospital": ("Columbus", "OH"),
+    "SolutionHealth":            ("Manchester", "NH"),
+    "ChristianaCare":            ("Newark", "DE"),
 }
 
 # 2026-09-24: tenants whose locationsText leads with "City ST" and no comma
@@ -3987,8 +4150,14 @@ def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | No
     # 2026-09-24: with no comma and no state, parse_city_state hands the whole
     # facility string back as the "city" ("Anna Jaques Hospital"). When the
     # map knows the town, the town wins over that echo.
-    if fc and not state and re.sub(r"\s+", " ", (city or "")).strip().lower() in (key, re.sub(r"\s+", " ", loc or "").strip().lower()):
-        city = ""
+    if fc and not state:
+        echo = re.sub(r"\s+", " ", (city or "")).strip().lower()
+        full = re.sub(r"\s+", " ", loc or "").strip().lower()
+        # 2026-10-04 cov3: "Town - Facility" boards (NMHS: "Tupelo - North MS
+        # Medical Center") hand back the facility half as the "city"; any
+        # stateless fragment of the location is that same echo.
+        if echo in (key, full) or (echo and echo in full):
+            city = ""
     return facility, (city or fc), (state or fs)
 
 
@@ -7503,7 +7672,11 @@ PHENOM_ORGS = {
     "ECU Health":                   "https://careers.ecuhealth.org",
     # ── Added from scraper1.xlsx expansion ──
     "Bon Secours Mercy":            "https://careers.bsmhealth.org",
-    "Hoag Health":                  "https://careers.hhsys.org",
+    # "Hoag Health" -> careers.hhsys.org removed 2026-10-04 (cov3): hhsys.org is
+    # Huntsville Hospital Health System (AL), already scraped through its iCIMS
+    # tenant careers-hhsys.icims.com under its own label; this line wrote 0
+    # active rows. Hoag (Newport Beach CA, CMS label "Hoag") runs careers.hoag.org
+    # on SAP SuccessFactors, which has no adapter here.
     "Spartanburg Regional":         "https://careers.spartanburgregional.com",
     "Duke Health":                  "https://careers.dukehealth.org",
     "Cone Health":                  "https://careers.conehealth.com",
@@ -9176,6 +9349,10 @@ INFOR_ORGS = {
     # ── 2026-09-25 (push5/systems, B1): csk pairs from each tenant's careers link.
     "Hawaii Health Systems":     ("css-hhsc-prd",             "7",    "EXTERNAL",       "HI"),
     "Hawaii Pacific Health":     ("css-jdzyl6hzmy2pe28d-prd", "10",   "EXTERNAL",       "HI"),
+    # ── 2026-10-04 cov3: csk pairs from each tenant's careers link, page-1 rows that day.
+    "Kaleida Health":            ("css-y9x4ku9mqsygapwx-prd", "1000", "KH-EXTERNAL",    "NY"),  # 500+ (Buffalo; Olean NY and Bradford PA ride along)
+    "Salem Health":              ("css-salemhealth-prd",      "1",    "STAFF_EXTERNAL", "OR"),  # 102
+    "Bellin Health":             ("css-bellin-prd",           "500",  "EXTERNAL",       "WI"),  # 287; org 1 answers 0 rows
 }
 
 # Tenants whose location value is a facility name with no city or state.
@@ -9625,7 +9802,11 @@ UKG_ORGS = {
     # (2026-08-04 SNF expansion, from the CMS chain analysis). Coordinates
     # pulled from nhccare.com/careers; validated live: totalCount=1092.
     "NHC":                          ("https://recruiting2.ultipro.com/NAT1059NHTH",      "02b4dc60-27be-428b-aa7b-4f7b89a29f7a"),
-    "North Mississippi Medical":    ("https://recruiting.ultipro.com/NOR1041NAHO",       "84528182-2cf7-4f42-b7ca-dbb54c6f1c10"),
+    # Relabelled 2026-10-04 (cov3): NOR1041NAHO is Norwegian American Hospital,
+    # now Humboldt Park Health (Chicago IL); its 99 rows said "North Mississippi
+    # Medical" (that AHRQ label now belongs to the nmhs.wd108 Workday tenant).
+    # The old rows need a one-shot relabel (post-push SQL).
+    "Humboldt Park Health":         ("https://recruiting.ultipro.com/NOR1041NAHO",       "84528182-2cf7-4f42-b7ca-dbb54c6f1c10", "IL"),
     "Kern Medical":                 ("https://recruiting.ultipro.com/KER1002KERN",       "e74fb506-5af0-e4c1-999e-64d5e8414cb0"),
     "Grinnell Regional Medical":    ("https://recruiting.ultipro.com/GRI1004GHSC",       "f5d979ef-386f-4469-8178-a3801183d063"),
     "Columbia Regional Medical":    ("https://recruiting.ultipro.com/COL1042CRME",       "5ac3f35f-7e01-49ff-ad53-0acc27b4cee7"),
@@ -9878,6 +10059,11 @@ ORACLE_ORGS = {
     # 2026-09-25 push 5 / gov: Southwest Mississippi Regional Medical Center
     # (McComb, county-owned); smrmc.com/careers links this candidate site.
     "Southwest Mississippi Regional Medical Center": ("https://fa-evlp-saasfaprod1.fa.ocs.oraclecloud.com", "CX_1"),
+    # 2026-10-04 cov3: sites read off each system's careers link; TotalJobsCount
+    # that day in brackets. Home markets in SYSTEM_LOCATION_DEFAULTS.
+    "Mosaic Life Care":          ("https://ibcjqy.fa.ocs.oraclecloud.com",                   "jobsmymlc"),   # [363] St. Joseph / Maryville / Albany MO
+    "UChicago Medicine":         ("https://fa-etnf-saasfaprod1.fa.ocs.oraclecloud.com",      "CX_1001"),     # [533] Chicago + Ingalls (Harvey) IL
+    "Inspira Health Network":    ("https://ernh.fa.us2.oraclecloud.com",                     "CX_1"),        # [502] Vineland / Mullica Hill / Elmer NJ
     # Northwell runs several CE sites on the same instance (enumerated
     # 2026-08-04: CX_1=367, CX_2=1291, CX_3=1370 — pools overlap heavily).
     # Both alias back to "Northwell Health" and the (job_id, hospital_system)
@@ -9907,7 +10093,13 @@ ORACLE_ORGS = {
     # (validated 2026-08-28, TotalJobsCount=682).
     "Inova Health System":       ("https://elar.fa.us2.oraclecloud.com",                      "CX_1"),
     "EvergreenHealth":           ("https://erym.fa.us6.oraclecloud.com",                      "CX_1"),
-    "Valley Health (NV)":        ("https://fa-eveq-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),
+    # fa-eveq/CX_1 was labelled "Valley Health (NV)"; every row it wrote is
+    # in Hickory / Conover / Taylorville NC (148 active on 2026-10-04): it is
+    # Catawba Valley Health System. Relabelled 2026-10-04 (cov3); the old rows,
+    # the hospital_cms_alias row and the ahrq_system_label row for Catawba
+    # Valley Medical Center still say "Valley Health (NV)" (post-push SQL).
+    # Winchester VA is "Valley Health (VA)" in WORKDAY_TENANTS.
+    "Catawba Valley Health System": ("https://fa-eveq-saasfaprod1.fa.ocs.oraclecloud.com",    "CX_1"),
     "Mount Nittany Health":      ("https://mnh-ibosjb.fa.ocs.oraclecloud.com",               "MountNittanyHealthCareers"),
     # ertr/CX_3001 was labelled "Trinity Health (Oregon)" (aliased to Trinity
     # Health), but every row it wrote is in Oklahoma: it is INTEGRIS Health
@@ -11906,6 +12098,11 @@ PAYCOM_ORGS = {
     # 2026-09-25 push 5 / gov: Regional One Health (Shelby County TN hospital
     # authority, Memphis); client key from regionalonehealth.org/job-postings.
     "Regional One Health": "E208574E271D180B27F578654032D107",
+    # 2026-10-04 cov3: Memorial Health System (Marietta OH; Selby, Marysville,
+    # Sistersville WV); client key from mhsystem.org/careers. Same AHRQ label as
+    # the Springfield IL Workday tenant and the Hollywood FL rows; the state
+    # guard in the coverage refresh tells them apart.
+    "Memorial Health System": "D9A1F2007E6D793704B1C60B560F717C",   # 50 previews on page 1: Marietta / Belpre OH, Parkersburg WV
     "Cullman Regional Medical Center": "560B0CFC7C69A1F00AEF9E03E31BD397",   # Cullman AL healthcare authority
     "Connally Memorial Medical Center": "772E59A3981B29A14463EC6C3223083C",
     # ── 2026-09-10 Texas block D (Y-texas-build): client keys read from each
@@ -11950,6 +12147,7 @@ PAYCOM_ORGS = {
 # 2026-09-25 (B2): Paycom boards outside Texas; a preview whose location has no
 # state takes this instead of the adapter's TX default.
 PAYCOM_DEFAULT_STATE = {
+    "Memorial Health System": "OH",   # 2026-10-04 cov3
     "Gateways Hospital and Mental Health Center": "CA",
     "Gibson Community Hospital": "IL",
     "LifeStream Behavioral Center": "FL",
