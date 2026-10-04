@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="https://phe.tbe.taleo.net/phe01/ats/rss/taleorssfeed.xsl" ?>
+<?xml-stylesheet type="text/css" href="https://phe.tbe.taleo.net/phe01/ats/rss/taleorssfeed.css" ?>
+<rss xmlns:taleo="urn:TBERss" version="2.0">
+<channel>
+<title>TUCSON MEDICAL CENTER Job Feed</title>
+<link>https://phe.tbe.taleo.net/dispatcher/servlet/DispatcherServlet?org=TMCAZ&amp;act=redirectCws&amp;cws=38</link>
+<description>TUCSON MEDICAL CENTER Job Feed</description>
+<language>en</language>
+<pubDate>Fri, 02 Oct 2026 22:57:21 GMT</pubDate>
+<ttl>60</ttl>
+<item>
+<title>Imaging Technologist I - TMCOne Rita Orthopedics</title>
+<link>https://phe.tbe.taleo.net/phe01/ats/careers/requisition.jsp?org=TMCAZ&amp;cws=38&amp;rid=42001</link>
+<guid>https://phe.tbe.taleo.net/phe01/ats/careers/requisition.jsp?org=TMCAZ&amp;cws=38&amp;rid=42001</guid>
+<description>          SUMMARY   :       Operates x-ray equipment to make radiographs of designated portions of the body under the supervision of a radiologist.&#160; Prepares and administers barium salts or other chemical mixtures.&#160; Prepares and maintains records and files as directed.&#160; Cleans and adjusts equipment.        ESSENTIAL FUNCTIONS:        Prepares room and equipment for patient.      Prepares the patient and explains the procedure; observes the patient&#8217;s status before, during and after procedure.      Arranges, attaches, or adjusts immobilization and support devices to obtain precise positions and prevent patient from moving.      Administers contrast media with instructions to patients.      Practices radiation protection techniques, minimize radiation to patient and staff, following established safety protocols.      Provides training to students, staff and physicians.      Develops film and assesses technical quality; seeks appropriate consultation to repeat radiographs.      Uses automated technology to archive, copy, film, and manipulate image data.      Maintains x-ray exams log.      Uses all department systems, including order entry, scheduling, patient location, and transport, and radiology information system.      Maintains inventory control; checks equipment, supplies and accessories on a regular basis; performs routine daily equipment maintenance and cleaning.      Adheres to TMC organizational and department-specific safety, confidentiality, values, policies and standards.      Performs related duties as assigned.        MINIMUM QUALIFICATIONS         EDUCATION :&#160; Associate's degree or equivalent from two-year college or technical school.       EXPERIENCE:  One (1) year of experience operating radiograph equipment.       LICENSURE OR CERTIFICATION : Arizona Certified Radiologic Technologist (CRT), American Registry of Radiology Technologists (ARRT), and     Cardio Pulmonary Resuscitation (CPR) c    ertification.        KNOWLEDGE, SKILLS AND ABILITIES: &#160;          Knowledge of radiograph equipment and how to operate machinery.        Skill in operating and maintaining radiograph equipment.        Ability to read and interpret documents such as safety rules, operating and maintenance instructions, and procedure manuals.        Ability to complete routine reports and correspondence.        Ability to listen and accurately interpret others' communication or instructions to take appropriate action; ability to speak effectively with customers.        Ability to calculate figures and compute rate, ratio, and percent, and to draw and interpret bar graphs; ability to apply basic algebraic concepts.        Ability to apply common sense understanding to carry out instructions furnished in written, oral, or diagram form.&#160;        Ability to deal with problems involving several concrete variables in standardized situations          </description>
+<pubDate>Fri, 02 Oct 2026 22:57:21 GMT</pubDate>
+<taleo:reqId>42001</taleo:reqId>
+<taleo:location>Tucson, Arizona</taleo:location>
+<taleo:locationState>US-AZ</taleo:locationState>
+<taleo:locationCity>Tucson</taleo:locationCity>
+<taleo:department>331 Rita Orthopedics</taleo:department>
+<taleo:html-description>Registered nurse posting body trimmed for the fixture.</taleo:html-description>
+</item>
+<item>
+<title>Patient Access Scheduler II - El Dorado Infusion Clinic</title>
+<link>https://phe.tbe.taleo.net/phe01/ats/careers/requisition.jsp?org=TMCAZ&amp;cws=38&amp;rid=41505</link>
+<guid>https://phe.tbe.taleo.net/phe01/ats/careers/requisition.jsp?org=TMCAZ&amp;cws=38&amp;rid=41505</guid>
+<description>      SUMMARY      :       The Patient Access Scheduler II is responsible for advanced scheduling functions, insurance verification, and coordination of complex outpatient and ancillary services. This role supports departmental operations by mentoring junior staff, resolving scheduling conflicts, and ensuring compliance with organizational and payer requirements.      &#160;       ESSENTIAL FUNCTIONS:           Schedule complex diagnostic, surgical, and outpatient procedures using EHR and scheduling systems.            Verify insurance eligibility, benefits, and authorization requirements for scheduled services.            Coordinate with clinical departments and physician offices to confirm procedure details and resolve conflicts.              Provide patients with procedure preparation instructions and cost estimates.        Collect co-pays, deductibles, and outstanding balances; reconcile daily cash drawer.            Mentor and train Scheduler I staff; serve as a resource for complex scheduling scenarios.            Monitor scheduling queues and ensure timely follow-up on pending cases.            Document all insurance and authorization information in the registration system.            Support outpatient departments with system maintenance tasks (e.g., opening/closing resources, overbooking).            Respond to incoming calls and assist patients with scheduling, rescheduling, and inquiries.            Adhere to HIPAA and organizational confidentiality standards.            Performs related duties as assigned.        &#160;       MINIMUM QUALIFICATIONS       &#160;       EDUCATION:      High school diploma or GED required; vocational training in medical office administration preferred.      &#160;       EXPERIENCE:      Two (2) years in a medical office or hospital setting, including 1 year of scheduling or insurance verification experience.      &#160;       LICENSURE OR CERTIFICATION :     Heartsaver   CPR certification required within 90 days for specific departments (e.g., Pediatric or Adult Therapies).      &#160;       KNOWLEDGE, SKILLS, AND ABILITIES:           Advanced knowledge of medical terminology, insurance plans, and scheduling protocols.              Strong communication and customer service skills  .        Proficiency in EHR systems and scheduling software.            Ability to multitask and prioritize in a fast-paced environment.            Attention to detail and accuracy in data entry.            Ability to mentor and support junior staff.            Basic computer and office equipment proficiency.        &#160;   </description>
+<pubDate>Fri, 02 Oct 2026 22:52:18 GMT</pubDate>
+<taleo:reqId>41505</taleo:reqId>
+<taleo:location>Tucson, Arizona</taleo:location>
+<taleo:locationState>US-AZ</taleo:locationState>
+<taleo:locationCity>Tucson</taleo:locationCity>
+<taleo:department>765 El Dorado Infusion Clinic</taleo:department>
+<taleo:html-description>Registered nurse posting body trimmed for the fixture.</taleo:html-description>
+</item>
+</channel></rss>

@@ -1,0 +1,35 @@
+{
+ "total": 2148,
+ "jobPostings": [
+  {
+   "title": "Patient Care Nurse Assistant - Coronary Care Unit",
+   "externalPath": "/job/Mercy-Hospital/Coronary-Care-PCNA_355366-1",
+   "timeType": "Full time",
+   "locationsText": "Mercy Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "355366"
+   ]
+  },
+  {
+   "title": "Operations Attendant",
+   "externalPath": "/job/Green-Health-and-Wellness/Operations-Attendant_356591",
+   "timeType": "Part time",
+   "locationsText": "Green Health and Wellness",
+   "postedOn": "Posted 2 Days Ago",
+   "bulletFields": [
+    "356591"
+   ]
+  },
+  {
+   "title": "RN - MICU",
+   "externalPath": "/job/Martin-Health-North/RN---MICU_345527",
+   "timeType": "Full time",
+   "locationsText": "Martin Health North",
+   "postedOn": "Posted 2 Days Ago",
+   "bulletFields": [
+    "345527"
+   ]
+  }
+ ]
+}

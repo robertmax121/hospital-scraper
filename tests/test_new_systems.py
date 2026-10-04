@@ -127,7 +127,8 @@ def test_talemetry_detail_fills_body(monkeypatch):
 
 
 def test_configs_added_and_dead_entries_retired():
-    assert set(scraper.TALEMETRY_SITES) == {"UCHealth", "PeaceHealth", "Penn Medicine"}
+    # 2026-10-04 coverage round 3 added LifeBridge and Asante (test_cov3_round3.py).
+    assert {"UCHealth", "PeaceHealth", "Penn Medicine"} <= set(scraper.TALEMETRY_SITES)
     assert "PeaceHealth" not in scraper.PHENOM_ORGS and "Penn Medicine" not in scraper.PHENOM_ORGS
     for lab in ("ThedaCare", "MUSC Health", "Presbyterian Healthcare Services", "St. Elizabeth Healthcare",
                 "Baystate Health", "Nebraska Medicine", "Phoebe Putney Health", "Adventist HealthCare (MD)"):

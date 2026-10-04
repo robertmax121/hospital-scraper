@@ -1366,6 +1366,9 @@ HOSPITAL_SYSTEM_ALIASES = {
     "Prisma Health (Providers)":   "Prisma Health",
     "Northwell Health (CX_1)":     "Northwell Health",
     "Northwell Health (CX_3)":     "Northwell Health",
+    # 2026-10-04 coverage round 3: Samaritan's clinician portal (HCTS_PORTALS)
+    # writes under the AHRQ label like the staff portal.
+    "Samaritan Health Services (Clinicians)": "Samaritan Health Services",
     "Ascension Health":            "Ascension",
     "Saint Luke's Health System":  "St. Luke's Health System",
     "Bon Secours Mercy":           "Bon Secours Mercy Health",
@@ -2078,6 +2081,21 @@ SYSTEM_CITY_STATE: dict[str, dict[str, str]] = {
     "legacy health": {"vancouver": "WA"},
     "st. luke's health system": {"overland park": "KS", "iola": "KS", "lenexa": "KS",
                                  "shawnee": "KS", "leawood": "KS", "olathe": "KS"},
+    # 2026-10-04 coverage round 3: Northwell's Oracle sites give the town
+    # alone and the "northwell health" default then wrote NY on the Nuvance
+    # (Connecticut) hospitals it took over in 2025: Danbury (24 rows), Norwalk
+    # (18) and Sharon (14) were filed as NY, so the three CT hospitals never
+    # counted. Every Nuvance town in Connecticut; Carmel, Poughkeepsie and
+    # Rhinebeck stay NY. Applied to the CX_1 / CX_3 site labels as well.
+    "northwell health": {"danbury": "CT", "norwalk": "CT", "sharon": "CT", "new milford": "CT",
+                         "southbury": "CT", "wilton": "CT", "ridgefield": "CT", "bethel": "CT",
+                         "brookfield": "CT", "new fairfield": "CT", "newtown": "CT", "westport": "CT",
+                         "darien": "CT", "new canaan": "CT", "stamford": "CT", "torrington": "CT",
+                         "lakeville": "CT", "kent": "CT", "canaan": "CT", "greenwich": "CT"},
+    "northwell health (cx_1)": {"danbury": "CT", "norwalk": "CT", "sharon": "CT", "new milford": "CT",
+                                "southbury": "CT", "wilton": "CT", "ridgefield": "CT", "bethel": "CT"},
+    "northwell health (cx_3)": {"danbury": "CT", "norwalk": "CT", "sharon": "CT", "new milford": "CT",
+                                "southbury": "CT", "wilton": "CT", "ridgefield": "CT", "bethel": "CT"},
 }
 
 # System-level fallback — used when facility lookup fails
@@ -2103,6 +2121,35 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "inspira health network":     ("Vineland",         "NJ"),
     "catawba valley health system": ("Hickory",        "NC"),
     "bryan health":               ("Lincoln",          "NE"),
+    # 2026-10-04 coverage round 3: home market of each new tenant (the
+    # board's own city/state wins when the posting carries one).
+    "community medical centers":  ("Fresno",           "CA"),
+    "tallahassee memorial healthcare": ("Tallahassee", "FL"),
+    "yale new haven health system": ("New Haven",      "CT"),
+    "care new england health system": ("Providence",   "RI"),
+    "memorialcare":               ("Long Beach",       "CA"),
+    "hackensack meridian health": ("Hackensack",       "NJ"),
+    "luminis health":             ("Annapolis",        "MD"),
+    "lifebridge health":          ("Baltimore",        "MD"),
+    "asante health system":       ("Medford",          "OR"),
+    "uab health system":          ("Birmingham",       "AL"),
+    "health first":               ("Melbourne",        "FL"),
+    "samaritan health services":  ("Corvallis",        "OR"),
+    "samaritan health services (clinicians)": ("Corvallis", "OR"),
+    "aultman health foundation":  ("Canton",           "OH"),
+    "willis knighton health system": ("Shreveport",    "LA"),
+    "cabell huntington hospital": ("Huntington",       "WV"),
+    "ephraim mcdowell health":    ("Danville",         "KY"),
+    "main line health":           ("Wynnewood",        "PA"),
+    "university of iowa hospitals and clinics": ("Iowa City", "IA"),
+    "tmc healthcare":             ("Tucson",           "AZ"),
+    "pipeline health":            ("Gardena",          "CA"),
+    "scripps health":             ("San Diego",        "CA"),
+    # 2026-10-04: Northwell's CX_1 / CX_3 Oracle sites alias to "Northwell
+    # Health" only at upsert time, after this lookup ran on the site label, so
+    # 52 of their rows had no state. Same home market as the main site.
+    "northwell health (cx_1)":    ("New Hyde Park",    "NY"),
+    "northwell health (cx_3)":    ("New Hyde Park",    "NY"),
     "university health (san antonio)": ("San Antonio", "TX"),   # 2026-09-22: TalentBrew cards carry no location
     # 2026-09-24: UTHealth Houston's Phenom board writes "Texas Medical
     # Center-Houston" (blanked by clean_city) or just "Texas" on about 70%
@@ -3825,6 +3872,35 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "kennett square":                     (None, "Kennett Square", "PA"),
         "30 lawrence broomall":               (None, "Broomall", "PA"),
     },
+    # 2026-10-04 coverage round 3: ccf.wd1's locationsText is the site name
+    # with no town or state ("Martin Health North", "Florida Weston Hospital",
+    # "Indian River Hospital"); every row then took the "cleveland clinic"
+    # default (Cleveland, OH), so 2,190 rows were OH and the six Florida
+    # hospitals never counted. The Florida and Nevada sites read off the
+    # tenant's locations facet that day (Indian River 110, Weston 71, Martin
+    # North 38, Tradition 35, Martin South 19, Nevada 10); the hospitals take
+    # their CMS names, the clinics only the town. Ohio sites keep the default.
+    "Cleveland Clinic": {
+        "florida weston hospital":      ("Cleveland Clinic Hospital", "Weston", "FL"),            # CMS 100289
+        "krupa center weston":          (None, "Weston", "FL"),
+        "florida west palm beach":      (None, "West Palm Beach", "FL"),
+        "florida wellington":           (None, "Wellington", "FL"),
+        "florida research and innovation center": (None, "Port St. Lucie", "FL"),
+        "martin health north":          ("Cleveland Clinic Martin North Hospital", "Stuart", "FL"),   # CMS 100044
+        "martin hospital south":        ("Cleveland Clinic Martin South Hospital", "Stuart", "FL"),
+        "martin health south":          ("Cleveland Clinic Martin South Hospital", "Stuart", "FL"),
+        "martin health at tiffany":     (None, "Stuart", "FL"),
+        "stuart family health center":  (None, "Stuart", "FL"),
+        "stuart north medical outpatient center": (None, "Stuart", "FL"),
+        "palm city medical center":     (None, "Palm City", "FL"),
+        "indian river hospital":        ("Cleveland Clinic Indian River Hospital", "Vero Beach", "FL"),   # CMS 100105
+        "vero radiology associates":    (None, "Vero Beach", "FL"),
+        "tradition hospital":           ("Cleveland Clinic Tradition Hospital", "Port St. Lucie", "FL"),
+        "saint lucie west med center":  (None, "Port St. Lucie", "FL"),
+        "palm beach gardens":           (None, "Palm Beach Gardens", "FL"),
+        "coral springs fhc surgery center": (None, "Coral Springs", "FL"),
+        "cleveland clinic nevada":      (None, "Las Vegas", "NV"),
+    },
     # 2026-09-25 push 5 / gov: both boards give the campus, never a town or
     # state ("Baptist Medical Center South", "Sumter Campus"); the hospital
     # campuses take the CMS names, everything else the tenant default.
@@ -4126,6 +4202,30 @@ _STATE_CODE_BY_NAME = {
 }
 
 
+def _wd_bullet_location(bullets: list) -> tuple[str, str]:
+    """(city, state code) from a posting's bulletFields when one bullet is a
+    US state name ("Arizona") and, optionally, another is a town ("Sun City
+    West"); ("", "") otherwise. Req numbers, "Posted ..." bullets and a
+    second copy of the state name are never the town (2026-10-04, Banner)."""
+    state, city = "", ""
+    for b in bullets or []:
+        s = str(b or "").strip()
+        if not s:
+            continue
+        if s.lower() in _STATE_CODE_BY_NAME:
+            state = state or _STATE_CODE_BY_NAME[s.lower()]
+    if not state:
+        return "", ""
+    for b in bullets or []:
+        s = str(b or "").strip()
+        if (not s or s.lower() in _STATE_CODE_BY_NAME or _WD_REQ_ID_RE.match(s)
+                or re.match(r"(?i)posted\b", s) or not _cityish(s)):
+            continue
+        city = s
+        break
+    return city, state
+
+
 def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | None, str, str]:
     """(facility or None, city, state) from WD_FACILITY_MAP for one posting.
     Parsed city/state win; the map only fills what is blank."""
@@ -4288,8 +4388,11 @@ async def _wd_location_facets(session, working_url: str, system: str) -> tuple[d
                 path_city[ext] = c
         logger.info(f"  Workday {system}: locations facet located {len(path_state):,} postings ({len(locs[1])} values)")
         return path_city, path_state
-    state_g = next(((p, v) for p, _, v in groups
-                    if re.search(r"state|province|region", p, re.I) and _is_state_group(v)), None)
+    # 2026-10-04: the group's label counts too. Banner nests its states under
+    # locationHierarchy2 with the descriptor "State" (locationHierarchy1 is
+    # "City"), which the parameter-name test alone never matched.
+    state_g = next(((p, v) for p, label, v in groups
+                    if re.search(r"state|province|region", f"{p} {label}", re.I) and _is_state_group(v)), None)
     if state_g:
         by_path = await _wd_facet_pass(session, working_url, state_g[0], state_g[1], budget)
         for ext, desc in by_path.items():
@@ -4297,7 +4400,7 @@ async def _wd_location_facets(session, working_url: str, system: str) -> tuple[d
             if code:
                 path_state[ext] = code
         city_g = next(((p, v) for p, label, v in groups
-                       if p == "locationHierarchy2" or label.strip().lower() == "city"), None)
+                       if p != state_g[0] and (p == "locationHierarchy2" or label.strip().lower() == "city")), None)
         if city_g and budget[0] > 0:
             by_path = await _wd_facet_pass(session, working_url, city_g[0], city_g[1], budget)
             for ext, desc in by_path.items():
@@ -4416,6 +4519,21 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         _fac, _city, _state = _wd_facility(system, loc, _city, _state)
                         if _fac:
                             _facility = _fac
+                    if not _state:
+                        # 2026-10-04 coverage round 3: Banner's locationsText is
+                        # the site plus its street ("Banner Del Webb Med Ctr
+                        # (14502 W Meeker Blvd)") and the state and town ride in
+                        # bulletFields (["R4446997", "Arizona", "Sun City West"]);
+                        # every row used to take the Phoenix AZ default, so the
+                        # 19 Colorado / Wyoming / Nevada / California / Nebraska
+                        # hospitals never counted.
+                        _bc, _bs = _wd_bullet_location(j.get("bulletFields") or [])
+                        if _bs:
+                            _state = _bs
+                            if _bc:
+                                _city = _bc
+                            elif (_city or "").strip().lower() == (loc or "").strip().lower():
+                                _city = ""   # the parse echoed the site text; the tenant default fills the town
                     if system in WD_TITLE_FACILITY:
                         _tf = _wd_title_facility(system, j.get("title", ""))
                         if _tf is None:
@@ -4726,6 +4844,15 @@ ICIMS_ORGS = {
     "AHMC Healthcare": "careers-ahmchealth.icims.com",   # 425, Alhambra CA
     "NeuroPsychiatric Hospitals": "careers-nph.icims.com",   # 41, Bremen IN
     "Blythedale Children's Hospital": "careers-blythedale.icims.com",   # 22, Valhalla NY
+    # ── 2026-10-04 coverage round 3: classic portals (the wrapper page at
+    # /jobs/search?pr=1 embeds the in_iframe=1 list this adapter reads).
+    # Both answered the classic path with an AWS WAF challenge to a curl_cffi
+    # Chrome handshake and the wrapper page with HTTP 200 to aiohttp on
+    # 2026-10-04; counts come from the first nightly run. Labels are the AHRQ
+    # system names. Care New England and Yale New Haven front their portals
+    # with Jibe sites (JIBE_SITES); Hackensack Meridian with TalentBrew.
+    "Community Medical Centers":        "careers-communitymedical.icims.com",   # Fresno CA (Community Regional, Clovis)
+    "Tallahassee Memorial Healthcare":  "careers-tmh.icims.com",                # Tallahassee FL
 }
 
 
@@ -4755,7 +4882,22 @@ TALENTBREW_ORGS = {
     # Workday tenant (nyp.wd1/nypcareers) in WORKDAY_TENANTS instead.
     # Hackensack Meridian (2026-08-28 resurrection): TalentBrew front over
     # iCIMS; results endpoint validated live, ~1,665 jobs, 15/page.
+    # 2026-10-04 coverage round 3: the entry had never written a row. The
+    # /results endpoint answers the generic module names ("Search Results" /
+    # "Search Filters") with 1,695 jobs, 15 a page, a job-facility element
+    # on every card (Hackensack University Medical Center, Jersey Shore
+    # University Medical Center, ...) and "City, NJ" locations; the "Section
+    # 6" names it is asked for first come back without cards, which the
+    # 2026-09-22 retry already handles. Verified with the scraper's own
+    # aiohttp client and with curl_cffi the same day; its iCIMS portal
+    # (careers-hackensackmeridianhealth.icims.com) answers the classic path
+    # with an AWS WAF challenge, so the TalentBrew front stays the source.
     "Hackensack Meridian Health": ("https://jobs.hackensackmeridianhealth.org/search-jobs", 15),
+    # 2026-10-04 coverage round 3: MemorialCare (Long Beach, Saddleback,
+    # Orange Coast, Miller Children's; label = public.hospitals.hospital_system).
+    # /results with the generic module names: 216 jobs, 15 a page, "City, CA"
+    # on every card, no facility element (SYSTEM_LOCATION_DEFAULTS backs it).
+    "MemorialCare":               ("https://careers.memorialcare.org/search-jobs", 15),
     # Mayo Clinic — REMOVED 2026-06-18. This TalentBrew/HTML scrape of
     # jobs.mayoclinic.org returned only ~14 jobs because Mayo migrated to
     # Oracle HCM. Now scraped via ORACLE_ORGS (fa-euwp-saasfaprod1 / Mayo-US,
@@ -6136,6 +6278,15 @@ JIBE_SITES = {
     # ── 2026-09-25 (push5/systems, B1)
     "Carle Health":     "https://careers.carlehealth.org",       # 746, Urbana IL
     "Infirmary Health": "https://careers.infirmaryhealth.org",   # 276, Mobile AL
+    # ── 2026-10-04 coverage round 3: iCIMS portals whose search page is a
+    # Jibe careers-home front (the Garnet / Bassett pattern). /api/jobs
+    # totalCount probed live that day; labels are the AHRQ system names.
+    # Yale: city + full state name per row, location_name is a "CT06510"
+    # site code (not a facility). Care New England: location_name is the
+    # facility plus its street ("Kent Hospital, 455 Toll Gate Rd, Warwick");
+    # tags2 carries the bare facility (JIBE_FACILITY_TAG).
+    "Yale New Haven Health System":   "https://jobs.ynhhs.org",                 # 1,667; CT (YNHH, Bridgeport, Greenwich, L+M) + Westerly RI
+    "Care New England Health System": "https://careers.carenewengland.org",     # 588; RI (Kent, Women & Infants, Butler)
 }
 
 # Jibe feeds whose location_name is a facility (not a street or a region):
@@ -6144,6 +6295,27 @@ JIBE_SITES = {
 JIBE_FACILITY_NAME = {"Garnet Health", "Maimonides Health", "Bassett Healthcare Network",
                       "Mercy", "Orlando Health", "UF Health", "BJC HealthCare", "Norton Healthcare",
                       "Sarasota Memorial Health Care System", "Tower Health", "Ardent Health"}
+
+# 2026-10-04: feeds that carry the facility in one of the tagsN lists
+# ("tags2": ["Kent Hospital"]) while location_name is an address. The first
+# entry of that list is the hospital_name; a blank list leaves the system.
+JIBE_FACILITY_TAG: dict[str, str] = {"Care New England Health System": "tags2"}
+
+
+def _jibe_facility(system: str, j: dict) -> str:
+    """hospital_name for one /api/jobs row: the configured tag list's first
+    entry, else location_name for JIBE_FACILITY_NAME systems, else the system."""
+    tag = JIBE_FACILITY_TAG.get(system)
+    if tag:
+        vals = j.get(tag)
+        if isinstance(vals, str):
+            vals = [vals]
+        for v in vals or []:
+            v = str(v or "").strip()
+            if v:
+                return v
+    facility = (j.get("location_name") or "").strip()
+    return facility if (system in JIBE_FACILITY_NAME and facility) else system
 
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs: list[Job] = []
@@ -6190,11 +6362,10 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                 if isinstance(cat, list):
                     cat = cat[0] if cat else None
                 posted = str(j.get("posted_date") or "")[:10]
-                facility = (j.get("location_name") or "").strip()
                 jobs.append(Job(
                     title=title,
                     hospital_system=system,
-                    hospital_name=facility if (system in JIBE_FACILITY_NAME and facility) else system,
+                    hospital_name=_jibe_facility(system, j),
                     city=city,
                     state=st,
                     location=", ".join(p for p in (city, st) if p),
@@ -6444,6 +6615,17 @@ FINDLY_GOOGLE_ORGS = {
         [],
         "https://www.uclahealthcareers.org",
     ),
+    # ── 2026-10-04 coverage round 3: Scripps Health (San Diego; label =
+    # public.hospitals.hospital_system). careers.scripps.org is the same
+    # WordPress cws plugin, cws_opts.org = companies/c7ae2ec3-... on the
+    # Google backend (not the legacy jobsapi-internal portal the targets file
+    # guessed). The unfiltered search answered 368 jobs that day, "City, CA"
+    # on every row, company_name "Scripps Health".
+    "Scripps Health": (
+        "c7ae2ec3-a75f-4fad-89a4-0c5d5f0f5308",
+        [],
+        "https://careers.scripps.org",
+    ),
 }
 
 
@@ -6637,6 +6819,12 @@ GREENHOUSE_ORGS = {
     "Ophelia":           "ophelia",             # 12 total, 6 clinical: NP/PA by state, no pay posted
     "Hicuity Health":    "hicuityhealth",       # 7 total, 2 clinical: tele-ICU program LVNs
     "Workit Health":     "workithealth",        # 8 total, 3 clinical
+    # 2026-10-04 coverage round 3: Luminis Health (Annapolis MD; Anne Arundel,
+    # Doctors Community, McNew). luminishealthcareers.org is a TalentBrew
+    # front that fails the TLS handshake for aiohttp and curl_cffi alike
+    # (TLSV1_ALERT_INTERNAL_ERROR, 2026-10-04); its Greenhouse board answers
+    # boards-api with 393 jobs and "City, MD" locations. Label = AHRQ name.
+    "Luminis Health":    "luminishealth",       # 393, MD
     "Bicycle Health":    "bicyclehealth",       # 11 total, ~3 clinical
     "Spring Health":     "springhealth66",      # 76 total, 5 clinical (engineering board; the gate drops the rest)
     # 1099-only boards, included so the entries exist if the 1099 gate is ever
@@ -7621,6 +7809,8 @@ PHENOM_ORG_CODES = {
     "DaVita":            "DAVIUS",     # confirmed from careers.davita.com 2026-05-27
     "UTHealth Houston":  "UHHUHHUS",   # 2026-09-24, widgets refNum on careers.uth.tmc.edu
     "University of Maryland Medical System": "UOJUOMUS",   # 2026-09-24, widgets refNum on careers.umms.org
+    "UAB Health System": "UHSUHSUS",   # 2026-10-04, refNum in the search-results HTML (pageId page12)
+    "Health First":      "HFDSUS",     # 2026-10-04, refNum on the landing page (pageId page6-migration)
 }
 
 # 2026-09-25 push 5 / gov: boards that also carry a parent university's
@@ -7718,6 +7908,15 @@ PHENOM_ORGS = {
     # table the same day: neither Phenom entry ever wrote a row.
     "UTHealth Houston":             "https://careers.uth.tmc.edu",
     "University of Maryland Medical System": "https://careers.umms.org",
+    # ── 2026-10-04 coverage round 3 (labels = AHRQ system names). UAB:
+    # /us/en/search-results carries pageId page12 / refNum UHSUHSUS, so the
+    # refineSearch flow applies (UAB Hospital, Callahan Eye, Medical West;
+    # also the ex-Ascension St. Vincent's hospitals UAB took over in 2024).
+    # Health First: /us/en/search-results 404s; the landing page carries
+    # pageId page6-migration / refNum HFDSUS, which the HTML probe reaches
+    # on its last fallback (the bare base_url) before the widgets call.
+    "UAB Health System":            "https://careers.uabmedicine.org",   # AL
+    "Health First":                 "https://www.careers.hf.org",         # FL (Holmes, Cape Canaveral, Viera, Palm Bay)
     # HCA Healthcare — REMOVED 2026-07-28. It was never Phenom (that 2026-06-18
     # web-research note was wrong): careers.hcahealthcare.com is Talemetry, and
     # this entry just burned a nightly 403. Covered by the rebuilt run_hca().
@@ -8724,6 +8923,15 @@ ADPCX_ORGS = {
     # 2026-09-24 Texas configs: Hunt Regional Healthcare (Greenville TX),
     # myjobs.adp.com/huntregional; 114 rows in the dry run, all with bodies.
     "Hunt Regional Healthcare": ("huntregional", "TX"),
+    # ── 2026-10-04 coverage round 3 (labels = AHRQ system names; board counts
+    # from the job-requisitions API that day, every row with city + state).
+    # Marshall Health Network (Cabell Huntington, St. Mary's, Rivers Health):
+    # careers.marshallhealthnetwork.org links recruiting.adp.com RTI.home
+    # c=1175015 d=ExternalMountainHealthNetworkCS, which 302s to
+    # myjobs.adp.com/mhnetwork, so it is this CX adapter, not ADP_ORGS.
+    # requisitionLocations carry no site name (hospital_name = system).
+    "Cabell Huntington Hospital": ("mhnetwork", "WV"),        # 770, Huntington + Point Pleasant WV
+    "Ephraim Mcdowell Health":    ("ephraimmcdowell", "KY"),  # 114, Danville KY
 }
 _ADPCX_SITE    = "https://myjobs.adp.com/public/staffing/v1/career-site/{domain}"
 _ADPCX_API     = "https://my.adp.com/myadp_prefix/mycareer/public/staffing/v1/job-requisitions"
@@ -9142,66 +9350,127 @@ SELECTMINDS_ORGS = {
     # McLaren Health Care is a wave-3 SelectMinds candidate (front-end HTML
     # at careers.mclaren.org, ~1,094 jobs; their AJAX endpoint 403s without
     # a browser session — see the 2026-08-28 audit doc before adding).
+    # ── 2026-10-04 coverage round 3 (labels = AHRQ system names). The
+    # /api/jobs/search path this adapter used to call answers 404 on both
+    # sites; the sites render server-side job_list_row cards (title link,
+    # "Town, Pennsylvania, United States", category, requisition number), so
+    # the adapter reads the HTML list pages instead (_parse_selectminds_page).
+    # Main Line: Lankenau, Bryn Mawr, Paoli, Riddle (the teaser names the
+    # hospital; SELECTMINDS_FACILITY). Iowa: the university-wide board;
+    # SELECTMINDS_KEEP keeps the health-care rows (UI Health Care / UIHC).
+    "Main Line Health":                         "mainline",   # Wynnewood PA
+    "University of Iowa Hospitals and Clinics": "uiowa",      # Iowa City IA
+}
+SELECTMINDS_MAX_PAGES = int(os.getenv("SELECTMINDS_MAX_PAGES", "80"))
+_SM_CARD_RE = re.compile(r'<div id="job_list_(\d+)"[^>]*class="job_list_row[^"]*"[^>]*>(.*?)(?=<div id="job_list_\d+"|\Z)', re.S)
+_SM_TITLE_RE = re.compile(r'<a href="([^"]+)"[^>]*class="job_link[^"]*"[^>]*>(.*?)</a>', re.S)
+_SM_LOC_RE = re.compile(r'class="location"[^>]*>(.*?)</a>', re.S)
+_SM_CAT_RE = re.compile(r'job_category.*?<span class="jlr_value[^"]*">(.*?)</span>', re.S)
+_SM_REQ_RE = re.compile(r'job_external_id.*?<span class="field_value">(.*?)</span>', re.S)
+_SM_DESC_RE = re.compile(r'class="jlr_description"[^>]*>(.*?)</p>', re.S)
+# Rows whose title, category or teaser names a hospital take it as hospital_name.
+SELECTMINDS_FACILITY: dict[str, tuple[tuple[re.Pattern, str], ...]] = {
+    "Main Line Health": (
+        (re.compile(r"\bLankenau\b", re.I), "Lankenau Medical Center"),
+        (re.compile(r"\bBryn Mawr Rehab", re.I), "Bryn Mawr Rehabilitation Hospital"),
+        (re.compile(r"\bBryn Mawr\b", re.I), "Bryn Mawr Hospital"),
+        (re.compile(r"\bPaoli\b", re.I), "Paoli Hospital"),
+        (re.compile(r"\bRiddle\b", re.I), "Riddle Hospital"),
+        (re.compile(r"\bMirmont\b", re.I), "Mirmont Treatment Center"),
+    ),
+    "University of Iowa Hospitals and Clinics": (
+        (re.compile(r"Stead Family Children", re.I), "University of Iowa Stead Family Children's Hospital"),
+        (re.compile(r"UI Health Care|UIHC|University of Iowa Hospitals", re.I), "University of Iowa Hospitals and Clinics"),
+    ),
+}
+# A board shared with a parent university keeps only the rows whose title,
+# category or teaser reads as health care (the Iowa board lists faculty,
+# dining and facilities jobs beside UI Health Care's).
+SELECTMINDS_KEEP: dict[str, re.Pattern] = {
+    "University of Iowa Hospitals and Clinics": re.compile(
+        r"UI Health Care|UIHC|Hospital|Clinic|Nurs|Patient|Pharmac|Radiolog|Therap|Physician|Medical|"
+        r"Surg|Imaging|Laborator|Respiratory|Dietit|Social Work|Behavioral|Anesthe|Dental|Health Care|"
+        r"Paramedic|EMT|Sonograph|Phlebotom|Steriliz", re.I),
 }
 
+
+def _selectminds_keep(system: str, job) -> bool:
+    """False for a row the tenant's SELECTMINDS_KEEP rule reads as not health care."""
+    keep = SELECTMINDS_KEEP.get(system)
+    return not keep or bool(keep.search(" ".join((job.title or "", job.specialty or "", job.description or ""))))
+
+
+def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
+    """job_list_row cards on one SelectMinds HTML page -> Jobs (every card;
+    the keep rule is applied by the caller so a filtered page still pages)."""
+    jobs: list[Job] = []
+    for sid, card in _SM_CARD_RE.findall(html or ""):
+        tm = _SM_TITLE_RE.search(card)
+        if not tm:
+            continue
+        url, title = tm.group(1).strip(), _html_unescape(strip_html(tm.group(2))).strip()
+        if not title:
+            continue
+        if url.startswith("/"):
+            url = base + url
+        lm = _SM_LOC_RE.search(card)
+        loc = _html_unescape(strip_html(lm.group(1))).strip() if lm else ""
+        # the link opens with a magnifier glyph (&#128269;) before the town
+        loc = re.sub(r",\s*United States\s*$", "", re.sub(r"^[^A-Za-z]+", "", loc)).strip()
+        city, st = parse_city_state(loc)
+        cm = _SM_CAT_RE.search(card)
+        category = _html_unescape(strip_html(cm.group(1))).strip() if cm else ""
+        rm = _SM_REQ_RE.search(card)
+        req_no = _html_unescape(strip_html(rm.group(1))).strip() if rm else ""
+        dm = _SM_DESC_RE.search(card)
+        teaser = _html_unescape(strip_html(dm.group(1))).strip() if dm else ""
+        teaser = re.sub(r"^Description:\s*", "", teaser)
+        text = " ".join((title, category, teaser))
+        facility = system
+        for rx, name in SELECTMINDS_FACILITY.get(system, ()):
+            if rx.search(text):
+                facility = name
+                break
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=facility,
+            city=city, state=st, location=f"{city}, {st}".strip(", ") if st else loc,
+            specialty=category, job_type="", url=url, job_id=sid,
+            posted_date="", description=teaser, ats_platform="SelectMinds",
+        ))
+        if req_no and jobs[-1].description:
+            jobs[-1].description = f"{jobs[-1].description}\n\nRequisition #: {req_no}"
+    return jobs
+
+
 async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
-    jobs = []
-    # SelectMinds public API endpoint pattern
+    """HTML list pages: /latest-jobs?page=N (every open job, newest first),
+    /jobs/search/?page=N when the first answers no cards. A page that adds no
+    new id ends the crawl (SELECTMINDS_MAX_PAGES x 20-card pages otherwise)."""
     base = f"https://{org}.referrals.selectminds.com"
-    api_url = f"{base}/api/jobs/search"
-    page = 1
-    while True:
-        try:
-            async with req(session, "get",
-                api_url,
-                params={"page": page, "per_page": 25, "keywords": ""},
-                headers={**HEADERS, "X-Requested-With": "XMLHttpRequest"}, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)
-            ) as r:
-                if r.status != 200:
-                    # Try alternate endpoint
-                    async with req(session, "get",
-                        f"{base}/jobs/search",
-                        params={"page": page, "per_page": 25},
-                        headers=HEADERS, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)
-                    ) as r2:
-                        if r2.status != 200:
-                            logger.info(f"SelectMinds {system}: HTTP {r.status}")
-                            break
-                        data = await r2.json(content_type=None)
-                else:
-                    data = await r.json(content_type=None)
-
-            listings = data.get("jobs", data.get("results", []))
-            if not listings:
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    for path in ("/latest-jobs", "/jobs/search/"):
+        for page in range(1, SELECTMINDS_MAX_PAGES + 1):
+            try:
+                async with req(session, "get", base + path, params={"page": str(page)},
+                               headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
+                               ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+                    if r.status != 200:
+                        logger.info(f"SelectMinds {system}: HTTP {r.status} on {path} page {page}")
+                        break
+                    html = await r.text()
+            except Exception as e:
+                logger.info(f"SelectMinds {system}: {path} page {page}: {e}")
                 break
-
-            for j in listings:
-                loc = j.get("location", "")
-                _city, _state = parse_city_state(loc)
-                jobs.append(Job(
-                    title=j.get("title", ""),
-                    hospital_system=system,
-                    hospital_name=j.get("department", system),
-                    city=_city, state=_state,
-                    location=loc,
-                    specialty=j.get("category", ""),
-                    job_type=j.get("employment_type", ""),
-                    url=j.get("url", f"{base}/jobs/{j.get('id','')}"),
-                    job_id=str(j.get("id", "")),
-                    posted_date=str(j.get("created_at", ""))[:10],
-                    description=strip_html(j.get("description", "")),
-                    ats_platform="SelectMinds",
-                ))
-
-            if len(listings) < 25:
+            cards = [j for j in _parse_selectminds_page(html, system, base) if j.job_id not in seen]
+            if not cards:
                 break
-            page += 1
+            seen.update(j.job_id for j in cards)
+            jobs.extend(j for j in cards if _selectminds_keep(system, j))
             await jitter()
-        except Exception as e:
-            logger.info(f"SelectMinds {system}: {e}")
+        if seen:
             break
-
-    logger.info(f"  SelectMinds {system}: {len(jobs)} jobs")
+    logger.info(f"  SelectMinds {system}: {len(jobs)} jobs ({len(seen)} cards read)")
     return jobs
 
 async def run_selectminds(session) -> list[Job]:
@@ -9829,6 +10098,11 @@ UKG_ORGS = {
     "Monadnock Community Hospital": ("https://recruiting.ultipro.com/MON1013", "a9bc7bc9-10fa-190f-a05e-e7fc4e84d763", "NH"),   # 72, Peterborough NH
     "Henry County Hospital (Napoleon)": ("https://recruiting.ultipro.com/HEN1007HCHI", "ccbfb32e-0999-44b9-90b0-7ceab704caa5", "OH"),   # 26, Napoleon OH
     "Evanston Regional Hospital": ("https://recruiting2.ultipro.com/QHC1000QHCS", "c93596e3-71e0-4eca-9683-6cd9b263ef57", "WY"),   # 11, Evanston WY
+    # 2026-10-04 coverage round 3: Pipeline Health (label = AHRQ name). The
+    # board answered LoadSearchResults with 8 postings that day, Gardena /
+    # Cerritos CA, Locations[].LocalizedName naming the hospital ("Memorial
+    # Hospital of Gardena"); West Suburban and Weiss (IL) were sold in 2022.
+    "Pipeline Health": ("https://pipeline.rec.pro.ukg.net/PIP1500PPLN", "663afd70-7892-48da-a106-a2deaafde171", "CA"),   # 8, Gardena CA
 }
 
 _UKG_PAGE = 50
@@ -10393,6 +10667,13 @@ HEALTHCARESOURCE_ORGS = {
     "North Country Hospital and Health Center": "northcountry",   # 43, Newport VT
     "Northeastern Vermont Regional Hospital": "dhanortheasternvt",   # 56, Saint Johnsbury VT
     "Sheridan Memorial Hospital": "sheridanhospital",   # 80, Sheridan WY
+    # ── 2026-10-04 coverage round 3 (labels = AHRQ system names; totals from
+    # the JobseekerSearchAPI that day). Aultman's hits name the foundation,
+    # not the campus (hospital_name = system); Willis-Knighton's sub-organization
+    # is a coded site ("WK Pierremont - 10", dropped by the digit rule), so its
+    # rows carry the system too. Both carry "City, ST" on every hit.
+    "Aultman Health Foundation":     "aultman",   # 222, Canton OH (Aultman, Alliance Community, Orrville)
+    "Willis Knighton Health System": "wkhs",      # 439, Shreveport LA
 }
 
 def _dig(d, *path, default=""):
@@ -12681,6 +12962,13 @@ TALEMETRY_SITES = {
     "UCHealth":      "https://careers.uchealth.org",       # 1,279, CO + Cheyenne/Laramie WY
     "PeaceHealth":   "https://careers.peacehealth.org",    # ~800, WA/OR/AK
     "Penn Medicine": "https://careers.pennmedicine.org",   # 1,710, PA/NJ
+    # ── 2026-10-04 coverage round 3: search.json total_entries probed live
+    # that day; labels are the AHRQ system names. LifeBridge entries carry
+    # locality + region_abbr and no location name (hospital_name = system);
+    # Asante entries name the campus ("Asante Rogue Regnl Med Center",
+    # "Asante Ashland"), which _talemetry_job already takes as hospital_name.
+    "LifeBridge Health":    "https://jobs.lifebridgehealth.org",   # 561; MD (Sinai, Northwest, Carroll, Levindale)
+    "Asante Health System": "https://jobs.asante.org",             # 231; OR (Rogue Regional, Three Rivers, Ashland)
 }
 TALEMETRY_PER_PAGE = 100
 TALEMETRY_PAGE_CAP = int(os.getenv("TALEMETRY_PAGE_CAP", "60"))
@@ -12812,6 +13100,11 @@ TALEO_BE_ORGS = {
     # 2026-09-25 push 5 / gov: Comanche County Memorial Hospital (Lawton OK,
     # county hospital authority); ccmhonline.com/careers links cws 37.
     "Comanche County Memorial Hospital": ("https://phg.tbe.taleo.net/phg04", "COMACOUN", "37", "OK"),
+    # 2026-10-04 coverage round 3: TMC Healthcare (Tucson Medical Center,
+    # Benson, Northern Cochise; label = AHRQ name). The RSS feed answered 356
+    # items that day; locationState reads "US-AZ" on most items and "AZ" on
+    # the rest (_parse_taleo_be_rss strips the country prefix).
+    "TMC Healthcare": ("https://phe.tbe.taleo.net/phe01", "TMCAZ", "38", "AZ"),
 }
 _TBE_NS = {"taleo": "urn:TBERss"}
 
@@ -12831,6 +13124,8 @@ def _parse_taleo_be_rss(xml_text: str, system: str, base: str, org: str, cws: st
             continue
         city = t("locationCity", ns=True)
         st = t("locationState", ns=True)
+        # 2026-10-04: TMC's feed writes ISO "US-AZ"; the prefix is not a state.
+        st = re.sub(r"^(?:US|USA)[-_ ]", "", st, flags=re.I).strip()
         if len(st) > 2:
             st = parse_city_state(f"{city}, {st}")[1] or st
         if not (city or st):
@@ -12900,12 +13195,22 @@ HCTS_PORTALS = {
     # 2026-09-25 push 5 / gov: East Alabama Health (EAMC Opelika, EAMC-Lanier
     # Valley; healthcare authority), eamc.org/careers redirects here.
     "East Alabama Health": ("alabamahealth", "AL"),
+    # 2026-10-04 coverage round 3: Samaritan Health Services (Corvallis OR)
+    # runs two portals, a staff board and a clinician board; both rendered 25
+    # cards a page on 2026-10-04 with a Facility field naming the hospital
+    # (Good Samaritan Regional Medical Center, Samaritan Albany General,
+    # Lebanon Community, North Lincoln, Pacific Communities) and "City, OR".
+    # The clinician board writes under its own key and aliases back to the
+    # AHRQ label at upsert time (HOSPITAL_SYSTEM_ALIASES).
+    "Samaritan Health Services":              ("samhealthjobs", "OR"),
+    "Samaritan Health Services (Clinicians)": ("samhealthclinicianjobs", "OR"),
 }
 HCTS_MAX_PAGES = int(os.getenv("HCTS_MAX_PAGES", "40"))
 _HCTS_ITEM_RE = re.compile(r'class="jobs-section__item[\s"]')
 # 2026-09-25 push 5 / gov: the East Alabama Health portal titles its cards
-# with <h4>, UMC El Paso with <h2>.
-_HCTS_TITLE_RE = re.compile(r'<h[2-4]>\s*<a[^>]+href="([^"]*?/jobs/(\d+)[^"]*)"[^>]*>(.*?)</a>', re.S)
+# with <h4>, UMC El Paso with <h2>. 2026-10-04: Samaritan's <h4> carries a
+# style and class attribute ('<h4 style="font-size: 1.375rem;" class="mb-0">').
+_HCTS_TITLE_RE = re.compile(r'<h[2-4](?:\s[^>]*)?>\s*<a[^>]+href="([^"]*?/jobs/(\d+)[^"]*)"[^>]*>(.*?)</a>', re.S)
 
 
 def _hcts_field(seg: str, label: str) -> str:
