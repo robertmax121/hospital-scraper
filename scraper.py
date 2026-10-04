@@ -1375,6 +1375,10 @@ HOSPITAL_SYSTEM_ALIASES = {
     "Samaritan Health Services (Clinicians)": "Samaritan Health Services",
     "Ascension Health":            "Ascension",
     "Saint Luke's Health System":  "St. Luke's Health System",
+    # 2026-10-04 (coverage round 3): the Boise Avature tenant (HTML_LIST_SITES)
+    # keeps its own name for tenant reporting and location defaults; the DB
+    # label is the one public.ahrq_system_label resolves with the state guard.
+    "St. Luke's Health System (Boise)": "St. Luke's Health System",
     "Bon Secours Mercy":           "Bon Secours Mercy Health",
     "Memorial Healthcare System":  "Memorial Health System",
     "Vanderbilt (VUMC)":           "Vanderbilt",
@@ -2428,6 +2432,17 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "Western Missouri Medical Center": ("Warrensburg", "MO"),
     "Whitman Hospital and Medical Center": ("Colfax", "WA"),
     "Woman's Hospital": ("Baton Rouge", "LA"),
+    # 2026-10-04 (coverage round 3, builder D): home markets of the HTML-list
+    # and Eightfold tenants, for rows whose card carries no city (UK HealthCare
+    # rows never do; Michigan's "Kahn Health Care Pavilion" rows do not).
+    "St. Luke's Health System (Boise)": ("Boise", "ID"),
+    "UK HealthCare": ("Lexington", "KY"),
+    "University of Michigan Health": ("Ann Arbor", "MI"),
+    "Rush": ("Chicago", "IL"),
+    "Premier Health": ("Dayton", "OH"),
+    "Community Health Network": ("Indianapolis", "IN"),
+    "WMCHealth": ("Valhalla", "NY"),
+    "University of Vermont Health Network": ("Burlington", "VT"),
 }
 
 # Normalize system keys to lowercase
@@ -12029,7 +12044,11 @@ async def run_playwright_scrapers() -> list[Job]:
         ("LifePoint Health",              "https://jobs.lifepointhealth.net/jobs/"),
         # CUSTOM ATS
         # MUSC Health moved to WORKDAY_TENANTS (musc.wd1, 2026-09-25): this page wrote 0 rows.
-        ("University of Vermont Health",  "https://www.uvmhealthnetworkcareers.org/jobs/"),
+        # University of Vermont Health retired here 2026-10-04: the
+        # uvmhealthnetworkcareers.org domain is gone (banked 0); the network
+        # is HTML_LIST_SITES "University of Vermont Health Network" now
+        # (uvmhealthcareers.org, plain requests, no browser needed).
+        # ("University of Vermont Health",  "https://www.uvmhealthnetworkcareers.org/jobs/"),
     ]
 
     # Deduplicate by system name (Cleveland Clinic listed twice above)
@@ -14128,6 +14147,539 @@ async def run_successfactors(session) -> list[Job]:
             logger.info(f"  SuccessFactors {s}: ERROR {r}")
     logger.info(f"  SuccessFactors total: {len(out):,} jobs")
     return out
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  HTML LIST SITES — server-rendered career lists and job RSS feeds
+#  (2026-10-04, coverage round 3, builder D). One crawler, one config per
+#  site: a page-URL template, a card regex, title/url/field regexes inside
+#  the card, a paging rule ({page} 1-based, {page0} 0-based, {offset} with
+#  "step") and a stop rule (a page with no new cards, or max_pages). Pages
+#  come through curl_cffi's Chrome profile (_curl_fetch: pool first, direct
+#  backup) since these fronts sit behind Cloudflare or Acquia. A site with
+#  mode "rss" is one feed, parsed with ElementTree. Bodies come from each
+#  row's job page JSON-LD (JobPosting) in the shared detail pass, when the
+#  page carries one.
+#
+#  Config keys (a card regex captures text with ONE group; tags are stripped):
+#    url        page template; "urls" = several templates crawled in turn
+#    step       offset increment for {offset} (default 1)
+#    card       regex marking the start of a card; the segment runs to the
+#               next card
+#    title      regex with (?P<url>...) and (?P<title>...) groups
+#    fields     name -> regex: hospital, city, state, location, department,
+#               job_type, shift, posted, job_id, teaser
+#    id         regex on the URL for the job id (default: last run of digits)
+#    base       prefix for relative URLs
+#    state      default state (parse_city_state result wins when it has one)
+#    drop       (field, regex): skip the card when the field matches
+#    hospital_map  ((regex, hospital name), ...) tried against the card's
+#               URL + title + hospital + city text, first hit names the row
+#    loc_split  text after this separator in "location" is the city
+#    loc_strip  regex removed from the "location" text before city parsing
+#    date_fmts  strptime formats for "posted" (ISO dates always parse)
+#    platform   ats_platform label
+#    max_pages  per-template page cap (default HTML_LIST_MAX_PAGES)
+# ══════════════════════════════════════════════════════════════════════════
+HTML_LIST_MAX_PAGES = int(os.getenv("HTML_LIST_MAX_PAGES", "120"))
+HTML_LIST_DESC_MAX_PER_RUN = int(os.getenv("HTML_LIST_DESC_MAX_PER_RUN", "800"))   # job-page JSON-LD
+HTML_LIST_DESC_BUDGET = _DescBudget(HTML_LIST_DESC_MAX_PER_RUN)
+HTML_LIST_IMPERSONATE = "chrome"
+
+_STLUKES_ID_HOSPITALS = (
+    (r"(?i)magic[\s-]*valley|twin[\s-]*falls", "St. Luke's Magic Valley Medical Center"),
+    (r"(?i)\bnampa\b", "St. Luke's Nampa Medical Center"),
+    (r"(?i)wood[\s-]*river|\bketchum\b|\bhailey\b", "St. Luke's Wood River Medical Center"),
+    (r"(?i)\bjerome\b", "St. Luke's Jerome"),
+    (r"(?i)\bmccall\b", "St. Luke's McCall"),
+    (r"(?i)\belmore\b|mountain[\s-]*home", "St. Luke's Elmore Medical Center"),
+    (r"(?i)\bboise\b|\bmeridian\b", "St. Luke's Boise Medical Center"),
+)
+_RUSH_HOSPITALS = (
+    # the feed's <city> is Oak Park / Aurora on the rows those hospitals post
+    (r"(?i)rush[\s-]*oak[\s-]*park|\boak[\s-]*park\b", "Rush Oak Park Hospital"),
+    (r"(?i)rush[\s-]*copley|\baurora\b", "Rush Copley Medical Center"),
+)
+_UMICH_HOSPITALS = (
+    (r"(?i)\bmott\b", "C.S. Mott Children's Hospital"),
+    (r"(?i)von[\s-]*voigtlander", "Von Voigtlander Women's Hospital"),
+    (r"(?i)university[\s-]*hospital", "University Hospital"),
+    (r"(?i)frankel|cardiovascular[\s-]*center", "Frankel Cardiovascular Center"),
+    (r"(?i)rogel", "Rogel Cancer Center"),
+    (r"(?i)um[\s-]*health[\s-]*west|\bmuskegon\b", "UM Health-West"),
+    (r"(?i)sparrow[\s-]*(?:carson|eaton|clinton|ionia)", "University of Michigan Health-Sparrow"),
+    (r"(?i)\bsparrow\b|\blansing\b", "Sparrow Hospital"),
+)
+_UK_HOSPITALS = (
+    (r"(?i)\bESH\b|eastern[\s-]*state", "Eastern State Hospital"),
+    (r"(?i)good[\s-]*sam", "UK Good Samaritan Hospital"),
+)
+
+HTML_LIST_SITES: dict[str, dict] = {
+    # Community Health Network (Indianapolis; Drupal/Acquia). 20 cards a
+    # page, 26 pages (2026-10-04); the location-name field is the campus
+    # (Community Hospital East/North/South, Anderson, Howard, Fairbanks).
+    "Community Health Network": {
+        "url": "https://www.ecommunity.com/careers/search?page={page0}",
+        "card": r'<article class="job-teaser"',
+        "title": r'<a href="(?P<url>/careers/jobs/[^"]+)">\s*<h3>(?P<title>.*?)</h3>',
+        "fields": {
+            "hospital":   r'field--name-field-job-location-name[^>]*>(.*?)</div>',
+            "location":   r'field--name-field-address">\s*(.*?)\s*</div>',
+            "department": r'field--name-field-job-department[^>]*>(.*?)</div>',
+            "job_type":   r'field--name-field-job-schedule[^>]*>(.*?)</div>',
+            "shift":      r'field--name-field-job-shift[^>]*>(.*?)</div>',
+        },
+        "loc_strip": r"\s+\d{5}(?:-\d{4})?\s*$",
+        "base": "https://www.ecommunity.com", "state": "IN", "platform": "Drupal",
+    },
+    # WMCHealth (Valhalla NY; WordPress). 25 cards a page, 31 pages; the
+    # Company line is the entity (Westchester Medical Center, Good Samaritan
+    # Hospital, MidHudson Regional, HealthAlliance, Bon Secours Community,
+    # St. Anthony Community, Margaretville Memorial, provider groups).
+    "WMCHealth": {
+        "url": "https://wmchealthjobs.org/search-jobs/page/{page}",
+        "card": r'class="job-contianer"',
+        "title": r'<h2>\s*<a href="(?P<url>[^"]+)">(?P<title>.*?)</a>',
+        "fields": {
+            "hospital":   r'wmc-location"><strong>Company:\s*</strong>(.*?)</span>',
+            "location":   r"wmc-locality'><strong>City:\s*</strong>(.*?)</span>",
+            "department": r"wmc-department'><strong>Department:\s*</strong>(.*?)</span>",
+            "job_type":   r"wmc-schedule'><strong>Schedule:\s*</strong>(.*?)</span>",
+            "shift":      r"wmc-position'><strong>Position:\s*</strong>(.*?)</span>",
+            "teaser":     r"wmc-salary'><strong>(Hiring Range:\s*</strong>.*?)</span>",
+        },
+        "base": "https://wmchealthjobs.org", "state": "NY", "platform": "WordPress",
+    },
+    # University of Vermont Health Network (Burlington; static job pages).
+    # 23 cards a page, 21 pages; "Health Care Partner" is the hospital
+    # (UVM Medical Center, Central Vermont Medical Center, Porter Medical
+    # Center, CVPH Plattsburgh, Elizabethtown Community, Alice Hyde) and
+    # the location block ends "City,\nST". Replaces the Playwright
+    # CUSTOM_SITES entry that pointed at the retired
+    # uvmhealthnetworkcareers.org domain and banked 0.
+    "University of Vermont Health Network": {
+        "url": "https://uvmhealthcareers.org/jobs/?page_jobs={page}",
+        "card": r'<a href="/job/\d+/[^"]+">\s*<h3>',
+        "title": r'<a href="(?P<url>/job/\d+/[^"]+)">\s*<h3>(?P<title>.*?)</h3>',
+        "fields": {
+            "job_id":     r'class="job-ref"><dt>Job Ref:</dt><dd>(.*?)</dd>',
+            "department": r'class="category"><dt>Category:</dt><dd>(.*?)</dd>',
+            "job_type":   r'class="employment_type"><dt>Employment Type:</dt><dd>(.*?)</dd>',
+            "hospital":   r'class="hospital"><dt>Health Care Partner:</dt><dd>(.*?)</dd>',
+            "location":   r'<dt>Location:</dt>\s*<dd>(.*?)</dd>',
+            "teaser":     r'<span class="description">\s*(.*?)\s*</span>',
+        },
+        "id": r"/job/(\d+)/",
+        "base": "https://uvmhealthcareers.org", "state": "VT", "platform": "Custom",
+    },
+    # University of Michigan Health (Michigan Medicine; U-M Drupal careers
+    # site, whole university). Table rows, 25 a page; the Work Location
+    # cell names the site ("Michigan Medicine - Ann Arbor", "Kahn Health
+    # Care Pavilion", "Troy Medical Campus", Lansing, Muskegon, ...), so
+    # the campus-only rows (Ann Arbor / Dearborn / Flint Campus,
+    # International, Outside Michigan) are dropped. The RSS feed at
+    # /search/feed/advanced answers the same search but unpaged.
+    "University of Michigan Health": {
+        "url": "https://careers.umich.edu/search-jobs?keyword=&op=Search&title=&page={page0}",
+        "card": r'<td headers="view-created-table-column"',
+        "title": r'<a href="(?P<url>/job_detail/\d+/[^"]*)"[^>]*>(?P<title>.*?)</a>',
+        "fields": {
+            "posted":     r'<time datetime="([^"]+)"',
+            "job_id":     r'views-field-field-job-opening-id">\s*(\d+)',
+            "department": r'views-field-field-job-department">\s*(.*?)\s*</td>',
+            "location":   r'views-field-field-job-work-location">\s*(.*?)\s*</td>',
+        },
+        "drop": ("location", r"(?i)^(?:Ann Arbor|Dearborn|Flint) Campus$|^International$|^Outside Michigan$"),
+        "hospital_map": _UMICH_HOSPITALS,
+        "loc_split": " - ",
+        "loc_strip": r"(?i)\s+(?:medical\s+)?campus$|^(?:kahn health care pavilion|multiple locations|other mi location)$",
+        "base": "https://careers.umich.edu", "state": "MI", "platform": "Drupal",
+    },
+    # UK HealthCare (Lexington; PeopleAdmin, the whole University of
+    # Kentucky board). The Job Category facet (field 985) has Healthcare
+    # (12) and Nursing (17): those two searches are crawled, 30 rows a
+    # page. Rows carry title, requisition, department code and deadline,
+    # no location; ESH departments are Eastern State Hospital.
+    "UK HealthCare": {
+        "urls": ["https://ukjobs.uky.edu/postings/search?query=&985%5B%5D=12&page={page}",
+                 "https://ukjobs.uky.edu/postings/search?query=&985%5B%5D=17&page={page}"],
+        "card": r"<div class='job-item job-item-posting'",
+        "title": r'<a href="(?P<url>/postings/\d+)">(?P<title>.*?)</a>',
+        "fields": {
+            "job_id":     r"col-md-push-4'>\s*([A-Z]{2}\d{5,})\s*<",
+            "department": r"col-md-push-4'>\s*([0-9A-Z]{4,6}:[^<]*?)\s*<",
+            "teaser":     r"<span class='job-description'>\s*(.*?)\s*</span>",
+        },
+        "hospital_map": _UK_HOSPITALS,
+        "base": "https://ukjobs.uky.edu", "state": "KY", "platform": "PeopleAdmin",
+    },
+    # St. Luke's Health System (Boise; Avature careers marketplace at
+    # careers.slhs.org, where slhs.avature.net redirects). 6 cards a page,
+    # jobRecordsPerPage is ignored (6 whatever is asked, 2026-10-04); 459
+    # jobs = 77 pages. The card carries department, schedule and city; the
+    # hospital comes from the URL slug or the city. The tenant is named
+    # "(Boise)" apart from the Kansas City iCIMS/Workday tenants, and
+    # HOSPITAL_SYSTEM_ALIASES folds it to "St. Luke's Health System" at
+    # upsert: public.ahrq_system_label maps the Boise and Kansas City AHRQ
+    # systems to that one label with the state deciding ("reviewed
+    # 2026-09-17: Boise, state guard decides"), and 7 KS/MO alias rows hang
+    # off it; ID rows are the Boise ones.
+    "St. Luke's Health System (Boise)": {
+        "url": "https://careers.slhs.org/careersmarketplace/SearchJobs/?jobRecordsPerPage=6&jobOffset={offset}",
+        "step": 6,
+        "card": r'<article class="article article--result',
+        "title": r'<a class="link" href="(?P<url>https://careers\.slhs\.org/careersmarketplace/JobDetail/[^"]+)"[^>]*>(?P<title>.*?)</a>',
+        "fields": {
+            "department": r'class="list-item-department">(.*?)</span>',
+            "job_type":   r'class="list-item-positionType">(.*?)</span>',
+            "city":       r'class="list-item-city">(.*?)</span>',
+        },
+        "id": r"/JobDetail/[^/]+/(\d+)",
+        "title_strip": r"\s*-\s*\d+\s*$",
+        "hospital_map": _STLUKES_ID_HOSPITALS,
+        "base": "https://careers.slhs.org", "state": "ID", "platform": "Avature",
+    },
+    # Rush (Chicago; FXRecruiter front over Infor GHR). One RSS feed, 539
+    # items (2026-10-04): title, link, a "United States,, IL,, Chicago |
+    # Work Type: | Ref: 30399" description, <city>, pubDate. Oak Park and
+    # Copley are read off the title; the rest is Rush University Medical
+    # Center. Label "Rush" is public.hospitals.hospital_system for RUMC and
+    # Rush Oak Park (IL), so by_system covers both.
+    "Rush": {
+        "mode": "rss",
+        "url": "https://rush.fxrecruiter.com/feeds/jobs-rss",
+        "id": r"/(\d+)(?:\?|$)",
+        "fields": {"state": r",\s*([A-Z]{2})\s*,"},
+        "hospital_map": _RUSH_HOSPITALS,
+        "hospital": "Rush University Medical Center",
+        "state": "IL", "platform": "FXRecruiter",
+    },
+}
+
+
+def _hl_text(s: str) -> str:
+    """Tag-stripped, entity-decoded, whitespace-collapsed card text."""
+    return re.sub(r"\s+", " ", _html_unescape(re.sub(r"<[^>]+>", " ", s or ""))).strip()
+
+
+def _hl_field(seg: str, rx: str) -> str:
+    m = re.search(rx, seg, re.S)
+    return _hl_text(m.group(1)) if m else ""
+
+
+def _hl_date(s: str, fmts=()) -> str:
+    s = (s or "").strip()
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})", s)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+    for fmt in tuple(fmts) + ("%m/%d/%Y", "%b %d, %Y", "%B %d, %Y", "%a, %d %b %Y %H:%M:%S %z"):
+        try:
+            return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+        except Exception:
+            continue
+    return ""
+
+
+def _hl_job_id(url: str, cfg: dict, fallback: str = "") -> str:
+    if fallback:
+        return fallback
+    m = re.search(cfg.get("id") or r"(\d+)(?:[/?#][^/]*)?$", url or "")
+    return m.group(1) if m else ""
+
+
+def _hl_hospital(cfg: dict, system: str, *texts) -> str:
+    blob = " ".join(t for t in texts if t)
+    for rx, name in cfg.get("hospital_map") or ():
+        if re.search(rx, blob):
+            return name
+    return ""
+
+
+def _hl_city_state(cfg: dict, city: str, state: str, location: str) -> tuple[str, str]:
+    """City and state for a card: explicit fields first, then the location
+    text (last two comma parts when it is an address block), then the
+    site's default state."""
+    loc = location
+    if cfg.get("loc_split") and cfg["loc_split"] in loc:
+        loc = loc.split(cfg["loc_split"], 1)[1]
+    if cfg.get("loc_strip"):
+        loc = re.sub(cfg["loc_strip"], "", loc).strip(" ,")
+    parts = [p.strip() for p in loc.split(",") if p.strip()]
+    if len(parts) > 2:
+        loc = ", ".join(parts[-2:])
+    if not city or not state:
+        c2, s2 = parse_city_state(loc) if loc else ("", "")
+        if not c2 and loc and not s2 and "," not in loc and _cityish(loc):
+            c2 = loc
+        city = city or c2
+        state = state or s2
+    if city and not state and "," in city:
+        city, state = parse_city_state(city)
+    state = (state or "").upper()
+    if not re.fullmatch(r"[A-Z]{2}", state):
+        state = cfg.get("state", "")
+    return clean_city(city), state
+
+
+def _hl_make_job(system: str, cfg: dict, url: str, title: str, f: dict) -> Job | None:
+    title = _hl_text(title)
+    if not title or not url:
+        return None
+    if url.startswith("/"):
+        url = f"{cfg.get('base', '').rstrip('/')}{url}"
+    if "utm_" in url:
+        url = url.split("?", 1)[0]
+    if cfg.get("title_strip"):
+        title = re.sub(cfg["title_strip"], "", title).strip()
+    city, state = _hl_city_state(cfg, f.get("city", ""), f.get("state", ""), f.get("location", ""))
+    hospital = f.get("hospital", "")
+    if cfg.get("hospital_map"):
+        hospital = _hl_hospital(cfg, system, url, title, hospital, f.get("department", ""), f.get("city", "")) or hospital
+    hospital = hospital or cfg.get("hospital") or ""
+    job_type = f.get("job_type", "")
+    shift = f.get("shift", "")
+    teaser = f.get("teaser", "")
+    desc = teaser
+    if shift and shift.lower() not in teaser.lower():
+        desc = f"Shift: {shift}\n{desc}".strip()
+    return Job(
+        title=title, hospital_system=system, hospital_name=hospital or system,
+        city=city, state=state,
+        location=f"{city}, {state}".strip(", ") if (city or state) else "",
+        specialty=f.get("department", ""), job_type=job_type,
+        url=url, job_id=_hl_job_id(url, cfg, f.get("job_id", "")),
+        posted_date=_hl_date(f.get("posted", ""), cfg.get("date_fmts", ())),
+        description=desc, ats_platform=cfg.get("platform", "Custom"),
+    )
+
+
+def _parse_html_list_page(text: str, system: str, cfg: dict) -> list[Job]:
+    jobs: list[Job] = []
+    starts = [m.start() for m in re.finditer(cfg["card"], text)]
+    title_rx = re.compile(cfg["title"], re.S)
+    drop = cfg.get("drop")
+    for n, s in enumerate(starts):
+        seg = text[s: starts[n + 1] if n + 1 < len(starts) else len(text)]
+        m = title_rx.search(seg)
+        if not m:
+            continue
+        f = {k: _hl_field(seg, rx) for k, rx in (cfg.get("fields") or {}).items()}
+        if drop and re.search(drop[1], f.get(drop[0], "")):
+            continue
+        j = _hl_make_job(system, cfg, m.group("url"), m.group("title"), f)
+        if j and j.job_id:
+            jobs.append(j)
+    return jobs
+
+
+def _parse_rss_list(text: str, system: str, cfg: dict) -> list[Job]:
+    import xml.etree.ElementTree as ET
+    jobs: list[Job] = []
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return jobs
+    for it in root.iter("item"):
+        def t(tag):
+            el = it.find(tag)
+            return (el.text or "").strip() if el is not None and el.text else ""
+        f = {k: (re.search(rx, t("description")) or [None, ""])[1] for k, rx in (cfg.get("fields") or {}).items()}
+        f["city"] = t("city")
+        f["posted"] = t("pubDate")
+        j = _hl_make_job(system, cfg, t("link") or t("guid"), t("title"), f)
+        if j and j.job_id:
+            jobs.append(j)
+    return jobs
+
+
+async def _hl_get(url: str, accept: str) -> str:
+    """One list page through the house curl policy (pool first, direct backup)."""
+    r = await asyncio.to_thread(_curl_fetch, "get", url, HTML_LIST_IMPERSONATE, 40,
+                                headers={"Accept": accept, "Accept-Language": "en-US,en;q=0.9"})
+    return r.text or ""
+
+
+async def scrape_html_list(session, system: str, cfg: dict) -> list[Job]:
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    if cfg.get("mode") == "rss":
+        try:
+            text = await _hl_get(cfg["url"], "application/rss+xml,application/xml,text/xml,*/*")
+            jobs = [j for j in _parse_rss_list(text, system, cfg) if j.job_id not in seen and not seen.add(j.job_id)]
+        except Exception as e:
+            logger.info(f"HTML list {system}: feed: {e}")
+        logger.info(f"  HTML list {system}: {len(jobs)} jobs")
+        return jobs
+    templates = cfg.get("urls") or [cfg["url"]]
+    cap = int(cfg.get("max_pages") or HTML_LIST_MAX_PAGES)
+    step = int(cfg.get("step") or 1)
+    for tpl in templates:
+        for n in range(cap):
+            url = tpl.format(page=n + 1, page0=n, offset=n * step)
+            try:
+                text = await _hl_get(url, "text/html,application/xhtml+xml")
+            except Exception as e:
+                logger.info(f"HTML list {system}: page {n + 1}: {e}")
+                break
+            batch = [j for j in _parse_html_list_page(text, system, cfg) if j.job_id not in seen]
+            if not batch:
+                break
+            seen.update(j.job_id for j in batch)
+            jobs.extend(batch)
+            await jitter()
+    logger.info(f"  HTML list {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def _html_list_detail(session, job) -> bool:
+    """Job page through curl_cffi -> JSON-LD JobPosting -> Job."""
+    posting = _jobposting_from_html(await _curl_html(job.url, HTML_LIST_IMPERSONATE))
+    return _apply_posting(job, _posting_with_requirements(posting)) if posting else False
+
+
+async def run_html_list(session) -> list[Job]:
+    if not HTML_LIST_SITES:
+        return []
+    logger.info(f"HTML list: scraping {len(HTML_LIST_SITES)} sites...")
+    ordered = priority_states_first(list(HTML_LIST_SITES.items()), lambda kv: kv[1].get("state", ""))
+    results = await asyncio.gather(*[scrape_html_list(session, s_, cfg) for s_, cfg in ordered], return_exceptions=True)
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  HTML list total: {len(jobs):,} jobs")
+    await _board_detail_passes(session, jobs, HTML_LIST_DESC_BUDGET,
+                               lambda j: _html_list_detail(session, j), "HTML list")
+    return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  EIGHTFOLD — PCSX career sites (2026-10-04, coverage round 3, builder D).
+#  The front's own call: GET <base>/api/pcsx/search?domain=<group>&query=&
+#  location=&start=N&sort_by=relevance with the page's <meta name="_csrf">
+#  value as X-CSRF-TOKEN and its cookies (the apply/v2 API answers "Not
+#  authorized for PCSX" on these tenants, and a POST gets 401). 10 positions
+#  a page whatever num asks; each has id, displayJobId, name, department,
+#  standardizedLocations ["Dayton, OH, US"], postedTs and positionUrl.
+#  Premier Health: count 606 on 2026-10-04. One curl_cffi session per
+#  tenant keeps the cookies; pool first, direct backup.
+# ══════════════════════════════════════════════════════════════════════════
+EIGHTFOLD_ORGS = {
+    # Format: "System": (site base, group domain, default state)
+    "Premier Health": ("https://careers.premierhealth.com", "premierhealth.com", "OH"),   # Dayton OH: Miami Valley, Atrium, Upper Valley
+}
+EIGHTFOLD_PAGE_SIZE = 10
+EIGHTFOLD_PAGE_CAP = int(os.getenv("EIGHTFOLD_PAGE_CAP", "150"))
+EIGHTFOLD_DESC_MAX_PER_RUN = int(os.getenv("EIGHTFOLD_DESC_MAX_PER_RUN", "400"))   # job-page JSON-LD
+EIGHTFOLD_DESC_BUDGET = _DescBudget(EIGHTFOLD_DESC_MAX_PER_RUN)
+_EIGHTFOLD_CSRF_RX = re.compile(r'<meta\s+name="_csrf"\s+content="([^"]+)"')
+
+
+def _eightfold_job(p: dict, system: str, base: str, default_state: str) -> Job | None:
+    pid = str((p or {}).get("id") or "").strip()
+    title = _html_unescape(str((p or {}).get("name") or "")).strip()
+    if not pid or not title:
+        return None
+    locs = p.get("standardizedLocations") or p.get("locations") or []
+    loc = str(locs[0]) if locs else ""
+    parts = [x.strip() for x in loc.split(",") if x.strip()]
+    if len(parts) >= 3 and parts[-1].upper() in ("US", "USA", "UNITED STATES"):
+        parts = parts[:-1]
+    city, state = parse_city_state(", ".join(parts[-2:])) if parts else ("", "")
+    if not re.fullmatch(r"[A-Z]{2}", state or ""):
+        state = default_state
+    city = clean_city(city)
+    posted = ""
+    try:
+        ts = int(p.get("postedTs") or 0)
+        if ts > 0:
+            posted = datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%d")
+    except Exception:
+        pass
+    path = str(p.get("positionUrl") or f"/careers/job/{pid}")
+    return Job(
+        title=title, hospital_system=system, hospital_name=system,
+        city=city, state=state, location=f"{city}, {state}".strip(", "),
+        specialty=str(p.get("department") or ""), job_type="",
+        url=path if path.startswith("http") else f"{base}{path}",
+        job_id=str(p.get("displayJobId") or p.get("atsJobId") or pid),
+        posted_date=posted, description="", ats_platform="Eightfold",
+    )
+
+
+def _eightfold_session(proxy):
+    s = curl_requests.Session(impersonate="chrome")
+    if proxy:
+        s.proxies = {"http": proxy, "https": proxy}
+    return s
+
+
+def _eightfold_fetch_all(base: str, domain: str, system: str) -> tuple[list, int]:
+    """Every position of one PCSX site, in one cookie-keeping session.
+    Returns (positions, site count). Raises when the front page or the
+    first search page fails on both paths."""
+    proxy = proxies.get()
+    last_exc = None
+    for proxy_cfg in ([proxy, None] if proxy else [None]):
+        try:
+            s = _eightfold_session(proxy_cfg)
+            r = s.get(f"{base}/careers", timeout=40)
+            if r.status_code != 200:
+                raise RuntimeError(f"HTTP {r.status_code} on /careers")
+            m = _EIGHTFOLD_CSRF_RX.search(r.text or "")
+            csrf = m.group(1) if m else ""
+            headers = {"Accept": "application/json", "X-CSRF-TOKEN": csrf, "Referer": f"{base}/careers"}
+            positions, count, start = [], None, 0
+            seen: set = set()
+            for _ in range(EIGHTFOLD_PAGE_CAP):
+                r = s.get(f"{base}/api/pcsx/search",
+                          params={"domain": domain, "query": "", "location": "", "start": start, "sort_by": "relevance"},
+                          headers=headers, timeout=40)
+                if r.status_code != 200:
+                    if start == 0:
+                        raise RuntimeError(f"HTTP {r.status_code} on search")
+                    logger.info(f"Eightfold {system}: HTTP {r.status_code} at start={start}; {len(positions)} kept")
+                    break
+                data = (r.json() or {}).get("data") or {}
+                batch = [p for p in (data.get("positions") or []) if isinstance(p, dict) and str(p.get("id")) not in seen]
+                if count is None:
+                    count = int(data.get("count") or 0)
+                if not batch:
+                    break
+                seen.update(str(p.get("id")) for p in batch)
+                positions.extend(batch)
+                start += len(batch)
+                if count and start >= count:
+                    break
+                time.sleep(random.uniform(0.8, 2.0))
+            return positions, count or len(positions)
+        except Exception as e:
+            last_exc = e
+    raise last_exc
+
+
+async def scrape_eightfold(session, system: str, org_data: tuple) -> list[Job]:
+    base, domain, default_state = org_data
+    base = base.rstrip("/")
+    try:
+        positions, count = await asyncio.to_thread(_eightfold_fetch_all, base, domain, system)
+    except Exception as e:
+        logger.info(f"Eightfold {system}: {e}")
+        return []
+    jobs = [j for j in (_eightfold_job(p, system, base, default_state) for p in positions) if j]
+    logger.info(f"  Eightfold {system}: {len(jobs)} jobs (site count {count})")
+    return jobs
+
+
+async def run_eightfold(session) -> list[Job]:
+    if not EIGHTFOLD_ORGS or curl_requests is None:
+        return []
+    logger.info(f"Eightfold: scraping {len(EIGHTFOLD_ORGS)} sites...")
+    ordered = priority_states_first(list(EIGHTFOLD_ORGS.items()), lambda kv: kv[1][2])
+    results = await asyncio.gather(*[scrape_eightfold(session, s_, cfg) for s_, cfg in ordered], return_exceptions=True)
+    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"  Eightfold total: {len(jobs):,} jobs")
+    await _board_detail_passes(session, jobs, EIGHTFOLD_DESC_BUDGET,
+                               lambda j: _html_list_detail(session, j), "Eightfold")
+    return jobs
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -19433,6 +19985,8 @@ async def run_all() -> list[dict]:
             run_successfactors(proxy_session), # SAP SuccessFactors career4 DWR search: Johns Hopkins (added 2026-10-04)
             run_tam(proxy_session),        # The Applicant Manager HTML board: Bayou Bend Health System (added 2026-09-15)
             run_preload(proxy_session),    # window.__PRELOAD_STATE__ career sites: Harris Health System (added 2026-09-22)
+            run_html_list(proxy_session),  # server-rendered HTML lists + RSS via curl_cffi: CHNw, WMCHealth, UVM, Michigan, UK HealthCare, St. Luke's Boise, Rush (added 2026-10-04)
+            run_eightfold(proxy_session),  # Eightfold PCSX search JSON: Premier Health (added 2026-10-04)
             run_hca(direct_session),    # HCA Healthcare — browserless per-state crawl via curl_cffi Firefox TLS (rebuilt 2026-07-28)
             run_houston_methodist(),    # Workday wd12/GTI — curl_cffi; wd12 edge 403s non-browser TLS (added 2026-07-28)
             run_oceans(proxy_session),  # Oceans Behavioral — custom board at oceansjobboard.com via curl_cffi (added 2026-07-28)

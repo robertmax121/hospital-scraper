@@ -1,0 +1,67 @@
+{
+ "status": 200,
+ "error": {
+  "message": "",
+  "body": ""
+ },
+ "data": {
+  "positions": [
+   {
+    "id": 790304849592,
+    "displayJobId": "104067",
+    "name": "ASSOC NURSE MGR/ OBSERVATION UNIT",
+    "locations": [
+     "DAYTON, OHIO, UNITED STATES"
+    ],
+    "standardizedLocations": [
+     "Dayton, OH, US"
+    ],
+    "postedTs": 1781624199,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Nursing",
+    "creationTs": 1755725225,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "104067",
+    "positionUrl": "/careers/job/790304849592"
+   },
+   {
+    "id": 790304936026,
+    "displayJobId": "104176",
+    "name": "Physical Therapist (PRN)",
+    "locations": [
+     "MIDDLETOWN, OHIO, UNITED STATES"
+    ],
+    "standardizedLocations": [
+     "Middletown, OH, US"
+    ],
+    "postedTs": 1756387636,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Therapy/Rehab",
+    "creationTs": 1756386327,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "104176",
+    "positionUrl": "/careers/job/790304936026"
+   }
+  ],
+  "filterDef": [],
+  "count": 606,
+  "sortBy": "relevance",
+  "appliedFilters": {},
+  "debug": {},
+  "savedSearchMetadata": {
+   "savedSearchParamsHash": null,
+   "isSavedSearchActive": false
+  },
+  "resultsMetaData": {
+   "usedFuzzSearch": false,
+   "mocTitle": null
+  }
+ },
+ "metadata": null
+}
