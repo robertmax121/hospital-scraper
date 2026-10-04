@@ -215,6 +215,11 @@ def test_bsw_uses_job_id_from_url(monkeypatch):
 
 def test_known_body_skipped_at_no_cost(monkeypatch):
     seen = _serve(monkeypatch, [("/widgets", 200, fx("widget_jackson_223645.json"))])
+    # Not this posting's refresh night: _refresh_slot is keyed on the run day
+    # (crc32 % DETAIL_REFRESH_DAYS), so without this pin the known body is
+    # legitimately re-read one night in thirty (2026-10-04 was one) and the
+    # test fails on the date, not on the code.
+    monkeypatch.setattr(scraper, "_refresh_slot", lambda canon, job_id: False)
     scraper.set_known_bodies([{"hospital_system": "Jackson Health System", "job_id": "1", "desc_len": 6000}])
     jobs = [_job(job_id="1"), _job(job_id="2")]
     asyncio.run(scraper._detail_pass(None, "Jackson Health System", jobs, scraper.PHENOM_DESC_BUDGET,
