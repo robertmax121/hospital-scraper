@@ -2742,7 +2742,12 @@ def _apply_posting(job, posting: dict) -> bool:
     if m and not (job.posted_date or "").strip():
         job.posted_date = f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
     bs = posting.get("baseSalary")
-    if isinstance(bs, dict) and job.wage_min is None:
+    # 2026-10-04 (S10): the JSON-LD baseSalary is the tenant's estimate band
+    # (CommonSpirit $20-$100, HCA "Salary Estimate" $100,000-$400,000); it is
+    # taken only when the posting's own body states no figure. A body figure
+    # left here as None is read by extract_posted_wage in normalize_job.
+    body = f"{job.title or ''}\n{job.description or ''}"
+    if isinstance(bs, dict) and job.wage_min is None and extract_posted_wage(body, job.job_type) is None:
         val = bs.get("value") if isinstance(bs.get("value"), dict) else bs
         try:
             lo = float(val.get("minValue")) if val.get("minValue") is not None else None
@@ -15695,7 +15700,13 @@ def posting_facts_for(text, job_type=None, title=None):
 # bonus" / "plus bonus" / "bonus eligible" as a description of the pay rather
 # than a priced bonus, and lets a unit or pay word right after the figure
 # ("/hour", "per year", "salary") settle it. See _wage_is_noise.
-_WAGE_NOISE_WORDS = r"sign[- ]?on|signing|bonus(?:es)?|relocation|retention|referral|differential|stipend|reimburse\w*|incentives?"
+# 2026-10-04 (pay accuracy, S6): shift diff, overtime / excess-hours rates,
+# extra-shift premiums, orientation / in-service / meeting rates (Northwell
+# fee-for-service), commute subsidies, directorship fees and on-call rates
+# are priced extras, not the pay (Emory "WEEKEND SHIFT DIFF IS AN EXTRA
+# $15/HR", Jackson "$185/hr excess hours", Geisinger "$275/hour" overtime).
+_WAGE_NOISE_WORDS = (r"sign[- ]?on|signing|bonus(?:es)?|relocation|retention|referral|differential|stipend|reimburse\w*|incentives?"
+                     r"|\bdiff\b|overtime|excess\s+hours|extra\s+shifts?|orientation|in-?services?|meetings?|subsid(?:y|ies)|commut(?:e|ing)|directorship|on-?call\s+(?:rate|pay)")
 _WAGE_NEAR_NOISE = re.compile(_WAGE_NOISE_WORDS, re.I)
 _WAGE_NOISE_HEAD_RX = re.compile(r"(?:^|[^A-Za-z$])(" + _WAGE_NOISE_WORDS + r")\b(?:\s+bonus(?:es)?)?([^$\n;]{0,50})$", re.I)
 _WAGE_NOISE_TAIL_RX = re.compile(r"^([^$\n;]{0,40}?)\b(" + _WAGE_NOISE_WORDS + r")\b", re.I)
@@ -15739,6 +15750,43 @@ def _type_score(label, job_type):
     return 2 if label == "Full time" else 0
 
 
+def _wage_clause(t, start, end):
+    """(before, after): the text of the figure's own clause on each side of
+    t[start:end], 100 characters before and 80 after at most. Clause bounds
+    are a line break, a semicolon, a sentence end before a capital, or a
+    flattened body's glued boundary ("27.25This position", "experience)Sign-on
+    Bonus"). Shared by _wage_is_noise and the FTE test (2026-10-04)."""
+    _clause = r"[\n;]|(?<=[a-z0-9)])[.!?](?=\s+[A-Z]|\s*$)|(?<=[a-z0-9)])(?=[A-Z][a-z])"
+    after = re.split(_clause, t[end - 1:end + 80])[0][1:]      # one char of context so a glued boundary at the figure's end still splits
+    before = re.split(_clause, t[max(0, start - 100):start])[-1]
+    return before, after
+
+
+# 2026-10-04 (S8): a prorated annual figure is not a full-year salary and the
+# site cannot un-prorate it. A sub-1.0 FTE (".4 FTE", "0.75 FTE") or a weekly
+# hour count under 30 ("18 hours per week") in the figure's own clause skips
+# an annual candidate (MaineHealth, UMMS, Northern Light).
+_WAGE_FTE_RX = re.compile(r"(?:^|[^\d.])0?\.\d{1,2}\s*FTE\b|\b(?:[1-9]|1\d|2\d)(?:\.\d+)?\s*(?:hours?|hrs?)\s*(?:per|/|a)\s*(?:week|wk)\b", re.I)
+# 2026-10-04 (S4): a per-visit / per-point / per-session rate right after
+# the figure is its own unit ("visit"), never hourly (AccentCare "$55 to
+# $160 per visit", BAYADA "$70-75 per point", Select "$24.00-$28.00/visit").
+_WAGE_VISIT_RX = re.compile(r"\s*(?:/|per|a|each)\s*(?:visit|point|session)\b", re.I)
+# 2026-10-04 (S9): a role word in the 60 characters before a figure that the
+# title line does not name demotes the figure, so the APP range wins on an
+# "NP or PA" posting that prints the physician range first, and the RN band
+# wins on "Registered Nurse/LPN". Longer forms first so "Physician Assistant"
+# reads as PA, not physician; "registered nurse" counts as RN.
+_ROLE_WORDS = re.compile(r"nurse practitioner|physician assistant|registered nurse|physician|\bMD\b|\bAPP\b|\bNP\b|\bPA\b|\bLPN\b|\bRN\b|\bCRNA\b", re.I)
+_ROLE_WORD_CANON = {"registered nurse": "rn", "physician assistant": "pa", "nurse practitioner": "np"}
+
+
+def _role_words(s, title=False):
+    words = {_ROLE_WORD_CANON.get(w.lower(), w.lower()) for w in _ROLE_WORDS.findall(s)}
+    if title and words & {"np", "pa"}:
+        words.add("app")                                     # an NP / PA title is an advanced practice provider
+    return words
+
+
 def _wage_is_noise(t, start, end):
     """True when the dollar figure at t[start:end] prices a bonus, relocation
     package, stipend or reimbursement rather than the pay. Decided inside the
@@ -15746,12 +15794,7 @@ def _wage_is_noise(t, start, end):
     words between two figures belong to the earlier one, a component word
     joined to the pay ("base + bonus", "plus bonus", "bonus eligible") is a
     description, and a unit or pay word right after the figure makes it pay."""
-    # Clause bounds: a line break, a semicolon, a sentence end before a
-    # capital, or a flattened body's glued boundary ("27.25This position",
-    # "experience)Sign-on Bonus").
-    _clause = r"[\n;]|(?<=[a-z0-9)])[.!?](?=\s+[A-Z]|\s*$)|(?<=[a-z0-9)])(?=[A-Z][a-z])"
-    after = re.split(_clause, t[end - 1:end + 80])[0][1:]      # one char of context so a glued boundary at the figure's end still splits
-    before = re.split(_clause, t[max(0, start - 100):start])[-1]
+    before, after = _wage_clause(t, start, end)
     # An aside in parentheses before the figure is dropped, so "Retention
     # Bonus (beginning at the completion of the 2nd year): up to $30,000"
     # still reads as a bonus (Flagler Health, 2026-09-22).
@@ -15768,7 +15811,14 @@ def _wage_is_noise(t, start, end):
     if m and not _PAY_WORDS.search(m.group(2)):
         if not (_WAGE_COMPONENT_WORD.match(m.group(1)) and _WAGE_COMPOSITION_RX.search(before[:m.start(1)])):
             return True
-    if _WAGE_PAY_LABEL_BEFORE_RX.search(before) or _WAGE_UNIT_RX.match(after):
+    if _WAGE_PAY_LABEL_BEFORE_RX.search(before):
+        return False
+    # 2026-10-04 (S6): a unit right after the figure settles it as pay only
+    # when no noise word follows the unit in the same clause, so "$185/hr
+    # excess hours" and "$15/HR" under "SHIFT DIFF IS AN EXTRA" are extras
+    # while "Starting rate $21.21/hr" (pay word before) stays pay.
+    um = _WAGE_UNIT_RX.match(after)
+    if um and not _WAGE_NOISE_TAIL_RX.match(after[um.end():]):
         return False
     # Flattened bodies (Select Medical) glue the next label onto the figure:
     # "$35.67 - $48.00 (based on experience)Sign-on Bonus: $10,000". An aside
@@ -15797,12 +15847,19 @@ def _wage_is_noise(t, start, end):
 # Three decimals too: Sharp HealthCare's Workday bodies write "Hourly Pay
 # Range (Minimum - Midpoint - Maximum):$83.970 - $108.360 - $121.360", and
 # the third figure (the maximum) is read by the range loop.
+# 2026-10-04 (S3): iCIMS prints "USD $17.13 - USD $216.42 /Hr" and GoHealth
+# "$135/hour - $160/hour"; the currency word and a per-end hourly unit before
+# the dash are part of the range (both forms used to store one end only).
 _WAGE_RANGE_RX = re.compile(
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?\s*(?:-|–|—|to|through)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?", re.I)
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s*(?:-|–|—|to|through)\s*(?:USD\s*)?\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?", re.I)
 _WAGE_THIRD_RX = re.compile(r"\s*(?:-|–|—)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\b")
 # County boards (NeoGov) quote a month or a pay period: "$9,404.43 -
 # $10,893.28 Biweekly", "$6,500 per month". Converted to a year.
-_WAGE_PERIOD_RX = re.compile(r"\s*(?:(per\s+month|monthly|/\s*mo(?:nth)?\b|a\s+month)|(bi-?weekly|per\s+pay\s+period|every\s+(?:two|2)\s+weeks|per\s+(?:two|2)\s+weeks))", re.I)   # used with .match(t, pos): no ^ (it would anchor to the string start)
+# 2026-10-04 (S5): the period word must be the figure's own, not the next
+# heading ("Hourly rate: $18.00- $25.00 Monthly Incentive Bonus" scaled 18-25
+# to 216-300 and stored it hourly; GoHealth, TX medical assistant cell).
+_WAGE_PERIOD_RX = re.compile(r"\s*(?:(per\s+month|monthly|/\s*mo(?:nth)?\b|a\s+month)|(bi-?weekly|per\s+pay\s+period|every\s+(?:two|2)\s+weeks|per\s+(?:two|2)\s+weeks))"
+                             r"(?!\s*(?:incentive|bonus|stipend|differential|commute|subsid))", re.I)   # used with .match(t, pos): no ^ (it would anchor to the string start)
 
 
 def _period_scale(t, pos):
@@ -15814,7 +15871,8 @@ _WAGE_PAY_LABEL_BEFORE_RX = re.compile(
     r"(?:salary|pay|compensation|wage|rate|guarantee)\s*(?:range|rate|scale)?\s*(?:\([^()]*\))?\s*(?:of|at|is|:|-|–|from|starting at|starts at|up to)?\s*(?:up to\s+)?$", re.I)
 _WAGE_SINGLE_RX = re.compile(
     r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?\s*(?:per\s+hour|/\s*hr\b|/\s*hour(?:ly)?|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum|a\s+year|"
-    r"per\s+month|monthly|/\s*mo\b|a\s+month|bi-?weekly|per\s+pay\s+period|every\s+(?:two|2)\s+weeks)", re.I)
+    r"per\s+month|monthly|/\s*mo\b|a\s+month|bi-?weekly|per\s+pay\s+period|every\s+(?:two|2)\s+weeks|"
+    r"(?:per|a|each)\s+(?:visit|point|session)\b|/\s*(?:visit|point|session)\b)", re.I)     # 2026-10-04 (S4): a per-visit single figure
 # A pay label right before a bare figure ("Income Guarantee at $354,000",
 # "Salary: $85,000", "Pay rate $42") is a single figure with no unit; the
 # band decides hourly or annual. Not when a range follows (the range rule
@@ -15822,9 +15880,12 @@ _WAGE_SINGLE_RX = re.compile(
 _WAGE_LABELLED_RX = re.compile(
     r"(?:salary|compensation|pay(?:\s+rate)?|wage|income\s+guarantee|guarantee(?:d)?(?:\s+(?:annual\s+)?(?:salary|income|base|minimum))?|"
     r"base(?:\s+salary|\s+pay)?|earnings?|rate)\s*(?:of|at|is|:|-|–|starts?\s+at|from|starting\s+at)?\s*(?:up\s+to\s+)?"
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)(?![\d,])\s*(k\b)?(?!\s*(?:-|–|—|to|through)\s*\$?\s*\d)", re.I)
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)(?![\d,])\s*(k\b)?(?!\s*k\b)(?!\s*(?:-|–|—|to|through)\s*\$?\s*\d)", re.I)
 # (?![\d,]) after the figure: without it "Salary: $12,500 - $15,000" backtracked
 # to "$12" once the range lookahead failed, and stored $12/hr (backfill sample, 2026-09-22).
+# (?!\s*k\b) after the optional suffix (2026-10-04, S7): a K that is present
+# must be consumed, so "pay $117K-$132,600" cannot backtrack the K away, pass
+# the range lookahead and store $117/hr (Amedisys).
 
 
 def _amt(num, k):
@@ -15847,12 +15908,23 @@ def _wage_num(s):
         return None
 
 
-def _wage_pair(lo, hi):
-    """(lo, hi, unit) when the pair lands in a plausible band, else None."""
+def _wage_pair(lo, hi, hint=None):
+    """(lo, hi, unit) when the pair lands in a plausible band, else None.
+    hint="visit" (2026-10-04, S4): the text priced the figure per visit /
+    point / session; the pair is returned with unit "visit" in a 12..500 band
+    and never as hourly. Every caller (text ranges, JSON-LD, ADP, Greenhouse,
+    Lever, card adapters) shares the width test below."""
     if lo is None or hi is None:
         return None
     if lo > hi:
         lo, hi = hi, lo
+    # 2026-10-04 (S1): a pair wider than 3x is an employer boilerplate band
+    # ("Pay Range: $15.00 - $130.00", JSON-LD $20-$100, "$100,000 - $400,000
+    # estimate") or a swapped typo ("$341.00 to $64.09"), never the pay.
+    if lo <= 0 or hi / lo > 3:
+        return None
+    if hint == "visit":
+        return (lo, hi, "visit") if 12 <= lo <= hi <= 500 else None
     if 12 <= lo <= 350 and 12 <= hi <= 350:     # 350: contract therapists and physicians quote "up to $296 per hour" (SonderMind, 2026-09-22)
         return (lo, hi, "hour")
     if 25000 <= lo <= 900000 and 25000 <= hi <= 900000:
@@ -16624,13 +16696,36 @@ def extract_posting_facts(text, job_type=None, title=None):
     # education as the posting states them (extract_requirements).
     out["requirements"] = extract_requirements(text)
     rq = out["requirements"]
+    # 2026-10-04 (S11): a flat figure the posting labels "up to" ("Pay: Up to
+    # $248 per hour", SonderMind) is stored as the pair it is, with
+    # pay_note = "up_to" so a display can say so. Set only when it applies.
+    note = _pay_note(t, job_type)
+    if note:
+        out["pay_note"] = note
     if not (out["certs"] or out["education"] or out["shift"] or out["experience"]
             or out["schedule"] or out["hours"] or out["signon"] or out["signon_offered"]
-            or out["relocation"] or out["benefits"] or out["benefit_lines"]
+            or out["relocation"] or out["benefits"] or out["benefit_lines"] or note
             or rq["qualifications"]["required"] or rq["qualifications"]["preferred"]
             or rq["certifications"] or rq["licensure"] or rq["education"]):
         return None
     return out
+
+
+_WAGE_UP_TO_RX = re.compile(
+    r"(?:salary|pay|compensation|wage|rate|earn(?:ings)?|guarantee)\s*(?:range|rate)?\s*(?::|-|–|of|is|at)?\s*up\s+to\s+"
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
+
+
+def _pay_note(t, job_type=None):
+    """"up_to" when the stored wage is a flat figure that a pay label in the
+    text introduces with "up to"; else None."""
+    w = extract_posted_wage(t, job_type)
+    if not w or w[0] != w[1]:
+        return None
+    for m in _WAGE_UP_TO_RX.finditer(t):
+        if _amt(m.group(1), m.group(2)) == w[1]:
+            return "up_to"
+    return None
 
 
 # ── Requirements: qualifications / certifications / licensure / education ──
@@ -17765,54 +17860,106 @@ def extract_posted_wage(text, job_type=None):
         return None
     t = text[:12000]
     cands = []
+    title_line = t.split("\n", 1)[0]                          # normalize_job passes "title\nbody"
+    title_roles = _role_words(title_line, title=True)
+    title_fte = bool(_WAGE_FTE_RX.search(title_line))         # "CRNA - .3 FTE": every annual figure is prorated
+    dead = set()                                              # S2: "$" positions of a range too wide to be pay
 
     def consider(m, got, rank):
         if got:
+            # 2026-10-04 (S4): a per-visit figure scores below an hourly one
+            # in the same body, so a body that prints both stores the hourly.
             score = rank + (1 if got[2] == "hour" else 0) + _type_score(_line_type(t, m.start()), job_type)
+            # 2026-10-04 (S9): a role word in the clause before the figure
+            # that the title does not name demotes it ("Physician: $420,000-
+            # $480,000" on an "NP or PA" posting).
+            if _role_words(t[max(0, m.start() - 60):m.start()]) - title_roles:
+                score -= 2
             cands.append((score, -m.start(), got))          # ties: the earlier figure in the text
+
+    def prorated(start, end, got):
+        # 2026-10-04 (S8): an annual figure stated for a part-time FTE or a
+        # weekly hour count under 30 is not a full-year salary.
+        if not got or got[2] != "year":
+            return False
+        if title_fte:
+            return True
+        before, after = _wage_clause(t, start, end)
+        return bool(_WAGE_FTE_RX.search(before + after))
 
     for m in _WAGE_RANGE_RX.finditer(t):
         if _wage_is_noise(t, m.start(), m.end()):
             continue
-        k = m.group(2) or m.group(4)                          # "$70-80K": one suffix for both ends
-        lo, hi = _amt(m.group(1), k), _amt(m.group(3), k)
+        # 2026-10-04 (S7): a "k" suffix carries to the other end only when
+        # that end has no comma group and is under 1,000 ("$70-80K"); in
+        # "$117K-$132,600" each end keeps its own form.
+        k1, k2 = m.group(2), m.group(4)
+        if k1 and not k2 and "," not in m.group(3) and _wage_num(m.group(3)) < 1000:
+            k2 = k1
+        if k2 and not k1 and "," not in m.group(1) and _wage_num(m.group(1)) < 1000:
+            k1 = k2
+        lo, hi = _amt(m.group(1), k1), _amt(m.group(3), k2)
         m3 = _WAGE_THIRD_RX.match(t, m.end())                 # "min - midpoint - max": the maximum is the third figure
         end = m.end()
         if m3 and hi is not None:
-            third = _amt(m3.group(1), k)
+            third = _amt(m3.group(1), k2)
             if third is not None and third > hi:
                 hi, end = third, m3.end()
+        hint = "visit" if _WAGE_VISIT_RX.match(t, end) else None
         scale = _period_scale(t, end)                         # "... Biweekly" / "... per month" -> a year
         if scale != 1 and lo is not None and hi is not None:
             lo, hi = lo * scale, hi * scale
-        consider(m, _wage_pair(lo, hi), 6)
+        got = _wage_pair(lo, hi, hint)
+        if scale != 1 and (not got or got[2] != "year"):     # S5: a scaled value is annual or nothing
+            got = None
+        if got is None and lo and hi and max(lo, hi) / min(lo, hi) > 3:
+            # S2: neither end of a rejected band may be re-stored as a flat
+            # figure by the single or labelled rule ("$15.00 - $130.00",
+            # "USD $17.13 - USD $216.42 /Hr").
+            dead.add(m.start())
+            second = t.rfind("$", m.end(1), m.start(3))
+            if second >= 0:
+                dead.add(second)
+            continue
+        if prorated(m.start(), end, got):
+            continue
+        consider(m, got, 6)
     for m in _WAGE_BARE_RANGE_RX.finditer(t):
         if _wage_is_noise(t, m.start(), m.end()):
             continue
         got = _wage_pair(_wage_num(m.group(1)), _wage_num(m.group(2)))
-        if got and got[2] == "year":
+        if got and got[2] == "year" and not prorated(m.start(), m.end(), got):
             consider(m, got, 3)
     for m in _WAGE_SINGLE_RX.finditer(t):
-        if _wage_is_noise(t, m.start(), m.end()):
+        if m.start() in dead or _wage_is_noise(t, m.start(), m.end()):
             continue
         v = _amt(m.group(1), m.group(2))
         tail = m.group(0).lower()
-        if v is not None and re.search(r"month|/\s*mo\b", tail):
+        hint = None
+        if v is not None and re.search(r"visit|point|session", tail):
+            unit = hint = "visit"
+        elif v is not None and re.search(r"month|/\s*mo\b", tail):
             v, unit = v * 12, "year"
         elif v is not None and re.search(r"weekly|pay period|two weeks|2 weeks", tail):
             v, unit = v * 26, "year"
         else:
             unit = "hour" if re.search(r"hour|hr", tail) else "year"
-        got = _wage_pair(v, v)
-        if got and got[2] == unit:
+        got = _wage_pair(v, v, hint)
+        if got and got[2] == unit and not prorated(m.start(), m.end(), got):
             consider(m, (v, v, unit), 0)
     for m in _WAGE_LABELLED_RX.finditer(t):
         fig = t.rfind("$", m.start(), m.start(1))
-        if fig < 0 or _wage_is_noise(t, fig, m.end()):
+        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()):
+            continue
+        if _WAGE_SINGLE_RX.match(t, fig):
+            # 2026-10-04 (S6): a figure that carries its own unit was judged
+            # by the single rule; the bare-label fallback must not re-store
+            # it under another unit ("Compensation $100 monthly commute
+            # subsidy" is $1,200 a year, not $100 an hour).
             continue
         v = _amt(m.group(1), m.group(2))
         got = _wage_pair(v, v)
-        if got:
+        if got and not prorated(fig, m.end(), got):
             consider(m, got, -1)                              # below a figure that carries its own unit
     if not cands:
         return None
