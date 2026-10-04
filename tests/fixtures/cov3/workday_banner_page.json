@@ -1,0 +1,170 @@
+{
+ "total": 1321,
+ "jobPostings": [
+  {
+   "title": "Cybersecurity Architect",
+   "externalPath": "/job/Remote-Arizona/Cybersecurity-Architect_R4452218",
+   "locationsText": "2 Locations",
+   "postedOn": "Posted Yesterday",
+   "remoteType": "Remote",
+   "bulletFields": [
+    "R4452218",
+    "Arizona",
+    "Arizona"
+   ]
+  },
+  {
+   "title": "Certified Patient Care Assistant CNA LNA Med Surg Ortho",
+   "externalPath": "/job/Banner-Del-Webb-Med-Ctr-14502-W-Meeker-Blvd/Certified-Patient-Care-Assistant-CNA-LNA-Med-Surg-Ortho_R4446997",
+   "locationsText": "Banner Del Webb Med Ctr (14502 W Meeker Blvd)",
+   "postedOn": "Posted Yesterday",
+   "bulletFields": [
+    "R4446997",
+    "Arizona",
+    "Sun City West"
+   ]
+  },
+  {
+   "title": "Certified Patient Care Assistant CNA LNA Float Pool CCO",
+   "externalPath": "/job/Banner-Casa-Grande-Med-Ctr-1800-E-Florence-Blvd/Certified-Patient-Care-Assistant-CNA-LNA-Float-Pool-CCO_R4452393",
+   "locationsText": "Banner Casa Grande Med Ctr (1800 E Florence Blvd)",
+   "postedOn": "Posted 2 Days Ago",
+   "bulletFields": [
+    "R4452393",
+    "Arizona",
+    "Casa Grande"
+   ]
+  }
+ ],
+ "facets": [
+  {
+   "facetParameter": "timeType",
+   "descriptor": "Time Type",
+   "values": [
+    {
+     "descriptor": "Full time",
+     "id": "de0f91f452ec013e31565f56460a5900",
+     "count": 1006
+    },
+    {
+     "descriptor": "Part time",
+     "id": "de0f91f452ec0143803d5f56460a5800",
+     "count": 293
+    }
+   ]
+  },
+  {
+   "facetParameter": "locationMainGroup",
+   "values": [
+    {
+     "facetParameter": "locationHierarchy2",
+     "descriptor": "State",
+     "values": [
+      {
+       "descriptor": "Arizona",
+       "id": "9b3a94a4058301a515e0d7b115074505",
+       "count": 1083
+      },
+      {
+       "descriptor": "California",
+       "id": "9b3a94a40583010402cbd8b115074b05",
+       "count": 14
+      },
+      {
+       "descriptor": "Colorado",
+       "id": "9b3a94a4058301b2e13dd9b115074e05",
+       "count": 130
+      },
+      {
+       "descriptor": "Idaho",
+       "id": "66ba22dad7080105efea47fdb600115a",
+       "count": 1
+      },
+      {
+       "descriptor": "Nebraska",
+       "id": "9b3a94a4058301c561e4dab115075705",
+       "count": 8
+      },
+      {
+       "descriptor": "Nevada",
+       "id": "9b3a94a4058301756b59dbb115075a05",
+       "count": 18
+      }
+     ]
+    },
+    {
+     "facetParameter": "locationHierarchy1",
+     "descriptor": "City",
+     "values": [
+      {
+       "descriptor": "Ahwatukee",
+       "id": "63da3abe0c341001fa16ec5d42260000",
+       "count": 2
+      },
+      {
+       "descriptor": "Ajo",
+       "id": "df70f3f1678f1001fecccbb5bcc10000",
+       "count": 2
+      },
+      {
+       "descriptor": "Anthem",
+       "id": "9b3a94a4058301ad6225e1b115077e05",
+       "count": 5
+      },
+      {
+       "descriptor": "Apache Junction",
+       "id": "9b3a94a4058301332b99e1b115078105",
+       "count": 12
+      },
+      {
+       "descriptor": "Avondale",
+       "id": "9b3a94a4058301208a75e5b115079905",
+       "count": 6
+      },
+      {
+       "descriptor": "Brush",
+       "id": "9b3a94a40583019536a6ecb11507c605",
+       "count": 11
+      }
+     ]
+    },
+    {
+     "facetParameter": "locations",
+     "descriptor": "Locations",
+     "values": [
+      {
+       "descriptor": "All of US Gateway (1920 N Higley Rd, Suite 106)",
+       "id": "9b3a94a40583010fecea61f01b076d10",
+       "count": 1
+      },
+      {
+       "descriptor": "Banner Alzheimer's Institute Tucson (2626 E River Rd)",
+       "id": "b9d5f5a069b2016c37da193df9014ee8",
+       "count": 4
+      },
+      {
+       "descriptor": "Banner Baywood Med Ctr (6644 E Baywood Ave)",
+       "id": "0e79e1fa512d100102add17e51540000",
+       "count": 32
+      },
+      {
+       "descriptor": "Banner Baywood Med Ctr (6644 E Baywood Ave)",
+       "id": "9b3a94a4058301c325096df01b079510",
+       "count": 5
+      },
+      {
+       "descriptor": "Banner Boswell Med Ctr (10401 W Thunderbird Blvd)",
+       "id": "0e79e1fa512d10010a318181a6700000",
+       "count": 61
+      },
+      {
+       "descriptor": "Banner Boswell Med Ctr (10401 W Thunderbird Blvd)",
+       "id": "9b3a94a40583013bd75369ee1b07dd09",
+       "count": 1
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

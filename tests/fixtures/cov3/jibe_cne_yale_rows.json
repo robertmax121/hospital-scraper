@@ -1,0 +1,258 @@
+{
+ "cne": {
+  "slug": "8184",
+  "language": "en-us",
+  "languages": [
+   "en-us"
+  ],
+  "client_code": "carenewengland",
+  "req_id": "8184",
+  "title": "Admin Supervisor Path and Lab",
+  "description": "<strong>Job Summary</strong><br><br><p>The Administrative Supervisor of Pathology and Laboratory Medicine provides full administrative support to the Chief of Pathology, pathologists, and laboratory leadership team. They direct the coordination and supervision of transcriptionists, help develop depa",
+  "location_name": "Kent Hospital, 455 Toll Gate Rd, Warwick",
+  "street_address": "455 Toll Gate Rd",
+  "city": "Warwick",
+  "state": "Rhode Island",
+  "country": "United States",
+  "country_code": "US",
+  "postal_code": "02886",
+  "location_type": "LAT_LNG",
+  "latitude": 41.7026,
+  "longitude": -71.4476,
+  "categories": [
+   {
+    "name": "Medical"
+   }
+  ],
+  "tags1": [
+   "Laboratory"
+  ],
+  "tags2": [
+   "Kent Hospital"
+  ],
+  "tags3": [
+   "Full-Time"
+  ],
+  "tags4": [
+   "Days"
+  ],
+  "tags5": [
+   "Non-Union"
+  ],
+  "tags6": [
+   "Mon.-Fri."
+  ],
+  "tags7": [
+   "40.00"
+  ],
+  "department": "",
+  "salary_value": 0,
+  "salary_min_value": 0,
+  "salary_max_value": 0,
+  "employment_type": "FULL_TIME",
+  "hiring_organization": "Care New England Health System",
+  "hiring_organization_logo": "https://carenewengland.icims.com/icims2/servlet/icims2?module=AppInert&action=download&id=76&hashed=1472542904",
+  "posted_date": "2026-10-02T14:49:00+0000",
+  "apply_url": "https://careers-carenewengland.icims.com/jobs/8184/login",
+  "internal": false,
+  "external": false,
+  "searchable": true,
+  "applyable": true,
+  "li_easy_applyable": true,
+  "ats_code": "icims",
+  "hiring_flow_name": "iCIMS ATS Hiring Flow",
+  "isFrontLineAIJob": false,
+  "isApplyFlowJob": false,
+  "meta_data": {
+   "mongo": {
+    "mongo_created": true
+   },
+   "openingjobs": {
+    "openingJobId": "0000310182b7e169c74cec8b482f0e10779b"
+   },
+   "icims": {
+    "jps_is_public": true,
+    "primary_posted_site_object": {
+     "site": "careers-carenewengland",
+     "siteId": "b4bde59c-9d71-4c23-b9ee-0c20de4f085d",
+     "datePosted": "2026-10-02T14:49:00+0000"
+    },
+    "date_updated": "2026-10-02T14:50:04Z",
+    "config_keys": {
+     "jobposting.external.company.name": "Care New England Health System",
+     "icims.external.xml.feeds": "icims.accessdubuquejobs.xml.enabled,icims.advantageai.xml.enabled,icims.adzuna.xml.enabled,icims.aeroemploiformation.xml.enabled,icims.agefiph.xml.enabled,icims.aicetech.xml.enabled,icims.allyenergy.xml.enabled,icims.almazlabs.xml.enabled,icims.alvius.xml.enabled,icims.apec.xml.enabled,icims.appcast.xml.enabled,icims.astronautjobs.xml.enabled,icims.atsinsider.xml.enabled,icims.bayard.xml.enabled,icims.bdssolutions.xml.enabled,icims.breakroom.xml.enabled,icims.bridgeofhope.xml.enabled,icims.calibersourcing.xml.enabled,icims.canaljob.xml.enabled,icims.careerbuilder.xml.enabled,icims.careertreenetwork.xml.enabled,icims.careerarc.xml.enabled,icims.careerjet.xml.enabled,icims.careerlink.xml.enabled,icims.careermd.xml.enabled,icims.careersarabia.xml.enabled,icims.caterer.xml.enabled,icims.cdljobs.xml.enabled,icims.cielotalent.xml.enabled,icims.clearbold.xml.enabled,icims.constructionjobs.xml.enabled,icims.convergesolution.xml.enabled,icims.craigslist.xml.enabled,icims.culinaryagents.xml.enabled,icims.cv-library.xml.enabled,icims.cvaden.xml.enabled,icims.cvresumenest.xml.enabled,icims.dciconsultinggroup.xml.enabled,icims.dentalpost.xml.enabled,icims.direct-employers.xml.enabled,icims.diversityjobsgroup.xml.enabled,icims.doccafe.xml.enabled,icims.drivemyway.xml.enabled,icims.edtech.xml.enabled,icims.emploi.xml.enabled,icims.network.xml.enabled,icims.essenceofaustralia.xml.enabled,icims.exxat.xml.enabled,icims.firsthand.xml.enabled,icims.flatworld.xml.enabled,icims.flockity.xml.enabled,icims.foorilla.xml.enabled,icims.forcebrands.xml.enabled,icims.geographic.xml.enabled,icims.getit.xml.enabled,icims.gitajob.xml.enabled,icims.gofigr.xml.enabled,icims.greatdane.xml.enabled,icims.hackajob.xml.enabled,icims.handshake.xml.enabled,icims.happydance.xml.enabled,icims.haymarket.xml.enabled,icims.hellowork.xml.enabled,icims.hireheroesusa.xml.enabled,icims.hireahero.xml.enabled,icims.hirebase.xml.enabled,icims.hireclix.xml.enabled,icims.hirepurpose.xml.enabled,icims.hiringcafe.xml.enabled,icims.hospitalcareers.xml.enabled,icims.hrpush.xml.enabled,icims.iberempleos.xml.enabled,icims.inautomotive.xml.enabled,icims.indeed.xml.enabled,icims.inhersight.xml.enabled,icims.intelycare.xml.enabled,icims.interactivesites.xml.enabled,icims.irishjobs.xml.enabled,icims.itjobscafe.xml.enabled,icims.jobbio.xml.enabled,icims.jobboardio.xml.enabled,icims.jobcase.xml.enabled,icims.jobget.xml.enabled,icims.jobgether.xml.enabled,icims.jobsinmaine.xml.enabled,icims.jobsite.xml.enabled,icims.jobsvue.xml.enabled,icims.jobted.xml.enabled,icims.jobtip.xml.enabled,icims.jooble.xml.enabled,icims.jooobs.xml.enabled,icims.keloh.xml.enabled,icims.lacantinedestalents.xml.enabled,icims.leisurejobs.xml.enabled,icims.lensa.xml.enabled,icims.tango.xml.enabled,icims.linkedin.xml.enabled,icims.marit.xml.enabled,icims.meritbench.xml.enabled,icims.militaryhire.xml.enabled,icims.mogul.xml.enabled,icims.monster.xml.enabled,icims.mygwork.xml.enabled,icims.nationalpest.xml.enabled,icims.nejoflexco.xml.enabled,icims.newworkse.xml.enabled,icims.nexxt.xml.enabled,icims.nijobs.xml.enabled,icims.novatel.xml.enabled,icims.nurserecruiter.xml.enabled,icims.offerup.xml.enabled,icims.oilandgas.xml.enabled,icims.oneten.xml.enabled,icims.onjob.xml.enabled,icims.openai.xml.enabled,icims.pallet-labs.xml.enabled,icims.paradox.xml.enabled,icims.xtrapointgroup.xml.enabled,icims.powertofly.xml.enabled,icims.practicematch.xml.enabled,icims.prideatwork.xml.enabled,icims.prideatworkcanada.xml.enabled,icims.professionaldiversitynetwork.xml.enabled,icims.propellum.xml.enabled,icims.puck.xml.enabled,icims.qkly.xml.enabled,icims.quorumit.xml.enabled,icims.radancy.xml.enabled,icims.recruitnet.xml.enabled,icims.recruitics.xml.enabled,icims.referio.xml.enabled,icims.regionsjob.xml.enabled,icims.resume-library.xml.enabled,icims.retailappointment.xml.enabled,icims.rmt.xml.enabled,icims.rollins.xml.enabled,icims.rssb.xml.enabled,icims.scrubshifts.xml.enabled,icims.searchforjobs.xml.enabled,icims.shaker.xml.enabled,icims.skillsire.xml.enabled,icims.smartjobboard.xml.enabled,icims.snagajob.xml.enabled,icims.socialhp.xml.enabled,icims.softwareiq.xml.enabled,icims.sourceamerica.xml.enabled,icims.stealth.xml.enabled,icims.stealthstartup.xml.enabled,icims.stylecareers.xml.enabled,icims.talentdotcom.xml.enabled,icims.talentify.xml.enabled,icims.tariangroup.xml.enabled,icims.technojobs.xml.enabled,icims.thestaffingagency.xml.enabled,icims.stepstone.xml.enabled,icims.triad.xml.enabled,icims.unpostedjobs.xml.enabled,icims.upward.xml.enabled,icims.venturefizz.xml.enabled,icims.vercida.xml.enabled,icims.vertices.xml.enabled,icims.vivian.xml.enabled,icims.vonq.xml.enabled,icims.webengineering.xml.enabled,icims.webscribble.xml.enabled,icims.welcometothejungle.xml.enabled,icims.werkzoeken.xml.enabled,icims.womenfirst.xml.enabled,icims.woodwardcommunications.xml.enabled,icims.wrightmedia.xml.enabled,icims.yesyep.xml.enabled,icims.ziprecruiter.xml.enabled,icims.zippia.xml.enabled",
+     "portal.id": "17",
+     "ccc.attract.portal.url": "https://careers.carenewengland.org",
+     "icims.config.web.indeed.easy.apply": "0"
+    },
+    "revision_int": 1,
+    "uuid": "d8d2dd35-50eb-4474-90f9-8970ad3c5c93"
+   },
+   "ats_job_hash": "79431cf39958d4e00de312a0c53cfdbb",
+   "googlejobs": {
+    "jobName": "projects/helpful-passage-853/tenants/cb22eb5b-7e00-0000-0000-007edad744d3/jobs/132028054405817030"
+   },
+   "import_id": "f3e09ee3-8ba8-4345-809b-4440ffa9c75b",
+   "redirectOnApply": true,
+   "questionservice": {
+    "id": "46644463"
+   },
+   "canonical_url": null,
+   "gdpr": false,
+   "last_mod": "2026-10-02T14:50:33+0000",
+   "elasticsearch": {
+    "es_created": true
+   },
+   "opensearch": {
+    "hit_score": "NaN",
+    "hit_explanation": null,
+    "hit_matched_queries": [
+     "internal",
+     "applyable",
+     "term-language",
+     "searchable",
+     "term-client_code"
+    ],
+    "hit_index": "jobs",
+    "hit_shard": null
+   },
+   "import_source": "ImporterService",
+   "client_code": "carenewengland"
+  },
+  "update_date": "2026-10-02T14:50:33+0000",
+  "create_date": "2026-10-02T14:50:33+0000",
+  "category": [
+   " Medical"
+  ],
+  "full_location": "Warwick, Rhode Island",
+  "short_location": "Warwick, Rhode Island",
+  "multipleLocations": false
+ },
+ "yale": {
+  "slug": "91744",
+  "language": "en-us",
+  "languages": [
+   "en-us"
+  ],
+  "client_code": "ynhhs",
+  "req_id": "91744",
+  "title": "PCT- Medical Coronary ICU- Per Diem- Nights",
+  "description": "<strong>Overview</strong><br><br>To be part of our organization, every employee should understand and share in the YNHHS Vision, support our Mission, and live our Values.  These values - integrity, patient-centered, respect, accountability, and compassion - must guide what we do, as individuals and ",
+  "location_name": "CT06604",
+  "city": "Bridgeport",
+  "state": "Connecticut",
+  "country": "United States",
+  "country_code": "US",
+  "postal_code": "06604",
+  "location_type": "LAT_LNG",
+  "latitude": 41.1796,
+  "longitude": -73.2019,
+  "categories": [
+   {
+    "name": "NURSING-SUPPORT - CLINICAL"
+   }
+  ],
+  "tags1": [
+   "NIGHTS"
+  ],
+  "tags2": [
+   "MCCU ET9"
+  ],
+  "tags3": [
+   ".04"
+  ],
+  "tags4": [
+   "Per Diem Non-Benefits Eligible"
+  ],
+  "tags5": [
+   "194622"
+  ],
+  "tags6": [
+   "Onsite 100%"
+  ],
+  "tags7": [
+   "267 Grant Street Bridgeport CT 06610"
+  ],
+  "tags9": [
+   "USD $18.09/Hr.-USD $35.90/Hr."
+  ],
+  "department": "",
+  "salary_value": 0,
+  "salary_min_value": 0,
+  "salary_max_value": 0,
+  "hiring_organization": "Yale New Haven Health",
+  "posted_date": "2026-10-03T18:05:00+0000",
+  "apply_url": "https://olivia.paradox.ai/co/YaleNewHavenHealth/Job?job_id=194622_1",
+  "internal": false,
+  "external": false,
+  "searchable": true,
+  "applyable": true,
+  "li_easy_applyable": true,
+  "ats_code": "icims",
+  "hiring_flow_name": "iCIMS ATS Hiring Flow",
+  "isFrontLineAIJob": false,
+  "isApplyFlowJob": false,
+  "meta_data": {
+   "mongo": {
+    "mongo_created": true
+   },
+   "openingjobs": {
+    "openingJobId": "00009a823872fea0add616fb98907625e6a1"
+   },
+   "icims": {
+    "jps_is_public": true,
+    "primary_posted_site_object": {
+     "site": "hvapply-ynhhs",
+     "siteId": "d488f70e-3cf1-492d-bae2-a218d8004ca1",
+     "datePosted": "2026-10-03T18:05:00+0000"
+    },
+    "date_updated": "2026-10-04T15:45:21Z",
+    "config_keys": {
+     "jobposting.external.company.name": "Yale New Haven Health",
+     "icims.external.xml.feeds": "icims.handshake.xml.enabled",
+     "portal.id": "463272",
+     "jobposting.external.parent.organization.name": "Yale New Haven Health",
+     "ccc.attract.portal.url": "https://jobs.ynhhs.org",
+     "icims.config.web.indeed.easy.apply": "0"
+    },
+    "revision_int": 24,
+    "uuid": "ef5c864b-b2cf-4512-ba51-6f7e8488001d"
+   },
+   "ats_job_hash": "0d1c95e571ccdc8c05cff4142db3bcd5",
+   "googlejobs": {
+    "jobName": "projects/helpful-passage-853/tenants/cb22eb5b-7e00-0000-0000-007edad744d3/jobs/125800935942169286"
+   },
+   "import_id": "d9f1236c-74bf-4c54-98b7-0ba152307f70",
+   "redirectOnApply": true,
+   "canonical_url": "https://jobs.ynhhs.org/jobs/91744?lang=en-us",
+   "gdpr": false,
+   "last_mod": "2026-10-04T15:47:19+0000",
+   "elasticsearch": {
+    "es_created": false
+   },
+   "opensearch": {
+    "hit_score": "NaN",
+    "hit_explanation": null,
+    "hit_matched_queries": [
+     "internal",
+     "applyable",
+     "term-language",
+     "searchable",
+     "term-client_code"
+    ],
+    "hit_index": "jobs",
+    "hit_shard": null
+   },
+   "import_source": "ImporterService",
+   "client_code": "ynhhs"
+  },
+  "update_date": "2026-10-04T15:47:19+0000",
+  "create_date": "2026-10-03T18:06:01+0000",
+  "category": [
+   " NURSING-SUPPORT - CLINICAL"
+  ],
+  "full_location": "Bridgeport, Connecticut",
+  "short_location": "Bridgeport, Connecticut",
+  "multipleLocations": false
+ }
+}
