@@ -1,0 +1,270 @@
+{
+ "total_count": 1693,
+ "page_count": 85,
+ "count": 20,
+ "current_page": 1,
+ "results": [
+  {
+   "id": 52547992,
+   "key": 0,
+   "index_date": "2026-10-04",
+   "posted_at": "2026-10-03 09:02:08",
+   "first_scraped_at": "2026-10-03 09:02:08",
+   "raw_title": "Patient Access Team Lead",
+   "description": "<div><ul><li><strong>Area of Interest:</strong> Patient Services</li><li><strong>FTE/Hours per pay period:</strong> 1.0</li><li><strong>Department:</strong> Patient Access</li><li><strong>Shift:</strong> 7:30A-4:00P Monday-Friday, rotating on-call weekend/holidays</li><li><strong>Job ID:</strong> 187988</li></ul></div><br /><strong>Overview</strong><p style=\"margin: 0px;\" data-pm-slice=\"1 1 []\"><span style=\"font-size: 12pt;\"><strong>Patient Access Team Lead</strong></span><br /><span style=\"font-size: 12pt;\"><strong>Marshalltown Hospital</strong></span><br /><span style=\"font-size: 12pt;\"><str",
+   "detail_url": "https://careers.unitypoint.org/job/52547992/patient-access-mgr",
+   "demand_index": 0,
+   "time_to_close": 0,
+   "ats_id": "187988",
+   "is_active": true,
+   "deactivated_at": null,
+   "title_id": 490,
+   "title": "Patient Access Mgr",
+   "title_slug": "patient-access-mgr",
+   "professional_category_id": 2,
+   "professional_category": "Admissions, Discharges and Patient Access",
+   "professional_category_slug": "admissions-discharges-and-patient-access",
+   "area_unit": "Patient access",
+   "professional_role": "Manager",
+   "education": "Not Stated",
+   "employment_type": "Not Stated",
+   "listing_type": "Not Stated",
+   "shift": "Not Stated",
+   "shift_length": "Not Stated",
+   "contract_duration": "Not Stated",
+   "shift_start": "Not Stated",
+   "shift_end": "Not Stated",
+   "years_of_experience": "Not Stated",
+   "is_signing_bonus": false,
+   "remote_status": "",
+   "hiring_events": false,
+   "signing_bonus_amount": 0,
+   "is_crisis": false,
+   "salary_max": 0,
+   "salary_min": 0,
+   "pay_frequency": "Not Stated",
+   "raw_titles": [
+    "Patient Access Team Lead"
+   ],
+   "titles": [
+    "Patient Access Mgr"
+   ],
+   "professional_categories": [
+    "Admissions, Discharges and Patient Access"
+   ],
+   "professional_roles": [
+    "Manager"
+   ],
+   "area_units": [
+    "Patient access"
+   ],
+   "peer_group": [
+    "Not Stated"
+   ],
+   "experience_level": [
+    "Not Stated"
+   ],
+   "certificates": [
+    "Not Stated"
+   ],
+   "location_id": 155984,
+   "location_name": "Marshalltown UnityPoint Health",
+   "location_short_name": "Marshalltown UnityPoint Health",
+   "location_slug": "marshalltown-unitypoint-health",
+   "location_size": "Not Stated",
+   "location_type": "Hospital",
+   "location_key": 143344,
+   "location_image": null,
+   "partner_id": 5235,
+   "location": {
+    "lat": "42.001265",
+    "lon": "-92.915205"
+   },
+   "address": "55 UnityPoint Way",
+   "is_client": true,
+   "displayable_job": true,
+   "is_quick_apply_enabled": true,
+   "is_quick_apply_direct_full_app_enabled": false,
+   "city": "Marshalltown",
+   "state": "IA",
+   "county": "Marshall",
+   "country": "United States",
+   "zip": "50158",
+   "market": "Not Stated",
+   "cbsa": "Marshalltown, IA",
+   "cbsa_type": "micropolitan",
+   "employer_id": 5235,
+   "employer_name": "UnityPoint Health",
+   "employer_slug": "unitypoint-health",
+   "employer_key": 12056,
+   "cp_up_additional_address": "",
+   "cp_up_additional_city": "",
+   "cp_up_additional_location_id": null,
+   "cp_up_additional_postal_code": "",
+   "cp_up_additional_state": "",
+   "cp_up_job_id": "2026-187988",
+   "cp_up_main_category": "Patient Services",
+   "cp_up_sub_category": "Registration and Scheduling",
+   "title_suggest": [
+    "Patient Access Manager",
+    "Patient Access Mgr"
+   ],
+   "title_suggest_output": "Patient Access Mgr",
+   "category_suggest": "Admissions, Discharges and Patient Access",
+   "category_suggest_output": "Admissions, Discharges and Patient Access",
+   "role_suggest": "Manager",
+   "role_suggest_output": "Manager",
+   "specialty_suggest": "Patient access",
+   "specialty_suggest_output": "Patient access",
+   "employer_suggest": "UnityPoint Health",
+   "employer_suggest_output": "UnityPoint Health",
+   "location_suggest": "Marshalltown UnityPoint Health",
+   "location_suggest_output": "Marshalltown UnityPoint Health",
+   "ats_integration_id": 5244,
+   "data": {
+    "originalObject": {
+     "portalUrl": "https://careers-unitypoint.icims.com/jobs/187988/job"
+    }
+   },
+   "is_applied": false,
+   "is_favorite": false,
+   "job_job_title": "Patient Access Mgr",
+   "original_description": "<div><ul><li><strong>Area of Interest:</strong> Patient Services</li><li><strong>FTE/Hours per pay period:</strong> 1.0</li><li><strong>Department:</strong> Patient Access</li><li><strong>Shift:</stro",
+   "post_title": "Patient Access Mgr",
+   "distance": null,
+   "url_tracking_tag": "",
+   "pixel_tracking_tag": ""
+  },
+  {
+   "id": 52547991,
+   "key": 0,
+   "index_date": "2026-10-04",
+   "posted_at": "2026-10-03 09:01:48",
+   "first_scraped_at": "2026-10-03 09:01:48",
+   "raw_title": "CMA/LPN/RN - Internal Medicine",
+   "description": "<div><ul><li><strong>Area of Interest:</strong> Nursing</li><li><strong>Sign On Bonus:</strong> $5,000</li><li><strong>FTE/Hours per pay period:</strong> 1.0</li><li><strong>Department:</strong> Internal Medicine- DQ</li><li><strong>Shift:</strong> Monday-Friday</li><li><strong>Job ID:</strong> 188118</li></ul></div><br /><strong>Overview</strong><p style=\"margin: 0px;\"><strong><span style=\"font-size: 12pt;\">UnityPoint Clinic</span></strong></p><p style=\"margin: 0px;\"><strong><span style=\"font-size: 12pt;\">CMA/LPN/RN - Internal Medicine</span></strong></p><p style=\"margin: 0px;\"><strong><span ",
+   "detail_url": "https://careers.unitypoint.org/job/52547991/lpn-lvn",
+   "demand_index": 0,
+   "time_to_close": 0,
+   "ats_id": "188118",
+   "is_active": true,
+   "deactivated_at": null,
+   "title_id": 368,
+   "title": "LPN / LVN",
+   "title_slug": "lpn-lvn",
+   "professional_category_id": 21,
+   "professional_category": "Nurses",
+   "professional_category_slug": "nurses",
+   "area_unit": "General Nursing",
+   "professional_role": "LPN / LVN",
+   "education": "Not Stated",
+   "employment_type": "Not Stated",
+   "listing_type": "Not Stated",
+   "shift": "Not Stated",
+   "shift_length": "Not Stated",
+   "contract_duration": "Not Stated",
+   "shift_start": "Not Stated",
+   "shift_end": "Not Stated",
+   "years_of_experience": "Not Stated",
+   "is_signing_bonus": false,
+   "remote_status": "",
+   "hiring_events": false,
+   "signing_bonus_amount": 0,
+   "is_crisis": false,
+   "salary_max": 0,
+   "salary_min": 0,
+   "pay_frequency": "Not Stated",
+   "raw_titles": [
+    "CMA/LPN/RN - Internal Medicine"
+   ],
+   "titles": [
+    "LPN / LVN"
+   ],
+   "professional_categories": [
+    "Nurses"
+   ],
+   "professional_roles": [
+    "LPN / LVN"
+   ],
+   "area_units": [
+    "General Nursing"
+   ],
+   "peer_group": [
+    "Not Stated"
+   ],
+   "experience_level": [
+    "Not Stated"
+   ],
+   "certificates": [
+    "Not Stated"
+   ],
+   "location_id": 245535,
+   "location_name": "DBQ Internal Medicine Clinic",
+   "location_short_name": "DBQ Internal Medicine Clinic",
+   "location_slug": "dbq-internal-medicine-clinic",
+   "location_size": "Not Stated",
+   "location_type": "Ambulatory",
+   "location_key": 184850,
+   "location_image": null,
+   "partner_id": 5235,
+   "location": {
+    "lat": "42.497654",
+    "lon": "-90.686412"
+   },
+   "address": "1515 Delhi St",
+   "is_client": true,
+   "displayable_job": true,
+   "is_quick_apply_enabled": true,
+   "is_quick_apply_direct_full_app_enabled": false,
+   "city": "Dubuque",
+   "state": "IA",
+   "county": "Dubuque",
+   "country": "United States",
+   "zip": "52001",
+   "market": "Not Stated",
+   "cbsa": "Dubuque, IA",
+   "cbsa_type": "metropolitan",
+   "employer_id": 5235,
+   "employer_name": "UnityPoint Health",
+   "employer_slug": "unitypoint-health",
+   "employer_key": 12056,
+   "cp_up_additional_address": "",
+   "cp_up_additional_city": "",
+   "cp_up_additional_location_id": null,
+   "cp_up_additional_postal_code": "",
+   "cp_up_additional_state": "",
+   "cp_up_job_id": "2026-188118",
+   "cp_up_main_category": "Nursing",
+   "cp_up_sub_category": "Clinics",
+   "title_suggest": [
+    "LPN / LVN",
+    "LPN / LVN"
+   ],
+   "title_suggest_output": "LPN / LVN",
+   "category_suggest": "Nurses",
+   "category_suggest_output": "Nurses",
+   "role_suggest": "LPN / LVN",
+   "role_suggest_output": "LPN / LVN",
+   "specialty_suggest": "General Nursing",
+   "specialty_suggest_output": "General Nursing",
+   "employer_suggest": "UnityPoint Health",
+   "employer_suggest_output": "UnityPoint Health",
+   "location_suggest": "DBQ Internal Medicine Clinic",
+   "location_suggest_output": "DBQ Internal Medicine Clinic",
+   "ats_integration_id": 5244,
+   "data": {
+    "originalObject": {
+     "portalUrl": "https://careers-unitypoint.icims.com/jobs/188118/job"
+    }
+   },
+   "is_applied": false,
+   "is_favorite": false,
+   "job_job_title": "LPN / LVN",
+   "original_description": "<div><ul><li><strong>Area of Interest:</strong> Nursing</li><li><strong>Sign On Bonus:</strong> $5,000</li><li><strong>FTE/Hours per pay period:</strong> 1.0</li><li><strong>Department:</strong> Inter",
+   "post_title": "LPN / LVN",
+   "distance": null,
+   "url_tracking_tag": "",
+   "pixel_tracking_tag": ""
+  }
+ ]
+}
