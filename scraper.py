@@ -14182,7 +14182,9 @@ async def run_successfactors(session) -> list[Job]:
 #  backup) since these fronts sit behind Cloudflare or Acquia. A site with
 #  mode "rss" is one feed, parsed with ElementTree. Bodies come from each
 #  row's job page JSON-LD (JobPosting) in the shared detail pass, when the
-#  page carries one.
+#  page carries one; a site's "body" regex is the fallback when it does not
+#  (Avature, PeopleAdmin), when the block does not parse (Rush's carries a
+#  trailing comma) or when its description is only the card teaser (CHNw).
 #
 #  Config keys (a card regex captures text with ONE group; tags are stripped):
 #    url        page template; "urls" = several templates crawled in turn
@@ -14203,6 +14205,9 @@ async def run_successfactors(session) -> list[Job]:
 #    date_fmts  strptime formats for "posted" (ISO dates always parse)
 #    platform   ats_platform label
 #    max_pages  per-template page cap (default HTML_LIST_MAX_PAGES)
+#    body       regex with ONE group on the job page (re.S | re.I); every
+#               match is tag-stripped and joined, then goes through
+#               _apply_body (200-char floor, beats the list's text only)
 # ══════════════════════════════════════════════════════════════════════════
 HTML_LIST_MAX_PAGES = int(os.getenv("HTML_LIST_MAX_PAGES", "120"))
 HTML_LIST_DESC_MAX_PER_RUN = int(os.getenv("HTML_LIST_DESC_MAX_PER_RUN", "800"))   # job-page JSON-LD
@@ -14242,7 +14247,11 @@ HTML_LIST_SITES: dict[str, dict] = {
     # Community Health Network (Indianapolis; Drupal/Acquia). 20 cards a
     # page, 26 pages (2026-10-04); the location-name field is the campus
     # (Community Hospital East/North/South, Anderson, Howard, Fairbanks).
+    # The job page's JSON-LD description is the 81-char card teaser; the
+    # body is the Drupal field--name-body block (2,727 chars on 2603617),
+    # which ends at the "Apply Today!" link field.
     "Community Health Network": {
+        "body": r'field--name-body[^>]*>(.*?)(?:<div class="field field--name-field-link|</div>\s*</div>)',
         "url": "https://www.ecommunity.com/careers/search?page={page0}",
         "card": r'<article class="job-teaser"',
         "title": r'<a href="(?P<url>/careers/jobs/[^"]+)">\s*<h3>(?P<title>.*?)</h3>',
@@ -14323,8 +14332,12 @@ HTML_LIST_SITES: dict[str, dict] = {
     # Kentucky board). The Job Category facet (field 985) has Healthcare
     # (12) and Nursing (17): those two searches are crawled, 30 rows a
     # page. Rows carry title, requisition, department code and deadline,
-    # no location; ESH departments are Eastern State Hospital.
+    # no location; ESH departments are Eastern State Hospital. The posting
+    # page has no JSON-LD; the body is the form_view Posting Details table
+    # (Job Summary, Salary Range, Work Location, licence rows as their own
+    # lines; 3,696 chars on 650761), cut before the questions tab.
     "UK HealthCare": {
+        "body": r"id='form_view'>(.*?)(?:<h2 class='tab'>(?:Posting Specific|Supplemental|Applicant Documents)|<div id=\"footer)",
         "urls": ["https://ukjobs.uky.edu/postings/search?query=&985%5B%5D=12&page={page}",
                  "https://ukjobs.uky.edu/postings/search?query=&985%5B%5D=17&page={page}"],
         "card": r"<div class='job-item job-item-posting'",
@@ -14347,8 +14360,13 @@ HTML_LIST_SITES: dict[str, dict] = {
     # upsert: public.ahrq_system_label maps the Boise and Kansas City AHRQ
     # systems to that one label with the state deciding ("reviewed
     # 2026-09-17: Boise, state guard decides"), and 7 KS/MO alias rows hang
-    # off it; ID rows are the Boise ones.
+    # off it; ID rows are the Boise ones. The job page has no JSON-LD; the
+    # body is the unlabelled article__content__view__field blocks under
+    # "Description & Requirements" and "What's In It For You" (the labelled
+    # ones are the department / type / id / city / state facts), joined
+    # (2,152 chars on 155259).
     "St. Luke's Health System (Boise)": {
+        "body": r'<div class="article__content__view__field ">\s*<div class="article__content__view__field__value">(.*?)</div>',
         "url": "https://careers.slhs.org/careersmarketplace/SearchJobs/?jobRecordsPerPage=6&jobOffset={offset}",
         "step": 6,
         "card": r'<article class="article article--result',
@@ -14368,9 +14386,14 @@ HTML_LIST_SITES: dict[str, dict] = {
     # Work Type: | Ref: 30399" description, <city>, pubDate. Oak Park and
     # Copley are read off the title; the rest is Rush University Medical
     # Center. Label "Rush" is public.hospitals.hospital_system for RUMC and
-    # Rush Oak Park (IL), so by_system covers both.
+    # Rush Oak Park (IL), so by_system covers both. The job page's JobPosting
+    # JSON-LD ends in a trailing comma (json.loads fails, strict or not);
+    # the body is the job-description-bg section's col-12 up to the Apply
+    # button (4,842 chars on 13072: location, unit, hospital, work type,
+    # shift, schedule lines, then summary, responsibilities, requirements).
     "Rush": {
         "mode": "rss",
+        "body": r'class="job-description-bg">.*?<div class="col-12">(.*?)<a[^>]+class="apply-btn"',
         "url": "https://rush.fxrecruiter.com/feeds/jobs-rss",
         "id": r"/(\d+)(?:\?|$)",
         "fields": {"state": r",\s*([A-Z]{2})\s*,"},
@@ -14555,10 +14578,28 @@ async def scrape_html_list(session, system: str, cfg: dict) -> list[Job]:
     return jobs
 
 
+def _html_list_body(html: str, rx: str) -> str:
+    """Every match of a site's "body" regex on its job page, tag-stripped
+    and joined with a blank line (St. Luke's keeps the description and the
+    benefits block in two fields); blank runs and trailing spaces trimmed."""
+    parts = [strip_html(m.group(1)).strip() for m in re.finditer(rx, html or "", re.S | re.I)]
+    body = "\n\n".join(p for p in parts if p)
+    return re.sub(r"[ \t\xa0]+\n", "\n", re.sub(r"\n{3,}", "\n\n", body)).strip()
+
+
 async def _html_list_detail(session, job) -> bool:
-    """Job page through curl_cffi -> JSON-LD JobPosting -> Job."""
-    posting = _jobposting_from_html(await _curl_html(job.url, HTML_LIST_IMPERSONATE))
-    return _apply_posting(job, _posting_with_requirements(posting)) if posting else False
+    """Job page through curl_cffi -> JSON-LD JobPosting -> Job; when the
+    page carries no JobPosting (St. Luke's, UK), the block does not parse
+    (Rush) or its description is the card teaser (CHNw: 81 chars, under the
+    200-char floor), the site's "body" regex through _apply_body. The
+    JobPosting's employment type / date / pay still land on the row before
+    the fallback runs (_apply_posting fills blanks whatever it returns)."""
+    html = await _curl_html(job.url, HTML_LIST_IMPERSONATE)
+    posting = _jobposting_from_html(html)
+    if posting and _apply_posting(job, _posting_with_requirements(posting)):
+        return True
+    rx = (HTML_LIST_SITES.get(job.hospital_system) or {}).get("body")
+    return _apply_body(job, _html_list_body(html, rx)) if rx else False
 
 
 async def run_html_list(session) -> list[Job]:

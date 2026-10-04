@@ -38,6 +38,11 @@ def test_every_html_list_site_is_complete():
                 + list((cfg.get("fields") or {}).values()) + [p for p, _ in cfg.get("hospital_map") or ()]:
             if rx:
                 re.compile(rx)
+        if cfg.get("body"):
+            assert re.compile(cfg["body"], re.S | re.I).groups == 1, system
+    # the four sites whose job page carries no usable JobPosting have a body regex
+    for system in ("Rush", "St. Luke's Health System (Boise)", "Community Health Network", "UK HealthCare"):
+        assert scraper.HTML_LIST_SITES[system].get("body"), system
     assert scraper.SYSTEM_LOCATION_DEFAULTS["st. luke's health system (boise)"] == ("Boise", "ID")
     assert scraper.HOSPITAL_SYSTEM_ALIASES["St. Luke's Health System (Boise)"] == "St. Luke's Health System"
     for system in ("UK HealthCare", "University of Michigan Health", "Rush", "Premier Health"):
@@ -151,6 +156,85 @@ def test_rush_rss_items():
     assert j.hospital_name == "Rush University Medical Center" and j.ats_platform == "FXRecruiter"
     assert jobs[2].hospital_name == "Rush Oak Park Hospital"
     assert scraper._parse_rss_list("<not xml", "Rush", _site("Rush")) == []
+
+
+# ── job-page bodies: the "body" regex fallback in _html_list_detail ──────
+# Rush, St. Luke's Boise, CHNw and UK carry no usable JobPosting JSON-LD
+# (reproduced 2026-10-04: description stayed "", "Shift: Day Job" or the
+# card teaser). Fixtures are trimmed copies of the live job pages.
+
+def _detail(monkeypatch, system, fixture, url, description="", job_type=""):
+    job = scraper.Job(title="T", hospital_system=system, hospital_name=system, city="", state=_site(system)["state"],
+                      location="", specialty="", job_type=job_type, url=url, job_id="1", posted_date="",
+                      description=description, ats_platform=_site(system)["platform"])
+    seen = []
+
+    async def fake_html(u, impersonate="chrome", timeout=25):
+        seen.append((u, impersonate))
+        return _r3(fixture)
+    monkeypatch.setattr(scraper, "_curl_html", fake_html)
+    ok = asyncio.run(scraper._html_list_detail(None, job))
+    assert seen == [(url, scraper.HTML_LIST_IMPERSONATE)]
+    return ok, job
+
+
+def test_rush_job_page_body_when_its_jsonld_does_not_parse(monkeypatch):
+    html = _r3("rush_job.html")
+    assert "application/ld+json" in html and scraper._jobposting_from_html(html) is None   # trailing comma
+    ok, job = _detail(monkeypatch, "Rush", "rush_job.html",
+                      "https://rush.fxrecruiter.com/jobs/details/united-states/il/chicago/work-type/medical-assistant-lisle/13072")
+    assert ok is True and len(job.description) > 4000
+    assert job.description.startswith("Job Description\n\nLocation: Chicago, Illinois")
+    assert "Hospital: Rush University Medical Center" in job.description
+    assert "Work Type: Part Time" in job.description and "legally protected characteristics." in job.description
+    assert "Apply" not in job.description[-40:] and "<" not in job.description
+
+
+def test_chnw_job_page_body_beats_the_teaser_jsonld(monkeypatch):
+    html = _r3("chnw_job.html")
+    posting = scraper._jobposting_from_html(html)
+    assert posting and len(posting["description"]) < 200          # the card teaser, under the floor
+    ok, job = _detail(monkeypatch, "Community Health Network", "chnw_job.html",
+                      "https://www.ecommunity.com/careers/jobs/patient-financial-advocate-2603617",
+                      description="Shift: Day Job")
+    assert ok is True and len(job.description) > 2500
+    assert job.description.startswith("Join Community\n\nCommunity Health Network was created by our neighbors")
+    assert job.description.endswith("Caring people apply here.")
+    assert job.job_type == "Full-time" and job.posted_date == "2026-07-21"   # still read off the JSON-LD
+
+
+def test_stlukes_boise_job_page_body_joins_the_unlabelled_fields(monkeypatch):
+    html = _r3("avature_job.html")
+    assert "ld+json" not in html
+    ok, job = _detail(monkeypatch, "St. Luke's Health System (Boise)", "avature_job.html",
+                      "https://careers.slhs.org/careersmarketplace/JobDetail/Flex-Clinical-Dietitian-Oncology/155259")
+    assert ok is True and len(job.description) > 2000
+    assert job.description.startswith("Our patients represent diverse backgrounds")
+    assert "Qualifications:" in job.description and "Licensed Dietitian" in job.description
+    assert "What's In It For You" not in job.description[:50]
+    assert job.description.endswith("intended to provide an overview to job seekers.")
+    # the labelled facts (department, type, id, city, state, category) stay out
+    assert not re.search(r"^(?:Flex|155259|Boise|ID)$", job.description, re.M)
+
+
+def test_uk_healthcare_posting_body_is_the_posting_details_table(monkeypatch):
+    html = _r3("uk_posting.html")
+    assert "ld+json" not in html
+    ok, job = _detail(monkeypatch, "UK HealthCare", "uk_posting.html", "https://ukjobs.uky.edu/postings/650761",
+                      description="x" * 400)                       # the 400-char card teaser
+    assert ok is True and len(job.description) > 3500
+    assert re.search(r"Job Summary\n+The Critical Care Advanced Practice Provider", job.description)   # <td><div> rows
+    assert "Salary Range\n$119,496-185,848/year" in job.description
+    assert "Work Location\nLexington, KY" in job.description
+    assert "Posting Specific Questions" not in job.description and "Bookmark" not in job.description
+
+
+def test_html_list_detail_without_a_body_regex_or_a_match_leaves_the_row(monkeypatch):
+    ok, job = _detail(monkeypatch, "WMCHealth", "uk_posting.html", "https://wmchealthjobs.org/job/x/")
+    assert ok is False and job.description == ""
+    ok, job = _detail(monkeypatch, "Rush", "uk_posting.html", "https://rush.fxrecruiter.com/jobs/details/x/1")
+    assert ok is False and job.description == ""
+    assert scraper._html_list_body("", _site("Rush")["body"]) == ""
 
 
 # ── crawl: paging, stop rule, no pages past a failure ────────────────────
