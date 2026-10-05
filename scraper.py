@@ -1467,7 +1467,10 @@ def derive_job_type(title, raw_job_type):
         return 'per_diem'
 
     # Temporary / Seasonal / Contract
-    TEMP_KW = ('temporary', 'temp', 'seasonal', 'interim')
+    # 2026-10-04 (push 8): "Contract" (1,114 active rows) and locum tenens
+    # postings are fixed-term work too. The SQL mirror of this function for
+    # stored rows is sql/67a_job_type_preserve.sql.
+    TEMP_KW = ('temporary', 'temp', 'seasonal', 'interim', 'contract', 'locum')
     if any(k in jt for k in TEMP_KW):
         return 'temporary'
     if 'temporary' in t or 'seasonal' in t:
@@ -2974,6 +2977,18 @@ def _oracle_posting_text(it: dict) -> tuple[str, str, str]:
     shift = _shift_words(str(it.get("JobShift") or ""))
     hours = it.get("WorkHours")
     days = str(it.get("WorkDays") or "").strip()
+    # 2026-10-04 (push 8, plan items 1 and 4): the requisition flex fields.
+    # FTE ("0.9 - 72 hr/pp (Full Time)" Lifepoint, "0.9" / "1" WellSpan) gives
+    # the weekly hours when WorkHours is empty; Position Type / Assignment
+    # Category ("Full Time", "Part Time 2 - Per Diem" Tenet) gives the job
+    # type when JobSchedule is empty, only when it names one ("Primary",
+    # Lifepoint's Position Type, does not).
+    flex = _oracle_flex(it)
+    if not hours:
+        hours = _fte_hours(flex.get("fte"))
+    if not sched:
+        sched = next((v for v in (flex.get("position type"), flex.get("assignment category"))
+                      if v and derive_job_type("", v) != "standard"), "")
     parts = []
     for k in ("ExternalDescriptionStr", "ExternalResponsibilitiesStr", "ExternalQualificationsStr"):
         v = strip_html(str(it.get(k) or "")).strip()
@@ -3001,6 +3016,30 @@ def _oracle_posting_text(it: dict) -> tuple[str, str, str]:
         parts.append("Benefits\n" + "\n".join(f"• {b}" for b in corp))
     start = str(it.get("ExternalPostedStartDate") or "")[:10]
     return "\n\n".join(parts), sched, (start if re.match(r"^\d{4}-\d{2}-\d{2}$", start) else "")
+
+
+def _oracle_flex(it: dict) -> dict:
+    """{prompt lowercased: value} of an Oracle requisition's
+    requisitionFlexFields ({"items": [{"Prompt", "Value"}...]} with
+    expand=all; a bare list is accepted too)."""
+    ff = it.get("requisitionFlexFields")
+    items = ff.get("items") if isinstance(ff, dict) else ff
+    out = {}
+    for x in items if isinstance(items, list) else []:
+        if isinstance(x, dict) and x.get("Prompt") and x.get("Value") not in (None, ""):
+            out.setdefault(str(x["Prompt"]).strip().lower(), str(x["Value"]).strip())
+    return out
+
+
+def _fte_hours(value):
+    """Weekly hours from an FTE value ("0.9", "1", "0.9 - 72 hr/pp (Full
+    Time)", "1.000000"): round(FTE x 40) for 0.1 <= FTE <= 1.0, else None
+    (0.001 / 0.0003 are the PRN placeholders)."""
+    m = re.match(r"^\s*(\d?\.\d+|\d)(?![\d])", str(value or ""))
+    if not m:
+        return None
+    f = float(m.group(1))
+    return int(round(f * 40)) if 0.1 <= f <= 1.0 else None
 
 
 def _corporate_benefits(corporate_html, body: str) -> list:
@@ -6187,7 +6226,96 @@ def _icims_apply_page(job, html: str) -> bool:
     if job.job_type != before and str(job.job_type).upper() not in _ICIMS_TYPES_KEPT:
         job.job_type = before
     _fill_state(job, *_posting_address(posting))
+    # 2026-10-04 (push 8, plan items 1, 3, 4): the page's header fields.
+    hdr = _icims_header(html)
+    if not (job.job_type or "").strip():
+        job.job_type = next((v for v in (hdr.get("position type"), hdr.get("job type"), hdr.get("employment type"))
+                             if v and derive_job_type("", v) != "standard"), job.job_type)
+    if ok:
+        job.description = _with_line_in_window(job.description, _icims_header_lines(hdr))
     return ok
+
+
+# iCIMS job page header (2026-10-04, push 8): every portal renders the
+# requisition's own fields as <dt>/<dd> pairs in one
+# <dl class="iCIMS_JobHeaderGroup"> (Prime: Shift "Days", Position Type "Full
+# Time"; Huntsville: Shift "3", Position Type "Regular Full-Time"; Legacy: Avg
+# Hours Per Week "36", FTE "0.90", Shift "Night"; Kettering: FTE "80 Hours
+# Per Pay Period/FTE 1.0", Shift "First Shift"; Select Medical: Experience
+# (Years) "0"). The JSON-LD body carries none of them. A search page (an
+# expired posting redirects to one) lists other jobs' cards with the same
+# markup, so a page with job cards gives nothing.
+_ICIMS_HDR_GROUP_RX = re.compile(r'<dl[^>]*class="[^"]*iCIMS_JobHeaderGroup[^"]*"[^>]*>(.*?)</dl>', re.I | re.S)
+_ICIMS_HDR_PAIR_RX = re.compile(r"<dt[^>]*>(.*?)</dt>\s*<dd[^>]*>(.*?)</dd>", re.I | re.S)
+_ICIMS_SHIFT_WORDS = (("Night", r"nights?|noc|overnights?|third|3rd|3"), ("Day", r"days?|first|1st|1"),
+                      ("Evening", r"evenings?|second|2nd|2|swing|pm"), ("Rotating", r"rotating|rotation|rotates?"),
+                      ("Variable", r"variable|varies|various|varied"), ("Weekend", r"weekends?"))
+
+
+def _icims_header(html: str) -> dict:
+    """{label lowercased: value} of an iCIMS job page's header fields."""
+    if not html or "iCIMS_JobCardItem" in html:
+        return {}
+    m = _ICIMS_HDR_GROUP_RX.search(html)
+    out = {}
+    for dt, dd in _ICIMS_HDR_PAIR_RX.findall(m.group(1) if m else ""):
+        k = re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", dt))).strip().lower()
+        v = re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", dd))).strip()
+        if k and v:
+            out.setdefault(k, v)
+    return out
+
+
+def _icims_shift_word(value: str) -> str:
+    """"Days" / "First Shift" / "3" / "Night" -> "Day" / "Day" / "Night" /
+    "Night"; "" for a value that names no time of day ("8 Hour", "Days and
+    Nights Available")."""
+    v = re.sub(r"\s*shift\s*$", "", (value or "").strip(), flags=re.I)
+    for word, rx in _ICIMS_SHIFT_WORDS:
+        if re.fullmatch(r"(?:" + rx + r")(?:\s*\(.*\))?", v, re.I):
+            return word
+    return ""
+
+
+def _icims_header_lines(hdr: dict) -> str:
+    """The header's shift, weekly hours and experience as lines the facts
+    extractors read: "Schedule: Day shift · 36 hours per week" and
+    "Experience: 3+ years experience"."""
+    if not hdr:
+        return ""
+    word = _icims_shift_word(hdr.get("shift") or hdr.get("shift schedule") or "")
+    hours = None
+    for k in ("avg hours per week", "hours per week", "weekly hours", "scheduled weekly hours", "standard hours"):
+        m = re.match(r"^\s*(\d{1,2}(?:\.\d+)?)\b(?!\s*(?:-|–|to)\s*\d)", hdr.get(k) or "")
+        if m and 4 <= float(m.group(1)) <= 84:
+            hours = float(m.group(1))
+            break
+    if hours is None and hdr.get("budgeted hours per pay period"):
+        m = re.match(r"^\s*(\d{2,3}(?:\.\d+)?)\b", hdr["budgeted hours per pay period"])
+        hours = float(m.group(1)) / 2 if m and 8 <= float(m.group(1)) <= 168 else None
+    if hours is None and hdr.get("fte"):
+        hours = _fte_hours(hdr["fte"]) or _hours_other_forms(hdr["fte"])
+    bits = [f"{word} shift" if word else "",
+            (f"{int(hours) if hours == int(hours) else hours} hours per week" if hours else "")]
+    lines = [_schedule_line(*bits)]
+    m = re.match(r"^\s*(\d{1,2})\s*\+?\s*(?:years?)?\s*$", hdr.get("experience (years)") or "")
+    if m and 1 <= int(m.group(1)) <= 15:
+        lines.append(f"Experience: {int(m.group(1))}+ years experience")
+    return "\n".join(x for x in lines if x)
+
+
+def _with_line_in_window(desc: str, line: str) -> str:
+    """desc with line added at the last paragraph break that keeps it inside
+    the 12,000 characters the facts extractors read (as on Oracle / Phenom);
+    unchanged when line is empty or already there."""
+    if not line or not desc or line in desc:
+        return desc
+    parts = desc.split("\n\n")
+    i = len(parts)
+    while i > 0 and len("\n\n".join(parts[:i] + [line])) > _FACTS_WINDOW:
+        i -= 1
+    parts.insert(i, line)
+    return "\n\n".join(parts)
 
 
 async def _icims_detail(session, job) -> bool:
@@ -17248,6 +17376,12 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         # Job-type classification — uses raw job_type (which may be noise)
         # + title as fallback signal. Result lands in derived_job_type so
         # the read side can ignore the original column without losing info.
+        # 2026-10-04 (push 8, plan item 1): a night whose job_type is blank
+        # must not replace the stored bucket with a title-only 'standard'.
+        # PostgREST bulk upserts need the same keys on every row, so the key
+        # cannot be left out of those rows (and a new row needs a value):
+        # the enrichment trigger keeps old.derived_job_type whenever it keeps
+        # old.job_type (sql/67a_job_type_preserve.sql).
         djt = derive_job_type(r.get("title"), r.get("job_type"))
         r["derived_job_type"] = djt
         jt_buckets[djt] = jt_buckets.get(djt, 0) + 1
@@ -17956,12 +18090,30 @@ _FACT_EDU = [
 # second / third shift, and a p.m.-to-p.m. span are shifts too. A bare
 # "evenings" is no longer one: it was always an availability clause ("shifts
 # during non-business hours such as evenings, weekends and holidays").
-_SHIFT_LABEL = r"\bshift\s*:\s*(?:\d\s*[-–]\s*)?"
+# 2026-10-04 (push 8, plan item 3): the forms the stored bodies use and the
+# rules above missed, each measured on a 3,569-body sample:
+#   * plural and hyphenated shift words: "Schedule: Nights shift · 1900-0700"
+#     (HealthcareSource / Oracle / Phenom schedule line built by _shift_words),
+#     "Schedule: Day-shift, part-time" (Ascension), "night-shift opportunity";
+#   * "Work Schedule: Days" (Infor CAMC / Vandalia), "Schedule: Day Job",
+#     "Work Schedule: Night Job" (Phenom / Infor UNC);
+#   * 24-hour and seconds time spans: "Three 12-hour shifts, 0700-1930",
+#     "Shift: Shift 1/8:00:00 AM to 5:00:00 PM" (Lee Health);
+#   * a time span is read only with whole-hour or quarter-hour minutes and
+#     sane start/end hours, so a year range ("2025-2026") is never a shift.
+_SHIFT_LABEL = r"\b(?:shift|work\s+schedule)\s*:\s*(?:\d\s*[-–]\s*)?"
+_SPAN_T = r"\d{1,2}(?::\d{2}){0,2}"
+_MIL_Q = r"(?:00|15|30|45)"
+_MIL_TO = r"\s*(?:-|–|—|to)\s*"
 _FACT_SHIFT = [
-    ("Nights",   r"\bnight\s*shift\b|\b7p\s*-?\s*7a\b|\bovernight(?:s|\s+shift)?\b(?!\s+(?:travel|stays?|trips?))|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*nights?\b|" + _SHIFT_LABEL + r"nights?\b|\b(?<!\btheir )(?<!\byour )(?<!\bthe )(?<!\bher )(?<!\bhis )(?<!\bmy )(?<!\ba )(?<!\bone )(?:3rd|third) shift\b|\bnights?\s*\(?\s*\d{1,2}(?::\d{2})?\s*[ap]\.?m|\b\d{1,2}(?::\d{2})?\s*p\.?m?\.?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*a\.?m\b"),
-    ("Days",     r"\bday\s*shift\b|\b7a\s*-?\s*7p\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*days?\b|" + _SHIFT_LABEL + r"days?\b|\b(?<!\btheir )(?<!\byour )(?<!\bthe )(?<!\bher )(?<!\bhis )(?<!\bmy )(?<!\ba )(?<!\bone )(?:1st|first) shift\b|\bdays?\s*\(?\s*\d{1,2}(?::\d{2})?\s*[ap]\.?m|\b\d{1,2}(?::\d{2})?\s*a\.?m?\.?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*p\.?m\b"),
-    ("Evenings", r"\bevening\s*shift\b|\bswing shift\b|\b(?<!\btheir )(?<!\byour )(?<!\bthe )(?<!\bher )(?<!\bhis )(?<!\bmy )(?<!\ba )(?<!\bone )(?:2nd|second) shift\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*evenings?\b|" + _SHIFT_LABEL + r"evenings?\b|\bevenings?\s*\(?\s*\d{1,2}(?::\d{2})?\s*p\.?m|\b[2-5](?::[0-5]\d)?\s*p\.?m?\.?\s*(?:-|–|—|to)\s*(?:9|1[01])(?::[0-5]\d)?\s*p\.?m\b"),
-    ("Rotating", r"\brotating (?:shift|schedule)|shift rotation|" + _SHIFT_LABEL + r"rotating\b"),
+    ("Nights",   r"\bnights?[\s-]*shift\b|\b7p\s*-?\s*7a\b|\bovernight(?:s|\s+shift)?\b(?!\s+(?:travel|stays?|trips?))|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*nights?\b|" + _SHIFT_LABEL + r"nights?\b|\b(?<!\btheir )(?<!\byour )(?<!\bthe )(?<!\bher )(?<!\bhis )(?<!\bmy )(?<!\ba )(?<!\bone )(?:3rd|third) shift\b|\bnights?\s*\(?\s*" + _SPAN_T + r"\s*[ap]\.?m|\b" + _SPAN_T + r"\s*p\.?m?\.?" + _MIL_TO + _SPAN_T + r"\s*a\.?m\b"
+                 r"|(?:\bschedule\s*:\s*|^\s*)night\s+job\b|(?<![\d:$.,/])(?:1[89]|2[0-3])" + _MIL_Q + _MIL_TO + r"0[4-9]" + _MIL_Q + r"(?![\d:])"),
+    ("Days",     r"\bdays?[\s-]*shift\b|\b7a\s*-?\s*7p\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*days?\b|" + _SHIFT_LABEL + r"days?\b|\b(?<!\btheir )(?<!\byour )(?<!\bthe )(?<!\bher )(?<!\bhis )(?<!\bmy )(?<!\ba )(?<!\bone )(?:1st|first) shift\b|\bdays?\s*\(?\s*" + _SPAN_T + r"\s*[ap]\.?m|\b" + _SPAN_T + r"\s*a\.?m?\.?" + _MIL_TO + _SPAN_T + r"\s*p\.?m\b"
+                 r"|(?:\bschedule\s*:\s*|^\s*)day\s+job\b|(?<![\d:$.,/])(?:0[4-9]|1[01])" + _MIL_Q + _MIL_TO + r"(?:1[2-9]|20)" + _MIL_Q + r"(?![\d:])"),
+    ("Evenings", r"\bevenings?[\s-]*shift\b|\bswing shift\b|\b(?<!\btheir )(?<!\byour )(?<!\bthe )(?<!\bher )(?<!\bhis )(?<!\bmy )(?<!\ba )(?<!\bone )(?:2nd|second) shift\b|(?:(?:full|part)[\s-]*time|relief|\bprn|per diem)\s*[-–,]?\s*evenings?\b|" + _SHIFT_LABEL + r"evenings?\b|\bevenings?\s*\(?\s*" + _SPAN_T + r"\s*p\.?m|\b[2-5](?::[0-5]\d){0,2}\s*p\.?m?\.?" + _MIL_TO + r"(?:9|1[01])(?::[0-5]\d){0,2}\s*p\.?m\b"
+                 r"|(?:\bschedule\s*:\s*|^\s*)evening\s+job\b|(?<![\d:$.,/])1[3-6]" + _MIL_Q + _MIL_TO + r"(?:2[1-3]|00)" + _MIL_Q + r"(?![\d:])"),
+    ("Rotating", r"\brotating (?:shift|schedule)|shift rotation|" + _SHIFT_LABEL + r"rotat(?:ing|ion)\b"),
+    ("Variable", r"\bvariable[\s-]*shift\b|" + _SHIFT_LABEL + r"(?:variable|varies|various|varied)\b"),
     ("Weekends", r"\bweekend(?:s| option| program| coverage| shifts?| rotation)\b|every other weekend"),
     ("3x12s",    r"\b3\s*x\s*12|three 12s|\b12[- ]hour shifts"),
     ("PRN",      r"\bPRN\b|per diem"),
@@ -17984,9 +18136,35 @@ _TITLE_SHIFT = [
     ("Rotating", re.compile(r"\brotating\b", re.I)),
     ("Weekends", re.compile(r"\bweekends?\b", re.I)),
 ]
-_SHIFT_TIER = {"Nights": 0, "Days": 0, "Evenings": 0, "Rotating": 0, "3x12s": 1, "Weekends": 2, "PRN": 3}
-_SHIFT_FIELD_RXS = [(lab, re.compile(r"\b(?:work\s+|job\s+)?shift\s*:\s*(?:\d\s*[-–]\s*)?" + w + r"\b", re.I))
-                    for lab, w in (("Nights", r"nights?"), ("Days", r"days?"), ("Evenings", r"evenings?"), ("Rotating", r"rotating"))]
+_SHIFT_TIER = {"Nights": 0, "Days": 0, "Evenings": 0, "Rotating": 0, "Variable": 1, "3x12s": 1, "Weekends": 2, "PRN": 3}
+# A labelled shift field (the ATS's own value). 2026-10-04 (push 8): the label
+# may stand alone on its line with the value on the next one and no colon
+# ("Work Shift\nDay (United States of America)" on Wellstar / Prisma / Cape
+# Fear, "Shift\nDays" Cleveland Clinic, "Work Shift\nWorkday Day (...)"
+# Jefferson); the value may be an ordinal ("Shift: First Shift (Days - ...)"
+# Stormont Vail, "Shift: 1st (Days)" Broward, "Shift:\nThird Shift" UofL) or
+# a shift number ("Shift: Shift 1" Broward / Lee, "Shift: Shift 3/7:00 PM to
+# 7:30 AM" Lee; BayCare's own legend: "Shift 1 = Days, 2 = Evenings, 3 =
+# Nights"), "Rotation", "Variable" / "Varies" / "Various", or "Weekends".
+# Without a colon the value must close its line or be followed by "(", a
+# dash, a slash, a comma or "shift", so a heading over prose never counts.
+# A line that opens "Schedule:" and names "<word> shift" within its first 60
+# characters is a labelled field too: the adapters build it from the ATS's
+# shift field (Oracle JobShift, Phenom shift, HealthcareSource shift, the
+# iCIMS header) and tenants write it the same way ("Schedule: Day Shift |
+# Full-time" Ascension). It outranks prose such as "aides are eligible for
+# evening shift, night shift ... differentials" (Blythedale).
+_SHIFT_FIELD_VALUES = (("Nights", r"nights?|overnights?|third|3rd", "nights?"), ("Days", r"days?|first|1st", "days?"),
+                       ("Evenings", r"evenings?|second|2nd|swing", "evenings?"), ("Rotating", r"rotating|rotation", "rotating"),
+                       ("Variable", r"variable|varies|various|varied", "variable"), ("Weekends", r"weekends?", "weekends?"))
+_SHIFT_FIELD_RXS = [(lab, re.compile(r"\b(?:work\s+|job\s+)?shift\s*:\s*(?:shift\s*)?(?:workday\s+)?(?:\d\s*[-–]\s*)?(?:" + w + r")\b"
+                                     r"|(?:^|(?<=\n))[ \t]*(?:work\s+|job\s+)?shift[ \t]*\n\s*(?:workday\s+)?(?:\d\s*[-–]\s*)?(?:" + w + r")\b"
+                                     r"(?=[ \t]*(?:$|\(|[-–/,|]|shift\b))"
+                                     r"|\b(?:work\s+|job\s+)?shift\s*:\s*(?:shift\s*)?#?\s*" + str(n)
+                                     + r"(?:st|nd|rd)?(?![\d.:a-z]|\s*(?:=|x\b|×|[ap]\.?m\b|-?\s*h(?:ou)?rs?\b|[-–]\s*[a-z]))"
+                                     r"|(?:^|(?<=\n))[ \t]*schedule[ \t]*:[^\n]{0,60}?\b(?:" + sw + r")[\s-]*shift\b",
+                                     re.I | re.M))
+                    for (lab, w, sw), n in zip(_SHIFT_FIELD_VALUES, (3, 1, 2, "(?!)", "(?!)", "(?!)"))]
 
 
 def title_shift(title) -> list:
@@ -18073,7 +18251,50 @@ _REQ_WORD_RX = re.compile(r"requir|\bmust\b|mandatory", re.I)
 # and relocation amounts, and a short benefits list, all from the posting text.
 _DAY = r"(mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:r|rs|rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)"
 _FACT_DAYS_RX = re.compile(_DAY + r"\s*(?:-|–|—|to|through|thru)\s*" + _DAY + r"\b", re.I)
-_FACT_HOURS_RX = re.compile(r"\b(\d{1,2}(?:\.\d)?)\s*(?:hours?|hrs?)\s*(?:per|/|a|each)\s*(?:week|wk)\b|\b(\d{1,2})\s*(?:hours?|hrs?)/(?:week|wk)\b", re.I)
+# 2026-10-04 (push 8): "40.00 hours per week" (two decimals) read as "00 hours".
+_FACT_HOURS_RX = re.compile(r"(?<![\d.])(\d{1,2}(?:\.\d+)?)\s*(?:hours?|hrs?)\s*(?:per|/|a|each)\s*(?:week|wk)\b|\b(\d{1,2})\s*(?:hours?|hrs?)/(?:week|wk)\b", re.I)
+# 2026-10-04 (push 8, plan item 4): the other ways a posting states weekly
+# hours, tried in this order when no "N hours per week" is found (each
+# measured on the stored bodies):
+#   label and value, on one line or across a line break: "Scheduled Weekly
+#     Hours:\n36" (the Workday template: Geisinger, Sanford, OhioHealth, and
+#     the Workday-backed Phenom tenants SSM, Bon Secours Mercy), "Hours Per
+#     Week: 36.00" (Northern Light), "Avg Hours Per Week: 36", "Hours: 24.00
+#     per week" (Middlesex);
+#   per pay period, halved: "Full Time - 0.9 FTE (72 hours per pay period)"
+#     (Owensboro), "Hours per pay period: 80" (Enloe), "72 hrs per pay"
+#     (CAMC), "48 Hours Biweekly" (Aspirus), "64 hours/pp", "80 hours every two
+#     weeks"; never a threshold ("32+ hours per pay period", "less than 40
+#     hours per pay period") or a range ("72 to 80 hours bi-weekly");
+#   "Full Time 72 Hours" / "Full time, 36 hours" (Bayhealth, AdventHealth, St.
+#     Luke's): a full-time figure over 60 (part-time over 39) is a pay period;
+#   FTE x 40: "0.9 FTE", "FTE: 1.00", "FTE:\n0.67" (Cone Health), 0.1 to 1.0
+#     only, never on a per-diem posting (0.0003 / 0.10 PRN placeholders) or
+#     after a threshold word ("0.6 FTE or higher", "at least 0.50 FTE");
+#   daily hours x days: "Scheduled Daily Hours: 7.5" with "Work Days: MON-FRI".
+_HRS_NUM = r"(\d{1,2}(?:\.\d+)?)(?![\d.]|\s*(?:-|–|to)\s*\d)"
+_HOURS_LABEL_RXS = [
+    re.compile(r"\b(?:(?:standard|scheduled|regular|expected|budgeted|average|avg)\s+)?"
+               r"(?:weekly\s+(?:scheduled\s+|standard\s+|work(?:ing)?\s+)?hours|hours\s*(?:per|a|/)\s*week|weekly\s+hours)"
+               r"[ \t]*(?:[:|][ \t]*\n?|\n)\s*" + _HRS_NUM, re.I),
+    re.compile(r"\bhours\s*:\s*" + r"(\d{1,2}(?:\.\d+)?)\s*(?:per|/|a)\s*week\b", re.I),
+]
+_HOURS_THRESHOLD_RX = re.compile(r"(?:less than|more than|greater than|at least|minimum(?: of)?|min\.?|up to|over|under|above|below|between|"
+                                 r"than|exceed\w*|eligib\w*|based on|\+)\s*$", re.I)
+_HOURS_PP_RXS = [
+    re.compile(r"(?<![\d.$+])(\d{2,3}(?:\.\d+)?)\s*(?:hours?|hrs?)\s*"
+               r"(?:(?:per|every|each|a|in\s+a|/)\s*(?:pay\s*period|pp\b|pay\b|two[\s-]*weeks|2[\s-]*weeks|fortnight)|bi-?weekly\b)", re.I),
+    re.compile(r"\bhours\s+(?:per|each|every)\s+pay\s*period\s*[:|]?\s*(\d{2,3}(?:\.\d+)?)(?![\d.])", re.I),
+]
+_HOURS_TYPE_RX = re.compile(r"\b(full|part)[\s-]*time\s*[-,:;/]?\s*(\d{2}(?:\.\d+)?)\s*(?:hours?|hrs?)\b"
+                            r"(?![ \t]*(?:per|/|a|each|every|in)\s*(?:week|wk|day|shift|pay|two|2|pp)|[ \t]*(?:shifts?|days?|nights?|bi-?weekly)\b|[- ]hour)", re.I)
+_HOURS_FTE_RXS = [
+    re.compile(r"(?<![\d.])(0?\.\d{1,6}|1(?:\.0+)?)\s*FTE\b(?!\s*(?:or\s+(?:higher|greater|more|above)|and\s+(?:above|higher)|%))", re.I),
+    re.compile(r"\bFTE\s*(?:[:|]\s*\n?|\n)\s*(0?\.\d{1,6}|1(?:\.0+)?)(?![\d.%])(?!\s*(?:or\s+(?:higher|greater|more|above)|and\s+(?:above|higher)))", re.I),
+]
+_HOURS_DAILY_RX = re.compile(r"\bdaily\s+hours\s*[:|]?\s*\n?\s*(\d{1,2}(?:\.\d+)?)", re.I)
+_WORK_DAYS_RX = re.compile(r"\bwork\s*days?\s*[:|]?\s*\n?\s*" + _DAY + r"\s*(?:-|–|—|to|through|thru)\s*" + _DAY + r"\b", re.I)
+_DAY_INDEX = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
 _FACT_SHIFTLEN_RX = re.compile(r"\b([2-6])\s*[x×]\s*(8|10|12)\b|\b(two|three|four|five|2|3|4|5)\s+(8|10|12)[- ]hour", re.I)
 _NUM_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5}
 # The amount that sits right before the keyword wins ("$10,000 sign-on bonus
@@ -18216,7 +18437,52 @@ def _hours_for_type(t, job_type):
         score = _type_score(_line_type(t, m.start()), job_type)
         if best is None or score > best[0]:
             best = (score, h)
-    return best[1] if best else None
+    return best[1] if best else _hours_other_forms(t, job_type)
+
+
+def _hours_threshold_before(t, i) -> bool:
+    return bool(_HOURS_THRESHOLD_RX.search(t[max(0, i - 24):i]))
+
+
+def _hours_other_forms(t, job_type=None):
+    """Weekly hours from the forms _FACT_HOURS_RX does not read (see the
+    note at _HRS_NUM), first form that gives a figure in 4..84 wins."""
+    for rx in _HOURS_LABEL_RXS:
+        for m in rx.finditer(t):
+            h = float(m.group(1))
+            if 4 <= h <= 84:
+                return h
+    for rx in _HOURS_PP_RXS:
+        for m in rx.finditer(t):
+            if _hours_threshold_before(t, m.start(1)) or re.search(r"\d\s*(?:-|–|to)\s*$", t[max(0, m.start(1) - 8):m.start(1)]):
+                continue
+            h = float(m.group(1)) / 2
+            if 4 <= h <= 84:
+                return h
+    for m in _HOURS_TYPE_RX.finditer(t):
+        if _hours_threshold_before(t, m.start(2)):
+            continue
+        n, full = float(m.group(2)), m.group(1).lower() == "full"
+        lo, hi = (30, 60) if full else (16, 39)
+        h = n if lo <= n <= hi else (n / 2 if hi < n <= 2 * hi and lo <= n / 2 else None)
+        if h is not None:
+            return h
+    if job_type != "per_diem":
+        for rx in _HOURS_FTE_RXS:
+            for m in rx.finditer(t):
+                if _hours_threshold_before(t, m.start(1)):
+                    continue
+                f = float(m.group(1))
+                if 0.1 <= f <= 1.0:
+                    return float(round(f * 40))
+    m = _HOURS_DAILY_RX.search(t)
+    d = _WORK_DAYS_RX.search(t) if m else None
+    if m and d:
+        a, b = _DAY_INDEX[d.group(1)[:3].lower()], _DAY_INDEX[d.group(2)[:3].lower()]
+        h = float(m.group(1)) * ((b - a) % 7 + 1)
+        if 4 <= h <= 84:
+            return h
+    return None
 
 
 def extract_schedule(text: str, shift_labels, job_type=None) -> tuple:
@@ -18236,7 +18502,7 @@ def extract_schedule(text: str, shift_labels, job_type=None) -> tuple:
     if hours is not None and not pieces:
         pieces.append(f"{int(hours) if hours == int(hours) else hours} hrs/wk")
     for lab in (shift_labels or []):
-        if lab in ("Days", "Nights", "Evenings", "Rotating") and lab not in pieces:
+        if lab in ("Days", "Nights", "Evenings", "Rotating", "Variable") and lab not in pieces:
             pieces.append(lab)
             break
     summary = " · ".join(pieces)[:48] if pieces else None
@@ -18555,7 +18821,7 @@ _CERT_GATE_RX = re.compile(r"BLS|BCLS|ACLS|PALS|NRP|TNCC|CCRN|CNOR|\bCEN\b|CPR|A
 _EDU_GATE_RX = re.compile(r"BSN|ADN|ASN|MSN|DNP|diploma|doctora|PhD|PharmD|DPT|DScPT|PsyD|AuD|master|bachelor|baccalaureate|associate|"
                           r"MHA|MPH|MBA|MSW|\bB\.?[SA]\b|\bA\.?A\.?S|GED|high school|\bH\.?S\b", re.I)
 _SHIFT_GATE_RX = re.compile(r"night|\bday|evening|swing|shift|overnight|\b7[ap]|\bprn\b|per diem|weekend|rotat|12[- ]hour|"
-                            r"3\s*x\s*12|three 12|\d\s*[ap]\.?m", re.I)
+                            r"3\s*x\s*12|three 12|\d\s*[ap]\.?m|variab|varies|various|varied|\d{4}\s*(?:-|–|—|to)\s*\d{4}", re.I)
 
 
 def _shift_hits(s: str):
@@ -18572,6 +18838,10 @@ def _shift_hits(s: str):
                 continue
             out.append(label)
             break
+    # 2026-10-04 (push 8): "Rotating shifts, 0700-1930 and 1900-0730" names a
+    # rotation; the two spans in it are its halves, not two shifts.
+    if "Rotating" in out and "Days" in out and "Nights" in out:
+        out = ["Rotating"] + [x for x in out if x not in ("Rotating", "Days", "Nights")]
     return out
 
 
