@@ -1164,7 +1164,7 @@ _KNOWN_FACTS_V: dict = {}         # same keys -> posting_facts "v" of the stored
 # The stored facts are re-derived in bulk by the one-time backfill
 # (tools/facts_backfill.py, owner-approved); the refresh share then keeps
 # them current.
-FACTS_VERSION       = 3            # 3: push 3 requirements rules (2026-09-24)
+FACTS_VERSION       = 4            # 3: push 3 requirements rules (2026-09-24); 4: push 8 shift/hours/requirements/benefits rules (2026-10-05)
 OLD_BODY_CAP        = (7990, 8000)
 DETAIL_REFRESH_PCT  = int(os.getenv("DETAIL_REFRESH_PCT", "5"))
 DETAIL_REFRESH_DAYS = int(os.getenv("DETAIL_REFRESH_DAYS", "30"))
@@ -18248,8 +18248,8 @@ _FACT_EXP_RX = re.compile(
     r"y(?:ea)?rs?(?:['’]|s)?\s*(?:of\s+)?"
     r"(?:(?!hire\b|hiring|employ|start|obtain|month|age\b|old\b|degree|diploma|program|school|college)[a-z /,&\-]){0,40}?"
     r"(experience|exp\b|clinical|nursing|\bRN\b|acute care|bedside|practice|professional|progressive|leadership|management|supervisory|related|relevant|post[- ]graduate)", re.I)
-_EXP_NUM_WORDS_RX = re.compile(r"\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|twelve|eighteen|twenty-four|thirty-six)\b(?:\s*\(\s*\d{1,2}\s*\))?", re.I)
-_EXP_PAREN_NUM_RX = re.compile(r"\(\s*(\d{1,2})\s*\)")
+_EXP_NUM_WORDS_RX = re.compile(r"\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|twelve|eighteen|twenty-four|thirty-six)\b(?:\s*\(\s*\d{1,2}\s*\+?\s*\))?", re.I)
+_EXP_PAREN_NUM_RX = re.compile(r"\(\s*(\d{1,2})\s*(\+?)\s*\)")
 _EXP_MONTHS_RX = re.compile(r"\b(12|24|36|48|60)\s*months?\b", re.I)
 
 
@@ -18259,7 +18259,7 @@ def _exp_text(s: str) -> str:
     months ... experience" -> "1 year ..." (whole years only)."""
     words = dict(_FACT_EXP_WORDS, zero=0, twelve=12, eighteen=18, **{"twenty-four": 24, "thirty-six": 36})
     s = _EXP_NUM_WORDS_RX.sub(lambda m: str(words[m.group(1).lower()]), s)
-    s = _EXP_PAREN_NUM_RX.sub(r"\1", s)
+    s = _EXP_PAREN_NUM_RX.sub(r"\1\2", s)
     return _EXP_MONTHS_RX.sub(lambda m: f"{int(m.group(1)) // 12} years", s)
 
 
@@ -18498,6 +18498,14 @@ def _hours_for_type(t, job_type):
         except (TypeError, ValueError):
             continue
         if not (4 <= h <= 84):
+            continue
+        # 2026-10-05 (push8 integration): a benefits definition is not the
+        # position's hours (Monadnock 35437993 "This is a 24 hour per week
+        # position" / "Part time employees are defined as working 22.5 to
+        # 35.99 hours per week": the two-decimal figure now reads, and its
+        # part-time line outranked the position's own 24). Never across a
+        # label (Wellstar "Sign-On Bonus Eligible***Hours: Full-Time 40 hrs a week").
+        if re.search(r"\b(?:defined as|considered|eligib\w*|qualif(?:y|ies))\b(?:[^.\n:*]|\.\d){0,30}$", t[max(0, m.start() - 45):m.start()], re.I):
             continue
         score = _type_score(_line_type(t, m.start()), job_type)
         if best is None or score > best[0]:
@@ -19767,6 +19775,14 @@ def _rq_heading(line: str):
             return _rq_heading(bare + ":")
     if m and value and len(value) <= 120 and re.match(r"[A-Z]", value) and not _rq_is_req_label(label, True):
         inner = _rq_heading(value)
+        # 2026-10-05 (push8 integration): the Oracle table row "Registered
+        # Nurse (RN) licensure in the state of practice: Required" / "Master's
+        # Degree: Preferred" (Adventist Health 8098720) is an item with its
+        # flag, not a bare "Required" heading: a label that names a licence,
+        # a certification, a degree or experience is read as the item.
+        if (inner and inner[0] == "mode" and not inner[2]
+                and (_rq_types(label) or _RQ_EXP_WORD_RX.search(label))):
+            return None
         if inner and inner[0] != "stop" and (not inner[2] or _RQ_STOP_HEAD_RX.search(label)):
             return inner
     # 2026-09-24 (reqfix): physical / working-conditions / schedule labels
@@ -20359,6 +20375,14 @@ def extract_requirements(text) -> dict:
             if (not _RQ_BOILER_RX.search(s) and not _RQ_PAY_END_RX.search(s)
                     and not re.search(r"\bequal (?:employment )?opportunity\b|\bis an? (?:EEO|equal)\b", s, re.I)
                     and _rq_req_ahead(rows, ix)):
+                continue
+            # 2026-10-05 (push8 integration): a note about the list under a
+            # licence / certification heading (Mercy 28999687 "Certification(s):"
+            # / "NOTE: one or more of the certifications below may be required
+            # ..." / "ACLS ...") is skipped and the block goes on; it used to end
+            # the block and silence every credential under it.
+            if (kind in ("lic", "cert", "lic+cert") and re.match(r"\*?\s*(?:please\s+)?note\s*:", s, re.I)
+                    and (_RQ_KEEP_RX.search(s) or _rq_types(s)) and _rq_req_ahead(rows, ix)):
                 continue
             kind, mode, last_stop, stem = None, None, "pay" if _RQ_PAY_END_RX.search(s) else "about", ""
             continue
