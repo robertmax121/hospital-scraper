@@ -391,9 +391,15 @@ def test_pay_reread_kind(monkeypatch):
     rows.append({"hospital_system": sysname, "job_id": "nokey", "desc_len": 4000, "fv": scraper.FACTS_VERSION})
     try:
         scraper.set_known_bodies(rows)
-        kinds = [scraper._known_kind(sysname, _job(job_id=str(i), hospital_system=sysname)) for i in range(70)]
-        assert set(kinds) <= {"pay", "known"}
-        assert 70 // scraper.PAY_REREAD_DAYS - 6 <= kinds.count("pay") <= 70 // scraper.PAY_REREAD_DAYS + 8
+        # over one PAY_REREAD_DAYS cycle every unpriced stored body is due exactly once
+        due = {str(i): 0 for i in range(70)}
+        for day in range(scraper.PAY_REREAD_DAYS):
+            monkeypatch.setattr(scraper, "_run_day", lambda d=day: 700000 + d)
+            kinds = {i: scraper._known_kind(sysname, _job(job_id=i, hospital_system=sysname)) for i in due}
+            assert set(kinds.values()) <= {"pay", "known"}
+            for i, k in kinds.items():
+                due[i] += k == "pay"
+        assert set(due.values()) == {1}
         assert scraper._known_kind(sysname, _job(job_id="priced", hospital_system=sysname)) == "known"
         assert scraper._known_kind("Some Workday System", _job(job_id="w1")) == "known"
         assert scraper._known_kind(sysname, _job(job_id="nokey", hospital_system=sysname)) == "known"
