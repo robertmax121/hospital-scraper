@@ -101,7 +101,8 @@ def test_every_stated_item_and_nothing_else(name):
 def test_posting_facts_carries_the_four_fields_and_keeps_the_old_keys():
     f = scraper.extract_posting_facts(body("workday_sutter_R-129343.json"), "Part time")
     rq = f["requirements"]
-    assert set(rq) == {"qualifications", "certifications", "licensure", "education"}
+    # ("experience" since 2026-10-05, push8/requirements)
+    assert set(rq) == {"qualifications", "certifications", "licensure", "education", "experience"}
     assert rq["licensure"] == []                 # the posting states none: empty, not invented
     # backward compatibility: the chips the site renders today are still filled
     assert ["BLS", False] in f["certs"]
@@ -156,7 +157,7 @@ def test_nothing_stated_nothing_stored():
             "Maintains a safe environment.")
     got = scraper.extract_requirements(text)
     assert got == {"qualifications": {"required": [], "preferred": []},
-                   "certifications": [], "licensure": [], "education": []}
+                   "certifications": [], "licensure": [], "education": [], "experience": []}
     assert scraper.extract_requirements("") == got
 
 

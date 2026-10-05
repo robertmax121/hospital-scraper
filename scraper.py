@@ -19000,7 +19000,7 @@ def _rq_window(s: str, span, width: int = 300) -> str:
     if a:
         sp = s.find(" ", a)
         a = sp + 1 if 0 <= sp < span[0] else a
-    return s[a:a + width]
+    return _rq_cut(s[a:], width)           # (push8: on a word break, never mid-word)
 
 
 _RQ_CERT_RX = re.compile(
@@ -19128,9 +19128,61 @@ _RQ_WORKCOND_RX = re.compile(
 _RQ_ABBR_RX = re.compile(r"(?:\b(?:St|Dr|Mr|Mrs|Ms|Jr|Sr|No|Nos|vs|etc|Inc|Co|Corp|Ltd|approx|Ft|Mt|U\.S|e\.g|i\.e)|\b[A-Z])\.$")
 
 
+# 2026-10-05 (push8/requirements): zero-width characters and the byte-order
+# mark carry no text; a no-break space is a space. A line made only of them
+# is empty (31 stored items were a bare U+200B), and an item keeps none.
+_RQ_ZW_RX = re.compile("[​‌‍⁠﻿­]")
+_RQ_NBSP_RX = re.compile("[   ]")
+
+
 def _rq_clean(line: str) -> str:
-    s = re.sub(r"^[\s•\-\*·–—>●○■□▪◦‣⁃∙➢➤►▸✓✔]+", "", line).strip()
+    s = _RQ_ZW_RX.sub("", line)
+    s = re.sub(r"^[\s•\-\*·–—>●○■□▪◦‣⁃∙➢➤►▸✓✔]+", "", s).strip()
     return re.sub(r"\*\*$", "", s).strip()
+
+
+# An item is stored at most 300 characters long, cut at the last word break
+# (12,792 stored items stopped mid-word: "... Food and Drug Administ"), with
+# no dangling joiner or punctuation left at the end.
+_RQ_ITEM_MAX = 300
+
+
+def _rq_cut(s: str, width: int = _RQ_ITEM_MAX) -> str:
+    if len(s) <= width:
+        return s
+    head = s[:width + 1]
+    k = max(head.rfind(" "), head.rfind("\n"))
+    s = s[:k] if k >= width * 0.6 else s[:width]
+    s = re.sub(r"(?:\s+(?:and|or|of|the|a|an|to|in|for|with|by|as|at|on|from|including|such as|e\.g\.?))+$", "", s.rstrip(), flags=re.I)
+    return s.rstrip(" ,;:-–—(/&")
+
+
+# Geisinger's credential table writes its issuer cell as "Default Issuing
+# Body" (often twice, glued): "Basic Life Support Certification - Default
+# Issuing BodyDefault Issuing Body".
+_RQ_DEFAULT_ISSUER_RX = re.compile(r"\s*[-–]?\s*(?:Default Issuing Body)+", re.I)
+
+
+# The enumerator of a list item ("1. ", "b) ", "(iv) ", "E) ) "), also
+# before a years figure ("3. 1+ year of experience in Nursing").
+_RQ_ITEM_ENUM_RX = re.compile(
+    r"^(?:\(?(?:[a-hA-H]|\d{1,2}|[ivx]{1,4})[.)](?:\s*\))?\s+)+"
+    r"(?=[A-Za-z(]|\d{1,2}\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*)?(?:years?|yrs?|months?)\b)")
+
+
+def _rq_item_text(s: str) -> str:
+    """An item as it is stored: no zero-width characters, no-break spaces as
+    spaces, no list enumerator ("1. ", "a) ", "(iv) "), no placeholder issuer,
+    one space between words, at most 300 characters cut on a word."""
+    s = _RQ_NBSP_RX.sub(" ", _RQ_ZW_RX.sub("", s))
+    s = _RQ_DEFAULT_ISSUER_RX.sub("", s)
+    s = re.sub(r"[ \t]{2,}", " ", s).strip()
+    s = _RQ_ITEM_ENUM_RX.sub("", s).strip()
+    return _rq_cut(s.rstrip(" ;,")).strip()
+
+
+def _rq_dupkey(s: str) -> str:
+    return re.sub(r"\s+", " ", s.lower()).rstrip(" .;,:-–()")
 
 
 def _rq_heading(line: str):
@@ -19530,10 +19582,11 @@ def _rq_req_ahead(rows, i: int) -> bool:
 
 
 def extract_requirements(text) -> dict:
-    """The four requirement fields (see the block comment above); every key
-    is always present, empty when the posting does not state it."""
+    """The requirement fields (see the block comment above; "experience"
+    since 2026-10-05); every key is always present, empty when the posting
+    does not state it."""
     out = {"qualifications": {"required": [], "preferred": []},
-           "certifications": [], "licensure": [], "education": []}
+           "certifications": [], "licensure": [], "education": [], "experience": []}
     if not text:
         return out
     # 2026-09-24 (reqfix): entities are decoded first (UW Medicine
@@ -19545,10 +19598,12 @@ def extract_requirements(text) -> dict:
     # (whether the body is one line is decided on the stored text, before
     # _rq_unglue adds breaks of its own)
     t = _rq_unwall(_rq_unglue(t), t.count("\n") < max(4, len(t) // 800))
-    seen = {k: set() for k in ("q", "certifications", "licensure", "education")}
+    seen = {k: set() for k in ("q", "certifications", "licensure", "education", "experience")}
 
     def add(field, s, pref):
-        s = s.strip().rstrip(" ;,")[:300]
+        # 2026-10-05 (push8/requirements): enumerators, zero-width characters,
+        # the 300-character cut on a word (_rq_item_text).
+        s = _rq_item_text(s)
         if len(s) < 3:
             return
         # (push3 integration) a heading label left over as an item is not one:
@@ -19561,9 +19616,33 @@ def extract_requirements(text) -> dict:
                 s.endswith(":") or "/" in lab or len(lab.split()) == 1
                 or all(w[:1].isupper() or w.lower() in _RQ_SMALL_WORDS or not w[:1].isalpha() for w in lab.split())):
             return
-        key = s.lower()
+        key = _rq_dupkey(s)
         if key in seen[field]:
             return
+        # 2026-10-05 (push8/requirements): an item that repeats the start of
+        # one already stored is the same requirement cut shorter (a 300-
+        # character window, a clause of the full line: "Current licensure with
+        # the Virginia State Board of Pharmacy" beside "... Board of Pharmacy
+        # required or obtained within 90 days"). Both 20+ characters: the
+        # shorter is skipped, and a longer one replaces the shorter in place.
+        if len(key) >= 20:
+            if field == "q":
+                slots = [(lst, i) for lst in (out["qualifications"]["required"], out["qualifications"]["preferred"])
+                         for i in range(len(lst))]
+                text_of = lambda lst, i: lst[i]
+            else:
+                slots = [(out[field], i) for i in range(len(out[field]))]
+                text_of = lambda lst, i: lst[i][0]
+            for lst, i in slots:
+                old = _rq_dupkey(text_of(lst, i))
+                if len(old) < 20:
+                    continue
+                if old.startswith(key):
+                    return
+                if key.startswith(old):
+                    lst[i] = s if field == "q" else [s, pref]
+                    seen[field].add(key)
+                    return
         if field == "q":
             lst = out["qualifications"]["preferred" if pref else "required"]
             if len(lst) < (12 if pref else 20):

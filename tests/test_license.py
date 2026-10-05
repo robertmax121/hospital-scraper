@@ -107,7 +107,9 @@ def test_not_licensure(line):
 
 def test_four_field_format_is_unchanged():
     got = scraper.extract_requirements("Qualifications:\nCurrent Texas RN license required\nBLS required\nBSN preferred")
-    assert set(got) == {"qualifications", "certifications", "licensure", "education"}
+    # (2026-10-05, push8/requirements: "experience" joined the four, same [line, preferred] shape)
+    assert set(got) == {"qualifications", "certifications", "licensure", "education", "experience"}
     assert set(got["qualifications"]) == {"required", "preferred"}
     assert got["licensure"] == [["Current Texas RN license required", False]]
-    assert all(isinstance(x, list) and len(x) == 2 for f in ("certifications", "licensure", "education") for x in got[f])
+    assert all(isinstance(x, list) and len(x) == 2
+               for f in ("certifications", "licensure", "education", "experience") for x in got[f])
