@@ -508,7 +508,11 @@ AYA_DESC_BUDGET        = _DescBudget(AYA_DESC_MAX_PER_RUN)
 DETAIL_FETCH            = os.getenv("DETAIL_FETCH", "1") == "1"
 DETAIL_CONCURRENCY      = int(os.getenv("DETAIL_CONCURRENCY", "4"))
 ORACLE_DESC_MAX_PER_RUN = int(os.getenv("ORACLE_DESC_MAX_PER_RUN", "10000"))  # 2026-09-22: 3,000 -> 8,000; 09-24: 10,000
-TB_DESC_MAX_PER_RUN     = int(os.getenv("TB_DESC_MAX_PER_RUN", "2500"))
+# 2026-10-05 (push 8, plan item 9): TalentBrew 2,500 -> 6,000. The shared 2,500
+# never reached UnitedHealth (1,589 rows with no body) or Hackensack (1,233),
+# fresh rows the pass should have read; a tenant still takes at most
+# DETAIL_TENANT_MAX (1,500) a night.
+TB_DESC_MAX_PER_RUN     = int(os.getenv("TB_DESC_MAX_PER_RUN", "6000"))
 PHENOM_DESC_MAX_PER_RUN = int(os.getenv("PHENOM_DESC_MAX_PER_RUN", "10000"))  # push 3: 4,000 -> 10,000
 PHENOM_DESC_TENANT_MAX  = int(os.getenv("PHENOM_DESC_TENANT_MAX", "2000"))
 DETAIL_TENANT_SHARE     = int(os.getenv("DETAIL_TENANT_SHARE", "4"))   # unregistered budgets: one tenant takes at most budget/SHARE
@@ -592,7 +596,7 @@ OCEANS_DESC_MAX_PER_RUN       = int(os.getenv("OCEANS_DESC_MAX_PER_RUN", "500"))
 APPLICANTPRO_DESC_MAX_PER_RUN = int(os.getenv("APPLICANTPRO_DESC_MAX_PER_RUN", "400"))  # <org>.applicantpro.com JSON-LD
 CSOD_DESC_MAX_PER_RUN         = int(os.getenv("CSOD_DESC_MAX_PER_RUN", "400"))        # CSOD jobDetails API (career-site token)
 HCTS_DESC_MAX_PER_RUN         = int(os.getenv("HCTS_DESC_MAX_PER_RUN", "300"))        # hctsportals.com job page
-PEOPLESOFT_DESC_MAX_PER_RUN   = int(os.getenv("PEOPLESOFT_DESC_MAX_PER_RUN", "400"))  # PeopleSoft HRS_APP_JBPST_FL posting page (2026-10-04)
+PEOPLESOFT_DESC_MAX_PER_RUN   = int(os.getenv("PEOPLESOFT_DESC_MAX_PER_RUN", "2000"))  # PeopleSoft HRS_APP_JBPST_FL posting page (2026-10-04; 400 -> 2,000 push 8: NYC H+H 1,706 rows without a body)
 SF_DESC_MAX_PER_RUN           = int(os.getenv("SF_DESC_MAX_PER_RUN", "600"))          # SuccessFactors career?career_ns=job_listing page (2026-10-04)
 KRONOS_DESC_MAX_PER_RUN       = int(os.getenv("KRONOS_DESC_MAX_PER_RUN", "300"))      # UKG Ready job-requisitions/{id}
 CHS_DESC_BUDGET               = _DescBudget(CHS_DESC_MAX_PER_RUN)
@@ -1124,7 +1128,13 @@ def load_cms_lookup() -> int:
 KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor", "PreloadState",
                         "Custom", "SmartRecruiters", "ADP", "Paycor", "Paylocity", "Workable",
                         "iCIMS", "UKG", "NeoGov", "CareerPlug",   # push 3 teaser passes
-                        "WPJobBoard", "Concentra", "OceansJobBoard", "ApplicantPro", "CSOD", "HCTS", "Kronos")   # push 3 title-only boards
+                        "WPJobBoard", "Concentra", "OceansJobBoard", "ApplicantPro", "CSOD", "HCTS", "Kronos",   # push 3 title-only boards
+                        # 2026-10-05 (push 8, plan item 9): the cov3 / push 5 passes store under these.
+                        # Without them every pass re-fetched the rows it filled the night before:
+                        # PeopleSoft's 400 went to the 377 bodies it read on 10-04, not to NYC H+H's
+                        # 1,706 rows with none.
+                        "PeopleSoft", "SuccessFactors", "Talemetry", "Eightfold",
+                        "Avature", "Drupal", "FXRecruiter", "PeopleAdmin", "WordPress")
 KNOWN_BODY_PAGE      = 1000
 KNOWN_BODY_MAX_ROWS  = int(os.getenv("KNOWN_BODY_MAX_ROWS", "400000"))
 KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
@@ -8707,21 +8717,24 @@ ADP_ORGS = {
     # to the system name instead of storing a city as a facility.
     "FastMed Urgent Care":
         ("05f4cb80-7271-43f3-b774-34a057858613", "19000101_000001", "NC"),
-    # Legacy cids from scraper1.xlsx (system names were never learned because
-    # the old endpoint never answered). Kept so the rebuilt adapter can say
-    # in the log which of them are live boards; rename once a run shows them.
-    "ADP Health System 1":  "152f13f3-9efa-4e16-9a69-bb7500136904",
-    "ADP Health System 2":  "542f7b59-1156-4a17-a729-f8cd9337acf6",
-    "ADP Health System 3":  "af93ba9c-e8c7-4a6f-ade3-711614110405",
-    "ADP Health System 4":  "77e754a7-66ab-427f-ae54-31edee4e9bf6",
-    "ADP Health System 5":  "86be0242-2e9b-4a21-9dac-6ef6b31fbbee",
-    "ADP Health System 6":  "171c7aca-96cb-44e7-95db-7545554c14e8",
-    "ADP Health System 7":  "c155faa0-8c71-47b0-bbaa-2b7939324014",
-    "ADP Health System 8":  "a074e043-a14e-4f2d-8cf7-bee3e0a7ac61",
-    "ADP Health System 9":  "1a214979-2739-4245-a1d1-38dc8531018f",
-    "ADP Health System 10": "5ffc5741-7db3-4aa8-a16a-e19abed9677e",
-    "ADP Health System 11": "58af5ddf-316e-4ac8-bc2f-471750cda3c7",
-    "ADP Health System 12": "bb661c48-7edc-400c-adfb-40f8f7743374",
+    # Legacy cids from scraper1.xlsx, written as "ADP Health System 1".."12"
+    # until 2026-10-05 (push 8): each is now labelled with the employer its
+    # postings name (evidence: active rows' hospital_name, city and body, read
+    # 2026-10-05; the stored rows are relabelled by sql/67c, which must run
+    # right after this push so the deploy run's upsert matches them). The
+    # state is the default for a row whose location carries none.
+    "Regional West Health Services":       ("152f13f3-9efa-4e16-9a69-bb7500136904", "19000101_000001", "NE"),  # Scottsbluff; 73/82 bodies name Regional West
+    "Jefferson Regional Medical Center":   ("542f7b59-1156-4a17-a729-f8cd9337acf6", "19000101_000001", "AR"),  # Pine Bluff; 91/92
+    "Unity Health":                        ("af93ba9c-e8c7-4a6f-ade3-711614110405", "19000101_000001", "AR"),  # Searcy, Jacksonville, Newport; 261/264
+    "Valley Health Systems (WV)":          ("77e754a7-66ab-427f-ae54-31edee4e9bf6", "19000101_000001", "WV"),  # Huntington health centers (FQHC); 12/36
+    "Columbus Regional Healthcare System": ("86be0242-2e9b-4a21-9dac-6ef6b31fbbee", "19000101_000001", "NC"),  # Whiteville; 52/54
+    "Missouri Delta Medical Center":       ("171c7aca-96cb-44e7-95db-7545554c14e8", "19000101_000001", "MO"),  # Sikeston
+    "South Central Regional Medical Center": ("c155faa0-8c71-47b0-bbaa-2b7939324014", "19000101_000001", "MS"),  # Laurel + Magee General; 96/120
+    "Touchette Regional Hospital":         ("a074e043-a14e-4f2d-8cf7-bee3e0a7ac61", "19000101_000001", "IL"),  # Centreville / East St. Louis; 16/32
+    "KPC Health":                          ("1a214979-2739-4245-a1d1-38dc8531018f", "19000101_000001", "CA"),  # Hemet, Menifee, Victor Valley Global Medical Centers
+    "Larkin Community Hospital":           ("5ffc5741-7db3-4aa8-a16a-e19abed9677e", "19000101_000001", "FL"),  # South Miami, Palm Springs, Behavioral
+    "Union General Health System":         ("58af5ddf-316e-4ac8-bc2f-471750cda3c7", "19000101_000001", "GA"),  # Blairsville + Chatuge Regional, Hiawassee
+    "Hudson Regional Health":              ("bb661c48-7edc-400c-adfb-40f8f7743374", "19000101_000001", "NJ"),  # Bayonne, Hoboken, Secaucus
     # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
     "Bear Valley Community Hospital": ("623d6b00-0ac6-45cb-9f80-96cd30ac65ea", "19000101_000001", "CA", "Bear Valley Community Hospital"),   # 7, Big Bear Lake CA
     "Catalina Island Medical Center": ("000c35c7-aac0-47bb-b34d-e0366b957c9d", "19000101_000001", "CA", "Catalina Island Medical Center"),   # 18, Avalon CA
@@ -11072,9 +11085,10 @@ KRONOS_ORGS = {
     "Astria Health":    ("prd01-hcm01.prd", "6110092"),
     "ArnotHealth":      ("prd01-hcm01.npr", "6012355"),
     "Ridgeview":        ("prd01-hcm01.prd", "6104389"),
-    # ── Added from scraper1.xlsx expansion ──
-    "Kronos Hospital 2": ("prd01-hcm01.prd", "6059921"),
-    "Kronos Hospital 3": ("prd01-hcm01.prd", "6142380"),
+    # ── Added from scraper1.xlsx expansion; labelled 2026-10-05 (push 8, was
+    # "Kronos Hospital 2" / "3"; stored rows relabelled by sql/67c) ──
+    "Northern Regional Hospital": ("prd01-hcm01.prd", "6059921", "NC"),   # Mount Airy; 30/33 bodies name it
+    "Pikeville Medical Center":   ("prd01-hcm01.prd", "6142380", "KY"),   # Pikeville; bodies say "PMC"
     # 2026-09-10 (S-scraper-2): contract client. magruderhospital.com/about-us/
     # careers links prd01-hcm01.npr.mykronos.com/ta/6070232.careers, i.e. UKG
     # Ready (this adapter), not UKG Dimensions; the optional third element is
@@ -12433,12 +12447,13 @@ PAYCOM_ORGS = {
     "Hemphill County Hospital":          "BA0F97E1F0BBEA0363815A42D822FDF2",   # 20
     # 2026-09-24 Texas configs.
     "Texas Institute for Surgery":       "6613B1554FEB2852B28AB89172680E60",   # 8, Dallas
-    # ── Added from scraper1.xlsx expansion ──
-    "Paycom Hospital 2": "4863CB61AD1B2555F37E9E5884626947",
-    "Paycom Hospital 3": "C48961799EBD231096CE8423D325C34C",
-    "Paycom Hospital 4": "0FD7E535C5AC57A6144B389ACAA1998B",
-    "Paycom Hospital 5": "8236C138F02B1587E10CAE245C2E6EE6",
-    "Paycom Hospital 6": "BA896DB60A5046DD23CC67AB5801923F",
+    # ── Added from scraper1.xlsx expansion; labelled 2026-10-05 (push 8, was
+    # "Paycom Hospital 2".."6"; stored rows relabelled by sql/67c) ──
+    "Onslow Memorial Hospital":      "4863CB61AD1B2555F37E9E5884626947",   # Jacksonville NC; "Onslow" bodies
+    "Duncan Regional Hospital":      "C48961799EBD231096CE8423D325C34C",   # Duncan OK (+ Jefferson County Hospital, Waurika)
+    "Oneida Health":                 "0FD7E535C5AC57A6144B389ACAA1998B",   # Oneida NY; 98/122
+    "Anderson Hospital":             "8236C138F02B1587E10CAE245C2E6EE6",   # Maryville IL (+ Community Hospital of Staunton)
+    "Cuyuna Regional Medical Center": "BA896DB60A5046DD23CC67AB5801923F",  # Crosby MN; 51/54
     # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
     "Gateways Hospital and Mental Health Center": "0E4AC8A6FD7D2375CD64614217F0D1D9",   # 25, Los Angeles CA
     "Mayers Memorial Hospital": "95C2AB5FD27B9847E71410D7DBC9CD20",   # 14, Fall River Mills CA
@@ -12454,6 +12469,13 @@ PAYCOM_ORGS = {
 # state takes this instead of the adapter's TX default.
 PAYCOM_DEFAULT_STATE = {
     "Memorial Health System": "OH",   # 2026-10-04 cov3
+    # 2026-10-05 (push 8): the five relabelled scraper1.xlsx boards. Onslow's
+    # physician postings carry no location and were stored as TX.
+    "Onslow Memorial Hospital": "NC",
+    "Duncan Regional Hospital": "OK",
+    "Oneida Health": "NY",
+    "Anderson Hospital": "IL",
+    "Cuyuna Regional Medical Center": "MN",
     "Gateways Hospital and Mental Health Center": "CA",
     "Gibson Community Hospital": "IL",
     "LifeStream Behavioral Center": "FL",
@@ -12629,8 +12651,10 @@ PAYCOR_ORGS = {
     # 2026-09-10 (Z-texas-acute-D): townsenmemorial.com/careers links this
     # clientId ("Click To See Our Career Opportunities").
     "Townsen Memorial Hospital": "8a7883d090b87b970190e27961ce11c4",
-    # ── Added from scraper1.xlsx expansion ──
-    "Paycor Hospital 2": "8a7883d07725ca8701773c07f64d08fa",
+    # ── Added from scraper1.xlsx expansion; labelled 2026-10-05 (push 8, was
+    # "Paycor Hospital 2"; 301/333 bodies say "WE ARE INSIGHT": Insight
+    # Hospital and Medical Center Chicago, Coldwater MI, Trumbull OH, Flint) ──
+    "Insight Health": "8a7883d07725ca8701773c07f64d08fa",
 }
 
 _PAYCOR_HOME = "https://recruitingbypaycor.com/career/CareerHome.action"
@@ -17185,6 +17209,42 @@ def retry_failed_hospital_upsert() -> int:
     return sent
 
 
+# ── first_seen (2026-10-05, push 8) ─────────────────────────────────────────
+# hospital_jobs.first_seen is the night a posting was first stored. The site
+# uses it as datePosted when the employer gives no posted_date. The upsert
+# sends this run's start on every row; on an insert that is the value, and on
+# a conflict the BEFORE UPDATE trigger trg_keep_first_seen (sql/67b) keeps the
+# stored one, so it never moves after the first night. The column only exists
+# once 67b is applied, and PostgREST rejects a whole batch that names an
+# unknown column, so the key is sent only after a read-only probe has seen the
+# column; a probe that fails for any reason leaves it out for this run (the
+# column default fills a new row then).
+_HJ_FIRST_SEEN: dict = {}
+
+
+def _hospital_jobs_has_first_seen(sb_url: str, sb_key: str) -> bool:
+    """True when hospital_jobs has a first_seen column (one read-only
+    PostgREST select per process, cached when the answer is definite)."""
+    if "ok" in _HJ_FIRST_SEEN:
+        return _HJ_FIRST_SEEN["ok"]
+    import urllib.request as _urlreq, urllib.error as _urlerr
+    u = f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=first_seen&limit=1"
+    rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+    try:
+        with _urlreq.urlopen(rq, timeout=30) as resp:
+            resp.read()
+        _HJ_FIRST_SEEN["ok"] = True
+    except _urlerr.HTTPError as e:
+        if e.code == 400:            # 42703 / PGRST: no such column (67b not applied)
+            _HJ_FIRST_SEEN["ok"] = False
+        logger.info(f"Hospital upsert: first_seen not sent this run (probe HTTP {e.code})")
+        return False
+    except Exception as e:
+        logger.info(f"Hospital upsert: first_seen not sent this run (probe failed: {e})")
+        return False
+    return _HJ_FIRST_SEEN["ok"]
+
+
 # ── Hospital upsert + deactivation pass (added 2026-05-12) ─────────────────
 # Mirrors _upsert_travel_jobs_to_supabase. The hospital pipeline previously
 # had no deactivation step, so when a hospital filled or removed a posting it
@@ -17234,9 +17294,14 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # resident_intern, standard (= unsignaled hospital staff).
     alias_hits = 0
     jt_buckets = {}
+    send_first_seen = _hospital_jobs_has_first_seen(sb_url, sb_key)
     for r in rows:
         r["scraped_at"] = run_started_iso
         r["is_active"]  = True
+        if send_first_seen:
+            r["first_seen"] = run_started_iso   # kept on conflict by trg_keep_first_seen
+        else:
+            r.pop("first_seen", None)
         # QA guardrails: repair any known-bad apply-URL shape, then set the
         # verified flag that ranks working links first on the board.
         r["url"] = _sanitize_apply_url(r.get("url", ""))
