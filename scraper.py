@@ -18030,13 +18030,37 @@ def _experience_from(s: str):
         if re.search(r"\b(?:within|after|last|past|every|per|for the|additional)\s*$", x[max(0, m.start() - 14):m.start()], re.I):
             continue
         lo = int(m.group(1))
+        hi = m.group(2)
+        # 2026-10-05 (push8, plan item 6): "0-1 years" and "less than one
+        # year" state an entry-level role: "Under 1 year". Another figure
+        # after "less than" / "under" / "up to" is a ceiling, no minimum
+        # ("less than one year" used to read as "1+ years").
+        if re.search(r"\b(?:less than|fewer than|under|up to|no more than)\s*$", x[max(0, m.start() - 16):m.start()], re.I):
+            if lo == 1 and not hi:
+                return "Under 1 year", x, m
+            continue
+        if lo == 0 and hi == "1":
+            return "Under 1 year", x, m
         if not (0 < lo <= 15):
             continue
-        hi = m.group(2)
         if hi and not (lo < int(hi) <= 20):
             hi = None
         return (f"{lo}-{hi} years" if hi else f"{lo}+ years"), x, m
+    # (push8) the label form "Experience: 0-1 years" / "Experience Required: 2 years"
+    m = _EXP_LABEL_RX.search(x)
+    if m:
+        lo, hi = int(m.group(1)), m.group(2)
+        if lo == 0 and hi == "1":
+            return "Under 1 year", x, m
+        if 0 < lo <= 15:
+            hi = hi if hi and lo < int(hi) <= 20 else None
+            return (f"{lo}-{hi} years" if hi else f"{lo}+ years"), x, m
     return None
+
+
+_EXP_LABEL_RX = re.compile(
+    r"\bexperience(?:\s+(?:required|preferred|level))?\s*[:\-–]\s*(?:minimum(?: of)?\s*|at least\s*)?(\d{1,2})\s*\+?\s*"
+    r"(?:(?:-|–|to)\s*(\d{1,2})\s*)?\+?\s*y(?:ea)?rs?\b", re.I)
 
 
 # Required / preferred markers (2026-09-24): "highly recommended" (Kimble:
@@ -18063,7 +18087,14 @@ _RELO_RXS = [
     re.compile(r"relocation(?:\s+(?:bonus|assistance|package|allowance))?([^$\n.]{0,60}?)\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?\b", re.I),
 ]
 _BENEFIT_ITEMS = [
-    ("Medical, dental and vision", r"\b(?:medical|health)\b[^.]{0,40}\bdental\b|\bdental\b[^.]{0,30}\bvision\b"),
+    # 2026-10-05 (push8, plan item 7): up to 80 characters between medical
+    # and dental (Geisinger "We offer healthcare benefits ... including
+    # vision, dental"), never a clinic's service list ("primary care,
+    # behavioral health and dental services").
+    ("Medical, dental and vision", r"\b(?:medical|health)\b[^.]{0,40}\bdental\b"
+                                   r"|\b(?:medical|health(?:care)?)\b[^.]{0,80}\bdental\b(?!\s+(?:services?|clinics?|offices?|practices?|patients?|"
+                                   r"hygien\w*|assistants?|providers?|procedures?|care\b|health center|school|students?))"
+                                   r"|\bdental\b[^.]{0,30}\bvision\b"),
     ("Benefits from day one",      r"benefits?[^.]{0,20}(?:from|starting|on|beginning)\s+day\s+one|day[- ]one benefits|benefits? start(?:ing)? (?:on )?(?:your )?first day"),
     ("401(k) with match",          r"401\s?\(?k\)?[^.]{0,50}match|matching 401"),
     ("401(k)",                     r"401\s?\(?k\)?"),
@@ -18224,7 +18255,23 @@ def extract_benefits(text: str) -> list:
             out.append(label)
         if len(out) == 8:
             break
+    # 2026-10-05 (push8, plan item 7): a posting that names its benefits only
+    # in general ("Comprehensive benefits package", Corewell on every posting;
+    # "competitive benefits", "total rewards") gets one label pointing at the
+    # posting, when no specific label fired. Never "not eligible for benefits".
+    if not out:
+        for m in _BENEFIT_GENERIC_RX.finditer(t):
+            if not _BENEFIT_GENERIC_NEG_RX.search(t[max(0, m.start() - 50):m.start()]):
+                out.append("Benefits package (see posting)")
+                break
     return out
+
+
+_BENEFIT_GENERIC_RX = re.compile(
+    r"\b(?:comprehensive|competitive|excellent|generous|full)\s+"
+    r"(?:[\w-]+,?\s+(?:and|&)\s+)?(?:[\w-]+\s+)?benefits?\b(?!\s+(?:administration|coordinator|specialist|analyst|department|team|eligibility verification))"
+    r"|\bbenefits? packages?\b|\bbenefit offerings?\b|\btotal rewards\b", re.I)
+_BENEFIT_GENERIC_NEG_RX = re.compile(r"\b(?:not|no|non|without|ineligible|isn't|aren't|does not|do not)\b[^.;\n]{0,40}$", re.I)
 
 
 # 2026-09-22 (Charlie Health lesson): the closed vocabulary caught five of a
@@ -18663,7 +18710,7 @@ def extract_posting_facts(text, job_type=None, title=None):
             or out["schedule"] or out["hours"] or out["signon"] or out["signon_offered"]
             or out["relocation"] or out["benefits"] or out["benefit_lines"] or note
             or rq["qualifications"]["required"] or rq["qualifications"]["preferred"]
-            or rq["certifications"] or rq["licensure"] or rq["education"]):
+            or rq["certifications"] or rq["licensure"] or rq["education"] or rq["experience"]):
         return None
     return out
 
@@ -18715,6 +18762,17 @@ _RQ_WORD = (r"(?:minimum|basic|required|preferred|desired|additional|job|positio
             r"credentials?|knowledge|skills?|abilit(?:y|ies)|expectations|ksas?|training|professional|clinical|work|"
             r"background|competenc(?:y|ies))")
 _RQ_HEAD_RX = re.compile(r"^" + _RQ_WORD + r"(?:[\s/&,]+" + _RQ_WORD + r")*$", re.I)
+# 2026-10-05 (push8, plan item 5): a heading made only of licence /
+# certification / registration / clearance / listing words, in any "(s)"
+# form ("Licensure, Certifications, and Clearances", "Certification(s) and
+# License(s)", "License(s)", "Licensure/Certification/Listing"); see _rq_heading.
+_RQ_LC_WORD = (r"(?:licen[sc]ure|licen[sc]es?|licen[sc]e\(s\)|licensing|certifications?|certification\(s\)|certificates?|"
+               r"certificate\(s\)|registrations?|registration\(s\)|clearances?|listings?|credentials?)")
+_RQ_LICCERT_HEAD_RX = re.compile(
+    r"^(?=.*(?:licen|certif|registr|credential))(?:(?:required|preferred|minimum|additional|special|other|current|desired)\s+)?"
+    + _RQ_LC_WORD + r"(?:\s*(?:,|/|&|\band\b|\bor\b)\s*(?:(?:and|or)\s+)?" + _RQ_LC_WORD + r")*"
+    r"(?:\s+(?:requirements?|required|preferred|desired))?"
+    r"(?:\s+(?:for|at|upon|prior to|before)\s+(?:the\s+)?(?:time of\s+)?(?:hire|hiring|start|continued employment|employment))?$", re.I)
 _RQ_PHRASE_HEAD_RX = re.compile(
     r"^(?:what you(?:'|’)ll need|what you (?:need|bring)|what you(?:'|’)ll bring|who you are|"
     # 2026-09-24 (reqfix): Elara "What is Required?", University Health
@@ -18820,6 +18878,14 @@ _RQ_GENERIC_HEAD_RX = re.compile(
     r"^(?:(?:this (?:job|role|position) is for you|a wow|bonus points?|extra points?|it(?:'|’)s a (?:plus|bonus)|"
     r"(?:it would be )?(?:great|nice|even better)) if you(?: also)? have|"
     r"(?:if )?you (?:are|have|bring)|about you|who you are|you(?:'|’)re|"
+    # 2026-10-05 (push8): RWJBarnabas "This role might be for you if:" / "To
+    # be considered for this Nuclear Medicine Technologist opportunity:" /
+    # "To Be Considered:" / "To be considered for this opportunity, you must
+    # meet the following criteria:" (their pay block sits above, so without a
+    # heading every credential line below it was read as pay prose)
+    r"this (?:job|role|position|opportunity) (?:might|may|could|would) be (?:right )?for you if|"
+    r"to be considered(?: for this [^:,]{0,70}?(?:opportunity|role|position|job))?(?:,? you (?:must|will|should) "
+    r"(?:meet|have|possess)(?: the following(?: criteria| requirements| qualifications)?)?)?|"
     r"here(?:'|’)s what you(?:'|’)?(?:ll)? need|what (?:qualifications|skills|experience|you) (?:you (?:will|would) |you(?:'|’)ll |do you |will you |)need|"
     r"qualified (?:candidates|applicants)(?: (?:will|must|should) have)?|"
     # (push3 integration, from _RQ_PHRASE_HEAD_RX: there "[^.]{0,30}" let a
@@ -18867,6 +18933,139 @@ _RQ_CUE_RX = re.compile(
     r"requir|\bmust\b|minimum|prefer|current|valid\b|active\b|unrestricted|unencumbered|eligib|graduat|"
     r"completion of|obtain|\bhold\b|possess|\bneeded\b|licensed (?:as|in|to|by)|certified (?:in|as|by|through)|"
     r"within \d+ (?:days|months)|upon hire|prior to (?:hire|start)", re.I)
+
+# 2026-10-05 (push8, plan item 5): a "must hold / have / possess / maintain /
+# obtain / be ... licence | certification | BLS" clause states a credential
+# even when the vocabulary above names none (Option Care "Must be licensed
+# or registered (if required by state)"), and outside a block even under the
+# pay lines some templates print first (RWJBarnabas "Must hold NMTCB or ARRT
+# (N) certification", "Must maintain current BLS certification").
+_RQ_MUST_CRED_RX = re.compile(
+    r"\bmust\s+(?:(?:currently|already|also|still)\s+)?(?:hold|have|possess|maintain|obtain|be|keep|carry)\b"
+    r"[^.;\n]{0,100}?\b(licens(?:e|es|ure|ed)|registered (?:professional )?nurse|certification|certificate|certified|"
+    r"BLS|ACLS|PALS|NRP|CPR|life support)\b", re.I)
+_RQ_MUST_NOT_RX = re.compile(
+    r"\bmust\s+(?:\w+\s+){0,3}?(?:able|willing|aware|familiar|knowledgeable|comfortable|proficient)\b|"
+    r"\b(?:hospital|facility|center|organization|agency|program|clinic|we)\b[^.;\n]{0,20}\bmust\b", re.I)
+
+
+def _rq_must_cred(c: str):
+    """The fields a must-clause names ({"licensure"} / {"certifications"}),
+    empty when it names none or only a driver's licence."""
+    out = set()
+    if _RQ_MUST_NOT_RX.search(c):
+        return out
+    for m in _RQ_MUST_CRED_RX.finditer(_RQ_DRIVER_RX.sub(lambda d: " " * len(d.group(0)), c)):
+        w = m.group(1).lower()
+        out.add("licensure" if w.startswith(("licens", "registered")) else "certifications")
+    return out
+
+
+# 2026-10-05 (push8, plan item 5): outside any block, a bare line of at most
+# 80 characters that names a credential or a degree is a requirement (UPMC
+# "High School Diploma or Equivalent", Franciscan "Bachelor's Degree",
+# Samaritan "NYS license required"). It must name the credential as a noun
+# or a certification acronym, so a job title repeated in the body
+# ("Certified Nursing Assistant", "Licensed Practical Nurse") is not one.
+# Background clearances are not certifications (UPMC "Act 31 Child Abuse
+# Reporting with renewal", "Act 33 with renewal", "Act 73 FBI Clearance").
+_RQ_CLEARANCE_RX = re.compile(
+    r"\bclearances?\b|^Act \d{2,3}\b|\bchild abuse\b|\bFBI\b|\bfingerprint\w*|\bbackground (?:check|investigation|screening)|"
+    r"\bcriminal (?:history|record|background)|\b(?:auto(?:motive|mobile)?|vehicle|car) insurance\b", re.I)
+_RQ_BARE_EDU_RX = re.compile(
+    r"\b(?:degree|diploma|GED|HSED|BSN|ADN|ASN|MSN|DNP|PharmD|bachelor(?:'s|’s|s)?|master(?:'s|’s)|"
+    r"associate(?:'s|’s|s)? degree|high school)\b", re.I)
+_RQ_BARE_LIC_RX = re.compile(r"\blicen[sc](?:e|es|ure|ures)\b", re.I)
+_RQ_BARE_CERT_RX = re.compile(
+    r"\bcertifications?\b|\bcertificates?\b|\b(?:BLS|BCLS|ACLS|PALS|NRP|TNCC|ENPC|CCRN|PCCN|CNOR|CEN|CPEN|OCN|CPAN|"
+    r"CPR|NIHSS|ARRT|RDMS|RDCS|RVT|RCIS|CPhT|PTCB|NREMT|ASCP|CPI|AHA)\b|life support", re.I)
+_RQ_BARE_NOT_RX = re.compile(
+    r"^(?:we|our|you|your|they|it|this|these|all|at|as|if|when|with|for|join|apply|about|why|how|who|where|the (?:hospital|"
+    r"facility|center|team|unit|department|organization|company))\b|"
+    r"\b(?:hospital|medical center|health system|magnet|joint commission|accredit\w*|stroke cent\w*|trauma cent\w*|"
+    r"designat\w*|award\w*|recogni\w*|program offers|tuition|reimburs\w*|scholarship|loan|clearances?|Act \d{2,3})\b", re.I)
+
+
+def _rq_bare_types(s: str) -> set:
+    """Which fields a bare credential line outside a block states."""
+    if len(s) > 80 or s.endswith((":", "?", "!")) or _RQ_BARE_NOT_RX.search(s) or _RQ_DRIVER_RX.search(s):
+        return set()
+    if _RQ_DUTY_RX.search(s) or _RQ_BLOCK_END_RX.search(s) or _RQ_BOILER_RX.search(s) or _RQ_SKIP_RX.search(s):
+        return set()
+    if len(re.findall(r"[.!?](?:\s|$)", s)) > 1:                  # two sentences: prose, not a list line
+        return set()
+    out = set()
+    types = _rq_types(s)
+    if "licensure" in types and _RQ_BARE_LIC_RX.search(s):
+        out.add("licensure")
+    if "certifications" in types and _RQ_BARE_CERT_RX.search(s):
+        out.add("certifications")
+    if "education" in types and _RQ_BARE_EDU_RX.search(s) and not _RQ_EDU_NOT_RX.search(s):
+        out.add("education")
+    return out
+
+
+# 2026-10-05 (push8, plan item 6): requirements.experience keeps, verbatim,
+# the qualification lines that name experience with a cue (required,
+# preferred, minimum, prior, previous, new grad, entry, no experience, at
+# least, a years figure); the site shows them when posting_facts.experience
+# (the years figure) is null. 35-55% of the postings with no figure state
+# experience this way ("Previous ICU experience preferred", "New grads
+# welcome", "No experience required"). Never the patient's experience, an
+# employer's history ("over 100 years of experience") or an education line
+# that only allows "equivalent experience".
+_RQ_EXP_WORD_RX = re.compile(r"\bexperience[ds]?\b|\bexp\b|\bnew grad(?:uate)?s?\b|\bentry[- ]level\b(?!\s+(?:certification|exam))|\byears? of\b|\bnew to\b", re.I)
+_RQ_EXP_CUE_RX = re.compile(
+    r"requir|prefer|desir|\bminimum\b|\bmin\.?\b|\bprior\b|\bprevious(?:ly)?\b|\bnew grad|\bentry\b|\bno (?:prior )?experience\b|"
+    r"\bat least\b|\bmust\b|\bwelcome\b|\bencouraged\b|\bnecessary\b|\bneeded\b|\bplus\b|\bdemonstrated\b|\bproven\b|"
+    r"\b(?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\s*\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*)?(?:years?|yrs?|months?)\b", re.I)
+_RQ_EXP_NOT_RX = re.compile(
+    r"\b(?:patient|guest|customer|member|employee|caregiver|team member|consumer|user|visitor|family|care|learning|"
+    r"educational|student|clinical rotation)s?(?:['’]s?)? experiences?\b|\bexperiences? (?:for|of) (?:our |the |every )?(?:patients?|members?|guests?|customers?)\b|"
+    r"\b(?:over|more than|nearly|almost)\s+(?:\d{2,}|a century)\b|\bexperience (?:the|our|what|first-?hand)\b|"
+    r"\bexperience an? (?:career|rewarding|culture|workplace|team|difference|place|community)\b|"
+    r"\bconsidered equivalent\b[^.;]{0,60}|"
+    r"\bequivalent (?:combination of )?(?:\w+ ){0,3}?experience\b|\bsubstitut\w*\b[^.;]{0,120}|"
+    # a deadline, not experience ("ServeSafe Certification / Within 1 Year of Employment")
+    r"\b(?:within|after) (?:\d{1,2}|one|two|three|six|twelve) (?:years?|months?|days)\b[^.;]{0,60}", re.I)
+_RQ_EXP_FIG_RX = re.compile(
+    r"\b(?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\s*\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*)?(?:years?|yrs?|months?)\b"
+    r"|^\d{1,2}\+?\s+(?=[A-Za-z])", re.I)
+_RQ_EXP_HEAD_RX = re.compile(r"\bexperien", re.I)
+_RQ_EXP_HEAD_OTHER_RX = re.compile(r"educat|licen|certif|skill|knowledge|abilit|training|degree|registr|credential", re.I)
+
+
+_RQ_PAY_WORD_RX = re.compile(
+    r"\$|\bpay\b|\bpaid\b|compensat|salar|\bwages?\b|\brates?\b|\bdifferential|\bbonus|\brange\b|\bdepend|\bfactors?\b|"
+    r"\boffer|\bbenefit|\bhourly\b|\bannual|\bper (?:hour|year)\b", re.I)
+
+
+def _rq_after_pay_line(s: str) -> bool:
+    """A line after a pay label that is a requirement, not pay prose (see
+    extract_requirements): at most 300 characters, no pay word, and a bare
+    credential line, a cue with a credential, or an experience line."""
+    s = _RQ_ENUM_RX.sub("", s)
+    if len(s) > 300 or _RQ_PAY_WORD_RX.search(s) or _RQ_DUTY_RX.search(s) or re.match(r"(?:we|our|they|you will)\b", s, re.I):
+        return False
+    if _rq_bare_types(s) or _rq_exp_line(s):
+        return True
+    return bool(_RQ_CUE_RX.search(s) and (_rq_types(s) or _rq_must_cred(s)))
+
+
+def _rq_exp_line(s: str, exp_block: bool = False) -> bool:
+    """A line that states the experience the role asks for (see above)."""
+    if len(s) > 300 or _RQ_DUTY_RX.search(s):
+        return False
+    s_ = _RQ_EXP_NOT_RX.sub(" ", s)
+    if exp_block:
+        # under an "Experience:" heading a years figure needs no word of its
+        # own (Geisinger "Minimum of 1 year-Nursing (Preferred)"); a
+        # credential line there is not experience
+        if _RQ_EXP_WORD_RX.search(s_):
+            return True
+        return bool(_RQ_EXP_FIG_RX.search(s_)) and not _rq_types(s_)
+    return bool(_RQ_EXP_WORD_RX.search(s_) and _RQ_EXP_CUE_RX.search(s_)
+                and re.search(r"\bexperience[ds]?\b|\bexp\b|\bnew grad|\bentry[- ]level\b", s_, re.I))
 
 # Professional licensure. A driver's licence is a qualification, not
 # licensure; "378 licensed beds" and "level of licensure" are neither.
@@ -19000,7 +19199,7 @@ def _rq_window(s: str, span, width: int = 300) -> str:
     if a:
         sp = s.find(" ", a)
         a = sp + 1 if 0 <= sp < span[0] else a
-    return s[a:a + width]
+    return _rq_cut(s[a:], width)           # (push8: on a word break, never mid-word)
 
 
 _RQ_CERT_RX = re.compile(
@@ -19011,6 +19210,9 @@ _RQ_CERT_RX = re.compile(
     r"|basic (?:cardiac )?life support|advanced (?:cardiac|cardiovascular) life support|pediatric advanced life support|"
     r"neonatal resuscitation|trauma nursing core", re.I)
 _RQ_CERT_NOT_RX = re.compile(r"certified (?:unit|hospital|center|facility)|\bcertificate program\b|"
+                             # (push8: Samaritan "One year or more experience as a
+                             # Certified Nursing Assistant preferable" is experience)
+                             r"\bexperience (?:as|working as|in the role of) an? certified\b(?![^.;]{0,80}\bcertification\b)|"
                              r"\bCRT (?:work|screens?|monitors?|terminals?)", re.I)
 _RQ_EDU_RX = re.compile(
     # (2026-09-25, push4/cleanup: HCTS "A high degree of motivation and
@@ -19083,7 +19285,9 @@ _RQ_NONE_RX = re.compile(
     r"no (?:professional |additional |prior )?(?:certifications?|licenses?|licensure|experience|education)(?: is| are)? required)\.?$|"
     r"^[^:]{2,60}:\s*(?:n/?a|none|not applicable)\.?$", re.I)
 _RQ_SKIP_RX = re.compile(
-    r"^(?:to perform this job successfully|applicants who do not meet|to be considered for this|"
+    # (push8: never RWJBarnabas "To be considered for this RN opportunity, you
+    # must hold an active New Jersey Registered Nurse license ...")
+    r"^(?:to perform this job successfully|applicants who do not meet|to be considered for this(?![^.:]{0,80}\byou must\b)|"
     r"(?:job )?(?:opening|requisition|req) (?:id|number|#)|[A-Z]{4,}:\s*we\b|"
     # 2026-09-24 (reqfix, third hand check): issuer rows of a Workday
     # certification table, UF Health's driving fields, schedule rows,
@@ -19128,9 +19332,61 @@ _RQ_WORKCOND_RX = re.compile(
 _RQ_ABBR_RX = re.compile(r"(?:\b(?:St|Dr|Mr|Mrs|Ms|Jr|Sr|No|Nos|vs|etc|Inc|Co|Corp|Ltd|approx|Ft|Mt|U\.S|e\.g|i\.e)|\b[A-Z])\.$")
 
 
+# 2026-10-05 (push8/requirements): zero-width characters and the byte-order
+# mark carry no text; a no-break space is a space. A line made only of them
+# is empty (31 stored items were a bare U+200B), and an item keeps none.
+_RQ_ZW_RX = re.compile("[​‌‍⁠﻿­]")
+_RQ_NBSP_RX = re.compile("[   ]")
+
+
 def _rq_clean(line: str) -> str:
-    s = re.sub(r"^[\s•\-\*·–—>●○■□▪◦‣⁃∙➢➤►▸✓✔]+", "", line).strip()
+    s = _RQ_ZW_RX.sub("", line)
+    s = re.sub(r"^[\s•\-\*·–—>●○■□▪◦‣⁃∙➢➤►▸✓✔]+", "", s).strip()
     return re.sub(r"\*\*$", "", s).strip()
+
+
+# An item is stored at most 300 characters long, cut at the last word break
+# (12,792 stored items stopped mid-word: "... Food and Drug Administ"), with
+# no dangling joiner or punctuation left at the end.
+_RQ_ITEM_MAX = 300
+
+
+def _rq_cut(s: str, width: int = _RQ_ITEM_MAX) -> str:
+    if len(s) <= width:
+        return s
+    head = s[:width + 1]
+    k = max(head.rfind(" "), head.rfind("\n"))
+    s = s[:k] if k >= width * 0.6 else s[:width]
+    s = re.sub(r"(?:\s+(?:and|or|of|the|a|an|to|in|for|with|by|as|at|on|from|including|such as|e\.g\.?))+$", "", s.rstrip(), flags=re.I)
+    return s.rstrip(" ,;:-–—(/&")
+
+
+# Geisinger's credential table writes its issuer cell as "Default Issuing
+# Body" (often twice, glued): "Basic Life Support Certification - Default
+# Issuing BodyDefault Issuing Body".
+_RQ_DEFAULT_ISSUER_RX = re.compile(r"\s*[-–]?\s*(?:Default Issuing Body)+", re.I)
+
+
+# The enumerator of a list item ("1. ", "b) ", "(iv) ", "E) ) "), also
+# before a years figure ("3. 1+ year of experience in Nursing").
+_RQ_ITEM_ENUM_RX = re.compile(
+    r"^(?:\(?(?:[a-hA-H]|\d{1,2}|[ivx]{1,4})[.)](?:\s*\))?\s+)+"
+    r"(?=[A-Za-z(]|\d{1,2}\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*)?(?:years?|yrs?|months?)\b)")
+
+
+def _rq_item_text(s: str) -> str:
+    """An item as it is stored: no zero-width characters, no-break spaces as
+    spaces, no list enumerator ("1. ", "a) ", "(iv) "), no placeholder issuer,
+    one space between words, at most 300 characters cut on a word."""
+    s = _RQ_NBSP_RX.sub(" ", _RQ_ZW_RX.sub("", s))
+    s = _RQ_DEFAULT_ISSUER_RX.sub("", s)
+    s = re.sub(r"[ \t]{2,}", " ", s).strip()
+    s = _RQ_ITEM_ENUM_RX.sub("", s).strip()
+    return _rq_cut(s.rstrip(" ;,")).strip()
+
+
+def _rq_dupkey(s: str) -> str:
+    return re.sub(r"\s+", " ", s.lower()).rstrip(" .;,:-–()")
 
 
 def _rq_heading(line: str):
@@ -19146,6 +19402,27 @@ def _rq_heading(line: str):
     if m:
         label, value = m.group(1).strip().strip("*").strip(), m.group(2).strip()
     label = re.sub(r"\s+", " ", label).rstrip(" :.-–")
+    # 2026-10-05 (push8, plan item 5): licence / certification headings the
+    # word list did not spell. "Licensure, Certifications, and Clearances:"
+    # (every UPMC posting) and "Certification(s) and License(s):" (Geisinger)
+    # read as 'stop', so "Basic Life Support (BLS) OR Cardiopulmonary
+    # Resuscitation (CPR)" under them was dropped; "Licensure/Certification/
+    # Listing" (Cone Health) was no heading at all and was filed as a
+    # certification item. A "(s)" form, a clearance or a listing in the label
+    # makes it a licence-and-certification block, like a label naming both.
+    # (A label the word list already reads keeps its old kind: "Certificate
+    # Required" stays a qualifications heading.)
+    lc = _RQ_LICCERT_HEAD_RX.match(label)
+    if lc and (m or len(label) <= 70) and (re.search(r"\(s\)|clearance|listing", label, re.I)
+                                           or not _rq_is_req_label(label, bool(m))):
+        low = label.lower()
+        lic = bool(re.search(r"licen|registration", low))
+        cert = bool(re.search(r"certif|credential", low))
+        mixed = bool(re.search(r"\(s\)|clearance|listing", low))
+        kind = "lic+cert" if (lic and cert) or mixed else ("lic" if lic else "cert")
+        mode = ("req" if re.match(r"(?:minimum|required|basic)\b", low) else
+                "pref" if _RQ_PREF_RX.search(low) else ("req" if _RQ_HEAD_REQ_RX.search(low) else None))
+        return (kind, mode, value)
     # 2026-09-24 (reqfix): "Job Requirements(Education, Experience, Licensure
     # and Certification)" (UofL) is read without its parenthesis, and
     # "Additional Job Description:Job Requirements(...)" by its value.
@@ -19530,10 +19807,11 @@ def _rq_req_ahead(rows, i: int) -> bool:
 
 
 def extract_requirements(text) -> dict:
-    """The four requirement fields (see the block comment above); every key
-    is always present, empty when the posting does not state it."""
+    """The requirement fields (see the block comment above; "experience"
+    since 2026-10-05); every key is always present, empty when the posting
+    does not state it."""
     out = {"qualifications": {"required": [], "preferred": []},
-           "certifications": [], "licensure": [], "education": []}
+           "certifications": [], "licensure": [], "education": [], "experience": []}
     if not text:
         return out
     # 2026-09-24 (reqfix): entities are decoded first (UW Medicine
@@ -19545,10 +19823,12 @@ def extract_requirements(text) -> dict:
     # (whether the body is one line is decided on the stored text, before
     # _rq_unglue adds breaks of its own)
     t = _rq_unwall(_rq_unglue(t), t.count("\n") < max(4, len(t) // 800))
-    seen = {k: set() for k in ("q", "certifications", "licensure", "education")}
+    seen = {k: set() for k in ("q", "certifications", "licensure", "education", "experience")}
 
     def add(field, s, pref):
-        s = s.strip().rstrip(" ;,")[:300]
+        # 2026-10-05 (push8/requirements): enumerators, zero-width characters,
+        # the 300-character cut on a word (_rq_item_text).
+        s = _rq_item_text(s)
         if len(s) < 3:
             return
         # (push3 integration) a heading label left over as an item is not one:
@@ -19561,9 +19841,33 @@ def extract_requirements(text) -> dict:
                 s.endswith(":") or "/" in lab or len(lab.split()) == 1
                 or all(w[:1].isupper() or w.lower() in _RQ_SMALL_WORDS or not w[:1].isalpha() for w in lab.split())):
             return
-        key = s.lower()
+        key = _rq_dupkey(s)
         if key in seen[field]:
             return
+        # 2026-10-05 (push8/requirements): an item that repeats the start of
+        # one already stored is the same requirement cut shorter (a 300-
+        # character window, a clause of the full line: "Current licensure with
+        # the Virginia State Board of Pharmacy" beside "... Board of Pharmacy
+        # required or obtained within 90 days"). Both 20+ characters: the
+        # shorter is skipped, and a longer one replaces the shorter in place.
+        if len(key) >= 20:
+            if field == "q":
+                slots = [(lst, i) for lst in (out["qualifications"]["required"], out["qualifications"]["preferred"])
+                         for i in range(len(lst))]
+                text_of = lambda lst, i: lst[i]
+            else:
+                slots = [(out[field], i) for i in range(len(out[field]))]
+                text_of = lambda lst, i: lst[i][0]
+            for lst, i in slots:
+                old = _rq_dupkey(text_of(lst, i))
+                if len(old) < 20:
+                    continue
+                if old.startswith(key):
+                    return
+                if key.startswith(old):
+                    lst[i] = s if field == "q" else [s, pref]
+                    seen[field].add(key)
+                    return
         if field == "q":
             lst = out["qualifications"]["preferred" if pref else "required"]
             if len(lst) < (12 if pref else 20):
@@ -19576,6 +19880,7 @@ def extract_requirements(text) -> dict:
 
     kind, mode, last_stop, stem = None, None, "", ""      # kind None = outside any block
     implicit, prev_bullet, hlabel = False, False, ""
+    exp_block = False                                      # (push8) the block sits under an "Experience" heading
     force = False                                          # heading stood alone: its lines are credentials
     tail_end = False                                       # the last line ran into the legal tail
     rows = t.split("\n")
@@ -19601,14 +19906,27 @@ def extract_requirements(text) -> dict:
             else:
                 kind, mode = hk, hm
                 force = not value
+                # (push8) an "Experience:" heading: its lines are experience
+                hl = s.split(":", 1)[0]
+                exp_block = bool(_RQ_EXP_HEAD_RX.search(hl) and not _RQ_EXP_HEAD_OTHER_RX.search(hl))
             if not value or _RQ_NONE_RX.match(value):
                 continue
-            hlabel, s = s, value
+            # (push8: the value without its bullet, "REQUIRED LICENSE(S): •
+            # Licensed RN with NH eligibility")
+            hlabel, s = s, (_rq_clean(value) or value)
         if kind is None:
             # Outside a block: a clause with a requirement cue and a specific
             # pattern, never under benefits / about / pay / EEO.
             if re.search(r"benefit|perks|about|pay|compensation|salary|equal|eeo|commitment|why", last_stop):
-                continue
+                # 2026-10-05 (push8): a pay FIELD printed above the posting
+                # (Samaritan "Pay Range:" / "$21.22 - $22.97", RWJBarnabas "Pay
+                # Transparency:") used to silence every line after it. Under a
+                # pay label alone, a short line that states a credential or
+                # experience with a cue and names no pay is read again.
+                if not (re.search(r"pay|compensation|salary|wage", last_stop)
+                        and not re.search(r"benefit|perks|about|equal|eeo|commitment|why", last_stop)
+                        and _rq_after_pay_line(s)):
+                    continue
             if len(s) > 600:
                 # 2026-09-24 (push3/license): a body stored as one long line
                 # used to be skipped whole; its licence sentences count.
@@ -19625,6 +19943,12 @@ def extract_requirements(text) -> dict:
                     if span:
                         w = _rq_window(c, span)
                         add("licensure", w, _rq_pref(w, None))
+                    # (push8) a must-clause the licence vocabulary does not name
+                    elif not _RQ_DUTY_RX.search(c):
+                        mc = _RQ_MUST_CRED_RX.search(c)
+                        for f in sorted(_rq_must_cred(c) if mc else ()):
+                            w = _rq_window(c, mc.span())
+                            add(f, w, _rq_pref(w, None))
                 continue
             # 2026-09-24 (reqfix, Halifax): a body with no requirement
             # heading at all lists them as the first bullets under the
@@ -19634,9 +19958,20 @@ def extract_requirements(text) -> dict:
             # requirements block until its first duty ("- Visits patients").
             if (bullet and not was_bullet and (not last_stop or re.search(r"description|summary|overview|position", last_stop))
                     and _rq_types(s) and not _RQ_BLOCK_END_RX.search(s)):
-                kind, mode, implicit = "qual", None, True
+                kind, mode, implicit, exp_block = "qual", None, True, False
         if kind is None:
+            # 2026-10-05 (push8, plan item 5): a bare credential / degree line
+            # ("High School Diploma or Equivalent", "NYS license required").
+            # The clause rule below still runs ("EMT Certificate (required)"
+            # is a licence there too).
+            for f in sorted(_rq_bare_types(_RQ_ENUM_RX.sub("", s))):
+                add(f, s, _rq_pref(s, None))
             for c in _rq_clauses(s):
+                # (push8, plan item 6) an experience requirement outside a
+                # block ("Previous ICU experience preferred", "New grads welcome")
+                if (not re.match(r"(?:we|our|they|you will|you'll)\b", c, re.I) and not _RQ_BLOCK_END_RX.search(c)
+                        and _rq_exp_line(_RQ_ENUM_RX.sub("", c))):
+                    add("experience", c, _rq_pref(c, None))
                 # (Essentia "Qualified candidates may be eligible for a
                 # hiring incentive of up to $7,500 (ADN)" is not education)
                 if not _RQ_CUE_RX.search(c) or _RQ_BLOCK_END_RX.search(c):
@@ -19646,7 +19981,7 @@ def extract_requirements(text) -> dict:
                 # activities ... as well as assurance of proper current licensure".
                 if _RQ_DUTY_RX.search(_RQ_ENUM_RX.sub("", c)):
                     continue
-                types = _rq_types(c)
+                types = _rq_types(c) or _rq_must_cred(c)          # (push8: "Must be licensed or registered")
                 if "education" in types and not _RQ_EDU_STRONG_RX.search(c):
                     types.discard("education")
                 for f in sorted(types):
@@ -19752,6 +20087,8 @@ def extract_requirements(text) -> dict:
                 continue
             pref = _rq_pref(piece, mode)
             add("q", piece, pref)
+            if _rq_exp_line(piece, exp_block):                 # (push8, plan item 6)
+                add("experience", piece, pref)
             if kind == "edu":
                 # 2026-09-24 (reqfix): an education block files as education
                 # its heading's value and the lines that name schooling;
@@ -19772,13 +20109,13 @@ def extract_requirements(text) -> dict:
                         if _rq_lic(c):
                             add("licensure", c, cp)
                         continue                # "Postsecondary certificate, diploma ..." is schooling
-                    for f in sorted(_rq_types(c) & {"licensure", "certifications"}):
+                    for f in sorted((_rq_types(c) or _rq_must_cred(c)) & {"licensure", "certifications"}):
                         add(f, c, cp)
                 continue
             clauses = _rq_clauses(piece)
             for c in clauses:
                 cp = _rq_pref(c, mode) if (_RQ_PREF_RX.search(c) or _RQ_REQ_RX.search(c) or len(clauses) > 1) else pref
-                types = _rq_types(c)
+                types = _rq_types(c) or _rq_must_cred(c)       # (push8: "Must be licensed or registered")
                 # (audit merge) push3/license: only under a bare Licensure heading and only
                 # a credential line; reqfix d119802: never an experience / skill line;
                 # reqfix a847c34: never a line that already names anything (education).
@@ -19796,7 +20133,10 @@ def extract_requirements(text) -> dict:
                 # "... license in the State of Florida. Temporary permit acceptable.")
                 if (kind in ("cert", "lic+cert") and not types and not _RQ_DRIVER_RX.search(c)
                         and not re.search(r"\bexperience\b|\byears?\b|\bskills?\b|knowledge|abilit|computer|"
-                                          r"^(?:an? )?(?:temporary |interim |provisional )?permits? (?:is |are )?(?:acceptable|accepted)", c, re.I)):
+                                          r"^(?:an? )?(?:temporary |interim |provisional )?permits? (?:is |are )?(?:acceptable|accepted)", c, re.I)
+                        # (push8: UPMC "Act 31 Child Abuse Reporting with
+                        # renewal", "Act 73 FBI Clearance" are clearances)
+                        and not _RQ_CLEARANCE_RX.search(c)):
                     types.add("certifications")
                 for f in sorted(types):
                     add(f, c, cp)
