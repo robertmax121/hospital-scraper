@@ -18592,6 +18592,19 @@ def _pf_later_unit(t) -> str | None:
     return next((name for name, rx in _PF_UNIT_ANY if rx.search(t)), None)
 
 
+def _pf_period_hint(lo, hi, hint):
+    """The sibling / label unit to use for a figure that names none of its own.
+    A month / pay-period / week hint (a "Pay Frequency: Monthly" sibling, an
+    API period) scales the figure only when the raw pair fits neither the
+    hourly nor the annual band (TX HHS "$4,094.50 - $5,094.16" Monthly = a
+    year after scaling). HR systems also use "Pay Frequency" for how often
+    staff are paid, so "$45,000 - $55,000" next to Monthly stays an annual
+    range, never 12x it (review 2026-10-05)."""
+    if hint in ("month", "biweekly", "week") and lo is not None and hi is not None and _wage_pair(lo, hi):
+        return None
+    return hint
+
+
 def _pf_finish(lo, hi, unit, t, start, end):
     """(lo, hi, unit) through the shared guards, or None."""
     if lo is None or hi is None:
@@ -18618,8 +18631,9 @@ def field_wage(value, unit=None):
     rate is based on ...)", "USD $35.00/Hr.-USD $79.07/Hr.", "13.5800 Through
     20.3700", "$ 18.79-28.03 USD", "62.33/hr.", "16.01 USD per hour").
     unit: the unit a sibling field, the label or the API states ("hour",
-    "year", "month", "HOURLY"...), used when the value names none; with no
-    unit anywhere the band decides (18.24 - 25.53 hourly, 55,000 - 80,000
+    "year", "month", "HOURLY"...), used when the value names none (a month
+    or pay-period one only when the raw figure fits neither band:
+    _pf_period_hint); with no unit anywhere the band decides (18.24 - 25.53 hourly, 55,000 - 80,000
     annual). The first range that passes the guards wins; a single figure is
     read only when the field holds no range at all and the figure carries a
     "$" or is the field's only number."""
@@ -18637,7 +18651,7 @@ def field_wage(value, unit=None):
         if k2 and not k1 and "," not in m.group(1) and (_wage_num(m.group(1)) or 0) < 1000:
             k1 = k2
         lo, hi = _pf_num(m.group(1), k1), _pf_num(m.group(3), k2)
-        u = _pf_unit_at(t, m.end()) or _pf_later_unit(t[m.end():]) or hint
+        u = _pf_unit_at(t, m.end()) or _pf_later_unit(t[m.end():]) or _pf_period_hint(lo, hi, hint)
         got = _pf_finish(lo, hi, u, t, m.start(), m.end())
         if got:
             return got
@@ -18652,7 +18666,7 @@ def field_wage(value, unit=None):
     else:
         return None
     v = _pf_num(f.group(1), f.group(2))
-    u = _pf_unit_at(t, f.end()) or _pf_later_unit(t[f.end():]) or hint
+    u = _pf_unit_at(t, f.end()) or _pf_later_unit(t[f.end():]) or _pf_period_hint(v, v, hint)
     return _pf_finish(v, v, u, t, f.start(), f.end())
 
 
@@ -18672,7 +18686,7 @@ def field_wage_pair(lo_value, hi_value, unit=None):
     lo = lo if lo is not None else hi
     hi = hi if hi is not None else lo
     u = ((_pf_unit_at(lt, lm.end()) if lm else None) or (_pf_unit_at(ht, hm.end()) if hm else None)
-         or _pf_later_unit(f"{lt} {ht}") or (_pf_unit_hint(unit) if unit else None))
+         or _pf_later_unit(f"{lt} {ht}") or _pf_period_hint(lo, hi, _pf_unit_hint(unit) if unit else None))
     return _pf_finish(lo, hi, u, "", 0, 0)
 
 

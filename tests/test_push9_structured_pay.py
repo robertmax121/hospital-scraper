@@ -309,6 +309,38 @@ def test_peoplesoft_pay_fields(fixture_text):
     assert scraper._ps_pay(hire_only) is None
 
 
+def test_pay_frequency_sibling_never_scales_an_annual_range():
+    """Review 2026-10-05: "Pay Frequency" often names how often staff are
+    paid, not the unit of the quoted rate. A Monthly / Biweekly sibling
+    scales only a figure that fits neither band raw (TX HHS monthly figures);
+    an annual or hourly figure next to it keeps its own band."""
+    assert scraper._header_lines_pay("Salary Range: $45,000.00 - $55,000.00\nPay Frequency: Monthly") \
+        == (45000.0, 55000.0, "year")
+    assert scraper._header_lines_pay("Salary Range: $4,094.50 - $5,094.16\nPay Frequency: Monthly") \
+        == (49134.0, 61129.92, "year")
+    assert scraper.field_wage("$45,000 - $55,000", "Monthly") == (45000.0, 55000.0, "year")
+    assert scraper.field_wage("$45,000", "Monthly") == (45000.0, 45000.0, "year")
+    assert scraper.field_wage("$22.50 - $30.00", "Biweekly") == (22.5, 30.0, "hour")
+    assert scraper.field_wage("$2,000 - $2,600", "Biweekly") == (52000.0, 67600.0, "year")
+    # a unit the field writes after its own figure still scales
+    assert scraper.field_wage("$4,094 - $5,094 monthly", "Monthly") == (49128.0, 61128.0, "year")
+    assert scraper.field_wage_pair("$45,000.00", "$55,000.00", "Monthly") == (45000.0, 55000.0, "year")
+    assert scraper.field_wage_pair("$4,094.50", "$5,094.16", "Monthly") == (49134.0, 61129.92, "year")
+    # PeopleSoft: Salary Range on MIN_RT / MAX_RT with a Monthly "Pay Frequency"
+    ps = ("<div id='win0divX_MIN_RTlbl'><span class='ps-label'>Salary Range</span></div>"
+          "<span class='ps_box-value' id='X_MIN_RT'>$45,000.00</span>"
+          "<span class='ps_box-value' id='X_MAX_RT'>$55,000.00</span>"
+          "<div id='win0divX_FREQlbl'><span class='ps-label'>Pay Frequency</span></div>"
+          "<span class='ps_box-value' id='X_FREQ'>Monthly</span>")
+    assert scraper._ps_pay(ps) == (45000.0, 55000.0, "year")
+    assert scraper._ps_pay(ps.replace("$45,000.00", "$4,094.50").replace("$55,000.00", "$5,094.16")) \
+        == (49134.0, 61129.92, "year")
+    # Oracle: an Inova-style "Pay Rate Frequency" sibling
+    it = {"requisitionFlexFields": {"items": [{"Prompt": "Salary Range", "Value": "$45,000 - $55,000"},
+                                              {"Prompt": "Pay Rate Frequency", "Value": "Monthly"}]}}
+    assert scraper._oracle_pay(it) == (45000.0, 55000.0, "year")
+
+
 def test_icims_header_salary_range(fixture_text):
     snips = _load(fixture_text, "page_snippets.json")
     got = [scraper.field_wage_from_labels(list(scraper._icims_header(h).items())) for h in snips["ohsu"]]
