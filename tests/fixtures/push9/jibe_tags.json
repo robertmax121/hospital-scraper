@@ -1,0 +1,691 @@
+{
+ "BJC HealthCare": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"TAGS7\":\"Pay Range:\",\"LOCATION\":\"Locations:\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"REQ_ID\":\"Req ID:\",\"TAGS3\":\"Job Status:\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"SHIFT_TYPE\":\"Shift Type:\",\"TAGS4\":\"Job Grade:\",\"TAGS2\":\"Shift:\",\"SKILLS\":\"Skills:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Categories:\",\"BRAND\":\"Facilities:\",\"CATEGORIES_ARIA_LABEL\":\"Job Category\",\"REGULAR_OR_TEMPORARY\":\"Regular/Temporary:\",\"BACK\":\"Back\",\"locations\":\"City/State:\",\"categories\":\"Categories:\",\"STREET_ADDRESS\":\"Street Address:\"}};</script>",
+  "rows": [
+   {
+    "tags2": [
+     "Days"
+    ],
+    "tags3": [
+     "Full-Time"
+    ],
+    "tags4": [
+     "STL1-N14"
+    ],
+    "tags5": [
+     "Saint Louis, MO"
+    ],
+    "tags6": [
+     "BJC HealthCare"
+    ],
+    "tags7": [
+     "$17.50 –  $23.88  / hour (Salary or hourly rate is based on job qualifications and relevant work experience)"
+    ],
+    "tags9": [
+     "Patient Access"
+    ]
+   },
+   {
+    "tags2": [
+     "Nights"
+    ],
+    "tags3": [
+     "Part-Time"
+    ],
+    "tags4": [
+     "STL1-S09"
+    ],
+    "tags5": [
+     "Saint Louis, MO"
+    ],
+    "tags6": [
+     "Barnes-Jewish Hospital"
+    ],
+    "tags7": [
+     "$17.50 –  $22.75  / hour (Salary or hourly rate is based on job qualifications and relevant work experience)"
+    ],
+    "tags9": [
+     "Nursing Services"
+    ]
+   },
+   {
+    "tags2": [
+     "Days"
+    ],
+    "tags3": [
+     "Full-Time"
+    ],
+    "tags4": [
+     "STL1-G20"
+    ],
+    "tags5": [
+     "Saint Louis, MO"
+    ],
+    "tags6": [
+     "Barnes-Jewish Hospital"
+    ],
+    "tags7": [
+     "$28.00 –  $40.60  / hour (Salary or hourly rate is based on job qualifications and relevant work experience)"
+    ],
+    "tags9": [
+     "Imaging Services"
+    ]
+   }
+  ]
+ },
+ "Universal Health Services": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"LOCATION\":\"Location\",\"TAGS7\":\"Minimum Hiring Rate\",\"TAGS8\":\"Maximum Hiring Rate\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"REQ_ID\":\"Req ID\",\"TAGS3\":\"Shift\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"TAGS4\":\"Facility Name\",\"SKILLS\":\"Skills:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Categories\",\"BRAND\":\"Facility:\",\"CATEGORIES_ARIA_LABEL\":\"Job Category\",\"BACK\":\"Back\",\"STREET_ADDRESS\":\"Street Address:\",\"LOCATION_NAME\":\"Facility\"},\"JOB_DESCRIPTION\":{\"LOCATION\":\"Ubicaciones:\",\"LOCATION_ARIA_LABEL\":\"Ubicación del trabajo\",\"REQ_ID\":\"ID de solicitud:\",\"TAGS3\":\"Turno\",\"EMPLOYMENT_TYPE\":\"Tipo de puesto:\",\"REQ_ID_ARIA_LABEL\":\"ID del empleo\",\"SKILLS\":\"Habilidades:\",\"BACK\":\"Volver\",\"DESCRIPTION_HEADING\":\"Descripción del puesto\",\"STREET_ADDRESS\":\"Dirección:\",\"CATEGORIES\":\"Categorías:\",\"CATEGORIES_ARIA_LABEL\":\"Categoría del puesto\"}};</script>",
+  "rows": [
+   {
+    "tags1": [
+     "Full Time"
+    ],
+    "tags2": [
+     "Nursing"
+    ],
+    "tags3": [
+     "Day"
+    ],
+    "tags4": [
+     "The George Washington University Hospital"
+    ],
+    "tags5": [
+     "Not Remote"
+    ],
+    "tags6": [
+     "36"
+    ],
+    "tags7": [
+     "USD $43.79/Hr."
+    ],
+    "tags8": [
+     "USD $60.93/Hr."
+    ],
+    "tags9": [
+     "Starting from $43.79 to $60.93 an hour"
+    ]
+   },
+   {
+    "tags1": [
+     "Full Time"
+    ],
+    "tags2": [
+     "Nursing"
+    ],
+    "tags3": [
+     "Day"
+    ],
+    "tags4": [
+     "The George Washington University Hospital"
+    ],
+    "tags5": [
+     "Not Remote"
+    ],
+    "tags6": [
+     "36"
+    ],
+    "tags7": [
+     "USD $43.79/Hr."
+    ],
+    "tags8": [
+     "USD $60.93/Hr."
+    ],
+    "tags9": [
+     "Starting from $43.79 to $60.93 an hour"
+    ]
+   },
+   {
+    "tags1": [
+     "Full Time"
+    ],
+    "tags2": [
+     "Nursing"
+    ],
+    "tags3": [
+     "Day"
+    ],
+    "tags4": [
+     "The George Washington University Hospital"
+    ],
+    "tags5": [
+     "Not Remote"
+    ],
+    "tags6": [
+     "36"
+    ],
+    "tags7": [
+     "USD $43.79/Hr."
+    ],
+    "tags8": [
+     "USD $60.93/Hr."
+    ],
+    "tags9": [
+     "Starting from $43.79 to $60.93 an hour"
+    ]
+   }
+  ]
+ },
+ "Yale New Haven Health System": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"TAGS7\":\"Work Address\",\"LOCATION\":\"Locations:\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"TAGS5\":\"YNHHS Requisition ID\",\"TAGS6\":\"Remote Work\",\"REQ_ID\":\"Req ID:\",\"TAGS3\":\"Scheduled Hours\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"TAGS4\":\"Position Type\",\"TAGS1\":\"Work Schedule\",\"TAGS2\":\"Department\",\"SKILLS\":\"Skills:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Categories:\",\"CATEGORIES_ARIA_LABEL\":\"Job Category\",\"BACK\":\"Back\",\"STREET_ADDRESS\":\"Street Address:\",\"TAGS9\":\"Salary Range:\"}};</script>",
+  "rows": [
+   {
+    "tags1": [
+     "12 HOUR PM-AM"
+    ],
+    "tags2": [
+     "Ortho.Surgery 7.7"
+    ],
+    "tags3": [
+     "36"
+    ],
+    "tags4": [
+     "Full Time Benefits Eligible"
+    ],
+    "tags5": [
+     "133066"
+    ],
+    "tags6": [
+     "Onsite 100%"
+    ],
+    "tags7": [
+     "20 York Street, New Haven, CT 06510"
+    ],
+    "tags9": [
+     "USD $35.00/Hr.-USD $79.07/Hr."
+    ]
+   },
+   {
+    "tags4": [
+     "Per Diem Non-Benefits Eligible"
+    ],
+    "tags7": [
+     "1450 Chapel Hill Rd"
+    ],
+    "tags9": [
+     "-"
+    ]
+   },
+   {
+    "tags1": [
+     "DAYS"
+    ],
+    "tags2": [
+     "HCPSCC Physical Therapy"
+    ],
+    "tags3": [
+     ".04"
+    ],
+    "tags4": [
+     "Per Diem Non-Benefits Eligible"
+    ],
+    "tags5": [
+     "122844"
+    ],
+    "tags6": [
+     "Onsite 100%"
+    ],
+    "tags7": [
+     "1 Long Wharf Drive, New Haven, CT 06511"
+    ],
+    "tags9": [
+     "USD $29.58/Hr.-USD $55.12/Hr."
+    ]
+   }
+  ]
+ },
+ "Trilogy Health Services": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"LOCATION\":\"Locations:\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"TAGS5\":\"Location Name:\",\"REQ_ID\":\"Req ID:\",\"TAGS3\":\"Starting Pay:\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"TAGS1\":\"Type:\",\"TAGS2\":\"Shift:\",\"SKILLS\":\"Skills:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Categories:\",\"CATEGORIES_ARIA_LABEL\":\"Job Category\",\"BACK\":\"Back\",\"STREET_ADDRESS\":\"Street Address:\",\"LOCATION_NAME\":\"Location Name:\"}};</script>",
+  "rows": [
+   {
+    "tags1": [
+     "Weekend Only, Full-Time & Part-Time"
+    ],
+    "tags2": [
+     "All Shifts"
+    ],
+    "tags3": [
+     "$23.97/Hr. -  $29.96/Hr."
+    ],
+    "tags5": [
+     "The Meadows of Kalida"
+    ]
+   },
+   {
+    "tags1": [
+     "Full-Time & Part-Time"
+    ],
+    "tags2": [
+     "All Shifts"
+    ],
+    "tags5": [
+     "The Meadows of Kalida"
+    ]
+   },
+   {
+    "tags1": [
+     "Full-Time, Part-Time & PRN"
+    ],
+    "tags2": [
+     "All Shifts"
+    ],
+    "tags3": [
+     "$18.15/Hr. -  $25.12/Hr."
+    ],
+    "tags5": [
+     "The Meadows of Ottawa"
+    ]
+   }
+  ]
+ },
+ "Fairview Health": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"LOCATION\":\"Locations:\",\"TAGS8\":\"Compensation:\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"LOCATIONS\":\"Location:\",\"REQ_ID\":\"Req ID:\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"SKILLS\":\"Skills:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Categories:\",\"CATEGORIES_ARIA_LABEL\":\"Job Category\",\"BACK\":\"Back\",\"STREET_ADDRESS\":\"Street Address:\"}};</script>",
+  "rows": [
+   {
+    "tags1": [
+     "Surgical Services"
+    ],
+    "tags2": [
+     "Fairview"
+    ],
+    "tags3": [
+     "day/evening/night"
+    ],
+    "tags4": [
+     "0.01"
+    ],
+    "tags5": [
+     "Onsite"
+    ],
+    "tags6": [
+     "0.01"
+    ],
+    "tags7": [
+     "Fairview"
+    ],
+    "tags8": [
+     "$37.67- $54.42 /  Hourly"
+    ]
+   },
+   {
+    "tags1": [
+     "Hematology/Oncology/Infusion"
+    ],
+    "tags2": [
+     "Fairview"
+    ],
+    "tags3": [
+     "evening"
+    ],
+    "tags4": [
+     "48"
+    ],
+    "tags5": [
+     "Onsite"
+    ],
+    "tags6": [
+     "0.60"
+    ],
+    "tags7": [
+     "Fairview"
+    ],
+    "tags8": [
+     "$44.48- $74.29 /  Hourly *based on degree and qualifying step level"
+    ]
+   },
+   {
+    "tags1": [
+     "Cardiology"
+    ],
+    "tags2": [
+     "Fairview"
+    ],
+    "tags3": [
+     "night"
+    ],
+    "tags4": [
+     "48"
+    ],
+    "tags5": [
+     "Onsite"
+    ],
+    "tags6": [
+     "0.60"
+    ],
+    "tags7": [
+     "Fairview"
+    ],
+    "tags8": [
+     "$42.96- $72.75 /  Hourly *based on degree and qualifying step level"
+    ]
+   }
+  ]
+ },
+ "UCI Health": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"LOCATION\":\"Location(s):\",\"TAGS7\":\"Division:\",\"TAGS8\":\"Department:\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"TAGS6\":\"Payroll Job Title:\",\"REQ_ID\":\"Req ID:\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"TAGS4\":\"Salary Range Maximum:\",\"TAGS1\":\"Organization:\",\"TAGS2\":\"Salary Range Minimum:\",\"SKILLS\":\"Skills:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Categories:\",\"CATEGORIES_ARIA_LABEL\":\"Job Category\",\"BACK\":\"Back\",\"STREET_ADDRESS\":\"Street Address:\",\"TAGS9\":\"Reports To Title:\"}};</script>",
+  "rows": [
+   {
+    "tags1": [
+     "UCI Health"
+    ],
+    "tags2": [
+     "USD $26.53/Hr."
+    ],
+    "tags3": [
+     "Fully Onsite"
+    ],
+    "tags4": [
+     "USD $31.69/Hr."
+    ],
+    "tags5": [
+     "No"
+    ],
+    "tags6": [
+     "008904-HOSP AST SR"
+    ],
+    "tags7": [
+     "Medical Center"
+    ],
+    "tags8": [
+     "BMT/Oncology - IRV (7)"
+    ],
+    "tags9": [
+     "006475-AMBUL CARE PAT SUPV 2"
+    ]
+   },
+   {
+    "tags1": [
+     "UCI Health"
+    ],
+    "tags2": [
+     "USD $29.10/Hr."
+    ],
+    "tags3": [
+     "Fully Onsite"
+    ],
+    "tags4": [
+     "USD $29.10/Hr."
+    ],
+    "tags5": [
+     "No"
+    ],
+    "tags6": [
+     "009220-STERILE PROCESSING TCHN"
+    ],
+    "tags7": [
+     "Medical Center"
+    ],
+    "tags8": [
+     "Periop Float Pool"
+    ],
+    "tags9": [
+     "004370-CTRL STERILE SUPV 1"
+    ]
+   },
+   {
+    "tags1": [
+     "UCI Health"
+    ],
+    "tags2": [
+     "USD $67.55/Hr."
+    ],
+    "tags3": [
+     "Fully Onsite"
+    ],
+    "tags4": [
+     "USD $92.72/Hr."
+    ],
+    "tags5": [
+     "No"
+    ],
+    "tags6": [
+     "009139-CLIN NURSE 2"
+    ],
+    "tags7": [
+     "Medical Center"
+    ],
+    "tags8": [
+     "Medical 2 Telemetry-LOM"
+    ],
+    "tags9": [
+     "006506-NURSE SVC MGR 2"
+    ]
+   }
+  ]
+ },
+ "Tower Health": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"LOCATION\":\"Locations:\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"REQ_ID\":\"Req ID:\",\"TAGS3\":\"Department:\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"TAGS1\":\"Position Type:\",\"TAGS2\":\"Hours Per Pay Period:\",\"SKILLS\":\"Skills:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Categories:\",\"CATEGORIES_ARIA_LABEL\":\"Job Category\",\"TAGS10\":\"Work Schedule:\",\"BACK\":\"Back\",\"STREET_ADDRESS\":\"Street Address:\",\"TAGS9\":\"Shift:\"}};</script>",
+  "rows": [
+   {
+    "tags1": [
+     "Regular Full-Time"
+    ],
+    "tags2": [
+     "80.00"
+    ],
+    "tags3": [
+     "THMG-STC Ambulatory Staff"
+    ],
+    "tags5": [
+     "Allied Health - Medical Assistant"
+    ],
+    "tags6": [
+     "lisa.williams@towerhealth.org"
+    ],
+    "tags7": [
+     "Tower Health Medical Group - St. Christopher's Hospital for Children"
+    ],
+    "tags9": [
+     "Day/Evening"
+    ]
+   },
+   {
+    "tags1": [
+     "Regular Part-Time"
+    ],
+    "tags2": [
+     "48"
+    ],
+    "tags3": [
+     "PM NSG 3RD FLOOR"
+    ],
+    "tags5": [
+     "Nursing Support - Patient Care Tech"
+    ],
+    "tags6": [
+     "Michael.DAngelo@towerhealth.org"
+    ],
+    "tags7": [
+     "Pottstown Hospital"
+    ],
+    "tags9": [
+     "Day"
+    ]
+   },
+   {
+    "tags1": [
+     "Regular Full-Time"
+    ],
+    "tags2": [
+     "80.00"
+    ],
+    "tags3": [
+     "PM SECURITY"
+    ],
+    "tags5": [
+     "Entry Level / Administrative - Security"
+    ],
+    "tags6": [
+     "cynthia.graham@towerhealth.org"
+    ],
+    "tags7": [
+     "Pottstown Hospital"
+    ],
+    "tags9": [
+     "Evening"
+    ]
+   }
+  ]
+ },
+ "Care New England Health System": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"TAGS7\":\"Weekly Hours:\",\"LOCATION\":\"Locations:\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"TAGS5\":\"Union/Non-Union:\",\"REQ_ID\":\"Job ID:\",\"TAGS6\":\"Schedule:\",\"TAGS3\":\"Job Status:\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"TAGS4\":\"Shift:\",\"TAGS1\":\"Category:\",\"TAGS2\":\"Operating Unit:\",\"SKILLS\":\"Skills:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Job Function:\",\"CATEGORIES_ARIA_LABEL\":\"Job Function:\",\"BACK\":\"Back\",\"STREET_ADDRESS\":\"Street Address:\"}};</script>",
+  "rows": [
+   {
+    "tags1": [
+     "Nursing"
+    ],
+    "tags2": [
+     "Butler Hospital"
+    ],
+    "tags3": [
+     "Full-Time"
+    ],
+    "tags4": [
+     "Nights"
+    ],
+    "tags5": [
+     "Union"
+    ],
+    "tags6": [
+     "11:00pm - 7:00am EOW/EOH"
+    ],
+    "tags7": [
+     "36.00"
+    ]
+   },
+   {
+    "tags1": [
+     "Nursing"
+    ],
+    "tags2": [
+     "Butler Hospital"
+    ],
+    "tags3": [
+     "Full-Time"
+    ],
+    "tags4": [
+     "Nights"
+    ],
+    "tags5": [
+     "Union"
+    ],
+    "tags6": [
+     "11:00pm - 7:00am EOW/EOH"
+    ],
+    "tags7": [
+     "36.00"
+    ]
+   },
+   {
+    "tags1": [
+     "Nursing"
+    ],
+    "tags2": [
+     "Butler Hospital"
+    ],
+    "tags3": [
+     "Per Diem"
+    ],
+    "tags4": [
+     "Flex"
+    ],
+    "tags5": [
+     "Union"
+    ],
+    "tags6": [
+     "Other"
+    ]
+   }
+  ]
+ },
+ "Tanner Health": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"LOCATION\":\"Locations:\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"REQ_ID\":\"Req ID:\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"SKILLS\":\"Skills:\",\"LOCATIONS_JD\":\"Locations:\",\"CATEGORIES_JD\":\"Categories:\",\"REQ_ID_JD\":\"Req ID:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Categories:\",\"CATEGORIES_ARIA_LABEL\":\"Job Category\",\"BACK\":\"Back\",\"STREET_ADDRESS\":\"Street Address:\"}};</script>",
+  "rows": [
+   {
+    "tags1": [
+     "Sign On Bonus Eligible-$20,000"
+    ]
+   },
+   {
+    "tags1": [
+     ""
+    ]
+   },
+   {
+    "tags1": [
+     ""
+    ]
+   }
+  ]
+ },
+ "Novant Health": {
+  "labels_html": "<script>window.__I18N__ = {\"JOB_DESCRIPTION\":{\"TAGS7\":\"Job Opening ID:\",\"LOCATION\":\"Locations:\",\"LOCATION_ARIA_LABEL\":\"Job Location\",\"TAGS5\":\"Facility:\",\"TAGS2_ARIA_LABEL\":\"Work Schedule:\",\"REQ_ID\":\"Req ID:\",\"TAGS3\":\"Department:\",\"EMPLOYMENT_TYPE\":\"Position Type:\",\"REQ_ID_ARIA_LABEL\":\"Job ID\",\"TAGS4\":\"Work Schedule Details:\",\"TAGS1\":\"Position Type:\",\"TAGS2\":\"Work Schedule:\",\"SKILLS\":\"Skills:\",\"TAGS4_ARIA_LABEL\":\"Work Schedule Details:\",\"DESCRIPTION_HEADING\":\"Job Description\",\"CATEGORIES\":\"Categories:\",\"CATEGORIES_ARIA_LABEL\":\"Job Category\",\"TAGS1_ARIA_LABEL\":\"Position Type:\",\"BACK\":\"Back\",\"TAGS3_ARIA_LABEL\":\"Department:\",\"STREET_ADDRESS\":\"Street Address:\",\"TAGS5_ARIA_LABEL\":\"Facility:\"}};</script>",
+  "rows": [
+   {
+    "tags1": [
+     "Full-Time"
+    ],
+    "tags2": [
+     "7:00pm-7:00am"
+    ],
+    "tags3": [
+     "Orthopedic Specialty Care Unit"
+    ],
+    "tags5": [
+     "POH - Charlotte Orthopedic Hospital"
+    ],
+    "tags6": [
+     "Charlotte Area"
+    ],
+    "tags7": [
+     "193247"
+    ]
+   },
+   {
+    "tags1": [
+     "Full-Time"
+    ],
+    "tags2": [
+     "7:00pm-7:00am"
+    ],
+    "tags3": [
+     "Specialty Care Unit"
+    ],
+    "tags4": [
+     "7p-7a, Nights"
+    ],
+    "tags5": [
+     "KVM - Kernersville Medical Center"
+    ],
+    "tags6": [
+     "Winston-Salem Area"
+    ],
+    "tags7": [
+     "190412"
+    ]
+   },
+   {
+    "tags1": [
+     "Full-Time"
+    ],
+    "tags2": [
+     "Other"
+    ],
+    "tags3": [
+     "Operating Room"
+    ],
+    "tags4": [
+     "3-12hr shifts, 0630am-1900pm with call"
+    ],
+    "tags5": [
+     "PHO - Presbyterian Medical Center"
+    ],
+    "tags6": [
+     "Charlotte Area"
+    ],
+    "tags7": [
+     "180474"
+    ]
+   }
+  ]
+ }
+}

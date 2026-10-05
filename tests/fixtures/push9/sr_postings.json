@@ -1,0 +1,56 @@
+[
+ {
+  "compensation": {
+   "min": 20.25,
+   "max": 26.33,
+   "currency": "USD",
+   "period": "HOURLY"
+  },
+  "customField": [
+   {
+    "fieldLabel": "Salary Range Minimum ",
+    "valueLabel": "$20.25"
+   },
+   {
+    "fieldLabel": "Salary Range Maximum",
+    "valueLabel": "$26.33"
+   }
+  ]
+ },
+ {
+  "compensation": {
+   "min": 34.5,
+   "max": 55.2,
+   "currency": "USD",
+   "period": "HOURLY"
+  },
+  "customField": [
+   {
+    "fieldLabel": "Salary Range Minimum ",
+    "valueLabel": "$34.50"
+   },
+   {
+    "fieldLabel": "Salary Range Maximum",
+    "valueLabel": "$55.20"
+   }
+  ]
+ },
+ {
+  "compensation": {
+   "min": 34.5,
+   "max": 55.2,
+   "currency": "USD",
+   "period": "HOURLY"
+  },
+  "customField": [
+   {
+    "fieldLabel": "Salary Range Minimum ",
+    "valueLabel": "$34.50"
+   },
+   {
+    "fieldLabel": "Salary Range Maximum",
+    "valueLabel": "$55.20"
+   }
+  ]
+ }
+]

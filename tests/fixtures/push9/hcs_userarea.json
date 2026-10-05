@@ -1,0 +1,265 @@
+{
+ "RenownHealth": [
+  {
+   "salaryRange": "18.24 - 25.53",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "19.16 - 26.82",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "19.16 - 26.82",
+   "customJobPostingFieldValues": {}
+  }
+ ],
+ "CommunityMemorial": [
+  {
+   "salaryRange": "$18.00 - $23.00",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "$28.54 - $44.32",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "$58.76 - $82.00",
+   "customJobPostingFieldValues": {}
+  }
+ ],
+ "MedicalCenterHealthSystemOdessa": [
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "$24.71- $40.02",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "$24.71- $40.02",
+   "customJobPostingFieldValues": {}
+  }
+ ],
+ "CHCHealthcare": [
+  {
+   "salaryRange": "13.5800 Through 20.3700",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "13.5800 Through 20.3700",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {}
+  }
+ ],
+ "HolyokeHealth": [
+  {
+   "salaryRange": "$22.00 - $29.25 hourly",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$22.00 - $29.25 hourly"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$18.40 - $25.45 hourly"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "$32.97 - $47.89 hourly",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$32.97 - $47.89 hourly"
+     }
+    ]
+   }
+  }
+ ],
+ "HaysMedicalCenter": [
+  {
+   "salaryRange": "$17.00 - $25.00",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$17.00 - $25.00"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "$30.00 - $46.00",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$30.00 - $46.00"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "$15.00 - $21.00",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$15.00 - $21.00"
+     }
+    ]
+   }
+  }
+ ],
+ "LawrenceGeneral": [
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {
+    "-2073073153": [
+     {
+      "name": "Pay Type",
+      "value": "Hourly"
+     }
+    ],
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$34.89 - $51.87"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {
+    "-2073073153": [
+     {
+      "name": "Pay Type",
+      "value": "Hourly"
+     }
+    ],
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$34.89 - $51.87"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {
+    "-2073073153": [
+     {
+      "name": "Pay Type",
+      "value": "Annually"
+     }
+    ],
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$43.86 - $65.79"
+     }
+    ]
+   }
+  }
+ ],
+ "YorkHospital": [
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$31.65 - $51.86 per hour"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$31.65 - $51.86 per hour"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "To Be Determined",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "$17.00 - $23.20 per hour "
+     }
+    ]
+   }
+  }
+ ],
+ "PacificaHospitaloftheValley": [
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {}
+  },
+  {
+   "salaryRange": "$20.2566 - $23.6974",
+   "customJobPostingFieldValues": {}
+  }
+ ],
+ "WillisKnightonHealthSystem": [
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "Min - $0.00 Mid - $0.00 Max - $0.00"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "Min - $0.00 Mid - $0.00 Max - $0.00"
+     }
+    ]
+   }
+  },
+  {
+   "salaryRange": "",
+   "customJobPostingFieldValues": {
+    "-1813165834": [
+     {
+      "name": "Salary Range",
+      "value": "Min - $0.00 Mid - $0.00 Max - $0.00"
+     }
+    ]
+   }
+  }
+ ]
+}

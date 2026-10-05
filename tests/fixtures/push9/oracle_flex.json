@@ -1,0 +1,1878 @@
+{
+ "AdventistHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full-time regular"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "The estimated base pay for this position is $20.41 to $32.97. Additional individual compensation may be available for this role through differentials, extra shift incentives, bonuses, etc. Base pay is only a portion of the total rewards package, and a comprehensive benefits program is available for qualifying positions. Please contact our Talent Acquisition team for more information."
+     },
+     {
+      "Prompt": "Hiring Department",
+      "Value": "Clinical Laboratory 1"
+     },
+     {
+      "Prompt": "Shift Length",
+      "Value": "Combo"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full-time regular"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "The estimated base pay for this position is $58.02 to $86.97. Additional individual compensation may be available for this role through differentials, extra shift incentives, bonuses, etc. Base pay is only a portion of the total rewards package, and a comprehensive benefits program is available for qualifying positions. Please contact our Talent Acquisition team for more information."
+     },
+     {
+      "Prompt": "Hiring Department",
+      "Value": "Radiology - Diagnostic"
+     },
+     {
+      "Prompt": "Shift Length",
+      "Value": "12 Hours"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full-time regular"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "The estimated base pay for this position is $25.00 to $29.56. Additional individual compensation may be available for this role through differentials, extra shift incentives, bonuses, etc. Base pay is only a portion of the total rewards package, and a comprehensive benefits program is available for qualifying positions. Please contact our Talent Acquisition team for more information."
+     },
+     {
+      "Prompt": "Hiring Department",
+      "Value": "Clinic Overhead - AHLM AHPN"
+     },
+     {
+      "Prompt": "Shift Length",
+      "Value": "8 Hours"
+     }
+    ]
+   }
+  }
+ ],
+ "BaptistHealthCarePensacola": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Environment",
+      "Value": "On Site"
+     },
+     {
+      "Prompt": "FTE",
+      "Value": "1.0 FT"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Environment",
+      "Value": "On Site"
+     },
+     {
+      "Prompt": "FTE",
+      "Value": "1.0 FT"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Environment",
+      "Value": "On Site"
+     },
+     {
+      "Prompt": "FTE",
+      "Value": "1.0 FT"
+     }
+    ]
+   }
+  }
+ ],
+ "BrookdaleSeniorLiving": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Hiring Range Minimum and Maximum Per Period",
+      "Value": "$26.37 - $39.55 / hour"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Hiring Range Minimum and Maximum Per Period",
+      "Value": "null"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Hiring Range Minimum and Maximum Per Period",
+      "Value": "$17.31 - $25.96 / hour"
+     }
+    ]
+   }
+  }
+ ],
+ "CedarsSinai": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Overtime Status",
+      "Value": "NONEXEMPT"
+     },
+     {
+      "Prompt": "Primary Shift",
+      "Value": "1 Day"
+     },
+     {
+      "Prompt": "Shift Duration",
+      "Value": "8 hour"
+     },
+     {
+      "Prompt": "Minimum Salary",
+      "Value": "82.00"
+     },
+     {
+      "Prompt": "Maximum Salary",
+      "Value": "92.00"
+     },
+     {
+      "Prompt": "UKG Pay Rule",
+      "Value": "C007"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Overtime Status",
+      "Value": "NONEXEMPT"
+     },
+     {
+      "Prompt": "Primary Shift",
+      "Value": "1 Day"
+     },
+     {
+      "Prompt": "Shift Duration",
+      "Value": "8 hour"
+     },
+     {
+      "Prompt": "Minimum Salary",
+      "Value": "23.18"
+     },
+     {
+      "Prompt": "Maximum Salary",
+      "Value": "34.77"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Overtime Status",
+      "Value": "NONEXEMPT"
+     },
+     {
+      "Prompt": "Primary Shift",
+      "Value": "1 Day"
+     },
+     {
+      "Prompt": "Shift Duration",
+      "Value": "8 hour"
+     },
+     {
+      "Prompt": "Minimum Salary",
+      "Value": "23.18"
+     },
+     {
+      "Prompt": "Maximum Salary",
+      "Value": "34.77"
+     }
+    ]
+   }
+  }
+ ],
+ "EasternConnecticutHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Shift",
+      "Value": "8 Hours"
+     },
+     {
+      "Prompt": "FTE (.01 - 1.0)",
+      "Value": "1"
+     },
+     {
+      "Prompt": "Job Type",
+      "Value": "Full-Time"
+     },
+     {
+      "Prompt": "Work Location",
+      "Value": "On-site"
+     },
+     {
+      "Prompt": "Salary Range",
+      "Value": "$29.16 - $44.47 Hourly*"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Shift",
+      "Value": "8 Hours"
+     },
+     {
+      "Prompt": "FTE (.01 - 1.0)",
+      "Value": "1"
+     },
+     {
+      "Prompt": "Job Type",
+      "Value": "Full-Time"
+     },
+     {
+      "Prompt": "Work Location",
+      "Value": "On-site"
+     },
+     {
+      "Prompt": "Salary Range",
+      "Value": "$22.71 - $33.18 Hourly*"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Shift",
+      "Value": "12 Hours"
+     },
+     {
+      "Prompt": "FTE (.01 - 1.0)",
+      "Value": "0.9"
+     },
+     {
+      "Prompt": "Job Type",
+      "Value": "Full-Time"
+     },
+     {
+      "Prompt": "Work Location",
+      "Value": "On-site"
+     },
+     {
+      "Prompt": "Salary Range",
+      "Value": "$41.03 - $65.70 Hourly*"
+     }
+    ]
+   }
+  }
+ ],
+ "HealthPartners": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Schedule",
+      "Value": ".7 8hr Day/Evening Every Other Weekend"
+     },
+     {
+      "Prompt": "Hours Per Week/FTE",
+      "Value": "28 hrs weekly / .7 FTE"
+     },
+     {
+      "Prompt": "Union (if applicable)",
+      "Value": "Park Nicollet SEIU Service Workers"
+     },
+     {
+      "Prompt": "Job Shift",
+      "Value": "Day/Evening"
+     },
+     {
+      "Prompt": "Position Type",
+      "Value": "Part-time regular"
+     },
+     {
+      "Prompt": "Job Category",
+      "Value": "Emergency Medicine"
+     },
+     {
+      "Prompt": "Department",
+      "Value": "Emergency Facility"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$21.80 - $28.69 hourly"
+     },
+     {
+      "Prompt": "Pay Range Statement",
+      "Value": "Compensation is based on the level and requirements of the role. Pay within our ranges may also be determined by education, experience, knowledge, skills, location, and abilities as well as internal equity.  Hired candidates may be eligible to receive additional compensation based on role (e.g., shift differential, bonus, sales incentive, productivity pay, etc.)."
+     },
+     {
+      "Prompt": "Overtime Eligibility Status",
+      "Value": "Non-Exempt"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Schedule",
+      "Value": "11p-730a flex every other weekend"
+     },
+     {
+      "Prompt": "Hours Per Week/FTE",
+      "Value": "20 hrs weekly / .5 FTE"
+     },
+     {
+      "Prompt": "Job Shift",
+      "Value": "Night"
+     },
+     {
+      "Prompt": "Position Type",
+      "Value": "Part-time regular"
+     },
+     {
+      "Prompt": "Job Category",
+      "Value": "Emergency Medicine"
+     },
+     {
+      "Prompt": "Department",
+      "Value": "Emergency Facility"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$22.30 - $31.24 hourly"
+     },
+     {
+      "Prompt": "Pay Range Statement",
+      "Value": "Compensation is based on the level and requirements of the role. Pay within our ranges may also be determined by education, experience, knowledge, skills, location, and abilities as well as internal equity.  Hired candidates may be eligible to receive additional compensation based on role (e.g., shift differential, bonus, sales incentive, productivity pay, etc.)."
+     },
+     {
+      "Prompt": "Overtime Eligibility Status",
+      "Value": "Non-Exempt"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Schedule",
+      "Value": "7p-730a flex every third weekend"
+     },
+     {
+      "Prompt": "Hours Per Week/FTE",
+      "Value": "24 hrs weekly / .6 FTE"
+     },
+     {
+      "Prompt": "Job Shift",
+      "Value": "Night"
+     },
+     {
+      "Prompt": "Position Type",
+      "Value": "Part-time regular"
+     },
+     {
+      "Prompt": "Job Category",
+      "Value": "Emergency Medicine"
+     },
+     {
+      "Prompt": "Department",
+      "Value": "Emergency Facility"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$22.30 - $31.24 hourly"
+     },
+     {
+      "Prompt": "Pay Range Statement",
+      "Value": "Compensation is based on the level and requirements of the role. Pay within our ranges may also be determined by education, experience, knowledge, skills, location, and abilities as well as internal equity.  Hired candidates may be eligible to receive additional compensation based on role (e.g., shift differential, bonus, sales incentive, productivity pay, etc.)."
+     },
+     {
+      "Prompt": "Overtime Eligibility Status",
+      "Value": "Non-Exempt"
+     }
+    ]
+   }
+  }
+ ],
+ "INTEGRISHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full-time regular"
+     },
+     {
+      "Prompt": "Job Shift",
+      "Value": "Variable"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full-time regular"
+     },
+     {
+      "Prompt": "Job Shift",
+      "Value": "Day Job"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full-time regular"
+     },
+     {
+      "Prompt": "Job Shift",
+      "Value": "Day Job"
+     }
+    ]
+   }
+  }
+ ],
+ "InovaHealthSystem": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Salary Range",
+      "Value": "$54.25 - $69.25"
+     },
+     {
+      "Prompt": "Pay Rate Frequency",
+      "Value": "HOURLY"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Salary Range",
+      "Value": "$20.30 - $33.09"
+     },
+     {
+      "Prompt": "Pay Rate Frequency",
+      "Value": "HOURLY"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Salary Range",
+      "Value": "$32.30 - $52.65"
+     }
+    ]
+   }
+  }
+ ],
+ "InspiraHealthNetwork": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Part Time"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "33.11 - 47.28"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full Time"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "33.11 - 47.28"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full Time"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "27.01 - 38.58"
+     }
+    ]
+   }
+  }
+ ],
+ "LifepointHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "FTE",
+      "Value": "0.6 - 48 hr/pp (Part Time)"
+     },
+     {
+      "Prompt": "Career Site Category",
+      "Value": "Nursing - Registered Nurse"
+     },
+     {
+      "Prompt": "Position Type",
+      "Value": "Primary"
+     },
+     {
+      "Prompt": "Facility Name",
+      "Value": "UP Health System - Portage"
+     },
+     {
+      "Prompt": "Is this position grant-funded?",
+      "Value": "No"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "FTE",
+      "Value": "1.0 - 80 hr/pp (Full Time)"
+     },
+     {
+      "Prompt": "Career Site Category",
+      "Value": "Administrative Support"
+     },
+     {
+      "Prompt": "Position Type",
+      "Value": "Primary"
+     },
+     {
+      "Prompt": "Facility Name",
+      "Value": "Valley Springs Behavioral Health Hospital"
+     },
+     {
+      "Prompt": "Is this position grant-funded?",
+      "Value": "No"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "FTE",
+      "Value": "1.0 - 80 hr/pp (Full Time)"
+     },
+     {
+      "Prompt": "Career Site Category",
+      "Value": "Facilities / Plant Operations"
+     },
+     {
+      "Prompt": "Position Type",
+      "Value": "Primary"
+     },
+     {
+      "Prompt": "Facility Name",
+      "Value": "Valley Springs Behavioral Health Hospital"
+     },
+     {
+      "Prompt": "Is this position grant-funded?",
+      "Value": "No"
+     }
+    ]
+   }
+  }
+ ],
+ "LomaLindaUniversityHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Organization",
+      "Value": "LLU Medical Center"
+     },
+     {
+      "Prompt": "Schedule Type",
+      "Value": "Part-Time"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "Evenings"
+     },
+     {
+      "Prompt": "Hours Per Pay Period",
+      "Value": "64"
+     },
+     {
+      "Prompt": "Workday Start Time",
+      "Value": "2-1500"
+     },
+     {
+      "Prompt": "Alternative Work Schedule (AWS)",
+      "Value": "H - 8/40 Clock Schedule"
+     },
+     {
+      "Prompt": "Benefits Eligible",
+      "Value": "Yes"
+     },
+     {
+      "Prompt": "LLUH Posting Location",
+      "Value": "LLU Medical Center"
+     },
+     {
+      "Prompt": "Travel Required",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Sunday",
+      "Value": "3:00pm-11:30pm"
+     },
+     {
+      "Prompt": "Monday",
+      "Value": "3:00pm-11:30pm"
+     },
+     {
+      "Prompt": "Friday",
+      "Value": "3:00pm-11:30pm"
+     },
+     {
+      "Prompt": "Saturday",
+      "Value": "3:00pm-11:30pm"
+     },
+     {
+      "Prompt": "Bonus",
+      "Value": "Not Applicable"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$25.00 - $26.37 / hourly"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Organization",
+      "Value": "LLU Medical Center"
+     },
+     {
+      "Prompt": "Schedule Type",
+      "Value": "Part-Time"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "Varied"
+     },
+     {
+      "Prompt": "Hours Per Pay Period",
+      "Value": "40"
+     },
+     {
+      "Prompt": "Workday Start Time",
+      "Value": "5-2400"
+     },
+     {
+      "Prompt": "Alternative Work Schedule (AWS)",
+      "Value": "H - 8/40 Clock Schedule"
+     },
+     {
+      "Prompt": "Benefits Eligible",
+      "Value": "Yes"
+     },
+     {
+      "Prompt": "LLUH Posting Location",
+      "Value": "LLU Medical Center"
+     },
+     {
+      "Prompt": "Travel Required",
+      "Value": "Yes 5%-25%"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$35.28 - $47.45 / hourly"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Organization",
+      "Value": "LLU Medical Center"
+     },
+     {
+      "Prompt": "Schedule Type",
+      "Value": "Full-Time"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "Varied"
+     },
+     {
+      "Prompt": "Hours Per Pay Period",
+      "Value": "80"
+     },
+     {
+      "Prompt": "Workday Start Time",
+      "Value": "5-2400"
+     },
+     {
+      "Prompt": "Alternative Work Schedule (AWS)",
+      "Value": "H - 8/40 Clock Schedule"
+     },
+     {
+      "Prompt": "Benefits Eligible",
+      "Value": "Yes"
+     },
+     {
+      "Prompt": "LLUH Posting Location",
+      "Value": "LLU Medical Center"
+     },
+     {
+      "Prompt": "Travel Required",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Sunday",
+      "Value": "Varied"
+     },
+     {
+      "Prompt": "Monday",
+      "Value": "Varied"
+     },
+     {
+      "Prompt": "Tuesday",
+      "Value": "Varied"
+     },
+     {
+      "Prompt": "Wednesday",
+      "Value": "Varied"
+     },
+     {
+      "Prompt": "Thursday",
+      "Value": "Varied"
+     },
+     {
+      "Prompt": "Friday",
+      "Value": "Varied"
+     },
+     {
+      "Prompt": "Saturday",
+      "Value": "Varied"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$25.00 - $26.37 / hourly"
+     }
+    ]
+   }
+  }
+ ],
+ "MayoClinic": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Hours / Pay Period",
+      "Value": "64"
+     },
+     {
+      "Prompt": "Benefits Eligible",
+      "Value": "Yes"
+     },
+     {
+      "Prompt": "Remote worker",
+      "Value": "100% On-Site"
+     },
+     {
+      "Prompt": "Compensation Detail",
+      "Value": "$123,427.20 - $172,244.80 (based on a 1.0 FTE)"
+     },
+     {
+      "Prompt": "Schedule Details",
+      "Value": "Monday - Friday "
+     },
+     {
+      "Prompt": "Weekend Schedule",
+      "Value": "1 in 5 weekends and outpatient clinic "
+     },
+     {
+      "Prompt": "Union Job",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Area of Interest 1",
+      "Value": "Nephrology & Hypertension"
+     },
+     {
+      "Prompt": "Marketing Category\t1",
+      "Value": "Advanced Practice Providers"
+     },
+     {
+      "Prompt": "International Assignment\t",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Overtime Rule",
+      "Value": "Salaried employee who does not receive overtime pay"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Hours / Pay Period",
+      "Value": "80"
+     },
+     {
+      "Prompt": "Benefits Eligible",
+      "Value": "Yes"
+     },
+     {
+      "Prompt": "Remote worker",
+      "Value": "Flexibility of both remote and on-site work"
+     },
+     {
+      "Prompt": "Compensation Detail",
+      "Value": "$31.49- $47.25 / hour"
+     },
+     {
+      "Prompt": "Schedule Details",
+      "Value": "Monday through Friday, hours range from 7 am to 5 pm, CST.  Occasionally hours outside of these.\n\nThis position is a combination of remote and on-site work; individual must live within a 100 mile driving distance to either the Jacksonville, FL, Scottsdale, AZ or Rochester, MN Mayo Clinic campus."
+     },
+     {
+      "Prompt": "Union Job",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Area of Interest 1",
+      "Value": "Information Technology"
+     },
+     {
+      "Prompt": "Area of Interest 2",
+      "Value": "Education"
+     },
+     {
+      "Prompt": "Marketing Category\t1",
+      "Value": "Information Technology"
+     },
+     {
+      "Prompt": "Marketing Category 2",
+      "Value": "Education"
+     },
+     {
+      "Prompt": "International Assignment\t",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Overtime Rule",
+      "Value": "Earn overtime for hours worked over 40 in a work week"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Hours / Pay Period",
+      "Value": "80"
+     },
+     {
+      "Prompt": "Benefits Eligible",
+      "Value": "Yes"
+     },
+     {
+      "Prompt": "Remote worker",
+      "Value": "100% On-Site"
+     },
+     {
+      "Prompt": "Compensation Detail",
+      "Value": "Compensation range is $71,510.40 - $107,390.40 / salary. This vacancy is not eligible for sponsorship. Mayo Clinic will not sponsor or transfer visas for this position. Mayo Clinic does not participate in the F-1 STEM OPT extension program."
+     },
+     {
+      "Prompt": "Schedule Details",
+      "Value": "Neuro Immunology - Monday-Friday 3:00pm-11:30pm\n\nNeuro Immunology - Wednesday-Saturday 3:00pm-1:30am\n\nNeuro Immunology - Sunday-Wednesday 3:00pm-1:30am\n\nCell Focus - Monday-Friday 8:00am-4:30pm"
+     },
+     {
+      "Prompt": "Union Job",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Area of Interest 1",
+      "Value": "Laboratory Medicine & Pathology"
+     },
+     {
+      "Prompt": "Marketing Category\t1",
+      "Value": "Laboratory"
+     },
+     {
+      "Prompt": "International Assignment\t",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Overtime Rule",
+      "Value": "Salaried employee who does not receive overtime pay"
+     }
+    ]
+   }
+  }
+ ],
+ "NorthwellHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Minimum Salary/Range*",
+      "Value": "32.2863"
+     },
+     {
+      "Prompt": "Maximum Salary/Range*",
+      "Value": "34.2317"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "Variable"
+     },
+     {
+      "Prompt": "Shift Begin Time",
+      "Value": "7:00 AM"
+     },
+     {
+      "Prompt": "Shift End Time",
+      "Value": "3:00 PM"
+     },
+     {
+      "Prompt": "Schedule",
+      "Value": "Per Diem"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Minimum Salary/Range*",
+      "Value": "91,400.0000"
+     },
+     {
+      "Prompt": "Maximum Salary/Range*",
+      "Value": "158,100.0000"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "Days"
+     },
+     {
+      "Prompt": "Shift Begin Time",
+      "Value": "7:00 AM"
+     },
+     {
+      "Prompt": "Shift End Time",
+      "Value": "9:00 PM"
+     },
+     {
+      "Prompt": "Schedule",
+      "Value": "Full Time"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Minimum Salary/Range*",
+      "Value": "41,780.0000"
+     },
+     {
+      "Prompt": "Maximum Salary/Range*",
+      "Value": "64,340.0000"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "Days"
+     },
+     {
+      "Prompt": "Shift Begin Time",
+      "Value": "9:00 AM"
+     },
+     {
+      "Prompt": "Shift End Time",
+      "Value": "5:30 PM"
+     },
+     {
+      "Prompt": "Schedule",
+      "Value": "Full Time"
+     }
+    ]
+   }
+  }
+ ],
+ "ProvidenceHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "FTE",
+      "Value": "0.9"
+     },
+     {
+      "Prompt": "Minimum Salary",
+      "Value": "21.16"
+     },
+     {
+      "Prompt": "Maximum Salary",
+      "Value": "32.37"
+     },
+     {
+      "Prompt": "Job Location",
+      "Value": "Providence St Vincent Medical Ctr-Portland(HR)"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "FTE",
+      "Value": "1"
+     },
+     {
+      "Prompt": "Minimum Salary",
+      "Value": "44.35"
+     },
+     {
+      "Prompt": "Maximum Salary",
+      "Value": "68.86"
+     },
+     {
+      "Prompt": "Job Location",
+      "Value": "Providence Saint John's Health Ctr-Santa Monica(HR)"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "FTE",
+      "Value": "1"
+     },
+     {
+      "Prompt": "Minimum Salary",
+      "Value": "28.11"
+     },
+     {
+      "Prompt": "Maximum Salary",
+      "Value": "43.00"
+     },
+     {
+      "Prompt": "Job Location",
+      "Value": "Providence Plaza South-Medford(HR)"
+     }
+    ]
+   }
+  }
+ ],
+ "TenetHealthcare": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full Time"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$30.60 - $48.80 hourly **Individual wages are determined based upon a number of factors including, but not limited to, an individual’s qualifications and experience"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full Time"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full Time"
+     }
+    ]
+   }
+  }
+ ],
+ "TriHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Shift",
+      "Value": "Day"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Regular or Temporary",
+      "Value": "Regular"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "Day"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Regular or Temporary",
+      "Value": "Regular"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "Evening"
+     }
+    ]
+   }
+  }
+ ],
+ "UCHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "For RN positions are you willing to accept New RN graduates?",
+      "Value": "N/A"
+     },
+     {
+      "Prompt": "Employer",
+      "Value": "University of Cincinnati Medical Center, LLC"
+     },
+     {
+      "Prompt": "Cost Center",
+      "Value": "UCMC-261102-Emergency Mental Health Services"
+     },
+     {
+      "Prompt": "Remote/Hybrid/Onsite",
+      "Value": "Onsite"
+     },
+     {
+      "Prompt": "On Call Required?",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "12 Hour AM"
+     },
+     {
+      "Prompt": "Working Hours",
+      "Value": "24"
+     },
+     {
+      "Prompt": "FTE",
+      "Value": "0.6"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "For RN positions are you willing to accept New RN graduates?",
+      "Value": "N/A"
+     },
+     {
+      "Prompt": "Employer",
+      "Value": "University of Cincinnati Medical Center, LLC"
+     },
+     {
+      "Prompt": "Cost Center",
+      "Value": "UCMC-261102-Emergency Mental Health Services"
+     },
+     {
+      "Prompt": "Remote/Hybrid/Onsite",
+      "Value": "Onsite"
+     },
+     {
+      "Prompt": "On Call Required?",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "12 Hour AM"
+     },
+     {
+      "Prompt": "Working Hours",
+      "Value": "36"
+     },
+     {
+      "Prompt": "FTE",
+      "Value": "0.9"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "For RN positions are you willing to accept New RN graduates?",
+      "Value": "N/A"
+     },
+     {
+      "Prompt": "Employer",
+      "Value": "University of Cincinnati Medical Center, LLC"
+     },
+     {
+      "Prompt": "Cost Center",
+      "Value": "UCMC-332209-Pathology - Hospital"
+     },
+     {
+      "Prompt": "Remote/Hybrid/Onsite",
+      "Value": "Onsite"
+     },
+     {
+      "Prompt": "On Call Required?",
+      "Value": "No"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "First"
+     },
+     {
+      "Prompt": "Working Hours",
+      "Value": "1"
+     },
+     {
+      "Prompt": "FTE",
+      "Value": "0.025"
+     }
+    ]
+   }
+  }
+ ],
+ "UCSFHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Shift Length",
+      "Value": "12 hours"
+     },
+     {
+      "Prompt": "Budgeted Job Salary Range",
+      "Value": "93.47-121.11"
+     },
+     {
+      "Prompt": "Campus Location 1",
+      "Value": "Parnassus Heights (SF)"
+     },
+     {
+      "Prompt": "Bargaining Unit",
+      "Value": "NX"
+     },
+     {
+      "Prompt": "Employee Class",
+      "Value": "Career"
+     },
+     {
+      "Prompt": "FLSA Status",
+      "Value": "Non-exempt"
+     },
+     {
+      "Prompt": "Job Code and Payroll Title",
+      "Value": "009139 | CLIN NURSE 2"
+     },
+     {
+      "Prompt": "Workplace",
+      "Value": "Fully On-Site"
+     },
+     {
+      "Prompt": "FTE%",
+      "Value": "90.00"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Shift Length",
+      "Value": "12 hours"
+     },
+     {
+      "Prompt": "Budgeted Job Salary Range",
+      "Value": "93.47-121.11"
+     },
+     {
+      "Prompt": "Campus Location 1",
+      "Value": "Parnassus Heights (SF)"
+     },
+     {
+      "Prompt": "Bargaining Unit",
+      "Value": "NX"
+     },
+     {
+      "Prompt": "Employee Class",
+      "Value": "Career"
+     },
+     {
+      "Prompt": "FLSA Status",
+      "Value": "Non-exempt"
+     },
+     {
+      "Prompt": "Job Code and Payroll Title",
+      "Value": "009139 | CLIN NURSE 2"
+     },
+     {
+      "Prompt": "Workplace",
+      "Value": "Fully On-Site"
+     },
+     {
+      "Prompt": "FTE%",
+      "Value": "90.00"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Shift Length",
+      "Value": "8 hours"
+     },
+     {
+      "Prompt": "Budgeted Job Salary Range",
+      "Value": "225,000-250,000"
+     },
+     {
+      "Prompt": "Campus Location 1",
+      "Value": "Mount Zion (SF)"
+     },
+     {
+      "Prompt": "Bargaining Unit",
+      "Value": "99"
+     },
+     {
+      "Prompt": "Employee Class",
+      "Value": "Career"
+     },
+     {
+      "Prompt": "FLSA Status",
+      "Value": "Exempt"
+     },
+     {
+      "Prompt": "Job Code and Payroll Title",
+      "Value": "005635 | HEALTH SCIENCES ADM 2"
+     },
+     {
+      "Prompt": "Workplace",
+      "Value": "Fully On-Site"
+     },
+     {
+      "Prompt": "FTE%",
+      "Value": "100.00"
+     }
+    ]
+   }
+  }
+ ],
+ "UChicagoMedicine": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Location Type",
+      "Value": "On Site"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "1"
+     },
+     {
+      "Prompt": "Min Salary",
+      "Value": "52.00"
+     },
+     {
+      "Prompt": "Max Salary",
+      "Value": "52.00"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Location Type",
+      "Value": "On Site"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "1"
+     },
+     {
+      "Prompt": "Position Type",
+      "Value": "Registry"
+     },
+     {
+      "Prompt": "Min Salary",
+      "Value": "56.75"
+     },
+     {
+      "Prompt": "Max Salary",
+      "Value": "56.75"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Work Location Type",
+      "Value": "On Site"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "1"
+     },
+     {
+      "Prompt": "Position Type",
+      "Value": "Registry"
+     },
+     {
+      "Prompt": "Min Salary",
+      "Value": "56.75"
+     },
+     {
+      "Prompt": "Max Salary",
+      "Value": "56.75"
+     }
+    ]
+   }
+  }
+ ],
+ "UWHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "FTE",
+      "Value": "0.5"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$20.920 - $29.30/ hour"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "FTE",
+      "Value": "0.7"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$20.92 - $29.30 / hour"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "FTE",
+      "Value": "0.8"
+     },
+     {
+      "Prompt": "Pay Range",
+      "Value": "$20.92 - $29.30 / hour"
+     }
+    ]
+   }
+  }
+ ],
+ "UnitedRegional": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Minimum Salary (Hourly Rate)",
+      "Value": "55.620000"
+     },
+     {
+      "Prompt": "Maximum Salary (Hourly Rate)",
+      "Value": "55.620000"
+     },
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Per Diem"
+     },
+     {
+      "Prompt": "Hours per Week",
+      "Value": "0.01"
+     },
+     {
+      "Prompt": "Primary Shift",
+      "Value": "Day"
+     },
+     {
+      "Prompt": "Work Schedule",
+      "Value": "8 am - 4 pm"
+     },
+     {
+      "Prompt": "Days and Shifts",
+      "Value": "varies Monday  - Friday  8:15- 4:15, weekends 7:30-3:30pm"
+     },
+     {
+      "Prompt": "On Call Expectations",
+      "Value": "none"
+     },
+     {
+      "Prompt": "Weekends Expectations",
+      "Value": "varies"
+     },
+     {
+      "Prompt": "Department",
+      "Value": "115000065601 - Infusion - Therapy Hospital Based"
+     },
+     {
+      "Prompt": "Division",
+      "Value": "Chilton Medical Center"
+     },
+     {
+      "Prompt": "Specialty",
+      "Value": "Other"
+     },
+     {
+      "Prompt": "Service Line",
+      "Value": "Oncology"
+     },
+     {
+      "Prompt": "Region",
+      "Value": "Northern Region (Chilton Medical Center)"
+     },
+     {
+      "Prompt": "Salary Admin Plan",
+      "Value": "RNS"
+     },
+     {
+      "Prompt": "Overtime Status",
+      "Value": "NonExempt"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Minimum Salary (Hourly Rate)",
+      "Value": "41.790000"
+     },
+     {
+      "Prompt": "Maximum Salary (Hourly Rate)",
+      "Value": "73.560000"
+     },
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full-time"
+     },
+     {
+      "Prompt": "Hours per Week",
+      "Value": "37.5"
+     },
+     {
+      "Prompt": "Primary Shift",
+      "Value": "Day"
+     },
+     {
+      "Prompt": "Work Schedule",
+      "Value": "8 am - 4 pm"
+     },
+     {
+      "Prompt": "Days and Shifts",
+      "Value": "Monday - Friday"
+     },
+     {
+      "Prompt": "On Call Expectations",
+      "Value": "none"
+     },
+     {
+      "Prompt": "Weekends Expectations",
+      "Value": "n/a"
+     },
+     {
+      "Prompt": "Department",
+      "Value": "115000065601 - Infusion - Therapy Hospital Based"
+     },
+     {
+      "Prompt": "Division",
+      "Value": "Chilton Medical Center"
+     },
+     {
+      "Prompt": "Specialty",
+      "Value": "Other"
+     },
+     {
+      "Prompt": "Service Line",
+      "Value": "Oncology"
+     },
+     {
+      "Prompt": "Region",
+      "Value": "Northern Region (Chilton Medical Center)"
+     },
+     {
+      "Prompt": "Salary Admin Plan",
+      "Value": "RNS"
+     },
+     {
+      "Prompt": "Overtime Status",
+      "Value": "NonExempt"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Minimum Salary (Hourly Rate)",
+      "Value": "41.790000"
+     },
+     {
+      "Prompt": "Maximum Salary (Hourly Rate)",
+      "Value": "73.560000"
+     },
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Full-time"
+     },
+     {
+      "Prompt": "Hours per Week",
+      "Value": "36"
+     },
+     {
+      "Prompt": "Primary Shift",
+      "Value": "Nights"
+     },
+     {
+      "Prompt": "Work Schedule",
+      "Value": "7 pm - 7 am"
+     },
+     {
+      "Prompt": "Days and Shifts",
+      "Value": "3 shifts per week"
+     },
+     {
+      "Prompt": "On Call Expectations",
+      "Value": "None"
+     },
+     {
+      "Prompt": "Weekends Expectations",
+      "Value": "every third weekend"
+     },
+     {
+      "Prompt": "Department",
+      "Value": "103000060030 - Ann M Oliva Multi Specialty Unit 6 AB"
+     },
+     {
+      "Prompt": "Division",
+      "Value": "Overlook Medical Center"
+     },
+     {
+      "Prompt": "Specialty",
+      "Value": "Other"
+     },
+     {
+      "Prompt": "Service Line",
+      "Value": "Other"
+     },
+     {
+      "Prompt": "Region",
+      "Value": "Eastern Region (Overlook Medical Center)"
+     },
+     {
+      "Prompt": "Salary Admin Plan",
+      "Value": "RNS"
+     },
+     {
+      "Prompt": "Overtime Status",
+      "Value": "NonExempt"
+     }
+    ]
+   }
+  }
+ ],
+ "Unknownfaeyip": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Hourly Salary Range",
+      "Value": "62.33/hr."
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Hourly Salary Range",
+      "Value": "55.00 - 77.00"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Hourly Salary Range",
+      "Value": "67.76 - 94.86"
+     }
+    ]
+   }
+  }
+ ],
+ "WellSpanHealth": [
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Not Applicable"
+     },
+     {
+      "Prompt": "FTE",
+      "Value": "0.9"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Not Applicable"
+     },
+     {
+      "Prompt": "FTE",
+      "Value": "1"
+     }
+    ]
+   }
+  },
+  {
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "Not Applicable"
+     },
+     {
+      "Prompt": "FTE",
+      "Value": "0.9"
+     }
+    ]
+   }
+  }
+ ]
+}

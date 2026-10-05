@@ -1134,7 +1134,9 @@ KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor"
                         # PeopleSoft's 400 went to the 377 bodies it read on 10-04, not to NYC H+H's
                         # 1,706 rows with none.
                         "PeopleSoft", "SuccessFactors", "Talemetry", "Eightfold",
-                        "Avature", "Drupal", "FXRecruiter", "PeopleAdmin", "WordPress")
+                        "Avature", "Drupal", "FXRecruiter", "PeopleAdmin", "WordPress",
+                        # 2026-10-05 (push 9): the RMK and NY State Jobs job-page passes store under these.
+                        "SuccessFactorsRMK", "NYStateJobs")
 KNOWN_BODY_PAGE      = 1000
 KNOWN_BODY_MAX_ROWS  = int(os.getenv("KNOWN_BODY_MAX_ROWS", "400000"))
 KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
@@ -1169,6 +1171,48 @@ OLD_BODY_CAP        = (7990, 8000)
 DETAIL_REFRESH_PCT  = int(os.getenv("DETAIL_REFRESH_PCT", "5"))
 DETAIL_REFRESH_DAYS = int(os.getenv("DETAIL_REFRESH_DAYS", "30"))
 
+# ── Pay re-reads (2026-10-05, push 9, structured pay) ───────────────────────
+# The structured pay readers (see "Structured pay fields") run where the
+# adapter already fetches the page. On the list-level sources (Jibe tags,
+# HealthcareSource, SmartRecruiters custom fields, Findly, Harris) that is
+# every row every night. On the detail-page sources it is only the rows the
+# detail pass fetches, and the pass skips a stored body: 21.6k of the ~23k
+# unpriced rows on the systems below already hold one (Tenet 1,729 of 2,729,
+# Brookdale 2,009 of 2,011, Adventist 1,332 of 1,332, BayCare 1,635 of 1,708,
+# NYC H+H 1,448 of 1,916 on 2026-10-05). So a stored body on one of
+# PAY_REREAD_SYSTEMS whose row has no wage ("pay") is a candidate again on
+# its slot night, one night in PAY_REREAD_DAYS (a fixed slot per posting, as
+# the refresh slot), after the tenant's rows with no body and before the
+# bodies cut at the old cap. Each system on the list carried a pay field on
+# the sampled postings of the sweep (approval_2026-10-05/structured-pay-
+# sweep.md); a posting that has none (Tenet fills it on about a third) is
+# looked at again a cycle later, so an employer that adds a range is caught.
+# The stored wage comes from the same read-only known-body load
+# (KNOWN_BODY_PLATFORMS); PAY_REREAD_DAYS=0 turns re-reads off.
+PAY_REREAD_DAYS = int(os.getenv("PAY_REREAD_DAYS", "7"))
+PAY_REREAD_SYSTEMS = frozenset({
+    # Oracle HCM requisition flex fields (_oracle_pay)
+    "Tenet Healthcare", "Brookdale Senior Living", "Mayo Clinic", "Adventist Health", "UW Health",
+    "HealthPartners", "UCSF Health", "Inova Health System", "Inspira Health Network",
+    "Loma Linda University Health", "Unknown (fa-eyip)", "Eastern Connecticut Health",
+    "Providence Health", "Northwell Health", "Cedars-Sinai", "United Regional", "UChicago Medicine",
+    # PeopleSoft posting fields (_ps_pay)
+    "NYC Health + Hospitals", "The Queen's Health Systems",
+    # iCIMS classic header (OHSU "Salary Range")
+    "OHSU",
+    # Infor formatted salary, single rate (BayCare)
+    "BayCare",
+})
+_KNOWN_UNPRICED: set = set()      # (canonical system, job_id) of known bodies whose stored row has no wage
+
+
+def _pay_slot(canon: str, job_id: str) -> bool:
+    """True on the one night in PAY_REREAD_DAYS that an unpriced stored body
+    on a PAY_REREAD_SYSTEMS system is read again for its pay field."""
+    if PAY_REREAD_DAYS <= 0:
+        return False
+    return zlib.crc32(f"pay|{canon}|{job_id}".encode("utf-8")) % PAY_REREAD_DAYS == _run_day() % PAY_REREAD_DAYS
+
 
 def _facts_version(v):
     try:
@@ -1180,9 +1224,11 @@ def _facts_version(v):
 def set_known_bodies(rows) -> int:
     """Install the known-body map from rows of {hospital_system, job_id,
     desc_len, fv}; fv is posting_facts->>'v' (absent or null = unstamped).
-    Rows under 200 characters are not bodies and are ignored."""
-    global _KNOWN_BODIES, _KNOWN_FACTS_V
-    kb, fv = {}, {}
+    Rows under 200 characters are not bodies and are ignored. A row that
+    carries the wage_min key with a null value is also recorded as unpriced
+    (push 9, pay re-reads); a row without the key is not."""
+    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED
+    kb, fv, unpriced = {}, {}, set()
     for r in rows or []:
         try:
             n = int(r.get("desc_len") or 0)
@@ -1194,7 +1240,11 @@ def set_known_bodies(rows) -> int:
             if n >= kb.get(k, 0):
                 kb[k] = n
                 fv[k] = _facts_version(r.get("fv"))
-    _KNOWN_BODIES, _KNOWN_FACTS_V = kb, fv
+                if "wage_min" in r and r.get("wage_min") is None:
+                    unpriced.add(k)
+                else:
+                    unpriced.discard(k)
+    _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED = kb, fv, unpriced
     return len(kb)
 
 
@@ -1219,7 +1269,7 @@ def load_known_bodies() -> int:
     rows, last = [], 0
     try:
         while len(rows) < KNOWN_BODY_MAX_ROWS:
-            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,desc_len,"
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,desc_len,wage_min,"
                  f"fv:posting_facts-%3E%3Ev"
                  f"&is_active=is.true&desc_len=gte.200&ats_platform=in.({plats})"
                  f"&id=gt.{last}&order=id.asc&limit={KNOWN_BODY_PAGE}")
@@ -1259,6 +1309,9 @@ def _known_kind(system: str, job):
                (DETAIL_MIN_CHARS+), or any real body longer than what the list
                gave (only a detail pass stores one); due for the refresh
                share on its slot (_refresh_slot)
+      "pay"    (push 9) a stored body on a PAY_REREAD_SYSTEMS system whose row
+               has no wage, on its _pay_slot night: a candidate after the rows
+               with no body, so the page's pay field is read
     Leaves the job unchanged."""
     key = (_canon_system(system), str(job.job_id))
     stored = _KNOWN_BODIES.get(key, 0)
@@ -1270,6 +1323,8 @@ def _known_kind(system: str, job):
     v = _KNOWN_FACTS_V.get(key)
     if v is None and OLD_BODY_CAP[0] <= stored <= OLD_BODY_CAP[1]:
         return "cut"
+    if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
+        return "pay"
     if v is not None and v < FACTS_VERSION and stored >= DETAIL_MIN_CHARS:
         return "stale"
     return "known"
@@ -1325,7 +1380,8 @@ def _held_note(held) -> str:
     if not n:
         return ""
     return (f"{n.get('refresh', 0) + n.get('stale', 0)} stored bodies re-read ({n.get('stale', 0)} with older facts), "
-            f"{n.get('cut', 0)} cut at the old 8,000 cap queued, ")
+            f"{n.get('cut', 0)} cut at the old 8,000 cap queued, "
+            + (f"{n['pay']} unpriced stored bodies queued for their pay field, " if n.get("pay") else ""))
 
 
 def _settle_held(system: str, held, job_of=lambda it: it) -> None:
@@ -2652,7 +2708,8 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     forever (see "A known body is not known forever"): up to _refresh_quota
     stored bodies go first ("stale" facts, then those whose slot is tonight),
     then the rows with no body (transparency states, then the newest), then
-    bodies cut at the old 8,000 cap. Each re-read or cut row is appended to
+    unpriced stored bodies due for their pay field ("pay", push 9), then
+    bodies cut at the old 8,000 cap. Each re-read, pay or cut row is appended to
     `held` as (item, list text, kind); the caller hands `held` to _settle_held
     after fetching, so a row no fetch refilled keeps its stored body. Without
     `held` every stored body is skipped, as before."""
@@ -2684,7 +2741,7 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
             elif ok:
                 dup += 1
             continue
-        tier[id(it)] = 1 if kind == "cut" else 0
+        tier[id(it)] = {"cut": 2, "pay": 1}.get(kind, 0)
         cands.append(it)
     random.shuffle(cands)
     cands.sort(key=lambda it: (tier[id(it)], _detail_rank(job_of(it))))
@@ -2698,7 +2755,8 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     if held is not None:
         stale_ids = {id(it) for it in stale}
         held.extend((it, job_of(it).description, "stale" if id(it) in stale_ids else "refresh") for it in refresh)
-        held.extend((it, job_of(it).description, "cut") for it in cands if tier[id(it)] == 1)
+        held.extend((it, job_of(it).description, "cut") for it in cands if tier[id(it)] == 2)
+        held.extend((it, job_of(it).description, "pay") for it in cands if tier[id(it)] == 1)
     return refresh + cands, known, dup
 
 
@@ -3041,6 +3099,27 @@ def _oracle_flex(it: dict) -> dict:
     return out
 
 
+def _oracle_pay(it: dict):
+    """(min, max, unit) from an Oracle requisition's flex fields (2026-10-05,
+    push 9, structured pay). _oracle_flex already returns {prompt: value};
+    the prompts that name the pay are read by label (field_wage_from_labels),
+    since each tenant names and numbers them its own way and the index moves
+    per posting (Loma Linda): one range string ("Pay Range" Tenet / UW Health
+    / HealthPartners / Adventist / Inspira / Loma Linda, "Compensation
+    Detail" Mayo, "Hiring Range Minimum and Maximum Per Period" Brookdale,
+    "Budgeted Job Salary Range" UCSF, "Salary Range" Inova / Eastern CT,
+    "Hourly Salary Range" fa-eyip) or a min / max pair ("Minimum / Maximum
+    Salary" Providence / Cedars, "Minimum / Maximum Salary/Range*" Northwell,
+    "Min / Max Salary" UChicago, "... (Hourly Rate)" United Regional). Inova's
+    "Pay Rate Frequency" sibling names the unit. Not pay: "Pay Range
+    Statement", "Hours / Pay Period", "UKG Pay Rule", "Salary Admin Plan"."""
+    flex = _oracle_flex(it)
+    if not flex:
+        return None
+    unit = flex.get("pay rate frequency") or flex.get("pay frequency") or None
+    return field_wage_from_labels(list(flex.items()), unit)
+
+
 def _fte_hours(value):
     """Weekly hours from an FTE value ("0.9", "1", "0.9 - 72 hr/pp (Full
     Time)", "1.000000"): round(FTE x 40) for 0.1 <= FTE <= 1.0, else None
@@ -3074,6 +3153,7 @@ async def _oracle_detail(session, base_url: str, site_number: str, job) -> bool:
     if not items:
         return False
     desc, sched, start = _oracle_posting_text(items[0])
+    set_field_wage(job, _oracle_pay(items[0]))
     ok = False
     if len(desc) >= 200 and len(desc) > len((job.description or "").strip()):
         job.description = desc
@@ -6229,6 +6309,11 @@ def _icims_apply_page(job, html: str) -> bool:
     if not posting:
         return False
     before = job.job_type
+    # 2026-10-05 (push 9, structured pay): a header field that names the pay
+    # (OHSU "Salary Range": "$55,536 - $92,560 annual salary with offer based
+    # on experience ...") comes first; the JSON-LD baseSalary rule in
+    # _apply_posting only fills a pay still blank after it.
+    set_field_wage(job, field_wage_from_labels(list(_icims_header(html).items())))
     ok = _apply_posting(job, posting)
     # iCIMS fills employmentType with OTHER or CONTRACTOR on staff postings
     # (Select Medical, Covenant, a Prime staff RN: 2026-09-24); only the
@@ -6484,8 +6569,79 @@ def _jibe_facility(system: str, j: dict) -> str:
     facility = (j.get("location_name") or "").strip()
     return facility if (system in JIBE_FACILITY_NAME and facility) else system
 
+
+# ── Jibe pay tags (2026-10-05, push 9, structured pay) ─────────────────────
+# Every /api/jobs row carries the requisition's custom fields as tags1..tagsN
+# lists, and each tenant numbers them its own way: BJC tags7 is "Pay Range:"
+# ("$17.50 – $23.88 / hour (Salary or hourly rate is based on ...)"), Novant
+# tags7 is a job opening id, Care New England tags7 is weekly hours. The
+# careers front ships the labels it prints beside them in its i18n strings,
+# "JOB_DESCRIPTION": {"TAGS7": "Pay Range:", ...}, on every page (the /jobs
+# search page included). One request a night per tenant whose rows carry a
+# figure in a tag reads that map; a tag is pay when its label names the pay
+# (field_pay_label), so the sweep's six tenants need no per-tenant table:
+# BJC "Pay Range:", Yale "Salary Range:", Trilogy "Starting Pay:", Fairview
+# "Compensation:", UHS "Minimum / Maximum Hiring Rate", UCI "Salary Range
+# Minimum: / Maximum:". Tower's "Hours Per Pay Period:" and Tanner's "Sign On
+# Bonus" are not pay. Zero extra requests per posting: the value is already
+# in the list row, so every row of the tenant is reached every night.
+_JIBE_LABEL_BLOCK_RX = re.compile(r'"JOB_DESCRIPTION"\s*:\s*\{([^{}]*)\}')
+_JIBE_TAG_LABEL_RX = re.compile(r'"TAGS(\d{1,2})"\s*:\s*"((?:[^"\\]|\\.)*)"')
+_JIBE_FIGURE_RX = re.compile(r"\$|\d\.\d\d|\d{2},\d{3}")
+
+
+def _jibe_pay_labels(html: str) -> dict:
+    """{"tags7": "Pay Range:", ...}: the tags whose label on the job page
+    names the pay. A tag every JOB_DESCRIPTION block (one per language)
+    labels the same way; a label in another language that names nothing is
+    ignored, one that names something else (hours, a bonus) drops the tag."""
+    labels: dict = {}
+    for m in _JIBE_LABEL_BLOCK_RX.finditer(html or ""):
+        for n, lab in _JIBE_TAG_LABEL_RX.findall(m.group(1)):
+            try:
+                lab = json.loads(f'"{lab}"')
+            except ValueError:
+                pass
+            labels.setdefault(f"tags{n}", []).append(str(lab))
+    out = {}
+    for tag, labs in labels.items():
+        sides = {field_pay_label(lab) for lab in labs} - {None}
+        if len(sides) == 1 and not any(_PF_LABEL_SKIP_RX.search(lab) for lab in labs):
+            out[tag] = next(lab for lab in labs if field_pay_label(lab))
+    return out
+
+
+def _jibe_tag_value(j: dict, tag: str) -> str:
+    v = j.get(tag)
+    if isinstance(v, list):
+        v = next((x for x in v if str(x or "").strip()), "")
+    return str(v or "").strip()
+
+
+def _jibe_pay(j: dict, pay_labels: dict):
+    """(min, max, unit) from one /api/jobs row's pay tags, or None."""
+    if not pay_labels:
+        return None
+    return field_wage_from_labels([(lab, _jibe_tag_value(j, tag)) for tag, lab in sorted(pay_labels.items())])
+
+
+def _jibe_has_figure(j: dict) -> bool:
+    return any(k.startswith("tags") and k != "tags" and _JIBE_FIGURE_RX.search(_jibe_tag_value(j, k))
+               for k in j)
+
+
+async def _jibe_labels_page(session, base_url: str, first_url: str = "") -> str:
+    """The careers front's /jobs page (its i18n block carries the tag labels);
+    the first posting's page when /jobs carries none."""
+    html = await _fetch_html(session, f"{base_url}/jobs", timeout=40)
+    if _JIBE_LABEL_BLOCK_RX.search(html or "") or not first_url:
+        return html
+    return await _fetch_html(session, first_url, timeout=40)
+
+
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs: list[Job] = []
+    raw_tags: dict = {}            # job_id -> the row's tagsN fields (push 9, pay tags)
     page, total = 1, None
     while page <= 60:  # 60 x 100 = 6,000/site ceiling; both sites are well under
         try:
@@ -6544,6 +6700,8 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                     description=strip_html(str(j.get("description") or "")),
                     ats_platform="iCIMS",
                 ))
+                if _jibe_has_figure(j):
+                    raw_tags.setdefault(rid, {k: v for k, v in j.items() if k.startswith("tags") and k != "tags"})
             except Exception as e:
                 # Count and report instead of swallowing: a structural bug
                 # (wrong field, missing name) fails EVERY row identically, and
@@ -6565,6 +6723,16 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
             continue
         seen.add(jb.job_id)
         uniq.append(jb)
+    if raw_tags and uniq:
+        try:
+            labels = _jibe_pay_labels(await _jibe_labels_page(session, base_url, uniq[0].url))
+        except Exception as e:
+            labels = {}
+            logger.info(f"Jibe {system}: tag labels not read ({e})")
+        priced = sum(set_field_wage(jb, _jibe_pay(raw_tags.get(jb.job_id) or {}, labels)) for jb in uniq) if labels else 0
+        if labels:
+            logger.info(f"  Jibe {system}: pay tags {', '.join(f'{t} {l!r}' for t, l in sorted(labels.items()))}: "
+                        f"{priced:,} rows priced from the field")
     logger.info(f"  Jibe {system}: {len(uniq):,} jobs (site reports {total})")
     return uniq
 
@@ -6796,6 +6964,17 @@ FINDLY_GOOGLE_ORGS = {
 }
 
 
+# 2026-10-05 (push 9, structured pay): the job JSON key each front prints as
+# its pay line. The cws plugin's custom fields are reused per tenant, so the
+# key is configured, never guessed: UPMC prints job.salary ("$ 18.79-28.03
+# USD") under "Salary Range:"; University Hospitals prints job.relocation
+# ("$15.00 - $23.14 /hour") under "Salary:". UT Southwestern's job.salary
+# ("79740.0") is NOT read: its page shows no figure and tells the reader the
+# salary is commensurate. Every Findly page's JSON-LD baseSalary is a
+# 1 - 1,000,000 placeholder and is never read either.
+FINDLY_GOOGLE_PAY_KEY = {"UPMC": "salary", "University Hospitals": "relocation"}
+
+
 async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     """Scrape a Findly CWS career portal on the Google CTS backend.
     Differs from scrape_findly in endpoint, identifier format, and response shape.
@@ -6899,6 +7078,7 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
             url = (j.get("url") or j.get("seo_url")
                    or (f"{base_site}/job/{ref}/" if ref else base_site))
 
+            pay_key = FINDLY_GOOGLE_PAY_KEY.get(system)
             jobs.append(Job(
                 title=title,
                 hospital_system=system,
@@ -6914,6 +7094,8 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
                 description=strip_html(description),
                 ats_platform="Findly-Google",
             ))
+            if pay_key:
+                set_field_wage(jobs[-1], field_wage(j.get(pay_key)))
 
         pages_fetched += 1
         next_page_token = data.get("nextPageToken")
@@ -7141,6 +7323,7 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
                     description="",
                     ats_platform="SmartRecruiters",
                 ))
+                set_field_wage(jobs[-1], _sr_pay(j))
             offset += 100
             if offset >= data.get("totalFound", 0): break
             await jitter()
@@ -7155,6 +7338,23 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
 # the boilerplate, not the posting.
 _SR_SECTIONS = (("jobDescription", "Job Description"), ("qualifications", "Qualifications"),
                 ("additionalInformation", "Additional Information"), ("companyDescription", "Company Description"))
+
+
+def _sr_pay(data: dict):
+    """(min, max, unit) from a SmartRecruiters posting (2026-10-05, push 9,
+    structured pay): the posting's compensation {min, max, currency, period}
+    (the detail API; period names the unit, Northwestern "HOURLY"), else the
+    custom fields labelled "Salary Range Minimum" / "Salary Range Maximum"
+    that the list rows already carry (Northwestern; the same figures as its
+    compensation). USD only."""
+    data = data or {}
+    comp = data.get("compensation") if isinstance(data.get("compensation"), dict) else {}
+    if comp and str(comp.get("currency") or "USD").upper() == "USD":
+        got = field_wage_pair(comp.get("min"), comp.get("max"), str(comp.get("period") or ""))
+        if got:
+            return got
+    fields = [(f.get("fieldLabel"), f.get("valueLabel")) for f in (data.get("customField") or []) if isinstance(f, dict)]
+    return field_wage_from_labels(fields)
 
 
 def _sr_posting_text(data: dict) -> str:
@@ -7183,6 +7383,12 @@ async def _sr_detail(session, job) -> bool:
             return False
         data = await r.json(content_type=None)
     desc = _sr_posting_text(data)
+    # 2026-10-05 (push 9): the detail's compensation (with its period) is the
+    # page's own pay line; it replaces a unit-less pair the list's custom
+    # fields gave.
+    got = _sr_pay(data)
+    if got:
+        job.wage_min, job.wage_max, job.wage_unit = got
     jt = str(((data or {}).get("typeOfEmployment") or {}).get("label") or "").strip()
     if jt and not (job.job_type or "").strip():
         job.job_type = jt
@@ -10051,11 +10257,11 @@ def _infor_apply_detail(job, data) -> bool:
         job.description = desc
         ok = True
     pay = str(val("_op_FormattedSalaryRangeAmountWithCurrencyCodeAndPayRate_spc_translation_cp_") or "")
-    nums = [float(x.replace(",", "")) for x in re.findall(r"\d[\d,]*(?:\.\d+)?", pay)]
-    if len(nums) >= 2 and job.wage_min is None:
-        got = _wage_pair(nums[0], nums[1])        # "0 - 0  per hour" means no posted pay
-        if got:
-            job.wage_min, job.wage_max, job.wage_unit = got
+    # 2026-10-05 (push 9, structured pay): read through field_wage, so a single
+    # rate counts (BayCare "16.01 USD per hour" was dropped: the old rule
+    # wanted two numbers) and the stated unit must agree with the band.
+    # "0 - 0  per hour" / "0.00 - 0.00 USD" still mean no posted pay.
+    set_field_wage(job, field_wage(pay))
     if not (job.job_type or "").strip():
         lcw = str(val("_op_JobRequisitionLocationCategoryWorkType_spc_translation_cp_") or "").split("|")
         if len(lcw) >= 3 and lcw[-1].strip():      # "US:NE:Norfolk | Support Services | Part Time No Benefits"
@@ -10889,7 +11095,7 @@ def _hcs_job(hit: dict, system: str, tenant: str) -> Job | None:
     sched = _schedule_line(_shift_words(str(ua.get("shift") or "")), str(src_.get("workHours") or "").strip())
     if body and sched and "Schedule:" not in body:
         body = f"{body}\n\n{sched}"
-    return Job(
+    job = Job(
         title=title,
         hospital_system=system,
         hospital_name=facility or system,
@@ -10903,6 +11109,32 @@ def _hcs_job(hit: dict, system: str, tenant: str) -> Job | None:
         description=body,
         ats_platform="HealthcareSource",
     )
+    set_field_wage(job, _hcs_pay(ua))
+    return job
+
+
+def _hcs_pay(ua: dict):
+    """(min, max, unit) from a search hit's posting pay fields (2026-10-05,
+    push 9, structured pay): userArea.salaryRange (the career site prints it
+    and publishes it as the page's JSON-LD baseSalary: Renown "18.24 -
+    25.53", CHC "13.5800 Through 20.3700"), else the posting-side custom field
+    labelled "Salary Range" (Holyoke "$22.00 - $29.25 hourly", York, Lawrence
+    General). customRequisitionFieldValues are never read: they are the
+    employer's internal requisition fields and include staff names (a
+    "Replacement for?" field naming the departing employee). Willis Knighton's
+    "Min - $0.00 Mid - $0.00 Max - $0.00" placeholder fails the band."""
+    if not isinstance(ua, dict):
+        return None
+    got = field_wage(ua.get("salaryRange"))
+    if got:
+        return got
+    posting = ua.get("customJobPostingFieldValues")
+    fields = []
+    for vals in (posting.values() if isinstance(posting, dict) else posting if isinstance(posting, list) else []):
+        for f in (vals if isinstance(vals, list) else [vals]):
+            if isinstance(f, dict):
+                fields.append((f.get("name"), f.get("value")))
+    return field_wage_from_labels(fields)
 
 
 # 2026-09-10 (Z-texas-acute-D): the endpoint is an Elasticsearch proxy. GET
@@ -11761,7 +11993,49 @@ async def run_ny_statejobs(session) -> list[Job]:
     jobs = _parse_ny_statejobs(page)
     logger.info(f"  NY State Jobs: {len(jobs)} hospital rows kept "
                 f"({len({j.hospital_name for j in jobs})} hospitals)")
+    await _board_detail_passes(session, jobs, NYSJ_DESC_BUDGET,
+                               lambda j: _nysj_detail(session, j), "NY State Jobs")
     return jobs
+
+
+# ── NY State Jobs vacancy pages (2026-10-05, push 9, structured pay) ─────────
+# The vacancy table carries the title, agency and grade only, so the 217 rows
+# stored the one-line summary built above, and the "Salary Range" the vacancy
+# page prints ("From $42641 to $52413 Annually", "From $17 to $17 Hourly")
+# never reached them. A detail pass on the shared framework reads the page's
+# <span class="leftCol">Label</span><span class="rightCol">value</span> rows:
+# the pay from "Salary Range" (field_wage_from_labels; "Salary Grade" is not
+# pay), the type from "Employment Type", and the body from "Duties
+# Description", "Minimum Qualifications" and "Additional Comments" under their
+# own headings. Rows store under "NYStateJobs", now a known-body platform, so
+# a stored body is not fetched again.
+NYSJ_DESC_MAX_PER_RUN = int(os.getenv("NYSJ_DESC_MAX_PER_RUN", "300"))
+NYSJ_DESC_BUDGET = _DescBudget(NYSJ_DESC_MAX_PER_RUN)
+_NYSJ_ROW_RX = re.compile(r'<span class="leftCol">(.*?)</span>\s*<span class="rightCol">(.*?)</span>', re.S)
+_NYSJ_BODY_PARTS = ("Duties Description", "Minimum Qualifications", "Additional Comments")
+
+
+def _nysj_posting(html: str) -> tuple[str, str, object]:
+    """(body, employment type, pay) from a statejobs.ny.gov vacancy page."""
+    rows = []
+    for lab, val in _NYSJ_ROW_RX.findall(html or ""):
+        lab = re.sub(r"\s+", " ", _html_unescape(re.sub(r"<[^>]+>", " ", lab))).strip()
+        rows.append((lab, val))
+    fields = [(lab, re.sub(r"\s+", " ", _html_unescape(re.sub(r"<[^>]+>", " ", val))).strip()) for lab, val in rows]
+    parts = []
+    for head in _NYSJ_BODY_PARTS:
+        raw = next((val for lab, val in rows if lab.lower() == head.lower()), "")
+        text = strip_html(raw).strip()
+        if text:
+            parts.append(f"{head}\n{text}")
+    et = next((v for k, v in fields if k.lower() == "employment type"), "")
+    return "\n\n".join(parts), et, field_wage_from_labels(fields)
+
+
+async def _nysj_detail(session, job) -> bool:
+    body, et, pay = _nysj_posting(await _fetch_html(session, job.url, timeout=40))
+    set_field_wage(job, pay)
+    return _apply_body(job, body, et)
 
 
 # SuccessFactors Recruiting Marketing boards.
@@ -11909,9 +12183,59 @@ async def scrape_sf_rmk(session: aiohttp.ClientSession, system: str, cfg: tuple)
     return list(seen.values())
 
 
+# ── RMK job pages (2026-10-05, push 9, structured pay) ──────────────────────
+# The tiles carry no body, so the 169 RMK rows (TX HHS 111) stored none, and
+# the pay the job page prints never reached them. The page's microdata body
+# (<span class="jobdescription">, up to the job-location line) opens with
+# the posting's header lines, TX HHS: "Salary Range: $4,094.50 - $5,094.16"
+# and "Pay Frequency: Monthly" (a year after scaling). A detail pass on the
+# shared framework reads both: the body through _apply_body, the pay from
+# the labelled header lines (field_wage_from_labels, unit from "Pay
+# Frequency"). Rows store under "SuccessFactorsRMK", now a known-body
+# platform, so a stored body is not fetched again.
+SF_RMK_DESC_MAX_PER_RUN = int(os.getenv("SF_RMK_DESC_MAX_PER_RUN", "300"))
+SF_RMK_DESC_BUDGET = _DescBudget(SF_RMK_DESC_MAX_PER_RUN)
+_RMK_BODY_RX = re.compile(r'<span class="jobdescription">(.*?)(?:<p class="job-location"|<div class="clear clearfix")', re.S)
+_LABELLED_LINE_RX = re.compile(r"^\s*([A-Za-z][A-Za-z /&()'-]{1,40}?)\s*:\s*(\S.{0,200}?)\s*$")
+
+
+def _labelled_lines(text: str, limit: int = 80) -> list:
+    """(label, value) of the "Label: value" lines among the first `limit`
+    lines of a body (the posting's header block)."""
+    out = []
+    for line in (text or "").split("\n")[:limit]:
+        m = _LABELLED_LINE_RX.match(line.replace("\xa0", " "))
+        if m:
+            out.append((m.group(1), m.group(2)))
+    return out
+
+
+def _header_lines_pay(text: str):
+    """(min, max, unit) from a body's labelled header lines: a pay-labelled
+    line, with a "Pay Frequency" / "Pay Basis" line as its unit."""
+    lines = _labelled_lines(text)
+    unit = next((v for k, v in lines if re.search(r"\bpay\s+(?:rate\s+)?(?:frequency|basis)\b", k, re.I)), None)
+    return field_wage_from_labels(lines, unit)
+
+
+def _rmk_posting(html: str) -> tuple[str, object]:
+    """(body, pay) from an RMK job page."""
+    m = _RMK_BODY_RX.search(html or "")
+    body = strip_html(m.group(1)).strip() if m else ""
+    body = re.sub(r"[ \t\xa0]+\n", "\n", re.sub(r"[ \t\xa0]{2,}", " ", body))
+    return body, _header_lines_pay(body)
+
+
+async def _rmk_detail(session, job) -> bool:
+    body, pay = _rmk_posting(await _fetch_html(session, job.url, timeout=40))
+    set_field_wage(job, pay)
+    return _apply_body(job, body)
+
+
 async def run_sf_rmk(session) -> list[Job]:
     """One board at a time per host (each board is its own host), jitter
-    between pages: never more than one request in flight to a board."""
+    between pages: never more than one request in flight to a board. The job
+    pages (push 9) follow on _board_detail_passes: two in flight in all."""
     results = await asyncio.gather(*[scrape_sf_rmk(session, s, c) for s, c in SF_RMK_BOARDS.items()],
                                    return_exceptions=True)
     out = []
@@ -11921,6 +12245,8 @@ async def run_sf_rmk(session) -> list[Job]:
         else:
             out.extend(r)
     logger.info(f"  SF RMK total: {len(out):,} jobs")
+    await _board_detail_passes(session, out, SF_RMK_DESC_BUDGET,
+                               lambda j: _rmk_detail(session, j), "SF RMK")
     return out
 
 
@@ -12003,6 +12329,11 @@ async def scrape_preload(session: aiohttp.ClientSession, system: str, cfg: tuple
                     description=strip_html(str(j.get("description") or "")),
                     ats_platform="PreloadState",
                 ))
+                # 2026-10-05 (push 9, structured pay): the row's custom fields
+                # carry the "Pay" line the job page prints (Harris: {"key":
+                # "Salary", "cfKey": "cf_salary", "value": "$20.87 - $26.03"}).
+                set_field_wage(jobs[-1], field_wage_from_labels(
+                    [(f.get("key"), f.get("value")) for f in (j.get("customFields") or []) if isinstance(f, dict)]))
             except Exception as e:
                 logger.info(f"Preload {system}: row error {e!r}")
         if total and per and page * per >= total:
@@ -13228,8 +13559,23 @@ def _talemetry_posting(html: str):
     return posting
 
 
+# 2026-10-05 (push 9, structured pay): the Jobvite Engage job header prints
+# the requisition's fields as "<strong>Label:</strong> value<br />" lines
+# (Asante: Req #, Entity, Shift, FTE, Schedule, "Salary: $21.86 - $28.23
+# depending on qualifications"). The pay-labelled line is read first; the
+# JSON-LD baseSalary rule in _apply_posting only fills a pay still blank.
+_TALEMETRY_HDR_RX = re.compile(r"<strong>\s*([^<:]{1,60}):\s*</strong>\s*([^<]{1,300})<br", re.I)
+
+
+def _talemetry_pay(html: str):
+    return field_wage_from_labels([(_html_unescape(k).strip(), _html_unescape(v).strip())
+                                   for k, v in _TALEMETRY_HDR_RX.findall(html or "")])
+
+
 async def _talemetry_detail(session, job) -> bool:
-    posting = _talemetry_posting(await _curl_html(job.url, TALEMETRY_IMPERSONATE))
+    html = await _curl_html(job.url, TALEMETRY_IMPERSONATE)
+    set_field_wage(job, _talemetry_pay(html))
+    posting = _talemetry_posting(html)
     return _apply_posting(job, _posting_with_requirements(posting)) if posting else False
 
 
@@ -13831,8 +14177,36 @@ def _ps_posting(html: str) -> tuple[str, str]:
     return body, (_html_unescape(f.group(1)).strip() if f else "")
 
 
+# 2026-10-05 (push 9, structured pay): a posting page prints its fields as
+# <span class='ps_box-value' id='FIELD'>value</span>, each labelled by
+# id='win0divFIELDlbl'. NYC H+H: "Salary Range" on HHC_HRS_JO_WRK_HRS_JO_MIN_RT
+# ($83,295.00), its unlabelled partner ..._MAX_RT ($90,000.00) and "Pay
+# Frequency" (Year). Queen's: "Starting Pay" on QHS_PYTRNS_WRK1_TEXT_250_1
+# ("$171,662.00 to $187,473.00 annual salary"). "Hire In Rate" is not read.
+_PS_PAY_VALUE_RX = re.compile(r"<span class='ps_box-value'\s+id='([^']+)'\s*>([^<]*)</span>")
+_PS_PAY_LABEL_RX = re.compile(r"id='win0div([^']+)lbl'>\s*<span\s+class='ps-label'>([^<]*)</span>")
+
+
+def _ps_pay(html: str):
+    """(min, max, unit) from a PeopleSoft posting page's pay fields, or None."""
+    vals = {i: _html_unescape(v).strip() for i, v in _PS_PAY_VALUE_RX.findall(html or "")}
+    labs = {i: _html_unescape(lab).strip() for i, lab in _PS_PAY_LABEL_RX.findall(html or "")}
+    unit = next((vals.get(i) for i, lab in labs.items() if re.search(r"\bpay\s+(?:rate\s+)?frequency\b", lab, re.I)), None)
+    for i, lab in labs.items():
+        if not field_pay_label(lab) or not vals.get(i):
+            continue
+        partner = i.replace("MIN", "MAX") if "MIN" in i else ""
+        got = (field_wage_pair(vals[i], vals[partner], unit) if partner in vals
+               else field_wage(vals[i], unit))
+        if got:
+            return got
+    return None
+
+
 async def _peoplesoft_detail(session, job) -> bool:
-    body, et = _ps_posting(await _curl_html(job.url, PEOPLESOFT_IMPERSONATE, 40))
+    html = await _curl_html(job.url, PEOPLESOFT_IMPERSONATE, 40)
+    body, et = _ps_posting(html)
+    set_field_wage(job, _ps_pay(html))
     return _apply_body(job, body, et)
 
 
@@ -14478,6 +14852,7 @@ HTML_LIST_SITES: dict[str, dict] = {
         "hospital_map": _UMICH_HOSPITALS,
         "loc_split": " - ",
         "loc_strip": r"(?i)\s+(?:medical\s+)?campus$|^(?:kahn health care pavilion|multiple locations|other mi location)$",
+        "pay": r'<h3>\s*Salary\s*</h3>\s*<div>\s*<p class="details-listing field_job_salary">([^<]*)</p>',   # push 9
         "base": "https://careers.umich.edu", "state": "MI", "platform": "Drupal",
     },
     # UK HealthCare (Lexington; PeopleAdmin, the whole University of
@@ -14747,6 +15122,14 @@ async def _html_list_detail(session, job) -> bool:
     JobPosting's employment type / date / pay still land on the row before
     the fallback runs (_apply_posting fills blanks whatever it returns)."""
     html = await _curl_html(job.url, HTML_LIST_IMPERSONATE)
+    # 2026-10-05 (push 9, structured pay): a site's "pay" regex captures the
+    # labelled pay field its job page prints (UMich: <h3>Salary</h3> ...
+    # field_job_salary "$93,464.00 - $135,674.00"); read before the JSON-LD
+    # baseSalary rule, which only fills a pay still blank.
+    pay_rx = (HTML_LIST_SITES.get(job.hospital_system) or {}).get("pay")
+    pm = re.search(pay_rx, html or "", re.S) if pay_rx else None
+    if pm:
+        set_field_wage(job, field_wage(_hl_text(pm.group(1))))
     posting = _jobposting_from_html(html)
     if posting and _apply_posting(job, _posting_with_requirements(posting)):
         return True
@@ -17797,9 +18180,12 @@ def normalize_job(j: Job) -> dict:
     # field set by the adapter (USAJobs, Lever) always wins; otherwise regex
     # extraction from the posting text. NULLs never clobber a prior value
     # (enrichment trigger).
+    # 2026-10-05 (push 9): pay_src records which of the two it was.
+    pay_src = "field" if d.get("wage_min") is not None else None
     if d.get("wage_min") is None:
         wage = extract_posted_wage(f"{d.get('title') or ''}\n{d.get('description') or ''}", d.get("job_type"))
         d["wage_min"], d["wage_max"], d["wage_unit"] = wage if wage else (None, None, None)
+        pay_src = "text" if wage else None
 
     # Requirements chips (2026-08-24): certs/education/shift/experience from
     # the posting text. Null when nothing found; the enrichment trigger
@@ -17807,6 +18193,15 @@ def normalize_job(j: Job) -> dict:
     # 2026-09-24 (review): built by posting_facts_for, which stamps the rules
     # version and keeps title-only facts off teasers.
     d["posting_facts"] = posting_facts_for(d.get("description"), d.get("job_type"), d.get("title"))
+    # 2026-10-05 (push 9, structured pay): posting_facts["pay_src"] is "field"
+    # when the wage came from a structured pay field the adapter read (the
+    # Jibe pay tag, an Oracle flex field, SmartRecruiters compensation...)
+    # and "text" when extract_posted_wage read it from the body. No other key
+    # changes, and a null posting_facts stays null: the enrichment trigger
+    # keeps the stored facts over a null, and an object holding only
+    # pay_src would replace them (see posting_facts_for on teasers).
+    if pay_src and d["posting_facts"]:
+        d["posting_facts"]["pay_src"] = pay_src
 
     return d
 
@@ -18086,6 +18481,237 @@ def _wage_pair(lo, hi, hint=None):
     if 25000 <= lo <= 900000 and 25000 <= hi <= 900000:
         return (lo, hi, "year")
     return None
+
+
+# ── Structured pay fields (2026-10-05, push 9) ──────────────────────────────
+# Owner, after /wages/bjc-healthcare came up empty: "How do we fix that data
+# gap?" The structured-pay sweep (approval_2026-10-05/structured-pay-sweep.md)
+# found 44 under-priced systems that print the pay in a field of their own,
+# outside the posting body, that no adapter read: iCIMS / Jibe tags (BJC
+# job.tags7 "Pay Range:" = "$17.50 - $23.88 / hour (...)"), Oracle requisition
+# flex fields, HealthcareSource userArea.salaryRange, SmartRecruiters
+# compensation, Findly job JSON, PeopleSoft and iCIMS header fields, Infor's
+# formatted salary. Each adapter that already holds that payload hands the
+# field to field_wage / field_wage_pair below; the result lands in
+# Job.wage_min/max/unit, which normalize_job keeps over the body parse
+# ("structured field first, description parse otherwise") and marks
+# posting_facts["pay_src"] = "field" (a body figure is "text").
+# Same honesty contract as extract_posted_wage: every pair goes through
+# _wage_pair (S1 width test, hourly/annual bands, visit unit), a stated unit
+# must agree with the band, a month / pay-period figure is scaled to a year or
+# dropped (S5), a sub-1.0 FTE annual figure is dropped (S8), and a figure the
+# noise rule calls a bonus / differential / stipend is skipped (S6). A field is
+# read only when its own label names the pay (field_pay_label); placeholders
+# ("0 - 0", "$0.00", Findly's 1 - 1,000,000 JSON-LD band) fail the band test.
+_PF_FIG = r"(?:USD\s*)?\$?\s*(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(k\b)?"
+_PF_SIDE_UNIT = r"(?:\s*(?:USD\s*)?(?:/\s*(?:hr|hour|year|yr)\b\.?|per\s+hour|hourly|an\s+hour))?"
+_PF_RANGE_RX = re.compile(_PF_FIG + _PF_SIDE_UNIT + r"\s*(?:-|–|—|to|through|thru)\s*" + _PF_FIG, re.I)
+_PF_ONE_RX = re.compile(_PF_FIG, re.I)
+# A field that is one bare number and at most its unit ("52.00", "62.33/hr.",
+# "16.01 USD per hour", "21.16"): the only shape a figure without a "$" is read from.
+_PF_BARE_ONE_RX = re.compile(r"^\s*(?:USD\s*)?\d[\d,]*(?:\.\d+)?\s*(?:USD\b)?\s*(?:(?:/|per|an?)\s*)?"
+                             r"(?:hour(?:ly)?|hrs?|year(?:ly)?|yr|annum|annual(?:ly)?)?\.?\s*$", re.I)
+_PF_UNIT_AFTER_RX = re.compile(
+    r"[\s*.,]*(?:USD\b\s*)?(?:/|per\b|an?\b|every\b)?\s*"
+    r"(hour(?:ly)?|hrs?\b|year(?:ly)?|yr\b|annum|annual(?:ly)?|salary|"
+    r"month(?:ly)?|mo\b|bi-?weekly|(?:two|2)\s+weeks|pay\s+period|week(?:ly)?|"
+    r"visit|point|session)", re.I)   # used with .match(t, pos)
+# Unit words further on in the field (the figure's own unit, right after it, wins).
+_PF_UNIT_ANY = (("hour", re.compile(r"\bhour(?:ly)?\b|/\s*hr\b|\bhr\.", re.I)),
+                ("year", re.compile(r"\bannual(?:ly)?\b|\bper\s+year\b|/\s*(?:year|yr)\b|\byearly\b|\bper\s+annum\b", re.I)),
+                ("month", re.compile(r"\bmonthly\b|\bper\s+month\b", re.I)),
+                ("biweekly", re.compile(r"\bbi-?weekly\b|\bper\s+pay\s+period\b", re.I)))
+# A label that names the pay: "Pay Range:", "Salary Range Minimum:", "Starting
+# Pay:", "Minimum Hiring Rate", "Compensation Detail", "Hiring Range Minimum
+# and Maximum Per Period", "Budgeted Job Salary Range", "Min Salary".
+_PF_LABEL_RX = re.compile(r"\b(?:pay(?:\s+(?:range|rate|scale))?|salary|salaries|compensation|wages?|hiring\s+(?:rate|range)|base\s+rate)\b", re.I)
+# ... and the labels that name something else although they hold a pay word:
+# Tower "Hours Per Pay Period", Mayo "Hours / Pay Period", HealthPartners "Pay
+# Range Statement" (boilerplate), Cedars "UKG Pay Rule", United Regional
+# "Salary Admin Plan", pay grades, Inova's "Pay Rate Frequency" (the unit,
+# read as a sibling), bonus / differential tags (Tanner "Sign On Bonus").
+_PF_LABEL_SKIP_RX = re.compile(
+    r"hours?\b|pay\s+period|statement|disclaimer|transparen|polic|\brules?\b|admin|\bplan\b|grade|\bstep\b|\bband\b|"
+    r"frequency|basis|\btype\b|class|\bcode\b|title|currency|bonus|sign[\s-]*on|differential|incentive|"
+    r"stipend|relocation|referral|\bshift\b|payroll|eligib|negotiab|commensurate|exempt", re.I)
+
+
+def field_pay_label(label) -> str | None:
+    """None when the label does not name the pay; else "min", "max" or
+    "range" (a label naming both ends, or neither, is a full range)."""
+    lab = re.sub(r"\s+", " ", str(label or "")).strip()
+    if not lab or not _PF_LABEL_RX.search(lab) or _PF_LABEL_SKIP_RX.search(lab):
+        return None
+    lo = re.search(r"\bmin(?:imum)?\b", lab, re.I)
+    hi = re.search(r"\bmax(?:imum)?\b", lab, re.I)
+    if (lo and hi) or not (lo or hi):
+        return "range"
+    return "min" if lo else "max"
+
+
+def _pf_unit_hint(text) -> str | None:
+    """"hour" / "year" / "month" / "biweekly" / "week" named by a unit field,
+    a label or an API period ("HOURLY", "Year", "Hourly Salary Range",
+    "Minimum Salary (Hourly Rate)"), else None. "Salary" alone names no unit."""
+    t = str(text or "")
+    if re.search(r"\bhour|\bhrs?\b", t, re.I):
+        return "hour"
+    if re.search(r"\byear|\bannual|\bannum|\byr\b|\bsalaried\b", t, re.I):
+        return "year"
+    if re.search(r"\bmonth", t, re.I):
+        return "month"
+    if re.search(r"bi-?weekly|pay\s+period|two\s+weeks", t, re.I):
+        return "biweekly"
+    if re.search(r"\bweek", t, re.I):
+        return "week"
+    return None
+
+
+def _pf_num(num, k):
+    v = _wage_num(num)
+    if v is None:
+        return None
+    return v * 1000 if k else v
+
+
+def _pf_unit_at(t, end) -> str | None:
+    """The unit word right after a figure ("/ hour", "Hourly*", "annual
+    salary", "/ salary" = a year, "per visit"), or None."""
+    m = _PF_UNIT_AFTER_RX.match(t, end)
+    if not m:
+        return None
+    w = m.group(1).lower()
+    if w.startswith(("visit", "point", "session")):
+        return "visit"
+    if w == "salary":
+        return "year"                                  # Mayo "$71,510.40 - $107,390.40 / salary"
+    return _pf_unit_hint(w)
+
+
+def _pf_later_unit(t) -> str | None:
+    return next((name for name, rx in _PF_UNIT_ANY if rx.search(t)), None)
+
+
+def _pf_finish(lo, hi, unit, t, start, end):
+    """(lo, hi, unit) through the shared guards, or None."""
+    if lo is None or hi is None:
+        return None
+    scale = {"month": 12, "biweekly": 26, "week": 52}.get(unit or "", 1)
+    if scale != 1:
+        lo, hi, unit = lo * scale, hi * scale, "year"
+    got = _wage_pair(lo, hi, "visit" if unit == "visit" else None)
+    if not got:
+        return None
+    if unit in ("hour", "year", "visit") and got[2] != unit:
+        return None                                   # "$45,000 / hour", "$18.50 annually": not this job's pay
+    if got[2] == "year" and t and _WAGE_FTE_RX.search(t):
+        return None                                   # S8: a prorated annual figure
+    if t and _wage_is_noise(t, start, end):
+        return None                                   # S6: a bonus / differential / stipend figure
+    return (round(got[0], 2), round(got[1], 2), got[2])
+
+
+def field_wage(value, unit=None):
+    """(min, max, unit) from one pay field's text, or None.
+
+    value: what the field shows ("$17.50 - $23.88 / hour (Salary or hourly
+    rate is based on ...)", "USD $35.00/Hr.-USD $79.07/Hr.", "13.5800 Through
+    20.3700", "$ 18.79-28.03 USD", "62.33/hr.", "16.01 USD per hour").
+    unit: the unit a sibling field, the label or the API states ("hour",
+    "year", "month", "HOURLY"...), used when the value names none; with no
+    unit anywhere the band decides (18.24 - 25.53 hourly, 55,000 - 80,000
+    annual). The first range that passes the guards wins; a single figure is
+    read only when the field holds no range at all and the figure carries a
+    "$" or is the field's only number."""
+    if value is None:
+        return None
+    t = re.sub(r"\s+", " ", strip_html(str(value))).strip()
+    if not t or not re.search(r"\d", t):
+        return None
+    hint = _pf_unit_hint(unit) if unit else None
+    ranges = list(_PF_RANGE_RX.finditer(t))
+    for m in ranges:
+        k1, k2 = m.group(2), m.group(4)
+        if k1 and not k2 and "," not in m.group(3) and (_wage_num(m.group(3)) or 0) < 1000:
+            k2 = k1
+        if k2 and not k1 and "," not in m.group(1) and (_wage_num(m.group(1)) or 0) < 1000:
+            k1 = k2
+        lo, hi = _pf_num(m.group(1), k1), _pf_num(m.group(3), k2)
+        u = _pf_unit_at(t, m.end()) or _pf_later_unit(t[m.end():]) or hint
+        got = _pf_finish(lo, hi, u, t, m.start(), m.end())
+        if got:
+            return got
+    if ranges:
+        return None
+    figs = [f for f in _PF_ONE_RX.finditer(t) if _wage_num(f.group(1)) is not None]
+    dollar = [f for f in figs if "$" in f.group(0)]
+    if dollar:
+        f = dollar[0]
+    elif len(figs) == 1 and _PF_BARE_ONE_RX.match(t):
+        f = figs[0]                                   # "52.00", "62.33/hr.", "16.01 USD per hour"; never "PG-37"
+    else:
+        return None
+    v = _pf_num(f.group(1), f.group(2))
+    u = _pf_unit_at(t, f.end()) or _pf_later_unit(t[f.end():]) or hint
+    return _pf_finish(v, v, u, t, f.start(), f.end())
+
+
+def field_wage_pair(lo_value, hi_value, unit=None):
+    """(min, max, unit) from two fields that hold one end each (UHS "Minimum
+    Hiring Rate" / "Maximum Hiring Rate", Providence "Minimum Salary" /
+    "Maximum Salary", PeopleSoft MIN_RT / MAX_RT), or None. One end alone is
+    read as a single rate (min = max)."""
+    def one(v):
+        t = re.sub(r"\s+", " ", strip_html(str(v if v is not None else ""))).strip()
+        return t, (_PF_ONE_RX.search(t) if re.search(r"\d", t) else None)
+    (lt, lm), (ht, hm) = one(lo_value), one(hi_value)
+    if not lm and not hm:
+        return None
+    lo = _pf_num(lm.group(1), lm.group(2)) if lm else None
+    hi = _pf_num(hm.group(1), hm.group(2)) if hm else None
+    lo = lo if lo is not None else hi
+    hi = hi if hi is not None else lo
+    u = ((_pf_unit_at(lt, lm.end()) if lm else None) or (_pf_unit_at(ht, hm.end()) if hm else None)
+         or _pf_later_unit(f"{lt} {ht}") or (_pf_unit_hint(unit) if unit else None))
+    return _pf_finish(lo, hi, u, "", 0, 0)
+
+
+def field_wage_from_labels(fields, unit=None):
+    """(min, max, unit) from (label, value) pairs: the fields whose label
+    names the pay (field_pay_label), a full-range field first, else the min /
+    max pair. A unit in the label ("Hourly Salary Range", "Minimum Salary
+    (Hourly Rate)") or `unit` (a sibling "Pay Rate Frequency" / "Pay
+    Frequency" field) applies when the value names none. None when no
+    labelled field yields a pay."""
+    rng, lo, hi = [], None, None
+    for label, value in fields or ():
+        side = field_pay_label(label)
+        if not side or value is None or str(value).strip().lower() in ("", "null", "none", "n/a", "na"):
+            continue
+        lu = _pf_unit_hint(label)
+        u = lu if lu in ("hour", "year") else unit
+        if side == "range":
+            rng.append((value, u))
+        elif side == "min" and lo is None:
+            lo = (value, u)
+        elif side == "max" and hi is None:
+            hi = (value, u)
+    for value, u in rng:
+        got = field_wage(value, u)
+        if got:
+            return got
+    if lo or hi:
+        u = (lo or hi)[1] or (hi or lo)[1]
+        return field_wage_pair(lo[0] if lo else None, hi[0] if hi else None, u)
+    return None
+
+
+def set_field_wage(job, got) -> bool:
+    """Store a field pay on the job unless the adapter already set one."""
+    if got and job.wage_min is None:
+        job.wage_min, job.wage_max, job.wage_unit = got
+        return True
+    return False
 
 
 # ── Posting-facts extraction (2026-08-24, Robert-approved chips) ────────────
