@@ -19041,7 +19041,7 @@ def extract_posting_facts(text, job_type=None, title=None):
     out["benefit_lines"] = extract_benefit_lines(text)
     # 2026-09-24 (owner): qualifications / certifications / licensure /
     # education as the posting states them (extract_requirements).
-    out["requirements"] = extract_requirements(text)
+    out["requirements"] = extract_requirements(text, title)
     rq = out["requirements"]
     # 2026-10-04 (S11): a flat figure the posting labels "up to" ("Pay: Up to
     # $248 per hour", SonderMind) is stored as the pair it is, with
@@ -19326,7 +19326,11 @@ _RQ_BARE_NOT_RX = re.compile(
     r"^(?:we|our|you|your|they|it|this|these|all|at|as|if|when|with|for|join|apply|about|why|how|who|where|the (?:hospital|"
     r"facility|center|team|unit|department|organization|company))\b|"
     r"\b(?:hospital|medical center|health system|magnet|joint commission|accredit\w*|stroke cent\w*|trauma cent\w*|"
-    r"designat\w*|award\w*|recogni\w*|program offers|tuition|reimburs\w*|scholarship|loan|clearances?|Act \d{2,3})\b", re.I)
+    r"designat\w*|award\w*|recogni\w*|program offers|tuition|reimburs\w*|scholarship|loan|clearances?|Act \d{2,3}|"
+    # 2026-10-05 (push8 review): a pay or benefit line is never a bare
+    # credential (Parkview "BSN Premium (If applicable)" under "Qualified
+    # RN's will receive:")
+    r"premiums?|differentials?|bonus(?:es)?|stipends?|incentives?)\b", re.I)
 
 
 def _rq_bare_types(s: str) -> set:
@@ -19375,6 +19379,23 @@ _RQ_EXP_FIG_RX = re.compile(
     r"\b(?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\s*\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*)?(?:years?|yrs?|months?)\b"
     r"|^\d{1,2}\+?\s+(?=[A-Za-z])", re.I)
 _RQ_EXP_HEAD_RX = re.compile(r"\bexperien", re.I)
+# 2026-10-05 (push8 review): a line whose only experience word is "new grad"
+# states a requirement only when it welcomes (or turns away) new grads;
+# "Acknowledged by Forbes as one of the Best Employers for New Grads." (every
+# CoxHealth posting) and "Why choose UH as a New Grad RN?" do not.
+_RQ_EXP_REAL_WORD_RX = re.compile(r"\bexperience[ds]?\b|\bexp\b|\bentry[- ]level\b", re.I)
+_RQ_EXP_NEWGRAD_CUE_RX = re.compile(
+    r"welcome|encouraged|\baccept|\bconsider|eligible to apply|may apply|open to|not accepting|"
+    r"\bnot\b[^.;]{0,30}\bnew grad|\bno new grad", re.I)     # "Not A New Grad Position"
+# Outside a block: honours, recruiting pitches, loan repayment, submission
+# instructions and cohort names ("December 2026 New Graduate RNs") are not
+# experience asks. A residency program, a DEA / licence / registry deadline
+# ("New grads in Orthopedics need to acquire their DEA within 90 days") is
+# not one either when new grads are the only experience the line names; a
+# line that also names experience ("current CPR license* and at least 1
+# year of experience") stays.
+_RQ_EXP_OUTSIDE_NOT_RX = re.compile(r"forbes|best employers|why choose|loan repayment|must submit|\b20\d\d new grad", re.I)
+_RQ_EXP_OUTSIDE_NG_NOT_RX = re.compile(r"residency program|\bDEA\b|licen|registry", re.I)
 _RQ_EXP_HEAD_OTHER_RX = re.compile(r"educat|licen|certif|skill|knowledge|abilit|training|degree|registr|credential", re.I)
 
 
@@ -19395,9 +19416,13 @@ def _rq_after_pay_line(s: str) -> bool:
     return bool(_RQ_CUE_RX.search(s) and (_rq_types(s) or _rq_must_cred(s)))
 
 
-def _rq_exp_line(s: str, exp_block: bool = False) -> bool:
-    """A line that states the experience the role asks for (see above)."""
+def _rq_exp_line(s: str, exp_block: bool = False, outside: bool = False) -> bool:
+    """A line that states the experience the role asks for (see above);
+    outside: the line sits outside any requirement block."""
     if len(s) > 300 or _RQ_DUTY_RX.search(s):
+        return False
+    if outside and (_RQ_EXP_OUTSIDE_NOT_RX.search(s)
+                    or (_RQ_EXP_OUTSIDE_NG_NOT_RX.search(s) and not _RQ_EXP_REAL_WORD_RX.search(s))):
         return False
     s_ = _RQ_EXP_NOT_RX.sub(" ", s)
     if exp_block:
@@ -19407,8 +19432,10 @@ def _rq_exp_line(s: str, exp_block: bool = False) -> bool:
         if _RQ_EXP_WORD_RX.search(s_):
             return True
         return bool(_RQ_EXP_FIG_RX.search(s_)) and not _rq_types(s_)
-    return bool(_RQ_EXP_WORD_RX.search(s_) and _RQ_EXP_CUE_RX.search(s_)
-                and re.search(r"\bexperience[ds]?\b|\bexp\b|\bnew grad|\bentry[- ]level\b", s_, re.I))
+    if not (_RQ_EXP_WORD_RX.search(s_) and _RQ_EXP_CUE_RX.search(s_)
+            and re.search(r"\bexperience[ds]?\b|\bexp\b|\bnew grad|\bentry[- ]level\b", s_, re.I)):
+        return False
+    return bool(_RQ_EXP_REAL_WORD_RX.search(s_) or _RQ_EXP_NEWGRAD_CUE_RX.search(s_))
 
 # Professional licensure. A driver's licence is a qualification, not
 # licensure; "378 licensed beds" and "level of licensure" are neither.
@@ -20157,10 +20184,12 @@ def _rq_req_ahead(rows, i: int) -> bool:
     return False
 
 
-def extract_requirements(text) -> dict:
+def extract_requirements(text, title=None) -> dict:
     """The requirement fields (see the block comment above; "experience"
     since 2026-10-05); every key is always present, empty when the posting
-    does not state it."""
+    does not state it. title: the posting's title; a line that only repeats
+    it is not an experience item (Bronson "Clinical Dietitian General
+    Posting-Completing or New Grads Welcome")."""
     out = {"qualifications": {"required": [], "preferred": []},
            "certifications": [], "licensure": [], "education": [], "experience": []}
     if not text:
@@ -20175,6 +20204,7 @@ def extract_requirements(text) -> dict:
     # _rq_unglue adds breaks of its own)
     t = _rq_unwall(_rq_unglue(t), t.count("\n") < max(4, len(t) // 800))
     seen = {k: set() for k in ("q", "certifications", "licensure", "education", "experience")}
+    title_key = _rq_dupkey(str(title)) if title else None
 
     def add(field, s, pref):
         # 2026-10-05 (push8/requirements): enumerators, zero-width characters,
@@ -20182,13 +20212,17 @@ def extract_requirements(text) -> dict:
         s = _rq_item_text(s)
         if len(s) < 3:
             return
+        if field == "experience" and title_key and _rq_dupkey(s) == title_key:
+            return                              # (push8 review) the title echoed in the body
         # (push3 integration) a heading label left over as an item is not one:
         # Orlando Health "Licensure/Certification", HCTS "License/Registration/
         # Certification", Workday table cells "Required" / "Preferred" / "AND".
         # Only a label that reads as one (a colon, a slash, one word, or Title
         # Case); "Clinical license preferred" is an item.
         lab = re.sub(r"\s*:$", "", s).strip()
-        if len(s) <= 60 and _RQ_HEAD_RX.match(lab) and (
+        # (push8 review) "Experience Requirements and Preferences" is a label
+        # too; only here, the heading reader keeps its own vocabulary
+        if len(s) <= 60 and _RQ_HEAD_RX.match(re.sub(r"\bpreferences\b", "preferred", lab, flags=re.I)) and (
                 s.endswith(":") or "/" in lab or len(lab.split()) == 1
                 or all(w[:1].isupper() or w.lower() in _RQ_SMALL_WORDS or not w[:1].isalpha() for w in lab.split())):
             return
@@ -20321,7 +20355,7 @@ def extract_requirements(text) -> dict:
                 # (push8, plan item 6) an experience requirement outside a
                 # block ("Previous ICU experience preferred", "New grads welcome")
                 if (not re.match(r"(?:we|our|they|you will|you'll)\b", c, re.I) and not _RQ_BLOCK_END_RX.search(c)
-                        and _rq_exp_line(_RQ_ENUM_RX.sub("", c))):
+                        and _rq_exp_line(_RQ_ENUM_RX.sub("", c), outside=True)):
                     add("experience", c, _rq_pref(c, None))
                 # (Essentia "Qualified candidates may be eligible for a
                 # hiring incentive of up to $7,500 (ADN)" is not education)
