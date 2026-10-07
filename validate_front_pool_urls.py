@@ -80,6 +80,12 @@ DEAD_CODES = {404, 410}
 # asked again because Paylocity (and others) answer HEAD with 404 on a
 # live posting (2026-10-07, push 10).
 GET_AGAIN_CODES = {400, 403, 404, 405, 410, 501}
+# A redirect onto a platform's "job not found" page is the posting's absence,
+# not a live page. Paylocity answers HEAD with 404 on every posting; GET
+# answers 200 on a live one and 302 -> /Recruiting/Jobs/JobNotFound (which
+# then answers 200) on a closed one, so following that hop would stamp a
+# closed job live (probed 2026-10-07, push 10). Path prefixes, lower case.
+DEAD_REDIRECT_PATHS = ("/recruiting/jobs/jobnotfound",)
 MAX_DEAD_SHARE = 0.05           # retire nothing if more than 5% of checked rows look dead
 SYSTEM_MAX_DEAD_SHARE = 0.5     # skip a system whose checked rows are half dead ...
 SYSTEM_MIN_DEAD = 10            # ... once it has at least this many dead
@@ -127,6 +133,16 @@ def _unverifiable(url) -> str:
     if host == "pm.healthcaresource.com" and p.path.startswith("/cs/") and p.fragment.startswith("/job"):
         return "fragment route"
     return ""
+
+
+def _dead_redirect(url) -> bool:
+    """True when a redirect target is a platform's job-not-found page
+    (DEAD_REDIRECT_PATHS), which counts as a 404 for the posting."""
+    try:
+        path = (urlparse(url).path or "").lower()
+    except Exception:
+        return False
+    return any(path.startswith(p) for p in DEAD_REDIRECT_PATHS)
 
 
 def _env() -> tuple:
@@ -209,6 +225,8 @@ async def _status(session, url) -> int:
             return 0
         if 300 <= st < 400 and loc:
             cur = urljoin(cur, loc)
+            if _dead_redirect(cur):
+                return 404
             continue
         return st
     return 0
