@@ -6,9 +6,10 @@ and stats queries.
 
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from supabase import create_client, Client
-from retire_guard import BACKSTOP_DAYS, plan_layer4
+from retire_guard import (BACKSTOP_DAYS, plan_layer4, load_yield_history, save_yield_history,
+                          zero_yield_alarms)
 
 logger = logging.getLogger(__name__)
 
@@ -137,8 +138,17 @@ def upsert_jobs(jobs: list[dict]) -> dict:
 
 def mark_inactive_jobs(current_jobs: list[dict],
                        miss_threshold: int = MISS_THRESHOLD,
-                       exclude_systems: set[str] | None = None) -> dict:
+                       exclude_systems: set[str] | None = None,
+                       complete_systems: set[str] | None = None) -> dict:
     """Layer 4 deactivation: multi-run miss confirmation.
+
+    2026-10-07 (push 10): `complete_systems` (canonical labels, from
+    scraper.COMPLETE_SYSTEMS) read their whole board tonight, so the yield
+    guard is bypassed for them and their unseen rows count as usual. The
+    guard's zero-yield streaks are kept in state/layer4_yields.json and a
+    system dark two runs in a row is logged as an ALARM (retire_guard.
+    zero_yield_alarms). BACKSTOP_EXEMPT systems keep their unseen rows frozen
+    past the backstop while guarded.
 
     2026-09-16: `exclude_systems` (canonical hospital_system labels) are left
     untouched: no miss bump, no reset, no deactivation. The per-system sweep
@@ -262,20 +272,45 @@ def mark_inactive_jobs(current_jobs: list[dict],
     # exclude_systems untouched; unseen rows of a yield-guarded system (0
     # rows tonight, or under 80% of 20+ active rows) keep their count unless
     # nobody has seen them for BACKSTOP_DAYS.
-    plan = plan_layer4(active, current_keys, miss_threshold, exclude_systems)
+    plan = plan_layer4(active, current_keys, miss_threshold, exclude_systems,
+                       complete_systems=complete_systems)
     found_ids: list[int] = plan["found_ids"]
     deactivate_ids: list[int] = plan["deactivate_ids"]
     bump_by_new_count: dict[int, list[int]] = plan["bump_by_new_count"]
     excluded_n = plan["excluded_rows"]
     guarded = plan["guarded"]
+    bypassed = plan["complete_bypassed"]
+    for system in sorted(bypassed, key=lambda s: -bypassed[s]["active"]):
+        c = bypassed[system]
+        logger.info(f"  LAYER4 complete crawl {system}: {c['reason']} {c['yield']}/{c['active']} "
+                    f"(yield/active) but the adapter read the whole board; unseen rows counted as usual")
     for system in sorted(guarded, key=lambda s: -guarded[s]["active"]):
         g = guarded[system]
         logger.warning(f"  LAYER4 GUARD {system}: {g['reason']} {g['yield']}/{g['active']} "
                        f"(yield/active); {g['frozen']} unseen rows keep their miss count, "
-                       f"{g['backstop']} past the {BACKSTOP_DAYS}-day backstop counted as usual")
+                       f"{g['backstop']} past the {BACKSTOP_DAYS}-day backstop counted as usual"
+                       + (f", {g['exempt']} past it kept frozen (BACKSTOP_EXEMPT)" if g.get("exempt") else ""))
     if guarded:
         logger.warning(f"  Layer 4 yield guard: {len(guarded)} system(s), "
                        f"{plan['frozen_rows']:,} rows held, {plan['backstop_rows']:,} past the backstop")
+
+    # 2026-10-07 (push 10): ALARM on a system that is zero-yield two runs in a
+    # row (or whose newest row is older than the previous run). Bookkeeping
+    # only; it never changes the plan and never fails the pass.
+    alarms: list[dict] = []
+    try:
+        now = datetime.now(timezone.utc)
+        history, alarms = zero_yield_alarms(guarded, load_yield_history(), now)
+        if not save_yield_history(history):
+            logger.warning("  Layer 4: could not save the zero-yield streaks (state/layer4_yields.json); "
+                           "streaks restart next run")
+        for a in alarms:
+            age = f"{a['age_h']} h ago" if a["age_h"] is not None else "unknown"
+            logger.warning(f"  ALARM LAYER4 {a['system']}: zero yield {a['runs']} run(s) in a row, "
+                           f"{a['active']} active rows, newest row stamped {a['newest_seen']} ({age}); "
+                           f"the adapter is broken or the employer left this board")
+    except Exception as e:
+        logger.warning(f"  Layer 4 zero-yield alarm bookkeeping failed (non-fatal): {e}")
 
     # Helper for batched updates.
     def _batch_update(ids: list[int], patch: dict, label: str) -> int:
@@ -312,6 +347,8 @@ def mark_inactive_jobs(current_jobs: list[dict],
         "guarded_systems": sorted(guarded),
         "guard_held_rows": plan["frozen_rows"],
         "guard_backstop_rows": plan["backstop_rows"],
+        "complete_bypassed": sorted(bypassed),
+        "zero_yield_alarms": [a["system"] for a in alarms],
     }
     logger.info(f"Layer 4 deactivation: {summary}")
     return summary

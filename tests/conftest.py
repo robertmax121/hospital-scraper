@@ -13,18 +13,23 @@ for _k in ("SUPABASE_URL", "SUPABASE_KEY", "SUPABASE_SERVICE_ROLE_KEY"):
     os.environ.pop(_k, None)
 
 import pytest  # noqa: E402
+import retire_guard  # noqa: E402
 import scraper  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _clean_module_state():
-    """Every test starts with no partial-run flags, no CMS lookup and no
-    rows left over from an earlier upsert."""
+def _clean_module_state(tmp_path, monkeypatch):
+    """Every test starts with no partial-run or complete-crawl flags, no CMS
+    lookup, no rows left over from an earlier upsert, and the Layer 4
+    zero-yield history in a temp file (2026-10-07) rather than state/."""
     scraper.PARTIAL_SYSTEMS.clear()
+    scraper.COMPLETE_SYSTEMS.clear()
     scraper.set_cms_lookup([])
     scraper.LAST_UPSERT_FAILED.clear()
+    monkeypatch.setattr(retire_guard, "YIELD_HISTORY_PATH", str(tmp_path / "layer4_yields.json"))
     yield
     scraper.PARTIAL_SYSTEMS.clear()
+    scraper.COMPLETE_SYSTEMS.clear()
     scraper.set_cms_lookup([])
     scraper.LAST_UPSERT_FAILED.clear()
 

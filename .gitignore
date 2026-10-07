@@ -36,3 +36,6 @@ link_scan_results.txt
 data/osm_hospitals/
 data/fingerprints/
 data/uncovered_hospitals_*.json
+
+# Layer 4 zero-yield streaks between runs (2026-10-07, retire_guard.YIELD_HISTORY_PATH)
+state/

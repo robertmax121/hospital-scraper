@@ -1014,6 +1014,37 @@ def priority_states_first(items, state_of):
 # that (per-state counts of 1000 / 500 / 500 / 500 = page boundaries).
 PARTIAL_SYSTEMS: set[str] = set()
 
+# ── Complete-crawl reports (2026-10-07, push 10) ────────────────────────────
+# The inverse of PARTIAL_SYSTEMS. An adapter that read a board whose site
+# advertises its total (TalentBrew's data-total-results, Talemetry's
+# total_entries, HealthcareSource's hits.total, CHS's meta.total, Phenom's
+# totalHits) reports the crawl complete when it listed COMPLETE_RATIO of that
+# total. The sweep and Layer 4 then retire what the run did not re-stamp as
+# usual, whatever the yield ratio says: the rows it missed are closed
+# postings, not a cut-short crawl. The yield guard (retire_guard.py) could
+# not tell the two apart and held about 1,600 closed Prime, Sutter, NYP,
+# One Medical and Carilion rows on 10-06 until the 7-day backstop.
+from retire_guard import COMPLETE_RATIO   # the one threshold, shared with Layer 4
+
+COMPLETE_SYSTEMS: set[str] = set()
+
+
+def report_complete(system: str, fetched: int, advertised) -> bool:
+    """Record that `system`'s list crawl reached the site's advertised total.
+
+    `advertised` is the site's own count (None or 0 when the site gives none,
+    in which case nothing is recorded). A system that also reported a
+    partial run keeps the partial flag: PARTIAL_SYSTEMS wins."""
+    try:
+        total = int(advertised or 0)
+    except (TypeError, ValueError):
+        total = 0
+    if total <= 0 or system in PARTIAL_SYSTEMS or fetched < COMPLETE_RATIO * total:
+        COMPLETE_SYSTEMS.discard(system)
+        return False
+    COMPLETE_SYSTEMS.add(system)
+    return True
+
 # ── Cross-tenant dedupe at the source (2026-09-10, S-scraper-2) ────────────
 # Two ATS tenants of one system can list the same posting (CityMD's two
 # Workday entries doubled 608 rows before the second entry was removed).
@@ -1194,8 +1225,10 @@ PAY_REREAD_SYSTEMS = frozenset({
     # Oracle HCM requisition flex fields (_oracle_pay)
     "Tenet Healthcare", "Brookdale Senior Living", "Mayo Clinic", "Adventist Health", "UW Health",
     "HealthPartners", "UCSF Health", "Inova Health System", "Inspira Health Network",
-    "Loma Linda University Health", "Unknown (fa-eyip)", "Eastern Connecticut Health",
-    "Providence Health", "Northwell Health", "Cedars-Sinai", "United Regional", "UChicago Medicine",
+    # 2026-10-07 (push 10): "Eastern Connecticut Health" and "United Regional"
+    # were the mislabelled Oracle tenants eglz and erqh, renamed with them.
+    "Loma Linda University Health", "Unknown (fa-eyip)", "Cottage Health",
+    "Providence Health", "Northwell Health", "Cedars-Sinai", "Atlantic Health System", "UChicago Medicine",
     # PeopleSoft posting fields (_ps_pay)
     "NYC Health + Hospitals", "The Queen's Health Systems",
     # iCIMS classic header (OHSU "Salary Range")
@@ -5621,6 +5654,12 @@ UHG_JOB_PATTERN = re.compile(r'href="(/job/([^/]+)/([^/]+)/34088/(\d+))"')
 UHG_TITLE_NEAR_HREF = re.compile(
     r'href="[^"]*?/34088/(\d+)"[^>]*>(?:\s*<[^>]+>)*\s*([^<\n]{3,150}?)\s*<'
 )
+# 2026-10-07 (push 10): every results page prints the site's own count on
+# the results container (data-total-results="5573" data-total-pages="372"
+# data-records-per-page="15" on 2026-10-07); the crawl ends on it.
+UHG_TOTAL_RX = re.compile(r'data-total-results="(\d+)"')
+UHG_PAGES_RX = re.compile(r'data-total-pages="(\d+)"')
+UHG_MAX_CONSECUTIVE_FAILURES = 3
 # Sub-brand classifier — applied during v2; v1 labels everything UHG.
 # Keys are substrings to check in title (lowercase); values are the
 # sub-brand to credit. First-match-wins on the order below.
@@ -5670,26 +5709,60 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
     """
     SYSTEM = "UnitedHealth Group"
     MAX_PAGES = 500                  # 5,800 jobs / 15 per page = 387 + safety
-    EXPECTED_PER_PAGE = 15
     SPLIT = os.environ.get("UHG_SPLIT_SUBBRANDS") == "1"
 
     jobs: list[Job] = []
     seen_ids: set[str] = set()
     empty_pages_in_a_row = 0
     subbrand_counts = {}
+    # 2026-10-07 (push 10): the crawl used to end on the first non-200 page,
+    # on the first fetch error and on any page after page 5 with fewer than 7
+    # new ids, so one bad page cost the rest of the board (477 of 6,315 on
+    # the 10-06 run, 5,093 rows held by the guard, 711 retired by the
+    # backstop). A failed page is now skipped and the next one read; the
+    # crawl stops after UHG_MAX_CONSECUTIVE_FAILURES in a row, and otherwise
+    # on the total the site prints in every page (UHG_TOTAL_RX / UHG_PAGES_RX).
+    # Without that total the old two-empty-pages rule still ends it.
+    advertised_total: int | None = None
+    advertised_pages: int | None = None
+    failures_in_a_row = 0
+    stop_reason = f"MAX_PAGES {MAX_PAGES} reached"
+    stop_is_normal = False
     for page in range(1, MAX_PAGES + 1):
+        if advertised_pages is not None and page > advertised_pages:
+            stop_reason = f"advertised {advertised_pages} pages read"
+            stop_is_normal = True
+            break
         url = f"{UHG_BASE}/search-jobs?p={page}"
+        html, problem = None, ""
         try:
             async with req(session, "get", url,
                            headers={**HEADERS, "Accept": "text/html,*/*"},
                            timeout=aiohttp.ClientTimeout(total=60)) as r:
-                if r.status != 200:
-                    logger.info(f"UHG: page {page} HTTP {r.status} — stopping")
-                    break
-                html = await r.text()
+                if r.status == 200:
+                    html = await r.text()
+                else:
+                    problem = f"HTTP {r.status}"
         except Exception as e:
-            logger.info(f"UHG: page {page} fetch error: {e} — stopping")
-            break
+            problem = f"{type(e).__name__}: {e}"
+        if html is None:
+            failures_in_a_row += 1
+            logger.warning(f"UHG: page {page} failed ({problem}); skipping it "
+                           f"({failures_in_a_row}/{UHG_MAX_CONSECUTIVE_FAILURES} in a row)")
+            if failures_in_a_row >= UHG_MAX_CONSECUTIVE_FAILURES:
+                stop_reason = (f"{failures_in_a_row} consecutive page failures, "
+                               f"last {problem} on page {page}")
+                break
+            await jitter()
+            continue
+        failures_in_a_row = 0
+
+        m_total, m_pages = UHG_TOTAL_RX.search(html), UHG_PAGES_RX.search(html)
+        if m_total and m_pages:
+            new_total, new_pages = int(m_total.group(1)), int(m_pages.group(1))
+            if (new_total, new_pages) != (advertised_total, advertised_pages):
+                logger.info(f"UHG: site advertises {new_total} results over {new_pages} pages (page {page})")
+            advertised_total, advertised_pages = new_total, new_pages
 
         matches = UHG_JOB_PATTERN.findall(html)
         title_map = {jid: t.strip() for jid, t in UHG_TITLE_NEAR_HREF.findall(html)}
@@ -5731,25 +5804,34 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
 
         logger.info(f"UHG: page {page} -> {new_this_page} new jobs (total: {len(jobs)})")
 
-        # Same end conditions as Kaiser:
-        #   - two consecutive empty pages = end of results
-        #   - <half a page worth and we're past page 5 = partial last page
-        if new_this_page == 0:
+        # End conditions (2026-10-07, push 10): the advertised page count when
+        # the site printed one, else two consecutive empty pages. The old
+        # "fewer than half a page after page 5" rule is gone: a thin page is
+        # a thin page, not the end of the board.
+        if advertised_pages is not None:
+            if page >= advertised_pages:
+                stop_reason = f"advertised {advertised_pages} pages read"
+                stop_is_normal = True
+                break
+        elif new_this_page == 0:
             empty_pages_in_a_row += 1
             if empty_pages_in_a_row >= 2:
-                logger.info(f"UHG: 2 empty pages in a row - done at page {page}")
+                stop_reason = f"2 empty pages in a row at page {page} (no advertised total)"
+                stop_is_normal = True
                 break
         else:
             empty_pages_in_a_row = 0
-        if new_this_page < EXPECTED_PER_PAGE // 2 and page > 5:
-            logger.info(f"UHG: partial page {page} ({new_this_page} jobs) - done")
-            break
 
         await jitter()
 
+    short = advertised_total is not None and len(jobs) < COMPLETE_RATIO * advertised_total
+    (logger.info if stop_is_normal and not short else logger.warning)(
+        f"UHG: stopped: {stop_reason}; {len(jobs)} jobs listed"
+        + (f" of {advertised_total} advertised" if advertised_total is not None else ""))
     if SPLIT and subbrand_counts:
         logger.info(f"  UHG sub-brand split: {subbrand_counts}")
     logger.info(f"  UnitedHealth Group (TalentBrew 34088): {len(jobs)} jobs")
+    report_complete(SYSTEM, len(jobs), advertised_total)
     return jobs
 
 
@@ -7287,7 +7369,12 @@ SMARTRECRUITERS_ORGS = {
     # ── Added 2026-05-29: Phase 3 non-acute expansion (verified SR API 200) ──
     # totalFound validated live 2026-05-29 via probe_ats.py.
     "US Physical Therapy":  "usphysicaltherapy2",   # 1,075 jobs, outpatient PT (~600 clinics)
-    "Atria Senior Living":  "AtriaGroupLLC",         # 966 jobs, senior living (~200 communities)
+    # "Atria Senior Living": "AtriaGroupLLC" removed 2026-10-07 (push 10):
+    # the company page is Atria Group LLC, an IT staffing firm (Java, SAP,
+    # .NET postings released 2012-2017; 5 of 5 sampled live on 2026-10-07),
+    # not the senior-living operator. Its 966 rows are retired by
+    # sql/push10_retire_and_relabel.sql; Atria Senior Living's real board is
+    # still to be found.
 }
 
 async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -8287,6 +8374,9 @@ PHENOM_ORGS = {
     # this entry just burned a nightly 403. Covered by the rebuilt run_hca().
 }
 
+PHENOM_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end a crawl
+
+
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     """Scrape a Phenom People career site.
 
@@ -8630,6 +8720,15 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     if is_widgets:
         fetch_headers["X-Requested-With"] = "XMLHttpRequest"
 
+    # 2026-10-07 (push 10): two back-to-back crawls of DaVita's first 300
+    # rows with this payload (sortBy "") returned the same id set, so the
+    # paging itself is left alone. What ends a crawl early is a page that
+    # fails: any exception ended the tenant at that offset and a non-200
+    # ended it silently. Such a page is now skipped and the next offset
+    # read; PHENOM_MAX_CONSECUTIVE_FAILURES in a row stop the crawl, with
+    # the reason and the offset at WARNING.
+    page_failures = 0
+    site_total = 0
     while True:
         try:
             is_cdn = "api.phenompeople.com" in api_url
@@ -8660,7 +8759,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 timeout=aiohttp.ClientTimeout(total=25),
             ) as r:
                 if r.status != 200:
-                    break
+                    raise RuntimeError(f"HTTP {r.status}")
                 data = await r.json(content_type=None)
 
             # Unwrap nested widget response if needed
@@ -8795,13 +8894,31 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
             )
             if isinstance(total, dict):
                 total = total.get("value", len(listings))
+            if int(total) > len(listings):
+                site_total = max(site_total, int(total))
+            page_failures = 0
             offset += 50
             if offset >= int(total) or len(listings) < 50:
                 break
             await jitter()
         except Exception as e:
-            logger.info(f"Phenom {system}: {e}")
-            break
+            page_failures += 1
+            logger.warning(f"Phenom {system}: page at offset {offset} failed ({type(e).__name__}: {e}); "
+                           f"skipping it ({page_failures}/{PHENOM_MAX_CONSECUTIVE_FAILURES} in a row)")
+            if page_failures >= PHENOM_MAX_CONSECUTIVE_FAILURES:
+                logger.warning(f"Phenom {system}: stopping at offset {offset} after {page_failures} consecutive "
+                               f"page failures; {len(jobs)} rows listed"
+                               + (f" of {site_total} advertised" if site_total else ""))
+                break
+            offset += 50
+            if site_total and offset >= site_total:
+                break
+            await jitter()
+
+    listed = len({j.job_id for j in jobs})
+    if site_total and listed < COMPLETE_RATIO * site_total:
+        logger.warning(f"Phenom {system}: listed {listed} of {site_total} advertised")
+    report_complete(system, listed, site_total)
 
     drop_rx = PHENOM_DROP_EMPLOYERS.get(system)
     if drop_rx and jobs:
@@ -10757,12 +10874,32 @@ ORACLE_ORGS = {
     # the old Cape Cod rows need a one-shot DB relabel (post-push step).
     "Adventist Health":          ("https://ecvz.fa.us2.oraclecloud.com",                      "CX_1"),
     "Flagler Health":            ("https://erou.fa.us2.oraclecloud.com",                      "CX_1"),
-    "Eastern Connecticut Health":("https://eglz.fa.us2.oraclecloud.com",                      "CX"),
+    # eglz/CX was labelled "Eastern Connecticut Health"; every row it writes
+    # is in Santa Barbara / Goleta / Solvang CA, and a live posting read on
+    # 2026-10-07 places the role "within Cottage Medical Group (CMG)": it is
+    # COTTAGE HEALTH (TotalJobsCount 135). Relabelled 2026-10-07 (push 10);
+    # the stored rows and the three hospital_cms_alias rows (Santa Barbara,
+    # Goleta Valley and Santa Ynez Valley Cottage) are relabelled by
+    # sql/push10_retire_and_relabel.sql.
+    "Cottage Health":            ("https://eglz.fa.us2.oraclecloud.com",                      "CX"),
     "Guthrie Health":            ("https://elfw.fa.us2.oraclecloud.com",                      "CX_1001"),  # confirmed
     "Valley Children's":         ("https://epyz.fa.us2.oraclecloud.com",                      "CX_1"),
     "Southwest Health":          ("https://fa-exgl-saasfaprod1.fa.ocs.oraclecloud.com",       "JoinOurTeam"),
     "HealthPartners":            ("https://fa-etnv-saasfaprod1.fa.ocs.oraclecloud.com",       "healthpartners"),
-    "United Regional":           ("https://erqh.fa.us2.oraclecloud.com",                      "CX_1001"),
+    # erqh/CX_1001 was labelled "United Regional" (the Wichita Falls TX
+    # system is iaoxqy above). Its rows are Morristown / Summit / Newton /
+    # Florham Park NJ, and live postings read on 2026-10-07 name "Atlantic
+    # Health Overlook Medical Center" and "Atlantic Mobile Health": it is
+    # ATLANTIC HEALTH SYSTEM (TotalJobsCount 892). Relabelled 2026-10-07
+    # (push 10); the stored rows and the six hospital_cms_alias rows
+    # (Morristown, Overlook, Newton, Chilton, CentraState, AHS Hospital Corp)
+    # are relabelled by sql/push10_retire_and_relabel.sql.
+    "Atlantic Health System":    ("https://erqh.fa.us2.oraclecloud.com",                      "CX_1001"),
+    # 2026-10-07 (push 10): Parkview Health left HealthcareSource (tenant pvh
+    # answers 200 with an empty index, and its ~600 rows went to the backstop
+    # in late September). parkview.com/careers links this tenant;
+    # TotalJobsCount 688 on 2026-10-07, Fort Wayne IN.
+    "Parkview Health":           ("https://parkview-ibyyjb.fa.ocs.oraclecloud.com",           "CX_1"),
     "Unknown (fa-eyip)":         ("https://fa-eyip-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_4001"),
     # ── Added 2026-05-13: post-acute expansion Phase 1 (verified) ──
     # VITAS Healthcare: largest US hospice operator (~30K patients/day).
@@ -10977,7 +11114,9 @@ async def run_oracle(session) -> list[Job]:
 HEALTHCARESOURCE_ORGS = {
     "Ellis Medicine":           "ellishospital",   # 2026-09-16 (NY coverage), pm.healthcaresource.com/cs/ellishospital
     "North Kansas City Hospital": "nkch",          # 2026-09-25 push 5 / gov: city-owned, pm.healthcaresource.com/cs/nkch
-    "Parkview Health":          "pvh",             # 2026-09-17 (lever 3), Fort Wayne IN
+    # "Parkview Health": "pvh" removed 2026-10-07 (push 10): the tenant answers
+    # 200 with an empty index (hits.total 0 on 2026-10-07) and parkview.com/
+    # careers links an Oracle tenant now (ORACLE_ORGS).
     "Renown Health":            "renownhealth",    # 2026-09-17 (lever 3), Reno NV
     "Central Valley Medical":   "centralvalleymedicalcenter",
     "RMCM":                     "rmcm",
@@ -10994,7 +11133,10 @@ HEALTHCARESOURCE_ORGS = {
     "Liberty Hospital":         "liberty",
     "Forrest Health":           "forresthealth",
     "MRHC":                     "mrhc",
-    "Brattleboro Memorial":     "bch",
+    # 2026-10-07 (push 10): tenant bch is BOULDER COMMUNITY HEALTH (Boulder
+    # CO; every row's hospital_name and state said so), not Brattleboro
+    # Memorial (VT). Stored rows are relabelled by sql/push10_relabel_bch.sql.
+    "Boulder Community Health": "bch",
     "Waterbury Hospital":       "waterbury",
     "ECHN":                     "echn",
     "Archbold Medical":         "archbold",
@@ -11144,24 +11286,48 @@ def _hcs_pay(ua: dict):
 # client.bundle.js, esQueryGenerator) posts a bool query and passes the page
 # size as a query-string parameter (searchEndpoint + "?size=N").
 _HCS_PAGE = 50
-_HCS_BODY = {"query": {"bool": {"must": {"match_all": {}}}}}   # 2026-09-10: "*" alone matches nothing
+# 2026-10-07 (push 10): match_all with no sort pages in index order, which
+# can differ between requests when scores tie, so RWJBarnabas, Aultman,
+# Salina and CRMC came back partial on 10-06 (unseen rows had been seen the
+# run before). The proxy forwards an Elasticsearch sort: datePosted (desc)
+# with the index's own _doc order as the tie-break is accepted (Salina,
+# 2026-10-07: sort values [epoch_ms, doc] on every hit); a sort on
+# userArea.jobPostingID or documentId answers 500 (text fields). A tenant
+# that answers 500 to the sorted body at offset 0 is retried unsorted once.
+_HCS_SORT = [{"datePosted": {"order": "desc"}}, "_doc"]
+_HCS_BODY = {"query": {"bool": {"must": {"match_all": {}}}}, "sort": _HCS_SORT}   # 2026-09-10: "*" alone matches nothing
+_HCS_BODY_UNSORTED = {"query": _HCS_BODY["query"]}
+_HCS_MAX_CONSECUTIVE_FAILURES = 3
 
 
 async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, tenant: str) -> list[Job]:
     jobs: list[Job] = []
+    seen: set[str] = set()
     api = f"https://pm.healthcaresource.com/JobseekerSearchAPI/{tenant}/api/Search"
     offset = 0
+    body = _HCS_BODY
+    total: int | None = None
+    failures_in_a_row = 0
+    # 2026-10-07 (push 10): rows are deduped by job_id inside the loop, a
+    # failed page is skipped (the next offset is read) and only
+    # _HCS_MAX_CONSECUTIVE_FAILURES in a row end the tenant; any exception
+    # used to end it at once.
     while True:
         try:
             async with req(session, "post", api,
                 params={"size": _HCS_PAGE, "from": offset},
-                json=_HCS_BODY,
+                json=body,
                 headers={**HEADERS, "Accept": "application/json", "Content-Type": "application/json; charset=utf-8",
                          "Referer": f"https://pm.healthcaresource.com/cs/{tenant}"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
-                    logger.info(f"HealthcareSource {system}: HTTP {r.status} {(await r.text())[:120]}")
-                    break
+                    snippet = (await r.text())[:120]
+                    if body is _HCS_BODY and offset == 0 and r.status == 500:
+                        logger.warning(f"HealthcareSource {system}: HTTP 500 to the sorted query at offset 0; "
+                                       f"retrying this tenant unsorted ({snippet!r})")
+                        body = _HCS_BODY_UNSORTED
+                        continue
+                    raise RuntimeError(f"HTTP {r.status} {snippet}")
                 data = await r.json(content_type=None)
             hits = (data or {}).get("hits") or {}
             items = hits.get("hits") or []
@@ -11169,18 +11335,34 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
                 break
             for h in items:
                 job = _hcs_job(h, system, tenant)
-                if job:
+                if job and job.job_id not in seen:
+                    seen.add(job.job_id)
                     jobs.append(job)
-            total = hits.get("total")
-            total = int((total or {}).get("value", 0)) if isinstance(total, dict) else int(total or 0)
+            t = hits.get("total")
+            t = int((t or {}).get("value", 0)) if isinstance(t, dict) else int(t or 0)
+            total = t or total
+            failures_in_a_row = 0
             offset += len(items)
-            if offset >= total or len(items) < _HCS_PAGE:
+            if (total and offset >= total) or len(items) < _HCS_PAGE:
                 break
             await jitter()
         except Exception as e:
-            logger.info(f"HealthcareSource {system}: {e}")
-            break
+            failures_in_a_row += 1
+            logger.warning(f"HealthcareSource {system}: page at offset {offset} failed ({type(e).__name__}: {e}); "
+                           f"skipping it ({failures_in_a_row}/{_HCS_MAX_CONSECUTIVE_FAILURES} in a row)")
+            if failures_in_a_row >= _HCS_MAX_CONSECUTIVE_FAILURES:
+                logger.warning(f"HealthcareSource {system}: stopping at offset {offset} after {failures_in_a_row} "
+                               f"consecutive page failures; {len(jobs)} rows listed"
+                               + (f" of {total} advertised" if total else ""))
+                break
+            offset += _HCS_PAGE
+            if total and offset >= total:
+                break
+            await jitter()
+    if total and len(jobs) < COMPLETE_RATIO * total:
+        logger.warning(f"HealthcareSource {system}: listed {len(jobs)} of {total} advertised")
     logger.info(f"  HealthcareSource {system}: {len(jobs)} jobs")
+    report_complete(system, len(jobs), total)
     return jobs
 
 async def run_healthcaresource(session) -> list[Job]:
@@ -13481,6 +13663,10 @@ TALEMETRY_SITES = {
 TALEMETRY_PER_PAGE = 100
 TALEMETRY_PAGE_CAP = int(os.getenv("TALEMETRY_PAGE_CAP", "60"))
 TALEMETRY_IMPERSONATE = "chrome"
+# 2026-10-07 (push 10): a list page that fails is retried this many more
+# times, TALEMETRY_RETRY_BASE_S doubling each time, before the crawl stops.
+TALEMETRY_PAGE_RETRIES = 2
+TALEMETRY_RETRY_BASE_S = 3.0
 TALEMETRY_DESC_MAX_PER_RUN = int(os.getenv("TALEMETRY_DESC_MAX_PER_RUN", "1500"))   # job-page JSON-LD
 TALEMETRY_DESC_BUDGET = _DescBudget(TALEMETRY_DESC_MAX_PER_RUN)
 _TALEMETRY_BAD_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
@@ -13519,16 +13705,35 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
     jobs: list[Job] = []
     seen: set[str] = set()
     page, total = 1, None
+    stopped_early = ""
     while page <= TALEMETRY_PAGE_CAP:
         # curl_cffi with a Chrome TLS profile: UCHealth answers aiohttp with 403.
-        try:
-            r = await asyncio.to_thread(
-                _curl_fetch, "get", f"{base}/jobs/search.json", TALEMETRY_IMPERSONATE, 40,
-                params={"page": str(page), "per_page": str(TALEMETRY_PER_PAGE)},
-                headers={"Accept": "application/json", "Referer": f"{base}/jobs/search"})
-            data = r.json()
-        except Exception as e:
-            logger.info(f"Talemetry {system}: page {page}: {e}")
+        # 2026-10-07 (push 10): a page that fails is retried with a backoff
+        # before the crawl stops, and every failure is logged at WARNING with
+        # the status (Asante and LifeBridge stopped after page 1 on 10-06;
+        # UCHealth, PeaceHealth and Penn Medicine have never listed a row).
+        # Live on 2026-10-07: careers.uchealth.org answers a Cloudflare
+        # challenge (403 "Just a moment") to any plain-TLS client and 200 to
+        # curl_cffi chrome from a residential address, pages 1 and 2 alike.
+        data, problem = None, ""
+        for attempt in range(TALEMETRY_PAGE_RETRIES + 1):
+            try:
+                r = await asyncio.to_thread(
+                    _curl_fetch, "get", f"{base}/jobs/search.json", TALEMETRY_IMPERSONATE, 40,
+                    params={"page": str(page), "per_page": str(TALEMETRY_PER_PAGE)},
+                    headers={"Accept": "application/json", "Referer": f"{base}/jobs/search"})
+                data = r.json()
+                break
+            except Exception as e:
+                m = re.search(r"\bHTTP (\d{3})\b", str(e))
+                problem = f"HTTP {m.group(1)}" if m else f"{type(e).__name__}: {e}"
+                if attempt < TALEMETRY_PAGE_RETRIES:
+                    delay = TALEMETRY_RETRY_BASE_S * (2 ** attempt)
+                    logger.warning(f"Talemetry {system}: page {page} failed ({problem}); "
+                                   f"retry {attempt + 1}/{TALEMETRY_PAGE_RETRIES} in {delay:.0f}s")
+                    await _retry_sleep(delay)
+        if data is None:
+            stopped_early = f"page {page} failed {TALEMETRY_PAGE_RETRIES + 1} times ({problem})"
             break
         entries = (data or {}).get("entries") or []
         if total is None:
@@ -13545,7 +13750,14 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
             break
         page += 1
         await jitter()
+    else:
+        stopped_early = f"TALEMETRY_PAGE_CAP {TALEMETRY_PAGE_CAP} reached"
+    short = bool(total) and len(jobs) < COMPLETE_RATIO * total
+    if stopped_early or short:
+        logger.warning(f"Talemetry {system}: {len(jobs)} of site total {total} fetched"
+                       + (f"; stopped early: {stopped_early}" if stopped_early else ""))
     logger.info(f"  Talemetry {system}: {len(jobs)} jobs (site total {total})")
+    report_complete(system, len(jobs), total)
     return jobs
 
 
@@ -15892,6 +16104,9 @@ async def run_oceans(session=None) -> list[Job]:
 # ══════════════════════════════════════════════════════════════════════════
 #  COMMUNITY HEALTH SYSTEMS (CHS) — WordPress WPJobBoard
 # ══════════════════════════════════════════════════════════════════════════
+CHS_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end the crawl
+
+
 async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
     jobs = []
     LIMIT  = 60
@@ -15927,10 +16142,13 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
     endpoint = None
     for method, probe_url, base_params in probes:
         try:
-            fn = getattr(session, method)
             kw = {"params" if method == "get" else "data": base_params}
-            async with fn(probe_url, **kw, headers=CHS_HEADERS,
-                          timeout=aiohttp.ClientTimeout(total=20)) as r:
+            # 2026-10-07 (push 10): through req(), like every other adapter,
+            # so a 5xx / 429 / timeout is retried. The probes and the page
+            # loop called session.get directly, and one bad answer ended the
+            # crawl (840 = exactly 14 pages of 60 on both 10-05 runs).
+            async with req(session, method, probe_url, **kw, headers=CHS_HEADERS,
+                           timeout=aiohttp.ClientTimeout(total=20)) as r:
                 logger.info(f"  CHS probe {probe_url} [{method.upper()}]: HTTP {r.status}")
                 if r.status == 200:
                     text = await r.text()
@@ -15943,115 +16161,154 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
             logger.info(f"  CHS probe {probe_url}: {ex}")
 
     if not endpoint:
-        logger.warning("CHS: could not find working endpoint — skipping")
+        logger.warning("CHS: could not find working endpoint; skipping")
         return []
 
     method, probe_url, base_params = endpoint
+    # 2026-10-07 (push 10): the offset advances by the cards the page
+    # returned, not by the cards the regexes parsed, and only an empty
+    # payload ends the crawl (a page with one unparsed card used to end it;
+    # such cards are logged at WARNING now). A page that fails is skipped
+    # and CHS_MAX_CONSECUTIVE_FAILURES in a row stop the crawl. meta.total
+    # is the site's advertised count (2,487 on 2026-10-07).
+    site_total: int | None = None
+    failures_in_a_row = 0
+    stop_reason, stop_is_normal = "", False
     while True:
         params = {**base_params, "offset": offset}
         kw = {"params" if method == "get" else "data": params}
         try:
-            fn = getattr(session, method)
-            async with fn(probe_url, **kw, headers=CHS_HEADERS,
-                          timeout=aiohttp.ClientTimeout(total=30)) as r:
+            async with req(session, method, probe_url, **kw, headers=CHS_HEADERS,
+                           timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
-                    break
+                    raise RuntimeError(f"HTTP {r.status}")
                 text = await r.text()
-                if not text.strip():
-                    break
-                try:
-                    import json as _j
-                    data = _j.loads(text)
-                except:
-                    break
-                # Two response shapes possible:
-                #   1. New: {"payload":[<html_card>, ...], "meta":{...}}  (api subdomain)
-                #   2. Legacy: list of {job_title, job_city, ...} or {jobs:[...]}
-                entries = []
-                payload_html = None
-                if isinstance(data, dict) and isinstance(data.get("payload"), list):
-                    payload_html = data["payload"]
-                else:
-                    entries = data if isinstance(data, list) else (
-                        data.get("jobs") or data.get("data") or []
-                    )
-
-                # Shape 1 — parse HTML cards (api.careershealthcare.com)
-                if payload_html is not None:
-                    if not payload_html:
-                        break
-                    parsed_count = 0
-                    for card in payload_html:
-                        if not isinstance(card, str):
-                            continue
-                        m_id    = re.search(r'data-id="(\d+)"', card)
-                        m_hosp  = re.search(r'<h3>([^<]+)</h3>', card)
-                        m_loc   = re.search(r'<h5 class="job-location">([^<]+)</h5>', card)
-                        m_title = re.search(r'<h5 class="job-title">\s*<a [^>]*href="([^"]+)"[^>]*>([^<]+)</a>', card)
-                        m_shift = re.search(r'<h6 class="job-shift">\s*([^<]+?)\s*</h6>', card)
-                        if not (m_id and m_title): continue
-                        jid = m_id.group(1)
-                        jurl = m_title.group(1).strip()
-                        title_t = re.sub(r'\s+', ' ', m_title.group(2)).strip()
-                        hosp = (m_hosp.group(1).strip() if m_hosp else "Community Health Systems").replace("&#039;", "'").replace("&amp;", "&")
-                        loc_str = m_loc.group(1).strip() if m_loc else ""
-                        city, state = parse_city_state(loc_str)
-                        jtype = (m_shift.group(1).strip() if m_shift else "")
-                        jobs.append(Job(
-                            title=title_t, hospital_system="Community Health Systems",
-                            hospital_name=hosp, city=city, state=state,
-                            location=loc_str or f"{city}, {state}".strip(", "),
-                            specialty="", job_type=jtype, url=jurl, job_id=jid,
-                            posted_date="",
-                            description="",
-                            ats_platform="WPJobBoard",
-                        ))
-                        parsed_count += 1
-                    logger.info(f"  CHS offset {offset}: {parsed_count} jobs (total: {len(jobs)})")
-                    if parsed_count < LIMIT:
-                        break
-                    offset += LIMIT
-                    await jitter()
-                    continue
-
-                # Shape 2 — legacy object-list response
-                if not entries:
-                    break
-                for j in entries:
-                    title = j.get("job_title") or j.get("title") or ""
-                    city  = j.get("job_city")  or j.get("city")  or ""
-                    state = j.get("job_state") or j.get("state") or ""
-                    loc   = j.get("job_location") or j.get("location") or f"{city}, {state}".strip(", ")
-                    jid   = str(j.get("job_id") or j.get("id") or "")
-                    jurl  = j.get("job_url") or j.get("url") or f"https://www.careershealthcare.com/job/{jid}"
-                    hosp  = j.get("job_company") or j.get("company") or "Community Health Systems"
-                    jtype = j.get("job_type") or j.get("employment_type") or ""
-                    if not title or not jid:
-                        continue
-                    if not city or not state:
-                        parts = [p.strip() for p in loc.split(",")]
-                        if len(parts) >= 2:
-                            city  = city  or parts[0]
-                            state = state or parts[-1].strip().upper()[:2]
-                    jobs.append(Job(
-                        title=title, hospital_system="Community Health Systems",
-                        hospital_name=hosp, city=city, state=state,
-                        location=f"{city}, {state}" if city and state else loc,
-                        specialty="", job_type=jtype, url=jurl, job_id=jid,
-                        posted_date=j.get("job_date") or j.get("date") or "",
-                        description=strip_html(j.get("job_description") or j.get("description") or ""),
-                        ats_platform="WPJobBoard",
-                    ))
-                logger.info(f"  CHS offset {offset}: {len(entries)} jobs (total: {len(jobs)})")
-                if len(entries) < LIMIT:
-                    break
-                offset += LIMIT
-                await jitter()
+            data = json.loads(text) if text.strip() else None
         except Exception as e:
-            logger.error(f"CHS offset {offset}: {e}")
+            failures_in_a_row += 1
+            logger.warning(f"CHS: offset {offset} failed ({type(e).__name__}: {e}); skipping it "
+                           f"({failures_in_a_row}/{CHS_MAX_CONSECUTIVE_FAILURES} in a row)")
+            if failures_in_a_row >= CHS_MAX_CONSECUTIVE_FAILURES:
+                stop_reason = f"{failures_in_a_row} consecutive page failures, last at offset {offset}"
+                break
+            offset += LIMIT
+            await jitter()
+            continue
+        failures_in_a_row = 0
+        if data is None:
+            stop_reason = f"empty body at offset {offset}"
+            stop_is_normal = True
             break
+        # Two response shapes possible:
+        #   1. New: {"payload":[<html_card>, ...], "meta":{...}}  (api subdomain)
+        #   2. Legacy: list of {job_title, job_city, ...} or {jobs:[...]}
+        entries = []
+        payload_html = None
+        if isinstance(data, dict) and isinstance(data.get("payload"), list):
+            payload_html = data["payload"]
+            meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
+            try:
+                meta_total = int(meta.get("total") or 0)
+            except (TypeError, ValueError):
+                meta_total = 0
+            if meta_total > 0 and meta_total != site_total:
+                site_total = meta_total
+                logger.info(f"CHS: site advertises {site_total} jobs (offset {offset})")
+        else:
+            entries = data if isinstance(data, list) else (
+                data.get("jobs") or data.get("data") or []
+            )
 
+        # Shape 1: parse HTML cards (api.careershealthcare.com)
+        if payload_html is not None:
+            if not payload_html:
+                stop_reason = f"empty payload at offset {offset}"
+                stop_is_normal = True
+                break
+            parsed_count = 0
+            unparsed: list[str] = []
+            for card in payload_html:
+                if not isinstance(card, str):
+                    unparsed.append(repr(card))
+                    continue
+                m_id    = re.search(r'data-id="(\d+)"', card)
+                m_hosp  = re.search(r'<h3>([^<]+)</h3>', card)
+                m_loc   = re.search(r'<h5 class="job-location">([^<]+)</h5>', card)
+                m_title = re.search(r'<h5 class="job-title">\s*<a [^>]*href="([^"]+)"[^>]*>([^<]+)</a>', card)
+                m_shift = re.search(r'<h6 class="job-shift">\s*([^<]+?)\s*</h6>', card)
+                if not (m_id and m_title):
+                    unparsed.append(card)
+                    continue
+                jid = m_id.group(1)
+                jurl = m_title.group(1).strip()
+                title_t = re.sub(r'\s+', ' ', m_title.group(2)).strip()
+                hosp = (m_hosp.group(1).strip() if m_hosp else "Community Health Systems").replace("&#039;", "'").replace("&amp;", "&")
+                loc_str = m_loc.group(1).strip() if m_loc else ""
+                city, state = parse_city_state(loc_str)
+                jtype = (m_shift.group(1).strip() if m_shift else "")
+                jobs.append(Job(
+                    title=title_t, hospital_system="Community Health Systems",
+                    hospital_name=hosp, city=city, state=state,
+                    location=loc_str or f"{city}, {state}".strip(", "),
+                    specialty="", job_type=jtype, url=jurl, job_id=jid,
+                    posted_date="",
+                    description="",
+                    ats_platform="WPJobBoard",
+                ))
+                parsed_count += 1
+            if unparsed:
+                first = re.sub(r"\s+", " ", unparsed[0])[:200]
+                logger.warning(f"CHS: offset {offset}: {len(unparsed)} of {len(payload_html)} cards unparsed; "
+                               f"first: {first}")
+            logger.info(f"  CHS offset {offset}: {parsed_count} jobs (total: {len(jobs)})")
+            offset += len(payload_html)
+            await jitter()
+            continue
+
+        # Shape 2: legacy object-list response
+        if not entries:
+            stop_reason = f"no entries at offset {offset}"
+            stop_is_normal = True
+            break
+        for j in entries:
+            title = j.get("job_title") or j.get("title") or ""
+            city  = j.get("job_city")  or j.get("city")  or ""
+            state = j.get("job_state") or j.get("state") or ""
+            loc   = j.get("job_location") or j.get("location") or f"{city}, {state}".strip(", ")
+            jid   = str(j.get("job_id") or j.get("id") or "")
+            jurl  = j.get("job_url") or j.get("url") or f"https://www.careershealthcare.com/job/{jid}"
+            hosp  = j.get("job_company") or j.get("company") or "Community Health Systems"
+            jtype = j.get("job_type") or j.get("employment_type") or ""
+            if not title or not jid:
+                continue
+            if not city or not state:
+                parts = [p.strip() for p in loc.split(",")]
+                if len(parts) >= 2:
+                    city  = city  or parts[0]
+                    state = state or parts[-1].strip().upper()[:2]
+            jobs.append(Job(
+                title=title, hospital_system="Community Health Systems",
+                hospital_name=hosp, city=city, state=state,
+                location=f"{city}, {state}" if city and state else loc,
+                specialty="", job_type=jtype, url=jurl, job_id=jid,
+                posted_date=j.get("job_date") or j.get("date") or "",
+                description=strip_html(j.get("job_description") or j.get("description") or ""),
+                ats_platform="WPJobBoard",
+            ))
+        logger.info(f"  CHS offset {offset}: {len(entries)} jobs (total: {len(jobs)})")
+        offset += len(entries)
+        if len(entries) < LIMIT:
+            stop_reason = f"short legacy page at offset {offset}"
+            stop_is_normal = True
+            break
+        await jitter()
+
+    short = site_total is not None and len(jobs) < COMPLETE_RATIO * site_total
+    (logger.info if stop_is_normal and not short else logger.warning)(
+        f"CHS: stopped: {stop_reason}; {len(jobs):,} jobs listed"
+        + (f" of {site_total} advertised" if site_total else ""))
     logger.info(f"  CHS: {len(jobs):,} total jobs")
+    report_complete("Community Health Systems", len(jobs), site_total)
     # 2026-09-24 (push 3): every CHS job page carries a JSON-LD JobPosting;
     # one tenant, so DETAIL_TENANT_MAX (1,500) a night, 2 in flight.
     await _board_detail_passes(session, jobs, CHS_DESC_BUDGET,
@@ -17926,8 +18183,20 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # with Layer 4 (database.mark_inactive_jobs), so the two retirement passes
     # cannot drift apart. A count whose total cannot be read also protects.
     from retire_guard import GUARD_RATIO, guard_reason
+    # 2026-10-07 (push 10): an adapter that read the whole board
+    # (COMPLETE_SYSTEMS, post-alias names: it listed COMPLETE_RATIO of the
+    # site's advertised total) is swept as usual whatever the ratio says.
+    # The rows it did not re-stamp are closed postings, not a cut-short
+    # crawl; the guard held about 1,600 such rows on 10-06 (Prime, Sutter,
+    # NYP, One Medical, Carilion) until the backstop. A partial report wins.
+    complete = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in COMPLETE_SYSTEMS} - partial
+    swept_complete = sorted(s for s in safe_systems if s in complete)
+    if swept_complete:
+        logger.info(f"Sweep guard bypassed for {len(swept_complete)} complete crawl(s): {swept_complete}")
     guarded: list[str] = []
     for system in list(safe_systems):
+        if system in complete:
+            continue
         try:
             curl_ = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
                      f"?select=id&is_active=eq.true&hospital_system=eq.{_q(system)}&limit=1")

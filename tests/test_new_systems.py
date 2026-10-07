@@ -77,18 +77,31 @@ def test_scrape_talemetry_pages_until_total(monkeypatch):
 
 
 def test_scrape_talemetry_stops_on_error_and_keeps_rows(monkeypatch):
+    # 2026-10-07 (push 10): a failed page is retried TALEMETRY_PAGE_RETRIES
+    # times with a doubling backoff before the crawl stops; the rows already
+    # listed are kept either way.
+    attempts = []
+
     def fake_fetch(method, url, impersonate, timeout=60, **kw):
+        attempts.append(kw["params"]["page"])
         if kw["params"]["page"] == "2":
             raise RuntimeError("HTTP 403 direct")
         return _Resp({"total_entries": 500, "entries": _entries(0, 100)})
 
     async def no_jitter():
         return None
+    waits = []
+
+    async def fake_sleep(seconds):
+        waits.append(seconds)
 
     monkeypatch.setattr(scraper, "_curl_fetch", fake_fetch)
     monkeypatch.setattr(scraper, "jitter", no_jitter)
+    monkeypatch.setattr(scraper, "_retry_sleep", fake_sleep)
     jobs = asyncio.run(scraper.scrape_talemetry(None, "Penn Medicine", "https://careers.pennmedicine.org"))
     assert len(jobs) == 100
+    assert attempts == ["1"] + ["2"] * (scraper.TALEMETRY_PAGE_RETRIES + 1)
+    assert waits == [scraper.TALEMETRY_RETRY_BASE_S * (2 ** i) for i in range(scraper.TALEMETRY_PAGE_RETRIES)]
 
 
 def _page(ld_text):
