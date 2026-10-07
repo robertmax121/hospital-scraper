@@ -9,8 +9,8 @@ Cron: 0 20 * * *  (8 PM nightly)
 import logging
 import os
 from datetime import datetime, timezone
-from scraper import (scrape, PARTIAL_SYSTEMS, HOSPITAL_SYSTEM_ALIASES, LAST_UPSERT_FAILED,
-                     LAST_RUN_COUNTS, proxies, fix_run_day)
+from scraper import (scrape, PARTIAL_SYSTEMS, COMPLETE_SYSTEMS, HOSPITAL_SYSTEM_ALIASES,
+                     LAST_UPSERT_FAILED, LAST_RUN_COUNTS, proxies, fix_run_day)
 from database import (mark_inactive_jobs, get_stats, active_total_after_passes,
                       start_run_record, finish_run_record)
 
@@ -124,7 +124,10 @@ def run():
     layer4_exempt = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS}
     if os.environ.get("HCA_NIGHTLY") != "1":
         layer4_exempt.add("HCA Healthcare")
-    deact_stats = mark_inactive_jobs(jobs, exclude_systems=layer4_exempt)
+    # 2026-10-07 (push 10): adapters that read their whole board
+    # (COMPLETE_SYSTEMS) bypass the yield guard; a partial report wins.
+    layer4_complete = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in COMPLETE_SYSTEMS} - layer4_exempt
+    deact_stats = mark_inactive_jobs(jobs, exclude_systems=layer4_exempt, complete_systems=layer4_complete)
     logger.info(f"  Layer 4 deactivation: {deact_stats}")
 
     # ── Step 2b: travel URL liveness sweep (added 2026-07-20) ─────
