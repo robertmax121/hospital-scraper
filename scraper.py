@@ -243,7 +243,11 @@ def strip_html(s):
     # 2026-09-24: 8,000 -> 12,000 (the facts extractors read 12,000). About
     # 2.5k active bodies sat at 8,000 and lost their tail: Houston Methodist's
     # "Work Shift : 3 - Night" line and most benefit lists sit there.
-    return s.strip()[:12000]
+    # 2026-10-07 (push 10, item 4): 12,000 -> 20,000. 1,426 active bodies sat
+    # at exactly 12,000 (SSM 178, all unpriced) with their tail cut; the tail
+    # comes back on the row's next read. The facts, wage and requirements
+    # extractors still read the first _FACTS_WINDOW (12,000) characters.
+    return s.strip()[:20000]
 
 
 _SPLIT_FIG_TAGS_RX = re.compile(r"(?:</?(?:span|font|b|strong|i|em|u)\b[^>]*>)+", re.I)
@@ -535,7 +539,7 @@ DETAIL_MIN_CHARS        = int(os.getenv("DETAIL_MIN_CHARS", "1500"))  # shorter 
 # WD_DESC_BUDGET goes to whichever of ~99 tenants finish listing first (the
 # small ones sit at 100%, the large ones at 0%), so its 1,542 Texas rows
 # would rarely get any of it.
-TB_PAGE_DESC_MAX_PER_RUN   = int(os.getenv("TB_PAGE_DESC_MAX_PER_RUN", "3200"))   # Kaiser, UHG, Enhabit, Maxim: 800 each
+TB_PAGE_DESC_MAX_PER_RUN   = int(os.getenv("TB_PAGE_DESC_MAX_PER_RUN", "6000"))   # Kaiser, UHG, Enhabit, Maxim: 1,500 each (2026-10-07, push 10: 3,200 -> 6,000; UHG had 934 rows with no body on 10-07)
 HM_DESC_MAX_PER_RUN        = int(os.getenv("HM_DESC_MAX_PER_RUN", "1600"))        # Houston Methodist CXS detail
 CUSTOM_DESC_MAX_PER_RUN    = int(os.getenv("CUSTOM_DESC_MAX_PER_RUN", "1000"))    # CHRISTUS job-page JSON-LD
 SR_DESC_MAX_PER_RUN        = int(os.getenv("SR_DESC_MAX_PER_RUN", "3000"))        # SmartRecruiters postings/{id}
@@ -1349,6 +1353,9 @@ def _known_kind(system: str, job):
       "pay"    (push 9) a stored body on a PAY_REREAD_SYSTEMS system whose row
                has no wage, on its _pay_slot night: a candidate after the rows
                with no body, so the page's pay field is read
+      "force"  (push 10) a stored body of a FORCED_REFRESH tenant on its one
+               night inside the tenant's window: a candidate after the rows
+               with no body, before the pay re-reads
     Leaves the job unchanged."""
     key = (_canon_system(system), str(job.job_id))
     stored = _KNOWN_BODIES.get(key, 0)
@@ -1360,6 +1367,8 @@ def _known_kind(system: str, job):
     v = _KNOWN_FACTS_V.get(key)
     if v is None and OLD_BODY_CAP[0] <= stored <= OLD_BODY_CAP[1]:
         return "cut"
+    if _force_slot(*key):
+        return "force"
     if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
         return "pay"
     if v is not None and v < FACTS_VERSION and stored >= DETAIL_MIN_CHARS:
@@ -1427,6 +1436,41 @@ def _refresh_slot(canon: str, job_id: str, run_day: Optional[int] = None) -> boo
     return zlib.crc32(f"{canon}|{job_id}".encode("utf-8")) % days == day % days
 
 
+# ── Forced re-reads (2026-10-07, push 10, item 2) ───────────────────────────
+# When a tenant's detail reader starts capturing more of the page than its
+# stored bodies hold, the known-body skip would leave every stored row short
+# for good: the refresh share re-reads DETAIL_REFRESH_PCT % of a tenant's
+# floor a night, so Hackensack's 1,677 rows (the JSON-LD summary, median
+# 1,855 characters, where the ats-description block runs 6-8k through the
+# Compensation section) would take months. A tenant listed here with a
+# window of nights (ISO dates, inclusive) has each stored body read again
+# exactly once inside the window (a fixed slot per posting, as the refresh
+# slot), after the tenant's rows with no body and inside its fair share of
+# the budget; a fetch that brings nothing keeps the stored body
+# (_settle_held). Outside the window the entry does nothing: drop it on the
+# push after the window ends.
+FORCED_REFRESH = {
+    "Hackensack Meridian Health": ("2026-10-08", "2026-10-14"),   # TB_PAGE_DETAIL_ORGS since push 10
+}
+
+
+def _force_slot(canon: str, job_id: str) -> bool:
+    """True on the one night inside the tenant's FORCED_REFRESH window that
+    this posting's stored body is read again."""
+    win = FORCED_REFRESH.get(canon)
+    if not win:
+        return False
+    try:
+        a = datetime.strptime(win[0], "%Y-%m-%d").toordinal()
+        b = datetime.strptime(win[1], "%Y-%m-%d").toordinal()
+    except (TypeError, ValueError):
+        return False
+    today = _run_day()
+    if b < a or today < a or today > b:
+        return False
+    return zlib.crc32(f"force|{canon}|{job_id}".encode("utf-8")) % (b - a + 1) == today - a
+
+
 def _refresh_quota(budget) -> int:
     """Stored bodies one tenant may re-read a night: DETAIL_REFRESH_PCT % of
     its floor (at least one), 0 when DETAIL_REFRESH_PCT is 0."""
@@ -1445,6 +1489,7 @@ def _held_note(held) -> str:
         return ""
     return (f"{n.get('refresh', 0) + n.get('stale', 0)} stored bodies re-read ({n.get('stale', 0)} with older facts), "
             f"{n.get('cut', 0)} cut at the old 8,000 cap queued, "
+            + (f"{n['force']} stored bodies queued on their forced slot, " if n.get("force") else "")
             + (f"{n['pay']} unpriced stored bodies queued for their pay field, " if n.get("pay") else ""))
 
 
@@ -2772,11 +2817,12 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     forever (see "A known body is not known forever"): up to _refresh_quota
     stored bodies go first ("stale" facts, then those whose slot is tonight),
     then the rows with no body (transparency states, then the newest), then
-    unpriced stored bodies due for their pay field ("pay", push 9), then
-    bodies cut at the old 8,000 cap. Each re-read, pay or cut row is appended to
-    `held` as (item, list text, kind); the caller hands `held` to _settle_held
-    after fetching, so a row no fetch refilled keeps its stored body. Without
-    `held` every stored body is skipped, as before."""
+    stored bodies of a FORCED_REFRESH tenant on their slot ("force", push 10),
+    then unpriced stored bodies due for their pay field ("pay", push 9), then
+    bodies cut at the old 8,000 cap. Each re-read, forced, pay or cut row is
+    appended to `held` as (item, list text, kind); the caller hands `held` to
+    _settle_held after fetching, so a row no fetch refilled keeps its stored
+    body. Without `held` every stored body is skipped, as before."""
     canon = _canon_system(system)
     cands, known, dup = [], 0, 0
     tier, stale, due = {}, [], []
@@ -2805,7 +2851,7 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
             elif ok:
                 dup += 1
             continue
-        tier[id(it)] = {"cut": 2, "pay": 1}.get(kind, 0)
+        tier[id(it)] = {"cut": 3, "pay": 2, "force": 1}.get(kind, 0)
         cands.append(it)
     random.shuffle(cands)
     cands.sort(key=lambda it: (tier[id(it)], _detail_rank(job_of(it))))
@@ -2819,8 +2865,9 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     if held is not None:
         stale_ids = {id(it) for it in stale}
         held.extend((it, job_of(it).description, "stale" if id(it) in stale_ids else "refresh") for it in refresh)
-        held.extend((it, job_of(it).description, "cut") for it in cands if tier[id(it)] == 2)
-        held.extend((it, job_of(it).description, "pay") for it in cands if tier[id(it)] == 1)
+        held.extend((it, job_of(it).description, "cut") for it in cands if tier[id(it)] == 3)
+        held.extend((it, job_of(it).description, "pay") for it in cands if tier[id(it)] == 2)
+        held.extend((it, job_of(it).description, "force") for it in cands if tier[id(it)] == 1)
     return refresh + cands, known, dup
 
 
@@ -3121,6 +3168,14 @@ def _oracle_posting_text(it: dict) -> tuple[str, str, str]:
     if not sched:
         sched = next((v for v in (flex.get("position type"), flex.get("assignment category"))
                       if v and derive_job_type("", v) != "standard"), "")
+    # 2026-10-07 (push 10, item 6c): the shift sits only in a flex field on
+    # some tenants, JobShift being null: Northwell "Shift: Nights" (195742,
+    # with Shift Begin / End Time beside it), INTEGRIS "Job Shift: Night Job"
+    # (116362, whose "Assignment Category: PRN" already gives the job type).
+    # 14,698 Oracle rows had no shift. "Night Job" reads as "Night", so the
+    # schedule line says "Night shift" and the extractor tags Nights.
+    if not shift:
+        shift = _shift_words(re.sub(r"\s+job$", "", next((v for v in (flex.get("shift"), flex.get("job shift")) if v), ""), flags=re.I))
     parts = []
     for k in ("ExternalDescriptionStr", "ExternalResponsibilitiesStr", "ExternalQualificationsStr"):
         v = strip_html(str(it.get(k) or "")).strip()
@@ -3750,10 +3805,26 @@ def _posting_with_requirements(posting: dict) -> dict:
     return {**posting, "qualifications": "\n\n".join(parts)}
 
 
+# 2026-10-07 (push 10, item 3): CHS's job page JSON-LD carries the intro only
+# (325 characters on 36448251, 347 on 36447928: 297 rows under 600) while the
+# rendered <div class="description"> block holds the posting (3,427 / 3,297:
+# the schedule and hours lines, benefits, duties, requirements). The block
+# is read for these platforms and wins when it is longer.
+_BOARD_DIV_DESC_RX = re.compile(r'<div[^>]*class="description"[^>]*>', re.I)
+_BOARD_DIV_DESC_PLATFORMS = ("WPJobBoard",)
+
+
 async def _jsonld_board_detail(session, job) -> bool:
-    """Job page -> JSON-LD JobPosting (requirement fields included) -> Job."""
-    posting = _jobposting_from_html(await _fetch_html(session, job.url))
-    return _apply_posting(job, _posting_with_requirements(posting)) if posting else False
+    """Job page -> JSON-LD JobPosting (requirement fields included) -> Job;
+    on _BOARD_DIV_DESC_PLATFORMS the page's div.description when longer."""
+    html = await _fetch_html(session, job.url)
+    posting = _jobposting_from_html(html)
+    ok = _apply_posting(job, _posting_with_requirements(posting)) if posting else False
+    if (job.ats_platform or "") in _BOARD_DIV_DESC_PLATFORMS:
+        rendered = strip_html(_div_inner(html, _BOARD_DIV_DESC_RX)).strip()
+        if _apply_body(job, rendered):
+            ok = True
+    return ok
 
 
 async def _board_detail_passes(session, jobs: list, budget, fetch_one, label: str, in_flight: int = 2) -> None:
@@ -5037,7 +5108,10 @@ ICIMS_ORGS = {
     # listings actually come from Phenom (POST jobs.ascension.org/widgets);
     # iCIMS is only used for the apply submit page. Moved to PHENOM_ORGS.
     # MyMichigan: small (~6 hospitals) but fills the empty MI coverage hole.
-    "MyMichigan Health":                "careers-mymichigan.icims.com",
+    # 2026-10-07 (push 10, item 3): retired here; the portal never wrote a
+    # row (every stored MyMichigan row was the Playwright "Custom" one).
+    # careers.mymichigan.org is a Jibe careers-home front: JIBE_SITES.
+    # "MyMichigan Health":                "careers-mymichigan.icims.com",
     # ── Added 2026-05-06: Home Health / Hospice expansion ──
     # Amedisys: ~530 home-health and hospice locations across the US.
     # Apply links resolve to careersen-amedisys.icims.com (verified via careers
@@ -5501,7 +5575,16 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
 # ats-description block. These tenants read the page with _tb_page_detail
 # (JSON-LD and the ats-description block, the longer wins, plus the
 # ats-extras schedule / date) on the same TB_DESC_BUDGET.
-TB_PAGE_DETAIL_ORGS = {"University Health (San Antonio)"}
+# 2026-10-07 (push 10, item 2): Hackensack Meridian's JSON-LD description is
+# the posting's summary only (803 / 828 characters on 99988118464 /
+# 101588192384), while the page's ats-description block (6,608 / 7,901)
+# carries the duties, qualifications and the "Compensation" section the
+# New Jersey Pay Transparency Act puts there ("Minimum rate of $40.28
+# Hourly"): 1,449 NJ rows, 3 priced, bodies median 1,855. The longer-wins
+# rule of _tb_page_detail picks the block; Kaiser / UHG / University Health
+# are read exactly as before. FORCED_REFRESH re-reads the stored summaries
+# once.
+TB_PAGE_DETAIL_ORGS = {"University Health (San Antonio)", "Hackensack Meridian Health"}
 
 
 async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
@@ -6580,6 +6663,15 @@ JIBE_SITES = {
     # hospice — the largest missing non-acute operator), Novant totalCount=1639.
     "Amedisys":      "https://careers.amedisys.com",
     "Novant Health": "https://jobs.novanthealth.org",
+    # 2026-10-07 (push 10, item 3): MyMichigan Health (Midland MI). The
+    # Playwright CUSTOM_SITES entry read the rendered page and stored 71
+    # rows with no body, no job type and the title glued to the next line
+    # ("Registered Nurse RN - ED\n\nReq ID: 49092", job_id "49092?lang=en-us").
+    # careers.mymichigan.org is the same Jibe careers-home front as BJC:
+    # /api/jobs validated live 2026-10-07, totalCount 968, full descriptions
+    # in-feed (4-8k characters), city / state ("Midland", "Michigan"),
+    # employment_type, tags7 the shift ("Day Shift"), tags6 the FTE.
+    "MyMichigan Health": "https://careers.mymichigan.org",
     # SNF expansion (2026-08-04): found via the CMS nursing-home chain
     # analysis — Trilogy runs 124 SNF/AL campuses across IN/OH/KY/MI and its
     # careers site is the same Jibe surface. Validated live: totalCount=1560,
@@ -7327,6 +7419,42 @@ def _greenhouse_pay(j):
     return (None, None, None)
 
 
+_GH_ADDRESS_META_RX = re.compile(r"address|location|\bstate\b|\bcity\b", re.I)
+
+
+def _greenhouse_city_state(j: dict) -> tuple[str, str]:
+    """(city, state) for one boards-api job. 2026-10-07 (push 10, item 5):
+    BAYADA's location name is "Sicklerville, NJ 08081 | 39.738815196 |
+    -74.986871161", which parse_city_state reads as a city with no state
+    (2,172 of 2,487 rows had a blank state and were missing from the state
+    pages), so the text before the first " | " is parsed first. When that
+    still names no state, the first office location and then an address-like
+    metadata value ("BAYADA Office address": "4300 Haddonfield Rd W Building,
+    Pennsauken, NJ 08109"; a "State" field) give the state only: a city alone
+    is ambiguous (Springfield, Lebanon), so the posting's own city stands."""
+    loc = str(((j or {}).get("location") or {}).get("name") or "").strip()
+    city, state = parse_city_state(loc)
+    if not state and "|" in loc:
+        c2, state = parse_city_state(loc.split("|", 1)[0].strip())
+        city = city or c2
+    if not state:
+        for o in j.get("offices") or []:
+            _c, s2 = parse_city_state(str((o or {}).get("location") or "").strip())
+            if s2:
+                state = s2
+                break
+    if not state:
+        for m in j.get("metadata") or []:
+            name, val = str((m or {}).get("name") or ""), (m or {}).get("value")
+            if not isinstance(val, str) or not val.strip() or not _GH_ADDRESS_META_RX.search(name):
+                continue
+            _c, s2 = parse_city_state(val.strip())
+            if s2:
+                state = s2
+                break
+    return city, state
+
+
 async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
     try:
         async with req(session, "get",
@@ -7339,7 +7467,7 @@ async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: st
         jobs = []
         for j in data.get("jobs", []):
             loc = j.get("location", {}).get("name", "")
-            _city, _state = parse_city_state(loc)
+            _city, _state = _greenhouse_city_state(j)
             jobs.append(Job(
                 title=j.get("title", ""),
                 hospital_system=system,
@@ -9517,6 +9645,16 @@ def _adpcx_job(j: dict, system: str, domain: str, default_state: str = "") -> Jo
         _c, _s = parse_city_state(tail.strip())
         if _s and _s.upper() == st and head.strip():
             title = head.strip()
+    # 2026-10-07 (push 10, item 3): the posting's requirements come as their
+    # own field (jobQualifications) that the row never stored; Cabell
+    # Huntington's 736 rows sat at a median 616 characters (duties only) and
+    # the requirements extractor saw no licence or experience line. Appended
+    # under a Qualifications heading, which the extractor keys on, when the
+    # description does not already carry it.
+    desc = strip_html(j.get("jobDescription") or "")
+    quals = strip_html(j.get("jobQualifications") or "").strip()
+    if quals and quals[:120] not in desc:
+        desc = f"{desc}\n\nQualifications\n{quals}".strip()
     return Job(
         title=title,
         hospital_system=system,
@@ -9529,7 +9667,7 @@ def _adpcx_job(j: dict, system: str, domain: str, default_state: str = "") -> Jo
         url=_ADPCX_DETAILS.format(domain=domain, req=req_id),
         job_id=req_id,
         posted_date=str(j.get("postingDate") or "")[:10],
-        description=strip_html(j.get("jobDescription") or ""),
+        description=desc,
         ats_platform="ADP CX",
     )
 
@@ -12744,7 +12882,10 @@ async def run_playwright_scrapers() -> list[Job]:
         # ~58 jobs from the first-page render; the new handler returns the full
         # 1,935-job inventory via paginated /widgets calls.
         # ("Baylor Scott & White",          "https://jobs.bswhealth.com/us/en/search-results"),
-        ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
+        # MyMichigan Health moved to JIBE_SITES 2026-10-07 (push 10): this
+        # route stored 71 rows with no body and "Title\n\nReq ID: N" titles;
+        # the Jibe /api/jobs feed carries 968 postings with full bodies.
+        # ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
         # LARGE SYSTEMS — Phenom via Playwright (proxy-free)
         # NOTE: HCA Healthcare is handled by dedicated run_hca() — do NOT add here
         # Ascension Health moved to PHENOM_ORGS (2026-05-08) — was returning 0
@@ -15001,7 +15142,12 @@ async def run_successfactors(session) -> list[Job]:
 #               _apply_body (200-char floor, beats the list's text only)
 # ══════════════════════════════════════════════════════════════════════════
 HTML_LIST_MAX_PAGES = int(os.getenv("HTML_LIST_MAX_PAGES", "120"))
-HTML_LIST_DESC_MAX_PER_RUN = int(os.getenv("HTML_LIST_DESC_MAX_PER_RUN", "800"))   # job-page JSON-LD
+# 2026-10-07 (push 10, item 3): 800 -> 2,500. Seven sites shared 800 a night
+# (a floor of ~114 each): Rush still had 206 of 538 rows with no body on
+# 10-07 although its job page parses (see "Rush" below), UMich's 378 rows
+# had none at all (its page carries no JSON-LD; the "body" regex below is
+# new), UK HealthCare and St. Luke's Boise queue behind them.
+HTML_LIST_DESC_MAX_PER_RUN = int(os.getenv("HTML_LIST_DESC_MAX_PER_RUN", "2500"))   # job-page JSON-LD / "body" regex
 HTML_LIST_DESC_BUDGET = _DescBudget(HTML_LIST_DESC_MAX_PER_RUN)
 HTML_LIST_IMPERSONATE = "chrome"
 
@@ -15103,7 +15249,14 @@ HTML_LIST_SITES: dict[str, dict] = {
     # the campus-only rows (Ann Arbor / Dearborn / Flint Campus,
     # International, Outside Michigan) are dropped. The RSS feed at
     # /search/feed/advanced answers the same search but unpaged.
+    # 2026-10-07 (push 10, item 3): the job page carries no JSON-LD, so the
+    # 378 rows never got a body. The posting is the
+    # <p class="details-listing field_job_description"> block (a <p> that
+    # wraps <h2> sections: Mission Statement, Job Summary, Responsibilities,
+    # Required Qualifications, ..., the EEO paragraph; 8,053 characters on
+    # 280808), closed by the first "</p></div>" that follows it.
     "University of Michigan Health": {
+        "body": r'class="details-listing field_job_description">(.*?)</p>\s*</div>',
         "url": "https://careers.umich.edu/search-jobs?keyword=&op=Search&title=&page={page0}",
         "card": r'<td headers="view-created-table-column"',
         "title": r'<a href="(?P<url>/job_detail/\d+/[^"]*)"[^>]*>(?P<title>.*?)</a>',
@@ -15183,6 +15336,14 @@ HTML_LIST_SITES: dict[str, dict] = {
     # the body is the job-description-bg section's col-12 up to the Apply
     # button (4,842 chars on 13072: location, unit, hospital, work type,
     # shift, schedule lines, then summary, responsibilities, requirements).
+    # 2026-10-07 (push 10, item 1): the detail GET of /jobs/details/... is
+    # this same pass (_html_list_detail through _curl_html). Verified on the
+    # three oldest rows with no body (2976, 4235, 4250: 2024 CRNA / physician
+    # postings, ~175-180 KB pages): the "body" regex gives 5,673 / 5,702 /
+    # 4,839 characters and the body's "Pay Range: $250,000 - $350,000" line
+    # prices through extract_posted_wage. The 206 rows still without a body
+    # on 10-07 (311 on 10-06) were waiting on the shared budget
+    # (HTML_LIST_DESC_MAX_PER_RUN), not on the parser.
     "Rush": {
         "mode": "rss",
         "body": r'class="job-description-bg">.*?<div class="col-12">(.*?)<a[^>]+class="apply-btn"',
@@ -18459,6 +18620,11 @@ def normalize_job(j: Job) -> dict:
     for _k in ("title", "hospital_name", "hospital_system", "url", "description", "specialty", "job_type"):
         if isinstance(d.get(_k), (dict, list)):
             d[_k] = _loc_text(d.get(_k))
+    # 2026-10-07 (push 10, item 3): a title never carries a line break. The
+    # MyMichigan Playwright rows stored "Registered Nurse RN - ED\n\nReq ID:
+    # 49092" (61 rows, 35191488); the first line is the title.
+    if "\n" in (d.get("title") or ""):
+        d["title"] = next((ln.strip() for ln in d["title"].split("\n") if ln.strip()), "")
 
     # Force override — always wins regardless of scraped data
     _sys_key = (d.get("hospital_system") or "").strip().lower()
@@ -19456,6 +19622,42 @@ _FACT_SHIFT = [
 _SHIFT_AVAIL_RX = re.compile(r"\b(?:willing|flexib\w*|availab\w*|able to work|ability to work|if needed|when needed|such as|occasional\w*|may\b[^.;\n]{0,30}\b(?:include|work|require|need|be required|rotate))\b", re.I)
 _SHIFT_AVAIL_HEAD_RX = re.compile(r"availab|may include|may vary|opportunit|options|flexib|if needed", re.I)
 _SHIFT_NEG_RX = re.compile(r"\b(?:no|not|without|never|excluding|except)\b[^.;\n]{0,14}$", re.I)
+# 2026-10-07 (push 10, item 6a): a PRN / per diem word is not this job's
+# status when it is one item of a list of the statuses the employer offers,
+# or a clause about per diem staff in general. 6,167 full-time rows carried
+# the PRN tag; the forms, each from a stored body: Advocate's "(e.g.,
+# full-time, part-time, per diem, temporary, etc.)" eligibility note on
+# 2,550 rows (34403132), Jefferson's "(including per diem colleagues ...)"
+# benefits line on 812 (36508543), Lifepoint's "benefit options for
+# part-time and PRN employees" on 261 (11663450), MaineHealth's "per diem
+# hires are ineligible" on 240 (32717036), Adventist's "if the position is
+# Per Diem" on 186 (36147483), Norton's "If PRN, must have one year" on 121
+# (29004760), South Central's "Full Time/PRN:" label over a "Full Time" value
+# (35996800), BAYADA's "Choose from full-time, part-time, and PRN
+# opportunities" (22142387). A labelled status ("Schedule: PRN"), a title's
+# PRN and a plain "This is a PRN position" keep their tag.
+_PRN_STATUS_RX = re.compile(r"\b(?:full|part)[\s-]*time\b|\bfulltime\b|\btemporary\b|\bseasonal\b|\bcasual\b|\bflexi\b", re.I)
+_PRN_CONTEXT_RX = re.compile(r"\b(?:eg|e\.g\.?|such as|for example|including|if)\b[^.;\n]{0,60}$", re.I)
+_PRN_SEP_RX = re.compile(r"(?:,|/|\bor\b|\band\b|&)\s*$", re.I)
+_PRN_CLASS_RX = re.compile(r"^\s*(?:\([^)]*\)\s*)?(?:employees|staff|colleagues|team members|hires|positions|opportunities|roles|schedules|status(?:es)?|workers|nurses|associates|basis)\b", re.I)
+_PRN_LABEL_RX = re.compile(r"^\s?:")
+
+
+def _prn_is_a_status_option(s: str, m) -> bool:
+    """True when the PRN / per diem match m in sentence s names an option
+    the employer offers or a class of staff, not this job's status: an
+    "e.g." / "such as" / "including" / "if" clause before it, a label colon
+    right after it, two other statuses in the 80 characters before it, or
+    one other status joined to it by a separator and followed by a class
+    noun ("part-time and PRN employees")."""
+    before = s[max(0, m.start() - 80):m.start()]
+    after = s[m.end():m.end() + 40]
+    if _PRN_CONTEXT_RX.search(before) or _PRN_LABEL_RX.match(after):
+        return True
+    statuses = {re.sub(r"[\s-]+", "", x.lower()) for x in _PRN_STATUS_RX.findall(before)}
+    if len(statuses) >= 2:
+        return True
+    return bool(statuses) and bool(_PRN_SEP_RX.search(before)) and bool(_PRN_CLASS_RX.match(after))
 # Title shift words (2026-09-24): "Registered Nurse RN NIGHTS", "LVN - Hospital
 # Full-Time Nightshift", "RN Nights (7 on/7off)". Used only with a body, so a
 # title-only facts object never replaces facts stored from a body.
@@ -19629,9 +19831,20 @@ _FACT_SHIFTLEN_RX = re.compile(r"\b([2-6])\s*[x×]\s*(8|10|12)\b|\b(two|three|fo
 _NUM_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5}
 # The amount that sits right before the keyword wins ("$10,000 sign-on bonus
 # ... and a $3,000 relocation package"), then an amount after it ("up to $15k").
+# 2026-10-07 (push 10, item 6b): cents after the figure ("$1,500.00 sign-on
+# bonus", UPMC 33994051; "$5,000.00 SIGN-ON BONUS!!", BAYADA 32459560; "Up to
+# a $15,000.00 Sign on Bonus!", Guthrie 24082822) stopped the gap at the "."
+# and the row showed "Offered" without its figure.
 _BONUS_RXS = [
-    re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?([^$\n.]{0,40}?)(?:sign[- ]?on|signing)", re.I),
+    re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)(?:\.\d{2})?\s*(k)?([^$\n.]{0,40}?)(?:sign[- ]?on|signing)", re.I),
     re.compile(r"(?:sign[- ]?on|signing)(?:\s+bonus)?([^$\n.]{0,60}?)\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?\b", re.I),
+]
+# A labelled amount whose sign-on mention sits elsewhere in the posting:
+# Prime's "Bonus Amount\n$15,000.00\n\nBonus Information\nSign-On Bonus
+# Available for Qualified Candidates" (26512036). Read only when the posting
+# offers a sign-on bonus (_signon_offered), after _BONUS_RXS found nothing.
+_BONUS_AMOUNT_RXS = [
+    re.compile(r"\b(?:sign[- ]?on\s+)?bonus\s+amount\b\s*[:|-]?\s*\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?\b", re.I),
 ]
 _RELO_RXS = [
     re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k)?([^$\n.]{0,40}?)relocation", re.I),
@@ -20174,6 +20387,8 @@ def _shift_hits(s: str):
             before = s[max(0, m.start() - 60):m.start()]
             if _SHIFT_AVAIL_RX.search(before) or _SHIFT_NEG_RX.search(before):
                 continue
+            if label == "PRN" and _prn_is_a_status_option(s, m):
+                continue
             out.append(label)
             break
     # 2026-10-04 (push 8): "Rotating shifts, 0700-1930 and 1900-0730" names a
@@ -20300,7 +20515,12 @@ def extract_posting_facts(text, job_type=None, title=None):
     out["signon"] = _first_amount(t, _BONUS_RXS)
     # 2026-09-22: "Signing Bonuses!" / "sign-on bonus available" with no
     # amount is still a fact worth a pill; the site shows it without a figure.
-    out["signon_offered"] = bool(out["signon"] is None and _signon_offered(t))
+    # 2026-10-07 (push 10, item 6b): a labelled "Bonus Amount" figure counts
+    # when the posting offers a sign-on bonus elsewhere (_BONUS_AMOUNT_RXS).
+    offered = _signon_offered(t)
+    if out["signon"] is None and offered:
+        out["signon"] = _first_amount(t, _BONUS_AMOUNT_RXS)
+    out["signon_offered"] = bool(out["signon"] is None and offered)
     out["relocation"] = _first_amount(t, _RELO_RXS)
     out["benefits"] = extract_benefits(t)
     out["benefit_lines"] = extract_benefit_lines(text)

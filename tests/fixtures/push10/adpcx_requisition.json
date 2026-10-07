@@ -1,0 +1,21 @@
+{
+ "reqId": "5001230089200",
+ "publishedJobTitle": "Registered Nurse - Med Surg",
+ "jobDescription": "<p>St. Mary's Medical Center is currently seeking a full time RN. Responsible for the daily planning, coordination, and monitoring of patient care. Responsible for the daily planning, coordination, and monitoring of patient care. Responsible for the daily planning, coordination, and monitoring of patient care. Responsible for the daily planning, coordination, and monitoring of patient care. Responsible for the daily planning, coordination, and monitoring of patient care. </p>",
+ "jobQualifications": "<ul><li>Current WV RN license</li><li>BLS required; ACLS within 6 months</li><li>1 year of acute care experience preferred</li></ul>",
+ "workLevelCode": "F",
+ "postingDate": "2026-10-01T00:00:00Z",
+ "requisitionLocations": [
+  {
+   "address": {
+    "cityName": "Huntington",
+    "countrySubdivisionLevel1": {
+     "codeValue": "WV"
+    },
+    "country": {
+     "codeValue": "US"
+    }
+   }
+  }
+ ]
+}

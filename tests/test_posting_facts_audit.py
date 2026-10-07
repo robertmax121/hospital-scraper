@@ -72,7 +72,7 @@ def test_strip_html_double_entities_bullets_and_split_figures():
         ["• CPR certification", "• State licensure"]
     assert strip_html("<p>Sign-On Bonus: $<span>5,0</span><span>00</span></p>") == "Sign-On Bonus: $5,000"
     assert strip_html("<p>Insurance</p><span>Paid</span> Time Off") == "Insurance\nPaid Time Off"
-    assert len(strip_html("x" * 20000)) == 12000
+    assert len(strip_html("x" * 25000)) == 20000      # 2026-10-07 (push 10, item 4): 12,000 -> 20,000
 
 
 # Houston Methodist's Workday layout (an unpunctuated list under headings).

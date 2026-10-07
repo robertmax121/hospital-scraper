@@ -1,0 +1,68 @@
+{
+ "items": [
+  {
+   "Id": "116362",
+   "Title": "Nurse Tech / Med Surg",
+   "JobSchedule": null,
+   "JobShift": null,
+   "WorkHours": null,
+   "WorkDays": null,
+   "ExternalPostedStartDate": "2026-08-26T21:30:07+00:00",
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Assignment Category",
+      "Value": "PRN"
+     },
+     {
+      "Prompt": "Job Shift",
+      "Value": "Night Job"
+     }
+    ]
+   },
+   "ExternalDescriptionStr": "<p><strong>Get to Know Your Team</strong></p><ul><li>INTEGRIS Health, Oklahoma's largest not-for-profit health systems, is seeking a dedicated caregiver to join us in our mission to partner with people to live heathier lives.</li><li>Benefits of being an INTEGRIS Health caregiver include front-loaded PTO, Medical benefits through the extensive INTEGRIS Health Network, finanical assistance for continued education, 24/7 health support and more.</li><li>Take the first step toward growing your career by joining us.</li></ul><p style=\"line-height: normal; margin-bottom: 13.45pt; margin-right: 6.35pt; margin-top: 13.45pt;\">The Nurse Tech performs basic patient care under the supervision of a Regis",
+   "ExternalResponsibilitiesStr": "<p style=\"line-height:normal;margin-bottom:13.45pt;margin-right:6.35pt;margin-top:13.45pt;text-autospace:none;\">The Nurse Tech responsibilities include, but are not limited to, the following:</p><ul><li>Performs personal patient care tasks, such as mouth care, making beds, giving baths, perineal care, hair care, shaving patients, giving backrubs, and emptying bedpans or urinals</li><li>Assist with patient safety issues such as the presence of an identification arm band, adherence to patient fall protocol and use of restraints, positioning of patient, promotion of an environment for rest and sleep, reporting of incidents/injury occurrences</li><li>Performs treatments, which may include urinar",
+   "ExternalQualificationsStr": "<p><strong><u>REQUIRED QUALIFICATIONS</u></strong><br><strong>EDUCATION:</strong></p><ul><li>Must have completed one semester of nursing school with clinical experience, attending at an eligible state-accredited Nursing program</li><li>Current BLS certification or completion within 90 days of hire</li></ul><p>&nbsp;</p><p><span style=\"color: rgb(45, 45, 45);\"><span style=\"font-size: 12pt;\">INTEGRIS Health is an Equal Opportunity/Affirmative Action employer. All applicants will receive consideration regardless of membership in any protected status as defined by applicable state or federal law, including protected veteran or disability status.&nbsp;</span></span></p>"
+  },
+  {
+   "Id": "195742",
+   "Title": "Patient Care Associate (PCA)",
+   "JobSchedule": "Full time",
+   "JobShift": null,
+   "WorkHours": null,
+   "WorkDays": null,
+   "ExternalPostedStartDate": "2026-09-08T16:23:41+00:00",
+   "requisitionFlexFields": {
+    "items": [
+     {
+      "Prompt": "Minimum Salary/Range*",
+      "Value": "32.2863"
+     },
+     {
+      "Prompt": "Maximum Salary/Range*",
+      "Value": "34.2317"
+     },
+     {
+      "Prompt": "Shift",
+      "Value": "Nights"
+     },
+     {
+      "Prompt": "Shift Begin Time",
+      "Value": "11:00 PM"
+     },
+     {
+      "Prompt": "Shift End Time",
+      "Value": "7:00 AM"
+     },
+     {
+      "Prompt": "Schedule",
+      "Value": "Full Time"
+     }
+    ]
+   },
+   "ExternalDescriptionStr": "<p>Job Description</p>\n<p>Provides direct care as assigned for a designated group of patients. Performs functions requiring skill and competence such as, but not limited to phlebotomy, EKG, obtaining specimens and cultures, activities of daily living, simple wound dressings and vital signs. Shares accountability for quality patient outcomes.</p>\n<p>Job Responsibility</p>\n<p>&nbsp;</p>\n<ul>\n <li>Assists with the unit’s admission and discharge processes.</li>\n <li>Establishes good interpersonal relationships with families/visitors and hospital staff.</li>\n <li>Reports vital information to all levels of the healthcare team, as needed.</li>\n <li>Conveys needed information to patients and visitor",
+   "ExternalResponsibilitiesStr": "",
+   "ExternalQualificationsStr": ""
+  }
+ ]
+}

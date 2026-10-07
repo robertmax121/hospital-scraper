@@ -1,0 +1,84 @@
+{
+ "id": 8869663002,
+ "title": "Weekends - Home Care Registered Nurse (RN)",
+ "absolute_url": "https://jobs.bayada.com/en/jobs?gh_jid=8869663002",
+ "updated_at": "2026-10-05T20:27:28-04:00",
+ "location": {
+  "name": "Sicklerville, NJ 08081 | 39.738815196 | -74.986871161"
+ },
+ "offices": [
+  {
+   "id": 4007304002,
+   "name": "Field",
+   "location": null,
+   "child_ids": [],
+   "parent_id": null
+  },
+  {
+   "id": 4017850002,
+   "name": "Practice Support - Field",
+   "location": null,
+   "child_ids": [],
+   "parent_id": null
+  }
+ ],
+ "metadata": [
+  {
+   "id": 4020315002,
+   "name": "BAYADA Office address",
+   "value": "4300 Haddonfield Rd W Building, Pennsauken, NJ 08109",
+   "value_type": "single_select"
+  },
+  {
+   "id": 4013991002,
+   "name": "Salary",
+   "value": null,
+   "value_type": "currency_range"
+  },
+  {
+   "id": 4010145002,
+   "name": "Employment Type",
+   "value": "Part-time",
+   "value_type": "single_select"
+  },
+  {
+   "id": 4013984002,
+   "name": "Job Category",
+   "value": "Registered Nurse",
+   "value_type": "single_select"
+  },
+  {
+   "id": 4480832002,
+   "name": "BAYADA Division",
+   "value": "Violet Division",
+   "value_type": "single_select"
+  },
+  {
+   "id": 4059246002,
+   "name": "BAYADA Practice",
+   "value": "Practice Support",
+   "value_type": "single_select"
+  },
+  {
+   "id": 15907647002,
+   "name": "Remote",
+   "value": false,
+   "value_type": "yes_no"
+  },
+  {
+   "id": 19273948002,
+   "name": "Company Brand",
+   "value": "BAYADA Home Health Care",
+   "value_type": "single_select"
+  }
+ ],
+ "departments": [
+  {
+   "id": 4016140002,
+   "name": "Violet Division (VIO) - 169",
+   "child_ids": [],
+   "parent_id": 4015293002
+  }
+ ],
+ "content": "<p>Our nurses visit clients at home. Our nurses visit clients at home. Our nurses visit clients at home. Our nurses visit clients at home. Our nurses visit clients at home. Our nurses visit clients at home. Our nurses visit clients at home. Our nurses visit clients at home. Our nurses visit clients at home. Our nurses visit clients at home. </p>"
+}

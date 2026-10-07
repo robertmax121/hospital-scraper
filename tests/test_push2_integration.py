@@ -93,4 +93,4 @@ def test_wired_bodies_keep_12000_characters():
     txt = scraper._sr_posting_text({"jobAd": {"sections": {"jobDescription": {"text": long},
                                                            "qualifications": {"text": long}}}})
     assert 8000 < len(txt) <= 12000
-    assert len(scraper.strip_html("x" * 20000)) == 12000
+    assert len(scraper.strip_html("x" * 25000)) == 20000      # 2026-10-07 (push 10, item 4): 12,000 -> 20,000
