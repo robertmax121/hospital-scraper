@@ -1241,7 +1241,7 @@ PAY_REREAD_SYSTEMS = frozenset({
     "HealthPartners", "UCSF Health", "Inova Health System", "Inspira Health Network",
     # 2026-10-07 (push 10): "Eastern Connecticut Health" and "United Regional"
     # were the mislabelled Oracle tenants eglz and erqh, renamed with them.
-    "Loma Linda University Health", "Unknown (fa-eyip)", "Cottage Health",
+    "Loma Linda University Health", "St. Joseph's Health", "Cottage Health",
     "Providence Health", "Northwell Health", "Cedars-Sinai", "Atlantic Health System", "UChicago Medicine",
     # PeopleSoft posting fields (_ps_pay)
     "NYC Health + Hospitals", "The Queen's Health Systems",
@@ -11119,7 +11119,8 @@ ORACLE_ORGS = {
     # in late September). parkview.com/careers links this tenant;
     # TotalJobsCount 688 on 2026-10-07, Fort Wayne IN.
     "Parkview Health":           ("https://parkview-ibyyjb.fa.ocs.oraclecloud.com",           "CX_1"),
-    "Unknown (fa-eyip)":         ("https://fa-eyip-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_4001"),
+    # 2026-10-07 (owner): tenant fa-eyip is St. Joseph's Health, Paterson / Wayne NJ (was "Unknown (fa-eyip)").
+    "St. Joseph's Health":       ("https://fa-eyip-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_4001"),
     # ── Added 2026-05-13: post-acute expansion Phase 1 (verified) ──
     # VITAS Healthcare: largest US hospice operator (~30K patients/day).
     # Confirmed via redirect from www.vitas.com/careers → ejrz.fa.us2.oraclecloud.com.
