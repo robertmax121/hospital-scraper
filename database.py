@@ -317,77 +317,210 @@ def mark_inactive_jobs(current_jobs: list[dict],
     return summary
 
 
-def get_stats() -> dict:
-    """Count active jobs.
+def active_total_after_passes(layer4: dict | None, front_pool: dict | None) -> int | None:
+    """The active hospital_jobs count the nightly already knows, with no
+    scan (2026-10-07, push 10): Layer 4 paged every active row
+    (active_before) and retired `deactivated` of them, and the front-pool
+    check retired `retired` more; nothing else in the run flips is_active
+    after Layer 4. On 10-06: 350,430 - 228 - 31 = 350,171, the live count.
+    None when Layer 4 aborted (its page is partial) or a figure is missing,
+    which the caller prints as "unknown", never as 0."""
+    if not layer4 or layer4.get("aborted"):
+        return None
+    before = layer4.get("active_before")
+    deact = layer4.get("deactivated")
+    if not isinstance(before, int) or not isinstance(deact, int):
+        return None
+    retired = (front_pool or {}).get("retired") or 0
+    if not isinstance(retired, int):
+        return None
+    return before - deact - retired
 
-    A single `SELECT id ... count=exact WHERE is_active=true` forces Postgres
-    to scan the whole active set in one statement, which now exceeds the role's
-    statement_timeout (error 57014 / HTTP 500) and returned a misleading 0 to
-    the website's job counter. Instead we CURSOR-paginate on id — the same
-    pattern Layer 4 uses to walk the table without timing out — and tally the
-    rows. Each page is a small indexed range scan with a LIMIT, so no single
-    statement can blow the timeout regardless of table size.
-    """
-    db = client()
+
+def _count_active_by_cursor() -> int | None:
+    """Tally active rows by id cursor, the Layer 4 walk, with the same
+    per-page retries and on the 300 s service client (2026-10-07, push 10:
+    the plain client's ~5 s read timeout killed the third page on 10-04 and
+    10-06, with no retry, and one exception ended the whole function).
+    Only the fallback for a standalone call or an aborted Layer 4; the
+    nightly passes the arithmetic total. None when a page fails after its
+    retries."""
     try:
-        total = 0
-        last_id = 0
-        while True:
-            resp = (db.table("hospital_jobs")
-                      .select("id")
-                      .eq("is_active", True)
-                      .gt("id", last_id)
-                      .order("id", desc=False)
-                      .limit(PAGE)
-                      .execute())
-            rows = resp.data or []
-            if not rows:
-                break
-            total += len(rows)
-            last_id = rows[-1]["id"]
-
-        # Persist to the single-row site_stats summary table. The public
-        # website reads THIS one row for its hero-pill count instead of
-        # running a live exact COUNT (which times out at this table size).
-        #
-        # site_stats has RLS enabled with a public-read-only policy, so the
-        # write MUST go through the service-role key (service_client), which
-        # bypasses RLS. The plain client() is the anon key — it can write the
-        # RLS-off hospital_jobs table fine but is rejected here (42501), which
-        # is exactly how this counter silently went stale before.
-        if not os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
-            logger.warning(
-                "SUPABASE_SERVICE_ROLE_KEY not set — the site_stats write will be "
-                "rejected by RLS and the homepage job counter will NOT update. "
-                "Add it to the cron environment (Supabase > Settings > API > "
-                "service_role key).")
-        try:
-            (service_client().table("site_stats")
-               .upsert({"id": 1,
-                        "total_active_jobs": total,
-                        "updated_at": datetime.now().isoformat()})
-               .execute())
-            logger.info(f"site_stats updated: total_active_jobs={total:,}")
-        except Exception as e:
-            logger.warning(f"site_stats write failed (non-fatal): {e}")
-
-        # Sticky sitemap cohort refresh (2026-08-24): admit tonight's new
-        # quality-bar qualifiers, evict only deactivated jobs. Kills the
-        # quality-gate flapping that swung GSC "known pages" by thousands
-        # per day. Non-fatal; the website's sitemap RPC reads the table.
-        try:
-            # Railway's older supabase-py requires the params argument
-            # explicitly; the no-arg form raised "Client.rpc() missing 1
-            # required positional argument: 'params'" every night, so the
-            # cohort never admitted new jobs after the 8/24 seed (confirmed
-            # 2026-08-26: cohort_joined_tonight=0 until a manual refresh).
-            res = service_client().rpc("refresh_hospital_sitemap_cohort", {}).execute()
-            logger.info(f"hospital_sitemap_cohort refreshed: {res.data}")
-        except Exception as e:
-            logger.warning(f"hospital_sitemap_cohort refresh failed (non-fatal): {e}")
-
-        return {"total_active_jobs": total,
-                "last_updated": datetime.now().isoformat()}
+        db = service_client()
     except Exception as e:
-        logger.error(f"get_stats error: {e}")
-        return {}
+        logger.warning(f"get_stats: no client for the fallback count ({e})")
+        return None
+    total = 0
+    last_id = 0
+    while True:
+        rows = None
+        for attempt in range(4):
+            try:
+                resp = (db.table("hospital_jobs")
+                          .select("id")
+                          .eq("is_active", True)
+                          .gt("id", last_id)
+                          .order("id", desc=False)
+                          .limit(PAGE)
+                          .execute())
+                rows = resp.data or []
+                break
+            except Exception as e:
+                logger.warning(f"get_stats: count page (last_id={last_id}, attempt {attempt + 1}/4): {e}")
+                import time as _t
+                _t.sleep(3 * (attempt + 1))
+        if rows is None:
+            logger.error(f"get_stats: fallback count failed after retries ({total:,} rows tallied before)")
+            return None
+        if not rows:
+            return total
+        total += len(rows)
+        last_id = rows[-1]["id"]
+
+
+def _write_site_stats(total: int) -> bool:
+    """Persist the count to the single-row site_stats summary table. The
+    public website reads THIS one row for its hero-pill count instead of
+    running a live exact COUNT (which times out at this table size).
+
+    site_stats has RLS enabled with a public-read-only policy, so the write
+    MUST go through the service-role key (service_client), which bypasses
+    RLS. The plain client() is rejected here (42501), which is exactly how
+    this counter silently went stale before."""
+    if not os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
+        logger.warning(
+            "SUPABASE_SERVICE_ROLE_KEY not set; the site_stats write will be "
+            "rejected by RLS and the homepage job counter will NOT update. "
+            "Add it to the cron environment (Supabase > Settings > API > "
+            "service_role key).")
+    try:
+        (service_client().table("site_stats")
+           .upsert({"id": 1,
+                    "total_active_jobs": total,
+                    "updated_at": datetime.now().isoformat()})
+           .execute())
+        logger.info(f"site_stats updated: total_active_jobs={total:,}")
+        return True
+    except Exception as e:
+        logger.warning(f"site_stats write failed (non-fatal): {e}")
+        return False
+
+
+def _refresh_sitemap_cohort() -> None:
+    """Sticky sitemap cohort refresh (2026-08-24): admit tonight's new
+    quality-bar qualifiers, evict only deactivated jobs. Kills the
+    quality-gate flapping that swung GSC "known pages" by thousands per
+    day. Non-fatal; the website's sitemap RPC reads the table.
+
+    2026-10-07 (push 10): runs on its own, not inside the count's try
+    block. Note that through PostgREST the call runs under the
+    authenticator role's 8 s statement_timeout (the function's own "set
+    local statement_timeout" cannot re-arm a timer that is already
+    running), and the refresh has taken 105-115 s since late September, so
+    this call has failed every night since 09-26 and will go on failing
+    until the function is cheaper; pg_cron job 4 (sql/push10_cohort_cron.sql
+    moves it to 05:30 UTC with a 600 s timeout) is the refresh of record."""
+    try:
+        # Railway's older supabase-py requires the params argument
+        # explicitly; the no-arg form raised "Client.rpc() missing 1
+        # required positional argument: 'params'" every night, so the
+        # cohort never admitted new jobs after the 8/24 seed (confirmed
+        # 2026-08-26: cohort_joined_tonight=0 until a manual refresh).
+        res = service_client().rpc("refresh_hospital_sitemap_cohort", {}).execute()
+        logger.info(f"hospital_sitemap_cohort refreshed: {res.data}")
+    except Exception as e:
+        logger.warning(f"hospital_sitemap_cohort refresh failed (non-fatal; pg_cron job 4 is the "
+                       f"refresh of record): {e}")
+
+
+def get_stats(total_active: int | None = None) -> dict:
+    """The active hospital_jobs count, written to site_stats id=1.
+
+    2026-10-07 (push 10): the nightly passes the total it already knows
+    (active_total_after_passes: Layer 4's active_before minus its
+    deactivations minus the front-pool retirements), so no statement scans
+    the table. The id-cursor walk that used to run here (each page a pkey
+    scan filtering is_active through the sparse low-id region, 3.3 s a page
+    at idle, on a client with a ~5 s read timeout and no retry) timed out on
+    10-04 and 10-06, printed "Active jobs in DB: 0", left site_stats stale
+    and skipped the cohort refresh. It remains only as the fallback for a
+    standalone call or an aborted Layer 4, with retries, on the service
+    client. The site_stats write and the sitemap-cohort RPC each run on
+    their own, so neither depends on the count any more.
+
+    Returns {"total_active_jobs": int or None, ...}; None means unknown,
+    and the caller prints "unknown", never 0.
+    """
+    total = total_active
+    if total is None:
+        total = _count_active_by_cursor()
+    if total is None:
+        logger.error("get_stats: active count unknown (no run arithmetic and the fallback count failed); "
+                     "site_stats id=1 left as it was")
+    else:
+        _write_site_stats(total)
+    _refresh_sitemap_cohort()
+    return {"total_active_jobs": total,
+            "last_updated": datetime.now().isoformat()}
+
+
+# ── Run observability: public.scraper_runs (2026-10-07, push 10) ────────────
+# One row a nightly: inserted when the run starts, updated when it ends,
+# through the service client (the table has RLS on and no policies, so only
+# service_role and postgres can write it). sql/push10_scraper_runs.sql adds
+# the run_* columns to the table that exists (it has ats_platform NOT NULL
+# and a status CHECK: running / success / partial / failed / blocked).
+# Non-fatal throughout: a run without a record still runs.
+RUN_RECORD_PLATFORM = "nightly"
+
+
+def start_run_record(run_day: int, started_at_iso: str) -> int | None:
+    """Insert tonight's scraper_runs row; returns its id, None on failure."""
+    try:
+        res = (service_client().table("scraper_runs")
+                 .insert({"ats_platform": RUN_RECORD_PLATFORM,
+                          "status": "running",
+                          "started_at": started_at_iso,
+                          "run_started_at": started_at_iso,
+                          "run_day": run_day})
+                 .execute())
+        rows = res.data or []
+        rid = rows[0].get("id") if rows and isinstance(rows[0], dict) else None
+        if rid is None:
+            logger.warning("scraper_runs: insert returned no id (non-fatal)")
+            return None
+        logger.info(f"scraper_runs: row {rid} started (run_day {run_day})")
+        return int(rid)
+    except Exception as e:
+        logger.warning(f"scraper_runs insert failed (non-fatal): {e}")
+        return None
+
+
+def finish_run_record(run_id: int | None, status: str, finished_at_iso: str,
+                      rows_upserted: int | None = None, deactivated: int | None = None,
+                      field_priced: int | None = None, text_priced: int | None = None,
+                      notes: str | None = None, duration_ms: int | None = None,
+                      jobs_seen: int | None = None, meta: dict | None = None) -> bool:
+    """Close tonight's scraper_runs row. status is one of the table's CHECK
+    values (success / partial / failed / blocked). None fields are left as
+    they are. Returns True when the update landed."""
+    if run_id is None:
+        return False
+    if status not in ("running", "success", "partial", "failed", "blocked"):
+        status = "partial"
+    patch = {"status": status,
+             "finished_at": finished_at_iso,
+             "run_finished_at": finished_at_iso}
+    for k, v in (("rows_upserted", rows_upserted), ("deactivated", deactivated),
+                 ("field_priced", field_priced), ("text_priced", text_priced),
+                 ("notes", notes), ("duration_ms", duration_ms), ("jobs_seen", jobs_seen),
+                 ("jobs_deactivated", deactivated), ("meta", meta)):
+        if v is not None:
+            patch[k] = v
+    try:
+        (service_client().table("scraper_runs").update(patch).eq("id", run_id).execute())
+        logger.info(f"scraper_runs: row {run_id} finished ({status})")
+        return True
+    except Exception as e:
+        logger.warning(f"scraper_runs update failed (non-fatal): {e}")
+        return False

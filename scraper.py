@@ -1200,18 +1200,22 @@ PAY_REREAD_SYSTEMS = frozenset({
     "NYC Health + Hospitals", "The Queen's Health Systems",
     # iCIMS classic header (OHSU "Salary Range")
     "OHSU",
-    # Infor formatted salary, single rate (BayCare)
-    "BayCare",
+    # 2026-10-07 (push 10): BayCare (Infor formatted salary) removed. Its
+    # field reads "0 - 0 per hour" on every posting probed (12 of 12 newest,
+    # pay audit 2026-10-07), so its slot night spent ~245 detail fetches for
+    # 1 priced row in 231 (0.4%). Tenet (13%) and Brookdale (29%) stay.
 })
 _KNOWN_UNPRICED: set = set()      # (canonical system, job_id) of known bodies whose stored row has no wage
 
 
-def _pay_slot(canon: str, job_id: str) -> bool:
+def _pay_slot(canon: str, job_id: str, run_day: Optional[int] = None) -> bool:
     """True on the one night in PAY_REREAD_DAYS that an unpriced stored body
-    on a PAY_REREAD_SYSTEMS system is read again for its pay field."""
+    on a PAY_REREAD_SYSTEMS system is read again for its pay field. run_day
+    defaults to the run's fixed day (_run_day; 2026-10-07, push 10)."""
     if PAY_REREAD_DAYS <= 0:
         return False
-    return zlib.crc32(f"pay|{canon}|{job_id}".encode("utf-8")) % PAY_REREAD_DAYS == _run_day() % PAY_REREAD_DAYS
+    day = _run_day() if run_day is None else run_day
+    return zlib.crc32(f"pay|{canon}|{job_id}".encode("utf-8")) % PAY_REREAD_DAYS == day % PAY_REREAD_DAYS
 
 
 def _facts_version(v):
@@ -1352,15 +1356,42 @@ def _body_known(system: str, job) -> bool:
     return True
 
 
+# 2026-10-07 (push 10): the run day is fixed once, at scrape() start, and
+# every slot test reads that one value. It used to be the clock at call
+# time, so a run that crossed midnight UTC (the push-triggered 10-05 22:26
+# start; a 00:09 start that drifts) changed slot mid-run: rows read before
+# midnight used day N, rows after it day N+1, and a posting could be due on
+# both or neither night. hca_local_push.py (a separate process) never fixes
+# it and keeps the clock day.
+_RUN_DAY: list = [None]
+
+
+def fix_run_day(day: Optional[int] = None) -> int:
+    """Fix the run day (a UTC ordinal) for this process and return it. The
+    first call wins; later calls return the fixed value, so the scheduler
+    can read it before scrape() and scrape() keeps it."""
+    if _RUN_DAY[0] is None:
+        _RUN_DAY[0] = int(day) if day is not None else datetime.now(timezone.utc).toordinal()
+    return _RUN_DAY[0]
+
+
+def reset_run_day() -> None:
+    """Forget the fixed day (tests)."""
+    _RUN_DAY[0] = None
+
+
 def _run_day() -> int:
-    return datetime.now(timezone.utc).toordinal()
+    """The run's fixed day, or the clock's UTC day when none is fixed."""
+    return _RUN_DAY[0] if _RUN_DAY[0] is not None else datetime.now(timezone.utc).toordinal()
 
 
-def _refresh_slot(canon: str, job_id: str) -> bool:
+def _refresh_slot(canon: str, job_id: str, run_day: Optional[int] = None) -> bool:
     """True on the one night in DETAIL_REFRESH_DAYS that this posting's stored
-    body is due to be read again (a fixed slot per posting)."""
+    body is due to be read again (a fixed slot per posting). run_day defaults
+    to the run's fixed day (_run_day; 2026-10-07, push 10)."""
     days = max(1, DETAIL_REFRESH_DAYS)
-    return zlib.crc32(f"{canon}|{job_id}".encode("utf-8")) % days == _run_day() % days
+    day = _run_day() if run_day is None else run_day
+    return zlib.crc32(f"{canon}|{job_id}".encode("utf-8")) % days == day % days
 
 
 def _refresh_quota(budget) -> int:
@@ -5684,11 +5715,11 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
                            headers={**HEADERS, "Accept": "text/html,*/*"},
                            timeout=aiohttp.ClientTimeout(total=60)) as r:
                 if r.status != 200:
-                    logger.info(f"UHG: page {page} HTTP {r.status} — stopping")
+                    logger.warning(f"UHG: page {page} HTTP {r.status} — stopping")
                     break
                 html = await r.text()
         except Exception as e:
-            logger.info(f"UHG: page {page} fetch error: {e} — stopping")
+            logger.warning(f"UHG: page {page} fetch error: {e} — stopping")
             break
 
         matches = UHG_JOB_PATTERN.findall(html)
@@ -5742,7 +5773,7 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
         else:
             empty_pages_in_a_row = 0
         if new_this_page < EXPECTED_PER_PAGE // 2 and page > 5:
-            logger.info(f"UHG: partial page {page} ({new_this_page} jobs) - done")
+            logger.warning(f"UHG: partial page {page} ({new_this_page} jobs) - done")
             break
 
         await jitter()
@@ -8800,7 +8831,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 break
             await jitter()
         except Exception as e:
-            logger.info(f"Phenom {system}: {e}")
+            logger.warning(f"Phenom {system}: stopped at offset {offset}: {e}")
             break
 
     drop_rx = PHENOM_DROP_EMPLOYERS.get(system)
@@ -11160,7 +11191,8 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
                          "Referer": f"https://pm.healthcaresource.com/cs/{tenant}"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
-                    logger.info(f"HealthcareSource {system}: HTTP {r.status} {(await r.text())[:120]}")
+                    logger.warning(f"HealthcareSource {system}: HTTP {r.status} at offset {offset}; stopping: "
+                                   f"{(await r.text())[:120]}")
                     break
                 data = await r.json(content_type=None)
             hits = (data or {}).get("hits") or {}
@@ -11178,7 +11210,7 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
                 break
             await jitter()
         except Exception as e:
-            logger.info(f"HealthcareSource {system}: {e}")
+            logger.warning(f"HealthcareSource {system}: stopped at offset {offset}: {e}")
             break
     logger.info(f"  HealthcareSource {system}: {len(jobs)} jobs")
     return jobs
@@ -13528,7 +13560,7 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
                 headers={"Accept": "application/json", "Referer": f"{base}/jobs/search"})
             data = r.json()
         except Exception as e:
-            logger.info(f"Talemetry {system}: page {page}: {e}")
+            logger.warning(f"Talemetry {system}: page {page}: {e}; stopping")
             break
         entries = (data or {}).get("entries") or []
         if total is None:
@@ -17304,7 +17336,7 @@ def update_travel_site_stats() -> int:
         return 0
 
 
-def flag_signon_jobs() -> int:
+def flag_signon_jobs(full_pass: bool = False) -> int:
     """Set has_signon=true on active hospital_jobs whose title or description
     mentions a sign-on / signing bonus (2026-08-08, Robert — feeds the solid
     yellow bonus pill on the job cards).
@@ -17315,7 +17347,22 @@ def flag_signon_jobs() -> int:
     boilerplate like "sign on to your account" doesn't false-positive.
     Id-windowed PATCHes (the travel-deactivate pattern) so no statement can
     time out. Never un-flags: the enrichment trigger means a description can
-    only gain mentions, and a title mention is stable for the row's life."""
+    only gain mentions, and a title mention is stable for the row's life.
+
+    2026-10-07 (push 10): a no-op unless full_pass is set. has_signon now
+    rides on the upsert: normalize_job computes it from the title and body
+    in hand (has_signon_for, the same two rules) and the enrichment trigger
+    ORs it with the stored value, so every row the run touched was flagged
+    in the same statement, and a row the run did not touch has not changed
+    since the night that flagged it. The SQL pass walked the whole id range
+    (7,290 PATCH windows of 5,000, 949 s on 10-06, growing with the id
+    sequence) to find ~3,000 rows a night. It stays available as
+    flag_signon_jobs(full_pass=True) for a one-off backfill, for instance
+    after a rule change or a night that ran before the trigger was applied."""
+    if not full_pass:
+        logger.info("flag_signon: skipped; has_signon is set by the upsert (push 10); "
+                    "flag_signon_jobs(full_pass=True) runs the SQL backfill")
+        return 0
     sb_url = os.environ.get("SUPABASE_URL", "")
     sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     if not sb_url or not sb_key:
@@ -17535,6 +17582,10 @@ def _qa_link_gate(rows: list[dict], run_started_iso: str, sb_url: str, sb_key: s
 # after the travel side-flow (retry_failed_hospital_upsert). Their systems are
 # not swept that night whether or not the retry lands them.
 LAST_UPSERT_FAILED: list[dict] = []
+# 2026-10-07 (push 10): what the upsert and sweep did tonight, for the
+# scraper_runs row the scheduler closes at the end (rows landed across the
+# first pass and the delayed retry; rows the per-system sweep retired).
+LAST_RUN_COUNTS: dict = {"upsert_sent": 0, "sweep_deactivated": 0}
 # Time-based breaker (2026-09-24 review). The loop pauses when
 # UPSERT_BREAKER_ROWS rows in a row have failed, or when rows are failing and
 # UPSERT_PROBE_PAUSE_S seconds have passed since the last successful POST.
@@ -17712,6 +17763,7 @@ def retry_failed_hospital_upsert() -> int:
                 f"that did not land in the first pass (no sweep)")
     sent, still = _post_hospital_rows(rows, sb_url, sb_key, label="Hospital upsert retry")
     LAST_UPSERT_FAILED[:] = still
+    LAST_RUN_COUNTS["upsert_sent"] = (LAST_RUN_COUNTS.get("upsert_sent") or 0) + sent
     msg = f"Hospital upsert retry: {sent:,} of {len(rows):,} rows landed"
     if still:
         logger.error(msg + f"; {len(still):,} still did not land (the next run sends them again)")
@@ -17871,6 +17923,8 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # _post_hospital_rows. What did not land is kept for the delayed retry.
     sent, failed_rows = _post_hospital_rows(rows, sb_url, sb_key)
     LAST_UPSERT_FAILED[:] = failed_rows
+    LAST_RUN_COUNTS["upsert_sent"] = sent
+    LAST_RUN_COUNTS["sweep_deactivated"] = 0
     logger.info(f"Hospital upsert: {sent}/{len(rows)} rows sent")
     if sent == 0:
         return 0
@@ -17986,6 +18040,7 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
             logger.warning(f"Deactivate {system}: {e}")
     logger.info(f"Hospital deactivation pass: {total_deactivated} rows across "
                 f"{len(safe_systems)} systems (skipped {len(skipped)})")
+    LAST_RUN_COUNTS["sweep_deactivated"] = total_deactivated
     return sent
 
 
@@ -18203,7 +18258,32 @@ def normalize_job(j: Job) -> dict:
     if pay_src and d["posting_facts"]:
         d["posting_facts"]["pay_src"] = pay_src
 
+    # Sign-on flag (2026-10-07, push 10): computed here, where the body is in
+    # hand, with the two rules the nightly SQL pass applied since 08-08, and
+    # sent in the upsert on every row (PostgREST bulk upserts need uniform
+    # keys). A blank body (a list-only night, or a stored body kept by
+    # _keep_stored_body) gives a title-only answer; the enrichment trigger
+    # ORs it with the stored flag (sql/push10_trigger_has_signon.sql), so a
+    # flag set from a full body is never cleared by a night without one.
+    d["has_signon"] = has_signon_for(d.get("title"), d.get("description"))
+
     return d
+
+
+# 2026-10-07 (push 10): the sign-on rules flag_signon_jobs ran as PostgREST
+# imatch filters (case-insensitive POSIX regex) since 2026-08-08, as Python.
+# A bare "sign-on" in the title is enough; the body needs bonus/incentive
+# proximity so ATS boilerplate like "sign on to your account" does not match.
+_SIGNON_TITLE_RX = re.compile(r"sign[- ]?on|signing bonus", re.I)
+_SIGNON_DESC_RX = re.compile(r"sign[- ]?on bonus|sign[- ]?on incentive|signing bonus", re.I)
+
+
+def has_signon_for(title, description) -> bool:
+    """True when the title or the body mentions a sign-on / signing bonus
+    under the flag_signon_jobs rules."""
+    if isinstance(title, str) and _SIGNON_TITLE_RX.search(title):
+        return True
+    return bool(isinstance(description, str) and _SIGNON_DESC_RX.search(description))
 
 
 def posting_facts_for(text, job_type=None, title=None):
@@ -21467,6 +21547,9 @@ def scrape() -> list[dict]:
     # Stamp this run's start so the upsert + deactivation pass agree on
     # "what was scraped this run vs what's stale". Same pattern as travel.
     run_started_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    # 2026-10-07 (push 10): one run day for every pay and refresh slot test
+    # (fix_run_day keeps a day the scheduler fixed a moment earlier).
+    logger.info(f"Run day fixed at {fix_run_day()} (UTC ordinal) for the pay and refresh slots")
 
     hospital_jobs = asyncio.run(run_all())
 

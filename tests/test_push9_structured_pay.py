@@ -470,6 +470,8 @@ def test_pay_reread_systems_are_detail_sources():
     for s in ("BJC HealthCare", "Universal Health Services", "UPMC", "Northwestern Medicine", "Renown Health",
               "Harris Health System"):
         assert s not in scraper.PAY_REREAD_SYSTEMS
-    assert len(scraper.PAY_REREAD_SYSTEMS) == 21
+    # 2026-10-07 (push 10): 20, BayCare removed (its Infor pay field reads
+    # "0 - 0 per hour" on every posting probed; 0.4% fill on its slot night).
+    assert len(scraper.PAY_REREAD_SYSTEMS) == 20
     for p in ("SuccessFactorsRMK", "NYStateJobs"):
         assert p in scraper.KNOWN_BODY_PLATFORMS
