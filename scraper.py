@@ -1211,7 +1211,7 @@ _KNOWN_FACTS_H: dict = {}         # (push 10) same keys, every platform -> posti
 # The stored facts are re-derived in bulk by the one-time backfill
 # (tools/facts_backfill.py, owner-approved); the refresh share then keeps
 # them current.
-FACTS_VERSION       = 5            # 3: push 3 requirements rules (2026-09-24); 4: push 8 shift/hours/requirements/benefits rules (2026-10-05); 5: push 10 pay parser (the facts-hash skip returns before the wage parser, so unchanged bodies only pick up a parser change when this moves)
+FACTS_VERSION       = 4            # 3: push 3 requirements rules (2026-09-24); 4: push 8 shift/hours/requirements/benefits rules (2026-10-05)
 OLD_BODY_CAP        = (7990, 8000)
 DETAIL_REFRESH_PCT  = int(os.getenv("DETAIL_REFRESH_PCT", "5"))
 DETAIL_REFRESH_DAYS = int(os.getenv("DETAIL_REFRESH_DAYS", "30"))
