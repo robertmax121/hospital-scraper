@@ -22540,7 +22540,8 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
 # per-run summary finalize_jobs logs counts the pool's rows too.
 # finalize_jobs took 2,997 s on 10-04 running it on one core, so the
 # rows now go to a process pool in chunks of FINALIZE_CHUNK, FINALIZE_WORKERS
-# wide (0 = one worker per CPU; 1 = the sequential path, the old code). The
+# wide (0 = min(CPUs seen, FINALIZE_WORKERS_CAP); 1 = the sequential path,
+# the old code; any explicit value is used as given). The
 # pool uses the "spawn" start method, never fork: by then the event loop and
 # its executor threads are alive, and a forked child may inherit a held
 # lock. Each worker therefore imports scraper afresh (SCRAPER_WORKER=1 keeps
@@ -22548,14 +22549,39 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
 # normalize_job reads. Any failure of the pool, or FINALIZE_TIMEOUT seconds
 # without the whole result, logs a warning and finishes the remaining rows
 # sequentially: the run never ends here.
+# 2026-10-07 (push 10 review): os.cpu_count() is the host kernel's online
+# CPU count, not the container's cgroup quota, so on a shared Railway host
+# it can report 32 or more while the service is allotted two. Each worker
+# imports scraper (~100-200 MB) and unpickles the ~347k-entry facts-hash
+# map, so "one worker per CPU" could have spawned dozens of them and had
+# the parent OOM-killed before the upsert (a worker dying gives
+# BrokenProcessPool and the sequential fallback; the parent dying ends the
+# run). Memory, not CPU, is the binding constraint: an unset
+# FINALIZE_WORKERS is now capped at FINALIZE_WORKERS_CAP, the affinity set
+# is preferred over cpu_count where the OS has one (it at least honours a
+# cpuset), the runbook sets FINALIZE_WORKERS=2 on Railway explicitly, and
+# the chosen count is logged before the pool starts.
 FINALIZE_WORKERS = int(os.getenv("FINALIZE_WORKERS", "0") or 0)
+FINALIZE_WORKERS_CAP = 2      # the ceiling for the default; an explicit FINALIZE_WORKERS is not capped
 FINALIZE_CHUNK = max(1, int(os.getenv("FINALIZE_CHUNK", "5000") or 5000))
 FINALIZE_TIMEOUT = int(os.getenv("FINALIZE_TIMEOUT", "3600") or 3600)
 _FACTS_SKIPS = {"n": 0}
 
 
+def _cpus_seen() -> int:
+    """CPUs this process may run on: the affinity set where the OS has one
+    (a cpuset-limited container reports its share), else os.cpu_count().
+    Neither reads a cgroup CPU quota, hence the cap in _finalize_workers."""
+    try:
+        if hasattr(os, "sched_getaffinity"):
+            return max(1, len(os.sched_getaffinity(0)))
+    except (OSError, ValueError):
+        pass
+    return os.cpu_count() or 1
+
+
 def _finalize_workers() -> int:
-    n = FINALIZE_WORKERS if FINALIZE_WORKERS > 0 else (os.cpu_count() or 1)
+    n = FINALIZE_WORKERS if FINALIZE_WORKERS > 0 else min(_cpus_seen(), FINALIZE_WORKERS_CAP)
     return max(1, n)
 
 
@@ -22596,6 +22622,10 @@ def normalize_jobs(jobs: list) -> list[dict]:
     out: list[dict] = []
     t0 = time.monotonic()
     ex = None
+    # 2026-10-07 (push 10 review): the count is logged BEFORE the pool starts,
+    # so a parent killed while the workers import still leaves the number.
+    logger.info(f"finalize_jobs: {workers} workers for {len(chunks)} chunks of {FINALIZE_CHUNK:,} "
+                f"(FINALIZE_WORKERS={FINALIZE_WORKERS}, {_cpus_seen()} CPUs seen, default cap {FINALIZE_WORKERS_CAP})")
     had_flag = os.environ.get("SCRAPER_WORKER")
     os.environ["SCRAPER_WORKER"] = "1"           # inherited by the spawned workers at start
     try:

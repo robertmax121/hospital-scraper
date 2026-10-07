@@ -241,6 +241,60 @@ def test_normalize_jobs_single_chunk_stays_sequential(monkeypatch):
     assert scraper.normalize_jobs(jobs) == [scraper.normalize_job(j) for j in jobs]
 
 
+# 2026-10-07 (push 10 review): os.cpu_count() is the host's count, not the
+# container's quota. An unset FINALIZE_WORKERS must stay at the cap however
+# many CPUs the kernel reports; an explicit setting is used as given.
+
+def test_finalize_workers_default_never_exceeds_the_cap(monkeypatch):
+    monkeypatch.setattr(scraper, "FINALIZE_WORKERS", 0)
+    monkeypatch.setattr(os, "cpu_count", lambda: 64)
+    monkeypatch.setattr(os, "sched_getaffinity", lambda pid: set(range(64)), raising=False)   # the Linux path
+    assert scraper.FINALIZE_WORKERS_CAP == 2
+    assert scraper._cpus_seen() == 64
+    assert scraper._finalize_workers() == 2
+    monkeypatch.delattr(os, "sched_getaffinity", raising=False)                               # the Windows / macOS path
+    assert scraper._cpus_seen() == 64
+    assert scraper._finalize_workers() == 2
+    # fewer CPUs than the cap, or no answer at all: never more than there are, never below one
+    monkeypatch.setattr(os, "cpu_count", lambda: 1)
+    assert scraper._finalize_workers() == 1
+    monkeypatch.setattr(os, "cpu_count", lambda: None)
+    assert scraper._cpus_seen() == 1 and scraper._finalize_workers() == 1
+    # an affinity call that fails falls through to cpu_count
+    monkeypatch.setattr(os, "cpu_count", lambda: 64)
+    monkeypatch.setattr(os, "sched_getaffinity", lambda pid: (_ for _ in ()).throw(OSError("no affinity")), raising=False)
+    assert scraper._cpus_seen() == 64 and scraper._finalize_workers() == 2
+    # an explicit setting is the operator's call, above or below the cap
+    monkeypatch.setattr(scraper, "FINALIZE_WORKERS", 6)
+    assert scraper._finalize_workers() == 6
+    monkeypatch.setattr(scraper, "FINALIZE_WORKERS", 1)
+    assert scraper._finalize_workers() == 1
+
+
+def test_normalize_jobs_logs_the_chosen_worker_count_before_the_pool_starts(monkeypatch, caplog):
+    jobs = _five()
+    scraper.set_known_bodies([])
+    monkeypatch.setattr(scraper, "FINALIZE_WORKERS", 0)
+    monkeypatch.setattr(scraper, "FINALIZE_CHUNK", 2)
+    monkeypatch.setattr(os, "cpu_count", lambda: 64)
+    monkeypatch.setattr(os, "sched_getaffinity", lambda pid: set(range(64)), raising=False)
+    seen = []
+
+    def broken(n):
+        seen.append(n)
+        raise RuntimeError("no pool tonight")
+    monkeypatch.setattr(scraper, "_finalize_pool", broken)
+    with caplog.at_level("INFO"):
+        out = scraper.normalize_jobs(jobs)
+    assert seen == [2]                                      # 64 CPUs seen, 3 chunks, still 2 workers
+    assert out == [scraper.normalize_job(j) for j in jobs]
+    msgs = [r.getMessage() for r in caplog.records]
+    chosen = [m for m in msgs if m.startswith("finalize_jobs: 2 workers for 3 chunks of 2 ")]
+    assert chosen and "FINALIZE_WORKERS=0" in chosen[0] and "64 CPUs seen" in chosen[0] and "default cap 2" in chosen[0]
+    # the count line precedes the pool failure line
+    assert msgs.index(chosen[0]) < next(i for i, m in enumerate(msgs) if "process pool stopped after 0 of 5 rows" in m)
+
+
 def test_normalize_jobs_pool_matches_sequential_and_moves_the_counters(monkeypatch):
     jobs = _five()
     scraper.set_known_bodies([])
