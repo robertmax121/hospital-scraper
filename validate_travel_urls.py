@@ -244,6 +244,30 @@ async def _deactivate_ids(session: aiohttp.ClientSession, sb_url: str,
     return sent
 
 
+
+# 2026-10-07 (push 10 review): a host-wide blip (CDN or WAF answering 404 to
+# every HEAD for a while) must not retire a whole agency's board in one
+# night. A host whose dead share passes MAX_DEAD_SHARE with more than
+# MAX_DEAD_MIN dead rows keeps its rows and logs an ALARM instead; the next
+# night re-checks them. Mirrors the front-pool checker's guard.
+MAX_DEAD_SHARE = 0.25
+MAX_DEAD_MIN = 500
+
+
+def _guard_mass_retire(bad: list, host_of: dict) -> tuple:
+    """Split the dead ids into (retire, held_by_host) by the per-host guard."""
+    totals: dict = {}
+    for h in host_of.values():
+        totals[h] = totals.get(h, 0) + 1
+    dead: dict = {}
+    for rid in bad:
+        h = host_of.get(rid, '?')
+        dead[h] = dead.get(h, 0) + 1
+    held = {h: n for h, n in dead.items()
+            if n > MAX_DEAD_MIN and n / max(totals.get(h, n), 1) > MAX_DEAD_SHARE}
+    retire = [rid for rid in bad if host_of.get(rid, '?') not in held]
+    return retire, held
+
 async def main() -> None:
     sb_url, sb_key = _env()
     started = datetime.now(timezone.utc)
@@ -292,6 +316,11 @@ async def main() -> None:
             f"validation complete: ok={ok} bad={len(bad)} indet={indet} "
             f"(of {len(rows):,})"
         )
+        host_of = {r["id"]: (urlparse(r.get("url", "")).hostname or "").lower() for r in rows}
+        bad, held = _guard_mass_retire(bad, host_of)
+        for h, n in held.items():
+            logger.warning(f"  ALARM travel validator: {h}: {n:,} of its rows answered 404/410 "
+                           f"(over {int(MAX_DEAD_SHARE * 100)}%); looks like a blocker, not expiry; nothing retired for this host")
         deact = await _deactivate_ids(session, sb_url, sb_key, bad)
         elapsed = (datetime.now(timezone.utc) - started).total_seconds()
         logger.info(f"deactivated {deact:,} rows in {elapsed:.1f}s")
