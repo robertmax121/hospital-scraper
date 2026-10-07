@@ -18493,13 +18493,16 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # crawl; the guard held about 1,600 such rows on 10-06 (Prime, Sutter,
     # NYP, One Medical, Carilion) until the backstop. A partial report wins.
     complete = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in COMPLETE_SYSTEMS} - partial
-    swept_complete = sorted(s for s in safe_systems if s in complete)
-    if swept_complete:
-        logger.info(f"Sweep guard bypassed for {len(swept_complete)} complete crawl(s): {swept_complete}")
+    # 2026-10-07 (push 10c): a complete claim is believed only when the run
+    # also returned at least COMPLETE_MIN_ACTIVE_RATIO of the system's active
+    # rows. The 13:06 run read UnitedHealth Group's total from a geo-filtered
+    # page (281 rows called complete against 5,987 active) and this sweep
+    # PATCHed every unseen row; only the database's statement timeout kept
+    # the inventory. The active count is now read for complete systems too.
+    from retire_guard import COMPLETE_MIN_ACTIVE_RATIO
+    swept_complete: list[str] = []
     guarded: list[str] = []
     for system in list(safe_systems):
-        if system in complete:
-            continue
         try:
             curl_ = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
                      f"?select=id&is_active=eq.true&hospital_system=eq.{_q(system)}&limit=1")
@@ -18518,6 +18521,14 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
             guarded.append(system)
             logger.warning(f"SWEEP GUARD: NOT sweeping {system} — active-count failed ({e}); inventory preserved")
             continue
+        if system in complete:
+            if system_counts[system] >= COMPLETE_MIN_ACTIVE_RATIO * active_n:
+                swept_complete.append(system)
+                continue
+            logger.warning(
+                f"SWEEP GUARD: complete claim rejected for {system}: run yielded {system_counts[system]} rows "
+                f"vs {active_n} active in DB (under {int(COMPLETE_MIN_ACTIVE_RATIO * 100)}%); the site's total "
+                f"was not the whole board; the yield guard decides")
         reason = guard_reason(active_n, system_counts[system])
         if reason:
             safe_systems.remove(system)
@@ -18526,6 +18537,8 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
                 f"SWEEP GUARD: NOT sweeping {system} — {reason}: run yielded {system_counts[system]} rows "
                 f"vs {active_n} active in DB (<{int(GUARD_RATIO*100)}%). Adapter likely "
                 f"broken/blocked; inventory preserved.")
+    if swept_complete:
+        logger.info(f"Sweep guard bypassed for {len(swept_complete)} complete crawl(s): {swept_complete}")
     if guarded:
         logger.warning(f"Sweep guard protected {len(guarded)} system(s): {guarded}")
 

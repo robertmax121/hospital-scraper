@@ -544,7 +544,7 @@ def test_sweep_guard_is_bypassed_for_a_complete_crawl_unless_partial(monkeypatch
         if "/qa_link_audit" in u or m == "POST":
             return _UResp()
         if m == "GET":
-            return _UResp("0-0/100")          # the database holds 100 active rows: 30 is under 80%
+            return _UResp("0-0/50")           # 50 active rows: 30 is under the 80% guard but over half, so a complete claim is believed
         patches.append(urllib.parse.unquote(u.split("hospital_system=eq.")[1].split("&")[0]))
         return _UResp("*/0")
     monkeypatch.setenv("SUPABASE_URL", "https://fake.invalid")
@@ -560,6 +560,36 @@ def test_sweep_guard_is_bypassed_for_a_complete_crawl_unless_partial(monkeypatch
     scraper.PARTIAL_SYSTEMS.add("Whole Board")
     scraper._upsert_hospital_jobs_to_supabase(rows, "2026-10-07T00:09:00.000000Z")
     assert patches == ["Whole Board"]                      # a partial report wins
+
+
+def test_sweep_rejects_a_complete_claim_under_half_of_active(monkeypatch, caplog):
+    # push 10c (2026-10-07): UnitedHealth Group's total came from a geo-filtered
+    # page; 281 rows were called a complete crawl against 5,987 active and the
+    # sweep PATCHed the rest. A claim under half of active is not believed.
+    patches = []
+
+    def urlopen(rq, timeout=None):
+        u, m = rq.full_url, rq.get_method()
+        if "/qa_link_audit" in u or m == "POST":
+            return _UResp()
+        if m == "GET":
+            return _UResp("0-0/100")          # 100 active rows: 30 is under half, whatever the site's total said
+        patches.append(urllib.parse.unquote(u.split("hospital_system=eq.")[1].split("&")[0]))
+        return _UResp("*/0")
+    monkeypatch.setenv("SUPABASE_URL", "https://fake.invalid")
+    monkeypatch.setenv("SUPABASE_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(scraper.time, "sleep", lambda _s: None)
+    scraper.COMPLETE_SYSTEMS.add("Geo Filtered Board")
+    try:
+        rows = [_job("Geo Filtered Board", i) for i in range(30)]
+        with caplog.at_level(logging.WARNING):
+            scraper._upsert_hospital_jobs_to_supabase(rows, "2026-10-07T00:09:00.000000Z")
+    finally:
+        scraper.COMPLETE_SYSTEMS.discard("Geo Filtered Board")
+    assert patches == []                                   # rejected: the yield guard holds the rows
+    assert any("complete claim rejected for Geo Filtered Board" in r.message for r in caplog.records)
+    assert any("NOT sweeping Geo Filtered Board" in r.message for r in caplog.records)
 
 
 # ── 7. Config: relabels and removals ────────────────────────────────────────
