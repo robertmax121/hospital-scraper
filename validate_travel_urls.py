@@ -7,17 +7,33 @@ flagged as inactive within hours instead of waiting until the next
 nightly run.
 
 Idempotent. Safe to interrupt and restart.
+
+2026-10-07 (push 10), after the 10-06 run analysis: the active rows are
+paged by id cursor (the 20,000-id windows were cut to PostgREST's 1,000-row
+cap, and 4,070 of 66,228 rows were never fetched); Nomad and AMN are on the
+allowlist (36,242 rows, 55% of the board, were rejected before any request
+and reported as indeterminate); rows off the allowlist are counted and
+skipped before a task exists; and the checks run 120 in flight, interleaved
+by host, so the whole board (~66k HEADs at the observed ~1.4 s each) fits in
+about 12 minutes instead of ~23 for 28k.
 """
 import asyncio
 import logging
 import os
+from collections import Counter
 from datetime import datetime, timezone
+from urllib.parse import urlparse, urljoin
 
 import aiohttp
 
 logger = logging.getLogger(__name__)
 
-CONCURRENCY = 30
+# 2026-10-07 (push 10): 30 in flight did ~22 rows/s (1,250 s for the 28k
+# Vivian/Aya rows). With Nomad and AMN the board is ~66k rows; at 120 in
+# flight, spread over four hosts by _interleave_by_host and capped per host
+# by the connector, that is ~88 rows/s, about 12-13 minutes.
+CONCURRENCY = 120
+PER_HOST = CONCURRENCY // 2
 TIMEOUT_SEC = 10
 PAGE_SIZE = 1000
 DEACT_BATCH = 500
@@ -25,15 +41,22 @@ BAD_CODES = {404, 410}              # treat these as definitively dead
 INDETERMINATE_CODES = {0, 408, 429, 500, 502, 503, 504}  # transient; leave alone
 USER_AGENT = "Mozilla/5.0 (compatible; WaypointURLValidator/1.0)"
 
-# SSRF guard. The `url` field on travel_jobs comes from scraped Vivian/Aya
+# SSRF guard. The `url` field on travel_jobs comes from scraped agency
 # data — if a row gets poisoned we don't want to issue requests to
 # arbitrary hosts (cloud metadata, internal Supabase endpoints, etc.).
 # Any host not on this list (or any URL not over plain https) is skipped.
+# 2026-10-07 (push 10): Nomad (23,341 active rows on 10-06, six agencies)
+# and AMN (12,901) added; until then every one of their rows was reported
+# as indeterminate without a request.
 ALLOWED_HOSTS = {
     "vivian.com",
     "www.vivian.com",
     "ayahealthcare.com",
     "www.ayahealthcare.com",
+    "nomadhealth.com",
+    "www.nomadhealth.com",
+    "amnhealthcare.com",
+    "www.amnhealthcare.com",
 }
 
 
@@ -53,6 +76,46 @@ def _is_allowed_url(url: str) -> bool:
     return host in ALLOWED_HOSTS
 
 
+def _split_allowed(rows: list[dict]) -> tuple[list[dict], Counter]:
+    """Rows whose URL passes the allowlist, and a Counter of the hosts of
+    the rows that do not (2026-10-07, push 10): the skipped rows never get a
+    task, so they are reported on their own line instead of swelling the
+    indeterminate count."""
+    allowed, skipped = [], Counter()
+    for r in rows:
+        url = r.get("url", "")
+        if _is_allowed_url(url):
+            allowed.append(r)
+        else:
+            try:
+                skipped[(urlparse(url).hostname or "").lower() or "(no host)"] += 1
+            except Exception:
+                skipped["(bad url)"] += 1
+    return allowed, skipped
+
+
+def _interleave_by_host(rows: list[dict]) -> list[dict]:
+    """Round-robin the rows across their hosts (2026-10-07, push 10). Ids
+    are assigned per agency in upsert order, so the id-ordered fetch comes
+    back in long single-host runs; checked in that order, 120 in flight would
+    all land on one host at a time. Interleaved, the four hosts share the
+    concurrency and the per-host connector cap holds."""
+    by_host: dict[str, list[dict]] = {}
+    for r in rows:
+        by_host.setdefault((urlparse(r.get("url", "")).hostname or "").lower(), []).append(r)
+    out: list[dict] = []
+    queues = [iter(v) for v in by_host.values()]
+    while queues:
+        alive = []
+        for q in queues:
+            r = next(q, None)
+            if r is not None:
+                out.append(r)
+                alive.append(q)
+        queues = alive
+    return out
+
+
 def _env() -> tuple[str, str]:
     sb_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     sb_key = (
@@ -65,15 +128,23 @@ def _env() -> tuple[str, str]:
 
 
 async def _fetch_active(session: aiohttp.ClientSession, sb_url: str, sb_key: str) -> list[dict]:
-    """Collect is_active=true rows via PK id-range windows, return
-    [{id, url}, ...].
+    """Collect is_active=true rows by id cursor, return [{id, url}, ...].
 
     Rewritten 2026-07-20: the old offset-Range pagination
     (`order=id` + `Range: frm-to`) re-scans from the top of the table on
     every page and started hitting the 8s statement timeout (HTTP 500)
     once the table passed ~250k rows, silently validating 0 rows. Windowed
     PK-range scans are bounded per statement regardless of table size, and
-    each window retries so a transient 500 can't zero the run."""
+    each window retries so a transient 500 can't zero the run.
+
+    2026-10-07 (push 10): the 20,000-id windows asked for limit=20000, but
+    PostgREST answers at most 1,000 rows a request, so a window with more
+    active rows than that was cut and nothing said so (8 windows, 4,070 of
+    66,228 rows on 10-06). Now the same cursor walk Layer 4 uses: id >
+    last, ordered by id, PAGE_SIZE a page, until an empty page (not a short
+    one, so a server cap below PAGE_SIZE cannot end the walk early). A page
+    that fails after its retries ends the walk with a WARNING; the rows
+    fetched so far are still checked (deactivation is per row)."""
     headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}"}
 
     async def _get_json(url: str, tries: int = 4):
@@ -82,29 +153,27 @@ async def _fetch_active(session: aiohttp.ClientSession, sb_url: str, sb_key: str
                 async with session.get(url, headers=headers) as r:
                     if r.status in (200, 206):
                         return await r.json()
-                    logger.warning(f"fetch window: HTTP {r.status} (attempt {attempt})")
+                    logger.warning(f"fetch page: HTTP {r.status} (attempt {attempt})")
             except (asyncio.TimeoutError, aiohttp.ClientError) as e:
-                logger.warning(f"fetch window: {e} (attempt {attempt})")
+                logger.warning(f"fetch page: {e} (attempt {attempt})")
             await asyncio.sleep(3 * attempt)
         return None
 
-    top = await _get_json(f"{sb_url}/rest/v1/travel_jobs?select=id&order=id.desc&limit=1")
-    if not top:
-        logger.error("fetch active rows: could not resolve max id")
-        return []
-    max_id = top[0]["id"]
-
-    WINDOW = 20000
     rows: list[dict] = []
-    for lo in range(0, max_id + WINDOW, WINDOW):
+    last_id = 0
+    while True:
         chunk = await _get_json(
             f"{sb_url}/rest/v1/travel_jobs?select=id,url"
-            f"&is_active=eq.true&id=gte.{lo}&id=lt.{lo + WINDOW}&limit={WINDOW}"
+            f"&is_active=eq.true&id=gt.{last_id}&order=id.asc&limit={PAGE_SIZE}"
         )
-        if chunk:
-            rows.extend(chunk)
-        elif chunk is None:
-            logger.warning(f"fetch window id {lo}-{lo + WINDOW}: gave up after retries")
+        if chunk is None:
+            logger.warning(f"fetch page after id {last_id}: gave up after retries; "
+                           f"checking the {len(rows):,} rows fetched so far")
+            break
+        if not chunk:
+            break
+        rows.extend(chunk)
+        last_id = chunk[-1]["id"]
     return rows
 
 
@@ -129,8 +198,12 @@ async def _head_check(session: aiohttp.ClientSession, sem: asyncio.Semaphore,
             ) as r:
                 # If it's a redirect, validate the target host before
                 # following — bounce off-allowlist redirects to "indeterminate".
+                # 2026-10-07 (push 10): the Location is resolved against the
+                # row's URL first: AMN answers every HEAD with a 301 to the
+                # same path plus a trailing slash, as a relative Location,
+                # which the allowlist (https + host) rejected as it stood.
                 if 300 <= r.status < 400:
-                    loc = r.headers.get("Location", "")
+                    loc = urljoin(row["url"], r.headers.get("Location", ""))
                     if not _is_allowed_url(loc):
                         return row["id"], 0
                     async with session.head(
@@ -178,13 +251,20 @@ async def main() -> None:
 
     headers = {"User-Agent": USER_AGENT}
     timeout = aiohttp.ClientTimeout(total=20)
-    connector = aiohttp.TCPConnector(limit=CONCURRENCY * 2)
+    connector = aiohttp.TCPConnector(limit=CONCURRENCY * 2, limit_per_host=PER_HOST)
     async with aiohttp.ClientSession(headers=headers, timeout=timeout,
                                      connector=connector) as session:
-        rows = await _fetch_active(session, sb_url, sb_key)
-        logger.info(f"validating {len(rows):,} active rows")
+        fetched = await _fetch_active(session, sb_url, sb_key)
+        # 2026-10-07 (push 10): rows off the allowlist get no task and their
+        # own count; the rest are interleaved by host for the shared pool.
+        rows, skipped = _split_allowed(fetched)
+        logger.info(f"validating {len(rows):,} active rows "
+                    f"({len(fetched):,} fetched, {sum(skipped.values()):,} skipped: host not allowed)")
+        if skipped:
+            logger.info(f"  skipped (host not allowed): {dict(skipped.most_common(6))}")
         if not rows:
             return
+        rows = _interleave_by_host(rows)
 
         sem = asyncio.Semaphore(CONCURRENCY)
         tasks = [asyncio.create_task(_head_check(session, sem, r)) for r in rows]
