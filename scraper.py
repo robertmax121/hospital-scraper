@@ -1885,7 +1885,7 @@ WORKDAY_TENANTS = {
     # (entry below in PHENOM_ORGS uses identical name; upsert dedups on
     # (job_id, hospital_system) so cross-scraper overlap collapses cleanly).
     "Baptist Health (KY/IN)":    ("bhs", "1", "careers"),
-    "Bozeman Health":            ("bozemanhealth", "1", "BozemanHealthCareers"),
+    # 2026-10-07 (owner): Bozeman Health left Workday (bozemanhealth.wd1 dead since 2026-09-11, 692 rows retired); it is on Infor now, see INFOR_ORGS.
     "Broadlawns Medical Center": ("broadlawns",            "501","Broadlawns_Careers"),
     "Cape Fear Valley Health":   ("capefearvalley", "1", "CFV"),
     "Capital Health":            ("capitalhealth", "1", "CapitalHealthCareers"),
@@ -10326,6 +10326,8 @@ INFOR_ORGS = {
     "Kaleida Health":            ("css-y9x4ku9mqsygapwx-prd", "1000", "KH-EXTERNAL",    "NY"),  # 500+ (Buffalo; Olean NY and Bradford PA ride along)
     "Salem Health":              ("css-salemhealth-prd",      "1",    "STAFF_EXTERNAL", "OR"),  # 102
     "Bellin Health":             ("css-bellin-prd",           "500",  "EXTERNAL",       "WI"),  # 287; org 1 answers 0 rows
+    # 2026-10-07 (owner): moved off Workday (bozemanhealth.wd1, dead since 09-11). csk pair from the careers link; 250 rows with full bodies on the probe.
+    "Bozeman Health":            ("css-bdhboz-prd",           "BH",   "EXTERNAL",       "MT"),  # 250
 }
 
 # Tenants whose location value is a facility name with no city or state.
