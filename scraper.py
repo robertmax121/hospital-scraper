@@ -7,6 +7,7 @@ import asyncio
 import contextvars
 import functools
 import aiohttp
+import hashlib
 import html as htmllib
 import json
 import logging
@@ -71,6 +72,12 @@ class ProxyRotator:
         # proxies.txt is untracked and PROXY_LIST is unset on Railway, so every
         # adapter ran direct. With WEBSHARE_API_KEY set, the current direct-mode
         # list is fetched at startup, so a rotated pool never goes stale.
+        # 2026-10-07 (push 10): a finalize_jobs worker process imports this
+        # module too (SCRAPER_WORKER=1, see normalize_jobs) and never makes a
+        # request: no proxy list fetch and no warning from it.
+        if os.environ.get("SCRAPER_WORKER") == "1":
+            self._i = 0
+            return
         if not self.proxies and os.environ.get("WEBSHARE_API_KEY"):
             self.proxies = self._webshare_list(os.environ["WEBSHARE_API_KEY"])
         self._i = 0
@@ -1138,10 +1145,13 @@ KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor"
                         # 2026-10-05 (push 9): the RMK and NY State Jobs job-page passes store under these.
                         "SuccessFactorsRMK", "NYStateJobs")
 KNOWN_BODY_PAGE      = 1000
-KNOWN_BODY_MAX_ROWS  = int(os.getenv("KNOWN_BODY_MAX_ROWS", "400000"))
+# 2026-10-07 (push 10): the read covers every active body now (346,809 on
+# 10-07), not only the detail platforms, so the cap moves up from 400,000.
+KNOWN_BODY_MAX_ROWS  = int(os.getenv("KNOWN_BODY_MAX_ROWS", "600000"))
 KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
 _KNOWN_BODIES: dict = {}
 _KNOWN_FACTS_V: dict = {}         # same keys -> posting_facts "v" of the stored row (None = unstamped)
+_KNOWN_FACTS_H: dict = {}         # (push 10) same keys, every platform -> posting_facts "h" of the stored row
 
 # ── A known body is not known forever (2026-09-24, review of push 2) ─────────
 # Skipping every stored body left three holes: (1) facts, pay and type are
@@ -1226,9 +1236,17 @@ def set_known_bodies(rows) -> int:
     desc_len, fv}; fv is posting_facts->>'v' (absent or null = unstamped).
     Rows under 200 characters are not bodies and are ignored. A row that
     carries the wage_min key with a null value is also recorded as unpriced
-    (push 9, pay re-reads); a row without the key is not."""
-    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED
-    kb, fv, unpriced = {}, {}, set()
+    (push 9, pay re-reads); a row without the key is not.
+    2026-10-07 (push 10): the read now covers every platform. A row that
+    carries ats_platform joins the detail-pass maps (_KNOWN_BODIES,
+    _KNOWN_FACTS_V, _KNOWN_UNPRICED) only on KNOWN_BODY_PLATFORMS, exactly
+    the rows the read used to return; a row without the key joins as before.
+    Every row's fh (posting_facts->>'h') whose facts carry the current
+    FACTS_VERSION goes to _KNOWN_FACTS_H, which normalize_job reads to skip
+    re-parsing an unchanged body (facts from older rules are never skipped).
+    Returns the detail-pass map's size, as before."""
+    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H
+    kb, fv, unpriced, fh = {}, {}, set(), {}
     for r in rows or []:
         try:
             n = int(r.get("desc_len") or 0)
@@ -1237,6 +1255,12 @@ def set_known_bodies(rows) -> int:
         sysname, jid = r.get("hospital_system"), r.get("job_id")
         if n >= 200 and sysname and jid not in (None, ""):
             k = (str(sysname), str(jid))
+            h = r.get("fh")
+            if (isinstance(h, str) and h and _facts_version(r.get("fv")) == FACTS_VERSION
+                    and n >= fh.get(k, (0, ""))[0]):
+                fh[k] = (n, h)
+            if "ats_platform" in r and r.get("ats_platform") not in KNOWN_BODY_PLATFORMS:
+                continue
             if n >= kb.get(k, 0):
                 kb[k] = n
                 fv[k] = _facts_version(r.get("fv"))
@@ -1245,6 +1269,7 @@ def set_known_bodies(rows) -> int:
                 else:
                     unpriced.discard(k)
     _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED = kb, fv, unpriced
+    _KNOWN_FACTS_H = {k: v[1] for k, v in fh.items()}
     return len(kb)
 
 
@@ -1264,14 +1289,16 @@ def load_known_bodies() -> int:
         logger.info("Known bodies: not loaded (no credentials or detail passes off); every row without a body is a candidate")
         return 0
     import urllib.request as _urlreq
-    from urllib.parse import quote as _q
-    plats = _q(",".join(f'"{p}"' for p in KNOWN_BODY_PLATFORMS), safe=",")
     rows, last = [], 0
     try:
         while len(rows) < KNOWN_BODY_MAX_ROWS:
-            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,desc_len,wage_min,"
-                 f"fv:posting_facts-%3E%3Ev"
-                 f"&is_active=is.true&desc_len=gte.200&ats_platform=in.({plats})"
+            # 2026-10-07 (push 10): every active body, with its platform and
+            # its facts hash (set_known_bodies keeps the detail-pass maps to
+            # KNOWN_BODY_PLATFORMS). The page walks the same id range as
+            # before; only more of its rows come back.
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,ats_platform,desc_len,wage_min,"
+                 f"fv:posting_facts-%3E%3Ev,fh:posting_facts-%3E%3Eh"
+                 f"&is_active=is.true&desc_len=gte.200"
                  f"&id=gt.{last}&order=id.asc&limit={KNOWN_BODY_PAGE}")
             rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
             for attempt in range(KNOWN_BODY_RETRIES):
@@ -1290,7 +1317,8 @@ def load_known_bodies() -> int:
     except Exception as e:
         logger.warning(f"Known bodies: load stopped after {len(rows):,} rows ({e}); the rest are fetched as before")
     n = set_known_bodies(rows)
-    logger.info(f"Known bodies: {n:,} active rows on {', '.join(KNOWN_BODY_PLATFORMS)} already hold a body")
+    logger.info(f"Known bodies: {n:,} active rows on {', '.join(KNOWN_BODY_PLATFORMS)} already hold a body; "
+                f"{len(_KNOWN_FACTS_H):,} of {len(rows):,} active bodies carry a facts hash (push 10)")
     return n
 
 
@@ -18192,6 +18220,24 @@ def normalize_job(j: Job) -> dict:
     # preserves a stored value across list-only upserts.
     # 2026-09-24 (review): built by posting_facts_for, which stamps the rules
     # version and keeps title-only facts off teasers.
+    # 2026-10-07 (push 10, run time): a body the database already holds facts
+    # for, read from the same text with the same rules, is not parsed again
+    # (posting_facts_for is ~11 ms a body). posting_facts carries "h", a hash
+    # of everything the facts are read from (title, job type, pay source,
+    # DETAIL_MIN_CHARS, the body; FACTS_VERSION is "v"), and the known-body
+    # load brings the stored "h" back for every active body whose facts
+    # carry the current "v". When it matches, posting_facts is sent as null
+    # and the enrichment trigger keeps the stored object
+    # (preserve_scraped_enrichment: a null never replaces facts). A changed
+    # body, title, type, pay source or rules version parses as before. The
+    # hash is stamped on every object sent, the bare {"v"} stamp included,
+    # so the next night can skip it.
+    key = (_canon_system(d.get("hospital_system") or ""), str(d.get("job_id")))
+    h = _facts_hash(d.get("title"), d.get("job_type"), pay_src, d.get("description"))
+    if h is not None and _KNOWN_FACTS_H.get(key) == h:
+        d["posting_facts"] = None
+        _FACTS_SKIPS["n"] += 1
+        return d
     d["posting_facts"] = posting_facts_for(d.get("description"), d.get("job_type"), d.get("title"))
     # 2026-10-05 (push 9, structured pay): posting_facts["pay_src"] is "field"
     # when the wage came from a structured pay field the adapter read (the
@@ -18202,8 +18248,24 @@ def normalize_job(j: Job) -> dict:
     # pay_src would replace them (see posting_facts_for on teasers).
     if pay_src and d["posting_facts"]:
         d["posting_facts"]["pay_src"] = pay_src
+    if h is not None and d["posting_facts"] is not None:
+        d["posting_facts"]["h"] = h
 
     return d
+
+
+def _facts_hash(title, job_type, pay_src, description):
+    """12 hex characters over everything posting_facts is read from (push
+    10), or None for a body under 200 characters, which is never a known
+    body. FACTS_VERSION travels as posting_facts["v"] and is checked beside
+    the hash; DETAIL_MIN_CHARS decides between a {"v"} stamp and null, so it
+    is part of the hash."""
+    body = description or ""
+    if len(body) < 200:
+        return None
+    raw = "\x1f".join((str(FACTS_VERSION), str(DETAIL_MIN_CHARS), str(title or ""), str(job_type or ""),
+                       str(pay_src or ""), body))
+    return hashlib.md5(raw.encode("utf-8", "surrogatepass"), usedforsecurity=False).hexdigest()[:12]
 
 
 def posting_facts_for(text, job_type=None, title=None):
@@ -19063,6 +19125,34 @@ _BENEFIT_VETO = {
 }
 
 
+# 2026-10-07 (push 10, run time): every _BENEFIT_RXS pattern scans the whole
+# body (19 scans, ~1.5 ms a body). Per label, lower-case fragments at least
+# one of which every match contains (see "Substring gates" below); the
+# "Continuing education" fragments also cover the _PRO_DEV_RX branch of
+# _benefit_hit. A label missing here is simply not gated.
+_BENEFIT_GATES = {
+    "Medical, dental and vision":    ("dental",),
+    "Benefits from day one":         ("benefit",),
+    "401(k) with match":             ("401",),
+    "401(k)":                        ("401",),
+    "403(b)":                        ("403",),
+    "Paid time off":                 ("paid", "pto"),
+    "Tuition assistance":            ("tuition", "student loan"),
+    "Paid parental leave":           ("leave", "maternity"),
+    "Retirement plan":               ("pension", "retirement"),
+    "Life and disability insurance": ("insurance", "disability"),
+    "Shift differentials":           ("differential",),
+    "Wellness and mental health resources": ("wellness", "assistance", "eap", "mental health"),
+    "Childcare support":             ("child",),
+    "Continuing education":          ("continuing education", "ceu", "professional development", "cme"),
+    "Malpractice insurance":         ("malpractice", "liability"),
+    "License reimbursement":         ("licens",),
+    "Wellness stipend":              ("wellness",),
+    "Flexible scheduling":           ("flexible", "self"),
+    "Employee discounts":            ("discount",),
+}
+
+
 _PERK_NEAR_RX = re.compile(r"paid time off|\bPTO\b|401\s?\(?k|403\s?\(?b|tuition|dental|retirement|perks|benefits|insurance|wellness|reimburse", re.I)
 
 
@@ -19226,9 +19316,11 @@ def extract_benefits(text: str) -> list:
     """Closed-vocabulary benefit labels, eight at most (the page shows the
     first few; raised from five on 2026-09-22 so the stored row keeps more)."""
     t = (text or "")[:20000]
+    tl = _gate_text(t)                  # (push 10) one substring gate per label, see _BENEFIT_GATES
     out = []
     for label, rx in _BENEFIT_RXS:
-        if _benefit_hit(label, rx, t):
+        gate = _BENEFIT_GATES.get(label)
+        if (gate is None or _may_match(tl, gate)) and _benefit_hit(label, rx, t):
             if label == "401(k)" and any(o.startswith("401(k)") for o in out):
                 continue
             out.append(label)
@@ -19536,6 +19628,55 @@ _EDU_GATE_RX = re.compile(r"BSN|ADN|ASN|MSN|DNP|diploma|doctora|PhD|PharmD|DPT|D
 _SHIFT_GATE_RX = re.compile(r"night|\bday|evening|swing|shift|overnight|\b7[ap]|\bprn\b|per diem|weekend|rotat|12[- ]hour|"
                             r"3\s*x\s*12|three 12|\d\s*[ap]\.?m|variab|varies|various|varied|\d{4}\s*(?:-|–|—|to)\s*\d{4}", re.I)
 
+# ── Substring gates (2026-10-07, push 10: run time) ─────────────────────────
+# finalize_jobs grew to ~50 minutes of regex on 10-04. A cProfile of 1,000
+# stored bodies put about 1,000 re.search calls on every body, most of them
+# alternations under IGNORECASE, which sre scans position by position (no
+# first-character skip). Each *_GATE_WORDS tuple below lists lower-case
+# fragments at least one of which EVERY match of its pattern contains (read
+# off the pattern's alternatives), so a text that holds none of them skips
+# the pattern with the same result. A text that holds one of the four
+# letters IGNORECASE folds onto ASCII (U+0130, U+0131, U+017F, U+212A) is
+# never gated, since str.lower() does not fold them the same way. Outputs
+# were checked byte-identical on 5,000 stored bodies (push 10 report).
+_FOLD_SPECIAL_RX = re.compile("[\u0130\u0131\u017f\u212a]")
+
+
+def _gate_text(s: str):
+    """s lower-cased for the substring gates, or None when s must not be gated."""
+    return None if _FOLD_SPECIAL_RX.search(s) else s.lower()
+
+
+def _may_match(sl, words) -> bool:
+    """False only when the pattern behind the gate cannot match: sl (from
+    _gate_text) holds none of its fragments."""
+    return sl is None or any(w in sl for w in words)
+
+
+# the fragments of _CERT_GATE_RX / _EDU_GATE_RX ("bcls" is its own word:
+# "bls" is not a substring of it)
+_CERT_GATE_WORDS = ("bls", "bcls", "acls", "pals", "nrp", "tncc", "ccrn", "cnor", "cen", "cpr", "arrt", "cst", "rrt", "nihss",
+                    "licen", "life support", "resuscitation", "surgical technologist", "respiratory therapist", "compact",
+                    "multistate", "nlc", "registered", "rn", "lpn", "lvn", "practical", "vocational")
+_EDU_GATE_WORDS = ("bsn", "adn", "asn", "msn", "dnp", "diploma", "doctora", "phd", "pharmd", "dpt", "dscpt", "psyd", "aud",
+                   "master", "bachelor", "baccalaureate", "associate", "mha", "mph", "mba", "msw", "bs", "ba", "b.s", "b.a",
+                   "aas", "a.a", "aa.", "ged", "high school", "hs", "h.s")
+# _experience_from reads a years figure (_FACT_EXP_RX / _EXP_LABEL_RX need
+# "yr" or "year"; _exp_text turns "12 months" into "1 years" first)
+_EXP_GATE_WORDS = ("year", "yr", "month")
+# every _SHIFT_FIELD_RXS pattern needs a "Shift:" field, a "Shift" line of
+# its own or a "Schedule:" line (the prefix of each of its alternatives)
+_SHIFT_FIELD_GATE_RX = re.compile(r"\bshift\s*:|(?:^|\n)[ \t]*(?:work\s+|job\s+)?shift[ \t]*\n|(?:^|\n)[ \t]*schedule[ \t]*:", re.I)
+# the inline patterns extract_posting_facts ran through the re cache on
+# every body / unit, compiled once
+_FACT_SPLIT_FIGURE_RX = re.compile(r"(?<=\d),(\d{1,2}) (\d{1,2})\b")
+_FACT_DOTTED_ABBR_RX = re.compile(r"\b([A-Za-z])\.([A-Za-z])\.(?=[\s,;:)]|$)")
+_FACT_PHD_RX = re.compile(r"\bPh\.D\.")
+_FACT_CFR_RX = re.compile(r"\bC\.F\.R\.")
+_FACT_SENTENCE_GLUE_RX = re.compile(r"([.!?;])(?=[A-Z(])")
+_FACT_UNIT_SPLIT_RX = re.compile(r"(?<=[.!?;])\s+")
+_FACT_PAREN_RX = re.compile(r"\([^)]*\)")
+
 
 def _shift_hits(s: str):
     """Shift labels a sentence states for the job itself."""
@@ -19578,11 +19719,11 @@ def extract_posting_facts(text, job_type=None, title=None):
         t = htmllib.unescape(htmllib.unescape(t))
     t = re.sub("[\u2010\u2011\u2012]", "-", t).replace("\xa0", " ")
     # "$ 5,0 00" (a figure split by inline tags in a stored body) -> "$ 5,000"
-    t = re.sub(r"(?<=\d),(\d{1,2}) (\d{1,2})\b", lambda m: "," + m.group(1) + m.group(2) if len(m.group(1) + m.group(2)) == 3 else m.group(0), t)
-    t = re.sub(r"\b([A-Za-z])\.([A-Za-z])\.(?=[\s,;:)]|$)", r"\1\2", t)
-    t = re.sub(r"\bPh\.D\.", "PhD", t)
-    t = re.sub(r"\bC\.F\.R\.", "CFR", t)
-    t = re.sub(r"([.!?;])(?=[A-Z(])", r"\1 ", t)
+    t = _FACT_SPLIT_FIGURE_RX.sub(lambda m: "," + m.group(1) + m.group(2) if len(m.group(1) + m.group(2)) == 3 else m.group(0), t)
+    t = _FACT_DOTTED_ABBR_RX.sub(r"\1\2", t)
+    t = _FACT_PHD_RX.sub("PhD", t)
+    t = _FACT_CFR_RX.sub("CFR", t)
+    t = _FACT_SENTENCE_GLUE_RX.sub(r"\1 ", t)
     # Units: every line, then every sentence in it, each with the mode of
     # the heading it sits under (see _fact_heading).
     # A heading that offers a menu of shifts ("Available RN Shifts:", "Shifts
@@ -19600,7 +19741,7 @@ def extract_posting_facts(text, job_type=None, title=None):
             mode = None
         if h is not None:
             avail = bool(_SHIFT_AVAIL_HEAD_RX.search(line))
-        for s in re.split(r"(?<=[.!?;])\s+", line.strip()):
+        for s in _FACT_UNIT_SPLIT_RX.split(line.strip()):
             if s:
                 units.append((s, mode, avail))
     out = {"certs": [], "education": [], "shift": [], "experience": None}
@@ -19609,9 +19750,10 @@ def extract_posting_facts(text, job_type=None, title=None):
     offset = 0
     for s, mode, avail in units:
         offset = max(offset, t.find(s, offset))
-        bare = re.sub(r"\([^)]*\)", " ", s)
+        sl = _gate_text(s)                  # (push 10) one lower-cased copy for the gates on this unit
+        bare = _FACT_PAREN_RX.sub(" ", s)
         pref = bool(_PREF_WORD_RX.search(bare)) or (mode == "pref" and not _REQ_WORD_RX.search(bare))
-        for label, rx in (_FACT_CERTS_C if _CERT_GATE_RX.search(s) else ()):
+        for label, rx in (_FACT_CERTS_C if _may_match(sl, _CERT_GATE_WORDS) and _CERT_GATE_RX.search(s) else ()):
             if label not in seen and rx.search(s):
                 # "... does not hold a Michigan RN license" is no requirement
                 m = next((m for m in rx.finditer(s)
@@ -19622,12 +19764,12 @@ def extract_posting_facts(text, job_type=None, title=None):
                     seen.add(label)
                     out["certs"].append([label, _item_pref(s, m.end(), m.start(), mode)])
         if "nurse licence" not in seen and not ({"RN license", "LPN license"} & seen):
-            m = _NURSE_LICENSE_RX.search(s)
+            m = _NURSE_LICENSE_RX.search(s) if _may_match(sl, ("licen",)) else None   # (push 10) every alternative says licen
             kind = _title_nurse_kind(title) if m else None
             if kind:
                 seen.update({"nurse licence", kind})
                 out["certs"].append([kind, _item_pref(s, m.end(), m.start(), mode)])
-        for label, rx in (_FACT_EDU_C if _EDU_GATE_RX.search(s) else ()):
+        for label, rx in (_FACT_EDU_C if _may_match(sl, _EDU_GATE_WORDS) and _EDU_GATE_RX.search(s) else ()):
             k = "e:" + label
             if k not in seen:
                 m = rx.search(s)
@@ -19641,7 +19783,7 @@ def extract_posting_facts(text, job_type=None, title=None):
             if k not in seen:
                 seen.add(k)
                 out["shift"].append([label, pref])
-        if out["experience"] is None:
+        if out["experience"] is None and _may_match(sl, _EXP_GATE_WORDS):   # (push 10) a figure needs years / yrs / months
             got = _experience_from(s)
             if got:
                 label, x, m = got
@@ -19663,7 +19805,9 @@ def extract_posting_facts(text, job_type=None, title=None):
     # A labelled shift field is the ATS's own value and outranks prose; it may
     # sit on two lines ("Work Shift :\n3 - Night (United States of America)"
     # on every Houston Methodist posting), so it is read from the whole text.
-    labelled = [lab for lab, rx in _SHIFT_FIELD_RXS if rx.search(t)]
+    # (push 10) six whole-text scans, 0.45 ms each: a body with no "Shift:"
+    # field, no "Shift" line of its own and no "Schedule:" line skips them.
+    labelled = [lab for lab, rx in _SHIFT_FIELD_RXS if rx.search(t)] if _SHIFT_FIELD_GATE_RX.search(t) else []
     shifts = []
     for lab in title_shift(title) + labelled:
         if lab not in [x[0] for x in shifts]:
@@ -19917,6 +20061,50 @@ _RQ_CUE_RX = re.compile(
     r"completion of|obtain|\bhold\b|possess|\bneeded\b|licensed (?:as|in|to|by)|certified (?:in|as|by|through)|"
     r"within \d+ (?:days|months)|upon hire|prior to (?:hire|start)", re.I)
 
+# 2026-10-07 (push 10, run time): _RQ_CUE_RX, _RQ_BLOCK_END_RX,
+# _RQ_HARD_STOP_RX and _RQ_EDU_RX run on most lines, labels and clauses of a
+# body (18-40k calls per 1,000 bodies, 15-40 us each). The helpers below
+# skip a pattern when the text holds none of the lower-case fragments every
+# match of it contains (read off its alternatives; see "Substring gates"
+# above _shift_hits). The requirements reader calls these helpers; the
+# patterns themselves are unchanged.
+_RQ_CUE_GATE_WORDS = ("requir", "must", "minimum", "prefer", "current", "valid", "active", "unrestricted", "unencumbered",
+                      "eligib", "graduat", "completion of", "obtain", "hold", "possess", "needed", "licensed ",
+                      "certified ", "within ", "upon hire", "prior to")
+_RQ_BLOCK_END_GATE_WORDS = ("benefit", "we offer", "we invest", "believe", "highly", "$", "differential", "bonus",
+                            "equal", "eeo")
+_RQ_HARD_STOP_GATE_WORDS = ("physical", "working conditions", "work environment", "working environment", "environmental",
+                            "emotional", "activities", "mental/sensory", "blood", "exposure", "age-specific",
+                            "age specific", "percentage", "protective", "weekly hours", "schedule hours",
+                            "scheduled hours", "hours per", "job details", "information", "travel requirement",
+                            "unusual", "responsible for")
+_RQ_EDU_GATE_WORDS = ("degree", "diploma", "ged", "hse", "high school", "graduat", "bsn", "adn", "asn", "msn", "dnp", "bsw",
+                      "msw", "mha", "mph", "mba", "phd", "pharmd", "dpt", "otd", "psyd", "aud", "bachelor", "baccalaureate",
+                      "master", "associate", "doctora", "college", "universit", "school of", "accredited", "program",
+                      "course", "equivalent", "gpa", "enrolled", "bs", "ba", "ms", "ma", "aas", "b.s", "b.a", "m.s", "m.a")
+_cue_search = _RQ_CUE_RX.search
+_block_end_search = _RQ_BLOCK_END_RX.search
+
+
+def _rq_cue(s: str):
+    """The _RQ_CUE_RX search, skipped when s holds none of its fragments."""
+    return _cue_search(s) if _may_match(_gate_text(s), _RQ_CUE_GATE_WORDS) else None
+
+
+def _rq_block_end(s: str):
+    """The _RQ_BLOCK_END_RX search, skipped when s holds none of its fragments."""
+    return _block_end_search(s) if _may_match(_gate_text(s), _RQ_BLOCK_END_GATE_WORDS) else None
+
+
+def _rq_hard_stop(s: str):
+    """The _RQ_HARD_STOP_RX search, skipped when s holds none of its fragments."""
+    return _hard_stop_search(s) if _may_match(_gate_text(s), _RQ_HARD_STOP_GATE_WORDS) else None
+
+
+def _rq_edu_search(s: str):
+    """The _RQ_EDU_RX search, skipped when s holds none of its fragments."""
+    return _edu_search(s) if _may_match(_gate_text(s), _RQ_EDU_GATE_WORDS) else None
+
 # 2026-10-05 (push8, plan item 5): a "must hold / have / possess / maintain /
 # obtain / be ... licence | certification | BLS" clause states a credential
 # even when the vocabulary above names none (Option Care "Must be licensed
@@ -19977,7 +20165,7 @@ def _rq_bare_types(s: str) -> set:
     """Which fields a bare credential line outside a block states."""
     if len(s) > 80 or s.endswith((":", "?", "!")) or _RQ_BARE_NOT_RX.search(s) or _RQ_DRIVER_RX.search(s):
         return set()
-    if _RQ_DUTY_RX.search(s) or _RQ_BLOCK_END_RX.search(s) or _RQ_BOILER_RX.search(s) or _RQ_SKIP_RX.search(s):
+    if _RQ_DUTY_RX.search(s) or _rq_block_end(s) or _RQ_BOILER_RX.search(s) or _RQ_SKIP_RX.search(s):
         return set()
     if len(re.findall(r"[.!?](?:\s|$)", s)) > 1:                  # two sentences: prose, not a list line
         return set()
@@ -20053,7 +20241,7 @@ def _rq_after_pay_line(s: str) -> bool:
         return False
     if _rq_bare_types(s) or _rq_exp_line(s):
         return True
-    return bool(_RQ_CUE_RX.search(s) and (_rq_types(s) or _rq_must_cred(s)))
+    return bool(_rq_cue(s) and (_rq_types(s) or _rq_must_cred(s)))
 
 
 def _rq_exp_line(s: str, exp_block: bool = False, outside: bool = False) -> bool:
@@ -20182,14 +20370,29 @@ _RQ_LIC_LINE_RX = re.compile(
     + _RQ_LIC_PROF + r"|(?-i:(?:" + _RQ_LIC_ABBR + r"|O\.T\.|P\.T\.))(?=[\s,:(\-–]|$))", re.I)
 
 
+# 2026-10-07 (push 10, run time): _rq_lic_span ran three big scans on every
+# clause (about 0.13 ms each, 18 clauses a body). The fragments below are
+# read off _RQ_LIC_RX and _RQ_LIC_CODE_RX: every alternative of theirs holds
+# one of them (blanking a driver's licence first only removes text), so a
+# clause with none of them states no licence. The vetoes (_RQ_LIC_NOT_RX)
+# are read only once a candidate exists.
+_RQ_LIC_GATE_WORDS = ("licen", "nlc", "dea", "drug enforcement", "psypact", "controlled substance", "cds", "board",
+                      "bc/be", "be/bc", "specific", "department of state", "registr", "cert", "paramedic", "emt",
+                      "emergency medical", "state of", "florida", "georgia", "texas", "compact", "multi", "lic-")
+
+
 def _rq_lic_span(s: str):
     """(start, end) of the first professional licence this clause states
     (see above), else None."""
+    if not _may_match(_gate_text(s), _RQ_LIC_GATE_WORDS):
+        return None
     s = _RQ_DRIVER_RX.sub(lambda m: " " * len(m.group(0)), s)
-    bad = [m.span() for m in _RQ_LIC_NOT_RX.finditer(s)]
+    bad = None
     hits = []
     for rx in (_RQ_LIC_RX, _RQ_LIC_CODE_RX):
         for m in rx.finditer(s):
+            if bad is None:
+                bad = [b.span() for b in _RQ_LIC_NOT_RX.finditer(s)]
             if not any(a < m.end() and m.start() < b for a, b in bad):
                 hits.append(m.span())
                 break
@@ -20242,6 +20445,7 @@ _RQ_EDU_RX = re.compile(
 # Inside an education block also "Completion of ... on-the-job training",
 # "completion of a course of study" (never outside one: "completion of BLS
 # course within 30 days" is a certification).
+_edu_search = _RQ_EDU_RX.search            # (push 10) bound once for _rq_edu_search
 _RQ_EDU_BLOCK_RX = re.compile(r"\bcompletion of\b[^.;]{0,60}\b(?:program|course|training|residency|fellowship|school)\b", re.I)
 # Inside an education block also a line that starts with a degree level:
 # AdventHealth "Education:" / "Associate [Required]" / "Master's [Required]"
@@ -20285,6 +20489,7 @@ _RQ_HARD_STOP_RX = re.compile(
     r"percentages? of time|personal protective|protective equipment|weekly hours|scheduled? hours|"
     r"hours per (?:week|pay period)|^job details$|(?:position|additional|other|job) information|travel requirements?|"
     r"^unusual (?:physical|demands)|you will be responsible for|^responsible for$|^job details", re.I)
+_hard_stop_search = _RQ_HARD_STOP_RX.search    # (push 10) bound once for _rq_hard_stop
 # Lines inside a block that are not a requirement but do not end it: a
 # heading value of "N/A" / "None" (Loma Linda "Licensures and
 # Certifications: None."), stock sentences about the list itself, schedule
@@ -20349,10 +20554,21 @@ _RQ_ZW_RX = re.compile("[​‌‍⁠﻿­]")
 _RQ_NBSP_RX = re.compile("[   ]")
 
 
+# 2026-10-07 (push 10, run time): the small patterns the requirements reader
+# ran through the re cache on every line / item, compiled once.
+_RQ_LEAD_MARK_RX = re.compile(r"^[\s•\-\*·–—>●○■□▪◦‣⁃∙➢➤►▸✓✔]+")
+_RQ_TRAIL_BOLD_RX = re.compile(r"\*\*$")
+_RQ_BULLET_RX = re.compile(r"^\s*[-•*·●▪■◦➢►–]\s")
+_RQ_LABEL_VALUE_RX = re.compile(r"^([^:]{2,70}?)\s*:\s*(.*)$", re.S)
+_RQ_TRAIL_COLON_RX = re.compile(r"\s*:$")
+_RQ_PREFERENCES_RX = re.compile(r"\bpreferences\b", re.I)
+_WS_RUN_RX = re.compile(r"\s+")
+
+
 def _rq_clean(line: str) -> str:
     s = _RQ_ZW_RX.sub("", line)
-    s = re.sub(r"^[\s•\-\*·–—>●○■□▪◦‣⁃∙➢➤►▸✓✔]+", "", s).strip()
-    return re.sub(r"\*\*$", "", s).strip()
+    s = _RQ_LEAD_MARK_RX.sub("", s).strip()
+    return _RQ_TRAIL_BOLD_RX.sub("", s).strip()
 
 
 # An item is stored at most 300 characters long, cut at the last word break
@@ -20396,7 +20612,7 @@ def _rq_item_text(s: str) -> str:
 
 
 def _rq_dupkey(s: str) -> str:
-    return re.sub(r"\s+", " ", s.lower()).rstrip(" .;,:-–()")
+    return _WS_RUN_RX.sub(" ", s.lower()).rstrip(" .;,:-–()")
 
 
 def _rq_heading(line: str):
@@ -20408,10 +20624,10 @@ def _rq_heading(line: str):
     if not s or len(s) > 6000:
         return None
     label, value = s, ""
-    m = re.match(r"^([^:]{2,70}?)\s*:\s*(.*)$", s, re.S)
+    m = _RQ_LABEL_VALUE_RX.match(s)
     if m:
         label, value = m.group(1).strip().strip("*").strip(), m.group(2).strip()
-    label = re.sub(r"\s+", " ", label).rstrip(" :.-–")
+    label = _WS_RUN_RX.sub(" ", label).rstrip(" :.-–")
     # 2026-10-05 (push8, plan item 5): licence / certification headings the
     # word list did not spell. "Licensure, Certifications, and Clearances:"
     # (every UPMC posting) and "Certification(s) and License(s):" (Geisinger)
@@ -20455,7 +20671,7 @@ def _rq_heading(line: str):
     # 2026-09-24 (reqfix): physical / working-conditions / schedule labels
     # end a block even with a value ("PHYSICAL REQUIREMENTS: Continually ...").
     nw = len(label.split())
-    if label and _RQ_HARD_STOP_RX.search(label) and (
+    if label and _rq_hard_stop(label) and (
             (m and nw <= 14) or (not m and nw <= 8 and not s.endswith(".")
                                  and not re.match(r"(?:must|able|ability|willing|requires?)\b", label, re.I))):
         return ("stop", None, "")
@@ -20532,7 +20748,7 @@ def _rq_heading(line: str):
             and not re.search(r"\b(?:RN|LPN|LVN|NURSE|NURSING|PHARMACIST|THERAPIST|TECHNOLOGIST|TECHNICIAN|PARAMEDIC|EMT|"
                               r"PHYSICIAN|ASSISTANT|AIDE|SOCIAL WORKER)\b", label)):
         return ("stop", None, "")
-    if m and value and len(words) <= 4 and _RQ_STOP_HEAD_RX.search(label) and not _RQ_CUE_RX.search(value):
+    if m and value and len(words) <= 4 and _RQ_STOP_HEAD_RX.search(label) and not _rq_cue(value):
         return ("stop", None, "")
     return None
 
@@ -20641,14 +20857,55 @@ _RQ_SLASH_HEAD = (r"(?:Licensure|Licenses?|Certifications?|Education|Registratio
                   r"(?:[ \t]*/[ \t]*(?:Licensure|Licenses?|Certifications?|Registration|Training|Experience))+")
 
 
+# 2026-10-07 (push 10, run time): the whole-text passes of _rq_unglue cost
+# about 1.4 ms a body, most of it lookbehind patterns sre tries at every
+# position. Each pass now runs only when a cheap scan finds the literal it
+# cannot match without (a *_PRE_RX, which starts with a literal or a
+# character class, so sre skips to candidates); the passes are unchanged.
+_RQ_CAPS_HEAD_PRE_RX = re.compile(_RQ_CAPS_HEAD_WORD)
+_RQ_GLUED_TITLE_PRE_RX = re.compile(
+    r"Additional Job Description|Job Description|Job Details|Minimum Qualifications|Required Qualifications|"
+    r"Preferred Qualifications|Qualifications|Requirements|Education|Licensure|Certifications?|Responsibilities|Benefits")
+_RQ_GLUE_CHARS = frozenset("abcdefghijklmnopqrstuvwxyz%)")
+_RQ_NA_GLUED_RX = re.compile(r"(Abilities|Knowledge|Education|Experience|Licenses)N/?A(?=[A-Z]|\b)")
+_RQ_SLASH_HEAD_PRE_RX = re.compile(r"/[ \t]*(?:Licensure|Licenses?|Certifications?|Registration|Training|Experience)")
+_RQ_SLASH_HEAD_INLINE_RX = re.compile(
+    r"(?<!Preferred)(?<!Required)(?<!Minimum)(?<!Additional)(?<!Desired)(?<!Other)(?<!Basic)(?<!Job)"
+    r"[ \t]+(" + _RQ_SLASH_HEAD + r")(?=[ \t]+(?:[•·●▪■◦➢►*-][ \t]*)?[A-Z]|[ \t]*$)", re.M)
+_RQ_SLASH_HEAD_LINE_RX = re.compile(r"^(" + _RQ_SLASH_HEAD + r")[ \t]+(?=[A-Z])", re.M)
+_RQ_THE_BREAK_PRE_RX = re.compile(r"the[ \t]*\n")
+_RQ_THE_BREAK_RX = re.compile(r"(\b(?:by|of|in|from|with|through|under) the)[ \t]*\n+[ \t]*(?=[A-Z][a-z])")
+_RQ_YEARS_GLUED_PRE_RX = re.compile(r"[a-z]\d")
+_RQ_YEARS_GLUED_RX = re.compile(r"(?<=[a-z]{3})(?=\d{1,2}\+?\s*(?:-\s*\d{1,2}\s*)?(?:years?|yrs?|months?)\b)")
+_RQ_HEAD_AFTER_STOP_PRE_RX = re.compile(r"[.!?](?:Licensure|Certification|Education|Experience|Required|Preferred)")
+_RQ_HEAD_AFTER_STOP_RX = re.compile(r"(?<=[A-Z][.!?])(?=(?:Licensure|Certifications?|Education|Experience|Required|Preferred)\b)")
+_RQ_CAMEL_PRE_RX = re.compile(r"[a-z](?:The|This|We|Our|Prior|Must|Ability|Minimum|Preferred|Required|Valid|Current|Here|What|Graduate)")
+_RQ_CAMEL_RX = re.compile(r"(?<=[a-z]{3})(?=(?:The|This|We|Our|Prior|Must|Ability|Minimum|Preferred|Required|Valid|Current|Here|What|"
+                          r"Graduate)\b)")
+_RQ_GLUED_SENTENCE_PRE_RX = re.compile(r"[.!?][A-Z][a-z]")
+_RQ_GLUED_SENTENCE_RX = re.compile(r"(?<=[a-z0-9)][.!?])(?=[A-Z][a-z])")
+
+
+def _rq_glued_title_may(t: str) -> bool:
+    """True when a heading word of _RQ_GLUED_TITLE_RX follows a lower-case
+    letter, '%' or ')'. The inner heading of a longer one ("Qualifications"
+    in "Minimum Qualifications") always follows a space, so a left-to-right
+    scan of the same alternatives misses no glued start."""
+    return any(m.start() and t[m.start() - 1] in _RQ_GLUE_CHARS for m in _RQ_GLUED_TITLE_PRE_RX.finditer(t))
+
+
 def _rq_unglue(t: str) -> str:
     """Cut glued headings and glued sentences out of any body (the wall
     splitter does more, on one-line bodies only): all-caps heading runs,
     "preferredThe University ...", "annually.Essential"."""
-    t = _RQ_CAPS_GLUED_RX.sub(lambda m: "\n" + m.group(1).strip() + "\n", t)
-    t = _RQ_GLUED_TITLE_RX.sub("\n", t)
-    t = _RQ_NBSP_ITEM_RX.sub(_rq_nbsp_item, t)
-    t = re.sub(r"(Abilities|Knowledge|Education|Experience|Licenses)N/?A(?=[A-Z]|\b)", "\\1\nN/A\n", t)
+    if _RQ_CAPS_HEAD_PRE_RX.search(t):
+        t = _RQ_CAPS_GLUED_RX.sub(lambda m: "\n" + m.group(1).strip() + "\n", t)
+    if _rq_glued_title_may(t):
+        t = _RQ_GLUED_TITLE_RX.sub("\n", t)
+    if "\xa0" in t:
+        t = _RQ_NBSP_ITEM_RX.sub(_rq_nbsp_item, t)
+    if "NA" in t or "N/A" in t:
+        t = _RQ_NA_GLUED_RX.sub("\\1\nN/A\n", t)
     # 2026-09-25 (push4/cleanup): a slash-joined heading left inside a line
     # (Orlando Health "... licensed outside the United States
     # Licensure/Certification Licensure/Certification Maintains current BLS
@@ -20656,19 +20913,22 @@ def _rq_unglue(t: str) -> str:
     # school graduate ...") is cut onto a line of its own: Title Case only,
     # and only before a capital or the line end; never after its own
     # qualifier (Spartanburg "Preferred License/Registration/Certifications").
-    t = re.sub(r"(?<!Preferred)(?<!Required)(?<!Minimum)(?<!Additional)(?<!Desired)(?<!Other)(?<!Basic)(?<!Job)"
-               r"[ \t]+(" + _RQ_SLASH_HEAD + r")(?=[ \t]+(?:[•·●▪■◦➢►*-][ \t]*)?[A-Z]|[ \t]*$)", "\n\\1\n", t, flags=re.M)
-    t = re.sub(r"^(" + _RQ_SLASH_HEAD + r")[ \t]+(?=[A-Z])", "\\1\n", t, flags=re.M)
+    if _RQ_SLASH_HEAD_PRE_RX.search(t):
+        t = _RQ_SLASH_HEAD_INLINE_RX.sub("\n\\1\n", t)
+        t = _RQ_SLASH_HEAD_LINE_RX.sub("\\1\n", t)
     # A line broken after "by the" / "of the" goes on on the next one (Kronos
     # "Registered Nurse currently licensed by the" / "State of Texas ...").
-    t = re.sub(r"(\b(?:by|of|in|from|with|through|under) the)[ \t]*\n+[ \t]*(?=[A-Z][a-z])", "\\1 ", t)
+    if _RQ_THE_BREAK_PRE_RX.search(t):
+        t = _RQ_THE_BREAK_RX.sub("\\1 ", t)
     # (push3 integration) a count glued to the word before it starts a new
     # item: "Must be Board Certified/Board Eligible2 years of experience preferred".
-    t = re.sub(r"(?<=[a-z]{3})(?=\d{1,2}\+?\s*(?:-\s*\d{1,2}\s*)?(?:years?|yrs?|months?)\b)", "\n", t)
-    t = re.sub(r"(?<=[A-Z][.!?])(?=(?:Licensure|Certifications?|Education|Experience|Required|Preferred)\b)", "\n", t)
-    t = re.sub(r"(?<=[a-z]{3})(?=(?:The|This|We|Our|Prior|Must|Ability|Minimum|Preferred|Required|Valid|Current|Here|What|"
-               r"Graduate)\b)", _rq_camel, t)
-    return re.sub(r"(?<=[a-z0-9)][.!?])(?=[A-Z][a-z])", "\n", t)
+    if _RQ_YEARS_GLUED_PRE_RX.search(t):
+        t = _RQ_YEARS_GLUED_RX.sub("\n", t)
+    if _RQ_HEAD_AFTER_STOP_PRE_RX.search(t):
+        t = _RQ_HEAD_AFTER_STOP_RX.sub("\n", t)
+    if _RQ_CAMEL_PRE_RX.search(t):
+        t = _RQ_CAMEL_RX.sub(_rq_camel, t)
+    return _RQ_GLUED_SENTENCE_RX.sub("\n", t) if _RQ_GLUED_SENTENCE_PRE_RX.search(t) else t
 
 
 # A capitalised word glued to one of these is two words ("What You'll
@@ -20740,7 +21000,7 @@ def _rq_types(s: str) -> set:
         out.add("licensure")
     if _RQ_CERT_RX.search(s) and not _RQ_CERT_NOT_RX.search(s):
         out.add("certifications")
-    if _RQ_EDU_RX.search(s) and not _RQ_EDU_NOT_RX.search(s):
+    if _rq_edu_search(s) and not _RQ_EDU_NOT_RX.search(s):
         out.add("education")
     return out
 
@@ -20811,11 +21071,11 @@ def _rq_req_ahead(rows, i: int) -> bool:
         if mt:
             s = s[:mt.start()]             # "Current BLS certification EEO Statement ..."
         stop = bool(mt or _RQ_BOILER_RX.search(s) or _RQ_PAY_END_RX.search(s))
-        if not stop and not _RQ_BLOCK_END_RX.search(s) and not _PERK_NEAR_RX.search(s):
+        if not stop and not _rq_block_end(s) and not _PERK_NEAR_RX.search(s):
             for c in ([s] if len(s) <= 300 else _rq_clauses(s)):
                 if re.match(r"(?:we|our|they|you)\b", c, re.I):
                     continue
-                if _RQ_CUE_RX.search(c) and (_rq_types(c) or _RQ_AHEAD_KEEP_RX.search(c)):
+                if _rq_cue(c) and (_rq_types(c) or _RQ_AHEAD_KEEP_RX.search(c)):
                     return True
             if len(s) <= 60 and not s.endswith(".") and _rq_types(s) and not _RQ_DUTY_RX.search(s):
                 return True
@@ -20859,10 +21119,10 @@ def extract_requirements(text, title=None) -> dict:
         # Certification", Workday table cells "Required" / "Preferred" / "AND".
         # Only a label that reads as one (a colon, a slash, one word, or Title
         # Case); "Clinical license preferred" is an item.
-        lab = re.sub(r"\s*:$", "", s).strip()
+        lab = _RQ_TRAIL_COLON_RX.sub("", s).strip()
         # (push8 review) "Experience Requirements and Preferences" is a label
         # too; only here, the heading reader keeps its own vocabulary
-        if len(s) <= 60 and _RQ_HEAD_RX.match(re.sub(r"\bpreferences\b", "preferred", lab, flags=re.I)) and (
+        if len(s) <= 60 and _RQ_HEAD_RX.match(_RQ_PREFERENCES_RX.sub("preferred", lab)) and (
                 s.endswith(":") or "/" in lab or len(lab.split()) == 1
                 or all(w[:1].isupper() or w.lower() in _RQ_SMALL_WORDS or not w[:1].isalpha() for w in lab.split())):
             return
@@ -20913,7 +21173,7 @@ def extract_requirements(text, title=None) -> dict:
         if tail_end:
             kind, mode, last_stop, stem, implicit, tail_end = None, None, "about", "", False, False
         s = _rq_clean(raw)
-        bullet = bool(re.match(r"^\s*[-•*·●▪■◦➢►–]\s", raw))
+        bullet = bool(_RQ_BULLET_RX.match(raw))
         was_bullet, prev_bullet = prev_bullet, (bullet if s else prev_bullet)
         if not s or _RQ_CSS_RX.search(s):
             continue
@@ -20964,7 +21224,7 @@ def extract_requirements(text, title=None) -> dict:
                 # rule below and file 61 certifications and 25 education lines
                 # from hospital prose: Magnet status, Joint Commission, schools.)
                 for c in _rq_clauses(s):
-                    span = _rq_lic_span(c) if _RQ_CUE_RX.search(c) else None
+                    span = _rq_lic_span(c) if _rq_cue(c) else None
                     if span:
                         w = _rq_window(c, span)
                         add("licensure", w, _rq_pref(w, None))
@@ -20982,7 +21242,7 @@ def extract_requirements(text, title=None) -> dict:
             # with a licence / certification / education line is read as a
             # requirements block until its first duty ("- Visits patients").
             if (bullet and not was_bullet and (not last_stop or re.search(r"description|summary|overview|position", last_stop))
-                    and _rq_types(s) and not _RQ_BLOCK_END_RX.search(s)):
+                    and _rq_types(s) and not _rq_block_end(s)):
                 kind, mode, implicit, exp_block = "qual", None, True, False
         if kind is None:
             # 2026-10-05 (push8, plan item 5): a bare credential / degree line
@@ -20994,12 +21254,12 @@ def extract_requirements(text, title=None) -> dict:
             for c in _rq_clauses(s):
                 # (push8, plan item 6) an experience requirement outside a
                 # block ("Previous ICU experience preferred", "New grads welcome")
-                if (not re.match(r"(?:we|our|they|you will|you'll)\b", c, re.I) and not _RQ_BLOCK_END_RX.search(c)
+                if (not re.match(r"(?:we|our|they|you will|you'll)\b", c, re.I) and not _rq_block_end(c)
                         and _rq_exp_line(_RQ_ENUM_RX.sub("", c), outside=True)):
                     add("experience", c, _rq_pref(c, None))
                 # (Essentia "Qualified candidates may be eligible for a
                 # hiring incentive of up to $7,500 (ADN)" is not education)
-                if not _RQ_CUE_RX.search(c) or _RQ_BLOCK_END_RX.search(c):
+                if not _rq_cue(c) or _rq_block_end(c):
                     continue
                 # (push3 integration) outside a block a duty stays a duty even
                 # when it names a licence: Oceans "Directs appropriate training
@@ -21028,12 +21288,12 @@ def extract_requirements(text, title=None) -> dict:
             # World's", "OSF HealthCare"), and without a dangling opener ("This").
             head = s[:mt.start()]
             k = max(head.rfind(". "), head.rfind("! "), head.rfind("? "), head.rfind(": "))
-            if k >= 0 and not (_RQ_CUE_RX.search(head[k + 2:]) or _rq_types(head[k + 2:]) or _RQ_KEEP_RX.search(head[k + 2:])):
+            if k >= 0 and not (_rq_cue(head[k + 2:]) or _rq_types(head[k + 2:]) or _RQ_KEEP_RX.search(head[k + 2:])):
                 head = head[:k + 1]
             s = re.sub(r"(?:\s+(?:This|The|Our|We|It|All|At|As|In|For|Please|Since|Through|During|Growing))+$", "",
                        head.rstrip(" ,;:-–(")).rstrip(" ,;:-–(")
             tail_end = True
-            if len(s) < 3 or not (_RQ_CUE_RX.search(s) or _rq_types(s) or _RQ_KEEP_RX.search(s)):
+            if len(s) < 3 or not (_rq_cue(s) or _rq_types(s) or _RQ_KEEP_RX.search(s)):
                 continue
         # (a requirement that names benefits, "5 years of experience in
         # benefits administration", does not end the block)
@@ -21041,7 +21301,7 @@ def extract_requirements(text, title=None) -> dict:
         # including the relative costs and benefits", Great River, is a
         # requirement, not the benefits section)
         if (_RQ_BOILER_RX.search(s) or _RQ_PAY_END_RX.search(s)
-                or (_RQ_BLOCK_END_RX.search(s) and not _RQ_KEEP_RX.search(s)
+                or (_rq_block_end(s) and not _RQ_KEEP_RX.search(s)
                     and not re.match(r"(?:knowledge|abilit|able to|understand|skill|familiar|proficien|competen)", s, re.I))):
             # (review: a benefits sentence with requirements after it in the
             # same block, IU Health, is skipped and the block goes on; never
@@ -21097,7 +21357,7 @@ def extract_requirements(text, title=None) -> dict:
         # paragraph's clauses naming years, experience, a degree, a licence or a
         # certification stay, never Great River's run-on duty list)
         thin = False
-        if len(s) > 300 and not (h and h[2]) and not _RQ_CUE_RX.search(s) and not _rq_types(s):
+        if len(s) > 300 and not (h and h[2]) and not _rq_cue(s) and not _rq_types(s):
             if not _rq_req_ahead(rows, ix):
                 kind, mode, last_stop, stem = None, None, "about", ""
                 continue
@@ -21107,12 +21367,12 @@ def extract_requirements(text, title=None) -> dict:
         # 2026-09-25 (push4/cleanup): ...unless the value is a licence that
         # names no schooling (Salinas "Education: California Occupational
         # Therapy License or eligibility.", 28363684): licensure only.
-        if own and _rq_lic(s) and not _RQ_EDU_RX.search(s):
+        if own and _rq_lic(s) and not _rq_edu_search(s):
             own = False
         for piece in ([s] if len(s) <= 300 else _rq_clauses(s)):
             if thin and not _RQ_AHEAD_KEEP_RX.search(piece):
                 continue
-            if len(s) > 300 and (_RQ_BOILER_RX.search(piece) or _RQ_BLOCK_END_RX.search(piece)):
+            if len(s) > 300 and (_RQ_BOILER_RX.search(piece) or _rq_block_end(piece)):
                 continue
             if len(s) > 300 and _RQ_WORKCOND_RX.search(piece):
                 break                           # working conditions close the paragraph
@@ -21129,7 +21389,7 @@ def extract_requirements(text, title=None) -> dict:
                 # Franciscan "Good clerical skills ...") are qualifications
                 # only, and a licence or certification in it (Inova "Board
                 # eligible or board certified in OB/GYN") keeps its own field.
-                if not _RQ_EDU_NOT_RX.search(piece) and ((own and len(s) <= 300) or _RQ_EDU_RX.search(piece)
+                if not _RQ_EDU_NOT_RX.search(piece) and ((own and len(s) <= 300) or _rq_edu_search(piece)
                                                           or _RQ_EDU_BLOCK_RX.search(piece)
                                                           or _RQ_EDU_LEVEL_RX.match(piece)):
                     add("education", piece, pref)
@@ -21138,7 +21398,7 @@ def extract_requirements(text, title=None) -> dict:
                 # schooling; reqfix: such a clause adds no certification.
                 for c in _rq_clauses(piece):
                     cp = _rq_pref(c, mode) if (_RQ_PREF_RX.search(c) or _RQ_REQ_RX.search(c)) else pref
-                    if _RQ_EDU_RX.search(c):
+                    if _rq_edu_search(c):
                         if _rq_lic(c):
                             add("licensure", c, cp)
                         continue                # "Postsecondary certificate, diploma ..." is schooling
@@ -21316,9 +21576,11 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         b = best.get(key)
         if b is None or len(job.description or "") > len(all_jobs[b].description or ""):
             best[key] = i
-    unique = []
-    family_seen: dict[tuple, str] = {}
-    family_dropped = 0
+    # 2026-10-07 (push 10, run time): the rows that survive the key dedupe
+    # and the employer rules are collected first, normalize_job runs over
+    # them in a process pool (normalize_jobs, in order), and the family
+    # dedupe walks the results in the same order as before.
+    kept: list[Job] = []
     for i, job in enumerate(all_jobs):
         if not job.job_id or not job.title:
             continue
@@ -21331,7 +21593,13 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         job = apply_employer_rules(job)
         if job is None:
             continue
-        row = normalize_job(job)
+        kept.append(job)
+    _FACTS_SKIPS["n"] = 0
+    rows = normalize_jobs(kept)
+    unique = []
+    family_seen: dict[tuple, str] = {}
+    family_dropped = 0
+    for job, row in zip(kept, rows):
         fam = SYSTEM_FAMILIES.get(job.hospital_system)
         if fam:
             fac = "" if job.hospital_name in SYSTEM_FAMILIES else _cms_norm(row.get("hospital_name"))
@@ -21347,7 +21615,100 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         logger.info(f"Cross-tenant dedupe: dropped {family_dropped} rows listed twice by one family (SYSTEM_FAMILIES)")
     if _CMS_FILLS["n"]:
         logger.info(f"CMS lookup: filled state on {_CMS_FILLS['n']} rows")
+    if _FACTS_SKIPS["n"]:
+        logger.info(f"Facts unchanged: {_FACTS_SKIPS['n']:,} of {len(rows):,} rows send posting_facts=null; "
+                    f"the enrichment trigger keeps their stored facts (push 10)")
     return unique
+
+
+# ── finalize_jobs fan-out (2026-10-07, push 10: run time) ───────────────────
+# normalize_job is pure apart from two counters (_CMS_FILLS, _FACTS_SKIPS):
+# it reads the Job, the module tables, the CMS lookup and the known-body
+# maps, mutates none of them, and returns a new dict (asdict copies the
+# Job). finalize_jobs took 2,997 s on 10-04 running it on one core, so the
+# rows now go to a process pool in chunks of FINALIZE_CHUNK, FINALIZE_WORKERS
+# wide (0 = one worker per CPU; 1 = the sequential path, the old code). The
+# pool uses the "spawn" start method, never fork: by then the event loop and
+# its executor threads are alive, and a forked child may inherit a held
+# lock. Each worker therefore imports scraper afresh (SCRAPER_WORKER=1 keeps
+# the import quiet) and the initializer hands it the run-time state
+# normalize_job reads. Any failure of the pool, or FINALIZE_TIMEOUT seconds
+# without the whole result, logs a warning and finishes the remaining rows
+# sequentially: the run never ends here.
+FINALIZE_WORKERS = int(os.getenv("FINALIZE_WORKERS", "0") or 0)
+FINALIZE_CHUNK = max(1, int(os.getenv("FINALIZE_CHUNK", "5000") or 5000))
+FINALIZE_TIMEOUT = int(os.getenv("FINALIZE_TIMEOUT", "3600") or 3600)
+_FACTS_SKIPS = {"n": 0}
+
+
+def _finalize_workers() -> int:
+    n = FINALIZE_WORKERS if FINALIZE_WORKERS > 0 else (os.cpu_count() or 1)
+    return max(1, n)
+
+
+def _finalize_worker_init(cms_lookup, facts_h):
+    """Runs in each worker: the state normalize_job reads that a fresh
+    import does not have (fork would inherit it; spawn does not)."""
+    global _CMS_LOOKUP, _KNOWN_FACTS_H
+    _CMS_LOOKUP = cms_lookup
+    _KNOWN_FACTS_H = facts_h
+
+
+def _normalize_chunk(jobs):
+    """normalize_job over one chunk, in order, with the counters it moved."""
+    _CMS_FILLS["n"] = 0
+    _FACTS_SKIPS["n"] = 0
+    rows = [normalize_job(j) for j in jobs]
+    return rows, _CMS_FILLS["n"], _FACTS_SKIPS["n"]
+
+
+def _finalize_pool(workers: int):
+    """The executor normalize_jobs runs on (a seam the tests replace)."""
+    import concurrent.futures as _cf
+    import multiprocessing as _mp
+    return _cf.ProcessPoolExecutor(max_workers=workers, mp_context=_mp.get_context("spawn"),
+                                   initializer=_finalize_worker_init,
+                                   initargs=(_CMS_LOOKUP, _KNOWN_FACTS_H))
+
+
+def normalize_jobs(jobs: list) -> list[dict]:
+    """normalize_job over every job, in order (see the note above). One
+    chunk or one worker runs sequentially in this process."""
+    workers = min(_finalize_workers(), max(1, (len(jobs) + FINALIZE_CHUNK - 1) // FINALIZE_CHUNK))
+    if workers <= 1:
+        return [normalize_job(j) for j in jobs]
+    chunks = [jobs[i:i + FINALIZE_CHUNK] for i in range(0, len(jobs), FINALIZE_CHUNK)]
+    out: list[dict] = []
+    t0 = time.monotonic()
+    ex = None
+    had_flag = os.environ.get("SCRAPER_WORKER")
+    os.environ["SCRAPER_WORKER"] = "1"           # inherited by the spawned workers at start
+    try:
+        ex = _finalize_pool(workers)
+        for rows, fills, skips in ex.map(_normalize_chunk, chunks, timeout=FINALIZE_TIMEOUT):
+            out.extend(rows)
+            _CMS_FILLS["n"] += fills
+            _FACTS_SKIPS["n"] += skips
+        ex.shutdown(wait=True)
+    except Exception as e:
+        logger.warning(f"finalize_jobs: process pool stopped after {len(out):,} of {len(jobs):,} rows "
+                       f"({type(e).__name__}: {e}); the rest run sequentially")
+        if ex is not None:
+            try:
+                ex.shutdown(wait=False, cancel_futures=True)
+                for p in list(getattr(ex, "_processes", {}).values()):
+                    p.terminate()
+            except Exception:
+                pass
+        out.extend(normalize_job(j) for j in jobs[len(out):])
+    finally:
+        if had_flag is None:
+            os.environ.pop("SCRAPER_WORKER", None)
+        else:
+            os.environ["SCRAPER_WORKER"] = had_flag
+    logger.info(f"finalize_jobs: normalize_job over {len(jobs):,} rows in {time.monotonic() - t0:.0f}s "
+                f"({workers} workers, chunks of {FINALIZE_CHUNK:,})")
+    return out
 
 
 async def run_all() -> list[dict]:

@@ -259,7 +259,11 @@ def test_load_known_bodies_pages_by_id(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
     assert scraper.load_known_bodies() == 2
     assert "id=gt.0" in urls[0] and "id=gt.9" in urls[1] and "id=gt.12" in urls[2]
-    assert all("desc_len=gte.200" in u and "is_active=is.true" in u and "%22Oracle%20HCM%22" in u for u in urls)
+    # 2026-10-07 (push 10): the read covers every platform (set_known_bodies
+    # keeps the detail-pass map to KNOWN_BODY_PLATFORMS) and brings the facts
+    # hash back, so there is no ats_platform filter in the URL any more.
+    assert all("desc_len=gte.200" in u and "is_active=is.true" in u and "ats_platform=in." not in u
+               and "ats_platform," in u and "fh:posting_facts-%3E%3Eh" in u for u in urls)
     assert scraper._KNOWN_BODIES[("VITAS Healthcare", "40788")] == 2712
 
 
