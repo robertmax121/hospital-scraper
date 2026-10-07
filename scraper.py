@@ -8287,6 +8287,24 @@ PHENOM_ORGS = {
     # this entry just burned a nightly 403. Covered by the rebuilt run_hca().
 }
 
+def _phenom_list_pay(doc: dict):
+    """(min, max, unit) from the pay keys some Phenom tenants put in the
+    list payload, or None (2026-10-07, push 10, item 6). UMMS fills
+    minimumPay / maximumPay (80 of 100 probed jobs; "0.00" when unposted),
+    Children's Minnesota fills salaryRange (25 of 25). Both go through the
+    push-9 field readers: a 0.00 end fails the band, the unit is the value's
+    own or the band's. The list is read nightly, so no backfill is needed."""
+    if not isinstance(doc, dict):
+        return None
+    got = field_wage(doc.get("salaryRange"))
+    if got:
+        return got
+    lo, hi = doc.get("minimumPay"), doc.get("maximumPay")
+    if lo in (None, "") and hi in (None, ""):
+        return None
+    return field_wage_pair(lo, hi)
+
+
 async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     """Scrape a Phenom People career site.
 
@@ -8763,7 +8781,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     doc.get("department", "")
                 )
                 if title and job_id:
-                    jobs.append(Job(
+                    job = Job(
                         title=title,
                         hospital_system=system,
                         hospital_name=doc.get("facility", "") or doc.get("company", "") or system,
@@ -8785,7 +8803,11 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                             doc.get("descriptionTeaser", "")
                         )),
                         ats_platform="Phenom",
-                    ))
+                    )
+                    # 2026-10-07 (push 10, item 6): UMMS minimumPay / maximumPay
+                    # and Children's Minnesota salaryRange ride in the list.
+                    set_field_wage(job, _phenom_list_pay(doc))
+                    jobs.append(job)
 
             total = (
                 data.get("total") or data.get("count") or data.get("total_entries") or
@@ -15344,6 +15366,14 @@ _HCA_TYPE_RE = re.compile(r'>work</i>\s*([^<&]+)')
 _HCA_TOTAL_RE = re.compile(r'\bof\s+([\d,]+)\s+results?\b', re.I)
 _HCA_CARD_MARK = "jobs-section__item-outer"   # one per card; _parse_hca_cards splits on it
 HCA_SHORTFALL_TOL = 0.03   # a finished slice may trail the listed total by max(10, 3%)
+# 2026-10-07 (push 10, item 5): HCA prints its own pay on the posting as a
+# dollar-less labelled line, "Hourly Wage Estimate: 30.00 - 45.00 / hour" or
+# "Salary Estimate: 183040.00 - 272480.00 / year" (2,515 stored bodies, 1,620
+# of them unpriced). The owner accepts HCA's own printed estimate as the
+# posted pay: True reads the line through field_wage_from_labels in
+# normalize_job (_hca_estimate_wage); False leaves those rows unpriced. The
+# generic body rules never read an "estimate" label.
+HCA_ESTIMATE_PAY = True
 
 
 def _hca_total(page_html: str) -> int | None:
@@ -16534,6 +16564,35 @@ AYA_API_BASE = "https://api.ayahealthcare.com/AyaHealthcareWeb/job/search"
 AYA_PAGE_SIZE = 250
 AYA_MAX_PAGES = 50            # ceiling — current inventory needs ~32
 
+_AYA_HOURLY_RX = re.compile(r"per\s+hour|/\s*h(?:ou)?r\b|hourly|an\s+hour", re.I)
+
+
+def _aya_pay(j: dict) -> tuple:
+    """(weekly_low, weekly_high, display, hourly) for one Aya list item.
+    weeklyPayLow/High first, then regularPayLow/High, then
+    alternatePayLow/High; the display is payRate.value when Aya prints one.
+    2026-10-07 (push 10, item 7): 74 rows print an hourly rate ("$23.25 per
+    hour") while weeklyPayLow holds Aya's own weekly figure for the contract
+    (hours x rate). The weekly stays the sortable number, as on every other
+    Aya row; the hourly figure is stored in hourly_rate_numeric as well, so
+    the display and the numbers agree."""
+    wp_low  = _coerce_money(j.get("weeklyPayLow"))  or _coerce_money(j.get("regularPayLow"))  or _coerce_money(j.get("alternatePayLow"))
+    wp_high = _coerce_money(j.get("weeklyPayHigh")) or _coerce_money(j.get("regularPayHigh")) or _coerce_money(j.get("alternatePayHigh"))
+    pay_display = None
+    pr = j.get("payRate") or {}
+    if isinstance(pr, dict) and pr.get("value"):
+        pay_display = str(pr["value"]).strip()
+    elif wp_low and wp_high:
+        pay_display = f"${wp_low:,.0f}–${wp_high:,.0f}/wk"
+    elif wp_low:
+        pay_display = f"${wp_low:,.0f}/wk"
+    hourly = None
+    if pay_display and _AYA_HOURLY_RX.search(pay_display):
+        hm = re.search(r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)", pay_display)
+        hourly = _coerce_money(hm.group(1)) if hm else None
+    return wp_low, wp_high, pay_display, hourly
+
+
 async def scrape_aya_page(session: aiohttp.ClientSession, offset: int) -> tuple[list[TravelJob], int]:
     """Fetch one Aya page. Returns (jobs, total_count)."""
     params = {
@@ -16568,16 +16627,7 @@ async def scrape_aya_page(session: aiohttp.ClientSession, offset: int) -> tuple[
             if jid is None: continue
             # Pay: prefer weeklyPayLow/High; fall back to regularPayLow/High;
             # then to alternatePayLow/High; then parse payRate.value.
-            wp_low  = _coerce_money(j.get("weeklyPayLow"))  or _coerce_money(j.get("regularPayLow"))  or _coerce_money(j.get("alternatePayLow"))
-            wp_high = _coerce_money(j.get("weeklyPayHigh")) or _coerce_money(j.get("regularPayHigh")) or _coerce_money(j.get("alternatePayHigh"))
-            pay_display = None
-            pr = j.get("payRate") or {}
-            if isinstance(pr, dict) and pr.get("value"):
-                pay_display = str(pr["value"]).strip()
-            elif wp_low and wp_high:
-                pay_display = f"${wp_low:,.0f}–${wp_high:,.0f}/wk"
-            elif wp_low:
-                pay_display = f"${wp_low:,.0f}/wk"
+            wp_low, wp_high, pay_display, hourly_num = _aya_pay(j)
 
             city = (j.get("city") or "").strip() or None
             st   = (j.get("stateAbbrev") or "").strip() or None
@@ -16619,7 +16669,7 @@ async def scrape_aya_page(session: aiohttp.ClientSession, offset: int) -> tuple[
                 location           = location,
                 weekly_pay_numeric = wp_low,           # match Vivian convention: low end is the sortable number
                 weekly_pay_display = pay_display,
-                hourly_rate_numeric= None,
+                hourly_rate_numeric= hourly_num,       # 2026-10-07 (push 10): the printed hourly rate, when the display is one
                 housing_stipend    = None,
                 contract_weeks     = cw,
                 hours_per_week     = hpw,
@@ -16913,7 +16963,11 @@ def _amn_map(j: dict) -> Optional[TravelJob]:
     city = (j.get("city") or {}).get("name")
     st = (j.get("state") or {}).get("abbrev")
     mn, mx = pr.get("minPayRate"), pr.get("maxPayRate")
-    weekly = float(mx or mn) if (pr.get("payRateType") == "Weekly" and (mx or mn)) else None
+    # 2026-10-07 (push 10, item 7): the LOW end is the sortable number, as
+    # Aya and Vivian store it. This line took the maximum first, so every AMN
+    # row (12,866 on 2026-10-07) sorted and filtered by the top of its range;
+    # sql/push10_amn_weekly_backfill.sql repairs the stored rows.
+    weekly = float(mn or mx) if (pr.get("payRateType") == "Weekly" and (mn or mx)) else None
     display = f"${mn}-${mx}/{pr.get('payRateTypeAbbrev')}" if (mn or mx) else None
     return TravelJob(
         agency_name="AMN Healthcare",
@@ -18181,9 +18235,31 @@ def normalize_job(j: Job) -> dict:
     # extraction from the posting text. NULLs never clobber a prior value
     # (enrichment trigger).
     # 2026-10-05 (push 9): pay_src records which of the two it was.
-    pay_src = "field" if d.get("wage_min") is not None else None
-    if d.get("wage_min") is None:
-        wage = extract_posted_wage(f"{d.get('title') or ''}\n{d.get('description') or ''}", d.get("job_type"))
+    body = f"{d.get('title') or ''}\n{d.get('description') or ''}"
+    field = (d.get("wage_min"), d.get("wage_max"), d.get("wage_unit")) if d.get("wage_min") is not None else None
+    # 2026-10-07 (push 10, item 4): an adapter-set figure that no job with
+    # this title is paid (a placeholder band on a physician posting, a grade
+    # scale on a pharmacist) is dropped here, whichever adapter set it.
+    if field and role_floor_rejects(d.get("title"), field, "field"):
+        d["wage_min"] = d["wage_max"] = d["wage_unit"] = None
+        field = None
+    pay_src = "field" if field else None
+    if field:
+        # 2026-10-07 (push 10, item 1): the body's own range replaces a
+        # structured field that disagrees with it (pay_text_overrides).
+        text = extract_posted_wage(body, d.get("job_type"))
+        if pay_text_overrides(field, text):
+            d["wage_min"], d["wage_max"], d["wage_unit"] = text
+            pay_src = "text"
+            _PAY_TEXT_OVER_FIELD["n"] += 1
+    else:
+        wage = extract_posted_wage(body, d.get("job_type"))
+        # 2026-10-07 (push 10, item 5): HCA's own printed estimate line, when
+        # the body states no other figure (HCA_ESTIMATE_PAY).
+        if wage is None and HCA_ESTIMATE_PAY and d.get("hospital_system") == "HCA Healthcare":
+            wage = _hca_estimate_wage(d.get("description"))
+            if wage and role_floor_rejects(d.get("title"), wage, "text"):
+                wage = None
         d["wage_min"], d["wage_max"], d["wage_unit"] = wage if wage else (None, None, None)
         pay_src = "text" if wage else None
 
@@ -18256,15 +18332,34 @@ def posting_facts_for(text, job_type=None, title=None):
 # fee-for-service), commute subsidies, directorship fees and on-call rates
 # are priced extras, not the pay (Emory "WEEKEND SHIFT DIFF IS AN EXTRA
 # $15/HR", Jackson "$185/hr excess hours", Geisinger "$275/hour" overtime).
-_WAGE_NOISE_WORDS = (r"sign[- ]?on|signing|bonus(?:es)?|relocation|retention|referral|differential|stipend|reimburse\w*|incentives?"
+# 2026-10-07 (push 10, item 4): a premium is a priced extra like a
+# differential (CHS "Weekend Premium Pay $12/hr", Henry Ford "$15/hour
+# weekend premium").
+_WAGE_NOISE_WORDS = (r"sign[- ]?on|signing|bonus(?:es)?|relocation|retention|referral|differential|premiums?|stipend|reimburse\w*|incentives?"
                      r"|\bdiff\b|overtime|excess\s+hours|extra\s+shifts?|orientation|in-?services?|meetings?|subsid(?:y|ies)|commut(?:e|ing)|directorship|on-?call\s+(?:rate|pay)")
 _WAGE_NEAR_NOISE = re.compile(_WAGE_NOISE_WORDS, re.I)
 _WAGE_NOISE_HEAD_RX = re.compile(r"(?:^|[^A-Za-z$])(" + _WAGE_NOISE_WORDS + r")\b(?:\s+bonus(?:es)?)?([^$\n;]{0,50})$", re.I)
 _WAGE_NOISE_TAIL_RX = re.compile(r"^([^$\n;]{0,40}?)\b(" + _WAGE_NOISE_WORDS + r")\b", re.I)
 _WAGE_NOISE_LABEL_RX = re.compile(r"(?:^|[^A-Za-z$])(" + _WAGE_NOISE_WORDS + r")\b(?:\s+bonus(?:es)?)?\s*(?::|-|–|\bof\b|\bup\s+to\b|\bis\b)", re.I)
+# 2026-10-07 (push 10, item 4): a non-base word in the 60 characters before
+# a figure, inside its clause, means the figure prices an extra, even when a
+# pay word sits between: "Weekend Premium Pay $12/hr" (CHS 31567141, stored
+# as $12 an hour for an RN), "Float pay premiums up to $15/hour" (Novant
+# 14793957), "can make an additional $50,000 to $100,000" (Denver Health
+# 35209607, an anesthesiologist shown at $50k), "loan assistance of up to
+# $75,000 annually" (Presbyterian 35282682), "Experience rate + $15.00"
+# (South Georgia), a retirement match. The LAST such word before the figure
+# decides, and only when no joining word separates them ("$5,000 sign-on
+# bonus and $70,000": the bonus is the earlier figure's). "up to" alone is
+# not a trigger: "Up to $248 per hour" is a ceiling the site prints as one
+# (pay_note "up_to").
+_WAGE_NONBASE_BEFORE_RX = re.compile(
+    r"(\b(?:premiums?|differentials?|diff|bonus(?:es)?|incentives?|stipends?|relocation|loans?|repayment|"
+    r"match(?:ing)?|additional)\b|rate\s*\+)", re.I)
+_WAGE_NONBASE_JOIN_RX = re.compile(r"\b(?:and|plus|or|with|including|incl)\b|\+|&", re.I)
 # Words that make a bonus part of the pay description rather than a priced
 # extra: "(base + bonus) $70,000", "$70,000 plus bonus", "$70,000, bonus eligible".
-_WAGE_COMPONENT_WORD = re.compile(r"^(?:bonus(?:es)?|incentives?|differentials?|stipends?)$", re.I)
+_WAGE_COMPONENT_WORD = re.compile(r"^(?:bonus(?:es)?|incentives?|differentials?|stipends?|premiums?)$", re.I)
 _WAGE_COMPOSITION_RX = re.compile(
     r"(?:\+|plus|and|&|including|incl\.?|inclusive of|with|or)\s*(?:an?\s+|the\s+)?"
     r"(?:annual|quarterly|monthly|performance|potential|productivity|generous|possible)?\s*$", re.I)
@@ -18350,6 +18445,17 @@ def _wage_is_noise(t, start, end):
     # Bonus (beginning at the completion of the 2nd year): up to $30,000"
     # still reads as a bonus (Flagler Health, 2026-09-22).
     before = re.sub(r"\([^()]{0,80}\)", " ", before)
+    # 2026-10-07 (push 10, item 4): the non-base guard reads the words after
+    # the last earlier figure (or the whole clause), before the split below
+    # hands those words to that figure.
+    seg = (before.rsplit("$", 1)[-1] if "$" in before else before)[-60:]
+    hits = list(_WAGE_NONBASE_BEFORE_RX.finditer(seg))
+    if hits:
+        nb = hits[-1]
+        gap = seg[nb.end():]
+        if not _WAGE_NONBASE_JOIN_RX.search(gap) and not _WAGE_BONUS_DESCR_RX.match(gap) \
+                and not (_WAGE_COMPONENT_WORD.match(nb.group(1)) and _WAGE_COMPOSITION_RX.search(seg[:nb.start()])):
+            return True
     if "$" in before:
         before = before.rsplit("$", 1)[-1]
         if re.match(r"\s*\d", before):
@@ -18420,8 +18526,10 @@ def _period_scale(t, pos):
 # ("Pay range: $26.18 - $33.51 Relief Differential - 15%", St. Charles).
 _WAGE_PAY_LABEL_BEFORE_RX = re.compile(
     r"(?:salary|pay|compensation|wage|rate|guarantee)\s*(?:range|rate|scale)?\s*(?:\([^()]*\))?\s*(?:of|at|is|:|-|–|from|starting at|starts at|up to)?\s*(?:up to\s+)?$", re.I)
+# 2026-10-07 (push 10, item 3): "annual", "yearly" and "/ year" are units
+# too (UW Medicine "$45,288.00 annual").
 _WAGE_SINGLE_RX = re.compile(
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?\s*(?:per\s+hour|/\s*hr\b|/\s*hour(?:ly)?|hourly|an\s+hour|per\s+year|/\s*yr\b|annually|per\s+annum|a\s+year|"
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?\s*(?:per\s+hour|/\s*hr\b|/\s*hour(?:ly)?|hourly|an\s+hour|per\s+year|/\s*y(?:ea)?r\b|annual(?:ly)?|yearly|per\s+annum|a\s+year|"
     r"per\s+month|monthly|/\s*mo\b|a\s+month|bi-?weekly|per\s+pay\s+period|every\s+(?:two|2)\s+weeks|"
     r"(?:per|a|each)\s+(?:visit|point|session)\b|/\s*(?:visit|point|session)\b)", re.I)     # 2026-10-04 (S4): a per-visit single figure
 # A pay label right before a bare figure ("Income Guarantee at $354,000",
@@ -18450,6 +18558,51 @@ def _amt(num, k):
 _WAGE_BARE_RANGE_RX = re.compile(
     r"(?:salary|pay|compensation)\s+range[^.\n$]{0,60}?"
     r"(\d{2,3},\d{3}(?:\.\d{1,2})?)\s*(?:-|–|—|to|through)\s*(\d{2,3},\d{3}(?:\.\d{1,2})?)", re.I)
+# 2026-10-07 (push 10, item 2): Sunrise Senior Living prints "Pay Range:
+# 15.50 - 19.40" with no "$" on 1,883 rows, the label on the line above
+# ("Pay Range:\n15.50 - 19.40") or glued to the figures in a flattened body
+# ("Senior CarePay Range:17.60 - 22.05Ready to take..."). A bare pair is read
+# only right after a pay label, only when both ends carry a decimal part
+# (never "3 - 5 years", a grade or an FTE), and only in the hourly band that
+# field_wage applies to the same text. No leading word boundary: the glued
+# form has none. A label naming an estimate never matches (HCA's "Hourly
+# Wage Estimate" is read by _hca_estimate_wage behind HCA_ESTIMATE_PAY).
+_WAGE_BARE_DECIMAL_RX = re.compile(
+    r"(?:salary|pay|compensation|wage|hourly)\s*(?:range|rate|scale)?\s*:?\s*\n?\s*"
+    r"(\d{1,3}\.\d{1,2})\s*(?:-|–|—|to|through)\s*(\d{1,3}\.\d{1,2})(?![\d,])", re.I)
+# 2026-10-07 (push 10, item 3): UW Medicine prints the range as two labelled
+# lines, "Pay Range Minimum:\n$45,288.00 annual\nPay Range Maximum:\n
+# $53,400.00 annual" (250 rows); UHS writes "Minimum Hiring Rate: $20.00
+# Maximum Hiring Rate: $30.00" on one line. A Minimum line and the Maximum
+# line that follows it are one range; the unit is the figures' own or the
+# band's.
+_WAGE_PAYLBL = r"(?:salary|pay|compensation|wage|hiring)\s*(?:range|rate|scale)?"
+_WAGE_MINMAX_RX = re.compile(
+    r"(?:" + _WAGE_PAYLBL + r"\s*min(?:imum)?|min(?:imum)?\s*" + _WAGE_PAYLBL + r")\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?[^\n$]{0,40}?\s*"
+    r"(?:" + _WAGE_PAYLBL + r"\s*)?max(?:imum)?(?:\s*" + _WAGE_PAYLBL + r")?\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
+# 2026-10-07 (push 10, item 4): "$650k Starting Salary" (Presbyterian
+# 35282682's headline) names the pay after the figure, where the labelled
+# rule never looks; a $650k job printed $75k (the loan-repayment figure).
+# A figure followed by a salary / base pay / income guarantee word is a
+# single, the band deciding the unit.
+_WAGE_FIGURE_LABEL_RX = re.compile(
+    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)(?![\d,])\s*(k\b)?\s+(?:starting\s+|annual\s+|base\s+|guaranteed\s+)?"
+    r"(?:salary|base\s+(?:salary|pay)|income\s+guarantee)\b", re.I)
+# 2026-10-07 (push 10, item 4): the unit a range names right after itself,
+# on its own line (UnitedHealth's "$48.72 - $73.08\n\nAnnual total cash
+# compensation ..." names no unit).
+_WAGE_STATED_UNIT_RX = re.compile(
+    r"[ \t]*(?:/\s*(?:hour|hr|year|yr|annum)\b\.?|per\s+(?:hour|year|annum)\b|an?\s+(?:hour|year)\b|(?:hourly|annually|annual|yearly)\b)", re.I)
+
+
+def _stated_unit(t, pos):
+    """"hour" / "year" when the text at pos names the figure's unit, else None."""
+    m = _WAGE_STATED_UNIT_RX.match(t, pos)
+    if not m:
+        return None
+    return "hour" if re.search(r"hour|hr", m.group(0), re.I) else "year"
 
 
 def _wage_num(s):
@@ -18720,9 +18873,133 @@ def field_wage_from_labels(fields, unit=None):
     return None
 
 
+# ── Role floors (2026-10-07, push 10, item 4) ───────────────────────────────
+# A figure that no job with this title is paid is a placeholder, a grade band
+# or an add-on, whichever path read it: a physician, surgeon, CRNA,
+# anesthesiologist, pharmacist or executive title under $40 an hour or
+# $100,000 a year (Luminis's $19-$23 placeholder on an OB hospitalist, Yale's
+# $36.66-$80.87 pharmacist grade band, University Hospitals' $30,937-$54,155
+# "Physician-OB/GYN", MedStar's $20 cardiologist); a CNA, PCT, EVS or dietary
+# title over $45 an hour. The floor is tested against the TOP of the pair (a
+# "Psychiatrist (MD/DO)" at $72,800-$130,000 reaches physician pay; a range
+# whose top cannot is a placeholder), the ceiling against the bottom (the
+# whole range sits above it). Student, resident, intern, assistant, tech,
+# coordinator, support, recruiting, analyst and manager titles are not the
+# role ("Physician Support Rep", "Physician Assistant", "Pharmacist Intern",
+# "Lead Physician Compensation Analyst"), a speech pathologist is not a
+# pathologist, and an RN title tagged "(CNA)" (the California Nurses
+# Association) is not a CNA. Every rejection is logged at WARNING with the
+# title and the figures, on the field path (set_field_wage, an adapter-set
+# figure in normalize_job) and the text path (every extract_posted_wage
+# candidate, the HCA estimate line).
+_ROLE_HIGH_RX = re.compile(
+    r"physician|surgeon|psychiatrist|hospitalist|intensivist|neonatologist|anesthesiologist|cardiologist|neurologist|"
+    r"oncologist|radiologist|pathologist|dermatologist|gastroenterologist|urologist|nephrologist|endocrinologist|"
+    r"rheumatologist|pulmonologist|ophthalmologist|obstetrician|gynecologist|pediatrician|internist|physiatrist|"
+    r"\bCRNA\b|nurse\s+anesthetist|pharmacist|chief\s+(?:executive|medical|nursing|financial|operating|information)\s+officer|"
+    r"\b(?:CEO|CFO|COO|CNO|CMO|CIO)\b|vice\s+president|\bVP\b", re.I)
+_ROLE_HIGH_SKIP_RX = re.compile(
+    r"resident|fellow|\bintern|student|trainee|extern|apprentice|assistant|associate|scribe|\btech|coordinator|liaison|"
+    r"recruit|support|coding|coder|specialist|engagement|pathways|navigator|secretary|clerk|billing|scheduler|"
+    r"analyst|manager|administrator|relations|advocate|services|outreach|enrollment|credential|contract|compensation|"
+    r"speech|language|\bRN\b|registered\s+nurse|\bLPN\b|\bLVN\b|office\s+nurse|\bPA\b|\bNP\b|"
+    r"nurse\s+practitioner", re.I)
+_ROLE_LOW_RX = re.compile(
+    r"\bCNA\b|certified\s+nurs(?:e|ing)\s+(?:assistant|aide)|nurs(?:e|ing)\s+(?:assistant|aide)|\bPCT\b|patient\s+care\s+tech|"
+    r"\bEVS\b|environmental\s+services|housekeep|dietary|food\s+service|dishwasher|\bcook\b", re.I)
+_ROLE_LOW_SKIP_RX = re.compile(
+    r"\bRN\b|\bRNFA\b|registered\s+nurse|\bLPN\b|\bLVN\b|\bAPRN\b|\bNP\b|\bPA\b|manager|director|supervisor|coordinator|"
+    r"instructor|educator|\blead\b|chief|dietitian|nutritionist|charge", re.I)
+ROLE_FLOOR_HIGH_HOUR, ROLE_FLOOR_HIGH_YEAR, ROLE_CEILING_LOW_HOUR = 40.0, 100000.0, 45.0
+
+
+def role_floor_reason(title, got) -> str | None:
+    """Why (min, max, unit) `got` cannot be the base pay of a job titled
+    `title` (the role floors above), or None when it can."""
+    if not got or not title:
+        return None
+    lo, hi, unit = got
+    if lo is None or unit not in ("hour", "year"):
+        return None
+    t = str(title)
+    top = hi if hi is not None else lo
+    if _ROLE_HIGH_RX.search(t) and not _ROLE_HIGH_SKIP_RX.search(t):
+        if (unit == "hour" and top < ROLE_FLOOR_HIGH_HOUR) or (unit == "year" and top < ROLE_FLOOR_HIGH_YEAR):
+            return "under the physician / CRNA / pharmacist / executive floor ($40 an hour, $100,000 a year)"
+    elif _ROLE_LOW_RX.search(t) and not _ROLE_LOW_SKIP_RX.search(t):
+        if unit == "hour" and lo > ROLE_CEILING_LOW_HOUR:
+            return "over the CNA / PCT / EVS / dietary ceiling ($45 an hour)"
+    return None
+
+
+def _role_floor_log(title, rejected, why, src):
+    figs = ", ".join(f"{g[0]:g}-{g[1]:g} {g[2]}" for g in rejected)
+    logger.warning(f"Pay rejected ({src}): {figs} is {why} for {str(title)[:70]!r}")
+
+
+def role_floor_rejects(title, got, src="text") -> bool:
+    """True, with a WARNING, when the role floor refuses `got` for `title`."""
+    why = role_floor_reason(title, got)
+    if not why:
+        return False
+    _role_floor_log(title, [got], why, src)
+    return True
+
+
+# 2026-10-07 (push 10, item 1): text over field. The push-9 field readers
+# store an iCIMS Jibe grade tag, a HealthcareSource userArea.salaryRange or
+# a SuccessFactorsRMK header that disagrees with the range the posting's
+# own text states on 8-11% of comparable rows (UCI 33987728 field
+# $79,200-$143,400 vs "$79,200.00 - $95,250.00 /year"; RWJBarnabas 35481735
+# $29.39-$36.09 vs "Pay Range: $38.47 - $47.45 per hour"; Lompoc 35483082
+# $14.17-$18.99 vs "Salary Range: $20.49 - $28.24", below the CA minimum
+# wage). The applicant reads the text, so when the body's own figures
+# (extract_posted_wage) carry the same unit and differ from the field by
+# more than 5% on either end, the text is stored and pay_src is "text". A
+# single figure in the text never replaces a field range; a text figure in
+# another unit is not comparable and the field stays (Crouse 27464647,
+# 33.15-46.69 vs 32.50-45.33, is within 5% and keeps its field).
+PAY_TEXT_OVER_FIELD_TOL = 0.05
+_PAY_TEXT_OVER_FIELD = {"n": 0}
+
+
+def pay_text_overrides(field, text) -> bool:
+    """True when the body's own (min, max, unit) `text` should replace the
+    structured field's `field` (see above)."""
+    if not field or not text or field[2] != text[2]:
+        return False
+    flo, fhi, _ = field
+    tlo, thi, _ = text
+    if flo is None or fhi is None or tlo is None or thi is None:
+        return False
+    if tlo == thi and flo != fhi:
+        return False
+    off = lambda a, b: abs(a - b) > PAY_TEXT_OVER_FIELD_TOL * abs(b)
+    return off(tlo, flo) or off(thi, fhi)
+
+
+# 2026-10-07 (push 10, item 5): HCA's own printed estimate line, behind
+# HCA_ESTIMATE_PAY (see the flag by the HCA constants).
+_HCA_ESTIMATE_LABEL_RX = re.compile(r"\b(?:wage|salary|pay)\s+estimate\b", re.I)
+
+
+def _hca_estimate_wage(text):
+    """(min, max, unit) from HCA's "Hourly Wage Estimate: 30.00 - 45.00 /
+    hour" or "Salary Estimate: 183040.00 - 272480.00 / year" line, through
+    field_wage_from_labels (the band, the stated unit, the S1 width test), or
+    None. A line whose unit disagrees with the band ("760,000 - 1,124,148 /
+    hour") is not read. None when HCA_ESTIMATE_PAY is False."""
+    if not HCA_ESTIMATE_PAY or not text:
+        return None
+    lines = [(k, v) for k, v in _labelled_lines(text, limit=400) if _HCA_ESTIMATE_LABEL_RX.search(k)]
+    return field_wage_from_labels(lines) if lines else None
+
+
 def set_field_wage(job, got) -> bool:
-    """Store a field pay on the job unless the adapter already set one."""
-    if got and job.wage_min is None:
+    """Store a field pay on the job unless the adapter already set one.
+    2026-10-07 (push 10, item 4): a figure the role floor rejects is not
+    stored (logged at WARNING by role_floor_rejects)."""
+    if got and job.wage_min is None and not role_floor_rejects(job.title, got, "field"):
         job.wage_min, job.wage_max, job.wage_unit = got
         return True
     return False
@@ -21194,8 +21471,17 @@ def extract_posted_wage(text, job_type=None):
     title_roles = _role_words(title_line, title=True)
     title_fte = bool(_WAGE_FTE_RX.search(title_line))         # "CRNA - .3 FTE": every annual figure is prorated
     dead = set()                                              # S2: "$" positions of a range too wide to be pay
+    rejected, rejected_why = [], []                           # push 10: figures the role floor refused
 
     def consider(m, got, rank):
+        # 2026-10-07 (push 10, item 4): a figure no job with this title is
+        # paid is not a candidate; every refused figure of the body goes
+        # into one WARNING line at the end.
+        why = role_floor_reason(title_line, got) if got else None
+        if why:
+            rejected.append(got)
+            rejected_why.append(why)
+            return
         if got:
             # 2026-10-04 (S4): a per-visit figure scores below an hourly one
             # in the same body, so a body that prints both stores the hourly.
@@ -21242,6 +21528,21 @@ def extract_posted_wage(text, job_type=None):
         got = _wage_pair(lo, hi, hint)
         if scale != 1 and (not got or got[2] != "year"):     # S5: a scaled value is annual or nothing
             got = None
+        # 2026-10-07 (push 10, item 4): a flat "range" whose stated unit
+        # disagrees with the band is an ATS placeholder, never re-stored under
+        # the other unit: MedStar's "USD $20.00 - USD $20.00 /Yr." is not $20
+        # an hour (33986367, a cardiologist). A range with two ends keeps the
+        # band's unit as before: Kaiser's TalentBrew template prints real
+        # hourly figures under "/ year" ("Pay Range: $52.8 - $68.93 / year",
+        # 6 of 38 Kaiser rows in the push-10 regression sample). Both ends
+        # of a dropped pair are dead for the single and labelled rules.
+        stated = _stated_unit(t, end) if scale == 1 and not hint else None
+        if got and stated and got[2] != stated and got[0] == got[1]:
+            dead.add(m.start())
+            second = t.rfind("$", m.end(1), m.start(3))
+            if second >= 0:
+                dead.add(second)
+            continue
         if got is None and lo and hi and max(lo, hi) / min(lo, hi) > 3:
             # S2: neither end of a rejected band may be re-stored as a flat
             # figure by the single or labelled rule ("$15.00 - $130.00",
@@ -21260,6 +21561,29 @@ def extract_posted_wage(text, job_type=None):
         got = _wage_pair(_wage_num(m.group(1)), _wage_num(m.group(2)))
         if got and got[2] == "year" and not prorated(m.start(), m.end(), got):
             consider(m, got, 3)
+    # 2026-10-07 (push 10, item 2): a labelled bare decimal pair ("Pay
+    # Range:\n15.50 - 19.40", Sunrise) ranks with the bare annual range; the
+    # band makes it hourly, a per-visit word after it makes it a visit rate.
+    for m in _WAGE_BARE_DECIMAL_RX.finditer(t):
+        if _wage_is_noise(t, m.start(1), m.end()):
+            continue
+        hint = "visit" if _WAGE_VISIT_RX.match(t, m.end()) else None
+        got = _wage_pair(_wage_num(m.group(1)), _wage_num(m.group(2)), hint)
+        stated = _stated_unit(t, m.end()) if not hint else None
+        if got and got[2] in ("hour", "visit") and not (stated and stated != got[2]):
+            consider(m, got, 3)
+    # 2026-10-07 (push 10, item 3): a labelled Minimum line and its Maximum
+    # line ("Pay Range Minimum:\n$45,288.00 annual\nPay Range Maximum:\n
+    # $53,400.00 annual", UW Medicine) are one range and rank as one.
+    for m in _WAGE_MINMAX_RX.finditer(t):
+        fig = t.rfind("$", m.start(), m.start(1))
+        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()):
+            continue
+        got = _wage_pair(_amt(m.group(1), m.group(2)), _amt(m.group(3), m.group(4)))
+        stated = _stated_unit(t, m.end()) or _stated_unit(t, m.end(1))
+        if not got or (stated and got[2] != stated) or prorated(fig, m.end(), got):
+            continue
+        consider(m, got, 6)
     for m in _WAGE_SINGLE_RX.finditer(t):
         if m.start() in dead or _wage_is_noise(t, m.start(), m.end()):
             continue
@@ -21291,6 +21615,19 @@ def extract_posted_wage(text, job_type=None):
         got = _wage_pair(v, v)
         if got and not prorated(fig, m.end(), got):
             consider(m, got, -1)                              # below a figure that carries its own unit
+    # 2026-10-07 (push 10, item 4): the label after the figure ("$650k
+    # Starting Salary", Presbyterian 35282682) ranks with the label before it.
+    for m in _WAGE_FIGURE_LABEL_RX.finditer(t):
+        if m.start() in dead or _wage_is_noise(t, m.start(), m.end()):
+            continue
+        if _WAGE_SINGLE_RX.match(t, m.start()):
+            continue                                          # judged by the single rule under its own unit
+        v = _amt(m.group(1), m.group(2))
+        got = _wage_pair(v, v)
+        if got and not prorated(m.start(), m.end(), got):
+            consider(m, got, -1)
+    if rejected:
+        _role_floor_log(title_line, rejected, rejected_why[0], "text")
     if not cands:
         return None
     cands.sort(key=lambda c: (-c[0], -c[1]))
@@ -21347,6 +21684,10 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         logger.info(f"Cross-tenant dedupe: dropped {family_dropped} rows listed twice by one family (SYSTEM_FAMILIES)")
     if _CMS_FILLS["n"]:
         logger.info(f"CMS lookup: filled state on {_CMS_FILLS['n']} rows")
+    if _PAY_TEXT_OVER_FIELD["n"]:
+        # 2026-10-07 (push 10, item 1): how often the body's own range beat the field.
+        logger.info(f"Pay: the posting text's own range replaced the structured field on {_PAY_TEXT_OVER_FIELD['n']} rows")
+        _PAY_TEXT_OVER_FIELD["n"] = 0
     return unique
 
 

@@ -388,9 +388,12 @@ def test_custom_fronts(fixture_text):
 def test_pay_src_marks_field_and_text():
     body = "Registered Nurse caring for patients on a busy unit. " * 40
     j = _job(description=body + "\nPay: $40.00 - $50.00 per hour")
-    scraper.set_field_wage(j, (35.0, 79.07, "hour"))
+    # 2026-10-07 (push 10, item 1): the field wins over the body only while
+    # the two agree within 5% on both ends; test_push10_pay covers the
+    # override. 39.00-51.00 is within 2.5% / 2% of the body's 40-50.
+    scraper.set_field_wage(j, (39.0, 51.0, "hour"))
     d = scraper.normalize_job(j)
-    assert (d["wage_min"], d["wage_max"]) == (35.0, 79.07)          # the field wins over the body
+    assert (d["wage_min"], d["wage_max"]) == (39.0, 51.0)           # the field wins over a body that agrees
     assert d["posting_facts"]["pay_src"] == "field"
     d2 = scraper.normalize_job(_job(description=body + "\nPay: $40.00 - $50.00 per hour"))
     assert d2["wage_min"] == 40.0 and d2["posting_facts"]["pay_src"] == "text"
