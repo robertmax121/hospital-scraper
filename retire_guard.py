@@ -76,6 +76,11 @@ BACKSTOP_DAYS = 7
 # 2026-10-07 (push 10): an adapter that listed at least this share of the
 # board's advertised total reports the crawl complete (scraper.report_complete).
 COMPLETE_RATIO = 0.98
+# 2026-10-07 (push 10c): a complete claim is only believed when the crawl
+# also returned at least this share of the system's ACTIVE rows. The first
+# push-10 run read UHG's advertised total from a geo-filtered page (281) and
+# called 281 of 5,987 rows a complete crawl, which lifted the guard off them.
+COMPLETE_MIN_ACTIVE_RATIO = 0.5
 # 2026-10-07 (push 10): UnitedHealth Group's TalentBrew crawl stopped at the
 # first bad page (477 of 6,315 on the 10-06 run) and the backstop was retiring
 # live rows (711 older than 7 days). While the system is yield-guarded its
@@ -191,8 +196,13 @@ def plan_layer4(active_rows: list[dict],
         if not reason:
             continue
         if system in complete:
-            complete_bypassed[system] = {"reason": reason, "active": active_n, "yield": yield_n}
-            continue
+            if yield_n >= COMPLETE_MIN_ACTIVE_RATIO * active_n:
+                complete_bypassed[system] = {"reason": reason, "active": active_n, "yield": yield_n}
+                continue
+            # The adapter believes it read the whole board but returned less
+            # than half of what is active: the advertised total was wrong.
+            # Hold the rows as a partial crawl and say so.
+            reason = f"{reason}; complete claim rejected ({yield_n}/{active_n} active)"
         guarded[system] = {"reason": reason, "active": active_n, "yield": yield_n,
                            "frozen": 0, "backstop": 0, "exempt": 0, "newest_seen": None}
 

@@ -578,3 +578,21 @@ def test_push10_config_relabels_and_removals():
     assert "Atria Senior Living" not in scraper.SMARTRECRUITERS_ORGS
     for d in (scraper.PAYCOR_ORGS, scraper.KRONOS_ORGS):
         assert not any(k.startswith(("Paycor Hospital", "Kronos Hospital")) for k in d)
+
+
+# push 10c (2026-10-07): a "complete" claim that returned less than half of the
+# system's active rows is not believed; the yield guard holds the rows.
+def test_complete_claim_rejected_when_yield_is_under_half_of_active():
+    import retire_guard as rg
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    rows = [{"id": i, "hospital_system": "UnitedHealth Group", "job_id": str(i), "consecutive_scrape_misses": 0,
+             "scraped_at": (now - timedelta(days=1)).isoformat()} for i in range(1, 1001)]
+    keys = {("UnitedHealth Group", str(i)) for i in range(1, 51)}  # 50 of 1,000 seen
+    plan = rg.plan_layer4(rows, keys, 3, complete_systems={"UnitedHealth Group"}, now=now)
+    assert "UnitedHealth Group" not in plan["complete_bypassed"]
+    assert "UnitedHealth Group" in plan["guarded"]
+    assert "complete claim rejected" in plan["guarded"]["UnitedHealth Group"]["reason"]
+    keys_ok = {("UnitedHealth Group", str(i)) for i in range(1, 981)}  # 980 of 1,000 seen
+    plan_ok = rg.plan_layer4(rows, keys_ok, 3, complete_systems={"UnitedHealth Group"}, now=now)
+    assert "UnitedHealth Group" not in plan_ok["guarded"]

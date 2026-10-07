@@ -6,7 +6,8 @@ import scraper
 
 
 def test_facts_version_bumped_once_for_push8():
-    assert scraper.FACTS_VERSION == 4
+    # 4 = push 8 (2026-10-05); 5 = push 10c (2026-10-07) so the new pay parser reaches unchanged bodies
+    assert scraper.FACTS_VERSION == 5
     f = scraper.posting_facts_for("Current BLS certification required. " * 60, None, "Registered Nurse")
     assert f["v"] == 4
 

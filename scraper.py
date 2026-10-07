@@ -1211,7 +1211,7 @@ _KNOWN_FACTS_H: dict = {}         # (push 10) same keys, every platform -> posti
 # The stored facts are re-derived in bulk by the one-time backfill
 # (tools/facts_backfill.py, owner-approved); the refresh share then keeps
 # them current.
-FACTS_VERSION       = 4            # 3: push 3 requirements rules (2026-09-24); 4: push 8 shift/hours/requirements/benefits rules (2026-10-05)
+FACTS_VERSION       = 5            # 3: push 3 requirements rules (2026-09-24); 4: push 8 shift/hours/requirements/benefits rules (2026-10-05); 5: push 10 pay parser (the facts-hash skip returns before the wage parser, so unchanged bodies only pick up a parser change when this moves)
 OLD_BODY_CAP        = (7990, 8000)
 DETAIL_REFRESH_PCT  = int(os.getenv("DETAIL_REFRESH_PCT", "5"))
 DETAIL_REFRESH_DAYS = int(os.getenv("DETAIL_REFRESH_DAYS", "30"))
@@ -5904,7 +5904,11 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
             new_total, new_pages = int(m_total.group(1)), int(m_pages.group(1))
             if (new_total, new_pages) != (advertised_total, advertised_pages):
                 logger.info(f"UHG: site advertises {new_total} results over {new_pages} pages (page {page})")
-            advertised_total, advertised_pages = new_total, new_pages
+            # 2026-10-07 (push 10c): never let the total shrink. A page the site
+            # geo-filters (Railway's IP) prints a small total; the first push-10
+            # run ended on 281 and called itself complete.
+            advertised_total = max(advertised_total or 0, new_total)
+            advertised_pages = max(advertised_pages or 0, new_pages)
 
         matches = UHG_JOB_PATTERN.findall(html)
         title_map = {jid: t.strip() for jid, t in UHG_TITLE_NEAR_HREF.findall(html)}
