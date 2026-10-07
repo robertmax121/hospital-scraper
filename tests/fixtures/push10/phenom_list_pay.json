@@ -1,0 +1,10 @@
+{
+ "_about": "Push 10 (2026-10-07) item 6: the pay keys as the Phenom refineSearch list returned them live on 2026-10-07 (careers.umms.org and careers.childrensmn.org, read-only, 10 rows each), trimmed to the pay keys and the title. UMMS fills minimumPay / maximumPay as hourly strings; Children's Minnesota fills salaryRange as a dollar-less pair, '0.0-0.0 ' when the posting shows no pay (salaryHourly is a derived figure and is not read).",
+ "umms": {"title": "Cardiac - Advanced Practice Provider", "minimumPay": "54.42", "maximumPay": "81.64"},
+ "umms_want": [54.42, 81.64, "hour"],
+ "umms_zero": {"title": "Patient Care Technician", "minimumPay": "0.00", "maximumPay": "0.00"},
+ "childrens": {"title": "Neonatal Nurse Practitioner", "payRate": "170000.0", "salary": "195041.0", "salaryHourly": "80", "salaryRange": "170000.0-195041.0 "},
+ "childrens_want": [170000.0, 195041.0, "year"],
+ "childrens_zero": {"title": "Registered Nurse - PICU System Float Team", "payRate": "0.0", "salary": "0.0", "salaryHourly": "48", "salaryRange": "0.0-0.0 "},
+ "plain": {"title": "Registered Nurse", "description": "Cares for patients on the unit."}
+}
