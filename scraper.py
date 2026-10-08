@@ -8466,6 +8466,26 @@ PHENOM_DROP_EMPLOYERS = {
     "UVA Health": re.compile(r"^The Rector (?:&|and) Visitors|College at Wise", re.I),
 }
 
+# 2026-10-08 (owner: "none of the Duke Health links lead to the job posting"):
+# when a Phenom listing carries no URL of its own, the job page lives at
+# {base}/us/en/job/{jobId}. The old fallback {base}/job/{jobId} 302s to the
+# site's home page on Duke, Hartford, PruittHealth, UMMS, Spartanburg, UAB,
+# ECU, MU Health Care, Broward and Jackson (about 8,700 live rows on
+# 2026-10-08, all marked apply-verified because the home page answers 200).
+# Health First and Bryan Health are the exceptions: their bare /job/{id}
+# resolves to the posting and /us/en/job/{id} answers 404.
+PHENOM_BARE_JOB_PATH = {"Health First", "Bryan Health"}
+
+
+def _phenom_fallback_job_url(system: str, base_url: str, job_id: str) -> str:
+    base = base_url.rstrip("/")
+    if not job_id:
+        return base
+    if system in PHENOM_BARE_JOB_PATH:
+        return f"{base}/job/{job_id}"
+    return f"{base}/us/en/job/{job_id}"
+
+
 PHENOM_ORGS = {
     # CommonSpirit moved to TalentBrew — see run_talentbrew
     # Baylor Scott & White moved to Playwright — session-based Phenom
@@ -9048,7 +9068,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 )
                 url = (
                     doc.get("applyUrl", "") or doc.get("jobUrl", "") or
-                    doc.get("url", "") or f"{base_url}/job/{job_id}"
+                    doc.get("url", "") or _phenom_fallback_job_url(system, base_url, job_id)
                 )
                 # 2026-09-24: Ascension's Phenom front (Oracle Recruiting behind
                 # it) hands out Oracle's e-mail apply step

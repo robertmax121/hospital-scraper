@@ -251,3 +251,19 @@ def test_fetched_body_reaches_requirements(monkeypatch, name, fields):
         got = rq[f]["required"] + rq[f]["preferred"] if f == "qualifications" else rq[f]
         was = teaser[f]["required"] + teaser[f]["preferred"] if f == "qualifications" else teaser[f]
         assert got and not was, f
+
+
+def test_phenom_fallback_job_url_uses_the_locale_path():
+    # 2026-10-08: {base}/job/{id} redirected to the home page on ten tenants
+    # (Duke and nine more); the posting lives under /us/en/job/{id}.
+    assert scraper._phenom_fallback_job_url("Duke Health", "https://careers.dukehealth.org", "273130") == \
+        "https://careers.dukehealth.org/us/en/job/273130"
+    assert scraper._phenom_fallback_job_url("University of Maryland Medical System", "https://careers.umms.org/", "P-108001") == \
+        "https://careers.umms.org/us/en/job/P-108001"
+    # The two tenants whose bare path resolves keep it (/us/en/job/ 404s there).
+    assert scraper._phenom_fallback_job_url("Health First", "https://www.careers.hf.org", "P-109071") == \
+        "https://www.careers.hf.org/job/P-109071"
+    assert scraper._phenom_fallback_job_url("Bryan Health", "https://careers.bryanhealth.com", "2196624") == \
+        "https://careers.bryanhealth.com/job/2196624"
+    assert scraper._phenom_fallback_job_url("Duke Health", "https://careers.dukehealth.org", "") == "https://careers.dukehealth.org"
+
