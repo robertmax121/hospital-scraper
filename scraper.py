@@ -3345,8 +3345,12 @@ def _phenom_posting_text(jd: dict) -> tuple[str, str, str]:
     return desc, jt, (created if re.match(r"^\d{4}-\d{2}-\d{2}$", created) else "")
 
 
+# 2026-10-09 (owner found /jobs/registered-nurse-ed-milwaukee-wi-34045801):
+# Ascension's new requisitions are numbered "2026-445063". The id group
+# stopped at the hyphen, so 551 active rows linked to .../job/2026, a job
+# that does not exist. The id now keeps its hyphens.
 _ORACLE_PREVIEW_RE = re.compile(
-    r"(https://[^/]+\.oraclecloud\.com/hcmUI/CandidateExperience/[a-z]{2}/sites/[^/]+)/jobs/preview/([0-9A-Za-z]+)")
+    r"(https://[^/]+\.oraclecloud\.com/hcmUI/CandidateExperience/[a-z]{2}/sites/[^/]+)/jobs/preview/([0-9A-Za-z][0-9A-Za-z-]*)")
 # 2026-09-24 (review): the preview -> /job/ rewrite in scrape_phenom is for
 # the Phenom fronts of Oracle Recruiting listed here (PHENOM_ORGS keys) and
 # no other tenant. CentraCare's Phenom rows also carry Oracle preview URLs

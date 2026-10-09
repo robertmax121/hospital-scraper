@@ -146,3 +146,13 @@ def test_oracle_preview_rewrite_is_scoped_to_ascension():
     plain = "https://jobs.ascension.org/us/en/job/ASCEUS123/RN"
     assert scraper._phenom_oracle_job_url("Ascension Health", plain) == plain
     assert scraper.PHENOM_ORACLE_FRONTS == {"Ascension Health"}
+
+
+# 2026-10-09: Ascension's year-numbered requisitions ("2026-445063") keep the
+# whole id; the old rewrite cut it at the hyphen and linked to /job/2026.
+def test_oracle_preview_rewrite_keeps_hyphenated_ids():
+    import scraper
+    base = "https://ibpcjb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    assert scraper._phenom_oracle_job_url("Ascension Health", base + "/jobs/preview/2026-445063/easy-apply/email") == base + "/job/2026-445063"
+    assert scraper._phenom_oracle_job_url("Ascension Health", base + "/jobs/preview/2026-445063") == base + "/job/2026-445063"
+    assert scraper._phenom_oracle_job_url("Ascension Health", base + "/jobs/preview/1311199/easy-apply/email") == base + "/job/1311199"
