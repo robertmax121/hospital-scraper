@@ -106,13 +106,14 @@ class FakeDB:
             return _Resp([])
         if m == "GET" and "select=first_seen" in u:
             return _Resp([])
-        if m == "GET" and "select=id,job_id,hospital_system,content_hash,posted_date" in u:
+        if m == "GET" and "select=id,job_id,hospital_system,content_hash,posted_date,scraped_at" in u:
             self.loads += 1
             last = int(u.split("id=gt.")[1].split("&")[0])
             page = sorted((r for r in self.rows.values() if r["is_active"] and r["id"] > last),
                           key=lambda r: r["id"])[:scraper.KNOWN_BODY_PAGE]
             return _Resp([{"id": r["id"], "job_id": r["job_id"], "hospital_system": r["hospital_system"],
-                           "content_hash": r.get("content_hash"), "posted_date": r.get("posted_date")}
+                           "content_hash": r.get("content_hash"), "posted_date": r.get("posted_date"),
+                           "scraped_at": r.get("scraped_at")}
                           for r in page])
         system = urllib.parse.unquote(u.split("hospital_system=eq.")[1].split("&")[0])
         if m == "GET":

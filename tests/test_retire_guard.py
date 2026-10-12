@@ -293,6 +293,9 @@ def test_upsert_gives_up_on_a_dead_database_and_sweeps_nothing_unlanded(monkeypa
     import scraper
     down = (503, "service unavailable")
     rows = [_job("A Board", i) for i in range(100)] + [_job("B Board", i) for i in range(500)]
+    # This test is about the breaker, so the rows go out in the order given
+    # (the nightly system order has its own tests: test_upsert_order.py).
+    monkeypatch.setattr(scraper, "order_rows_for_upsert", lambda rows, seen, run: rows)
     posts, patches = _fake_db(monkeypatch, lambda b: down if b[0]["hospital_system"] == "B Board" else None)
     sent = scraper._upsert_hospital_jobs_to_supabase(rows, "2026-09-24T00:09:00.000000Z")
     assert sent == 100
@@ -443,6 +446,8 @@ def test_upsert_abandons_after_ten_minutes_without_a_write_and_leaves_the_rest_f
     import scraper
     clock = _Clock()
     rows, keys = _twelve_boards()
+    # The breaker, not the system order, is under test: rows go out as given.
+    monkeypatch.setattr(scraper, "order_rows_for_upsert", lambda rows, seen, run: rows)
     log = _brownout_db(monkeypatch, clock, down=lambda t: t >= 20)
     sent = scraper._upsert_hospital_jobs_to_supabase(rows, RUN)
     assert sent == 2000                                   # Boards 00-03 landed before the outage

@@ -18457,13 +18457,18 @@ def load_content_hashes(sb_url: str, sb_key: str) -> dict:
     """{(hospital_system, job_id): (id, content_hash, posted_date)} for every
     ACTIVE row, keyset-paged on id like load_known_bodies. A page that still
     fails after KNOWN_BODY_RETRIES keeps the rows read so far: a row missing
-    from the map takes the full upsert, as before."""
+    from the map takes the full upsert, as before.
+
+    2026-10-12: the same pages also fill STORED_SYSTEM_SEEN (each system's
+    newest stored scraped_at), which orders tonight's upsert stalest first
+    (order_rows_for_upsert)."""
     import urllib.request as _urlreq
     out: dict = {}
+    STORED_SYSTEM_SEEN.clear()
     last, n = 0, 0
     try:
         while n < KNOWN_BODY_MAX_ROWS:
-            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,job_id,hospital_system,content_hash,posted_date"
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,job_id,hospital_system,content_hash,posted_date,scraped_at"
                  f"&is_active=is.true&id=gt.{last}&order=id.asc&limit={KNOWN_BODY_PAGE}")
             rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
             for attempt in range(KNOWN_BODY_RETRIES):
@@ -18481,12 +18486,61 @@ def load_content_hashes(sb_url: str, sb_key: str) -> dict:
                 if x.get("id") is None or not x.get("hospital_system") or x.get("job_id") in (None, ""):
                     continue
                 out[(x["hospital_system"], str(x["job_id"]))] = (x["id"], x.get("content_hash"), x.get("posted_date"))
+                ts = _seen_key(x.get("scraped_at"))
+                if ts > STORED_SYSTEM_SEEN.get(x["hospital_system"], ""):
+                    STORED_SYSTEM_SEEN[x["hospital_system"]] = ts
             n += len(chunk)
             last = chunk[-1]["id"]
     except Exception as e:
         logger.warning(f"Content hashes: load stopped after {n:,} rows ({e}); the rest take the full upsert")
     logger.info(f"Content hashes: {sum(1 for v in out.values() if v[1]):,} of {len(out):,} active rows carry a hash")
     return out
+
+
+# 2026-10-12: upsert order. The rows went out in adapter order (Playwright,
+# Workday, Taleo, ...; Oracle is 29th of 59 adapters). Runs 4-6 (10-10 to
+# 10-12) landed 4,475 / 52,750 / 52,475 of ~325,000 rows before the breaker
+# abandoned the rest, every night the same head (Playwright + Workday), so the
+# same tail never landed: no Ascension row was refreshed after 10-09 and its
+# hyphen-id fix (b25710a) never ran. Systems now go out stalest first: the
+# system whose newest stored scraped_at is oldest leads, and a system with no
+# stored row leads all; a system a stalled night starves is near the front the
+# next night. Ties (and every system when no stored times are known: content
+# hash off or absent, or the load failed) are ordered by a hash of the run day
+# and the system name, so no system is last every night. Each system's rows
+# stay together and in their scraped order, so a system can still land whole
+# and be swept.
+STORED_SYSTEM_SEEN: dict = {}
+
+
+def _seen_key(ts) -> str:
+    """A stored scraped_at as a sortable 'YYYY-MM-DDTHH:MM:SS' string ('' when
+    absent). Seconds are enough to order nights."""
+    return str(ts or "").replace(" ", "T")[:19]
+
+
+def order_rows_for_upsert(rows: list[dict], seen: dict, run_started_iso: str) -> list[dict]:
+    """rows grouped by hospital_system, stalest system first (see
+    STORED_SYSTEM_SEEN); within a system the order is kept."""
+    groups: dict = {}
+    for r in rows:
+        groups.setdefault(r.get("hospital_system") or "", []).append(r)
+    day = (run_started_iso or "")[:10]
+
+    def key(s):
+        return (seen.get(s, "") if seen else "",
+                hashlib.sha1(f"{day}|{s}".encode("utf-8")).hexdigest())
+    order = sorted(groups, key=key)
+    return [r for s in order for r in groups[s]]
+
+
+def _log_upsert_order(rows: list[dict], how: str) -> None:
+    order: list = []
+    for r in rows:
+        s = r.get("hospital_system")
+        if not order or order[-1] != s:
+            order.append(s)
+    logger.info(f"Hospital upsert: {len(order)} systems in {how} order; first: {order[:5]}")
 
 
 def _posted_needs_write(stored, tonight) -> bool:
@@ -18719,6 +18773,11 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         logger.info(f"Hospital upsert: deduped {len(rows) - len(by_key)} duplicate (system, job_id) rows")
         rows = list(by_key.values())
 
+    # 2026-10-12: rotated for the night; stalest first once stored times are
+    # loaded (content hash on). See order_rows_for_upsert.
+    rows = order_rows_for_upsert(rows, {}, run_started_iso)
+    order_how = "rotated"
+
     # 2026-10-11: content hash (see HASH_VERSION). Off, or without the
     # column, every row takes the upsert exactly as before.
     for k_ in ("hash_new", "hash_changed", "hash_unchanged", "stamp_landed",
@@ -18749,6 +18808,9 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
             for r in rows:
                 r["content_hash"] = content_hash_for(r)
             stored = load_content_hashes(sb_url, sb_key)
+            if STORED_SYSTEM_SEEN:
+                rows = order_rows_for_upsert(rows, STORED_SYSTEM_SEEN, run_started_iso)
+                order_how = "stalest-first"
             full_rows, seen_rows, posted_rows, ids, hc = partition_by_hash(rows, stored)
             missed: list[dict] = []
             stop: dict = {"rows": []}
@@ -18783,6 +18845,8 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
                         f"{len(stamp_failed):,} failed, {len(missed):,} back to the upsert"
                         + (f", {len(stop['rows']):,} to the full upsert after {stop['why']}"
                            if stop.get("why") else "") + ")")
+
+    _log_upsert_order(rows, order_how)
 
     # 2026-09-24: resilient batches with a time-based breaker; see
     # _post_hospital_rows. What did not land is kept for the delayed retry.
