@@ -157,8 +157,9 @@ def run():
         layer4_exempt.add("HCA Healthcare")
     # 2026-10-07 (push 10): adapters that read their whole board
     # (COMPLETE_SYSTEMS) bypass the yield guard; a partial report wins.
-    # 2026-10-12: complete_canonical, the sweep's rule: a system fed by two
-    # emit-names (two Workday tenants) is complete only when both are.
+    # 2026-10-12: complete_canonical, the sweep's rule: a system is complete
+    # only when every configured feed of it (each tenant, each other adapter
+    # that emits it, each alias key) returned rows and claimed a whole crawl.
     layer4_complete = complete_canonical(layer4_exempt)
     deact_stats = mark_inactive_jobs(jobs, exclude_systems=layer4_exempt, complete_systems=layer4_complete)
     logger.info(f"  Layer 4 deactivation: {deact_stats}")

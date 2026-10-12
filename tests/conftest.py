@@ -25,6 +25,8 @@ def _clean_module_state(tmp_path, monkeypatch):
     scraper.PARTIAL_SYSTEMS.clear()
     scraper.COMPLETE_SYSTEMS.clear()
     scraper.LISTED_SYSTEMS.clear()
+    scraper.EMITTED_SYSTEMS.clear()
+    scraper.COMPLETE_FEEDS.clear()
     scraper.set_cms_lookup([])
     scraper.LAST_UPSERT_FAILED.clear()
     monkeypatch.setattr(retire_guard, "YIELD_HISTORY_PATH", str(tmp_path / "layer4_yields.json"))
@@ -37,6 +39,8 @@ def _clean_module_state(tmp_path, monkeypatch):
     scraper.PARTIAL_SYSTEMS.clear()
     scraper.COMPLETE_SYSTEMS.clear()
     scraper.LISTED_SYSTEMS.clear()
+    scraper.EMITTED_SYSTEMS.clear()
+    scraper.COMPLETE_FEEDS.clear()
     scraper.set_cms_lookup([])
     scraper.LAST_UPSERT_FAILED.clear()
 

@@ -6,11 +6,18 @@ and held the sweep, so 172 closed postings kept their dead Apply links.
 scrape_workday now reports a complete crawl (report_complete) when its plain
 crawl reached the last page with no error and no window hit, and a system fed
 by two emit-names is complete only when both are (complete_canonical).
+Review (2026-10-12): every configured feed of a system (each adapter config
+that emits it, each alias key) must have run, returned rows and claimed a
+whole crawl; the Workday claim is recorded only as scrape_workday returns.
 No network, no database."""
 import asyncio
+import pathlib
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
+
+import pytest
 
 import retire_guard
 import scraper
@@ -141,6 +148,7 @@ def test_a_partial_report_wins_over_a_complete_crawl(monkeypatch):
 def test_complete_canonical_needs_every_emit_name(monkeypatch):
     monkeypatch.setitem(scraper.HOSPITAL_SYSTEM_ALIASES, "Two Tenant Board (Providers)", "Two Tenant Board")
     scraper.LISTED_SYSTEMS.update({"Two Tenant Board", "Two Tenant Board (Providers)", "Solo Board"})
+    scraper.EMITTED_SYSTEMS.update({"Two Tenant Board", "Two Tenant Board (Providers)", "Solo Board"})
     scraper.COMPLETE_SYSTEMS.update({"Two Tenant Board", "Solo Board"})
     assert scraper.complete_canonical() == {"Solo Board"}          # the second tenant did not finish
     scraper.COMPLETE_SYSTEMS.add("Two Tenant Board (Providers)")
@@ -239,3 +247,137 @@ def test_layer4_counts_a_complete_workday_systems_unseen_rows():
     assert held["deactivate_ids"] == [] and "NewYork-Presbyterian" in held["guarded"]
     plan = retire_guard.plan_layer4(active, keys, 3, complete_systems={"NewYork-Presbyterian"})
     assert len(plan["deactivate_ids"]) == 172 and "NewYork-Presbyterian" in plan["complete_bypassed"]
+
+
+# -- 5. Every configured feed of a system must claim (review 2026-10-12) ------
+
+NYP = "NewYork-Presbyterian"
+
+
+def _nyp_complete(monkeypatch):
+    """NYP's Workday tenant crawls its whole board: 316 rows of 323 listed."""
+    _run(monkeypatch, _board([_posting(i) for i in range(316)] + [_posting(316 + i, req=i) for i in range(7)]))
+    assert NYP in scraper.COMPLETE_SYSTEMS and ("WORKDAY_TENANTS", NYP) in scraper.COMPLETE_FEEDS
+
+
+def test_a_workday_only_system_is_complete(monkeypatch):
+    # NYP has one feed in the real configs: its Workday tenant.
+    feeds = scraper.configured_feed_map()
+    assert {e for e in feeds if scraper.HOSPITAL_SYSTEM_ALIASES.get(e, e) == NYP} == {NYP}
+    assert feeds[NYP] == {"WORKDAY_TENANTS"}
+    _nyp_complete(monkeypatch)
+    assert scraper.complete_canonical() == {NYP}
+
+
+def test_a_silent_non_workday_sibling_with_no_rows_holds_the_system(monkeypatch):
+    # Another adapter emits the same name; it ran tonight with 0 rows and no
+    # claim. The Workday claim alone does not make the system complete, and
+    # the sweep keeps the yield guard (316 rows vs 488 active: held).
+    monkeypatch.setitem(scraper.ICIMS_ORGS, NYP, "careers-nyp.icims.com")
+    _nyp_complete(monkeypatch)
+    assert NYP not in scraper.complete_canonical()
+    patches = _fake_db(monkeypatch, {NYP: 488})
+    scraper._upsert_hospital_jobs_to_supabase([_row(NYP, i) for i in range(316)], "2026-10-13T00:09:00.000000Z")
+    assert patches == []
+
+
+def test_a_silent_alias_sibling_holds_the_system(monkeypatch):
+    # A HOSPITAL_SYSTEM_ALIASES key that maps to NYP is a feed of it, listed
+    # in a config or not; with no rows and no claim tonight it holds NYP.
+    monkeypatch.setitem(scraper.HOSPITAL_SYSTEM_ALIASES, "NYP (Physicians)", NYP)
+    _nyp_complete(monkeypatch)
+    assert NYP not in scraper.complete_canonical()
+    monkeypatch.setitem(scraper.HEALTHCARESOURCE_ORGS, "NYP (Physicians)", "nypmd")
+    assert NYP not in scraper.complete_canonical()
+
+
+def test_both_feeds_complete_make_the_system_complete(monkeypatch):
+    # A sibling under its own (aliased) name, and one under the same name.
+    monkeypatch.setitem(scraper.HOSPITAL_SYSTEM_ALIASES, "NYP (Physicians)", NYP)
+    monkeypatch.setitem(scraper.HEALTHCARESOURCE_ORGS, "NYP (Physicians)", "nypmd")
+    monkeypatch.setitem(scraper.PHENOM_ORGS, NYP, "https://careers.nyp.org")
+    assert scraper.report_complete(NYP, 400, 400, feed="PHENOM_ORGS")   # the Phenom sibling, before Workday
+    _nyp_complete(monkeypatch)
+    assert NYP not in scraper.complete_canonical()                       # the Physicians feed has not run
+    assert scraper.report_complete("NYP (Physicians)", 50, 50, feed="HEALTHCARESOURCE_ORGS")
+    assert NYP not in scraper.complete_canonical()                       # claimed, but returned no rows
+    scraper.EMITTED_SYSTEMS.add("NYP (Physicians)")
+    assert scraper.complete_canonical() == {NYP}
+    patches = _fake_db(monkeypatch, {NYP: 488})
+    rows = [_row(NYP, i) for i in range(300)] + [_row("NYP (Physicians)", 9000 + i) for i in range(16)]
+    scraper._upsert_hospital_jobs_to_supabase(rows, "2026-10-13T00:09:00.000000Z")
+    assert patches == [NYP]                                              # swept as a complete system
+
+
+def test_a_same_name_sibling_that_failed_its_claim_holds_the_system(monkeypatch):
+    monkeypatch.setitem(scraper.PHENOM_ORGS, NYP, "https://careers.nyp.org")
+    _nyp_complete(monkeypatch)
+    assert not scraper.report_complete(NYP, 100, 400, feed="PHENOM_ORGS")  # Phenom listed a quarter
+    assert NYP not in scraper.complete_canonical()
+
+
+def test_real_systems_with_a_non_workday_sibling_are_held(monkeypatch):
+    # Cleveland Clinic (Playwright fallback), Trinity Health (run_trinity),
+    # Monument Health (iCIMS) and Owensboro Health (iCIMS) each have a second
+    # adapter emitting the Workday tenant's name.
+    for system in ("Cleveland Clinic", "Trinity Health", "Monument Health", "Owensboro Health"):
+        assert "WORKDAY_TENANTS" in scraper.configured_feed_map()[system]
+        _run(monkeypatch, _board([_posting(i) for i in range(40)]), system=system)
+        assert system in scraper.COMPLETE_SYSTEMS
+        assert system not in scraper.complete_canonical()
+
+
+def test_a_workday_tenant_with_no_rows_claims_nothing(monkeypatch):
+    # The whole board is listed, but the statewide-board title filter
+    # (WD_TITLE_FACILITY) keeps none of its 30 postings: no rows, no claim.
+    monkeypatch.setitem(scraper.WD_TITLE_FACILITY, NYP, ())
+    monkeypatch.setattr(scraper, "_wd_title_facility", lambda system, title: None)
+    assert _run(monkeypatch, _board([_posting(i) for i in range(30)])) == []
+    assert NYP not in scraper.COMPLETE_SYSTEMS and NYP not in scraper.EMITTED_SYSTEMS
+    assert NYP not in scraper.complete_canonical()
+
+
+# -- 6. The Workday claim is recorded only as scrape_workday returns ---------
+
+def test_an_exception_after_the_crawl_leaves_the_system_not_complete(monkeypatch):
+    _nyp_complete(monkeypatch)                                 # last night's claim, same process
+
+    async def cancelled(*a, **k):
+        raise asyncio.CancelledError()
+    monkeypatch.setattr(scraper, "_wd_fill_states", cancelled)
+    with pytest.raises(asyncio.CancelledError):
+        _run(monkeypatch, _board([_posting(i) for i in range(323)]))
+    assert NYP not in scraper.COMPLETE_SYSTEMS
+    assert ("WORKDAY_TENANTS", NYP) not in scraper.COMPLETE_FEEDS
+    assert NYP not in scraper.complete_canonical()
+
+
+# -- 7. The feed registry covers every adapter config ------------------------
+
+_CONFIG_NAME = re.compile(r"_(TENANTS|ORGS|SITES|BOARDS|BRANDS|AGENCIES|PORTALS)$")
+_NOT_FEEDS = {"MOUNT_SINAI_SITES"}      # Mount Sinai facility patterns, not boards
+
+
+def test_every_adapter_config_is_a_feed_config():
+    configs = {n for n, v in vars(scraper).items()
+               if _CONFIG_NAME.search(n) and isinstance(v, (dict, list, tuple))}
+    assert configs - _NOT_FEEDS <= set(scraper.FEED_CONFIGS)
+    assert set(scraper.FEED_CONFIGS) <= configs
+
+
+def test_every_literal_emit_name_is_a_configured_feed():
+    src = pathlib.Path(scraper.__file__).read_text(encoding="utf-8")
+    literals = set(re.findall(r'hospital_system="([^"]+)"', src))
+    literals |= set(re.findall(r'^\s*(?:[A-Z_]*SYSTEM|system)\s*=\s*"([^"]+)"', src, re.M))
+    assert literals and literals <= set(scraper.configured_feed_map())
+
+
+def test_every_complete_claim_names_a_configured_feed():
+    src = pathlib.Path(scraper.__file__).read_text(encoding="utf-8")
+    calls = re.findall(r'(?<!def )report_complete\((?:[^()]|\([^()]*\))*\)', src)
+    claimed = {m.group(1) for c in calls for m in [re.search(r'feed="([^"]+)"', c)] if m}
+    assert len(calls) == 6 and all('feed="' in c for c in calls)        # every claim names its feed
+    known = set().union(*scraper.configured_feed_map().values())
+    assert claimed == {"WORKDAY_TENANTS", "PHENOM_ORGS", "HEALTHCARESOURCE_ORGS", "TALEMETRY_SITES",
+                       "run_uhg", "run_chs"}
+    assert claimed <= known
