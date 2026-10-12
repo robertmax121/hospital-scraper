@@ -171,6 +171,12 @@ class Job:
     wage_min: float | None = None
     wage_max: float | None = None
     wage_unit: str | None = None
+    # The employer's public requisition number, when it differs from job_id
+    # (2026-10-12: HCA's job_id is the Talemetry URL id, 18284308, while the
+    # posting shows "Job ID: 4981331", the number recruiters look up). Not a
+    # column: normalize_job pops it into posting_facts["req_id"]. job_id and
+    # the (job_id, hospital_system) upsert key stay exactly as they were.
+    req_id: str = ""
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
@@ -15824,6 +15830,43 @@ _HCA_LOCATION_RE = re.compile(
     r'<div class="neu-text--caption neu-margin--bottom-10">(.*?)</div>', re.DOTALL
 )
 _HCA_TYPE_RE = re.compile(r'>work</i>\s*([^<&]+)')
+# 2026-10-12: the requisition number HCA shows ("Job ID: 4981331"), which is
+# NOT the Talemetry id in the URL (/jobs/18284308-...). Every card carries it
+# (50 of 50 TX cards, 500 of 500 FL cards, 2026-10-12) as the last line of the
+# support block, "Category: Nursing &bull; Job ID: 4981331"; the job page
+# repeats it beside its find_in_page icon and as the JSON-LD
+# identifier.value. Physician postings use another form, "J-049490" (38 of
+# the 500 FL cards), so the value is kept as printed.
+_HCA_REQ_RE = re.compile(r'Job ID:\s*([A-Za-z0-9][A-Za-z0-9-]{0,23})')
+_HCA_REQ_VALUE_RE = re.compile(r'^(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{0,23}$')
+
+
+def _hca_req_value(raw) -> str:
+    """A requisition number as HCA prints it ("4981331", "J-049490"), or ""
+    for anything else (blank, prose, an id with no digit)."""
+    s = str(raw or "").strip()
+    return s if _HCA_REQ_VALUE_RE.match(s) else ""
+
+
+def hca_req_id_from_page(page_html: str, posting: dict | None = None) -> str:
+    """The requisition number on an HCA job page: the JSON-LD JobPosting's
+    identifier.value first (pass the posting when it is already parsed), then
+    the visible "Job ID: NNNNNNN" line. "" when the page carries neither."""
+    if posting is None:
+        posting = _jobposting_from_html(page_html)
+    ident = posting.get("identifier") if isinstance(posting, dict) else None
+    if isinstance(ident, list):
+        ident = ident[0] if ident else None
+    if isinstance(ident, dict):
+        got = _hca_req_value(ident.get("value"))
+        if got:
+            return got
+    elif ident is not None:
+        got = _hca_req_value(ident)
+        if got:
+            return got
+    m = _HCA_REQ_RE.search(page_html or "")
+    return _hca_req_value(m.group(1)) if m else ""
 # 2026-09-24: the results header ("Showing 1-500 of 4561 results"); the site's
 # own count for the slice, checked against what the pages actually served.
 _HCA_TOTAL_RE = re.compile(r'\bof\s+([\d,]+)\s+results?\b', re.I)
@@ -15837,6 +15880,12 @@ HCA_SHORTFALL_TOL = 0.03   # a finished slice may trail the listed total by max(
 # normalize_job (_hca_estimate_wage); False leaves those rows unpriced. The
 # generic body rules never read an "estimate" label.
 HCA_ESTIMATE_PAY = True
+# 2026-10-12: posting_facts["req_id"] on a row whose facts are null tonight (no
+# body in hand: most HCA rows on most nights). OFF until the owner applies
+# sql/hca_req_id_trigger.sql: the live enrichment trigger replaces a non-null
+# posting_facts whole, so a {"req_id"} object would wipe the stored facts.
+# With the SQL applied the trigger merges it, and one push stamps every row.
+REQ_ID_ONLY_FACTS = os.getenv("REQ_ID_ONLY_FACTS", "0") == "1"
 
 
 def _hca_total(page_html: str) -> int | None:
@@ -15899,6 +15948,10 @@ def _parse_hca_cards(page_html: str) -> list[Job]:
         jt_m = _HCA_TYPE_RE.search(chunk)
         job_type = jt_m.group(1).strip().rstrip("&").strip() if jt_m else ""
 
+        # 2026-10-12: the public requisition number, beside job_id (the URL id).
+        req_m = _HCA_REQ_RE.search(chunk)
+        req_id = _hca_req_value(req_m.group(1)) if req_m else ""
+
         jobs.append(Job(
             title=title,
             hospital_system="HCA Healthcare",
@@ -15911,6 +15964,7 @@ def _parse_hca_cards(page_html: str) -> list[Job]:
             posted_date="",
             description="",
             ats_platform="Talemetry",
+            req_id=req_id,
         ))
     return jobs
 
@@ -19077,6 +19131,8 @@ def normalize_job(j: Job) -> dict:
     - location always built as 'City, ST' from clean city + state
     """
     d = asdict(j)
+    # 2026-10-12: not a column; it travels as posting_facts["req_id"] (below).
+    req_id = str(d.pop("req_id", "") or "").strip()
 
     # Sanitize/extract the city up front: turns "2 Locations", street
     # addresses, and pipe/newline facility blocks into a real city or "".
@@ -19257,7 +19313,11 @@ def normalize_job(j: Job) -> dict:
     d["has_signon"] = has_signon_for(d.get("title"), d.get("description"))
 
     key = (_canon_system(d.get("hospital_system") or ""), str(d.get("job_id")))
-    h = _facts_hash(d.get("title"), d.get("job_type"), pay_src, d.get("description"))
+    # 2026-10-12 (HCA requisition number): req_id is part of the hash when the
+    # adapter read one, so stored facts written before it existed (or with
+    # another number) do not match and are rebuilt with it; a row without one
+    # hashes exactly as before, so no other system re-parses.
+    h = _facts_hash(d.get("title"), d.get("job_type"), pay_src, d.get("description"), req_id)
     if h is not None and _KNOWN_FACTS_H.get(key) == h:
         d["posting_facts"] = None
         _FACTS_SKIPS["n"] += 1
@@ -19272,8 +19332,21 @@ def normalize_job(j: Job) -> dict:
     # pay_src would replace them (see posting_facts_for on teasers).
     if pay_src and d["posting_facts"]:
         d["posting_facts"]["pay_src"] = pay_src
+    # 2026-10-12: the employer's requisition number (HCA "Job ID: 4981331").
+    # It rides on every facts object this row sends. A row whose facts are
+    # null tonight (no body in hand) sends null as before, and the enrichment
+    # trigger keeps the stored object, req_id included once it has one: the
+    # live trigger REPLACES a non-null object whole, so an object holding
+    # only req_id would wipe the stored certs, education and shift. That
+    # object is sent only with REQ_ID_ONLY_FACTS=1, after the owner applies
+    # sql/hca_req_id_trigger.sql, which merges it into the stored facts.
     if h is not None and d["posting_facts"] is not None:
         d["posting_facts"]["h"] = h
+    if req_id:
+        if d["posting_facts"] is not None:
+            d["posting_facts"]["req_id"] = req_id
+        elif REQ_ID_ONLY_FACTS:
+            d["posting_facts"] = {"req_id": req_id}
 
     return d
 
@@ -19292,17 +19365,21 @@ def has_signon_for(title, description) -> bool:
     if isinstance(title, str) and _SIGNON_TITLE_RX.search(title):
         return True
     return bool(isinstance(description, str) and _SIGNON_DESC_RX.search(description))
-def _facts_hash(title, job_type, pay_src, description):
+def _facts_hash(title, job_type, pay_src, description, req_id=""):
     """12 hex characters over everything posting_facts is read from (push
     10), or None for a body under 200 characters, which is never a known
     body. FACTS_VERSION travels as posting_facts["v"] and is checked beside
     the hash; DETAIL_MIN_CHARS decides between a {"v"} stamp and null, so it
-    is part of the hash."""
+    is part of the hash. req_id (2026-10-12, HCA's requisition number) joins
+    the hash only when there is one, so every other row hashes as before."""
     body = description or ""
     if len(body) < 200:
         return None
-    raw = "\x1f".join((str(FACTS_VERSION), str(DETAIL_MIN_CHARS), str(title or ""), str(job_type or ""),
-                       str(pay_src or ""), body))
+    parts = (str(FACTS_VERSION), str(DETAIL_MIN_CHARS), str(title or ""), str(job_type or ""),
+             str(pay_src or ""), body)
+    if req_id:
+        parts += ("req_id=" + str(req_id),)
+    raw = "\x1f".join(parts)
     return hashlib.md5(raw.encode("utf-8", "surrogatepass"), usedforsecurity=False).hexdigest()[:12]
 
 

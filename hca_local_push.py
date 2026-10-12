@@ -124,6 +124,10 @@ def _hca_detail_pass(jobs) -> None:
             if r.status_code != 200:
                 return
             posting = scraper._jobposting_from_html(r.text)
+            # 2026-10-12: HCA's requisition number ("Job ID: 4981331"), when
+            # the search card did not carry one (every card did on 10-12).
+            if not (job.req_id or "").strip():
+                job.req_id = scraper.hca_req_id_from_page(r.text, posting)
             if posting and scraper._apply_posting(job, posting):
                 filled += 1
         except Exception:
