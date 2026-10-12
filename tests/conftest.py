@@ -27,6 +27,11 @@ def _clean_module_state(tmp_path, monkeypatch):
     scraper.set_cms_lookup([])
     scraper.LAST_UPSERT_FAILED.clear()
     monkeypatch.setattr(retire_guard, "YIELD_HISTORY_PATH", str(tmp_path / "layer4_yields.json"))
+    # 2026-10-11: the fake databases in the older tests predate content_hash
+    # (sql/100), so they model a table without it: the upsert path exactly as
+    # before. tests/test_content_hash.py turns it on per test.
+    monkeypatch.setattr(scraper, "_HJ_CONTENT_HASH", {"ok": False})
+    monkeypatch.delenv("HASH_SKIP", raising=False)
     yield
     scraper.PARTIAL_SYSTEMS.clear()
     scraper.COMPLETE_SYSTEMS.clear()

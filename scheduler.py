@@ -62,6 +62,32 @@ def _priced_counts(jobs: list[dict]) -> tuple[int, int]:
     return field, text
 
 
+_HASH_KEYS = ("hash_new", "hash_changed", "hash_unchanged", "stamp_landed",
+              "stamp_posted", "stamp_failed", "stamp_missed")
+
+
+def hash_meta(counts: dict) -> dict:
+    """The content-hash counts for scraper_runs.meta (2026-10-11): mode is
+    on, off (HASH_SKIP=0) or absent (no content_hash column)."""
+    out = {"mode": counts.get("hash_mode") or "absent"}
+    out.update({k: counts[k] for k in _HASH_KEYS if counts.get(k) is not None})
+    return out
+
+
+def hash_notes(counts: dict) -> str:
+    """The notes tail for the content hash; empty when the column is absent,
+    so the notes read as before."""
+    mode = counts.get("hash_mode") or "absent"
+    if mode == "absent":
+        return ""
+    if mode != "on":
+        return "; content hash off (HASH_SKIP=0), full upsert"
+    g = lambda k: counts.get(k) or 0
+    return (f"; content hash: new {g('hash_new'):,}, changed {g('hash_changed'):,}, "
+            f"unchanged stamped {g('stamp_landed'):,} (posted_date refreshed {g('stamp_posted'):,}), "
+            f"stamp not landed {g('stamp_failed'):,}, stamp back to upsert {g('stamp_missed'):,}")
+
+
 def run():
     os.makedirs("logs", exist_ok=True)
     start = datetime.now()
@@ -215,13 +241,17 @@ def run():
              f"{len(deact_stats.get('guarded_systems') or [])} system(s)"
              f"{' (ABORTED)' if deact_stats.get('aborted') else ''}; partial adapters "
              f"{len(PARTIAL_SYSTEMS)}; active after run {shown}")
+    notes += hash_notes(LAST_RUN_COUNTS)
     finish_run_record(run_id, status, datetime.now(timezone.utc).isoformat(),
                       rows_upserted=LAST_RUN_COUNTS.get("upsert_sent"),
                       deactivated=sweep_deact + layer4_deact + front_retired,
                       field_priced=field_priced, text_priced=text_priced,
                       notes=notes, duration_ms=int((datetime.now() - start).total_seconds() * 1000),
                       jobs_seen=len(jobs),
-                      meta={"layer4": {k: v for k, v in deact_stats.items()
+                      jobs_inserted=LAST_RUN_COUNTS.get("hash_new"),
+                      jobs_updated=LAST_RUN_COUNTS.get("hash_changed"),
+                      meta={"content_hash": hash_meta(LAST_RUN_COUNTS),
+                            "layer4": {k: v for k, v in deact_stats.items()
                                        if k not in ("excluded_systems", "guarded_systems")},
                             "front_pool": front_summary,
                             "partial_systems": sorted(PARTIAL_SYSTEMS)[:50],

@@ -537,10 +537,12 @@ def finish_run_record(run_id: int | None, status: str, finished_at_iso: str,
                       rows_upserted: int | None = None, deactivated: int | None = None,
                       field_priced: int | None = None, text_priced: int | None = None,
                       notes: str | None = None, duration_ms: int | None = None,
-                      jobs_seen: int | None = None, meta: dict | None = None) -> bool:
+                      jobs_seen: int | None = None, meta: dict | None = None,
+                      jobs_inserted: int | None = None, jobs_updated: int | None = None) -> bool:
     """Close tonight's scraper_runs row. status is one of the table's CHECK
     values (success / partial / failed / blocked). None fields are left as
-    they are. Returns True when the update landed."""
+    they are. Returns True when the update landed. 2026-10-11: jobs_inserted
+    / jobs_updated carry the content-hash counts (new rows / changed rows)."""
     if run_id is None:
         return False
     if status not in ("running", "success", "partial", "failed", "blocked"):
@@ -551,7 +553,8 @@ def finish_run_record(run_id: int | None, status: str, finished_at_iso: str,
     for k, v in (("rows_upserted", rows_upserted), ("deactivated", deactivated),
                  ("field_priced", field_priced), ("text_priced", text_priced),
                  ("notes", notes), ("duration_ms", duration_ms), ("jobs_seen", jobs_seen),
-                 ("jobs_deactivated", deactivated), ("meta", meta)):
+                 ("jobs_deactivated", deactivated), ("meta", meta),
+                 ("jobs_inserted", jobs_inserted), ("jobs_updated", jobs_updated)):
         if v is not None:
             patch[k] = v
     try:

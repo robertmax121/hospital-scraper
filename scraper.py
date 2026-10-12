@@ -18131,7 +18131,8 @@ UPSERT_ABANDON_S = 600
 
 
 def _post_hospital_rows(rows: list[dict], sb_url: str, sb_key: str,
-                        label: str = "Hospital upsert") -> tuple[int, list[dict]]:
+                        label: str = "Hospital upsert", post=None,
+                        batch: int = 100, min_batch: int = 25) -> tuple[int, list[dict]]:
     """POST rows to hospital_jobs (merge-duplicates on job_id,
     hospital_system) in resilient batches. Returns (rows landed, rows that
     did not land). No aliasing, stamping, dedupe or sweep: the caller does
@@ -18148,7 +18149,11 @@ def _post_hospital_rows(rows: list[dict], sb_url: str, sb_key: str,
     20 clean batches double it back, so a database under pressure is not
     sent 100-row statements it cannot finish, 2,000 times a night. When the
     database stops answering, the time-based breaker above pauses and probes
-    instead of hammering it. Retrying is safe: the upsert is idempotent."""
+    instead of hammering it. Retrying is safe: the upsert is idempotent.
+
+    2026-10-11 (content hash): post, batch and min_batch let the seen stamp
+    (_stamp_post) reuse this loop. post(chunk) returns (ok, retryable,
+    detail) and must be idempotent; the defaults are the upsert, unchanged."""
     import urllib.request as _urlreq, urllib.error as _urlerr
 
     url = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
@@ -18159,7 +18164,7 @@ def _post_hospital_rows(rows: list[dict], sb_url: str, sb_key: str,
         "Content-Type":  "application/json",
         "Prefer":        "resolution=merge-duplicates,return=minimal",
     }
-    BATCH, MIN_BATCH = 100, 25
+    BATCH, MIN_BATCH = batch, min_batch
     RETRY_PAUSES = (2, 5)      # seconds, before each retry of a MIN_BATCH piece
     failed_rows: list[dict] = []
     splits = [0]
@@ -18167,6 +18172,11 @@ def _post_hospital_rows(rows: list[dict], sb_url: str, sb_key: str,
 
     def _post(chunk: list[dict]) -> tuple[bool, bool, str]:
         """One POST. Returns (ok, retryable, detail)."""
+        if post is not None:
+            ok, retryable, detail = post(chunk)
+            if ok:
+                last_ok[0] = time.monotonic()
+            return ok, retryable, detail
         rq = _urlreq.Request(url, data=json.dumps(chunk).encode(), headers=headers, method="POST")
         try:
             with _urlreq.urlopen(rq, timeout=60) as resp:
@@ -18338,6 +18348,203 @@ def _hospital_jobs_has_first_seen(sb_url: str, sb_key: str) -> bool:
     return _HJ_FIRST_SEEN["ok"]
 
 
+# -- Content hash: skip unchanged rows, keep the nightly seen stamp (2026-10-11)
+# Every seen posting used to be rewritten in full every night: body, TOAST,
+# the INSERT-path tsvector and sponsorship lookup, all 35 indexes. Now each
+# row's final payload is hashed (content_hash, sql/100) and a row whose hash
+# matches the stored one is not upserted; it gets the narrow seen stamp
+# (stamp_seen: scraped_at only), so the sweep, Layer 4, sorts, alerts and
+# posted dates read exactly what the full write would have left.
+#
+# posted_date is NOT in the hash. The site anchors a relative label on
+# scraped_at (lib/posted-date.js, and the board card's postedDaysAgo in
+# lib/travel-card.js, which rounds an ISO date and a label differently), so
+# the label must be stored exactly as the list sent it. A row whose label
+# changed but whose hash did not gets stamp_seen_posted (scraped_at and
+# posted_date in one write, the enrichment trigger applying its keep-ISO
+# rule, as the upsert does). A label equal to the stored one, or a non-ISO
+# label over a stored ISO date (the trigger keeps the ISO), needs no
+# posted_date write.
+#
+# HASH_SKIP=0 restores the full upsert of every row (content_hash is then
+# sent as null, so a later re-enable starts from a full write rather than a
+# hash older than the stored row). Without the column (sql/100 not applied)
+# nothing about the upsert changes.
+HASH_VERSION = 1
+HASH_STAMP_BATCH = int(os.getenv("HASH_STAMP_BATCH", "500"))
+HASH_STAMP_MIN_BATCH = 25
+_HASH_EXCLUDE = frozenset({"scraped_at", "first_seen", "is_active", "posted_date", "content_hash"})
+_PG_ISO_RX = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}")
+_HJ_CONTENT_HASH: dict = {}
+
+
+def hash_skip_enabled() -> bool:
+    """HASH_SKIP (default on): anything but 0 / false / off / no keeps it on."""
+    return os.getenv("HASH_SKIP", "1").strip().lower() not in ("0", "false", "off", "no")
+
+
+def _facts_token(r: dict):
+    """posting_facts for the hash. A null sent because the stored facts carry
+    this body's facts hash (normalize_job) and the object that wrote them hash
+    alike, so the hash does not flip between a write night and a skip night."""
+    pf = r.get("posting_facts")
+    if pf is None:
+        key = (_canon_system(r.get("hospital_system") or ""), str(r.get("job_id")))
+        h = _KNOWN_FACTS_H.get(key)
+        return ["h", h] if h else None
+    if isinstance(pf, dict) and isinstance(pf.get("h"), str) and pf.get("h"):
+        return ["h", pf["h"]]
+    return pf
+
+
+def content_hash_for(r: dict) -> str:
+    """md5 over HASH_VERSION and every payload key except scraped_at,
+    first_seen, is_active, posted_date and content_hash (sorted keys, so key
+    order does not matter). Computed on the final payload, after the stamp
+    loop and the dedupe."""
+    body = {k: (_facts_token(r) if k == "posting_facts" else v)
+            for k, v in r.items() if k not in _HASH_EXCLUDE}
+    raw = json.dumps([HASH_VERSION, body], sort_keys=True, ensure_ascii=False,
+                     separators=(",", ":"), default=str)
+    return hashlib.md5(raw.encode("utf-8", "surrogatepass"), usedforsecurity=False).hexdigest()
+
+
+def _hospital_jobs_has_content_hash(sb_url: str, sb_key: str) -> bool:
+    """True when hospital_jobs has content_hash (one read-only select per
+    process, cached when the answer is definite; as _hospital_jobs_has_first_seen)."""
+    if "ok" in _HJ_CONTENT_HASH:
+        return _HJ_CONTENT_HASH["ok"]
+    import urllib.request as _urlreq, urllib.error as _urlerr
+    u = f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=content_hash&limit=1"
+    rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+    try:
+        with _urlreq.urlopen(rq, timeout=30) as resp:
+            resp.read()
+        _HJ_CONTENT_HASH["ok"] = True
+    except _urlerr.HTTPError as e:
+        if e.code == 400:
+            _HJ_CONTENT_HASH["ok"] = False
+        logger.info(f"Hospital upsert: content_hash not used this run (probe HTTP {e.code})")
+        return False
+    except Exception as e:
+        logger.info(f"Hospital upsert: content_hash not used this run (probe failed: {e})")
+        return False
+    return _HJ_CONTENT_HASH["ok"]
+
+
+def load_content_hashes(sb_url: str, sb_key: str) -> dict:
+    """{(hospital_system, job_id): (id, content_hash, posted_date)} for every
+    ACTIVE row, keyset-paged on id like load_known_bodies. A page that still
+    fails after KNOWN_BODY_RETRIES keeps the rows read so far: a row missing
+    from the map takes the full upsert, as before."""
+    import urllib.request as _urlreq
+    out: dict = {}
+    last, n = 0, 0
+    try:
+        while n < KNOWN_BODY_MAX_ROWS:
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,job_id,hospital_system,content_hash,posted_date"
+                 f"&is_active=is.true&id=gt.{last}&order=id.asc&limit={KNOWN_BODY_PAGE}")
+            rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            for attempt in range(KNOWN_BODY_RETRIES):
+                try:
+                    with _urlreq.urlopen(rq, timeout=60) as resp:
+                        chunk = json.loads(resp.read().decode())
+                    break
+                except Exception:
+                    if attempt + 1 >= KNOWN_BODY_RETRIES:
+                        raise
+                    time.sleep(3 * (attempt + 1))
+            if not isinstance(chunk, list) or not chunk:
+                break
+            for x in chunk:
+                if x.get("id") is None or not x.get("hospital_system") or x.get("job_id") in (None, ""):
+                    continue
+                out[(x["hospital_system"], str(x["job_id"]))] = (x["id"], x.get("content_hash"), x.get("posted_date"))
+            n += len(chunk)
+            last = chunk[-1]["id"]
+    except Exception as e:
+        logger.warning(f"Content hashes: load stopped after {n:,} rows ({e}); the rest take the full upsert")
+    logger.info(f"Content hashes: {sum(1 for v in out.values() if v[1]):,} of {len(out):,} active rows carry a hash")
+    return out
+
+
+def _posted_needs_write(stored, tonight) -> bool:
+    """False when writing tonight's posted_date would leave the stored value
+    as it is: the same text, or a non-ISO value over a stored ISO date
+    (preserve_scraped_enrichment keeps the ISO)."""
+    if stored == tonight:
+        return False
+    if _PG_ISO_RX.match(stored or "") and not _PG_ISO_RX.match(tonight or ""):
+        return False
+    return True
+
+
+def partition_by_hash(rows: list[dict], stored: dict):
+    """Split tonight's deduped rows (content_hash already set) into
+      full    new, inactive or absent from the map, no stored hash, or a
+              different hash: the upsert
+      seen    identical hash, posted_date write not needed: stamp_seen
+      posted  identical hash, posted_date changed: stamp_seen_posted
+    and count new / changed / unchanged. Returns (full, seen, posted, ids,
+    counts), ids mapping each stamped row's key to its database id."""
+    full, seen, posted, ids = [], [], [], {}
+    counts = {"new": 0, "changed": 0, "unchanged": 0}
+    for r in rows:
+        k = (r.get("hospital_system"), str(r.get("job_id")))
+        hit = stored.get(k)
+        if hit is None:
+            counts["new"] += 1          # new, or inactive tonight (the upsert reactivates it)
+            full.append(r)
+            continue
+        db_id, h, pd = hit
+        if not h or h != r.get("content_hash"):
+            counts["changed"] += 1
+            full.append(r)
+            continue
+        counts["unchanged"] += 1
+        ids[k] = db_id
+        (posted if _posted_needs_write(pd, r.get("posted_date")) else seen).append(r)
+    return full, seen, posted, ids, counts
+
+
+def _stamp_post(sb_url: str, sb_key: str, run_started_iso: str, ids: dict,
+                missed: list, with_posted: bool):
+    """post function for _post_hospital_rows: one stamp_seen (or
+    stamp_seen_posted) RPC per chunk. The RPC returns the ids it did not
+    stamp (gone, or no longer active); their rows go to missed, for the full
+    upsert, which writes them exactly as before."""
+    import urllib.request as _urlreq, urllib.error as _urlerr
+    fn = "stamp_seen_posted" if with_posted else "stamp_seen"
+    url = f"{sb_url.rstrip('/')}/rest/v1/rpc/{fn}"
+    headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
+               "Content-Type": "application/json"}
+
+    def post(chunk: list[dict]):
+        keyed = [(ids[(r.get("hospital_system"), str(r.get("job_id")))], r) for r in chunk]
+        body = {"p_ids": [i for i, _ in keyed], "p_ts": run_started_iso}
+        if with_posted:
+            body["p_posted"] = [r.get("posted_date") for _, r in keyed]
+        rq = _urlreq.Request(url, data=json.dumps(body).encode(), headers=headers, method="POST")
+        try:
+            with _urlreq.urlopen(rq, timeout=60) as resp:
+                raw = resp.read()
+        except _urlerr.HTTPError as e:
+            try:
+                err = e.read().decode()[:300]
+            except Exception:
+                err = ""
+            return False, e.code >= 500 or e.code in (408, 429) or "57014" in err, f"HTTP {e.code} {err}"
+        except Exception as e:
+            return False, True, f"{type(e).__name__}: {e}"
+        try:
+            left = set(json.loads(raw.decode() or "[]") or [])
+        except Exception:
+            left = set()
+        missed.extend(r for i, r in keyed if i in left)
+        return True, False, ""
+    return post
+
+
 # ── Hospital upsert + deactivation pass (added 2026-05-12) ─────────────────
 # Mirrors _upsert_travel_jobs_to_supabase. The hospital pipeline previously
 # had no deactivation step, so when a hospital filled or removed a posting it
@@ -18449,9 +18656,57 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         logger.info(f"Hospital upsert: deduped {len(rows) - len(by_key)} duplicate (system, job_id) rows")
         rows = list(by_key.values())
 
+    # 2026-10-11: content hash (see HASH_VERSION). Off, or without the
+    # column, every row takes the upsert exactly as before.
+    for k_ in ("hash_new", "hash_changed", "hash_unchanged", "stamp_landed",
+               "stamp_posted", "stamp_failed", "stamp_missed"):
+        LAST_RUN_COUNTS.pop(k_, None)
+    LAST_RUN_COUNTS["hash_mode"] = "absent"
+    full_rows, stamp_sent, stamp_failed = rows, 0, []
+    if _hospital_jobs_has_content_hash(sb_url, sb_key):
+        if not hash_skip_enabled():
+            LAST_RUN_COUNTS["hash_mode"] = "off"
+            for r in rows:
+                r["content_hash"] = None
+            logger.info("Hospital upsert: HASH_SKIP=0, every row takes the full upsert")
+        else:
+            LAST_RUN_COUNTS["hash_mode"] = "on"
+            for r in rows:
+                r["content_hash"] = content_hash_for(r)
+            stored = load_content_hashes(sb_url, sb_key)
+            full_rows, seen_rows, posted_rows, ids, hc = partition_by_hash(rows, stored)
+            missed: list[dict] = []
+            for part, with_posted, lab in ((seen_rows, False, "Hospital seen stamp"),
+                                           (posted_rows, True, "Hospital seen stamp+posted")):
+                if not part:
+                    continue
+                n_, f_ = _post_hospital_rows(
+                    part, sb_url, sb_key, label=lab,
+                    post=_stamp_post(sb_url, sb_key, run_started_iso, ids, missed, with_posted),
+                    batch=HASH_STAMP_BATCH, min_batch=HASH_STAMP_MIN_BATCH)
+                stamp_failed.extend(f_)
+                if with_posted:
+                    LAST_RUN_COUNTS["stamp_posted"] = n_
+            # A stamped row the RPC did not touch (deactivated or gone since
+            # the load) takes the upsert, which writes it as before.
+            if missed:
+                full_rows = full_rows + missed
+            stamp_sent = len(seen_rows) + len(posted_rows) - len(stamp_failed) - len(missed)
+            LAST_RUN_COUNTS.update(hash_new=hc["new"], hash_changed=hc["changed"],
+                                   hash_unchanged=hc["unchanged"], stamp_landed=stamp_sent,
+                                   stamp_failed=len(stamp_failed), stamp_missed=len(missed))
+            logger.info(f"Hospital upsert: content hash: new {hc['new']:,}, changed {hc['changed']:,}, "
+                        f"unchanged {hc['unchanged']:,} (stamped {stamp_sent:,}, "
+                        f"{LAST_RUN_COUNTS.get('stamp_posted') or 0:,} with posted_date; "
+                        f"{len(stamp_failed):,} failed, {len(missed):,} back to the upsert)")
+
     # 2026-09-24: resilient batches with a time-based breaker; see
     # _post_hospital_rows. What did not land is kept for the delayed retry.
-    sent, failed_rows = _post_hospital_rows(rows, sb_url, sb_key)
+    # 2026-10-11: a stamp batch that failed counts as a failed upsert batch:
+    # its rows go to the retry (as full rows) and its system is not swept.
+    sent, failed_rows = _post_hospital_rows(full_rows, sb_url, sb_key) if full_rows else (0, [])
+    failed_rows = stamp_failed + failed_rows
+    sent += stamp_sent
     LAST_UPSERT_FAILED[:] = failed_rows
     LAST_RUN_COUNTS["upsert_sent"] = sent
     LAST_RUN_COUNTS["sweep_deactivated"] = 0
