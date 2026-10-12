@@ -1064,6 +1064,29 @@ def report_complete(system: str, fetched: int, advertised) -> bool:
     COMPLETE_SYSTEMS.add(system)
     return True
 
+
+# 2026-10-12: emit-names an adapter set out to list this run. scrape_workday
+# records each tenant before its first request (so a tenant that fails with
+# no rows still counts); finalize_jobs adds every emit-name that produced a
+# row. complete_canonical() reads it: a system fed by two emit-names (Prisma
+# Health's two Workday tenants) is complete only when each of them is.
+LISTED_SYSTEMS: set[str] = set()
+
+
+def complete_canonical(exclude=None) -> set[str]:
+    """COMPLETE_SYSTEMS in post-alias names, for the sweep and Layer 4.
+
+    A canonical system is complete only when every emit-name that fed it
+    this run (LISTED_SYSTEMS or COMPLETE_SYSTEMS, through
+    HOSPITAL_SYSTEM_ALIASES) reported a complete crawl. Systems in `exclude`
+    (post-alias) and those with a partial report are never complete."""
+    feeds: dict[str, set[str]] = {}
+    for emit in LISTED_SYSTEMS | COMPLETE_SYSTEMS:
+        feeds.setdefault(HOSPITAL_SYSTEM_ALIASES.get(emit, emit), set()).add(emit)
+    held = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS} | set(exclude or ())
+    return {canon for canon, emits in feeds.items()
+            if emits <= COMPLETE_SYSTEMS and canon not in held}
+
 # ── Cross-tenant dedupe at the source (2026-09-10, S-scraper-2) ────────────
 # Two ATS tenants of one system can list the same posting (CityMD's two
 # Workday entries doubled 608 rows before the second entry was removed).
@@ -4882,6 +4905,9 @@ async def _wd_fill_states(session, working_url: str, system: str, jobs: list, de
 async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_data: tuple) -> list[Job]:
     tenant, wd_num, primary_site = tenant_data
     jobs = []
+    # 2026-10-12: recorded before the first request, so a tenant that fails
+    # still counts as a feed of its system (complete_canonical).
+    LISTED_SYSTEMS.add(system)
     # (Job, externalPath) pairs, so the optional detail pass can rebuild each
     # job's CXS detail URL. externalPath is not carried on the Job dataclass.
     detail_targets = []
@@ -4904,9 +4930,15 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # time"), failing the whole 500-row chunk.
     seen_ids = set()
 
-    async def _crawl(applied_facets=None):
+    async def _crawl(applied_facets=None, stats=None):
         """One paginated sweep; parses into jobs/detail_targets via seen_ids.
-        Returns True if it hit the 2,000-result window (i.e. likely truncated)."""
+        Returns True if it hit the 2,000-result window (i.e. likely truncated).
+
+        stats (2026-10-12, the plain crawl only): "listed" counts every posting
+        the pages returned (before the id dedupe and the title filter),
+        "total" is the tenant's advertised total, and "end" says how the
+        crawl stopped: "end" (a short or empty page after the first one),
+        "empty", "window", "HTTP <status>" or "error: ..."."""
         offset = 0
         # 2026-05-14 quirk preserved: some tenants report the true total only
         # on page 1 and 0 afterwards. Kept for logging; never bounds the loop.
@@ -4922,14 +4954,22 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     ssl=False, proxy=proxies.get(),
                     timeout=aiohttp.ClientTimeout(total=25)) as r:
                     if r.status != 200:
+                        if stats is not None:
+                            stats["end"] = f"HTTP {r.status}"
                         return False
                     data = await r.json()
                 listings = data.get("jobPostings", [])
                 if not listings:
+                    if stats is not None:
+                        stats["end"] = "end" if offset else "empty"
                     return False
                 page_total = data.get("total", 0) or 0
                 if initial_total is None and page_total > 0:
                     initial_total = page_total
+                    if stats is not None:
+                        stats["total"] = page_total
+                if stats is not None:
+                    stats["listed"] += len(listings)
                 for j in listings:
                     loc = j.get("locationsText", "")
                     _city, _state = parse_city_state(loc)
@@ -5006,11 +5046,17 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         detail_targets.append((jobs[-1], _ext))
                 offset += LIMIT
                 if len(listings) < LIMIT:
+                    if stats is not None:
+                        stats["end"] = "end"
                     return False           # short page — genuine end
                 if offset >= WD_RESULT_WINDOW:
+                    if stats is not None:
+                        stats["end"] = "window"
                     return True            # hit the window — truncated
                 await jitter()
             except Exception as e:
+                if stats is not None:
+                    stats["end"] = f"error: {e}"
                 logger.info(f"Workday {system}: {e}")
                 return False
 
@@ -5018,7 +5064,26 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # inside its fixed facet (WD_TENANT_FACETS), including the probe and the
     # slices below.
     base_facets = WD_TENANT_FACETS.get(system) or {}
-    hit_window = await _crawl(base_facets or None)
+    plain = {"listed": 0, "total": None, "end": None}
+    hit_window = await _crawl(base_facets or None, plain)
+    # 2026-10-12: a complete-crawl report (report_complete), as the Phenom,
+    # TalentBrew, Talemetry, HealthcareSource and CHS adapters make. The
+    # yield guard held NewYork-Presbyterian's closed postings for good: its
+    # 10-12 crawl listed the whole board (316 rows, board total 323) against
+    # 488 active rows, 65% < 80%, and every closed posting it kept lowered the
+    # ratio further. Complete means the plain crawl reached the last page
+    # with no error, did not fill the 2,000-result window (a facet-sliced
+    # crawl never claims), and its pages returned COMPLETE_RATIO of the
+    # tenant's advertised total. The sweep and Layer 4 still require the
+    # crawl to return half of the system's active rows before they believe it.
+    if not hit_window and plain["end"] == "end":
+        whole = report_complete(system, plain["listed"], plain["total"])
+    else:
+        COMPLETE_SYSTEMS.discard(system)
+        whole = False
+    logger.info(f"Workday {system}: listed {plain['listed']} of {plain['total']} advertised "
+                f"(stopped: {'window' if hit_window else plain['end']}); "
+                + ("complete crawl" if whole else "not reported complete"))
     if base_facets and not jobs:
         logger.warning(f"Workday {system}: 0 rows inside its fixed facet {sorted(base_facets)}; "
                        f"the facet ids may have changed (check the tenant's facets before "
@@ -19090,7 +19155,9 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # The rows it did not re-stamp are closed postings, not a cut-short
     # crawl; the guard held about 1,600 such rows on 10-06 (Prime, Sutter,
     # NYP, One Medical, Carilion) until the backstop. A partial report wins.
-    complete = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in COMPLETE_SYSTEMS} - partial
+    # 2026-10-12: complete_canonical also holds a system that another
+    # emit-name (a second tenant) fed tonight without a complete claim.
+    complete = complete_canonical(partial)
     # 2026-10-07 (push 10c): a complete claim is believed only when the run
     # also returned at least COMPLETE_MIN_ACTIVE_RATIO of the system's active
     # rows. The 13:06 run read UnitedHealth Group's total from a geo-filtered
@@ -23128,6 +23195,8 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     # them in a process pool (normalize_jobs, in order), and the family
     # dedupe walks the results in the same order as before.
     kept: list[Job] = []
+    # 2026-10-12: every emit-name that produced a row (complete_canonical).
+    LISTED_SYSTEMS.update(j.hospital_system for j in all_jobs if getattr(j, "hospital_system", None))
     for i, job in enumerate(all_jobs):
         if not job.job_id or not job.title:
             continue
