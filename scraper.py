@@ -18374,6 +18374,12 @@ HASH_VERSION = 1
 HASH_STAMP_BATCH = int(os.getenv("HASH_STAMP_BATCH", "500"))
 HASH_STAMP_MIN_BATCH = 25
 _HASH_EXCLUDE = frozenset({"scraped_at", "first_seen", "is_active", "posted_date", "content_hash"})
+# Every other payload column feeds the hash, and sql/100's guard trigger
+# (trg_zz_content_hash_guard, BEFORE UPDATE OF exactly those columns, named to
+# fire after trg_preserve_enrichment) clears content_hash on any write that
+# changes one of them without changing the hash: a night without the hash, an
+# older checkout's upsert, a manual relabel. tests/test_content_hash.py pins
+# the column list to the payload; a new payload column goes in both.
 _PG_ISO_RX = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _HJ_CONTENT_HASH: dict = {}
 
@@ -18409,27 +18415,42 @@ def content_hash_for(r: dict) -> str:
     return hashlib.md5(raw.encode("utf-8", "surrogatepass"), usedforsecurity=False).hexdigest()
 
 
+HASH_PROBE_PAUSES = (2, 4, 8)   # seconds before each retry of a probe that got no definite answer
+
+
 def _hospital_jobs_has_content_hash(sb_url: str, sb_key: str) -> bool:
     """True when hospital_jobs has content_hash (one read-only select per
-    process, cached when the answer is definite; as _hospital_jobs_has_first_seen)."""
+    process, cached when the answer is definite; as _hospital_jobs_has_first_seen).
+    A failure that is not a definite answer (no 200, no 400) is retried
+    len(HASH_PROBE_PAUSES) times before the run falls back to the plain
+    upsert; a night that skips the hash for a passing blip writes every row
+    in full, and the database guard (sql/100, trg_zz_content_hash_guard)
+    clears the stored hash of every row that write changes."""
     if "ok" in _HJ_CONTENT_HASH:
         return _HJ_CONTENT_HASH["ok"]
     import urllib.request as _urlreq, urllib.error as _urlerr
     u = f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=content_hash&limit=1"
     rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
-    try:
-        with _urlreq.urlopen(rq, timeout=30) as resp:
-            resp.read()
-        _HJ_CONTENT_HASH["ok"] = True
-    except _urlerr.HTTPError as e:
-        if e.code == 400:
-            _HJ_CONTENT_HASH["ok"] = False
-        logger.info(f"Hospital upsert: content_hash not used this run (probe HTTP {e.code})")
-        return False
-    except Exception as e:
-        logger.info(f"Hospital upsert: content_hash not used this run (probe failed: {e})")
-        return False
-    return _HJ_CONTENT_HASH["ok"]
+    detail = ""
+    for attempt in range(len(HASH_PROBE_PAUSES) + 1):
+        if attempt:
+            time.sleep(HASH_PROBE_PAUSES[attempt - 1])
+        try:
+            with _urlreq.urlopen(rq, timeout=30) as resp:
+                resp.read()
+            _HJ_CONTENT_HASH["ok"] = True
+            return True
+        except _urlerr.HTTPError as e:
+            if e.code == 400:
+                _HJ_CONTENT_HASH["ok"] = False
+                logger.info(f"Hospital upsert: content_hash not used this run (probe HTTP {e.code})")
+                return False
+            detail = f"probe HTTP {e.code}"
+        except Exception as e:
+            detail = f"probe failed: {e}"
+    logger.info(f"Hospital upsert: content_hash not used this run ({detail}, "
+                f"{len(HASH_PROBE_PAUSES) + 1} attempts)")
+    return False
 
 
 def load_content_hashes(sb_url: str, sb_key: str) -> dict:
@@ -18507,19 +18528,55 @@ def partition_by_hash(rows: list[dict], stored: dict):
     return full, seen, posted, ids, counts
 
 
+STAMP_GONE_CODES = (401, 403, 404)   # the RPC is missing (sql/100r) or not allowed (a grant change)
+
+
+def _stamp_rpc_probe(sb_url: str, sb_key: str, run_started_iso: str) -> str | None:
+    """One empty call to stamp_seen and one to stamp_seen_posted (no ids, so
+    nothing is written). None when both answer with a JSON list; otherwise
+    what failed, and the run takes the full upsert with content_hash null."""
+    import urllib.request as _urlreq, urllib.error as _urlerr
+    headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
+               "Content-Type": "application/json"}
+    for fn, body in (("stamp_seen", {"p_ids": [], "p_ts": run_started_iso}),
+                     ("stamp_seen_posted", {"p_ids": [], "p_posted": [], "p_ts": run_started_iso})):
+        rq = _urlreq.Request(f"{sb_url.rstrip('/')}/rest/v1/rpc/{fn}", data=json.dumps(body).encode(),
+                             headers=headers, method="POST")
+        try:
+            with _urlreq.urlopen(rq, timeout=30) as resp:
+                out = json.loads(resp.read().decode() or "null")
+        except _urlerr.HTTPError as e:
+            return f"{fn} HTTP {e.code}"
+        except Exception as e:
+            return f"{fn} {type(e).__name__}: {e}"
+        if not isinstance(out, list):
+            return f"{fn} answered {str(out)[:80]}"
+    return None
+
+
 def _stamp_post(sb_url: str, sb_key: str, run_started_iso: str, ids: dict,
-                missed: list, with_posted: bool):
+                missed: list, with_posted: bool, stop: dict | None = None):
     """post function for _post_hospital_rows: one stamp_seen (or
     stamp_seen_posted) RPC per chunk. The RPC returns the ids it did not
     stamp (gone, or no longer active); their rows go to missed, for the full
-    upsert, which writes them exactly as before."""
+    upsert, which writes them exactly as before.
+
+    stop (one dict shared by both partitions): a 404, 401 or 403 from the
+    RPC means it is gone or not allowed, not that the rows are bad. stop["why"]
+    is set, and that chunk and every later one (in either partition) go to
+    stop["rows"] unsent, for the full upsert, instead of failing."""
     import urllib.request as _urlreq, urllib.error as _urlerr
     fn = "stamp_seen_posted" if with_posted else "stamp_seen"
     url = f"{sb_url.rstrip('/')}/rest/v1/rpc/{fn}"
     headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
                "Content-Type": "application/json"}
+    stop = {} if stop is None else stop
+    stop.setdefault("rows", [])
 
     def post(chunk: list[dict]):
+        if stop.get("why"):
+            stop["rows"].extend(chunk)
+            return True, False, ""
         keyed = [(ids[(r.get("hospital_system"), str(r.get("job_id")))], r) for r in chunk]
         body = {"p_ids": [i for i, _ in keyed], "p_ts": run_started_iso}
         if with_posted:
@@ -18533,6 +18590,12 @@ def _stamp_post(sb_url: str, sb_key: str, run_started_iso: str, ids: dict,
                 err = e.read().decode()[:300]
             except Exception:
                 err = ""
+            if e.code in STAMP_GONE_CODES:
+                stop["why"] = f"{fn} HTTP {e.code}"
+                stop["rows"].extend(chunk)
+                logger.warning(f"Hospital seen stamp: {fn} answered HTTP {e.code} {err}; stamping stops, "
+                               f"the remaining unchanged rows take the full upsert")
+                return True, False, ""
             return False, e.code >= 500 or e.code in (408, 429) or "57014" in err, f"HTTP {e.code} {err}"
         except Exception as e:
             return False, True, f"{type(e).__name__}: {e}"
@@ -18659,16 +18722,28 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # 2026-10-11: content hash (see HASH_VERSION). Off, or without the
     # column, every row takes the upsert exactly as before.
     for k_ in ("hash_new", "hash_changed", "hash_unchanged", "stamp_landed",
-               "stamp_posted", "stamp_failed", "stamp_missed"):
+               "stamp_posted", "stamp_failed", "stamp_missed", "stamp_fallback", "hash_off_reason"):
         LAST_RUN_COUNTS.pop(k_, None)
     LAST_RUN_COUNTS["hash_mode"] = "absent"
     full_rows, stamp_sent, stamp_failed = rows, 0, []
     if _hospital_jobs_has_content_hash(sb_url, sb_key):
-        if not hash_skip_enabled():
+        # 2026-10-11 (review): the 'on' branch first checks that both stamp
+        # RPCs answer (one empty call each); if either does not, the run is
+        # 'off', exactly as HASH_SKIP=0.
+        skip_on = hash_skip_enabled()
+        probe_err = _stamp_rpc_probe(sb_url, sb_key, run_started_iso) if skip_on else None
+        if not skip_on:
             LAST_RUN_COUNTS["hash_mode"] = "off"
             for r in rows:
                 r["content_hash"] = None
             logger.info("Hospital upsert: HASH_SKIP=0, every row takes the full upsert")
+        elif probe_err:
+            LAST_RUN_COUNTS["hash_mode"] = "off"
+            LAST_RUN_COUNTS["hash_off_reason"] = f"stamp RPC probe failed: {probe_err}"
+            for r in rows:
+                r["content_hash"] = None
+            logger.warning(f"Hospital upsert: stamp RPC probe failed ({probe_err}); content hash off "
+                           f"this run, every row takes the full upsert with content_hash null")
         else:
             LAST_RUN_COUNTS["hash_mode"] = "on"
             for r in rows:
@@ -18676,29 +18751,38 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
             stored = load_content_hashes(sb_url, sb_key)
             full_rows, seen_rows, posted_rows, ids, hc = partition_by_hash(rows, stored)
             missed: list[dict] = []
+            stop: dict = {"rows": []}
             for part, with_posted, lab in ((seen_rows, False, "Hospital seen stamp"),
                                            (posted_rows, True, "Hospital seen stamp+posted")):
                 if not part:
                     continue
+                back0 = len(missed) + len(stop["rows"])
                 n_, f_ = _post_hospital_rows(
                     part, sb_url, sb_key, label=lab,
-                    post=_stamp_post(sb_url, sb_key, run_started_iso, ids, missed, with_posted),
+                    post=_stamp_post(sb_url, sb_key, run_started_iso, ids, missed, with_posted, stop),
                     batch=HASH_STAMP_BATCH, min_batch=HASH_STAMP_MIN_BATCH)
                 stamp_failed.extend(f_)
                 if with_posted:
-                    LAST_RUN_COUNTS["stamp_posted"] = n_
+                    LAST_RUN_COUNTS["stamp_posted"] = n_ - (len(missed) + len(stop["rows"]) - back0)
             # A stamped row the RPC did not touch (deactivated or gone since
-            # the load) takes the upsert, which writes it as before.
-            if missed:
-                full_rows = full_rows + missed
-            stamp_sent = len(seen_rows) + len(posted_rows) - len(stamp_failed) - len(missed)
+            # the load) takes the upsert, which writes it as before; so does
+            # every row left when a stamp RPC answered 404/401/403 (stop).
+            if missed or stop["rows"]:
+                full_rows = full_rows + missed + stop["rows"]
+            stamp_sent = (len(seen_rows) + len(posted_rows) - len(stamp_failed) - len(missed)
+                          - len(stop["rows"]))
             LAST_RUN_COUNTS.update(hash_new=hc["new"], hash_changed=hc["changed"],
                                    hash_unchanged=hc["unchanged"], stamp_landed=stamp_sent,
-                                   stamp_failed=len(stamp_failed), stamp_missed=len(missed))
+                                   stamp_failed=len(stamp_failed), stamp_missed=len(missed),
+                                   stamp_fallback=len(stop["rows"]))
+            if stop.get("why"):
+                LAST_RUN_COUNTS["hash_off_reason"] = f"stamping stopped mid-run: {stop['why']}"
             logger.info(f"Hospital upsert: content hash: new {hc['new']:,}, changed {hc['changed']:,}, "
                         f"unchanged {hc['unchanged']:,} (stamped {stamp_sent:,}, "
                         f"{LAST_RUN_COUNTS.get('stamp_posted') or 0:,} with posted_date; "
-                        f"{len(stamp_failed):,} failed, {len(missed):,} back to the upsert)")
+                        f"{len(stamp_failed):,} failed, {len(missed):,} back to the upsert"
+                        + (f", {len(stop['rows']):,} to the full upsert after {stop['why']}"
+                           if stop.get("why") else "") + ")")
 
     # 2026-09-24: resilient batches with a time-based breaker; see
     # _post_hospital_rows. What did not land is kept for the delayed retry.

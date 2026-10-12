@@ -5,6 +5,8 @@
 # No database, no network: a fake PostgREST that keeps rows in a dict.
 import copy
 import io
+import os
+import re
 import json
 import urllib.error
 import urllib.parse
@@ -41,8 +43,9 @@ class FakeDB:
 
     def __init__(self, monkeypatch, has_column=True, stamp_fail=None, upsert_fail=None):
         self.rows, self.next_id = {}, 1
-        self.posts, self.rpcs, self.patches, self.loads = [], [], [], 0
+        self.posts, self.rpcs, self.patches, self.loads, self.probes = [], [], [], 0, []
         self.has_column, self.stamp_fail, self.upsert_fail = has_column, stamp_fail, upsert_fail
+        self.column_probes, self.column_probe_fail = 0, []
         monkeypatch.setenv("SUPABASE_URL", "https://fake.invalid")
         monkeypatch.setenv("SUPABASE_KEY", "test-key")
         monkeypatch.setattr(urllib.request, "urlopen", self.urlopen)
@@ -60,7 +63,8 @@ class FakeDB:
         if "/rpc/stamp_seen" in u:
             body = json.loads(rq.data.decode())
             fn = u.rsplit("/", 1)[1]
-            self.rpcs.append((fn, body))
+            # The run's opening RPC probe (empty ids) is kept apart from the stamps.
+            (self.rpcs if body["p_ids"] else self.probes).append((fn, body))
             if self.stamp_fail:
                 err = self.stamp_fail(fn, body)
                 if err:
@@ -89,9 +93,14 @@ class FakeDB:
                 if cur is None:
                     cur = self.rows[k] = {"id": self.next_id}
                     self.next_id += 1
-                cur.update(r)
+                    cur.update(r)
+                else:
+                    self.update(k, **r)
             return _Resp()
         if m == "GET" and "select=content_hash&limit=1" in u:
+            self.column_probes += 1
+            if self.column_probe_fail:
+                self._err(u, self.column_probe_fail.pop(0), "upstream")
             if not self.has_column:
                 self._err(u, 400, '{"code":"42703"}')
             return _Resp([])
@@ -116,9 +125,37 @@ class FakeDB:
                 r["is_active"] = False
         return _Resp(content_range="*/0")
 
+    def update(self, k, **cols):
+        """An UPDATE of row k (the upsert's conflict path, or manual SQL),
+        with the content-hash guard trigger applied as sql/100 defines it."""
+        old = dict(self.rows[k])
+        new = dict(old, **cols)
+        _content_hash_guard(old, new, cols)
+        self.rows[k].update(new)
+
     def posted_keys(self, i=None):
         posts = self.posts if i is None else self.posts[i:]
         return [(r["hospital_system"], r["job_id"]) for b in posts for r in b]
+
+
+# sql/100: trg_zz_content_hash_guard BEFORE UPDATE OF exactly these columns
+# (every payload column that feeds content_hash_for), firing after
+# trg_preserve_enrichment (same timing, name order).
+GUARD_COLUMNS = ("title", "hospital_system", "hospital_name", "city", "state", "location",
+                 "specialty", "job_type", "url", "job_id", "description", "ats_platform",
+                 "wage_min", "wage_max", "wage_unit", "has_signon", "posting_facts",
+                 "apply_verified", "derived_job_type", "employer_type")
+
+
+def _content_hash_guard(old, new, set_cols):
+    """hj_content_hash_guard(): an UPDATE naming a hashed column that leaves
+    content_hash as stored while a hashed column changes clears the hash, so
+    the next night writes the row in full instead of stamping it."""
+    if not set(set_cols) & set(GUARD_COLUMNS):
+        return                                   # the column list: stamps never fire it
+    if new.get("content_hash") == old.get("content_hash") and any(
+            new.get(c) != old.get(c) for c in GUARD_COLUMNS):
+        new["content_hash"] = None
 
 
 def _night(rows, run):
@@ -254,8 +291,8 @@ def test_a_row_retired_between_load_and_stamp_goes_back_to_the_upsert(monkeypatc
     real = db.urlopen
 
     def racing(rq, timeout=None):
-        if "/rpc/stamp_seen" in rq.full_url:
-            db.rows[("A Board", "5")]["is_active"] = False
+        if "/rpc/stamp_seen" in rq.full_url and json.loads(rq.data.decode())["p_ids"]:
+            db.rows[("A Board", "5")]["is_active"] = False   # a stamp, not the opening probe
         return real(rq, timeout)
     monkeypatch.setattr(urllib.request, "urlopen", racing)
     before = len(db.posts)
@@ -367,3 +404,174 @@ def test_finish_run_record_writes_inserted_and_updated(monkeypatch):
     monkeypatch.setattr(database, "service_client", lambda: _C())
     assert database.finish_run_record(7, "success", RUN2, jobs_inserted=2, jobs_updated=5)
     assert sent["jobs_inserted"] == 2 and sent["jobs_updated"] == 5
+
+
+# -- the database guard (sql/100, trg_zz_content_hash_guard) --------------------
+
+def test_guard_columns_are_exactly_the_columns_the_hash_reads(monkeypatch):
+    db = FakeDB(monkeypatch)
+    job = scraper.Job(title="Registered Nurse", hospital_system="A Board", hospital_name="A Board",
+                      city="Odessa", state="TX", location="Odessa, TX", specialty="", job_type="Full time",
+                      url="https://example.org/jobs/1", job_id="1", posted_date="Posted 3 Days Ago",
+                      description="Body " * 60, ats_platform="workday")
+    _night([scraper.normalize_job(job)], RUN1)
+    sent = db.posts[0][0]
+    # The stamps and the bookkeeping are sent but neither hashed nor guarded.
+    assert {"scraped_at", "posted_date", "first_seen", "is_active", "content_hash"} <= set(sent)
+    assert set(sent) - scraper._HASH_EXCLUDE == set(GUARD_COLUMNS)
+    assert len(GUARD_COLUMNS) == len(set(GUARD_COLUMNS))
+
+
+SQL_100 = os.path.join(os.environ.get("WAYPOINT_SQL_DIR", r"C:\Users\19403\OneDrive\claud_outputinput"
+                                      r"\redesign_2026-09-09\sql"), "100_hj_content_hash.sql")
+
+
+@pytest.mark.skipif(not os.path.exists(SQL_100), reason="sql/100 is kept outside the repo")
+def test_sql_100_guard_lists_the_same_columns_and_fires_after_the_enrichment_trigger():
+    text = io.open(SQL_100, encoding="utf-8").read()
+    m = re.search(r"create or replace trigger (trg_zz_content_hash_guard) before update of (.+?) "
+                  r"on public\.hospital_jobs for each row execute function public\.hj_content_hash_guard\(\);",
+                  text)
+    assert m and tuple(c.strip() for c in m.group(2).split(",")) == GUARD_COLUMNS
+    # Same-timing row triggers fire in name order: the guard sees the row as
+    # trg_preserve_enrichment (and trg_search_doc) left it.
+    assert sorted(["trg_preserve_enrichment", "trg_search_doc", m.group(1)])[-1] == m.group(1)
+    fn = next(ln for ln in text.splitlines() if "function public.hj_content_hash_guard()" in ln)
+    for c in GUARD_COLUMNS:
+        assert re.search(rf"\bnew\.{c}\b", fn) and re.search(rf"\bold\.{c}\b", fn), c
+    assert "new.content_hash is not distinct from old.content_hash" in fn
+    assert "new.content_hash := null" in fn
+
+
+def _hashes(db):
+    return {k: r.get("content_hash") for k, r in db.rows.items()}
+
+
+@pytest.mark.parametrize("how", ["probe_failed", "older_checkout"])
+def test_a_night_without_the_hash_that_changes_a_row_clears_its_hash(monkeypatch, how):
+    """A failed column probe and an older checkout (hca_local_push,
+    tools/wd_local_detail) upsert without content_hash; the guard clears the
+    hash of each row they change, so a later night that sees the earlier
+    content writes it in full instead of stamping over the changed row."""
+    db = FakeDB(monkeypatch)
+    _night([_row("A Board", i) for i in range(12)], RUN1)
+    h0 = _hashes(db)
+    real_probe = scraper._hospital_jobs_has_content_hash
+    if how == "probe_failed":
+        monkeypatch.setattr(scraper, "_HJ_CONTENT_HASH", {})
+        db.column_probe_fail = [503] * 4
+    else:
+        monkeypatch.setattr(scraper, "_hospital_jobs_has_content_hash", lambda *a: False)
+    _night([_row("A Board", i, title="Charge Nurse" if i == 3 else "Registered Nurse")
+            for i in range(12)], RUN2)
+    assert scraper.LAST_RUN_COUNTS["hash_mode"] == "absent"
+    assert db.rows[("A Board", "3")]["content_hash"] is None          # changed: hash cleared
+    assert all(_hashes(db)[k] == h0[k] for k in h0 if k != ("A Board", "3"))
+    # Night 3, hash back on, the listing shows the night-1 title again.
+    monkeypatch.setattr(scraper, "_hospital_jobs_has_content_hash", real_probe)
+    monkeypatch.setattr(scraper, "_HJ_CONTENT_HASH", {})
+    before = len(db.posts)
+    _night([_row("A Board", i) for i in range(12)], "2026-10-12T00:09:00.000000Z")
+    assert db.posted_keys(before) == [("A Board", "3")]                # written in full, not stamped
+    assert db.rows[("A Board", "3")]["title"] == "Registered Nurse"
+    assert db.rows[("A Board", "3")]["content_hash"] == h0[("A Board", "3")]
+
+
+def test_a_manual_relabel_clears_the_hash_and_the_next_night_writes_the_row(monkeypatch):
+    db = FakeDB(monkeypatch)
+    _night([_row("A Board", i) for i in range(12)], RUN1)
+    db.update(("A Board", "4"), specialty="ICU")                      # relabel SQL
+    assert db.rows[("A Board", "4")]["content_hash"] is None
+    before = len(db.posts)
+    _night([_row("A Board", i) for i in range(12)], RUN2)
+    assert db.posted_keys(before) == [("A Board", "4")]                # as every night before the hash
+    assert db.rows[("A Board", "4")]["content_hash"]
+
+
+def test_the_stamps_and_the_scrapers_own_writes_keep_the_hash(monkeypatch):
+    db = FakeDB(monkeypatch)
+    _night([_row("A Board", i) for i in range(12)], RUN1)
+    h0 = _hashes(db)
+    db.update(("A Board", "1"), scraped_at=RUN2, posted_date="2026-10-01", is_active=True)
+    assert _hashes(db) == h0                                           # not in the column list
+    _night([_row("A Board", i, posted_date="Posted 4 Days Ago",
+                 title="LPN" if i == 2 else "Registered Nurse") for i in range(12)], RUN2)
+    h1 = _hashes(db)
+    assert all(h1.values()) and h1[("A Board", "2")] != h0[("A Board", "2")]
+    assert all(h1[k] == h0[k] for k in h0 if k != ("A Board", "2"))
+
+
+# -- the column probe retries ---------------------------------------------------
+
+def test_column_probe_retries_a_blip_before_falling_back(monkeypatch):
+    db = FakeDB(monkeypatch)
+    pauses = []
+    monkeypatch.setattr(scraper.time, "sleep", pauses.append)
+    db.column_probe_fail = [503, 502, 500]
+    assert scraper._hospital_jobs_has_content_hash("https://fake.invalid", "k") is True
+    assert db.column_probes == 4 and pauses == list(scraper.HASH_PROBE_PAUSES)
+    assert scraper._HJ_CONTENT_HASH == {"ok": True}
+
+
+def test_column_probe_gives_up_after_three_retries_without_caching(monkeypatch):
+    db = FakeDB(monkeypatch)
+    db.column_probe_fail = [503] * 4
+    assert scraper._hospital_jobs_has_content_hash("https://fake.invalid", "k") is False
+    assert db.column_probes == 4 and scraper._HJ_CONTENT_HASH == {}
+
+
+def test_column_probe_400_is_definite_and_not_retried(monkeypatch):
+    db = FakeDB(monkeypatch, has_column=False)
+    assert scraper._hospital_jobs_has_content_hash("https://fake.invalid", "k") is False
+    assert db.column_probes == 1 and scraper._HJ_CONTENT_HASH == {"ok": False}
+
+
+# -- the stamp RPC probe, and a stamp RPC that disappears mid-run ---------------
+
+@pytest.mark.parametrize("fn,err", [("stamp_seen", (404, '{"code":"PGRST202"}')),
+                                    ("stamp_seen_posted", (403, '{"code":"42501"}')),
+                                    ("stamp_seen_posted", (503, "upstream"))])
+def test_a_failed_rpc_probe_turns_the_hash_off_for_the_run(monkeypatch, fn, err):
+    db = FakeDB(monkeypatch)
+    _night([_row("A Board", i) for i in range(12)], RUN1)
+    db.stamp_fail = lambda f, b: err if f == fn and not b["p_ids"] else None
+    loads, before = db.loads, len(db.posts)
+    assert _night([_row("A Board", i) for i in range(12)], RUN2) == 12
+    c = scraper.LAST_RUN_COUNTS
+    assert c["hash_mode"] == "off" and fn in c["hash_off_reason"] and "hash_new" not in c
+    assert not db.rpcs and db.loads == loads                         # no stamps, no hash load
+    assert len(db.posted_keys(before)) == 12                          # every row in full
+    assert all(r["content_hash"] is None for b in db.posts[before:] for r in b)
+    assert all(r["scraped_at"] == RUN2 for r in db.rows.values()) and not scraper.LAST_UPSERT_FAILED
+    assert scheduler.hash_notes(c) == f"; content hash off ({c['hash_off_reason']}), full upsert"
+    assert scheduler.hash_meta(c)["reason"] == c["hash_off_reason"]
+
+
+def test_the_rpc_probe_sends_empty_arrays(monkeypatch):
+    db = FakeDB(monkeypatch)
+    _night([_row("A Board", i) for i in range(3)], RUN1)
+    assert [(fn, b["p_ids"], b.get("p_posted")) for fn, b in db.probes] == [
+        ("stamp_seen", [], None), ("stamp_seen_posted", [], [])]
+    assert scraper.LAST_RUN_COUNTS["hash_mode"] == "on"
+
+
+@pytest.mark.parametrize("code", [404, 401, 403])
+def test_a_stamp_rpc_gone_mid_run_sends_the_rest_through_the_full_upsert(monkeypatch, code):
+    db = FakeDB(monkeypatch)
+    _night([_row("A Board", i) for i in range(600)], RUN1)
+    # Night 2: the first stamp batch (500) lands, then the RPC is gone; rows
+    # 590-599 also need their posted_date written (the other partition).
+    db.stamp_fail = lambda f, b: (code, '{"code":"PGRST202"}') if b["p_ids"] and db.rpcs[1:] else None
+    rows2 = [_row("A Board", i, posted_date="Posted 4 Days Ago" if i >= 590 else "Posted 3 Days Ago")
+             for i in range(600)]
+    before, p0 = len(db.posts), len(db.patches)
+    assert _night(rows2, RUN2) == 600
+    assert [(fn, len(b["p_ids"])) for fn, b in db.rpcs[-2:]] == [("stamp_seen", 500), ("stamp_seen", 90)]
+    assert len(db.posted_keys(before)) == 100                         # 90 + 10, none marked failed
+    assert not scraper.LAST_UPSERT_FAILED and db.patches[p0:] == ["A Board"]
+    assert all(r["scraped_at"] == RUN2 and r["is_active"] for r in db.rows.values())
+    assert all(db.rows[("A Board", str(i))]["posted_date"] == "Posted 4 Days Ago" for i in range(590, 600))
+    c = scraper.LAST_RUN_COUNTS
+    assert (c["stamp_landed"], c["stamp_fallback"], c["stamp_failed"], c["stamp_posted"]) == (500, 100, 0, 0)
+    assert f"HTTP {code}" in c["hash_off_reason"] and c["hash_mode"] == "on"
+    assert scheduler.hash_notes(c).endswith(f"{c['hash_off_reason']}: 100 sent through the full upsert")

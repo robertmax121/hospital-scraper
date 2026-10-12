@@ -63,13 +63,15 @@ def _priced_counts(jobs: list[dict]) -> tuple[int, int]:
 
 
 _HASH_KEYS = ("hash_new", "hash_changed", "hash_unchanged", "stamp_landed",
-              "stamp_posted", "stamp_failed", "stamp_missed")
+              "stamp_posted", "stamp_failed", "stamp_missed", "stamp_fallback")
 
 
 def hash_meta(counts: dict) -> dict:
     """The content-hash counts for scraper_runs.meta (2026-10-11): mode is
     on, off (HASH_SKIP=0) or absent (no content_hash column)."""
     out = {"mode": counts.get("hash_mode") or "absent"}
+    if counts.get("hash_off_reason"):
+        out["reason"] = counts["hash_off_reason"]
     out.update({k: counts[k] for k in _HASH_KEYS if counts.get(k) is not None})
     return out
 
@@ -81,11 +83,13 @@ def hash_notes(counts: dict) -> str:
     if mode == "absent":
         return ""
     if mode != "on":
-        return "; content hash off (HASH_SKIP=0), full upsert"
+        return f"; content hash off ({counts.get('hash_off_reason') or 'HASH_SKIP=0'}), full upsert"
     g = lambda k: counts.get(k) or 0
+    tail = (f", {counts.get('hash_off_reason') or 'stamping stopped'}: {g('stamp_fallback'):,} "
+            f"sent through the full upsert" if g("stamp_fallback") else "")
     return (f"; content hash: new {g('hash_new'):,}, changed {g('hash_changed'):,}, "
             f"unchanged stamped {g('stamp_landed'):,} (posted_date refreshed {g('stamp_posted'):,}), "
-            f"stamp not landed {g('stamp_failed'):,}, stamp back to upsert {g('stamp_missed'):,}")
+            f"stamp not landed {g('stamp_failed'):,}, stamp back to upsert {g('stamp_missed'):,}" + tail)
 
 
 def run():
