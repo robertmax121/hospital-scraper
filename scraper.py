@@ -15837,7 +15837,7 @@ _HCA_TYPE_RE = re.compile(r'>work</i>\s*([^<&]+)')
 # repeats it beside its find_in_page icon and as the JSON-LD
 # identifier.value. Physician postings use another form, "J-049490" (38 of
 # the 500 FL cards), so the value is kept as printed.
-_HCA_REQ_RE = re.compile(r'Job ID:\s*([A-Za-z0-9][A-Za-z0-9-]{0,23})')
+_HCA_REQ_RE = re.compile(r'Job ID:\s*([A-Za-z0-9][A-Za-z0-9-]{0,23})(?![A-Za-z0-9-])')
 _HCA_REQ_VALUE_RE = re.compile(r'^(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{0,23}$')
 
 
