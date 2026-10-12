@@ -4601,6 +4601,54 @@ def _wd_bullet_location(bullets: list) -> tuple[str, str]:
     return city, state
 
 
+# 2026-10-12 (Option Care coverage): a posting open at several sites reads
+# "2 Locations" / "3 Locations" in locationsText, and a site-named location
+# ("Tampa", "Woodlands AIC") carries no state, so the row left the adapter
+# with no city and no state. The board shows only rows with both, so Option
+# Care's 286 live postings showed as 244 (42 multi-site rows hidden). The
+# externalPath still names the primary site ("/job/Hayward-CA/Territory-
+# Sales-Manager_R37386-1"), so for a listed tenant a row whose parse found no
+# state takes its city and state from that first path segment: "City-ST", or
+# "City-Statename" ("Englewood-Colorado"). The per-tenant map holds the
+# tenant's site names that carry no state, checked against the employer's
+# own posting pages on 2026-10-12. Scoped to listed tenants, like
+# WD_CITY_SPACE_STATE, so no other board's location changes.
+WD_PATH_LOCATION: dict[str, dict[str, tuple[str, str]]] = {
+    "Option Care Health": {
+        "tampa": ("Tampa", "FL"),                        # second site of R37387 is St. Petersburg, FL
+        "murray": ("Murray", "UT"),                      # posting page: Murray, Utah
+        "intramed plus columbia": ("West Columbia", "SC"),   # posting page: West Columbia, South Carolina
+        "intramed plus charleston": ("Mount Pleasant", "SC"),  # Workday requisition location: Mount Pleasant, SC
+        "woodlands aic": ("Shenandoah", "TX"),           # posting page: "Shenadoah", Texas (their spelling)
+    },
+}
+_WD_STATE_CODES = frozenset(_STATE_CODE_BY_NAME.values())
+
+
+def _wd_path_location(system: str, external_path: str) -> tuple[str, str]:
+    """(city, state code) from the first segment of a Workday externalPath
+    for a tenant in WD_PATH_LOCATION; ("", "") when it names no state."""
+    m = re.match(r"^/?job/([^/]+)/", external_path or "")
+    if not m:
+        return "", ""
+    seg = re.sub(r"[-_\s]+", " ", m.group(1)).strip()
+    known = WD_PATH_LOCATION.get(system, {}).get(seg.lower())
+    if known:
+        return known
+    words = seg.split()
+    if len(words) < 2:
+        return "", ""
+    last = words[-1]
+    if len(last) == 2 and last.isupper() and last in _WD_STATE_CODES:
+        return " ".join(words[:-1]), last
+    for k in (3, 2, 1):
+        if len(words) > k:
+            code = _STATE_CODE_BY_NAME.get(" ".join(words[-k:]).lower())
+            if code:
+                return " ".join(words[:-k]), code
+    return "", ""
+
+
 def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | None, str, str]:
     """(facility or None, city, state) from WD_FACILITY_MAP for one posting.
     Parsed city/state win; the map only fills what is blank."""
@@ -4909,6 +4957,12 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                                 _city = _bc
                             elif (_city or "").strip().lower() == (loc or "").strip().lower():
                                 _city = ""   # the parse echoed the site text; the tenant default fills the town
+                    if not _state and system in WD_PATH_LOCATION:
+                        # 2026-10-12: "2 Locations" and stateless site names take
+                        # the primary site named in externalPath (Option Care).
+                        _pc, _ps = _wd_path_location(system, j.get("externalPath", ""))
+                        if _ps:
+                            _city, _state = _pc, _ps
                     if system in WD_TITLE_FACILITY:
                         _tf = _wd_title_facility(system, j.get("title", ""))
                         if _tf is None:
