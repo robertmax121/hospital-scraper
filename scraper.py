@@ -173,7 +173,9 @@ class Job:
     wage_unit: str | None = None
     # The employer's public requisition number, when it differs from job_id
     # (2026-10-12: HCA's job_id is the Talemetry URL id, 18284308, while the
-    # posting shows "Job ID: 4981331", the number recruiters look up). Not a
+    # posting shows "Job ID: 4981331", the number recruiters look up; the
+    # TalentBrew tenants' job_id is TalentBrew's id, 101678237952, while the
+    # page shows "Requisition ID 2026-495862", tb_req_id_from_page). Not a
     # column: normalize_job pops it into posting_facts["req_id"]. job_id and
     # the (job_id, hospital_system) upsert key stay exactly as they were.
     req_id: str = ""
@@ -3046,6 +3048,18 @@ def _jobposting_from_html(html: str):
     return None
 
 
+def _ld_identifier_value(posting) -> str:
+    """A JSON-LD JobPosting's identifier as a requisition number ("4981331"
+    HCA, "2026-497242" CommonSpirit): identifier.value, or a bare identifier
+    string; "" when absent or not a requisition number (_hca_req_value)."""
+    ident = posting.get("identifier") if isinstance(posting, dict) else None
+    if isinstance(ident, list):
+        ident = ident[0] if ident else None
+    if isinstance(ident, dict):
+        return _hca_req_value(ident.get("value"))
+    return _hca_req_value(ident) if ident is not None else ""
+
+
 def _apply_posting(job, posting: dict) -> bool:
     """Copy a JSON-LD JobPosting onto a Job: description (+ qualifications),
     employment type, posted date, structured pay. Fills blanks only; True when
@@ -3101,8 +3115,13 @@ async def _fetch_html(session, url: str, timeout: int = 20) -> str:
 
 
 async def _jsonld_detail(session, job) -> bool:
-    """Job page -> JSON-LD JobPosting -> Job fields."""
-    posting = _jobposting_from_html(await _fetch_html(session, job.url))
+    """Job page -> JSON-LD JobPosting -> Job fields. On a TalentBrew page
+    (CommonSpirit, ScionHealth, MemorialCare come through here) it also reads
+    the employer's requisition number (tb_req_id_from_page)."""
+    html = await _fetch_html(session, job.url)
+    posting = _jobposting_from_html(html)
+    if job.ats_platform == "TalentBrew" and not job.req_id:
+        job.req_id = tb_req_id_from_page(html, posting)
     return _apply_posting(job, posting) if posting else False
 
 
@@ -3656,6 +3675,35 @@ def _div_inner(html: str, open_rx) -> str:
     return ""
 
 
+# 2026-10-12 (TalentBrew requisition number, owner approved): job_id is
+# TalentBrew's own posting id (101678237952), while the page prints the
+# employer's number: "Job ID / Requisition ID 2026-495862" CommonSpirit,
+# "Requisition number 1063301" UHG, "Job Number 1453546" Kaiser, "Req ID
+# 558281" ScionHealth, "Job ID 592405" Maxim. Every TalentBrew job page read
+# on 2026-10-12 (all nine tenants) carries it in <meta name="job-ats-req-id">
+# (and gtm_reqid), the same value as the JSON-LD identifier.value. The meta
+# comes first: Kaiser's and Maxim's JSON-LD does not parse (raw control
+# characters in the body). Of the search lists only UHG's cards print it
+# (span.job-id, read in scrape_uhg_talentbrew); the other tenants get it from
+# the job page, so only on the rows their detail pass reads.
+_TB_REQ_META_RX = re.compile(r'<meta\b[^>]*\bname="(?:job-ats-req-id|gtm_reqid)"[^>]*>', re.I)
+_META_CONTENT_RX = re.compile(r'\bcontent="([^"]*)"', re.I)
+
+
+def tb_req_id_from_page(page_html: str, posting: dict | None = None) -> str:
+    """The employer's requisition number on a TalentBrew job page, exactly as
+    printed ("2026-497242", "00070959", "MEM009943"): the job-ats-req-id /
+    gtm_reqid meta, then the JSON-LD identifier.value. "" when neither."""
+    for m in _TB_REQ_META_RX.finditer(page_html or ""):
+        c = _META_CONTENT_RX.search(m.group(0))
+        got = _hca_req_value(htmllib.unescape(c.group(1))) if c else ""
+        if got:
+            return got
+    if posting is None:
+        posting = _jobposting_from_html(page_html)
+    return _ld_identifier_value(posting)
+
+
 async def _tb_page_detail(session, job) -> bool:
     """TalentBrew job page for the HTML-list runners (Kaiser, UHG, Enhabit,
     Maxim). Kaiser, UHG and Enhabit pages carry a JSON-LD JobPosting; Maxim's
@@ -3681,6 +3729,8 @@ async def _tb_page_detail(session, job) -> bool:
     if extras.get("Job Schedule") and not (job.job_type or "").strip():
         job.job_type = extras["Job Schedule"]
     posting = _jobposting_from_html(html)
+    if not job.req_id:                     # UHG's card already gave it
+        job.req_id = tb_req_id_from_page(html, posting)
     if posting:
         p = dict(posting)
         et = p.get("employmentType")
@@ -5806,6 +5856,13 @@ UHG_JOB_PATTERN = re.compile(r'href="(/job/([^/]+)/([^/]+)/34088/(\d+))"')
 UHG_TITLE_NEAR_HREF = re.compile(
     r'href="[^"]*?/34088/(\d+)"[^>]*>(?:\s*<[^>]+>)*\s*([^<\n]{3,150}?)\s*<'
 )
+# 2026-10-12: each card prints UHG's requisition number inside its own anchor,
+# <span class="job-id job-info">2386735</span> (the job page's "Requisition
+# number" and job-ats-req-id meta carry the same value; tb_req_id_from_page).
+UHG_REQ_NEAR_HREF = re.compile(
+    r'href="[^"]*?/34088/(\d+)"[^>]*>(?:(?!</a>)[\s\S]){0,800}?'
+    r'<span class="job-id job-info">\s*([^<]{1,40}?)\s*</span>'
+)
 # 2026-10-07 (push 10): every results page prints the site's own count on
 # the results container (data-total-results="5573" data-total-pages="372"
 # data-records-per-page="15" on 2026-10-07); the crawl ends on it.
@@ -5922,6 +5979,11 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
 
         matches = UHG_JOB_PATTERN.findall(html)
         title_map = {jid: t.strip() for jid, t in UHG_TITLE_NEAR_HREF.findall(html)}
+        req_map: dict[str, str] = {}
+        for jid, raw in UHG_REQ_NEAR_HREF.findall(html):
+            got = _hca_req_value(htmllib.unescape(raw))
+            if got:
+                req_map.setdefault(jid, got)
 
         new_this_page = 0
         for url_path, city, title_slug, job_id in matches:
@@ -5956,6 +6018,7 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
                 posted_date="",
                 description="",
                 ats_platform="TalentBrew",
+                req_id=req_map.get(job_id, ""),
             ))
 
         logger.info(f"UHG: page {page} -> {new_this_page} new jobs (total: {len(jobs)})")
