@@ -24,6 +24,9 @@ def _clean_module_state(tmp_path, monkeypatch):
     zero-yield history in a temp file (2026-10-07) rather than state/."""
     scraper.PARTIAL_SYSTEMS.clear()
     scraper.COMPLETE_SYSTEMS.clear()
+    scraper.LISTED_SYSTEMS.clear()
+    scraper.EMITTED_SYSTEMS.clear()
+    scraper.COMPLETE_FEEDS.clear()
     scraper.set_cms_lookup([])
     scraper.LAST_UPSERT_FAILED.clear()
     monkeypatch.setattr(retire_guard, "YIELD_HISTORY_PATH", str(tmp_path / "layer4_yields.json"))
@@ -35,6 +38,9 @@ def _clean_module_state(tmp_path, monkeypatch):
     yield
     scraper.PARTIAL_SYSTEMS.clear()
     scraper.COMPLETE_SYSTEMS.clear()
+    scraper.LISTED_SYSTEMS.clear()
+    scraper.EMITTED_SYSTEMS.clear()
+    scraper.COMPLETE_FEEDS.clear()
     scraper.set_cms_lookup([])
     scraper.LAST_UPSERT_FAILED.clear()
 

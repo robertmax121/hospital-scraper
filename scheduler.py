@@ -10,7 +10,8 @@ import logging
 import os
 from datetime import datetime, timezone
 from scraper import (scrape, PARTIAL_SYSTEMS, COMPLETE_SYSTEMS, HOSPITAL_SYSTEM_ALIASES,
-                     LAST_UPSERT_FAILED, LAST_RUN_COUNTS, proxies, fix_run_day)
+                     LAST_UPSERT_FAILED, LAST_RUN_COUNTS, proxies, fix_run_day,
+                     complete_canonical)
 from database import (mark_inactive_jobs, get_stats, active_total_after_passes,
                       start_run_record, finish_run_record)
 
@@ -156,7 +157,10 @@ def run():
         layer4_exempt.add("HCA Healthcare")
     # 2026-10-07 (push 10): adapters that read their whole board
     # (COMPLETE_SYSTEMS) bypass the yield guard; a partial report wins.
-    layer4_complete = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in COMPLETE_SYSTEMS} - layer4_exempt
+    # 2026-10-12: complete_canonical, the sweep's rule: a system is complete
+    # only when every configured feed of it (each tenant, each other adapter
+    # that emits it, each alias key) returned rows and claimed a whole crawl.
+    layer4_complete = complete_canonical(layer4_exempt)
     deact_stats = mark_inactive_jobs(jobs, exclude_systems=layer4_exempt, complete_systems=layer4_complete)
     logger.info(f"  Layer 4 deactivation: {deact_stats}")
 
