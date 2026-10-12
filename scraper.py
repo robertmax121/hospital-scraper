@@ -23,7 +23,7 @@ from urllib.parse import urlsplit
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
-from city_utils import clean_city
+from city_utils import clean_city, is_plausible_city
 from specialty_canon import canonical_specialty
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
@@ -4649,6 +4649,174 @@ def _wd_path_location(system: str, external_path: str) -> tuple[str, str]:
     return "", ""
 
 
+# 2026-10-12 (hidden locations, every tenant): the board needs both a city
+# and a state, and 4,831 Workday rows had one or neither. Their externalPath
+# still names the site ("/job/Raynham-MA---General-Area/...", "/job/Granby---
+# Granby-CT/...", "/job/Remote---South-Carolina/..."), so a row the parsers
+# and facets left without a state, or with a state and no city, now reads
+# that segment (before the tenant default). Rules from the d1b9b68 review: a
+# segment that is only a state name gives the state alone ("West-Virginia" ->
+# WV, never city "West"); remote / home / field words give no city; a city
+# that is not plausible (street addresses, facility names) gives no city; a
+# city's spelling comes from the same tenant's own locationsText when a row
+# there spells it with punctuation the slug lost ("St-Louis" -> "St. Louis"),
+# else from WD_PUNCT_CITIES. A city is never invented: it is the employer's
+# own path text or the tenant's own spelling of it.
+_WD_N_LOCATIONS_RE = re.compile(r"^\s*\d+\s+locations?\s*$", re.I)
+_WD_NONPLACE_RE = re.compile(
+    r"\b(?:remote|virtual|telecommut\w*|telework\w*|wfh|home|field|"
+    r"travel(?:ing|er)?|multiple|various|statewide|nationwide)\b", re.I)
+WD_PUNCT_CITIES: dict[tuple[str, str], str] = {
+    ("stlouis", "MO"): "St. Louis", ("baystlouis", "MS"): "Bay St. Louis",
+    ("stpaul", "MN"): "St. Paul", ("stcloud", "MN"): "St. Cloud",
+    ("stpetersburg", "FL"): "St. Petersburg", ("staugustine", "FL"): "St. Augustine",
+    ("portstlucie", "FL"): "Port St. Lucie", ("stgeorge", "UT"): "St. George",
+    ("stjoseph", "MO"): "St. Joseph", ("stcharles", "MO"): "St. Charles",
+    ("stpeters", "MO"): "St. Peters", ("stcharles", "IL"): "St. Charles",
+    ("stjohnsbury", "VT"): "St. Johnsbury", ("stalbans", "VT"): "St. Albans",
+    ("stmarys", "PA"): "St. Marys", ("stegenevieve", "MO"): "Ste. Genevieve",
+    ("winstonsalem", "NC"): "Winston-Salem", ("wilkesbarre", "PA"): "Wilkes-Barre",
+    ("sedrowoolley", "WA"): "Sedro-Woolley", ("miltonfreewater", "OR"): "Milton-Freewater",
+    ("coeurdalene", "ID"): "Coeur d'Alene", ("ofallon", "MO"): "O'Fallon",
+    ("ofallon", "IL"): "O'Fallon",
+    ("ftworth", "TX"): "Fort Worth", ("ftmyers", "FL"): "Fort Myers",
+    ("ftlauderdale", "FL"): "Fort Lauderdale", ("ftwayne", "IN"): "Fort Wayne",
+    ("ftsmith", "AR"): "Fort Smith", ("ftcollins", "CO"): "Fort Collins",
+}
+
+
+# Single-town tenants whose locationsText names a building or campus ("SE
+# Health Hospital", "102 Doctors Drive"): the WD_TENANT_DEFAULT town is the
+# site's town, so a site-named row takes it (Southeast Health: 199 hidden rows).
+WD_SITE_DEFAULT_CITY = frozenset({"Southeast Health (Dothan)"})
+
+
+def _wd_city_key(city: str) -> str:
+    """Spelling-blind key: lower case, St/Saint, Mt/Mount, Ft/Fort folded, no
+    punctuation or spaces ("St. Louis" == "St-Louis" == "Saint Louis")."""
+    w = re.sub(r"[^a-z0-9 ]+", " ", (city or "").lower().replace("'", "")).split()
+    fold = {"saint": "st", "mount": "mt", "fort": "ft"}
+    return "".join(fold.get(x, x) for x in w)
+
+
+def _wd_path_segment(external_path: str) -> str:
+    m = re.match(r"^/?job/([^/]+)/", external_path or "")
+    return m.group(1) if m else ""
+
+
+def _wd_spell(city: str, state: str, spellings: dict | None) -> str:
+    k = (_wd_city_key(city), state)
+    if spellings and k in spellings:
+        return spellings[k]
+    if city.isupper():
+        city = city.title()   # "PARK-RIDGE-IL"
+    return WD_PUNCT_CITIES.get(k, city)
+
+
+_WD_NOT_TOWN_RE = re.compile(
+    r"\b(?:region|area|corporate|campus|office|system|services|network|division|county|locations?)\b", re.I)
+
+
+def _wd_town_ok(c: str) -> bool:
+    """A plausible town written only with letters, spaces and . ' - (rejects
+    "NY)", "Gulf Coast Region", street addresses and facility names)."""
+    c = (c or "").strip()
+    return (is_plausible_city(c) and bool(re.fullmatch(r"[A-Za-z][A-Za-z .'\-]*", c))
+            and not _WD_NOT_TOWN_RE.search(c))
+
+
+def _wd_segment_location(seg: str, spellings: dict | None = None) -> tuple[str, str]:
+    """(city, state code) named by one externalPath segment; ('', code) when
+    only the state is safe; ('', '') when it names no state."""
+    if not seg:
+        return "", ""
+    remote = bool(_WD_NONPLACE_RE.search(re.sub(r"[-_]+", " ", seg)))
+    has_digit = any(ch.isdigit() for ch in seg)
+    chunks = [c for c in re.split(r"-{2,}|_{2,}", seg) if c.strip("-_ ")]
+    for ci in range(len(chunks) - 1, -1, -1):
+        words = [w for w in re.split(r"[-_\s]+", chunks[ci]) if w]
+        if not words:
+            continue
+        city_words, code = None, ""
+        if len(words) >= 3 and words[0].upper() in ("US", "USA") and words[1] in _WD_STATE_CODES:
+            city_words, code = words[2:], words[1]           # "US-TX-Houston"
+        elif (len(chunks) == 1 and len(words) >= 2 and words[0] in _WD_STATE_CODES and spellings
+              and (_wd_city_key(" ".join(words[1:])), words[0]) in spellings):
+            # "ND-Bismarck", only when the tenant itself lists that town in that
+            # state ("NE-Torresdale-Main-Hosp" is a Philadelphia campus, not Nebraska)
+            city_words, code = words[1:], words[0]
+        elif words[-1] in _WD_STATE_CODES:
+            city_words, code = words[:-1], words[-1]         # "Hayward-CA"
+        elif not has_digit:
+            # a state written out ("Charleston-West-Virginia"); never next to a
+            # street number ("Decatur-319-W-Delaware", "6th--Maine")
+            for k in (3, 2, 1):
+                if len(words) >= k:
+                    c = _STATE_CODE_BY_NAME.get(" ".join(words[-k:]).lower())
+                    if c:
+                        city_words, code = words[:-k], c
+                        break
+        if not code:
+            continue
+        if len(words) == 1 and code == "WA" and len(chunks) == 1:
+            return "", ""   # a bare "Washington" is as often DC as the state
+        if remote:
+            return "", code
+        city = " ".join(city_words or [])
+        if not city and ci > 0:
+            # "Kansas-City------MO": the town is the chunk before the state
+            prev = " ".join(w for w in re.split(r"[-_\s]+", chunks[ci - 1]) if w)
+            if _wd_town_ok(prev) and len(prev.split()) <= 4:
+                return _wd_spell(prev, code, spellings), code
+        if not city:
+            return "", code
+        if spellings:
+            # the longest tail the tenant itself spells as a town in this state
+            # ("Carolinas-Medical-Center---1000-Blythe-Blvd-Charlotte-NC")
+            for i in range(len(city_words)):
+                k2 = (_wd_city_key(" ".join(city_words[i:])), code)
+                if k2 in spellings:
+                    return spellings[k2], code
+        if len(city_words) > 4 or not _wd_town_ok(city):
+            return "", code
+        return _wd_spell(city, code, spellings), code
+    return "", ""
+
+
+def _wd_path_fill(jobs: list, ext_by_job: dict, path_state: dict | None = None) -> dict:
+    """{id(job): (city, state)} for rows with no state, or a state and no
+    plausible city: from (1) a same-tenant row whose externalPath segment is
+    identical and whose locationsText resolved to exactly one place, else (2)
+    the segment itself. A row that has a state only takes a city in that
+    state; a facet-named state wins over the path. Reads the crawl's own
+    parses, so it runs before the facet and default fills write anything."""
+    spellings: dict[tuple[str, str], str] = {}
+    by_seg: dict[str, set] = {}
+    for jb in jobs:
+        c, st = (jb.city or "").strip(), (jb.state or "").strip()
+        if not (c and st) or not _wd_town_ok(c):
+            continue
+        spellings.setdefault((_wd_city_key(c), st), c)
+        seg = _wd_path_segment(ext_by_job.get(id(jb), ""))
+        if seg:
+            by_seg.setdefault(seg, set()).add((c, st))
+    out = {}
+    for jb in jobs:
+        c, st = (jb.city or "").strip(), (jb.state or "").strip()
+        ext = ext_by_job.get(id(jb), "")
+        if not ext or (st and _wd_town_ok(c)):
+            continue
+        if not st and path_state and path_state.get(ext):
+            continue
+        seg = _wd_path_segment(ext)
+        sib = by_seg.get(seg, set())
+        pc, ps = next(iter(sib)) if len(sib) == 1 else _wd_segment_location(seg, spellings)
+        if not ps or (st and ps != st):
+            continue
+        out[id(jb)] = (pc, ps)
+    return out
+
+
 def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | None, str, str]:
     """(facility or None, city, state) from WD_FACILITY_MAP for one posting.
     Parsed city/state win; the map only fills what is blank."""
@@ -4835,23 +5003,43 @@ async def _wd_location_facets(session, working_url: str, system: str) -> tuple[d
 
 
 def _wd_apply_locations(jobs: list, ext_by_job: dict, path_city: dict, path_state: dict,
-                        default: tuple | None) -> tuple[int, int]:
+                        default: tuple | None, site_default_city: bool = False) -> tuple[int, int]:
     """Fill blank states (and blank cities) from the facet maps, then the
     tenant default for whatever is still without a state.
     Returns (filled_by_facet, filled_by_default)."""
     by_facet = by_default = 0
+    from_path = _wd_path_fill(jobs, ext_by_job, path_state)
     for jb in jobs:
         ext = ext_by_job.get(id(jb), "")
         if not (jb.city or "").strip() and path_city.get(ext):
             jb.city = path_city[ext]
+        pc, ps = from_path.get(id(jb), ("", ""))
         if (jb.state or "").strip():
+            if pc and ps == jb.state.strip() and not _wd_town_ok(clean_city(jb.city or "")):
+                jb.city = pc   # 2026-10-12: state known, the town is named only in the path
             continue
         st = path_state.get(ext, "") if path_state else ""
         if st:
             jb.state = st
             by_facet += 1
+        elif ps:
+            # 2026-10-12: the path names the site. A state-only result keeps the
+            # tenant default's town only when the default sits in that state.
+            jb.state = ps
+            if pc:
+                jb.city = pc
+            elif not _wd_town_ok(clean_city(jb.city or "")):
+                jb.city = default[0] if (site_default_city and default and default[1] == ps) else ""
+            by_facet += 1
         elif default:
-            jb.city = jb.city or default[0]
+            # 2026-10-12: on a WD_SITE_DEFAULT_CITY tenant a city that only
+            # echoes a site name ("SE Health Hospital") used to block the
+            # default town and was blanked later; elsewhere the HQ town would be
+            # a guess for a site elsewhere, so the old rule stands.
+            if site_default_city and not _wd_town_ok(clean_city(jb.city or "")):
+                jb.city = default[0]
+            else:
+                jb.city = jb.city or default[0]
             jb.state = default[1]
             by_default += 1
     return by_facet, by_default
@@ -4864,7 +5052,7 @@ def _wd_apply_states(jobs: list, ext_by_job: dict, path_state: dict, default: tu
 async def _wd_fill_states(session, working_url: str, system: str, jobs: list, detail_targets: list) -> None:
     """Blank-state recovery for one tenant: location facets, then tenant default."""
     blank = sum(1 for jb in jobs if not (jb.state or "").strip())
-    if not blank:
+    if not blank and all(is_plausible_city((jb.city or "").strip()) for jb in jobs):
         return
     path_city: dict[str, str] = {}
     path_state: dict[str, str] = {}
@@ -4874,7 +5062,8 @@ async def _wd_fill_states(session, working_url: str, system: str, jobs: list, de
         except Exception as e:
             logger.info(f"Workday {system}: location facet pass failed ({e})")
     ext_by_job = {id(j): ext for j, ext in detail_targets}
-    by_facet, by_default = _wd_apply_locations(jobs, ext_by_job, path_city, path_state, WD_TENANT_DEFAULT.get(system))
+    by_facet, by_default = _wd_apply_locations(jobs, ext_by_job, path_city, path_state, WD_TENANT_DEFAULT.get(system),
+                                               system in WD_SITE_DEFAULT_CITY)
     still = sum(1 for jb in jobs if not (jb.state or "").strip())
     logger.info(f"  Workday {system}: blank states {blank:,} -> facet {by_facet:,}, default {by_default:,}, still blank {still:,}")
 
@@ -4933,6 +5122,8 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                 for j in listings:
                     loc = j.get("locationsText", "")
                     _city, _state = parse_city_state(loc)
+                    if _WD_N_LOCATIONS_RE.match(loc or ""):
+                        _city = ""   # 2026-10-12: "2 Locations" is never a town, on any tenant
                     if system in WD_CITY_SPACE_STATE:
                         _city, _state = _wd_city_space_state(loc, _city, _state)
                     _facility = system

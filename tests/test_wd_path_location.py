@@ -138,10 +138,11 @@ def test_a_parsed_state_is_never_replaced(monkeypatch):
     assert [(j.city, j.state) for j in jobs] == [("Itasca", "IL")]
 
 
-def test_unlisted_tenant_keeps_its_old_parse(monkeypatch):
-    # Scope: a tenant not in WD_PATH_LOCATION is unchanged ("2 Locations"
-    # still leaves the state blank for the facet pass and tenant default).
+def test_unlisted_tenant_reads_the_path_after_its_own_parse(monkeypatch):
+    # 2026-10-12 (extended to every tenant): a tenant not in WD_PATH_LOCATION
+    # now takes the path's site in _wd_fill_states, after the facet pass, and
+    # "N Locations" never survives as a city.
     assert "Plain Board" not in scraper.WD_PATH_LOCATION
     _fake_board(monkeypatch, POSTINGS[:2])
     jobs = asyncio.run(scraper.scrape_workday(None, "Plain Board", ("plain", "5", "External")))
-    assert [j.state for j in jobs] == ["", ""]
+    assert [(j.city, j.state) for j in jobs] == [("Hayward", "CA"), ("Camp Hill", "PA")]
