@@ -175,7 +175,9 @@ class Job:
     # (2026-10-12: HCA's job_id is the Talemetry URL id, 18284308, while the
     # posting shows "Job ID: 4981331", the number recruiters look up; the
     # TalentBrew tenants' job_id is TalentBrew's id, 101678237952, while the
-    # page shows "Requisition ID 2026-495862", tb_req_id_from_page). Not a
+    # page shows "Requisition ID 2026-495862", tb_req_id_from_page;
+    # AdventHealth's job_id is the Findly URL id, 23744623, while the page
+    # shows "Req #: R-0379591", findly_google_req_id). Not a
     # column: normalize_job pops it into posting_facts["req_id"]. job_id and
     # the (job_id, hospital_system) upsert key stay exactly as they were.
     req_id: str = ""
@@ -1046,23 +1048,133 @@ PARTIAL_SYSTEMS: set[str] = set()
 from retire_guard import COMPLETE_RATIO   # the one threshold, shared with Layer 4
 
 COMPLETE_SYSTEMS: set[str] = set()
+# 2026-10-12 (review): the same claims per feed, (feed, emit-name). A feed is
+# the adapter config that lists the emit-name (its name in FEED_CONFIGS, or
+# the adapter function in FIXED_FEEDS). Two adapters can emit one name
+# (Monument Health: WORKDAY_TENANTS and ICIMS_ORGS), so complete_canonical
+# reads these, not the emit-name, for every configured feed.
+COMPLETE_FEEDS: set[tuple[str, str]] = set()
 
 
-def report_complete(system: str, fetched: int, advertised) -> bool:
+def report_complete(system: str, fetched: int, advertised, feed: str = None) -> bool:
     """Record that `system`'s list crawl reached the site's advertised total.
 
     `advertised` is the site's own count (None or 0 when the site gives none,
     in which case nothing is recorded). A system that also reported a
-    partial run keeps the partial flag: PARTIAL_SYSTEMS wins."""
+    partial run keeps the partial flag: PARTIAL_SYSTEMS wins. `feed`: the
+    config the adapter read `system` from (COMPLETE_FEEDS)."""
     try:
         total = int(advertised or 0)
     except (TypeError, ValueError):
         total = 0
     if total <= 0 or system in PARTIAL_SYSTEMS or fetched < COMPLETE_RATIO * total:
         COMPLETE_SYSTEMS.discard(system)
+        COMPLETE_FEEDS.discard((feed, system))
         return False
     COMPLETE_SYSTEMS.add(system)
+    if feed is not None:
+        COMPLETE_FEEDS.add((feed, system))
     return True
+
+
+# 2026-10-12: emit-names an adapter set out to list this run. scrape_workday
+# records each tenant before its first request (so a tenant that fails with
+# no rows still counts as a feed of its system).
+LISTED_SYSTEMS: set[str] = set()
+# 2026-10-12 (review): emit-names that returned at least one row this run:
+# finalize_jobs records every one, scrape_workday its own as it returns.
+EMITTED_SYSTEMS: set[str] = set()
+
+# 2026-10-12 (review): every adapter config whose entries are feeds of a
+# system, by the global name of the config (the feed name report_complete
+# takes). Keyed by the name the adapter emits, except PLAYWRIGHT_SITES and
+# USAJOBS_ORGS, lists of (name, ...). Some keys (Trinity's, Tenet's and UHS's)
+# are labels the adapter does not emit; a key that feeds nothing can only
+# hold a claim, never grant one. tests/test_wd_complete.py checks that every
+# config-shaped global in this file is listed here.
+FEED_CONFIGS = (
+    "WORKDAY_TENANTS", "TALEO_ORGS", "ICIMS_ORGS", "TALENTBREW_ORGS", "JIBE_SITES",
+    "FINDLY_CWS_ORGS", "FINDLY_GOOGLE_ORGS", "GREENHOUSE_ORGS", "SMARTRECRUITERS_ORGS",
+    "LEVER_ORGS", "ASHBY_ORGS", "CAREERPLUG_ORGS", "PHENOM_ORGS", "ADP_ORGS", "ADPCX_ORGS",
+    "SELECTMINDS_ORGS", "RECRUITINGCOM_ORGS", "INFOR_ORGS", "UKG_ORGS", "ORACLE_ORGS",
+    "HEALTHCARESOURCE_ORGS", "TENET_BRANDS", "TRINITY_ORGS", "UHS_BRANDS", "KRONOS_ORGS",
+    "TAM_ORGS", "NEOGOV_AGENCIES", "SF_RMK_BOARDS", "PRELOAD_SITES", "APPLICANTPRO_ORGS",
+    "CSOD_ORGS", "PAYCOM_ORGS", "PAYCOR_ORGS", "PAYLOCITY_ORGS", "WORKABLE_ORGS",
+    "TALEMETRY_SITES", "TALEO_BE_ORGS", "HCTS_PORTALS", "PEOPLESOFT_SITES",
+    "LIQUIDCOMPASS_SITES", "SUCCESSFACTORS_ORGS", "HTML_LIST_SITES", "EIGHTFOLD_ORGS",
+    "PLAYWRIGHT_SITES", "USAJOBS_ORGS",
+)
+# Adapters that emit fixed names, by adapter function. run_bsw and
+# run_ny_statejobs are added in configured_feed_map (their names are
+# constants defined further down). The tests check that every literal
+# emit-name in this file is a configured feed.
+FIXED_FEEDS = {
+    "run_hca": ("HCA Healthcare",), "run_kaiser": ("Kaiser Permanente",),
+    "run_uhg": ("UnitedHealth Group",), "run_enhabit": ("Enhabit Home Health",),
+    "run_maxim": ("Maxim Healthcare",), "run_patient_first": ("Patient First",),
+    "run_concentra": ("Concentra",), "run_tenet": ("Tenet Health",),
+    "run_trinity": ("Trinity Health",), "run_uhs": ("UHS",),
+    "run_houston_methodist": ("Houston Methodist",), "run_oceans": ("Oceans Healthcare",),
+    "run_chs": ("Community Health Systems",), "run_atrium": ("Atrium Health",),
+}
+
+
+def configured_feed_map() -> dict[str, set[str]]:
+    """emit-name -> the feeds configured to emit it (FEED_CONFIGS names and
+    FIXED_FEEDS adapters). A HOSPITAL_SYSTEM_ALIASES key no adapter lists
+    maps to an empty set: it is still a feed, judged by its own claim in
+    COMPLETE_SYSTEMS. Built at call time (the configs are defined further
+    down this file, and the tests patch them)."""
+    feeds: dict[str, set[str]] = {}
+
+    def add(feed, names):
+        for n in names:
+            if n:
+                feeds.setdefault(n, set()).add(feed)
+    g = globals()
+    for feed in FEED_CONFIGS:
+        cfg = g[feed]
+        add(feed, cfg if isinstance(cfg, dict) else (entry[0] for entry in cfg))
+    for feed, names in FIXED_FEEDS.items():
+        add(feed, names)
+    add("run_bsw", (BSW_SYSTEM,))
+    add("run_ny_statejobs", (NY_STATEJOBS_SYSTEM, NY_STATEJOBS_DOH_SYSTEM,
+                             *(f[3] for f in NY_STATEJOBS_FACILITIES)))
+    for key in HOSPITAL_SYSTEM_ALIASES:
+        feeds.setdefault(key, set())
+    return feeds
+
+
+def complete_canonical(exclude=None, emitted=None) -> set[str]:
+    """COMPLETE_SYSTEMS in post-alias names, for the sweep and Layer 4.
+
+    2026-10-12 (review): a canonical system is complete only when every feed
+    of it ran, returned rows and reported a complete crawl. Its feeds are
+    every emit-name that maps to it through HOSPITAL_SYSTEM_ALIASES: each
+    adapter config that lists it (configured_feed_map), each alias key, and
+    any other name this run listed, emitted or claimed. A configured feed
+    counts only with its own claim in COMPLETE_FEEDS (one name can have two
+    adapters); a name no config lists counts with its claim in
+    COMPLETE_SYSTEMS. Before this a Workday tenant's claim alone made its
+    system complete while a sibling feed (Cleveland Clinic's Playwright
+    route, Trinity Health's own adapter, Monument Health's iCIMS board)
+    failed silently with no rows, and the sweep would have retired that
+    feed's rows. `emitted`: emit-names of the rows in hand (the sweep's,
+    before aliasing), counted with EMITTED_SYSTEMS as having returned rows.
+    Systems in `exclude` (post-alias) and those with a partial report are
+    never complete."""
+    produced = EMITTED_SYSTEMS | set(emitted or ())
+    feeds = configured_feed_map()
+    for emit in LISTED_SYSTEMS | EMITTED_SYSTEMS | COMPLETE_SYSTEMS:
+        feeds.setdefault(emit, set())
+    whole: dict[str, bool] = {}
+    for emit, by in feeds.items():
+        ok = emit in produced and (all((f, emit) in COMPLETE_FEEDS for f in by) if by
+                                   else emit in COMPLETE_SYSTEMS)
+        canon = HOSPITAL_SYSTEM_ALIASES.get(emit, emit)
+        whole[canon] = whole.get(canon, True) and ok
+    held = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS} | set(exclude or ())
+    return {canon for canon, ok in whole.items() if ok and canon not in held}
 
 # ── Cross-tenant dedupe at the source (2026-09-10, S-scraper-2) ────────────
 # Two ATS tenants of one system can list the same posting (CityMD's two
@@ -5071,6 +5183,13 @@ async def _wd_fill_states(session, working_url: str, system: str, jobs: list, de
 async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_data: tuple) -> list[Job]:
     tenant, wd_num, primary_site = tenant_data
     jobs = []
+    # 2026-10-12: recorded before the first request, so a tenant that fails
+    # still counts as a feed of its system (complete_canonical).
+    LISTED_SYSTEMS.add(system)
+    # 2026-10-12 (review): no claim survives from an earlier crawl of this
+    # tenant; this crawl's claim is recorded only on its way out (below).
+    COMPLETE_SYSTEMS.discard(system)
+    COMPLETE_FEEDS.discard(("WORKDAY_TENANTS", system))
     # (Job, externalPath) pairs, so the optional detail pass can rebuild each
     # job's CXS detail URL. externalPath is not carried on the Job dataclass.
     detail_targets = []
@@ -5093,9 +5212,15 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # time"), failing the whole 500-row chunk.
     seen_ids = set()
 
-    async def _crawl(applied_facets=None):
+    async def _crawl(applied_facets=None, stats=None):
         """One paginated sweep; parses into jobs/detail_targets via seen_ids.
-        Returns True if it hit the 2,000-result window (i.e. likely truncated)."""
+        Returns True if it hit the 2,000-result window (i.e. likely truncated).
+
+        stats (2026-10-12, the plain crawl only): "listed" counts every posting
+        the pages returned (before the id dedupe and the title filter),
+        "total" is the tenant's advertised total, and "end" says how the
+        crawl stopped: "end" (a short or empty page after the first one),
+        "empty", "window", "HTTP <status>" or "error: ..."."""
         offset = 0
         # 2026-05-14 quirk preserved: some tenants report the true total only
         # on page 1 and 0 afterwards. Kept for logging; never bounds the loop.
@@ -5111,14 +5236,22 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     ssl=False, proxy=proxies.get(),
                     timeout=aiohttp.ClientTimeout(total=25)) as r:
                     if r.status != 200:
+                        if stats is not None:
+                            stats["end"] = f"HTTP {r.status}"
                         return False
                     data = await r.json()
                 listings = data.get("jobPostings", [])
                 if not listings:
+                    if stats is not None:
+                        stats["end"] = "end" if offset else "empty"
                     return False
                 page_total = data.get("total", 0) or 0
                 if initial_total is None and page_total > 0:
                     initial_total = page_total
+                    if stats is not None:
+                        stats["total"] = page_total
+                if stats is not None:
+                    stats["listed"] += len(listings)
                 for j in listings:
                     loc = j.get("locationsText", "")
                     _city, _state = parse_city_state(loc)
@@ -5197,11 +5330,17 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         detail_targets.append((jobs[-1], _ext))
                 offset += LIMIT
                 if len(listings) < LIMIT:
+                    if stats is not None:
+                        stats["end"] = "end"
                     return False           # short page — genuine end
                 if offset >= WD_RESULT_WINDOW:
+                    if stats is not None:
+                        stats["end"] = "window"
                     return True            # hit the window — truncated
                 await jitter()
             except Exception as e:
+                if stats is not None:
+                    stats["end"] = f"error: {e}"
                 logger.info(f"Workday {system}: {e}")
                 return False
 
@@ -5209,7 +5348,22 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # inside its fixed facet (WD_TENANT_FACETS), including the probe and the
     # slices below.
     base_facets = WD_TENANT_FACETS.get(system) or {}
-    hit_window = await _crawl(base_facets or None)
+    plain = {"listed": 0, "total": None, "end": None}
+    hit_window = await _crawl(base_facets or None, plain)
+    # 2026-10-12: a complete-crawl report (report_complete), as the Phenom,
+    # TalentBrew, Talemetry, HealthcareSource and CHS adapters make. The
+    # yield guard held NewYork-Presbyterian's closed postings for good: its
+    # 10-12 crawl listed the whole board (316 rows, board total 323) against
+    # 488 active rows, 65% < 80%, and every closed posting it kept lowered the
+    # ratio further. Complete means the plain crawl reached the last page
+    # with no error, did not fill the 2,000-result window (a facet-sliced
+    # crawl never claims), and its pages returned COMPLETE_RATIO of the
+    # tenant's advertised total. The sweep and Layer 4 still require the
+    # crawl to return half of the system's active rows before they believe it.
+    # 2026-10-12 (review): decided here, recorded just before `return jobs`,
+    # so a tenant that exits by exception after the crawl (blank-state
+    # recovery, detail pass) claims nothing.
+    claim_whole = not hit_window and plain["end"] == "end"
     if base_facets and not jobs:
         logger.warning(f"Workday {system}: 0 rows inside its fixed facet {sorted(base_facets)}; "
                        f"the facet ids may have changed (check the tenant's facets before "
@@ -5265,6 +5419,14 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
         except Exception as e:
             # Descriptions are a bonus; never let them cost us the listings.
             logger.info(f"Workday {system}: detail pass failed ({e}) — keeping list data")
+    # A tenant that returned no rows claims nothing (complete_canonical).
+    if jobs:
+        EMITTED_SYSTEMS.add(system)
+    whole = bool(claim_whole and jobs and report_complete(system, plain["listed"], plain["total"],
+                                                          feed="WORKDAY_TENANTS"))
+    logger.info(f"Workday {system}: listed {plain['listed']} of {plain['total']} advertised "
+                f"(stopped: {'window' if hit_window else plain['end']}); "
+                + ("complete crawl" if whole else "not reported complete"))
     return jobs
 
 async def run_workday(session) -> list[Job]:
@@ -6295,7 +6457,7 @@ async def scrape_uhg_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
     if SPLIT and subbrand_counts:
         logger.info(f"  UHG sub-brand split: {subbrand_counts}")
     logger.info(f"  UnitedHealth Group (TalentBrew 34088): {len(jobs)} jobs")
-    report_complete(SYSTEM, len(jobs), advertised_total)
+    report_complete(SYSTEM, len(jobs), advertised_total, feed="run_uhg")
     return jobs
 
 
@@ -7529,6 +7691,32 @@ FINDLY_GOOGLE_ORGS = {
 # 1 - 1,000,000 placeholder and is never read either.
 FINDLY_GOOGLE_PAY_KEY = {"UPMC": "salary", "University Hospitals": "relocation"}
 
+# 2026-10-12: the employer's requisition number. AdventHealth's job_id is the
+# Findly posting id in its jobs.adventhealth.com URL (23744623); the job page
+# prints "Req #: R-0379591", the Workday requisition its recruiters use. The
+# search payload already carries it as job.clientid: on the seven pages read
+# 2026-10-12 the visible "Req #" and the gtm-jobdetail-idSC span equal
+# clientid every time. job.ref is NOT it: on a requisition posted to several
+# locations Findly gives each location row its own ref, the requisition plus
+# a "-N" suffix (job 23999932: ref and JSON-LD identifier.value
+# "R-0407667-1", page "Req #: R-0407667"; 429 of 4,367 listed rows that day),
+# so ref and the JSON-LD identifier are never read. Kept exactly as printed:
+# "R-0379591", the older "R-316207" and the pre-R numeric "315099". Several
+# rows can share one number (one requisition, several locations). Configured
+# per tenant, never guessed, like FINDLY_GOOGLE_PAY_KEY; it travels as
+# posting_facts["req_id"] (Job.req_id, normalize_job).
+FINDLY_GOOGLE_REQ_ID = {"AdventHealth"}
+
+
+def findly_google_req_id(job_json) -> str:
+    """The requisition number on a Findly Google CTS search result's job
+    object, exactly as the job page prints it under "Req #" ("R-0379591"):
+    job.clientid, or "" when it is not a requisition number (_hca_req_value).
+    job.ref is not read: it carries a per-location "-N" suffix."""
+    if not isinstance(job_json, dict):
+        return ""
+    return _hca_req_value(job_json.get("clientid"))
+
 
 async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     """Scrape a Findly CWS career portal on the Google CTS backend.
@@ -7651,6 +7839,8 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
             ))
             if pay_key:
                 set_field_wage(jobs[-1], field_wage(j.get(pay_key)))
+            if system in FINDLY_GOOGLE_REQ_ID:
+                jobs[-1].req_id = findly_google_req_id(j)
 
         pages_fetched += 1
         next_page_token = data.get("nextPageToken")
@@ -8681,16 +8871,21 @@ def apply_employer_rules(job: Job):
 # ══════════════════════════════════════════════════════════════════════════
 #  USAJOBS — Free public API
 # ══════════════════════════════════════════════════════════════════════════
+# (system, org code) for run_usajobs. Module level since 2026-10-12 so
+# configured_feed_map() can count these as feeds of their systems.
+USAJOBS_ORGS = [
+    ("VA Hospitals",            "VATA"),
+    ("Indian Health Service",   "HE38"),
+    ("Military Health System",  "DD"),
+    ("NIH Clinical Center",     "HE06"),
+]
+
+
 async def run_usajobs(session) -> list[Job]:
     logger.info("USAJOBS: scraping VA + federal hospitals...")
     jobs = []
     MEDICAL_SERIES = "0600;0601;0602;0610;0620;0630;0640;0645;0646;0647;0648;0649;0660;0670;0675"
-    ORGS = [
-        ("VA Hospitals",            "VATA"),
-        ("Indian Health Service",   "HE38"),
-        ("Military Health System",  "DD"),
-        ("NIH Clinical Center",     "HE06"),
-    ]
+    ORGS = USAJOBS_ORGS
     usajobs_key = os.environ.get("USAJOBS_API_KEY", "")
     usajobs_email = os.environ.get("USAJOBS_EMAIL", "")
     usajobs_headers = {
@@ -9469,7 +9664,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     listed = len({j.job_id for j in jobs})
     if site_total and listed < COMPLETE_RATIO * site_total:
         logger.warning(f"Phenom {system}: listed {listed} of {site_total} advertised")
-    report_complete(system, listed, site_total)
+    report_complete(system, listed, site_total, feed="PHENOM_ORGS")
 
     drop_rx = PHENOM_DROP_EMPLOYERS.get(system)
     if drop_rx and jobs:
@@ -11926,7 +12121,7 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
     if total and len(jobs) < COMPLETE_RATIO * total:
         logger.warning(f"HealthcareSource {system}: listed {len(jobs)} of {total} advertised")
     logger.info(f"  HealthcareSource {system}: {len(jobs)} jobs")
-    report_complete(system, len(jobs), total)
+    report_complete(system, len(jobs), total, feed="HEALTHCARESOURCE_ORGS")
     return jobs
 
 async def run_healthcaresource(session) -> list[Job]:
@@ -13236,6 +13431,42 @@ async def run_applicantpro(session) -> list[Job]:
     return jobs
 
 
+# (system, url) for run_playwright_scrapers. Module level since 2026-10-12
+# so configured_feed_map() can count these as feeds of their systems.
+PLAYWRIGHT_SITES = [
+    # PRODUCING JOBS — keep these
+    # Mayo Clinic removed 2026-06-18 — migrated to Oracle HCM (see ORACLE_ORGS).
+    ("CHRISTUS Health",               "https://careers.christushealth.org/job-search"),
+    # Baylor Scott & White — moved to dedicated run_bsw() handler (Apr 29 2026)
+    # using Phenom refineSearch endpoint. The Playwright route only captured
+    # ~58 jobs from the first-page render; the new handler returns the full
+    # 1,935-job inventory via paginated /widgets calls.
+    # ("Baylor Scott & White",          "https://jobs.bswhealth.com/us/en/search-results"),
+    # MyMichigan Health moved to JIBE_SITES 2026-10-07 (push 10): this
+    # route stored 71 rows with no body and "Title\n\nReq ID: N" titles;
+    # the Jibe /api/jobs feed carries 968 postings with full bodies.
+    # ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
+    # LARGE SYSTEMS — Phenom via Playwright (proxy-free)
+    # NOTE: HCA Healthcare is handled by dedicated run_hca() — do NOT add here
+    # Ascension Health moved to PHENOM_ORGS (2026-05-08) — was returning 0
+    # jobs here; the Phenom widgets path produces full inventory.
+    # Cleveland Clinic is in WORKDAY_TENANTS (ccf.wd1) — Playwright is a
+    # fallback; left here in case Workday route flakes out.
+    ("Cleveland Clinic",              "https://jobs.clevelandclinic.org/search/"),
+    # Methodist Healthcare (joinmethodist.com) — REMOVED 2026-07-28. HCA
+    # affiliate; its jobs come through the rebuilt run_hca() master crawl.
+    # LIFEPOINT — rebuilt on WordPress 2025
+    ("LifePoint Health",              "https://jobs.lifepointhealth.net/jobs/"),
+    # CUSTOM ATS
+    # MUSC Health moved to WORKDAY_TENANTS (musc.wd1, 2026-09-25): this page wrote 0 rows.
+    # University of Vermont Health retired here 2026-10-04: the
+    # uvmhealthnetworkcareers.org domain is gone (banked 0); the network
+    # is HTML_LIST_SITES "University of Vermont Health Network" now
+    # (uvmhealthcareers.org, plain requests, no browser needed).
+    # ("University of Vermont Health",  "https://www.uvmhealthnetworkcareers.org/jobs/"),
+]
+
+
 async def run_playwright_scrapers() -> list[Job]:
     try:
         from playwright.async_api import async_playwright
@@ -13246,38 +13477,7 @@ async def run_playwright_scrapers() -> list[Job]:
     logger.info("Playwright: scraping JS-heavy custom sites...")
     jobs = []
 
-    CUSTOM_SITES = [
-        # PRODUCING JOBS — keep these
-        # Mayo Clinic removed 2026-06-18 — migrated to Oracle HCM (see ORACLE_ORGS).
-        ("CHRISTUS Health",               "https://careers.christushealth.org/job-search"),
-        # Baylor Scott & White — moved to dedicated run_bsw() handler (Apr 29 2026)
-        # using Phenom refineSearch endpoint. The Playwright route only captured
-        # ~58 jobs from the first-page render; the new handler returns the full
-        # 1,935-job inventory via paginated /widgets calls.
-        # ("Baylor Scott & White",          "https://jobs.bswhealth.com/us/en/search-results"),
-        # MyMichigan Health moved to JIBE_SITES 2026-10-07 (push 10): this
-        # route stored 71 rows with no body and "Title\n\nReq ID: N" titles;
-        # the Jibe /api/jobs feed carries 968 postings with full bodies.
-        # ("MyMichigan Health",             "https://careers.mymichigan.org/jobs"),
-        # LARGE SYSTEMS — Phenom via Playwright (proxy-free)
-        # NOTE: HCA Healthcare is handled by dedicated run_hca() — do NOT add here
-        # Ascension Health moved to PHENOM_ORGS (2026-05-08) — was returning 0
-        # jobs here; the Phenom widgets path produces full inventory.
-        # Cleveland Clinic is in WORKDAY_TENANTS (ccf.wd1) — Playwright is a
-        # fallback; left here in case Workday route flakes out.
-        ("Cleveland Clinic",              "https://jobs.clevelandclinic.org/search/"),
-        # Methodist Healthcare (joinmethodist.com) — REMOVED 2026-07-28. HCA
-        # affiliate; its jobs come through the rebuilt run_hca() master crawl.
-        # LIFEPOINT — rebuilt on WordPress 2025
-        ("LifePoint Health",              "https://jobs.lifepointhealth.net/jobs/"),
-        # CUSTOM ATS
-        # MUSC Health moved to WORKDAY_TENANTS (musc.wd1, 2026-09-25): this page wrote 0 rows.
-        # University of Vermont Health retired here 2026-10-04: the
-        # uvmhealthnetworkcareers.org domain is gone (banked 0); the network
-        # is HTML_LIST_SITES "University of Vermont Health Network" now
-        # (uvmhealthcareers.org, plain requests, no browser needed).
-        # ("University of Vermont Health",  "https://www.uvmhealthnetworkcareers.org/jobs/"),
-    ]
+    CUSTOM_SITES = list(PLAYWRIGHT_SITES)
 
     # Deduplicate by system name (Cleveland Clinic listed twice above)
     seen_systems = set()
@@ -14324,7 +14524,7 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
         logger.warning(f"Talemetry {system}: {len(jobs)} of site total {total} fetched"
                        + (f"; stopped early: {stopped_early}" if stopped_early else ""))
     logger.info(f"  Talemetry {system}: {len(jobs)} jobs (site total {total})")
-    report_complete(system, len(jobs), total)
+    report_complete(system, len(jobs), total, feed="TALEMETRY_SITES")
     return jobs
 
 
@@ -16951,7 +17151,7 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
         f"CHS: stopped: {stop_reason}; {len(jobs):,} jobs listed"
         + (f" of {site_total} advertised" if site_total else ""))
     logger.info(f"  CHS: {len(jobs):,} total jobs")
-    report_complete("Community Health Systems", len(jobs), site_total)
+    report_complete("Community Health Systems", len(jobs), site_total, feed="run_chs")
     # 2026-09-24 (push 3): every CHS job page carries a JSON-LD JobPosting;
     # one tenant, so DETAIL_TENANT_MAX (1,500) a night, 2 in flight.
     await _board_detail_passes(session, jobs, CHS_DESC_BUDGET,
@@ -19071,6 +19271,9 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # bleed wage strings or schedule prose into the column. The classifier
     # buckets into: travel, per_diem, temporary, part_time, full_time,
     # resident_intern, standard (= unsignaled hospital staff).
+    # 2026-10-12 (review): the emit-names that returned rows, read before the
+    # alias rewrite below (complete_canonical's `emitted`).
+    emitted_names = {r.get("hospital_system") for r in rows if r.get("hospital_system")}
     alias_hits = 0
     jt_buckets = {}
     send_first_seen = _hospital_jobs_has_first_seen(sb_url, sb_key)
@@ -19281,7 +19484,12 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     # The rows it did not re-stamp are closed postings, not a cut-short
     # crawl; the guard held about 1,600 such rows on 10-06 (Prime, Sutter,
     # NYP, One Medical, Carilion) until the backstop. A partial report wins.
-    complete = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in COMPLETE_SYSTEMS} - partial
+    # 2026-10-12: complete_canonical also holds a system that another
+    # emit-name (a second tenant) fed tonight without a complete claim.
+    # 2026-10-12 (review): and one with any configured feed (another
+    # adapter's entry, an alias key) that did not run, failed, returned no
+    # rows or made no complete claim.
+    complete = complete_canonical(partial, emitted_names)
     # 2026-10-07 (push 10c): a complete claim is believed only when the run
     # also returned at least COMPLETE_MIN_ACTIVE_RATIO of the system's active
     # rows. The 13:06 run read UnitedHealth Group's total from a geo-filtered
@@ -23319,6 +23527,8 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     # them in a process pool (normalize_jobs, in order), and the family
     # dedupe walks the results in the same order as before.
     kept: list[Job] = []
+    # 2026-10-12: every emit-name that produced a row (complete_canonical).
+    EMITTED_SYSTEMS.update(j.hospital_system for j in all_jobs if getattr(j, "hospital_system", None))
     for i, job in enumerate(all_jobs):
         if not job.job_id or not job.title:
             continue
