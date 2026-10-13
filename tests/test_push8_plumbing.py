@@ -156,7 +156,11 @@ def test_no_tenant_is_written_under_a_placeholder_name():
     ("Hudson Regional Health", "bb661c48-7edc-400c-adfb-40f8f7743374", "NJ"),
 ])
 def test_adp_boards_keep_their_cid_under_the_real_name(label, cid, state):
-    (c, cc, st, name), = scraper._adp_centers(scraper.ADP_ORGS[label])
+    # 2026-10-13: KPC Health has a second career center (the former "Chapman
+    # Global Medical Center" cid); this cid stays its first.
+    centers = scraper._adp_centers(scraper.ADP_ORGS[label])
+    assert len(centers) == (2 if label == "KPC Health" else 1), label
+    (c, cc, st, name) = centers[0]
     assert (c, cc, st, name) == (cid, "19000101_000001", state, "")
     # A requisition with no location falls back to the label and its state
     # (it used to read "ADP Health System N", state blank).
