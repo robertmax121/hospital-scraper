@@ -21,6 +21,32 @@ VERDICTS (one per row, written to <out-dir>/<platform>.csv)
                        UNKNOWN for every row (canary), never CLOSED.
              Oracle    recruitingCEJobRequisitionDetails ById answers 200 with
                        items = [].
+             HCA       (careers.hcahealthcare.com, Talemetry; curl_cffi
+                       impersonate="firefox", no proxy) the job page answers
+                       301 to /jobs?job_not_found=true, or 200 with "This job
+                       posting is no longer active." and no JSON-LD
+                       JobPosting, on two separate fetches (the second must
+                       read CLOSED too, else UNKNOWN). Only those two signals
+                       were measured live; a 404/410 never was, so it is
+                       UNKNOWN here. OPEN = 200 with a JobPosting.
+             PeopleSoft (NYC Health + Hospitals, careers.nychhc.org) the
+                       posting url (Page=HRS_APP_JBPST_FL&JobOpeningId=N) is
+                       sent to the job list (Page=HRS_APP_SCHJOB_FL, "N jobs
+                       found") on two separate fetches. OPEN = the posting
+                       page echoes Job ID N with its HRS_SCH_PSTDSC body.
+             iCIMS     the job page (in_iframe=1) answers 404/410 AND carries
+                       "does not exist or is no longer open". OPEN = 200 with
+                       a JSON-LD JobPosting and no job cards.
+             Phenom    the row's url is a Phenom job page on the site's own
+                       host ({base}/.../job/{jobId}), the tenant's jobDetail
+                       widget (POST {base}/widgets, by that jobId) answers
+                       hits 0 AND that job page answers 404/410. A row whose
+                       id comes from job_id instead (Workday, Infor or other
+                       apply links) is never CLOSED by the Phenom board, only
+                       OPEN or UNKNOWN. OPEN = the widget returns the job. A
+                       row whose url is a Workday job page is asked of
+                       Workday first (rules above); only when Workday says
+                       UNKNOWN is the Phenom board asked.
              others    HTTP 404/410 on the job page, a redirect that drops the
                        job id and lands on a search/listing page, or an
                        explicit "no longer available" text with no posting
@@ -29,20 +55,62 @@ VERDICTS (one per row, written to <out-dir>/<platform>.csv)
   UNKNOWN  anything else: 403, 5xx, timeouts, 429 after backoff, login or bot
            walls, pages that say neither. UNKNOWN is never retired.
 
-Only the Workday checker was validated live (2026-10-12, NYP / Sutter /
-Carilion / John Muir). The others encode each platform's documented closed
-signal conservatively; spot-check a few CLOSED rows before trusting a new
-platform's CSV.
+CANARY (one per site, before any row of that site is judged)
+  Workday: the board's /jobs search answers with a total > 0. HCA, PeopleSoft,
+  iCIMS and Phenom: a posting the board lists right now (first card of HCA's
+  Colorado search, first row of the PeopleSoft job list, first link of the
+  iCIMS portal search, first jobId on the Phenom search-results page) must
+  read OPEN through the same requests the rows go through (Phenom: and its
+  job page must answer 200). If it does not, every row of that site is
+  UNKNOWN ("board canary failed (...)"), never CLOSED.
+  HCA re-runs its canary before every 500th row; when one fails mid-run,
+  every remaining HCA row is UNKNOWN without a request ("... site aborted"),
+  and a CLOSED still in flight at that moment is written UNKNOWN.
+  Phenom adds a ROW canary per site and system: the board canary's jobId
+  comes from the search page, not from the ids our rows store, so it cannot
+  catch a system whose stored ids are not the widget's jobId (every open row
+  would read hits 0). The most recently scraped row of that system in the
+  input export (rows whose url is a Phenom job page on the site first, the
+  only rows that can be CLOSED) must read OPEN through the same widget call,
+  else every row of that system is UNKNOWN ("row canary failed (...)"). A
+  legitimately closed newest row therefore holds the whole system back;
+  that is the intended trade (UNKNOWN is never retired).
+
+VALIDATION
+  Workday live 2026-10-12 (NYP / Sutter / Carilion / John Muir). HCA,
+  PeopleSoft (NYC H+H), iCIMS (Prime, Legacy, Select Medical, Emory) and
+  Phenom (Jackson Health, UVA Health) live 2026-10-13 01:00-01:20 UTC, a
+  handful of open and closed postings each (signals and ids in the comments
+  above each checker; recorded pages in tests/fixtures/verify_stale). Oracle
+  and the generic page checker encode each platform's documented closed
+  signal conservatively; spot-check a few CLOSED rows before trusting a new
+  platform's CSV.
 
 POLITENESS
-  * at most 2 requests in flight per host, a 0.5-1.0 s pause inside the host
-    gate after every request
+  * at most PER_HOST = 2 requests in flight per host (--per-host, 1..2), and
+    a pause of P..2P s inside the host gate after every request (--pause P,
+    default 0.5, so 0.5-1.0 s). --workers is the thread count across ALL
+    hosts: any value of 2 or more still sends 2 at a time to one host, so
+    lowering --workers does not slow HCA (the run's biggest host).
   * 429 / 503 with Retry-After: back off (Retry-After or 10 s, 30 s, 90 s),
     three tries, then UNKNOWN; three 429s in a row on one host pause that host
     for 5 minutes
+  * IF A BOARD ANSWERS 429 (the progress lines show UNKNOWN climbing, the
+    CSV evidence says "answered 429"): stop the run (Ctrl+C, or close the
+    window; the CSV keeps every row already written) and start it again with
+      --per-host 1 --pause 2 --retry-unknown
+    which sends one request at a time to each host with a 2-4 s rest after
+    each, and re-asks the rows the 429s left UNKNOWN. A higher --pause (up to
+    30) slows it further. Lowering --workers is not the knob.
   * --max-requests caps the whole run (default 3000); --stop-at (UTC HH:MM,
     default 23:15) stops issuing requests so nothing runs into the nightly
     (00:09 UTC); the script refuses to start between 23:15 and 05:30 UTC
+
+SHIPPING
+  This file ships in the same batched hospital-scraper push as A1 and A2,
+  never in a push of its own: every push to the scraper repo redeploys
+  Railway, and a redeploy kills an in-flight nightly run (00:09-05:15 UTC).
+  The checks themselves run from a local checkout and need no deploy.
 
 RESUMABLE
   Each platform CSV is appended row by row. On start, ids already in the CSV
@@ -54,6 +122,32 @@ DATABASE
   helper with a 30 s statement_timeout and refuses to run 23:30-05:30 UTC.
   `sql` mode writes the owner-run retire / restore files from the CSVs; it
   never connects to the database.
+
+HCA / NYC H+H / PHENOM / iCIMS RUN (2026-10-13; lead, after 05:30 UTC)
+  1. Export the candidates, read-only, through wp.sql (one statement; save
+     the JSON it prints as rows_2026-10-13.json):
+       select id, hospital_system, ats_platform, job_id, url, scraped_at, consecutive_scrape_misses as misses from public.hospital_jobs where is_active and scraped_at < now() - interval '4 days' and (hospital_system in ('HCA Healthcare', 'NYC Health + Hospitals') or ats_platform in ('Phenom', 'iCIMS')) order by hospital_system, scraped_at, id;
+     Note the export time (UTC): it is the --stale-before of step 3.
+  2. Check (about 1 request a row, 2 for a CLOSED HCA, PeopleSoft or Phenom
+     row, plus a few per canary: HCA re-runs its canary every 500 rows; HCA
+     alone is several thousand rows, so raise the budget):
+       python tools/verify_stale.py check --rows-file rows_2026-10-13.json --out-dir <shared>/stale_verify_2026-10-13 --max-requests 20000
+  3. Write the retire + rollback files in db_write format:
+       python tools/verify_stale.py sql --db-write --out-dir <shared>/stale_verify_2026-10-13 --backup-table retired_closed_backup_20261013 --stale-before "<export time>+00" --out-sql NNN_retire_verified_closed_more.sql --out-restore NNNr_retire_verified_closed_more.sql
+     which writes, for each batch of at most 1000 CLOSED ids (<T> =
+     public.retired_closed_backup_20261013, <S> = the export time):
+       NNN:
+         set lock_timeout = '3s'; create table if not exists <T> (id bigint primary key, is_active boolean not null, scraped_at timestamptz, saved_at timestamptz not null default now());
+         set lock_timeout = '3s'; insert into <T> (id, is_active, scraped_at) select id, is_active, scraped_at from public.hospital_jobs where is_active and scraped_at < '<S>' and id in (<ids>) on conflict (id) do nothing;
+         set lock_timeout = '3s'; update public.hospital_jobs set is_active = false where is_active and scraped_at < '<S>' and id in (<ids>);
+         select count(*) as still_active from public.hospital_jobs h join <T> b using (id) where h.is_active;
+       NNNr:
+         set lock_timeout = '3s'; update public.hospital_jobs h set is_active = b.is_active from <T> b where h.id = b.id and h.is_active = false and b.is_active = true and h.scraped_at < '<S>';
+         select count(*) as restored_active from public.hospital_jobs h join <T> b using (id) where h.is_active;
+     (the same shape as 115 / 115r, with a backup table of its own so NNNr
+     cannot restore the rows 115 retired). A row any crawl re-stamps after
+     the export (the 04:00 UTC HCA task included) fails the scraped_at guard
+     and is left alone.
 
 USAGE
   python tools/verify_stale.py check --rows-file rows.json --system "NewYork-Presbyterian"
@@ -161,10 +255,21 @@ class Http:
                 g = self.gates[host] = threading.Semaphore(self.per_host)
             return g
 
-    def request(self, method, url, *, headers=None, json_body=None, verify=True, allow_redirects=True):
-        """Returns (status or exception name, response or None)."""
+    def request(self, method, url, *, headers=None, json_body=None, verify=True, allow_redirects=True,
+                impersonate="chrome", native_ua=False):
+        """Returns (status or exception name, response or None).
+
+        native_ua=True leaves the User-Agent to curl_cffi's impersonation
+        profile. The fixed Chrome 124 UA below rides on a newer Chrome TLS
+        handshake, a mismatch some bot walls answer: iCIMS portals return
+        405 to it and 200 without it (2026-10-13), and a Chrome UA on
+        HCA's Firefox handshake would be worse. The checkers added on
+        2026-10-13 all pass native_ua=True; Workday, Oracle and the generic
+        page checker keep the UA they were validated with."""
         host = (urlsplit(url).hostname or "").lower()
-        h = {"User-Agent": UA, "Accept-Language": "en-US,en;q=0.9"}
+        h = {"Accept-Language": "en-US,en;q=0.9"}
+        if not native_ua and impersonate == "chrome":
+            h["User-Agent"] = UA
         h.update(headers or {})
         for attempt in range(len(BACKOFF) + 1):
             wait = self.cool_until[host] - time.time()
@@ -176,7 +281,7 @@ class Http:
                 self.by_host[host] += 1
                 try:
                     r = self.cr.request(method, url, headers=h, json=json_body, timeout=TIMEOUT,
-                                        impersonate="chrome", verify=verify,
+                                        impersonate=impersonate, verify=verify,
                                         allow_redirects=allow_redirects, max_redirects=8)
                     status = r.status_code
                 except Exception as e:  # noqa: BLE001 - any transport failure is UNKNOWN
@@ -415,14 +520,606 @@ class GenericChecker:
 
 def checker_for(platform, http, cache={}):  # noqa: B006 - per-run cache by design
     key = slug(platform)
-    if key not in cache:
+    ck = (key, id(http))
+    if ck not in cache:
         if key == "workday":
-            cache[key] = WorkdayChecker(http)
+            cache[ck] = WorkdayChecker(http)
         elif key in ("oracle_hcm", "oracle"):
-            cache[key] = OracleChecker(http)
+            cache[ck] = OracleChecker(http)
+        elif key == "phenom":
+            cache[ck] = PhenomChecker(http, workday=checker_for("Workday", http))
+        elif key == "peoplesoft":
+            cache[ck] = PeopleSoftChecker(http)
+        elif key == "icims":
+            cache[ck] = IcimsChecker(http)
+        elif key == "hca":
+            cache[ck] = HcaChecker(http)
         else:
-            cache[key] = GenericChecker(http, platform)
-    return cache[key]
+            cache[ck] = GenericChecker(http, platform)
+    return cache[ck]
+
+
+def checker_for_row(row, http):
+    """The checker for one row: the url decides where it names a board this
+    script reads (HCA's Talemetry site, a PeopleSoft posting, an iCIMS
+    portal), else the row's ats_platform. Phenom rows stay with the Phenom
+    checker, which sends Workday-linked rows on to the Workday checker."""
+    url = row.get("url") or ""
+    plat = slug(row.get("ats_platform"))
+    if _host(url) == HCA_HOST:
+        return checker_for("hca", http)
+    if plat == "phenom":
+        return checker_for("Phenom", http)
+    if _PS_POSTING_URL.match(url):
+        return checker_for("PeopleSoft", http)
+    if plat == "icims" or _ICIMS_URL.match(url):
+        return checker_for("iCIMS", http)
+    return checker_for(row.get("ats_platform"), http)
+
+
+# ------------------------------------------------------- per-site canary
+class Canary:
+    """One check per site key, shared by every worker thread: the first
+    caller runs probe() (-> (ok, note)), the rest wait for its answer. The
+    rule (2026-10-13): a posting the board itself lists right now must read
+    OPEN through the very path the rows go through, or every row on that site
+    is UNKNOWN. A probe cut short by the request budget is not cached."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.events, self.results = {}, {}
+
+    def get(self, key, probe):
+        with self.lock:
+            ev = self.events.get(key)
+            owner = ev is None
+            if owner:
+                ev = self.events[key] = threading.Event()
+        if owner:
+            try:
+                res = probe()
+            except Http.OutOfBudget:
+                res = None
+            except Exception as e:  # noqa: BLE001
+                res = (False, "canary error " + type(e).__name__)
+            with self.lock:
+                self.results[key] = res
+                if res is None:
+                    del self.events[key]
+            ev.set()
+        else:
+            ev.wait()
+        res = self.results.get(key)
+        if res is None:
+            raise Http.OutOfBudget()
+        return res
+
+
+class NativeUA:
+    """An Http whose requests leave the User-Agent to the TLS profile (see
+    Http.request); every checker added on 2026-10-13 talks through one."""
+
+    def __init__(self, http):
+        self.http = http
+
+    def request(self, method, url, **kw):
+        kw.setdefault("native_ua", True)
+        return self.http.request(method, url, **kw)
+
+
+def _host(url):
+    try:
+        return (urlsplit(url or "").hostname or "").lower()
+    except ValueError:
+        return ""
+
+
+def _has_jobposting(text):
+    return bool(re.search(r'"@type"\s*:\s*"JobPosting"', text or ""))
+
+
+_REDIRECTS = (301, 302, 303, 307, 308)
+
+
+# --------------------------------------------- HCA Healthcare (Talemetry)
+# Measured live 2026-10-13 (curl_cffi impersonate="firefox", no proxy, from a
+# residential line): an open posting answers 200 with a JSON-LD JobPosting
+# and its "Job ID: NNNNNNN" line. A closed one answers either 200 with
+# <p class="neu-text--h3 ...">This job posting is no longer active.</p> and
+# NO JobPosting (17200000, Charleston Pharmacy Tech), or 301 to
+# /jobs?job_not_found=true once Talemetry has dropped it (16263000, 16800000,
+# 17500000, 17700000, 99999999). Cloudflare blocks come back as 403 or a
+# "Just a moment" interstitial: UNKNOWN. No 404/410 was seen, so neither is
+# a closed signal here (UNKNOWN), and CLOSED needs a second fetch that agrees.
+HCA_HOST = "careers.hcahealthcare.com"
+HCA_IMPERSONATE = "firefox"
+HCA_CANARY_LIST = f"https://{HCA_HOST}/search/jobs/in/co-colorado?q=&page=1&per_page=20"
+_HCA_JOB_URL = re.compile(r"^https://careers\.hcahealthcare\.com/jobs/(\d+)(?:-[^/?#]*)?/?(?:[?#].*)?$")
+_HCA_CARD_LINK = re.compile(r'href="(https://careers\.hcahealthcare\.com/jobs/(\d+)-[^"]+)"')
+_HCA_INACTIVE = re.compile(r"This job posting is no longer active", re.I)
+_HCA_CHALLENGE = re.compile(r"Just a moment|cf-chl", re.I)
+
+
+class HcaChecker:
+    """CLOSED only on the two signals measured live (the 301 to
+    job_not_found, the 'no longer active' page without a JobPosting), and
+    only when a second fetch of the same url reads CLOSED too. A 404/410 was
+    never observed on this board, so it is UNKNOWN. The board canary runs
+    before the first row and again before every CANARY_EVERY-th row; once one
+    fails, every remaining HCA row is UNKNOWN without a request, and a CLOSED
+    still in flight when it failed is written UNKNOWN."""
+
+    CANARY_EVERY = 500
+
+    def __init__(self, http, canary=None):
+        self.http = NativeUA(http)
+        self.canary = canary or Canary()
+        self.lock = threading.Lock()
+        self.rows_seen = 0
+        self.dead = ""          # set once a canary fails: why
+
+    def _get(self, url):
+        return self.http.request("GET", url, headers={"Accept": "text/html,application/xhtml+xml"},
+                                 allow_redirects=False, impersonate=HCA_IMPERSONATE)
+
+    def read(self, url, job_id):
+        """One fetch of the job page (one same-id slug redirect followed)."""
+        st, r = self._get(url)
+        if st in _REDIRECTS and r is not None:
+            loc = r.headers.get("location") or ""
+            if "job_not_found" in loc:
+                return "CLOSED", st, "redirect to /jobs?job_not_found=true"
+            # a changed slug moves the posting: follow one hop on the same id
+            m = _HCA_JOB_URL.match(loc)
+            if not (m and m.group(1) == job_id):
+                return "UNKNOWN", st, "redirect to " + loc[:120]
+            st, r = self._get(loc)
+            if st in _REDIRECTS and r is not None:
+                loc = r.headers.get("location") or ""
+                if "job_not_found" in loc:
+                    return "CLOSED", st, "redirect to /jobs?job_not_found=true"
+                return "UNKNOWN", st, "second redirect to " + loc[:120]
+        if st in (404, 410):
+            return "UNKNOWN", st, f"job page {st} (never observed on this board; not a closed signal)"
+        if st != 200 or r is None:
+            return "UNKNOWN", st, f"job page answered {st}"
+        text = r.text or ""
+        posting = _has_jobposting(text)
+        if _HCA_CHALLENGE.search(text) and not posting:
+            return "UNKNOWN", st, "Cloudflare interstitial"
+        inactive = bool(_HCA_INACTIVE.search(text))
+        if inactive and not posting:
+            return "CLOSED", st, "page says 'This job posting is no longer active.'"
+        if posting and not inactive and f"/jobs/{job_id}" in text:
+            return "OPEN", st, "JobPosting on the page"
+        return "UNKNOWN", st, "page says neither" + (" (inactive text beside a JobPosting)" if inactive else "")
+
+    def verdict(self, url, job_id):
+        v, st, ev = self.read(url, job_id)
+        if v != "CLOSED":
+            return v, st, ev
+        v2, st2, ev2 = self.read(url, job_id)
+        if v2 == "CLOSED":
+            return "CLOSED", st2, f"{ev}; second fetch agrees ({ev2})"
+        return "UNKNOWN", st2, f"first fetch: {ev}; second fetch read {v2} ({ev2})"
+
+    def _probe(self):
+        st, r = self.http.request("GET", HCA_CANARY_LIST, headers={"Accept": "text/html"},
+                                  impersonate=HCA_IMPERSONATE)
+        if st != 200 or r is None:
+            return False, f"listing answered {st}"
+        m = _HCA_CARD_LINK.search(r.text or "")
+        if not m:
+            return False, "listing has no job cards"
+        v, _, ev = self.verdict(m.group(1), m.group(2))
+        return v == "OPEN", f"listed job {m.group(2)} read {v} ({ev})"
+
+    def check(self, row):
+        url = (row.get("url") or "").strip()
+        m = _HCA_JOB_URL.match(url)
+        if not m:
+            return "UNKNOWN", "", "url is not an HCA job url"
+        with self.lock:
+            if self.dead:
+                return "UNKNOWN", "", self.dead
+            n = self.rows_seen
+            self.rows_seen += 1
+        block = n // self.CANARY_EVERY
+        ok, note = self.canary.get((HCA_HOST, block), self._probe)
+        if not ok:
+            why = "board canary failed (" + note + ")"
+            if block:
+                why = f"board canary failed at row {block * self.CANARY_EVERY} ({note}); site aborted"
+            with self.lock:
+                self.dead = self.dead or why
+            return "UNKNOWN", "", why
+        v, st, ev = self.verdict(url, m.group(1))
+        with self.lock:
+            dead = self.dead
+        if dead and v == "CLOSED":
+            return "UNKNOWN", st, ev + "; not trusted: " + dead
+        return v, st, ev
+
+
+# ------------------------------------------- PeopleSoft (NYC H+H, Queen's)
+# Measured live 2026-10-13 on careers.nychhc.org: every posting url first
+# answers 302 to itself plus "&" (the site's cookie handshake). An open
+# posting then serves Page=HRS_APP_JBPST_FL with
+# <span ... id='HRS_SCH_WRK2_HRS_JOB_OPENING_ID' >140671</span> and the
+# HRS_SCH_PSTDSC body; a closed or unknown opening (130000, 138000, 9999999)
+# is sent on by a second 302 to the job list, Page=HRS_APP_SCHJOB_FL
+# ("1819 jobs found"). CLOSED needs that landing on two separate fetches, so
+# a one-off session hiccup cannot retire an open posting.
+_PS_POSTING_URL = re.compile(
+    r"^(https://[^?#]+\.GBL)\?(?=.*\bPage=HRS_APP_JBPST_FL\b)(?=.*\bJobOpeningId=(\d+))", re.I)
+_PS_LIST_PAGE = "?Page=HRS_APP_SCHJOB_FL&Action=U"
+_PS_LIST_ID = re.compile(r"HRS_APP_JBSCH_I_HRS_JOB_OPENING_ID\$\d+' >(\d+)<")
+_PS_JOBS_FOUND = re.compile(r"\d[\d,]*\s*(?:<[^>]+>\s*)*jobs found", re.I)
+
+
+def ps_posting_url(base, jid):
+    return f"{base}?Page=HRS_APP_JBPST_FL&Action=U&FOCUS=Applicant&SiteId=1&JobOpeningId={jid}&PostingSeq=1"
+
+
+class PeopleSoftChecker:
+    def __init__(self, http, canary=None):
+        self.http = NativeUA(http)
+        self.canary = canary or Canary()
+
+    def _read(self, url, jid):
+        """('open' | 'list' | 'other', status, final url)."""
+        st, r = self.http.request("GET", url, headers={"Accept": "text/html,application/xhtml+xml"})
+        if st != 200 or r is None:
+            return "other", st, ""
+        final, text = str(r.url or url), r.text or ""
+        if re.search(r"id='HRS_SCH_WRK2_HRS_JOB_OPENING_ID'\s*>\s*" + re.escape(jid) + r"\s*<", text) \
+                and "HRS_SCH_PSTDSC" in text:
+            return "open", st, final
+        if re.search(r"[?&]Page=HRS_APP_SCHJOB_FL\b", final, re.I) and _PS_JOBS_FOUND.search(text) \
+                and "HRS_SCH_PSTDSC" not in text:
+            return "list", st, final
+        return "other", st, final
+
+    def verdict(self, url, jid):
+        kind, st, final = self._read(url, jid)
+        if kind == "open":
+            return "OPEN", st, f"posting page shows Job ID {jid}"
+        if kind != "list":
+            return "UNKNOWN", st, f"posting page answered {st}" + (" at ..." + final[-60:] if final else "")
+        kind2, st2, _ = self._read(url, jid)
+        if kind2 == "list":
+            return "CLOSED", st2, "posting url sent to the job list on two fetches (Page=HRS_APP_SCHJOB_FL)"
+        return "UNKNOWN", st2, f"first fetch landed on the job list, the second read {kind2}"
+
+    def _probe(self, base):
+        st, r = self.http.request("GET", base + _PS_LIST_PAGE, headers={"Accept": "text/html"})
+        if st != 200 or r is None:
+            return False, f"job list answered {st}"
+        m = _PS_LIST_ID.search(r.text or "")
+        if not m:
+            return False, "job list has no rows"
+        v, _, ev = self.verdict(ps_posting_url(base, m.group(1)), m.group(1))
+        return v == "OPEN", f"listed opening {m.group(1)} read {v} ({ev})"
+
+    def check(self, row):
+        url = (row.get("url") or "").strip()
+        m = _PS_POSTING_URL.match(url)
+        if not m:
+            return "UNKNOWN", "", "url is not a PeopleSoft posting url"
+        base, jid = m.group(1), m.group(2)
+        ok, note = self.canary.get(base, lambda: self._probe(base))
+        if not ok:
+            return "UNKNOWN", "", "board canary failed (" + note + ")"
+        return self.verdict(url, jid)
+
+
+# ------------------------------------------------------------------ iCIMS
+# Measured live 2026-10-13 (Prime, Legacy, Select Medical, Emory), on the
+# job page with in_iframe=1 as the scraper reads it: an open posting answers
+# 200 with a JSON-LD JobPosting and the iCIMS_JobHeaderGroup; a closed or
+# unknown id answers 410 with <div class="iCIMS_Message iCIMS_ErrorMessage
+# ...">Error: The job that you were looking for either does not exist or is
+# no longer open.</div> above the portal's current job cards. CLOSED needs
+# the 404/410 AND that message; a 410 without it is UNKNOWN.
+_ICIMS_URL = re.compile(r"^https?://([a-z0-9-]+\.icims\.com)/jobs/(\d+)(/[^?#]*)?", re.I)
+_ICIMS_GONE = re.compile(r"does not exist or is no longer open", re.I)
+_ICIMS_LIST_LINK = re.compile(r"https?://[a-z0-9-]+\.icims\.com/jobs/(\d+)/[^\"'?#\s<>]*/job", re.I)
+
+
+def icims_page_url(url):
+    """The in_iframe=1 job page for an iCIMS job or apply url, or ""."""
+    m = _ICIMS_URL.match(url or "")
+    if not m:
+        return ""
+    host, jid, rest = m.group(1).lower(), m.group(2), (m.group(3) or "").rstrip("/")
+    path = f"/jobs/{jid}{rest}" if re.fullmatch(r"(?:/[^/]+)?/job", rest) else f"/jobs/{jid}/job"
+    return f"https://{host}{path}?in_iframe=1"
+
+
+class IcimsChecker:
+    def __init__(self, http, canary=None):
+        self.http = NativeUA(http)
+        self.canary = canary or Canary()
+
+    def verdict(self, page, jid):
+        st, r = self.http.request("GET", page, headers={"Accept": "text/html,application/xhtml+xml"})
+        if r is None or not isinstance(st, int):
+            return "UNKNOWN", st, f"job page answered {st}"
+        text = r.text or ""
+        gone = bool(_ICIMS_GONE.search(text))
+        posting = _has_jobposting(text)
+        if st in (404, 410):
+            if gone and not posting:
+                return "CLOSED", st, f"job page {st}: 'does not exist or is no longer open'"
+            return "UNKNOWN", st, f"job page {st} without the iCIMS closed message"
+        if st != 200:
+            return "UNKNOWN", st, f"job page answered {st}"
+        if _host(str(r.url or page)) != _host(page):
+            return "UNKNOWN", st, "redirected off the portal to " + str(r.url)[:120]
+        if gone and not posting:
+            return "CLOSED", st, "page says 'does not exist or is no longer open'"
+        if posting and not gone and "iCIMS_JobCardItem" not in text and f"/jobs/{jid}/" in (text + str(r.url or page)):
+            return "OPEN", st, "JobPosting on the page"
+        return "UNKNOWN", st, "page says neither"
+
+    def _probe(self, host):
+        st, r = self.http.request("GET", f"https://{host}/jobs/search?ss=1&in_iframe=1",
+                                  headers={"Accept": "text/html"})
+        if st != 200 or r is None:
+            return False, f"job search answered {st}"
+        m = _ICIMS_LIST_LINK.search(r.text or "")
+        if not m:
+            return False, "job search lists no jobs"
+        v, _, ev = self.verdict(icims_page_url(m.group(0)), m.group(1))
+        return v == "OPEN", f"listed job {m.group(1)} read {v} ({ev})"
+
+    def check(self, row):
+        page = icims_page_url((row.get("url") or "").strip())
+        if not page:
+            return "UNKNOWN", "", "url is not an iCIMS job url"
+        host, jid = _host(page), _ICIMS_URL.match(page).group(2)
+        ok, note = self.canary.get(host, lambda: self._probe(host))
+        if not ok:
+            return "UNKNOWN", "", "board canary failed (" + note + ")"
+        return self.verdict(page, jid)
+
+
+# ----------------------------------------------------------------- Phenom
+# Measured live 2026-10-13 (Jackson Health, UVA Health): the tenant's
+# jobDetail widget (POST {base}/widgets, the call the scraper's detail pass
+# makes) answers {"jobDetail": {"status": 200, "hits": 1, "data": {"job":
+# {"jobId": ...}}}} for a listed posting and "hits": 0, "data": {} for one
+# the board no longer has; the job page {base}/us/en/job/{jobId} answers 200
+# with a JSON-LD JobPosting, or HTTP 410 (Jackson 205000 .. 222000 and 1;
+# UVA 1). CLOSED needs both (widget hits 0 AND page 404/410), on a row whose
+# url is that Phenom job page (review 2026-10-13: a stored job_id that is not
+# the widget's jobId reads hits 0 for an open posting; see the row canary in
+# PhenomChecker). Rows whose url
+# is a Workday job page (DaVita, Bon Secours Mercy, Corewell, SSM, Cone ...:
+# the scraper stores the Workday page) go to the Workday checker, the
+# employer's own ATS. Crawls of several Phenom tenants look truncated, so a
+# stale Phenom row is not presumed closed; OPEN rows are expected.
+_PHENOM_JOB_PATH = re.compile(r"/(?:[a-z]{2}/[a-z]{2}/)?job/([^/?#]+)", re.I)
+_PHENOM_SEQNO = re.compile(r"(?:EXTERNAL|INTERNAL)[A-Z]{4}$")
+_PHENOM_LIST_ID = re.compile(r'"jobId"\s*:\s*"([^"]+)"')
+_ATS_HOSTS = re.compile(r"(myworkdayjobs|myworkdaysite|icims|oraclecloud|taleo|smartrecruiters|inforcloudsuite"
+                        r"|healthcaresource|successfactors|ultipro|ukg|paylocity|jobvite|brassring)\.", re.I)
+
+
+def _scraper_literal(name, _cache={}):  # noqa: B006 - parsed once per process
+    """A module-level literal of scraper.py (PHENOM_ORGS, PHENOM_BARE_JOB_PATH),
+    read with ast rather than by importing scraper, whose import opens a log
+    file and reads credentials. None when it cannot be read."""
+    if name not in _cache:
+        import ast
+        val = None
+        try:
+            with open(os.path.join(os.path.dirname(HERE), "scraper.py"), encoding="utf-8") as f:
+                tree = ast.parse(f.read())
+            for node in tree.body:
+                if isinstance(node, ast.Assign) and len(node.targets) == 1:
+                    tgt = node.targets[0]
+                elif isinstance(node, ast.AnnAssign):
+                    tgt = node.target
+                else:
+                    continue
+                if isinstance(tgt, ast.Name) and tgt.id == name and node.value is not None:
+                    val = ast.literal_eval(node.value)
+                    break
+        except (OSError, SyntaxError, ValueError):
+            val = None
+        _cache[name] = val
+    return _cache[name]
+
+
+def phenom_base(row):
+    """The Phenom career site a row belongs to: PHENOM_ORGS[system], else the
+    row's own host when its url is a Phenom job page (BSW). "" if neither."""
+    orgs = _scraper_literal("PHENOM_ORGS") or {}
+    base = orgs.get(row.get("hospital_system") or "")
+    if base:
+        return base.rstrip("/")
+    url = row.get("url") or ""
+    if _PHENOM_JOB_PATH.search(urlsplit(url).path or "") and not _ATS_HOSTS.search(_host(url)):
+        parts = urlsplit(url)
+        return f"{parts.scheme}://{parts.netloc}"
+    return ""
+
+
+def _scraped_ts(v):
+    """scraped_at (ISO text from wp.sql or a CSV) as epoch seconds; 0 if unreadable."""
+    s = str(v or "").strip().replace("Z", "+00:00")
+    try:
+        d = datetime.fromisoformat(s)
+    except ValueError:
+        return 0.0
+    if d.tzinfo is None:
+        d = d.replace(tzinfo=timezone.utc)
+    return d.timestamp()
+
+
+def _id_num(v):
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return 0
+
+
+class PhenomChecker:
+    """Two canaries per Phenom site before any row is judged:
+      board  the first jobId on the search-results page reads OPEN (widget
+             finds it) and its job page answers 200;
+      row    the most recently scraped row of that system in the input export
+             (prime(rows); rows whose url is a Phenom job page on the site
+             come first, since only they can be judged CLOSED) reads OPEN
+             through the same widget call, by the id the row itself carries.
+             The board canary uses an id from the search page, so it cannot
+             tell when the ids this system's rows store are not the widget's
+             jobId (every open row would then read hits 0). A checker that
+             was never primed fails this canary.
+    CLOSED also needs the row's url to be a Phenom /job/{id} page on the
+    site's own host: a row whose id comes from job_id (Workday, Infor or other
+    apply links) can read OPEN or UNKNOWN through the widget, never CLOSED."""
+
+    def __init__(self, http, workday=None, canary=None):
+        self.http = NativeUA(http)
+        self.workday = workday or WorkdayChecker(http)
+        self.canary = canary or Canary()
+        self.site_rows = None   # (base, hospital_system) -> the export row the row canary reads
+
+    @staticmethod
+    def row_id(row, base):
+        """(Phenom jobId for the row, True when it comes from a Phenom job url
+        on base's host) or ("", False)."""
+        url = (row.get("url") or "").strip()
+        m = _PHENOM_JOB_PATH.search(urlsplit(url).path or "") if _host(url) == _host(base) else None
+        wid = unquote(m.group(1)) if m else str(row.get("job_id") or "").strip()
+        if not wid or _PHENOM_SEQNO.search(wid):
+            return "", False
+        return wid, bool(m)
+
+    def prime(self, rows):
+        """Pick each (site, system)'s row canary from the input export."""
+        best = {}
+        for row in rows:
+            if slug(row.get("ats_platform")) != "phenom" or _host(row.get("url")) == HCA_HOST:
+                continue
+            base = phenom_base(row)
+            if not base:
+                continue
+            wid, on_site = self.row_id(row, base)
+            if not wid:
+                continue
+            key = (base, row.get("hospital_system") or "")
+            rank = (on_site, _scraped_ts(row.get("scraped_at")), _id_num(row.get("id")))
+            if key not in best or rank > best[key][0]:
+                best[key] = (rank, row)
+        self.site_rows = {k: r for k, (_, r) in best.items()}
+        return self.site_rows
+
+    def _row_probe(self, base, system):
+        if self.site_rows is None:
+            return False, "no input export given for the row canary"
+        row = self.site_rows.get((base, system))
+        if row is None:
+            return False, "no row of this system in the export to test"
+        wid, on_site = self.row_id(row, base)
+        v, _, ev = self.verdict(base, system, wid, (row.get("url") or "").strip() if on_site else "",
+                                closable=on_site)
+        return v == "OPEN", (f"most recently scraped row id {row.get('id')} (jobId {wid}, scraped "
+                             f"{row.get('scraped_at')}) read {v} ({ev})")
+
+    def _widget(self, base, wid):
+        body = {"lang": "en_us", "deviceType": "desktop", "country": "us", "pageName": "job-page",
+                "ddoKey": "jobDetail", "jobId": str(wid)}
+        st, r = self.http.request("POST", base + "/widgets", json_body=body,
+                                  headers={"Accept": "application/json", "Content-Type": "application/json"})
+        if st != 200 or r is None:
+            return st, None
+        try:
+            jd = (r.json() or {}).get("jobDetail")
+        except Exception:  # noqa: BLE001
+            return "bad-json", None
+        if not isinstance(jd, dict) or jd.get("status") != 200 or not isinstance(jd.get("hits"), int):
+            return "bad-shape", None
+        job = (jd.get("data") or {}).get("job") or {}
+        return st, (jd["hits"], str(job.get("jobId") or ""))
+
+    @staticmethod
+    def page_url(base, system, wid, url=""):
+        if url and _host(url) == _host(base) and _PHENOM_JOB_PATH.search(urlsplit(url).path or ""):
+            return url
+        bare = _scraper_literal("PHENOM_BARE_JOB_PATH") or set()
+        return f"{base}/job/{wid}" if system in bare else f"{base}/us/en/job/{wid}"
+
+    def _page(self, page):
+        return self.http.request("GET", page, headers={"Accept": "text/html,application/xhtml+xml"})
+
+    def verdict(self, base, system, wid, url="", closable=False):
+        """closable: the row's url is a Phenom job page on base's host (its
+        id came from that url). Without it a widget miss is UNKNOWN and the
+        job page is not fetched."""
+        wst, w = self._widget(base, wid)
+        if w is None:
+            return "UNKNOWN", wst, f"jobDetail widget answered {wst}"
+        hits, got = w
+        if hits >= 1 and got == wid:
+            return "OPEN", wst, f"jobDetail widget finds {wid}"
+        if hits != 0:
+            return "UNKNOWN", wst, f"jobDetail widget hits {hits}, jobId {got[:40]!r}"
+        if not closable:
+            return "UNKNOWN", wst, (f"jobDetail widget hits 0 for {wid}, but the row's url is not a Phenom "
+                                    f"job page on {_host(base)}; not judged")
+        page = self.page_url(base, system, wid, url)
+        pst, r = self._page(page)
+        if pst in (404, 410) and r is not None and _host(str(r.url or page)) == _host(page):
+            return "CLOSED", pst, f"jobDetail widget hits 0 and job page {pst}"
+        return "UNKNOWN", pst, f"jobDetail widget hits 0 but job page answered {pst}"
+
+    def _probe(self, base, system):
+        for path in ("/us/en/search-results", "/search-results", ""):
+            st, r = self.http.request("GET", base + path, headers={"Accept": "text/html"})
+            if st != 200 or r is None:
+                continue
+            ids = [i for i in _PHENOM_LIST_ID.findall(r.text or "") if not _PHENOM_SEQNO.search(i)]
+            if not ids:
+                continue
+            wid = ids[0]
+            v, _, ev = self.verdict(base, system, wid)
+            if v != "OPEN":
+                return False, f"listed job {wid} read {v} ({ev})"
+            pst, _ = self._page(self.page_url(base, system, wid))
+            if pst != 200:
+                return False, f"listed job {wid}: the widget finds it but its job page answered {pst}"
+            return True, f"listed job {wid} OPEN, job page 200"
+        return False, "no listed job found on the search page"
+
+    def check(self, row):
+        url = (row.get("url") or "").strip()
+        pre = ""
+        if workday_parts(url):
+            # The Workday posting decides when it can; when it cannot (UVA's
+            # CXS search reports total 0, so its canary fails) the Phenom
+            # board is asked the same question under its own rules.
+            v = self.workday.check(row)
+            if v[0] != "UNKNOWN":
+                return v
+            pre = "workday: " + str(v[2])[:80] + "; phenom: "
+        base = phenom_base(row)
+        if not base:
+            return "UNKNOWN", "", pre + "no Phenom site known for this system"
+        wid, on_site = self.row_id(row, base)
+        if not wid:
+            return "UNKNOWN", "", pre + "no Phenom jobId on the row"
+        system = row.get("hospital_system") or ""
+        ok, note = self.canary.get(base, lambda: self._probe(base, system))
+        if not ok:
+            return "UNKNOWN", "", pre + "board canary failed (" + note + ")"
+        ok, note = self.canary.get(("row", base, system), lambda: self._row_probe(base, system))
+        if not ok:
+            return "UNKNOWN", "", pre + "row canary failed (" + note + ")"
+        v, st, ev = self.verdict(base, system, wid, url if on_site else "", closable=on_site)
+        return v, st, pre + ev
 
 
 # ------------------------------------------------------------------- rows
@@ -497,7 +1194,7 @@ def run_check(args):
         raise SystemExit(f"--stop-at {args.stop_at} UTC has already passed")
     os.makedirs(args.out_dir, exist_ok=True)
 
-    rows = rows_from_file(args.rows_file) if args.rows_file else rows_from_db(args)
+    rows = all_rows = rows_from_file(args.rows_file) if args.rows_file else rows_from_db(args)
     if args.system:
         rows = [r for r in rows if r.get("hospital_system") in set(args.system)]
     if args.platform:
@@ -526,7 +1223,10 @@ def run_check(args):
     print(f"{len(rows)} rows read; {len(order)} to check on {len(by_host)} hosts; "
           f"budget {args.max_requests} requests; stop at {stop_at:%H:%M} UTC", flush=True)
 
-    http = Http(Budget(args.max_requests, stop_at))
+    http = Http(Budget(args.max_requests, stop_at), per_host=args.per_host, pause=(args.pause, 2 * args.pause))
+    # Phenom row canaries come from the whole export (resumed or filtered
+    # runs pick the same row).
+    checker_for("Phenom", http).prime(all_rows)
     writers, files, wlock = {}, {}, threading.Lock()
     stats = collections.Counter()
     per_sys = collections.defaultdict(collections.Counter)
@@ -560,7 +1260,7 @@ def run_check(args):
         if stopped.is_set():
             return
         try:
-            verdict, status, ev = checker_for(row.get("ats_platform"), http).check(row)
+            verdict, status, ev = checker_for_row(row, http).check(row)
         except Http.OutOfBudget:
             stopped.set()
             return
@@ -569,12 +1269,20 @@ def run_check(args):
         write(row, verdict, status, ev)
 
     workers = max(2, min(args.workers, 2 * len(by_host)))
-    with ThreadPoolExecutor(max_workers=workers) as ex:
+    ex = ThreadPoolExecutor(max_workers=workers)
+    try:
         list(ex.map(one, order))
+    except KeyboardInterrupt:
+        # Without this the pool's shutdown would work through every queued
+        # row before exiting; the docs tell the operator Ctrl+C stops a run.
+        stopped.set()
+        print("interrupted: finishing the requests in flight, starting no new row", flush=True)
+    finally:
+        ex.shutdown(wait=True, cancel_futures=True)
     for f in files.values():
         f.close()
     print(f"done: {dict(stats)}; requests {http.budget.used}"
-          + ("; STOPPED at the request budget or stop time" if stopped.is_set() else ""), flush=True)
+          + ("; STOPPED (request budget, stop time or Ctrl+C)" if stopped.is_set() else ""), flush=True)
     for s, c in sorted(per_sys.items(), key=lambda kv: -sum(kv[1].values())):
         print(f"  {s}: {dict(c)}")
     print("requests by host: " + ", ".join(f"{h} {n}" for h, n in http.by_host.most_common()))
@@ -582,24 +1290,30 @@ def run_check(args):
 
 # -------------------------------------------------------------------- sql
 def run_sql(args):
+    """Owner-run retire + restore files from the CSVs in --out-dir. With
+    --db-write both files are in the db_write format (no comment or blank
+    lines, one statement per line, every locking statement prefixed with
+    set lock_timeout = '3s';); without it they carry the explanatory header
+    that 115 / 115r had. Each run names its own backup table (--backup-table,
+    default retired_closed_backup_<UTC date>) so a rollback restores only the
+    rows its own retire file saved."""
     verdicts = latest_verdicts(args.out_dir)
-    closed = sorted(int(i) for i, r in verdicts.items() if r.get("verdict") == "CLOSED")
-    if args.system:
-        keep = set(args.system)
-        closed = sorted(int(i) for i, r in verdicts.items()
-                        if r.get("verdict") == "CLOSED" and r.get("hospital_system") in keep)
+    keep = set(args.system or [])
+    closed = sorted(int(i) for i, r in verdicts.items()
+                    if r.get("verdict") == "CLOSED" and (not keep or r.get("hospital_system") in keep))
     by_sys = collections.Counter(verdicts[str(i)]["hospital_system"] for i in closed)
     batches = [closed[i:i + args.batch] for i in range(0, len(closed), args.batch)]
     guard = f"is_active and scraped_at < {q(args.stale_before)}"
-    tbl = "public.retired_closed_backup_20261012"
+    tbl = "public." + args.backup_table
+    name, rname = os.path.basename(args.out_sql), os.path.basename(args.out_restore)
     lines = [
-        "-- 115_retire_verified_closed.sql  (generated by hospital-scraper tools/verify_stale.py sql)",
+        f"-- {name}  (generated by hospital-scraper tools/verify_stale.py sql)",
         "-- DATA project (tlzxajgonuevbqaelhvf) only. OWNER-RUN. Never between 23:30 and 05:30 UTC.",
         f"-- Retires {len(closed)} active rows whose posting the employer's own board confirmed CLOSED",
         f"-- (CSVs in {args.out_dir}). UNKNOWN and OPEN rows are not touched.",
         "-- Per system: " + "; ".join(f"{s} {n}" for s, n in by_sys.most_common()),
         f"-- Guard on every statement: {guard}  (a row re-stamped by a later crawl is left alone).",
-        "-- Undo: 115r_retire_verified_closed.sql restores is_active from the backup table.",
+        f"-- Undo: {rname} restores is_active from the backup table.",
         "",
         "-- 1. Save (id, is_active, scraped_at) of the rows to retire.",
         f"set lock_timeout = '3s'; create table if not exists {tbl} (id bigint primary key, is_active boolean not null, "
@@ -615,12 +1329,10 @@ def run_sql(args):
                      f"where {guard} and id in ({','.join(map(str, b))});")
     lines += ["", "-- 3. Check: expect 0 rows still active among the backed-up ids.",
               f"select count(*) as still_active from public.hospital_jobs h join {tbl} b using (id) where h.is_active;", ""]
-    with open(args.out_sql, "w", encoding="utf-8", newline="\n") as f:
-        f.write("\n".join(lines))
     rlines = [
-        "-- 115r_retire_verified_closed.sql  (undo of 115_retire_verified_closed.sql)",
+        f"-- {rname}  (undo of {name})",
         "-- DATA project (tlzxajgonuevbqaelhvf) only. OWNER-RUN. Never between 23:30 and 05:30 UTC.",
-        f"-- Puts is_active back from {tbl} for rows 115 retired that no crawl has re-stamped since",
+        f"-- Puts is_active back from {tbl} for rows {name} retired that no crawl has re-stamped since",
         f"-- (scraped_at still before {args.stale_before}). The backup table is kept; drop it by hand later.",
         "",
         f"set lock_timeout = '3s'; update public.hospital_jobs h set is_active = b.is_active from {tbl} b "
@@ -630,10 +1342,15 @@ def run_sql(args):
         f"select count(*) as restored_active from public.hospital_jobs h join {tbl} b using (id) where h.is_active;",
         "",
     ]
+    if args.db_write:
+        lines = [x for x in lines if x and not x.startswith("--")] + [""]
+        rlines = [x for x in rlines if x and not x.startswith("--")] + [""]
+    with open(args.out_sql, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lines))
     with open(args.out_restore, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(rlines))
     print(f"wrote {args.out_sql}: {len(closed)} CLOSED ids in {len(batches)} batches; {dict(by_sys)}")
-    print(f"wrote {args.out_restore}")
+    print(f"wrote {args.out_restore} (backup table {tbl})")
 
 
 def main():
@@ -649,7 +1366,12 @@ def main():
     c.add_argument("--out-dir", default=DEFAULT_OUT)
     c.add_argument("--max-requests", type=int, default=3000)
     c.add_argument("--stop-at", default="23:15", help="UTC HH:MM; no request starts after it")
-    c.add_argument("--workers", type=int, default=8)
+    c.add_argument("--workers", type=int, default=8,
+                   help="threads across all hosts; does NOT slow one host (see --per-host / --pause)")
+    c.add_argument("--per-host", type=int, default=PER_HOST,
+                   help=f"requests in flight per host, 1..{PER_HOST} (default {PER_HOST}); 1 if a board answers 429")
+    c.add_argument("--pause", type=float, default=PAUSE[0],
+                   help=f"seconds each host slot rests after a request: a random P..2P (default {PAUSE[0]})")
     c.add_argument("--retry-unknown", action="store_true")
     s = sub.add_parser("sql", help="write the owner-run retire + restore SQL from the CSVs")
     s.add_argument("--out-dir", default=DEFAULT_OUT)
@@ -658,14 +1380,24 @@ def main():
     s.add_argument("--stale-before", required=True, help="timestamptz; only rows last scraped before it are touched")
     s.add_argument("--system", action="append")
     s.add_argument("--batch", type=int, default=1000)
+    s.add_argument("--backup-table", default="retired_closed_backup_" + utcnow().strftime("%Y%m%d"),
+                   help="table in schema public that saves the retired rows (default: by UTC date)")
+    s.add_argument("--db-write", action="store_true",
+                   help="db_write format: no comment or blank lines, one statement per line")
     args = ap.parse_args()
     if args.cmd == "check":
         if not args.rows_file and not args.from_db:
             ap.error("check needs --rows-file or --from-db")
+        if not 1 <= args.per_host <= PER_HOST:
+            ap.error(f"--per-host is 1..{PER_HOST}")
+        if not 0.5 <= args.pause <= 30:
+            ap.error("--pause is 0.5..30 seconds")
         run_check(args)
     else:
         if args.batch > 1000:
             ap.error("--batch is at most 1000")
+        if not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", args.backup_table):
+            ap.error("--backup-table must be a plain lower-case table name")
         run_sql(args)
 
 
