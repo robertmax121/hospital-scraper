@@ -16442,6 +16442,18 @@ def _hl_city_state(cfg: dict, city: str, state: str, location: str) -> tuple[str
     return clean_city(city), state
 
 
+def _hl_drop_utm(url: str) -> str:
+    """The URL without its utm_* parameters (Rush's feed tags every link).
+    Until 2026-10-13 the whole query went, which on a query-addressed
+    posting (WMCHealth /?jobs=<slug>&utm_source=...) leaves the bare
+    domain: an Apply link to the home page."""
+    from urllib.parse import parse_qsl, urlencode, urlunsplit
+    p = urlsplit(url)
+    keep = [(k, v) for k, v in parse_qsl(p.query.replace("&amp;", "&"), keep_blank_values=True)
+            if not k.lower().startswith("utm_")]
+    return urlunsplit(p._replace(query=urlencode(keep)))
+
+
 def _hl_make_job(system: str, cfg: dict, url: str, title: str, f: dict) -> Job | None:
     title = _hl_text(title)
     if not title or not url:
@@ -16449,7 +16461,13 @@ def _hl_make_job(system: str, cfg: dict, url: str, title: str, f: dict) -> Job |
     if url.startswith("/"):
         url = f"{cfg.get('base', '').rstrip('/')}{url}"
     if "utm_" in url:
-        url = url.split("?", 1)[0]
+        url = _hl_drop_utm(url)
+    # 2026-10-13: a card whose link is the site's home page names no posting;
+    # the row is not emitted (hide rather than mislabel). WMCHealth's links
+    # are root-path but query-addressed (/?jobs=<slug>-<req>, the site's own
+    # canonical), and those pass (_root_url_names_posting).
+    if urlsplit(url).path in ("", "/") and not _root_url_names_posting(url):
+        return None
     if cfg.get("title_strip"):
         title = re.sub(cfg["title_strip"], "", title).strip()
     city, state = _hl_city_state(cfg, f.get("city", ""), f.get("state", ""), f.get("location", ""))
@@ -19320,6 +19338,30 @@ def _sanitize_apply_url(url: str) -> str:
     url = re.sub(r"(/sites/[^/]+)/jobs/(?!preview/)([0-9A-Za-z])", r"\1/job/\2", url)
     return url
 
+# 2026-10-13: the query keys that name ONE posting on a root-path URL. A
+# WordPress site on plain permalinks addresses a post by query, not by path:
+# WMCHealth's own canonical posting URL is https://wmchealthjobs.org/?jobs=
+# <slug>-<req> (the page's rel=canonical says so, and its /jobs/<slug>/ form
+# answers 301 to it), and core WordPress uses /?p=<id> and /?page_id=<id>.
+# The QA link gate read those 778 working links as "no_path" on every run
+# since the adapter landed (10-04): an alarm with no broken link behind it.
+# A bare domain, or a root URL carrying only tracking / search / paging
+# parameters (utm_*, s=, paged=, post_type=), still names no posting.
+_ROOT_POSTING_QUERY_KEY = re.compile(r"(?i)^(?:p|page_id|jobs?|job_?id|jobid|posting_?id|req_?id)$")
+
+
+def _root_url_names_posting(url: str) -> bool:
+    """True when a URL whose path is empty or "/" still names one posting
+    through its query (/?jobs=<slug>, /?p=<id>). False for a bare domain."""
+    from urllib.parse import parse_qsl
+    try:
+        q = _urlsplit(url or "").query
+    except Exception:
+        return False
+    return any(_ROOT_POSTING_QUERY_KEY.match(k) and re.search(r"[0-9A-Za-z]", v)
+               for k, v in parse_qsl(q))
+
+
 def _apply_verified_for(url: str) -> bool:
     """True for platforms whose apply links we trust; False for the opaque
     tranche (ranked to the back of the board until we can verify them)."""
@@ -19348,7 +19390,7 @@ def _structural_url_ok(url: str, platform: str) -> tuple[bool, str]:
         return True, ""
     try:
         p = _urlsplit(url)
-        if not p.path or p.path == "/":
+        if (not p.path or p.path == "/") and not _root_url_names_posting(url):
             return False, "no_path"
     except Exception:
         return False, "unparseable"
