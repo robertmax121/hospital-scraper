@@ -195,6 +195,7 @@ NON_US = [
     ("GBR Hereford – Clinic", FME + "GBR-Hereford--Clinic/Nurse_R11"),
     ("2 Locations", FME + "CHN-FCH-Guangzhou-Office---Office/Specialist_R12"),
     ("Pathumwan, BKK", FME + "Pathumwan-BKK/Nurse_R13"),
+    ("2 Locations", FME + "Watthana-BKK/Renal-Nurse_R0271462"),
     ("Amphoe Chom Thong, CMI", FME + "Amphoe-Chom-Thong-CMI/Nurse_R14"),
     ("Quanzhou,Fujian", FME + "QuanzhouFujian/Nurse_R15"),
     ("Rochdale, United Kingdom", FME + "Rochdale-United-Kingdom/Nurse_R16"),

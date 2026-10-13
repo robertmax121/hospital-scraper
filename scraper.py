@@ -8646,7 +8646,7 @@ _NON_US_PLACES = {
 # A Workday path segment (/job/<segment>/...): an ISO country prefix
 # ("GBR-Hereford--Clinic", "DEU-Ludwigshafen---Clinic", "CHN-FCH-Shanghai-
 # Office---Office"), or a '---' chunk that ends in a country name, a country
-# code or a Canadian province ("Krosno-Poland", "Rio-de-Janeiro-RJ-BR",
+# code (or Bangkok's BKK) or a Canadian province ("Krosno-Poland", "Rio-de-Janeiro-RJ-BR",
 # "Bonifacio-Global-City-PHL", "Richmond-Hill-ON---Sunrise-of-Richmond-Hill").
 # PHL and IND are not path codes here, at either end: on a US board they
 # read as Philadelphia and Indianapolis (the location text still catches
@@ -8655,7 +8655,7 @@ _WD_PATH_SEG_RX = re.compile(r"/job/([^/?#]+)/")
 _NON_US_PATH_PREFIX_RX = re.compile(r"^(?:GBR|DEU|CHN|ESP|POL|PRT|NLD|CHE|THA|BRA|MEX|CAN)-")
 _NON_US_PATH_END_RX = re.compile(
     r"-(?:(?i:" + _NON_US_COUNTRY_NAMES.replace(" ", "-") + r")"
-    r"|" + "|".join(sorted(_NON_US_COUNTRY_CODES - {"PHL", "IND"})) + r")(?:---|$)")
+    r"|" + "|".join(sorted((_NON_US_COUNTRY_CODES - {"PHL", "IND"}) | {"BKK"})) + r")(?:---|$)")
 _CA_PATH_END_RX = re.compile(r"[A-Za-z]-(?:" + "|".join(sorted(_CA_PROVINCES)) + r")(?:---|$)")
 
 
