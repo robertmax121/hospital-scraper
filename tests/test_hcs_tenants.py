@@ -175,6 +175,40 @@ def test_a_whole_crawl_is_not_partial(monkeypatch):
     assert "Aultman Health Foundation" in scraper.COMPLETE_SYSTEMS
 
 
+def test_a_hole_under_two_percent_is_still_partial_and_never_claims_complete(monkeypatch):
+    # Review 2026-10-13: 295 of 300 is above COMPLETE_RATIO, so a ratio test
+    # alone would claim complete and the sweep would retire the skipped page.
+    monkeypatch.setattr(scraper, "_HCS_PAGE", 5)
+    null_source = _fixture("liberty_null_source.json")
+
+    def responder(frm, body):
+        if frm == 150:
+            return _R(500, null_source)
+        return _R(200, {"hits": {"total": {"value": 300}, "hits": [_hit(frm + i) for i in range(5)] if frm < 300 else []}})
+    _hcs_fake(monkeypatch, responder)
+    jobs = asyncio.run(scraper.scrape_healthcaresource(None, "Aultman Health Foundation", "aultman"))
+    assert len(jobs) == 295
+    assert "Aultman Health Foundation" in scraper.PARTIAL_SYSTEMS
+    assert "Aultman Health Foundation" not in scraper.COMPLETE_SYSTEMS
+
+
+def test_a_tenant_gone_answer_mid_crawl_is_a_failed_page_not_an_end(monkeypatch, caplog):
+    monkeypatch.setattr(scraper, "_HCS_PAGE", 5)
+    gone = _fixture("smh_alias_gone.json")
+
+    def responder(frm, body):
+        if frm == 10:
+            return _R(500, gone)
+        return _R(200, {"hits": {"total": {"value": 50}, "hits": [_hit(frm + i) for i in range(5)] if frm < 50 else []}})
+    _hcs_fake(monkeypatch, responder)
+    with caplog.at_level(logging.WARNING):
+        jobs = asyncio.run(scraper.scrape_healthcaresource(None, "Aultman Health Foundation", "aultman"))
+    assert len(jobs) == 45
+    assert not any("TENANT GONE" in m for m in caplog.messages)
+    assert "Aultman Health Foundation" in scraper.PARTIAL_SYSTEMS
+    assert "Aultman Health Foundation" not in scraper.COMPLETE_SYSTEMS
+
+
 # -- 3. The sweep and Layer 4 on these outages --------------------------------
 
 class _UResp:

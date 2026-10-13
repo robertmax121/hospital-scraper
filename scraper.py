@@ -12558,7 +12558,10 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
                     snippet = (await r.text())[:200]
-                    if _HCS_TENANT_GONE_RX.search(snippet):
+                    # Only a first page with nothing listed proves the tenant
+                    # gone; the same answer mid-crawl is a failed page (and
+                    # makes the crawl PARTIAL below), never a quiet early end.
+                    if _HCS_TENANT_GONE_RX.search(snippet) and offset == 0 and not jobs:
                         logger.warning(f"HealthcareSource {system}: TENANT GONE, {tenant!r} answers {snippet!r}; "
                                        f"the employer has left HealthcareSource or moved to another tenant "
                                        f"(check its careers page); nothing listed, the yield guard holds its rows")
@@ -12611,7 +12614,11 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
     # crawl that listed nothing is not flagged: the zero-yield guard holds
     # its rows, and the 7-day backstop still lets a dead tenant's links go
     # (PARTIAL would exempt them from Layer 4, backstop included).
-    if pages_skipped and jobs and (not total or len(jobs) < COMPLETE_RATIO * total):
+    # 2026-10-13 (review): ANY skipped page makes the crawl partial, whatever
+    # the ratio. A hole smaller than 2% of the total would otherwise still
+    # claim complete (report_complete), and a complete claim bypasses the
+    # yield guard, so the sweep would retire the live rows on that page.
+    if pages_skipped and jobs:
         PARTIAL_SYSTEMS.add(system)
         logger.warning(f"HealthcareSource {system}: PARTIAL, {pages_skipped} page(s) skipped, "
                        f"{len(jobs)} listed" + (f" of {total} advertised" if total else "")
