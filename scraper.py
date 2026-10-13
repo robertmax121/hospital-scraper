@@ -4259,6 +4259,17 @@ _WD_REQ_ID_RE = re.compile(r"^[A-Za-z]{0,12}[-_ ]?\d{3,}[A-Za-z0-9._-]*$")
 # trailing "(CODE)" stripped; a key also matches as a prefix. Value =
 # (facility label or None to keep the system name, city, state).
 WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
+    # 2026-10-13: Liberty Hospital (Liberty MO) left HealthcareSource for this
+    # tenant. Its sites are facility-only locations, so its rows took the
+    # tenant default (Kansas City, KS). Towns from libertyhospital.org:
+    # the hospital at 2525 Glenn Hendren Dr, Liberty; Sports Medicine at 398
+    # N. Blue Jay Dr, Liberty; Urgent Care Shoal Creek at 8300 N. Church Rd,
+    # Kansas City MO 64158. The longer keys come first in the prefix match.
+    "The University of Kansas Health System": {
+        "liberty hospital":                          ("Liberty Hospital", "Liberty", "MO"),
+        "liberty hospital sports medicine":          (None, "Liberty", "MO"),
+        "liberty hospital urgent care shoal creek":  (None, "Kansas City", "MO"),
+    },
     # ── 2026-10-04 cov3: boards whose location is a facility or a "Town -
     # Facility" string (every value read off each tenant's locations facet
     # that day). Hospital campuses take their CMS-facing names; clinics and
@@ -12337,7 +12348,16 @@ HEALTHCARESOURCE_ORGS = {
     "Crouse Health":            "crouse",
     "York Hospital":            "yorkhospital",
     "Lake Regional Health":     "lakeregional",
-    "Liberty Hospital":         "liberty",
+    # "Liberty Hospital": "liberty" removed 2026-10-13: every page of the
+    # tenant answers HTTP 500 "Value cannot be null. Parameter name: source"
+    # (sorted and unsorted, 0 rows on the 10-13 12:00 run; it never stored a
+    # row). Liberty Hospital (Liberty MO) is part of The University of Kansas
+    # Health System now: libertyhospital.org/careers "View our openings" goes
+    # to jobs.kansashealthsystem.com, whose Apply links are the
+    # kansashealthsystem wd1 Workday tenant we already read (WORKDAY_TENANTS
+    # "The University of Kansas Health System", 1,043 on 10-13: "Liberty, MO"
+    # 134, "Liberty Hospital" 6, its urgent care and sports medicine sites 3).
+    # Those three sites are located through WD_FACILITY_MAP.
     "Forrest Health":           "forresthealth",
     "MRHC":                     "mrhc",
     # 2026-10-07 (push 10): tenant bch is BOULDER COMMUNITY HEALTH (Boulder
@@ -12354,7 +12374,11 @@ HEALTHCARESOURCE_ORGS = {
     "CHC Healthcare":           "chc",
     "Lawrence General":         "lawrence",
     "Holyoke Health":           "Holyokehealth",
-    "Sarasota Memorial":        "smh",
+    # "Sarasota Memorial": "smh" removed 2026-10-13: the tenant is gone (every
+    # request answers HTTP 500 "Alias for clientId 4723 does not exist."; its
+    # last rows were stamped 2026-09-22 and all 78 are inactive). Sarasota
+    # Memorial moved to iCIMS: careers.smh.com is the Jibe front already in
+    # JIBE_SITES as "Sarasota Memorial Health Care System" (397 on 10-13).
     # 2026-09-10 (Z-texas-acute-D): Texas block D, keys read from the /cs/<tenant>
     # links on shannonhealth.com/careers and mchodessa.com/careers.
     "Shannon Medical Center":   "shannonhealth",
@@ -12505,6 +12529,10 @@ _HCS_SORT = [{"datePosted": {"order": "desc"}}, "_doc"]
 _HCS_BODY = {"query": {"bool": {"must": {"match_all": {}}}}, "sort": _HCS_SORT}   # 2026-09-10: "*" alone matches nothing
 _HCS_BODY_UNSORTED = {"query": _HCS_BODY["query"]}
 _HCS_MAX_CONSECUTIVE_FAILURES = 3
+# 2026-10-13: the answer of a tenant HealthcareSource has removed (Sarasota
+# Memorial, clientId 4723, after the move to iCIMS). It is permanent, so the
+# adapter stops at once instead of retrying unsorted and paging on.
+_HCS_TENANT_GONE_RX = re.compile(r"Alias for clientId \d+ does not exist", re.I)
 
 
 async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, tenant: str) -> list[Job]:
@@ -12515,6 +12543,7 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
     body = _HCS_BODY
     total: int | None = None
     failures_in_a_row = 0
+    pages_skipped = 0
     # 2026-10-07 (push 10): rows are deduped by job_id inside the loop, a
     # failed page is skipped (the next offset is read) and only
     # _HCS_MAX_CONSECUTIVE_FAILURES in a row end the tenant; any exception
@@ -12528,7 +12557,15 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
                          "Referer": f"https://pm.healthcaresource.com/cs/{tenant}"},
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
-                    snippet = (await r.text())[:120]
+                    snippet = (await r.text())[:200]
+                    # Only a first page with nothing listed proves the tenant
+                    # gone; the same answer mid-crawl is a failed page (and
+                    # makes the crawl PARTIAL below), never a quiet early end.
+                    if _HCS_TENANT_GONE_RX.search(snippet) and offset == 0 and not jobs:
+                        logger.warning(f"HealthcareSource {system}: TENANT GONE, {tenant!r} answers {snippet!r}; "
+                                       f"the employer has left HealthcareSource or moved to another tenant "
+                                       f"(check its careers page); nothing listed, the yield guard holds its rows")
+                        break
                     if body is _HCS_BODY and offset == 0 and r.status == 500:
                         logger.warning(f"HealthcareSource {system}: HTTP 500 to the sorted query at offset 0; "
                                        f"retrying this tenant unsorted ({snippet!r})")
@@ -12555,6 +12592,7 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
             await jitter()
         except Exception as e:
             failures_in_a_row += 1
+            pages_skipped += 1
             logger.warning(f"HealthcareSource {system}: page at offset {offset} failed ({type(e).__name__}: {e}); "
                            f"skipping it ({failures_in_a_row}/{_HCS_MAX_CONSECUTIVE_FAILURES} in a row)")
             if failures_in_a_row >= _HCS_MAX_CONSECUTIVE_FAILURES:
@@ -12568,6 +12606,23 @@ async def scrape_healthcaresource(session: aiohttp.ClientSession, system: str, t
             await jitter()
     if total and len(jobs) < COMPLETE_RATIO * total:
         logger.warning(f"HealthcareSource {system}: listed {len(jobs)} of {total} advertised")
+    # 2026-10-13: a crawl that skipped a failed page and came back short of
+    # the advertised total (or with no total) is PARTIAL, so the sweep does
+    # not retire the live postings on the pages it could not read. Without
+    # it, one bad page of 50 on a big tenant (RWJBarnabas, 2,278) leaves the
+    # yield above GUARD_RATIO and the sweep retires those 50 live rows. A
+    # crawl that listed nothing is not flagged: the zero-yield guard holds
+    # its rows, and the 7-day backstop still lets a dead tenant's links go
+    # (PARTIAL would exempt them from Layer 4, backstop included).
+    # 2026-10-13 (review): ANY skipped page makes the crawl partial, whatever
+    # the ratio. A hole smaller than 2% of the total would otherwise still
+    # claim complete (report_complete), and a complete claim bypasses the
+    # yield guard, so the sweep would retire the live rows on that page.
+    if pages_skipped and jobs:
+        PARTIAL_SYSTEMS.add(system)
+        logger.warning(f"HealthcareSource {system}: PARTIAL, {pages_skipped} page(s) skipped, "
+                       f"{len(jobs)} listed" + (f" of {total} advertised" if total else "")
+                       + "; not swept tonight")
     logger.info(f"  HealthcareSource {system}: {len(jobs)} jobs")
     report_complete(system, len(jobs), total, feed="HEALTHCARESOURCE_ORGS")
     return jobs
