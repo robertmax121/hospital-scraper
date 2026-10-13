@@ -35,11 +35,15 @@ def _hit(i, slug=True, et="Travel"):
     }
 
 
-def _page(n_slugged, n_slugless, start, served_hpp, nb_pages=1513):
+def _page(n_slugged, n_slugless, start, served_hpp, nb_pages=1513, nb_hits=387649):
     hits = [_hit(start + k) for k in range(n_slugged)]
     hits += [_hit(start + n_slugged + k, slug=False) for k in range(n_slugless)]
-    return {"results": [{"hits": hits, "nbHits": 387649, "nbPages": nb_pages,
+    return {"results": [{"hits": hits, "nbHits": nb_hits, "nbPages": nb_pages,
                          "hitsPerPage": served_hpp, "page": 0}]}
+
+
+def _empty(nb_hits, served_hpp=10):
+    return {"results": [{"hits": [], "nbHits": nb_hits, "nbPages": 0, "hitsPerPage": served_hpp}]}
 
 
 class _Resp:
@@ -63,8 +67,9 @@ class _Ctx:
 
 
 class FakeAlgolia:
-    """Serves pages[(employmentType, page)] -> payload | int (HTTP status).
-    A missing page is an empty result (past the end)."""
+    """Serves pages[(employmentType, page)] -> payload | int (HTTP status) |
+    a list of those, one per request (the last one repeats). A missing page
+    is an empty result with nbHits 0 (past the end)."""
 
     def __init__(self, pages):
         self.pages = pages
@@ -76,6 +81,8 @@ class FakeAlgolia:
         page = int(params["page"])
         self.calls.append((et, page, params))
         got = self.pages.get((et, page))
+        if isinstance(got, list):
+            got = got.pop(0) if len(got) > 1 else got[0]
         if isinstance(got, int):
             return _Ctx(_Resp(got, {}))
         if got is None:
@@ -90,7 +97,15 @@ def small_pages(monkeypatch):
     monkeypatch.setattr(scraper, "VIVIAN_HITS_PER_PAGE", 10)
     monkeypatch.setattr(scraper, "VIVIAN_PAGE_SLEEP", 0)
     monkeypatch.setattr(scraper, "VIVIAN_EMPLOYMENT_TYPES", ["Travel"])
+    monkeypatch.setattr(scraper, "VIVIAN_RETRY_SLEEP", (0, 0))
     monkeypatch.setattr(scraper, "_retry_sleep", _no_sleep, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _no_incomplete_flags():
+    scraper.TRAVEL_INCOMPLETE.clear()
+    yield
+    scraper.TRAVEL_INCOMPLETE.clear()
 
 
 async def _no_sleep(*_a, **_k):
@@ -149,14 +164,90 @@ def test_a_lowered_page_size_still_pages_through(small_pages):
     assert [p for _, p, _ in s.calls] == [0, 1, 2]
 
 
-def test_a_failed_page_ends_the_type_and_says_so(small_pages, caplog):
+def test_a_page_that_fails_twice_ends_the_type_and_flags_vivian(small_pages, caplog):
     pages = {("Travel", 0): _page(5, 5, 0, 10), ("Travel", 1): 403}
     s = FakeAlgolia(pages)
     with caplog.at_level(logging.INFO):
         jobs = _run(s)
     assert len(jobs) == 5
-    assert [p for _, p, _ in s.calls] == [0, 1]
-    assert any("stopped: request failed on page 1" in m for m in caplog.messages)
+    assert [p for _, p, _ in s.calls] == [0, 1, 1]          # one retry
+    assert any("stopped: request failed on page 1 (after a retry)" in m for m in caplog.messages)
+    assert scraper.TRAVEL_INCOMPLETE == {"vivian.com": "Travel: request failed on page 1 (after a retry)"}
+
+
+def test_a_failed_page_is_retried_once_and_the_crawl_goes_on(small_pages):
+    # 403 is not retried inside req(), so this is the adapter's own retry.
+    pages = {("Travel", 0): _page(5, 5, 0, 10, nb_hits=22),
+             ("Travel", 1): [403, _page(4, 6, 100, 10, nb_hits=22)],
+             ("Travel", 2): _page(2, 0, 200, 10, nb_hits=22)}
+    s = FakeAlgolia(pages)
+    jobs = _run(s)
+    assert [p for _, p, _ in s.calls] == [0, 1, 1, 2]
+    assert len(jobs) == 11 and scraper.TRAVEL_INCOMPLETE == {}
+
+
+def test_an_empty_deep_page_is_re_requested_once_while_nbhits_is_far_past(small_pages):
+    # Reachable depth moved between requests on 10-13 (page 100 full at
+    # 11:45, 64k-70k at 12:13): one empty answer is asked again.
+    pages = {("Travel", 0): _page(5, 5, 0, 10, nb_hits=22),
+             ("Travel", 1): [_empty(387649), _page(3, 7, 100, 10, nb_hits=22)],
+             ("Travel", 2): _page(2, 0, 200, 10, nb_hits=22)}
+    s = FakeAlgolia(pages)
+    jobs = _run(s)
+    assert [p for _, p, _ in s.calls] == [0, 1, 1, 2]
+    assert len(jobs) == 10
+
+
+def test_an_empty_page_at_the_real_end_is_not_re_requested(small_pages):
+    pages = {("Travel", 0): _page(5, 5, 0, 10, nb_hits=20),
+             ("Travel", 1): _page(4, 6, 100, 10, nb_hits=20)}
+    s = FakeAlgolia(pages)                                   # page 2: empty, nbHits 0
+    _run(s)
+    assert [p for _, p, _ in s.calls] == [0, 1, 2]
+    assert scraper.TRAVEL_INCOMPLETE == {}
+
+
+def test_a_travel_collapse_flags_vivian_even_when_other_types_are_full(small_pages, monkeypatch, caplog):
+    # The review case: Travel back to page 0 only while the other types are
+    # healthy; the domain total alone would clear the 70% guard.
+    monkeypatch.setattr(scraper, "VIVIAN_EMPLOYMENT_TYPES", ["Travel", "Local Contract"])
+    pages = {("Travel", 0): _page(4, 6, 0, 10), ("Travel", 1): _empty(387649),
+             ("Local Contract", 0): _page(9, 1, 1000, 10, nb_hits=15),
+             ("Local Contract", 1): _page(5, 0, 1100, 10, nb_hits=15)}
+    s = FakeAlgolia(pages)
+    with caplog.at_level(logging.WARNING):
+        jobs = _run(s)
+    assert [(e, p) for e, p, _ in s.calls] == [("Travel", 0), ("Travel", 1), ("Travel", 1),
+                                               ("Local Contract", 0), ("Local Contract", 1)]
+    assert len(jobs) == 18
+    assert scraper.TRAVEL_INCOMPLETE == {
+        "vivian.com": "Travel: ended at page 1 with 4 rows (floor 2,000) from 10 of ~387,649 hits"}
+    assert any("crawl INCOMPLETE" in m for m in caplog.messages)
+
+
+def test_a_short_crawl_above_its_floor_or_near_its_total_is_complete(small_pages, monkeypatch):
+    # nbHits far past the scan but the rows clear the floor: complete.
+    monkeypatch.setattr(scraper, "VIVIAN_MIN_ROWS", {"Travel": 4})
+    _run(FakeAlgolia({("Travel", 0): _page(4, 6, 0, 10), ("Travel", 1): _empty(387649)}))
+    assert scraper.TRAVEL_INCOMPLETE == {}
+    # Few rows, but the type is small: nbHits is within 5x of the scan.
+    monkeypatch.setattr(scraper, "VIVIAN_MIN_ROWS", {"Travel": 2000})
+    _run(FakeAlgolia({("Travel", 0): _page(4, 6, 0, 10, nb_hits=40),
+                      ("Travel", 1): _page(1, 0, 100, 10, nb_hits=40)}))
+    assert scraper.TRAVEL_INCOMPLETE == {}
+
+
+def test_stopping_on_the_job_page_budget_is_complete(small_pages, monkeypatch):
+    monkeypatch.setattr(scraper, "VIVIAN_JOB_PAGES", {"Travel": 2})
+    pages = {("Travel", p): _page(2, 8, p * 100, 10) for p in range(10)}
+    _run(FakeAlgolia(pages))
+    assert scraper.TRAVEL_INCOMPLETE == {}
+
+
+def test_a_new_run_clears_an_old_flag(small_pages):
+    scraper.TRAVEL_INCOMPLETE["vivian.com"] = "stale"
+    _run(FakeAlgolia({("Travel", 0): _page(4, 0, 0, 10, nb_hits=4)}))
+    assert scraper.TRAVEL_INCOMPLETE == {}
 
 
 def test_job_page_budget_counts_only_pages_with_jobs(small_pages, monkeypatch, caplog):
@@ -181,6 +272,7 @@ def test_page_ceiling_bounds_requests_through_a_long_slugless_run(small_pages, m
         jobs = _run(s)
     assert len(s.calls) == 6 and len(jobs) == 3
     assert any("5 page(s) had no job pages; stopped: page ceiling 6" in m for m in caplog.messages)
+    assert scraper.TRAVEL_INCOMPLETE["vivian.com"].startswith("Travel: hit the 6-page ceiling")
 
 
 def test_every_type_is_crawled_with_its_own_budget(small_pages, monkeypatch):
@@ -218,9 +310,10 @@ def test_budgets_stay_within_a_few_hundred_requests():
     for t in scraper.VIVIAN_EMPLOYMENT_TYPES:
         assert (scraper.VIVIAN_JOB_PAGES.get(t, scraper.VIVIAN_JOB_PAGES_DEFAULT)
                 <= scraper.VIVIAN_MAX_PAGES.get(t, scraper.VIVIAN_MAX_PAGES_DEFAULT))
-    # Travel must reach past the old 25,000-hit window plus a slugless run.
-    assert scraper.VIVIAN_MAX_PAGES["Travel"] * scraper.VIVIAN_HITS_PER_PAGE >= 100_000
+    # Travel's job pages cover more than the old 25,000-hit window, and its
+    # ceiling leaves room for a long slugless run on top (30k+ hits on 10-13).
     assert scraper.VIVIAN_JOB_PAGES["Travel"] * scraper.VIVIAN_HITS_PER_PAGE >= 25_000
+    assert scraper.VIVIAN_MAX_PAGES["Travel"] >= scraper.VIVIAN_JOB_PAGES["Travel"] + 40
 
 
 def test_live_pair_keeps_the_slugged_hit_only(fixture_text):

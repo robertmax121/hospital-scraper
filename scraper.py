@@ -17842,6 +17842,13 @@ class TravelJob:
     posted_date:        str | None      = None
 
 
+# Travel source domains whose crawl tonight is not trusted for a sweep,
+# domain -> reason (2026-10-13 review). Cleared at the start of
+# run_all_travel, filled by the adapters (run_vivian), read by
+# _upsert_travel_jobs_to_supabase, which holds those domains' sweeps.
+TRAVEL_INCOMPLETE: dict[str, str] = {}
+
+
 def _coerce_money(v) -> float | None:
     """Turn things like '$2,400' or 2400.0 or '2400' into a float; else None."""
     if v is None: return None
@@ -17901,13 +17908,17 @@ VIVIAN_EMPLOYMENT_TYPES = ["Travel", "Permanent", "Local Contract", "Per Diem / 
 #     Diem 1,044 / Locum 671. nbHits is an estimate (exhaustive.nbHits=false)
 #     that wobbles between requests (Travel 364k-405k; Permanent 11,809 on
 #     page 0 but 28,512 on page 24), so nbPages cannot end a crawl.
-#   * hitsPerPage=1000 is accepted (the old "250 hard cap" comment was wrong);
-#     deep paging ends between hit 101,000 (full) and 150,000 (empty).
-# Now a type stops only on a short or empty page, a failed request, or its
-# budget: VIVIAN_JOB_PAGES pages that yielded jobs (the depth of real
-# listings; slugless pages do not use it) inside a hard VIVIAN_MAX_PAGES
-# ceiling on requests. Pages are 1,000 hits with only the parsed attributes
-# and no highlighting (about 2.5 MB each).
+#   * hitsPerPage=1000 is accepted (the old "250 hard cap" comment was wrong).
+#     How deep Algolia will page varies: Travel page 100 (hits 100k-101k)
+#     was full at ~11:45 UTC on 10-13 and the reachable depth was 64k-70k
+#     at 12:13. An empty page is therefore not proof of the end while
+#     nbHits is far past it (re-requested once, below).
+# Now a type stops only on a short or empty page, a failed request (retried
+# once), or its budget: VIVIAN_JOB_PAGES pages that yielded jobs (the depth
+# of real listings; slugless pages do not use it) inside a hard
+# VIVIAN_MAX_PAGES ceiling on requests. Pages are 1,000 hits with only the
+# parsed attributes and no highlighting (~2-2.5 MB a Travel page, ~6 MB a
+# Permanent page: longer descriptions).
 VIVIAN_HITS_PER_PAGE   = 1000         # Algolia's hitsPerPage maximum; accepted live 2026-10-13
 VIVIAN_JOB_PAGES = {                  # pages that yielded jobs, per employmentType
     "Travel":         40,             # old window was 25k hits (~5,800 rows); room for drift
@@ -17917,12 +17928,26 @@ VIVIAN_JOB_PAGES = {                  # pages that yielded jobs, per employmentT
 }
 VIVIAN_JOB_PAGES_DEFAULT = 25
 VIVIAN_MAX_PAGES = {                  # hard ceiling on requests, slugless pages included
-    "Travel":         120,            # past Algolia's deep-paging end (101k-150k)
+    "Travel":         120,            # 40 job pages + a slugless run of up to 80 pages
 }
 VIVIAN_MAX_PAGES_DEFAULT = 40
 VIVIAN_PAGE_SLEEP = 0.3
+VIVIAN_RETRY_SLEEP = (2.0, 5.0)       # seconds before the one retry of a failed or suspect page
+# Crawl-completeness check (2026-10-13 review). The travel sweep counts the
+# whole vivian.com domain, so one employmentType collapsing (Travel back to
+# page 0 only) could hide behind the others and still clear the 70% guard.
+# A type marks Vivian incomplete for tonight when it ends on a failed
+# request (after its retry), on its VIVIAN_MAX_PAGES ceiling, or on an
+# empty/short page while its nbHits estimate is more than
+# VIVIAN_SHORTFALL_FACTOR x the hits it scanned AND it produced fewer rows
+# than its VIVIAN_MIN_ROWS floor. Stopping on the VIVIAN_JOB_PAGES budget is
+# a normal, complete stop. run_vivian records the reasons in
+# TRAVEL_INCOMPLETE["vivian.com"]; the travel sweep holds that domain.
+VIVIAN_SHORTFALL_FACTOR = 5
+VIVIAN_MIN_ROWS = {"Travel": 2000, "Permanent": 2000, "Local Contract": 1000, "Per Diem / PRN": 100}
+VIVIAN_MIN_ROWS_DEFAULT = 100
 # Every hit attribute scrape_vivian_page reads. Asking for these only, with
-# highlighting off, keeps a 1,000-hit page near 2.5 MB.
+# highlighting off, keeps a 1,000-hit Travel page near 2-2.5 MB.
 VIVIAN_ATTRIBUTES = [
     "objectID", "jobDetailsSlug", "titles", "employerName", "agencyName", "pay",
     "contractLengthWeeks", "shift", "location", "locationDisplay", "specialtyNames",
@@ -18108,16 +18133,29 @@ async def scrape_vivian_page(session: aiohttp.ClientSession,
 
 async def run_vivian(session: aiohttp.ClientSession) -> list[TravelJob]:
     logger.info("Vivian Health: starting scrape (travel jobs)")
+    TRAVEL_INCOMPLETE.pop("vivian.com", None)
+    incomplete: list[str] = []
     all_jobs: list[TravelJob] = []
     for employment_type in VIVIAN_EMPLOYMENT_TYPES:
         max_pages = VIVIAN_MAX_PAGES.get(employment_type, VIVIAN_MAX_PAGES_DEFAULT)
         job_pages_cap = VIVIAN_JOB_PAGES.get(employment_type, VIVIAN_JOB_PAGES_DEFAULT)
         before = len(all_jobs)
         scanned = job_pages = slugless_pages = 0
+        max_total = 0
+        stop = "ceiling"
         reason = f"page ceiling {max_pages}"
         for page in range(0, max_pages):
             jobs, total, has_more, n_hits = await scrape_vivian_page(session, employment_type, page)
+            # One retry of a failed page, and of an empty page while nbHits
+            # says the results run far past this depth (deep paging that
+            # stops early on one request has been seen to vary).
+            if n_hits < 0 or (n_hits == 0 and total > 2 * max(scanned, 1)):
+                why = "failed" if n_hits < 0 else f"came back empty at ~{total:,} hits"
+                logger.info(f"  Vivian {employment_type} page {page} {why}; retrying once")
+                await asyncio.sleep(random.uniform(*VIVIAN_RETRY_SLEEP))
+                jobs, total, has_more, n_hits = await scrape_vivian_page(session, employment_type, page)
             all_jobs.extend(jobs)
+            max_total = max(max_total, total or 0)
             if n_hits > 0:
                 scanned += n_hits
                 if jobs:
@@ -18128,16 +18166,33 @@ async def run_vivian(session: aiohttp.ClientSession) -> list[TravelJob]:
                 logger.info(f"  Vivian {employment_type}: total~{total:,}, page 0: "
                             f"{len(jobs)} jobs of {max(n_hits, 0)} hits")
             if not has_more:
-                reason = (f"request failed on page {page}" if n_hits < 0
-                          else f"last page {page} ({n_hits} hits)")
+                if n_hits < 0:
+                    stop, reason = "failed", f"request failed on page {page} (after a retry)"
+                else:
+                    stop, reason = "end", f"last page {page} ({n_hits} hits)"
                 break
             if job_pages >= job_pages_cap:
-                reason = f"{job_pages_cap} pages with jobs"
+                stop, reason = "budget", f"{job_pages_cap} pages with jobs"
                 break
             await asyncio.sleep(VIVIAN_PAGE_SLEEP)
-        logger.info(f"  Vivian {employment_type}: {len(all_jobs) - before:,} jobs from "
+        n_rows = len(all_jobs) - before
+        logger.info(f"  Vivian {employment_type}: {n_rows:,} jobs from "
                     f"{scanned:,} hits; {slugless_pages} page(s) had no job pages; "
                     f"stopped: {reason}")
+        floor = VIVIAN_MIN_ROWS.get(employment_type, VIVIAN_MIN_ROWS_DEFAULT)
+        if stop == "failed":
+            incomplete.append(f"{employment_type}: {reason}")
+        elif stop == "ceiling":
+            incomplete.append(f"{employment_type}: hit the {max_pages}-page ceiling "
+                              f"({n_rows:,} rows from {scanned:,} hits)")
+        elif (stop == "end" and max_total > VIVIAN_SHORTFALL_FACTOR * scanned
+              and n_rows < floor):
+            incomplete.append(f"{employment_type}: ended at page {page} with {n_rows:,} rows "
+                              f"(floor {floor:,}) from {scanned:,} of ~{max_total:,} hits")
+    if incomplete:
+        TRAVEL_INCOMPLETE["vivian.com"] = "; ".join(incomplete)
+        logger.warning(f"Vivian Health: crawl INCOMPLETE, tonight's vivian.com sweep will be held: "
+                       f"{TRAVEL_INCOMPLETE['vivian.com']}")
     # Dedupe within Vivian on agency_job_id
     seen, uniq = set(), []
     for j in all_jobs:
@@ -18643,6 +18698,7 @@ async def run_amn() -> list[TravelJob]:
 # ── Travel jobs runner + Supabase upsert ──────────────────────────────────
 async def run_all_travel() -> list[dict]:
     start = datetime.now()
+    TRAVEL_INCOMPLETE.clear()
     proxy_connector = aiohttp.TCPConnector(limit=20, ssl=False)
     direct_connector = aiohttp.TCPConnector(limit=20)
     async with aiohttp.ClientSession(connector=proxy_connector, headers=HEADERS,
