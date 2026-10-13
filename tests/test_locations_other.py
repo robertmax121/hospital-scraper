@@ -117,8 +117,8 @@ def test_erym_is_mcleod_health():
 # ── UKG: location name as the town ─────────────────────────────────────────
 
 EXCELA = scraper.UKG_ORGS["Excela Health"]
-GRIFFIN = scraper.UKG_ORGS["Grinnell Regional Medical"]       # GRI1004GHSC: Griffin Health's board
-WYCKOFF = scraper.UKG_ORGS["Wyoming County Community"]        # WYC1000WHMC: Wyckoff Heights' board
+GRIFFIN = scraper.UKG_ORGS["Griffin Health"]                  # GRI1004GHSC
+WYCKOFF = scraper.UKG_ORGS["Wyckoff Heights Medical Center"]  # WYC1000WHMC
 
 
 def _opp(name=None, desc=None, city=None, state="PA", country="USA", oid="o1"):
@@ -142,21 +142,72 @@ def test_ukg_excela_town_names():
 
 
 def test_ukg_griffin_and_wyckoff():
-    j = _ukg(GRIFFIN, "Grinnell Regional Medical", _opp(desc="Shelton", state="CT"))
+    j = _ukg(GRIFFIN, "Griffin Health", _opp(desc="Shelton", state="CT"))
+    assert (j.city, j.state, j.hospital_name) == ("Shelton", "CT", "Griffin Health")
+    j = _ukg(GRIFFIN, "Griffin Health", _opp(desc="Shelton", state=None))
     assert (j.city, j.state) == ("Shelton", "CT")
-    j = _ukg(GRIFFIN, "Grinnell Regional Medical", _opp(desc="Shelton", state=None))
-    assert (j.city, j.state) == ("Shelton", "CT")
-    j = _ukg(WYCKOFF, "Wyoming County Community",
+    j = _ukg(WYCKOFF, "Wyckoff Heights Medical Center",
              _opp(name="Wyckoff Heights Medical Center", desc="Wyckoff Heights Medical C", state="NY"))
     assert (j.city, j.state, j.hospital_name) == ("Brooklyn", "NY", "Wyckoff Heights Medical Center")
     row = scraper.normalize_job(j)
     assert (row["city"], row["state"], row["location"]) == ("Brooklyn", "NY", "Brooklyn, NY")
 
 
+def test_ukg_griffin_located_town_postings_stay_listed():
+    # Live Shelton postings carry Address.City "Shelton" and LocalizedName
+    # "Shelton": the town name is not the facility, so normalize_job keeps the
+    # city instead of blanking it as equal to hospital_name.
+    for town in ("Shelton", "Derby"):
+        for opp in (_opp(name=town, desc=town, city=town, state="CT"),
+                    _opp(desc=town, city=town, state="CT"),
+                    _opp(name=town, city=town, state="CT")):
+            j = _ukg(GRIFFIN, "Griffin Health", opp)
+            assert (j.city, j.state, j.hospital_name) == (town, "CT", "Griffin Health"), (town, opp)
+            row = scraper.normalize_job(j)
+            assert (row["city"], row["state"], row["hospital_system"]) == (town, "CT", "Griffin Health")
+            assert row["hospital_name"] == "Griffin Health"
+    # Before the fix the row came out with no city (hidden on the site).
+    raw = scraper._ukg_job(_opp(name="Shelton", desc="Shelton", city="Shelton", state="CT"),
+                           "Griffin Health", "https://recruiting.ultipro.com/NOT_A_TABLE_BOARD", "g")
+    assert raw.hospital_name == "Shelton" and scraper.normalize_job(raw)["city"] == ""
+
+
+def test_ukg_located_swap_stays_narrow():
+    # A facility name that is not exactly one of the board's towns stays.
+    j = _ukg(EXCELA, "Excela Health", _opp(desc="Butler Hospital", city="Butler"))
+    assert (j.city, j.hospital_name) == ("Butler", "Butler Hospital")
+    # Another board's "Shelton" location keeps its name (no table for it).
+    j = _ukg(scraper.UKG_ORGS["Deaconess Health"], "Deaconess Health", _opp(desc="Shelton", city="Shelton", state="IN"))
+    assert j.hospital_name == "Shelton"
+    # Wyckoff's table entry is the hospital itself, not a town: its name stays.
+    j = _ukg(WYCKOFF, "Wyckoff Heights Medical Center",
+             _opp(name="Wyckoff Heights Medical Center", city="Brooklyn", state="NY"))
+    assert (j.city, j.hospital_name) == ("Brooklyn", "Wyckoff Heights Medical Center")
+
+
+def test_ukg_boards_carry_their_real_systems():
+    # WYC1000WHMC is Wyckoff Heights (Brooklyn NY), GRI1004GHSC is Griffin
+    # Health (Derby / Shelton CT): neither board is Wyoming County Community
+    # (Warsaw NY) nor Grinnell Regional (IA).
+    assert scraper.UKG_ORGS["Wyckoff Heights Medical Center"][0] == "https://recruiting.ultipro.com/WYC1000WHMC"
+    assert scraper.UKG_ORGS["Griffin Health"][0] == "https://recruiting.ultipro.com/GRI1004GHSC"
+    feeds = scraper.configured_feed_map()
+    for old in ("Wyoming County Community", "Grinnell Regional Medical"):
+        assert old not in scraper.UKG_ORGS
+        assert old not in feeds
+        assert old not in scraper.HOSPITAL_SYSTEM_ALIASES
+        assert old not in scraper.HOSPITAL_SYSTEM_ALIASES.values()
+    bases = [v[0].rstrip("/").rsplit("/", 1)[-1] for v in scraper.UKG_ORGS.values()]
+    assert bases.count("WYC1000WHMC") == 1 and bases.count("GRI1004GHSC") == 1
+    # The town tables are keyed by board code, so they follow the relabel.
+    assert set(scraper.UKG_LOCATION_TOWNS) <= set(bases)
+
+
 def test_ukg_town_rules_stay_narrow():
-    # A located posting keeps its own city.
+    # A located posting keeps its own city; a town-name location is still not
+    # a facility.
     j = _ukg(EXCELA, "Excela Health", _opp(desc="Latrobe", city="Greensburg"))
-    assert j.city == "Greensburg" and j.hospital_name == "Latrobe"
+    assert j.city == "Greensburg" and j.hospital_name == "Excela Health"
     # Another board's "Latrobe" is not Excela's.
     j = _ukg(scraper.UKG_ORGS["Deaconess Health"], "Deaconess Health", _opp(desc="Latrobe"))
     assert j.city == ""

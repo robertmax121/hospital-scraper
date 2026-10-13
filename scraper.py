@@ -11213,7 +11213,11 @@ UKG_ORGS = {
     "Heritage Health":              ("https://recruiting.ultipro.com/HER1004HERIT",      "68189271-8c8d-4634-bb50-bd2edf375278"),
     "Alliant Health":               ("https://recruiting.ultipro.com/ALL1034ABHC",       "ad28382f-2fcd-4cbb-bb18-24dd71b05bce"),
     "Erie County Medical Center":   ("https://ecmc462.rec.pro.ukg.net/ERI1003ECMC",      "4d1858fb-5b2a-499b-a320-4f1f4e5bcb06"),
-    "Wyoming County Community":     ("https://recruiting.ultipro.com/WYC1000WHMC",       "5e6bf310-55e9-45dd-8252-85e4c670f433"),
+    # Relabelled 2026-10-13: WYC1000WHMC is Wyckoff Heights Medical Center
+    # (Brooklyn NY, CCN 330221; the board's one location is that hospital),
+    # not Wyoming County Community Hospital (Warsaw NY). The stored rows are
+    # relabelled by sql/119b_ukg_relabel.sql, keyed on the board code.
+    "Wyckoff Heights Medical Center": ("https://recruiting.ultipro.com/WYC1000WHMC",     "5e6bf310-55e9-45dd-8252-85e4c670f433"),
     "Deaconess Health":             ("https://deaconess.rec.pro.ukg.net/DEA1005DEAC",    "a1f943e7-8d4d-4348-bf5e-4664f78d3abb"),
     # NHC — National HealthCare Corporation, 69 SNFs across the Southeast
     # (2026-08-04 SNF expansion, from the CMS chain analysis). Coordinates
@@ -11225,7 +11229,12 @@ UKG_ORGS = {
     # The old rows need a one-shot relabel (post-push SQL).
     "Humboldt Park Health":         ("https://recruiting.ultipro.com/NOR1041NAHO",       "84528182-2cf7-4f42-b7ca-dbb54c6f1c10", "IL"),
     "Kern Medical":                 ("https://recruiting.ultipro.com/KER1002KERN",       "e74fb506-5af0-e4c1-999e-64d5e8414cb0"),
-    "Grinnell Regional Medical":    ("https://recruiting.ultipro.com/GRI1004GHSC",       "f5d979ef-386f-4469-8178-a3801183d063"),
+    # Relabelled 2026-10-13: GRI1004GHSC is Griffin Health (Griffin Hospital,
+    # Derby CT, CCN 070031, and its Shelton CT sites), not Grinnell Regional
+    # Medical Center (Grinnell IA, listed through UnityPoint Health). The
+    # stored rows and the 070031 hospital_cms_alias row are relabelled by
+    # sql/119b_ukg_relabel.sql, keyed on the board code.
+    "Griffin Health":               ("https://recruiting.ultipro.com/GRI1004GHSC",       "f5d979ef-386f-4469-8178-a3801183d063"),
     "Columbia Regional Medical":    ("https://recruiting.ultipro.com/COL1042CRME",       "5ac3f35f-7e01-49ff-ad53-0acc27b4cee7"),
     "Crisp Regional Health":        ("https://recruiting.ultipro.com/CRI1005CRISP",      "c74342f0-7984-4858-8545-16e720353c82"),
     "South Georgia Health":         ("https://sghsukg.rec.pro.ukg.net/SOU1076SOUG",      "2de20fad-cb3f-4525-87cd-7bd1d3c2a720"),
@@ -11263,7 +11272,10 @@ _UKG_PAGE = 50
 # blank or agrees. Location names read off the live boards on 2026-10-13
 # (LocalizedName / LocalizedDescription) plus the hospital_name values stored
 # on rows with no city (Excela "Latrobe" / "Butler" / "Delmont", Griffin
-# "Shelton").
+# "Shelton"). Separately, whenever the location name itself is one of these
+# towns (with or without an Address.City: Griffin's Shelton postings carry
+# City "Shelton" and LocalizedName "Shelton"), hospital_name is the system
+# name, since normalize_job blanks a city equal to hospital_name.
 UKG_LOCATION_TOWNS: dict[str, dict[str, tuple[str, str]]] = {
     "EXC1005EXCEH": {                         # Excela Health, Westmoreland / Butler counties PA
         "latrobe": ("Latrobe", "PA"),
@@ -11355,11 +11367,13 @@ def _ukg_job(j: dict, system: str, base_url: str, guid: str, default_state: str 
                                     loc0.get("Name") or loc0.get("name")), st)
         if town:
             city, st = town
-            # A location name that is itself a town is a place, not a
-            # facility (normalize_job would also blank a city equal to
-            # hospital_name); Wyckoff's hospital name stays.
-            if _ukg_town(base_url, (facility,), "") and not _NOT_CITY_WORDS.search(facility):
-                facility = system
+    # A location name that is itself one of the board's towns is a place, not
+    # a facility, whether or not the Address carries a City (Griffin's Shelton
+    # postings: City "Shelton", LocalizedName "Shelton"); normalize_job would
+    # otherwise blank the city as equal to hospital_name. Wyckoff's hospital
+    # name stays.
+    if facility and _ukg_town(base_url, (facility,), "") and not _NOT_CITY_WORDS.search(facility):
+        facility = system
     if (not facility or "," in facility or re.search(r"\d", facility)
             or facility.lower() in _US_STATE_CODES or facility.upper() in _US_STATE_CODES.values()):
         facility = system          # "City, ST", street addresses and region names ("Alabama") are not facilities
