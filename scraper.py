@@ -22,7 +22,7 @@ import zlib
 from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 from dataclasses import dataclass, asdict, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from city_utils import clean_city, is_plausible_city
 from specialty_canon import canonical_specialty
@@ -18684,6 +18684,87 @@ async def run_all_travel() -> list[dict]:
     return rows
 
 
+# ── Travel sweep guard (2026-10-13) ──────────────────────────────────────
+# DEACT_MIN alone let the 10-13 00:04 run sweep Vivian on 8,650 rows (the
+# night before it returned ~22,000): its paging broke, it still cleared the
+# 100-row floor, and 13,550 open listings were retired. A domain is now swept
+# only when this run's yield for it is at least TRAVEL_SWEEP_MIN_RATIO of its
+# baseline: the domain's active rows last seen by the previous run, i.e. with
+# scraped_at in the TRAVEL_BASELINE_HOURS before this run's run_started and
+# not this run's own stamp. Rows retired on earlier nights are inactive and
+# older than the window, so they never enter the baseline and a source cannot
+# lock itself out of sweeping. The baseline is read BEFORE the upsert: the
+# upsert restamps every row seen again with this run's scraped_at, after
+# which the window would only hold the rows the sweep is about to retire.
+# A baseline that cannot be read holds that domain's sweep (logged); DEACT_MIN
+# stays as an extra floor.
+TRAVEL_SWEEP_MIN_RATIO = 0.70
+TRAVEL_BASELINE_HOURS  = 36
+
+
+def _travel_baseline_window(run_started_iso: str,
+                            hours: float = TRAVEL_BASELINE_HOURS) -> tuple[str, str]:
+    """(lo, hi) ISO bounds of the baseline window: [run_started - hours, run_started)."""
+    t = datetime.fromisoformat(run_started_iso.replace("Z", "+00:00"))
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=timezone.utc)
+    lo = (t - timedelta(hours=hours)).astimezone(timezone.utc)
+    return lo.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), run_started_iso
+
+
+def _travel_domain_baseline(sb_url: str, sb_key: str, domain: str,
+                            run_started_iso: str) -> Optional[int]:
+    """Active travel_jobs rows of `domain` whose scraped_at falls in the
+    previous run's window (see TRAVEL_BASELINE_HOURS). One count=exact head
+    read; None when it fails or the total cannot be read."""
+    import urllib.request as _urlreq
+    from urllib.parse import quote as _q
+    try:
+        lo, hi = _travel_baseline_window(run_started_iso)
+        curl_ = (f"{sb_url.rstrip('/')}/rest/v1/travel_jobs"
+                 f"?select=id&is_active=eq.true"
+                 f"&scraped_at=gte.{_q(lo)}&scraped_at=lt.{_q(hi)}"
+                 f"&url=like.{_q('*' + domain + '*')}&limit=1")
+        crq = _urlreq.Request(curl_, headers={"apikey": sb_key,
+                                              "Authorization": f"Bearer {sb_key}",
+                                              "Prefer": "count=exact",
+                                              "Range": "0-0"})
+        with _urlreq.urlopen(crq, timeout=60) as resp:
+            cr = resp.headers.get("Content-Range", "")
+        total = cr.split("/")[-1] if "/" in cr else ""
+        if not total.isdigit():
+            raise ValueError(f"unreadable Content-Range {cr!r}")
+        return int(total)
+    except Exception as e:
+        logger.warning(f"Travel sweep guard: baseline read failed for {domain} ({e})")
+        return None
+
+
+def _travel_sweep_plan(domain_counts: dict[str, int], baselines: dict[str, Optional[int]],
+                       deact_min: int,
+                       ratio: float = TRAVEL_SWEEP_MIN_RATIO) -> tuple[list[str], dict[str, str]]:
+    """Which domains to sweep. Returns (sweep, held) where held maps each
+    domain that is NOT swept to the reason. A domain is swept only when its
+    yield is >= deact_min AND its baseline was read AND yield >= ratio x
+    baseline."""
+    sweep: list[str] = []
+    held: dict[str, str] = {}
+    for d, n in domain_counts.items():
+        if n < deact_min:
+            held[d] = f"yield {n:,} below DEACT_MIN={deact_min}"
+            continue
+        b = baselines.get(d)
+        if b is None:
+            held[d] = f"yield {n:,}; baseline unreadable"
+            continue
+        if n < ratio * b:
+            held[d] = (f"yield {n:,} is {n / b:.0%} of baseline {b:,} "
+                       f"(needs {ratio:.0%})")
+            continue
+        sweep.append(d)
+    return sweep, held
+
+
 def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     """Upsert travel rows into Supabase. Returns count upserted, or 0 on failure
     or if env vars are missing. Falls back to JSON dump in either case.
@@ -18701,6 +18782,32 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
         logger.info("Travel upsert: no rows to send")
         return 0
     import urllib.request as _urlreq, urllib.error as _urlerr
+    # Sources swept by the deactivation pass below, matched by url domain.
+    # New sources MUST be listed here or their removed listings never
+    # deactivate (the 2026-07-20 travel-purge bug). nomadhealth.com +
+    # amnhealthcare.com added 2026-07-29.
+    KNOWN_DOMAINS = ("vivian.com", "ayahealthcare.com", "nomadhealth.com", "amnhealthcare.com")
+    DEACT_MIN     = 100
+    WINDOW        = 5000
+    run_started_iso = min(
+        (r.get("scraped_at") for r in rows if r.get("scraped_at")),
+        default=None,
+    )
+    domain_counts: dict[str, int] = {d: 0 for d in KNOWN_DOMAINS}
+    for r in rows:
+        u = (r.get("url") or "").lower()
+        for d in KNOWN_DOMAINS:
+            if d in u:
+                domain_counts[d] += 1
+                break
+    # Sweep-guard baselines (2026-10-13), read before the upsert restamps the
+    # rows seen again; see TRAVEL_SWEEP_MIN_RATIO. Only domains that clear
+    # DEACT_MIN can be swept, so only those are read.
+    baselines: dict[str, Optional[int]] = {}
+    if run_started_iso:
+        for d, n in domain_counts.items():
+            if n >= DEACT_MIN:
+                baselines[d] = _travel_domain_baseline(sb_url, sb_key, d, run_started_iso)
     url = f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?on_conflict=agency_name,agency_job_id"
     headers = {
         "apikey":        sb_key,
@@ -18751,13 +18858,9 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     # a partial outage can't wipe a healthy source's inventory (previously a
     # single short source skipped the sweep for ALL sources — the other half
     # of the snowball).
-    # Each source is swept independently, matched by its url domain. New
-    # sources MUST be listed here or their removed listings never deactivate
-    # (the 2026-07-20 travel-purge bug). nomadhealth.com + amnhealthcare.com
-    # added 2026-07-29.
-    KNOWN_DOMAINS = ("vivian.com", "ayahealthcare.com", "nomadhealth.com", "amnhealthcare.com")
-    DEACT_MIN     = 100
-    WINDOW        = 5000
+    # Each source is swept independently, matched by its url domain
+    # (KNOWN_DOMAINS, above the upsert). 2026-10-13: and only when its yield
+    # is at least TRAVEL_SWEEP_MIN_RATIO of its previous-run baseline.
     if sent == 0:
         return sent
     # HARD GUARD (2026-08-06): a partial upsert must NEVER trigger the sweep.
@@ -18773,25 +18876,23 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
         )
         update_travel_site_stats()
         return sent
-    run_started_iso = min(
-        (r.get("scraped_at") for r in rows if r.get("scraped_at")),
-        default=None,
-    )
     if not run_started_iso:
         logger.info("Travel deactivate: no scraped_at on rows; skipping")
         return sent
-    domain_counts: dict[str, int] = {d: 0 for d in KNOWN_DOMAINS}
-    for r in rows:
-        u = (r.get("url") or "").lower()
-        for d in KNOWN_DOMAINS:
-            if d in u:
-                domain_counts[d] += 1
-                break
-    sweep = [d for d, n in domain_counts.items() if n >= DEACT_MIN]
-    short = [d for d, n in domain_counts.items() if n < DEACT_MIN]
-    if short:
+    sweep, held = _travel_sweep_plan(domain_counts, baselines, DEACT_MIN)
+    for d in KNOWN_DOMAINS:
+        if domain_counts[d] < DEACT_MIN:
+            continue
+        b = baselines.get(d)
+        b_txt = "unreadable" if b is None else f"{b:,}"
+        logger.info(
+            f"Travel sweep guard {d}: yield {domain_counts[d]:,} vs baseline {b_txt} "
+            f"(active, seen in the {TRAVEL_BASELINE_HOURS}h before this run) -> "
+            f"{'sweep' if d in sweep else 'HOLD'}"
+        )
+    if held:
         logger.warning(
-            f"Travel deactivate: NOT sweeping {short} — below DEACT_MIN={DEACT_MIN} "
+            f"Travel deactivate: NOT sweeping {sorted(held)} — {held} "
             f"(counts={domain_counts}); healthy sources still sweep"
         )
     from urllib.parse import quote as _q
