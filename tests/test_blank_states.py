@@ -88,8 +88,10 @@ class _J:
 def test_state_facet_then_default():
     a, b, c, d = _J(), _J("Toledo", ""), _J("Boise", "ID"), _J()
     jobs = [a, b, c, d]
-    ext = {id(a): "/job/x/a", id(b): "/job/x/b", id(c): "/job/x/c", id(d): "/job/x/d"}
-    path_state = {"/job/x/a": "MI", "/job/x/b": "OH"}
+    # 2026-10-12: one site segment per row (a shared segment now copies a
+    # located sibling's place, see test_wd_path_location_all)
+    ext = {id(a): "/job/sa/a", id(b): "/job/sb/b", id(c): "/job/sc/c", id(d): "/job/sd/d"}
+    path_state = {"/job/sa/a": "MI", "/job/sb/b": "OH"}
     by_facet, by_default = _wd_apply_states(jobs, ext, path_state, ("Morgantown", "WV"))
     assert (by_facet, by_default) == (2, 1)
     assert (a.state, b.state, b.city) == ("MI", "OH", "Toledo")
