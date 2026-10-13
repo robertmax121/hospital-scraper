@@ -8598,6 +8598,102 @@ _NON_US_RX = re.compile(
 _NON_US_URL_RX = re.compile(r"myworkdayjobs\.com/[^/]+/job/(?!US)[A-Z]{2,3}(?:-|/)")
 _NON_US_TITLE_RX = re.compile(r"campa[n\u00f1]a|espa[n\u00f1]a|\bESP\b|\bCanad[a\u00e1]\b|\bUK\b")
 
+# US country values, the territories included (Oracle and UKG give Puerto
+# Rico its own ISO code).
+_US_COUNTRY_VALUES = {"us", "usa", "united states", "united states of america",
+                      "pr", "pri", "puerto rico", "gu", "gum", "guam",
+                      "vi", "vir", "virgin islands", "u.s. virgin islands"}
+
+
+# ── Postings outside the US (2026-10-13) ────────────────────────────────────
+# Global boards list other countries next to the US: Fresenius Medical Care's
+# Workday site (about 650 of 3,343 postings on 2026-10-13: Germany, Brazil,
+# India, Poland, the Philippines, Mexico...) and Sunrise Senior Living's
+# Canadian communities (76: "Richmond Hill, ON - Sunrise of Richmond Hill").
+# non_us_reason() names the rule a posting fails, or None, and finalize_jobs
+# drops those rows for every system. Every rule needs a token that only a
+# non-US place carries; a row whose state is a US state passes all of them
+# except the place-name list (Chennai, Tamil Nadu is written "Chennai, TN").
+# sql/120_deactivate_non_us.sql applies the same rules to stored rows (city,
+# state and the Workday path; the stored location is rebuilt from those).
+_CA_PROVINCES = {"AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"}
+# Subdivision codes the global boards write where a US state would go, none
+# of them a US code: Indian states (Karnataka, Maharashtra, Delhi, Haryana,
+# Telangana, Kerala, Gujarat, West Bengal), Bangkok, and Brazil / Mexico
+# themselves ("Benito Juarez, MX").
+_NON_US_REGION_CODES = {"KA", "MH", "DL", "HR", "TG", "TS", "KL", "GJ", "WB", "BKK", "BR", "MX"}
+_NON_US_COUNTRY_CODES = {
+    "ARG", "AUS", "AUT", "BEL", "BRA", "CAN", "CHE", "CHL", "CHN", "COL", "CZE", "DEU", "EGY",
+    "ESP", "FRA", "GBR", "HKG", "IDN", "IND", "IRL", "ISR", "ITA", "JPN", "KOR", "MEX", "MYS",
+    "NLD", "PAK", "PHL", "POL", "PRT", "ROU", "SAU", "SGP", "SRB", "SVK", "THA", "TUR", "TWN",
+    "VNM", "BR", "MX",
+}
+_NON_US_COUNTRY_NAMES = (
+    "argentina|australia|austria|belgium|brazil|canada|china|colombia|czechia|czech republic|"
+    "egypt|france|germany|hong kong|india|indonesia|ireland|israel|italy|japan|south korea|"
+    "malaysia|netherlands|pakistan|philippines|poland|portugal|romania|saudi arabia|serbia|"
+    "singapore|slovakia|spain|switzerland|taiwan|thailand|turkey|t\u00fcrkiye|united kingdom|vietnam")
+_NON_US_COUNTRY_NAME_SET = set(_NON_US_COUNTRY_NAMES.split("|"))
+# Place names no US town shares (Delhi NY, Manila AR, Toronto OH, Vancouver
+# WA, London KY and Dublin OH are left out on purpose).
+_NON_US_PLACES = {
+    "bengaluru", "bangalore", "chennai", "mumbai", "gurugram", "gurgaon", "hyderabad", "noida",
+    "greater noida", "mohali", "pune", "kolkata", "karnal", "punjab", "tijuana", "reynosa",
+    "zapopan", "baja california", "bonifacio global city", "alabang", "muntinlupa city (metro manila)",
+    "metro manila", "pathumwan", "shanghai", "beijing", "suzhou", "guangzhou", "hangzhou",
+    "quanzhou", "mengzi", "jiangsu", "zhejiang", "fujian", "guangdong", "yunnan",
+}
+# A Workday path segment (/job/<segment>/...): an ISO country prefix
+# ("GBR-Hereford--Clinic", "DEU-Ludwigshafen---Clinic", "CHN-FCH-Shanghai-
+# Office---Office"), or a '---' chunk that ends in a country name, a country
+# code or a Canadian province ("Krosno-Poland", "Rio-de-Janeiro-RJ-BR",
+# "Bonifacio-Global-City-PHL", "Richmond-Hill-ON---Sunrise-of-Richmond-Hill").
+# PHL and IND are not path codes here, at either end: on a US board they
+# read as Philadelphia and Indianapolis (the location text still catches
+# "Bonifacio Global City, PHL").
+_WD_PATH_SEG_RX = re.compile(r"/job/([^/?#]+)/")
+_NON_US_PATH_PREFIX_RX = re.compile(r"^(?:GBR|DEU|CHN|ESP|POL|PRT|NLD|CHE|THA|BRA|MEX|CAN)-")
+_NON_US_PATH_END_RX = re.compile(
+    r"-(?:(?i:" + _NON_US_COUNTRY_NAMES.replace(" ", "-") + r")"
+    r"|" + "|".join(sorted(_NON_US_COUNTRY_CODES - {"PHL", "IND"})) + r")(?:---|$)")
+_CA_PATH_END_RX = re.compile(r"[A-Za-z]-(?:" + "|".join(sorted(_CA_PROVINCES)) + r")(?:---|$)")
+
+
+def non_us_reason(location: str, city: str, state: str, url: str = "") -> str | None:
+    """The rule that marks a posting as outside the US, or None."""
+    st = (state or "").strip().upper()
+    parts = [p.strip() for p in str(location or "").split(",") if p.strip()]
+    places = {re.sub(r"\s+", " ", p).lower() for p in parts + [str(city or "").strip()] if p}
+    if places & _NON_US_PLACES or any(p.startswith("amphoe ") for p in places):
+        return "place"
+    url = str(url or "")
+    m = _WD_PATH_SEG_RX.search(url) if "myworkdayjobs.com" in url else None
+    seg = m.group(1) if m else ""
+    if seg:
+        # "6 Locations" rows: the path names the primary site ("Gurugram-HR").
+        head = seg.split("---", 1)[0].replace("-", " ").lower()
+        if any(head == p or head.startswith(p + " ") for p in _NON_US_PLACES):
+            return "path_place"
+    if st in _US_STATE_SET or st in ("PR", "GU", "VI"):
+        return None
+    if st in _CA_PROVINCES or st in _NON_US_REGION_CODES:
+        return "region_code"
+    if len(parts) >= 2:
+        last = re.split(r"\s+[-\u2013]\s+", parts[-1], maxsplit=1)[0].strip()
+        if last in _CA_PROVINCES or last in _NON_US_REGION_CODES or last in _NON_US_COUNTRY_CODES:
+            return "location_code"
+        if last.lower() in _NON_US_COUNTRY_NAME_SET:
+            return "location_country"
+    if seg:
+        if _NON_US_PATH_PREFIX_RX.match(seg):
+            return "path_prefix"
+        if _NON_US_PATH_END_RX.search(seg):
+            return "path_country"
+        if _CA_PATH_END_RX.search(seg):
+            return "path_province"
+    return None
+
+
 # Per-state remote postings name the state in the title ("Psychiatrist -
 # Texas", "Virtual Nurse Practitioner - CA License") and often carry no
 # address, so normalize_job would leave state blank and the row would never
@@ -11159,6 +11255,70 @@ UKG_ORGS = {
 
 _UKG_PAGE = 50
 
+# 2026-10-13: UKG postings whose Address has no City but whose location name
+# is the town (or, for Wyckoff, the one hospital) the posting is at. Keyed by
+# the board's tenant code (the last segment of the UKG_ORGS base URL), so a
+# relabel of the system name cannot detach a rule; matched exactly on the
+# lowercased location name, and applied only when the posting's state is
+# blank or agrees. Location names read off the live boards on 2026-10-13
+# (LocalizedName / LocalizedDescription) plus the hospital_name values stored
+# on rows with no city (Excela "Latrobe" / "Butler" / "Delmont", Griffin
+# "Shelton").
+UKG_LOCATION_TOWNS: dict[str, dict[str, tuple[str, str]]] = {
+    "EXC1005EXCEH": {                         # Excela Health, Westmoreland / Butler counties PA
+        "latrobe": ("Latrobe", "PA"),
+        "butler": ("Butler", "PA"),
+        "butler city": ("Butler", "PA"),
+        "butler township": ("Butler", "PA"),
+        "east butler": ("East Butler", "PA"),
+        "delmont": ("Delmont", "PA"),
+        "greensburg": ("Greensburg", "PA"),
+        "city of greensburg": ("Greensburg", "PA"),
+        "mount pleasant": ("Mount Pleasant", "PA"),
+        "mt pleasant boro": ("Mount Pleasant", "PA"),
+        "slippery rock boro": ("Slippery Rock", "PA"),
+        "seven fields boro": ("Seven Fields", "PA"),
+    },
+    "GRI1004GHSC": {                          # Griffin Health, Derby / Shelton CT
+        "derby": ("Derby", "CT"),
+        "shelton": ("Shelton", "CT"),
+    },
+    "WYC1000WHMC": {                          # Wyckoff Heights Medical Center, Brooklyn NY
+        "wyckoff heights medical center": ("Brooklyn", "NY"),
+        "wyckoff heights medical c": ("Brooklyn", "NY"),   # LocalizedDescription, cut at 25 characters
+    },
+}
+
+
+def _ukg_town(base_url: str, names, state: str) -> tuple[str, str] | None:
+    """(city, state) from UKG_LOCATION_TOWNS for the first location name the
+    board's table knows, when the posting's state is blank or the same."""
+    towns = UKG_LOCATION_TOWNS.get(str(base_url or "").rstrip("/").rsplit("/", 1)[-1])
+    if not towns:
+        return None
+    for n in names:
+        hit = towns.get(re.sub(r"\s+", " ", str(n or "")).strip().lower())
+        if hit and (not state or state.upper() == hit[1]):
+            return hit
+    return None
+
+
+def _ukg_non_us(j: dict) -> bool:
+    """True when every location of a UKG opportunity carries a country code
+    and none of them is the US (Locations[].Address.Country.Code)."""
+    codes = set()
+    for loc in (j.get("Locations") or j.get("locations") or []):
+        if not isinstance(loc, dict):
+            continue
+        c = (loc.get("Address") or loc.get("address") or {}).get("Country") or ""
+        if isinstance(c, dict):
+            c = c.get("Code") or c.get("code") or c.get("Name") or c.get("name") or ""
+        c = str(c).strip().lower()
+        if not c:
+            return False
+        codes.add(c)
+    return bool(codes) and not (codes & _US_COUNTRY_VALUES)
+
 
 def _ukg_job(j: dict, system: str, base_url: str, guid: str, default_state: str = "") -> Job:
     """One LoadSearchResults opportunity -> Job (hoisted 2026-09-10 so the
@@ -11189,6 +11349,17 @@ def _ukg_job(j: dict, system: str, base_url: str, guid: str, default_state: str 
     st = (st or default_state).upper()
     facility = str(loc0.get("LocalizedName") or loc0.get("LocalizedDescription")
                    or loc0.get("Name") or loc0.get("name") or "").strip()
+    if not city:
+        # 2026-10-13: the location name is the town (UKG_LOCATION_TOWNS).
+        town = _ukg_town(base_url, (loc0.get("LocalizedName"), loc0.get("LocalizedDescription"),
+                                    loc0.get("Name") or loc0.get("name")), st)
+        if town:
+            city, st = town
+            # A location name that is itself a town is a place, not a
+            # facility (normalize_job would also blank a city equal to
+            # hospital_name); Wyckoff's hospital name stays.
+            if _ukg_town(base_url, (facility,), "") and not _NOT_CITY_WORDS.search(facility):
+                facility = system
     if (not facility or "," in facility or re.search(r"\d", facility)
             or facility.lower() in _US_STATE_CODES or facility.upper() in _US_STATE_CODES.values()):
         facility = system          # "City, ST", street addresses and region names ("Alabama") are not facilities
@@ -11246,6 +11417,8 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
             if not items:
                 break
             for j in items:
+                if _ukg_non_us(j):
+                    continue          # 2026-10-13: the posting's own country is not the US
                 job = _ukg_job(j, system, base_url, guid, default_state)
                 if job.job_id and job.title:
                     jobs.append(job)
@@ -11418,7 +11591,15 @@ ORACLE_ORGS = {
     # row under that name; careers.inova.org redirect confirms it is INOVA
     # (validated 2026-08-28, TotalJobsCount=682).
     "Inova Health System":       ("https://elar.fa.us2.oraclecloud.com",                      "CX_1"),
-    "EvergreenHealth":           ("https://erym.fa.us6.oraclecloud.com",                      "CX_1"),
+    # erym/CX_1 was labelled "EvergreenHealth" (Kirkland WA), but every row it
+    # wrote is in South Carolina (547 active SC rows, none in WA, on
+    # 2026-10-04) and its work locations are McLeod's (McLeod Regional
+    # Medical Center - Pee Dee, Dillon, Loris, Seacoast, Cheraw, Clarendon;
+    # TotalJobsCount 573 on 2026-10-13): it is MCLEOD HEALTH (Florence SC).
+    # Relabelled 2026-10-13; the stored rows and the five hospital_cms_alias
+    # rows (CCNs 420005, 420051, 420105, 420107, 420109) are relabelled by
+    # sql/119_mcleod_relabel.sql. EvergreenHealth has no board configured.
+    "McLeod Health":             ("https://erym.fa.us6.oraclecloud.com",                      "CX_1"),
     # fa-eveq/CX_1 was labelled "Valley Health (NV)"; every row it wrote is
     # in Hickory / Conover / Taylorville NC (148 active on 2026-10-04): it is
     # Catawba Valley Health System. Relabelled 2026-10-04 (cov3); the old rows,
@@ -11548,6 +11729,65 @@ def _mount_sinai_loc(title: str, city: str, state: str) -> tuple[str, str, str]:
     return facility, (site_city or "New York"), "NY"
 
 
+
+def _oracle_items(v) -> list:
+    """An expanded Oracle child collection ({"items": [...]}, or a bare list)."""
+    if isinstance(v, dict):
+        v = v.get("items")
+    return [x for x in v if isinstance(x, dict)] if isinstance(v, list) else []
+
+
+def _oracle_location(j: dict) -> tuple[str, str, str]:
+    """(location text, city, state) of one Oracle requisition.
+
+    2026-10-13: PrimaryLocation is a geography, and on many tenants it stops
+    at the state ("SC, United States": McLeod Health's Loris, Florence and
+    Carolina Forest postings) or names only the country, so 662 rows were
+    stored with no city or no state and the site hid them. The requisition
+    already carries its work location (expand=requisitionList.workLocation:
+    TownOrCity, Region2, Country). When PrimaryLocation lacks a city or a
+    state, they are filled from the US work locations whose state agrees with
+    the one PrimaryLocation gave; a city is taken only when those locations
+    name exactly one town, a state only when they name exactly one state."""
+    loc = j.get("PrimaryLocation", j.get("primaryLocation", ""))
+    if isinstance(loc, dict):
+        loc = loc.get("Name", loc.get("name", ""))
+    loc = str(loc or "")
+    city, state = parse_city_state(loc)
+    if city and state:
+        return loc, city, state
+    known = state if state in _US_STATE_SET else ""
+    places = set()
+    for w in _oracle_items(j.get("workLocation", j.get("WorkLocation"))):
+        country = str(w.get("Country") or "").strip().lower()
+        if country and country not in _US_COUNTRY_VALUES:
+            continue
+        st = _us_state(str(w.get("Region2") or ""))
+        if not st or (state and st != known):
+            continue
+        places.add((str(w.get("TownOrCity") or "").strip(), st))
+    states = {st for _, st in places}
+    if len(states) == 1:
+        state = state or next(iter(states))
+        towns = {c for c, _ in places if c}
+        if not city and len(towns) == 1:
+            city = next(iter(towns))
+    return loc, city, state
+
+
+def _oracle_non_us(j: dict) -> bool:
+    """True when the requisition's own country field names a country other
+    than the US (PrimaryLocationCountry, else its work locations' when none
+    of them is in the US)."""
+    c = str(j.get("PrimaryLocationCountry") or "").strip().lower()
+    if c:
+        return c not in _US_COUNTRY_VALUES
+    cs = {str(w.get("Country") or "").strip().lower()
+          for w in _oracle_items(j.get("workLocation", j.get("WorkLocation")))}
+    cs.discard("")
+    return bool(cs) and not (cs & _US_COUNTRY_VALUES)
+
+
 async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
     base_url, site_number = org_data
     jobs = []
@@ -11610,10 +11850,12 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
             if not page_items:
                 break
             for j in page_items:
-                loc = j.get("PrimaryLocation", j.get("primaryLocation", ""))
-                if isinstance(loc, dict):
-                    loc = loc.get("Name", loc.get("name", ""))
-                _city, _state = parse_city_state(str(loc))
+                # 2026-10-13: a posting whose own country field is not the
+                # US is not listed; a missing city or state comes from the
+                # requisition's work location (_oracle_location).
+                if _oracle_non_us(j):
+                    continue
+                loc, _city, _state = _oracle_location(j)
                 _facility = system
                 if system == "Mount Sinai Health System":
                     _facility, _city, _state = _mount_sinai_loc(j.get("Title", j.get("title", "")), _city, _state)
@@ -23336,6 +23578,7 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     # them in a process pool (normalize_jobs, in order), and the family
     # dedupe walks the results in the same order as before.
     kept: list[Job] = []
+    non_us: dict[str, int] = {}
     # 2026-10-12: every emit-name that produced a row (complete_canonical).
     EMITTED_SYSTEMS.update(j.hospital_system for j in all_jobs if getattr(j, "hospital_system", None))
     for i, job in enumerate(all_jobs):
@@ -23350,7 +23593,15 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         job = apply_employer_rules(job)
         if job is None:
             continue
+        # 2026-10-13: postings outside the US are not listed (non_us_reason).
+        why = non_us_reason(job.location, job.city, job.state, job.url)
+        if why:
+            non_us[job.hospital_system] = non_us.get(job.hospital_system, 0) + 1
+            continue
         kept.append(job)
+    if non_us:
+        top = sorted(non_us.items(), key=lambda kv: -kv[1])
+        logger.info(f"Non-US postings dropped: {sum(non_us.values()):,} rows {dict(top[:12])}")
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
     unique = []
