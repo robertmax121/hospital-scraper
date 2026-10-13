@@ -1,0 +1,101 @@
+{
+ "_note": "The University of Kansas Health System Workday (kansashealthsystem wd1 careers), postings read live 2026-10-13: the nine at the three Liberty Hospital sites (locations facet), two at 'Liberty, MO' and one Kansas City KS posting. Fields trimmed to what the list adapter reads.",
+ "jobPostings": [
+  {
+   "title": "Patient Scheduling Associate",
+   "externalPath": "/job/Liberty-Hospital-Sports-Medicine/Patient-Scheduling-Associate_R-58326-1",
+   "locationsText": "Liberty Hospital Sports Medicine",
+   "bulletFields": [
+    "R-58326"
+   ]
+  },
+  {
+   "title": "Physician - Urology",
+   "externalPath": "/job/Liberty-Hospital/Physician---Urology---Liberty_R-45937-1",
+   "locationsText": "Liberty Hospital",
+   "bulletFields": [
+    "R-45937"
+   ]
+  },
+  {
+   "title": "Physician - Pulmonologist",
+   "externalPath": "/job/Liberty-Hospital/Physician---Pulmonologist---Liberty_R-42558-1",
+   "locationsText": "Liberty Hospital",
+   "bulletFields": [
+    "R-42558"
+   ]
+  },
+  {
+   "title": "Registered Nurse (RN) - Orthopedics",
+   "externalPath": "/job/Liberty-Hospital/Registered-Nurse---Ortho-Trauma-Neurosurgery_R-51069",
+   "locationsText": "Liberty Hospital",
+   "bulletFields": [
+    "R-51069"
+   ]
+  },
+  {
+   "title": "Patient Service Representative",
+   "externalPath": "/job/Liberty-Hospital-Urgent-Care-Shoal-Creek/Patient-Service-Representative_R-56321-1",
+   "locationsText": "Liberty Hospital Urgent Care Shoal Creek",
+   "bulletFields": [
+    "R-56321"
+   ]
+  },
+  {
+   "title": "Housekeeper I",
+   "externalPath": "/job/Liberty-Hospital/Housekeeper-I_R-53774-1",
+   "locationsText": "Liberty Hospital",
+   "bulletFields": [
+    "R-53774"
+   ]
+  },
+  {
+   "title": "New Graduate Nurse - Liberty Campus",
+   "externalPath": "/job/Liberty-Hospital/New-Graduate-Nurse---Liberty-Campus_R-48097",
+   "locationsText": "Liberty Hospital",
+   "bulletFields": [
+    "R-48097"
+   ]
+  },
+  {
+   "title": "Radiologic Technologist - Urgent Care",
+   "externalPath": "/job/Liberty-Hospital-Urgent-Care-Shoal-Creek/Radiologic-Technologist---Urgent-Care_R-53612",
+   "locationsText": "Liberty Hospital Urgent Care Shoal Creek",
+   "bulletFields": [
+    "R-53612"
+   ]
+  },
+  {
+   "title": "Registered Nurse (RN) - Cardiac Telemetry",
+   "externalPath": "/job/Liberty-Hospital/Registered-Nurse---Medical-Telemetry--Night-Shifts-_R-49813-1",
+   "locationsText": "Liberty Hospital",
+   "bulletFields": [
+    "R-49813"
+   ]
+  },
+  {
+   "title": "PRN Nurse Tech- Liberty Hospital",
+   "externalPath": "/job/Liberty-MO/PRN-Nurse-Tech--Liberty-Hospital_R-52114",
+   "locationsText": "Liberty, MO",
+   "bulletFields": [
+    "R-52114"
+   ]
+  },
+  {
+   "title": "Medical Assistant - Liberty Ambulatory Float",
+   "externalPath": "/job/Liberty-MO/Medical-Assistant---Liberty-Ambulatory-Float_R-57029-1",
+   "locationsText": "Liberty, MO",
+   "bulletFields": [
+    "R-57029"
+   ]
+  },
+  {
+   "title": "Certified Diabetes Educator",
+   "externalPath": "/job/Kansas-City-KS/Certified-Diabetes-Educator--PT-20-hrs-week-_R-56851-1",
+   "locationsText": "Kansas City, KS",
+   "bulletFields": [
+    "R-56851"
+   ]
+  }
+ ]
+}
