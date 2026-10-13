@@ -82,17 +82,52 @@ def test_hca_open_posting_reads_open_and_uses_firefox_without_redirects():
     assert all(kw["allow_redirects"] is False for kw in page_calls)
 
 
-def test_hca_inactive_page_reads_closed():
+HCA_GONE = Resp(301, "", headers={"Location": "https://careers.hcahealthcare.com/jobs?job_not_found=true"})
+
+
+def test_hca_inactive_page_reads_closed_on_two_fetches():
     http = FakeHttp(hca_routes([("GET", "/jobs/17200000", Resp(200, fx("hca_inactive_17200000.html")))]))
     v, st, ev = vs.HcaChecker(http).check(hca_row("17200000", "pharmacy-tech"))
     assert (v, st) == ("CLOSED", 200)
-    assert "no longer active" in ev
+    assert "no longer active" in ev and "second fetch agrees" in ev
+    assert len(urls(http, "/jobs/17200000")) == 2
 
 
-def test_hca_job_not_found_redirect_reads_closed():
-    http = FakeHttp(hca_routes([("GET", "/jobs/16263000", Resp(
-        301, "", headers={"Location": "https://careers.hcahealthcare.com/jobs?job_not_found=true"}))]))
+def test_hca_job_not_found_redirect_reads_closed_on_two_fetches():
+    http = FakeHttp(hca_routes([("GET", "/jobs/16263000", HCA_GONE)]))
     assert vs.HcaChecker(http).check(hca_row("16263000"))[0] == "CLOSED"
+    assert len(urls(http, "/jobs/16263000")) == 2
+
+
+def test_hca_closed_then_open_on_the_second_fetch_is_unknown():
+    seen = []
+
+    def page(url, kw):
+        seen.append(url)
+        if len(seen) == 1:
+            return HCA_GONE
+        return Resp(200, fx("hca_open_17996054.html").replace("17996054", "16263001"), url)
+    http = FakeHttp(hca_routes([("GET", "/jobs/16263001", page)]))
+    v, _, ev = vs.HcaChecker(http).check(hca_row("16263001"))
+    assert v == "UNKNOWN" and "second fetch read OPEN" in ev
+    assert len(seen) == 2
+
+
+def test_hca_closed_then_blocked_on_the_second_fetch_is_unknown():
+    answers = [Resp(200, fx("hca_inactive_17200000.html")), Resp(403, "Forbidden")]
+    http = FakeHttp(hca_routes([("GET", "/jobs/17200000", lambda u, kw: answers.pop(0))]))
+    v, st, ev = vs.HcaChecker(http).check(hca_row("17200000"))
+    assert (v, st) == ("UNKNOWN", 403) and "second fetch read UNKNOWN" in ev
+
+
+def test_hca_404_and_410_are_unknown_not_closed():
+    http = FakeHttp(hca_routes([("GET", "/jobs/555", Resp(404, "Not Found")),
+                                ("GET", "/jobs/666", Resp(410, "Gone"))]))
+    chk = vs.HcaChecker(http)
+    for jid, code in (("555", 404), ("666", 410)):
+        v, st, ev = chk.check(hca_row(jid))
+        assert (v, st) == ("UNKNOWN", code) and "never observed" in ev
+        assert len(urls(http, f"/jobs/{jid}")) == 1   # no second fetch for a non-CLOSED read
 
 
 def test_hca_slug_redirect_is_followed_once_on_the_same_id():
@@ -110,9 +145,10 @@ def test_hca_redirect_elsewhere_and_blocks_are_unknown():
         ("GET", "/jobs/222", Resp(403, "Forbidden")),
         ("GET", "/jobs/333", Resp(200, "<html><title>Just a moment...</title></html>")),
         ("GET", "/jobs/444", Resp(200, "<html>a page with no posting</html>")),
+        ("GET", "/jobs/777", Resp(410, "Gone")),
     ]))
     chk = vs.HcaChecker(http)
-    for jid in ("111", "222", "333", "444"):
+    for jid in ("111", "222", "333", "444", "777"):
         assert chk.check(hca_row(jid))[0] == "UNKNOWN", jid
 
 
@@ -128,10 +164,49 @@ def test_hca_canary_failure_makes_every_row_unknown_without_fetching_it():
 def test_hca_canary_fails_when_the_listed_job_does_not_read_open():
     http = FakeHttp([
         ("GET", "/search/jobs/in/co-colorado", Resp(200, fx("hca_list_co.html"))),
-        ("GET", "/jobs/17996054", Resp(301, "", headers={"Location": "https://careers.hcahealthcare.com/jobs?job_not_found=true"})),
+        ("GET", "/jobs/17996054", HCA_GONE),
     ])
     v, _, ev = vs.HcaChecker(http).check(hca_row("16263000"))
     assert v == "UNKNOWN" and "canary failed" in ev
+
+
+def test_hca_canary_reruns_every_n_rows():
+    http = FakeHttp(hca_routes([("GET", "/jobs/16263000", HCA_GONE)]))
+    chk = vs.HcaChecker(http)
+    chk.CANARY_EVERY = 2
+    verdicts = [chk.check(hca_row("16263000"))[0] for _ in range(5)]
+    assert verdicts == ["CLOSED"] * 5
+    assert len(urls(http, "/search/jobs/in/co-colorado")) == 3   # before rows 0, 2 and 4
+    assert vs.HcaChecker.CANARY_EVERY == 500
+
+
+def test_hca_canary_failing_mid_run_aborts_the_rest_of_the_site():
+    listings = [Resp(200, fx("hca_list_co.html")), Resp(403, "blocked")]
+    http = FakeHttp([
+        ("GET", "/search/jobs/in/co-colorado", lambda u, kw: listings.pop(0)),
+        ("GET", "/jobs/17996054", Resp(200, fx("hca_open_17996054.html"), HCA_OPEN)),
+        ("GET", "/jobs/16263000", HCA_GONE),
+    ])
+    chk = vs.HcaChecker(http)
+    chk.CANARY_EVERY = 2
+    out = [chk.check(hca_row("16263000")) for _ in range(5)]
+    assert [v for v, _, _ in out] == ["CLOSED", "CLOSED", "UNKNOWN", "UNKNOWN", "UNKNOWN"]
+    assert "canary failed at row 2" in out[2][2] and "site aborted" in out[2][2]
+    assert all("site aborted" in ev for _, _, ev in out[3:])
+    assert len(urls(http, "/jobs/16263000")) == 4                # rows 0 and 1 only, two fetches each
+    assert len(urls(http, "/search/jobs/in/co-colorado")) == 2   # no third canary after the abort
+
+
+def test_hca_closed_in_flight_when_the_canary_fails_is_unknown():
+    chk = None
+
+    def page(url, kw):
+        chk.dead = "board canary failed at row 500 (listing answered 403); site aborted"
+        return HCA_GONE
+    http = FakeHttp(hca_routes([("GET", "/jobs/16263000", page)]))
+    chk = vs.HcaChecker(http)
+    v, _, ev = chk.check(hca_row("16263000"))
+    assert v == "UNKNOWN" and "not trusted" in ev
 
 
 # ------------------------------------------------------------ PeopleSoft
@@ -269,9 +344,12 @@ def uva_http(extra=()):
     ])
 
 
-def uva_row(jid, url=None):
-    return {"id": 4, "hospital_system": "UVA Health", "ats_platform": "Phenom", "job_id": jid,
-            "url": url or f"{UVA}/us/en/job/{jid}"}
+def uva_row(jid, url=None, scraped="2026-10-07T03:00:00+00:00", rid=4):
+    return {"id": rid, "hospital_system": "UVA Health", "ats_platform": "Phenom", "job_id": jid,
+            "url": url or f"{UVA}/us/en/job/{jid}", "scraped_at": scraped}
+
+
+UVA_NEWEST_OPEN = uva_row("R0005339", scraped="2026-10-08 22:10:00+00", rid=40)
 
 
 class StubWorkday:
@@ -282,6 +360,13 @@ class StubWorkday:
     def check(self, row):
         self.rows.append(row)
         return self.answer
+
+
+def phenom(http, workday=None, rows=(UVA_NEWEST_OPEN,)):
+    """A PhenomChecker primed with an export (the row canary's pick)."""
+    chk = vs.PhenomChecker(http, workday=workday or StubWorkday(None))
+    chk.prime(list(rows))
+    return chk
 
 
 def test_phenom_orgs_are_read_from_scraper_without_importing_it():
@@ -297,20 +382,20 @@ def test_phenom_orgs_are_read_from_scraper_without_importing_it():
 
 def test_phenom_widget_hit_reads_open():
     http = uva_http()
-    v, st, ev = vs.PhenomChecker(http, workday=StubWorkday(None)).check(uva_row("R0005339"))
+    v, st, ev = phenom(http).check(uva_row("R0005339"))
     assert (v, st) == ("OPEN", 200) and "R0005339" in ev
 
 
 def test_phenom_widget_zero_and_page_410_reads_closed():
     http = uva_http()
-    v, st, ev = vs.PhenomChecker(http, workday=StubWorkday(None)).check(uva_row("R0000001"))
+    v, st, ev = phenom(http).check(uva_row("R0000001"))
     assert (v, st) == ("CLOSED", 410)
     assert "hits 0" in ev
 
 
 def test_phenom_widget_zero_but_page_200_is_unknown():
     http = uva_http([("GET", "/us/en/job/R0000002", lambda u, kw: Resp(200, "<html></html>", u))])
-    assert vs.PhenomChecker(http, workday=StubWorkday(None)).check(uva_row("R0000002"))[0] == "UNKNOWN"
+    assert phenom(http).check(uva_row("R0000002"))[0] == "UNKNOWN"
 
 
 def test_phenom_widget_hit_on_another_job_is_unknown():
@@ -319,53 +404,119 @@ def test_phenom_widget_hit_on_another_job_is_unknown():
         ("POST", UVA + "/widgets", Resp(200, fx("phenom_widget_uva_R0005339.json"))),   # any id -> R0005339
         ("GET", "/us/en/job/R0005339", lambda u, kw: Resp(200, "", u)),
     ])
-    v, _, ev = vs.PhenomChecker(http, workday=StubWorkday(None)).check(uva_row("R0000003"))
+    v, _, ev = phenom(http).check(uva_row("R0000003"))
     assert v == "UNKNOWN" and "hits 1" in ev
 
 
-def test_phenom_jackson_row_with_an_infor_apply_link_asks_the_widget_by_job_id():
-    http = FakeHttp([
+def jackson_http():
+    return FakeHttp([
         ("POST", JACKSON + "/widgets", lambda u, kw: Resp(
             200, fx("phenom_widget_open_223645.json") if kw["json_body"]["jobId"] == "223645"
             else fx("phenom_widget_empty.json"))),
-        ("GET", "/us/en/job/215000", lambda u, kw: Resp(410, fx("phenom_page_410.html"), u)),
+        ("GET", "/us/en/job/", lambda u, kw: Resp(410, fx("phenom_page_410.html"), u)),
     ])
-    chk = vs.PhenomChecker(http, workday=StubWorkday(None))
-    chk.canary.get(JACKSON, lambda: (True, "test"))
-    row = {"id": 5, "hospital_system": "Jackson Health System", "ats_platform": "Phenom", "job_id": "223645",
-           "url": "https://css-f76fc6enwqtkl6kq-prd.inforcloudsuite.com:443/hcm/Jobs/form/x"}
-    assert chk.check(row)[0] == "OPEN"
-    assert chk.check({**row, "job_id": "215000"})[0] == "CLOSED"
-    assert urls(http, "inforcloudsuite") == []
+
+
+JACKSON_INFOR = {"id": 5, "hospital_system": "Jackson Health System", "ats_platform": "Phenom", "job_id": "223645",
+                 "url": "https://css-f76fc6enwqtkl6kq-prd.inforcloudsuite.com:443/hcm/Jobs/form/x",
+                 "scraped_at": "2026-10-08T01:00:00+00:00"}
+
+
+def test_phenom_row_without_a_phenom_url_can_read_open_but_never_closed():
+    """Jackson stores Infor apply links: the widget is asked by job_id, and a
+    widget miss is UNKNOWN (the stored id is not proven to be the jobId);
+    the job page is not even fetched."""
+    http = jackson_http()
+    chk = phenom(http, rows=[JACKSON_INFOR])
+    chk.canary.get(JACKSON, lambda: (True, "test"))   # board canary (search page not recorded)
+    assert chk.check(JACKSON_INFOR)[0] == "OPEN"
+    v, _, ev = chk.check({**JACKSON_INFOR, "job_id": "215000"})
+    assert v == "UNKNOWN" and "not a Phenom job page" in ev
+    assert urls(http, "inforcloudsuite") == [] and urls(http, "/job/") == []
 
 
 def test_phenom_workday_linked_row_takes_workday_verdict_first():
     wd_url = "https://uva.wd1.myworkdayjobs.com/UVAJobs/job/Charlottesville-VA/Custodial_R0005339"
     http = uva_http()
     stub = StubWorkday(("CLOSED", "403-S22", "detail 403-S22; search no match"))
-    assert vs.PhenomChecker(http, workday=stub).check(uva_row("R0005339", wd_url))[0] == "CLOSED"
+    assert phenom(http, workday=stub).check(uva_row("R0005339", wd_url))[0] == "CLOSED"
     assert http.calls == []   # Workday decided; the Phenom board was not asked
 
 
-def test_phenom_workday_unknown_falls_back_to_the_widget():
+def test_phenom_workday_unknown_falls_back_to_the_widget_but_cannot_close():
     wd_url = "https://uva.wd1.myworkdayjobs.com/UVAJobs/job/Charlottesville-VA/Gone_R0000001"
     stub = StubWorkday(("UNKNOWN", "", "board canary failed (board total 0)"))
-    v, st, ev = vs.PhenomChecker(uva_http(), workday=stub).check(uva_row("R0000001", wd_url))
-    assert v == "CLOSED" and ev.startswith("workday: board canary failed")
+    http = uva_http()
+    v, st, ev = phenom(http, workday=stub).check(uva_row("R0000001", wd_url))
+    assert v == "UNKNOWN" and ev.startswith("workday: board canary failed") and "not a Phenom job page" in ev
+    assert urls(http, "/us/en/job/R0000001") == []
+    open_url = wd_url.replace("Gone_R0000001", "Custodial_R0005339")
+    v, _, ev = phenom(uva_http(), workday=stub).check(uva_row("R0005339", open_url))
+    assert v == "OPEN" and ev.startswith("workday: ")
 
 
 def test_phenom_seqno_job_id_is_unknown():
     row = {"id": 6, "hospital_system": "UVA Health", "ats_platform": "Phenom",
            "job_id": "UOVUNIUSR0005339EXTERNALENUS", "url": "https://example.org/apply"}
     http = FakeHttp([])
-    assert vs.PhenomChecker(http, workday=StubWorkday(None)).check(row)[0] == "UNKNOWN"
+    assert phenom(http).check(row)[0] == "UNKNOWN"
     assert http.calls == []
 
 
 def test_phenom_canary_needs_the_listed_jobs_page_to_answer_200():
     http = uva_http([("GET", "/us/en/job/R0005339", lambda u, kw: Resp(410, "", u))])
+    v, _, ev = phenom(http).check(uva_row("R0000001"))
+    assert v == "UNKNOWN" and "board canary failed" in ev
+
+
+def test_phenom_row_canary_catches_stored_ids_that_are_not_the_widget_job_id():
+    """The review case: the board canary passes on a search-page jobId
+    (R0005339), but this system's rows store another id form (here the bare
+    number), so an open posting reads widget hits 0, and its job page 410
+    would make it CLOSED. The newest row of the export must read OPEN first;
+    it does not, so every row of the system is UNKNOWN."""
+    http = uva_http()
+    rows = [uva_row("0005339", scraped="2026-10-08T21:00:00+00:00", rid=41),
+            uva_row("0000001", scraped="2026-10-02T21:00:00+00:00", rid=42)]
+    chk = phenom(http, rows=rows)
+    for row in rows:
+        v, st, ev = chk.check(row)
+        assert v == "UNKNOWN" and "row canary failed" in ev and "id 41" in ev, ev
+    widget_ids = [kw["json_body"]["jobId"] for m, _, kw in http.calls if m == "POST"]
+    assert widget_ids == ["R0005339", "0005339"]   # board canary, row canary; no row asked after
+
+
+def test_phenom_unprimed_checker_never_judges():
+    http = uva_http()
     v, _, ev = vs.PhenomChecker(http, workday=StubWorkday(None)).check(uva_row("R0000001"))
-    assert v == "UNKNOWN" and "canary failed" in ev
+    assert v == "UNKNOWN" and "row canary failed (no input export" in ev
+
+
+def test_phenom_row_canary_is_per_system():
+    http = uva_http()
+    bsw = {"id": 50, "hospital_system": "Baylor Scott & White", "ats_platform": "Phenom", "job_id": "1",
+           "url": "https://jobs.bswhealth.com/us/en/job/26007805/rn", "scraped_at": "2026-10-09T00:00:00+00:00"}
+    chk = phenom(http, rows=[UVA_NEWEST_OPEN, bsw])
+    assert set(chk.site_rows) == {(UVA, "UVA Health"), ("https://jobs.bswhealth.com", "Baylor Scott & White")}
+    assert chk.check(uva_row("R0000001"))[0] == "CLOSED"
+    assert urls(http, "bswhealth") == []
+
+
+def test_phenom_prime_prefers_phenom_urls_then_the_newest_scrape():
+    wd = "https://uva.wd1.myworkdayjobs.com/UVAJobs/job/X/Y_R0000009"
+    rows = [
+        uva_row("R0000009", url=wd, scraped="2026-10-09T05:00:00+00:00", rid=1),     # newest, Workday url
+        uva_row("R0000010", scraped="2026-10-06 04:00:00+00", rid=2),
+        uva_row("R0000011", scraped="2026-10-06T04:30:00.12345+00:00", rid=3),      # newest Phenom url
+        uva_row("R0000012", scraped="", rid=99),
+        {**uva_row("R0000013", rid=4), "ats_platform": "Workday", "scraped_at": "2026-10-10T00:00:00+00:00"},
+        {**uva_row("UOVUNIUSR0000014EXTERNALENUS", url="https://example.org/a", rid=5),
+         "scraped_at": "2026-10-10T00:00:00+00:00"},
+    ]
+    picked = vs.PhenomChecker(FakeHttp([])).prime(rows)
+    assert picked[(UVA, "UVA Health")]["id"] == 3
+    only_wd = vs.PhenomChecker(FakeHttp([])).prime(rows[:1])
+    assert only_wd[(UVA, "UVA Health")]["id"] == 1   # no Phenom url in the export: newest row overall
 
 
 # ------------------------------------------------------- dispatch, canary
@@ -415,6 +566,85 @@ def test_native_ua_wrapper_sets_the_flag_only_when_not_given():
     assert [kw["native_ua"] for _, _, kw in http.calls] == [True, False]
 
 
+def _check_args(tmp_path, rows, **kw):
+    import argparse
+    rows_file = tmp_path / "rows.json"
+    rows_file.write_text(json.dumps(rows), encoding="utf-8")
+    base = dict(rows_file=str(rows_file), from_db=False, system=None, platform=None, days=4, limit=0,
+                out_dir=str(tmp_path / "out"), max_requests=100, stop_at="23:15", workers=4,
+                per_host=vs.PER_HOST, pause=vs.PAUSE[0], retry_unknown=False)
+    base.update(kw)
+    return argparse.Namespace(**base)
+
+
+def _verdicts(out_dir):
+    return {k: r["verdict"] for k, r in vs.latest_verdicts(out_dir).items()}
+
+
+def _fake_run_http(monkeypatch, make_http):
+    """run_check end to end on the routes of make_http() (a FakeHttp); the
+    clock is set to 12:00 UTC so the nightly-window refusal does not fire."""
+    from datetime import datetime, timezone
+    made = []
+
+    class RunHttp(FakeHttp):
+        OutOfBudget = vs.Http.OutOfBudget
+
+        def __init__(self, budget, per_host=vs.PER_HOST, pause=vs.PAUSE):
+            super().__init__(make_http().routes)
+            self.budget, self.by_host = budget, vs.collections.Counter()
+            made.append((per_host, pause))
+    monkeypatch.setattr(vs, "Http", RunHttp)
+    monkeypatch.setattr(vs, "utcnow", lambda: datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc))
+    return made
+
+
+def test_run_check_primes_the_phenom_row_canary_from_the_whole_export(tmp_path, monkeypatch):
+    made = _fake_run_http(monkeypatch, uva_http)
+    rows = [uva_row("R0000001", scraped="2026-10-02T00:00:00+00:00", rid=71), UVA_NEWEST_OPEN]
+    args = _check_args(tmp_path, rows, per_host=1, pause=2.0)
+    vs.run_check(args)
+    assert _verdicts(args.out_dir) == {"71": "CLOSED", "40": "OPEN"}
+    assert made == [(1, (2.0, 4.0))]
+    # a run limited to the old row alone still reads the newest row as its canary
+    again = tmp_path / "again"
+    again.mkdir()
+    args2 = _check_args(again, rows, system=["UVA Health"], limit=1)
+    vs.run_check(args2)
+    assert _verdicts(args2.out_dir) == {"71": "CLOSED"}
+
+
+def test_run_check_ctrl_c_starts_no_new_row(tmp_path, monkeypatch):
+    """The docs say Ctrl+C stops a run so it can be restarted slower; the
+    pool must not work through the rest of its queue after it."""
+    import time as _time
+
+    def slow_open(u, kw):
+        _time.sleep(0.05)
+        return Resp(200, fx("icims_open_285412.html").replace("285412", u.split("/jobs/")[1].split("/")[0]), u)
+
+    def interrupt(u, kw):
+        raise KeyboardInterrupt()
+
+    def make_http():
+        return icims_http([("GET", "/jobs/900000/", interrupt), ("GET", "/jobs/9", slow_open)])
+    _fake_run_http(monkeypatch, make_http)
+    rows = [icims_row("900000")] + [{**icims_row(str(900001 + i)), "id": 100 + i} for i in range(40)]
+    args = _check_args(tmp_path, rows)
+    vs.run_check(args)
+    written = vs.latest_verdicts(args.out_dir) if os.path.isdir(args.out_dir) else {}
+    assert len(written) < 10
+
+
+def test_run_check_row_canary_failure_keeps_every_row_of_the_system_unknown(tmp_path, monkeypatch):
+    _fake_run_http(monkeypatch, uva_http)
+    rows = [uva_row("0005339", scraped="2026-10-08T21:00:00+00:00", rid=81),
+            uva_row("0000001", scraped="2026-10-02T21:00:00+00:00", rid=82)]
+    args = _check_args(tmp_path, rows)
+    vs.run_check(args)
+    assert _verdicts(args.out_dir) == {"81": "UNKNOWN", "82": "UNKNOWN"}
+
+
 # --------------------------------------------------------------- sql mode
 def _sql_args(tmp_path, **kw):
     import argparse
@@ -462,3 +692,20 @@ def test_docstring_carries_the_export_and_retire_sql():
             "(hospital_system in ('HCA Healthcare', 'NYC Health + Hospitals') or ats_platform in ('Phenom', 'iCIMS'))") in doc
     assert "set lock_timeout = '3s'; update public.hospital_jobs set is_active = false" in doc
     assert "on conflict (id) do nothing" in doc and "restored_active" in doc
+
+
+def test_docstring_names_the_real_rate_knobs_and_the_shipping_rule():
+    doc = vs.__doc__
+    assert vs.PER_HOST == 2 and "PER_HOST = 2" in doc
+    assert "--per-host 1 --pause 2 --retry-unknown" in doc
+    assert "--workers 4" not in doc and "Lowering --workers is not the knob" in doc
+    assert "same batched hospital-scraper push as A1 and A2" in doc and "redeploys" in doc
+
+
+@pytest.mark.parametrize("extra", [["--per-host", "3"], ["--per-host", "0"], ["--pause", "0.1"]])
+def test_check_refuses_rate_knobs_out_of_range(monkeypatch, extra):
+    monkeypatch.setattr(sys, "argv", ["verify_stale.py", "check", "--rows-file", "rows.json"] + extra)
+    monkeypatch.setattr(vs, "run_check", lambda args: pytest.fail("run_check must not start"))
+    with pytest.raises(SystemExit) as e:
+        vs.main()
+    assert e.value.code == 2
