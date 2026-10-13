@@ -17876,20 +17876,80 @@ VIVIAN_ALGOLIA_APP_ID  = "Q86HQHHJLB"
 VIVIAN_ALGOLIA_API_KEY = "d303713dffdc1b685b8993b09665717d"  # rotated key, refreshed 2026-06-18 (old 1e4ad0… returned 403; app id unchanged)
 VIVIAN_ALGOLIA_HOST    = f"https://{VIVIAN_ALGOLIA_APP_ID.lower()}-dsn.algolia.net"
 VIVIAN_INDEX           = "searchable-jobs-prod"
-VIVIAN_HITS_PER_PAGE   = 250          # Algolia hard cap
-VIVIAN_MAX_PAGES       = 100          # 25,000 per employmentType
 VIVIAN_EMPLOYMENT_TYPES = ["Travel", "Permanent", "Local Contract", "Per Diem / PRN"]
+
+# Paging rewritten 2026-10-13. The 10-13 00:04 UTC run stopped Travel, Local
+# Contract and Per Diem at page 5 (Travel 397 rows of a reported 387,649) and
+# the travel sweep then retired 13,550 Vivian rows that are still open. Live
+# probes 11:15-12:00 UTC the same day (Algolia searchable-jobs-prod, same key
+# and filters, 51 requests):
+#   * Past the first 1,000 hits of a type the ranking now opens with a run of
+#     records that have no jobDetailsSlug and no rawHash (it looks like an
+#     unprocessed ingest). Every page in the run is full (250 or 1,000
+#     hits), ids do not repeat, nothing errors, there is no cursor.
+#     Travel at hitsPerPage=1000: page 0 392 slugged; pages 1-10 0 of 1,000;
+#     page 15 261 (11:40) then 0 (11:59); pages 20 and 30 0 at 12:00, page 40
+#     204. The run grew from ~14k to 30k+ hits in twenty minutes.
+#     Local Contract had it at hits 1,000-1,249 at 00:04 (page 4 of 250 parsed
+#     to zero); at 11:50 that page had 103 slugged and 87 unhashed.
+#   * Only slugged hits are kept (a slugless hit has no working job page) and
+#     the old loop stopped on the first page that parsed to zero jobs, so a
+#     full page of slugless hits read as the end of the results. That is the
+#     bug. Permanent had no such run, so it paged on.
+#   * The category filter is NOT ignored: facet counts under the same filters
+#     were Travel 346,040 / Permanent 66,656 / Local Contract 15,684 / Per
+#     Diem 1,044 / Locum 671. nbHits is an estimate (exhaustive.nbHits=false)
+#     that wobbles between requests (Travel 364k-405k; Permanent 11,809 on
+#     page 0 but 28,512 on page 24), so nbPages cannot end a crawl.
+#   * hitsPerPage=1000 is accepted (the old "250 hard cap" comment was wrong);
+#     deep paging ends between hit 101,000 (full) and 150,000 (empty).
+# Now a type stops only on a short or empty page, a failed request, or its
+# budget: VIVIAN_JOB_PAGES pages that yielded jobs (the depth of real
+# listings; slugless pages do not use it) inside a hard VIVIAN_MAX_PAGES
+# ceiling on requests. Pages are 1,000 hits with only the parsed attributes
+# and no highlighting (about 2.5 MB each).
+VIVIAN_HITS_PER_PAGE   = 1000         # Algolia's hitsPerPage maximum; accepted live 2026-10-13
+VIVIAN_JOB_PAGES = {                  # pages that yielded jobs, per employmentType
+    "Travel":         40,             # old window was 25k hits (~5,800 rows); room for drift
+    "Permanent":      25,             # same 25k hits as the old 100 x 250
+    "Local Contract": 25,             # whole category (16k+ hits live)
+    "Per Diem / PRN": 25,             # whole category (~1k hits live)
+}
+VIVIAN_JOB_PAGES_DEFAULT = 25
+VIVIAN_MAX_PAGES = {                  # hard ceiling on requests, slugless pages included
+    "Travel":         120,            # past Algolia's deep-paging end (101k-150k)
+}
+VIVIAN_MAX_PAGES_DEFAULT = 40
+VIVIAN_PAGE_SLEEP = 0.3
+# Every hit attribute scrape_vivian_page reads. Asking for these only, with
+# highlighting off, keeps a 1,000-hit page near 2.5 MB.
+VIVIAN_ATTRIBUTES = [
+    "objectID", "jobDetailsSlug", "titles", "employerName", "agencyName", "pay",
+    "contractLengthWeeks", "shift", "location", "locationDisplay", "specialtyNames",
+    "startDateDisplay", "startMonth", "facilityName", "description",
+    "searchDescription", "createdAtDisplay",
+]
+
 
 import urllib.parse as _vivian_urllib_parse  # used inside scrape_vivian_page
 
 async def scrape_vivian_page(session: aiohttp.ClientSession,
-                              employment_type: str, page: int) -> tuple[list[TravelJob], int, bool]:
-    """Fetch one Vivian page from Algolia. Returns (jobs, total, has_more)."""
+                              employment_type: str, page: int) -> tuple[list[TravelJob], int, bool, int]:
+    """Fetch one Vivian page from Algolia.
+
+    Returns (jobs, total, has_more, n_hits): jobs are the slugged hits parsed
+    to TravelJob, total is Algolia's nbHits estimate, has_more is True when
+    the page came back full (so another may follow), and n_hits is the raw
+    hit count, or -1 when the request failed. A full page can parse to zero
+    jobs (all slugless); that is not the end of the results."""
     inner_params = _vivian_urllib_parse.urlencode({
         "hitsPerPage":  VIVIAN_HITS_PER_PAGE,
         "page":         page,
         "filters":      'origin:"platform" OR origin:"vms" OR origin:"scraped"',
         "facetFilters": json.dumps([[f"employmentType:{employment_type}"]]),
+        "attributesToRetrieve":  json.dumps(VIVIAN_ATTRIBUTES),
+        "attributesToHighlight": "[]",
+        "attributesToSnippet":   "[]",
     })
     body = {
         "requests": [{
@@ -17910,24 +17970,26 @@ async def scrape_vivian_page(session: aiohttp.ClientSession,
         # Note: `req()` does getattr(session, method) — aiohttp's method names
         # are lowercase ("post"), not uppercase, or it raises AttributeError.
         async with req(session, "post", url, json=body, headers=headers,
-                       timeout=aiohttp.ClientTimeout(total=30)) as r:
+                       timeout=aiohttp.ClientTimeout(total=60)) as r:
             if r.status != 200:
                 logger.info(f"Vivian {employment_type} page {page}: HTTP {r.status}")
-                return [], 0, False
+                return [], 0, False, -1
             data = await r.json(content_type=None)
     except Exception as e:
         logger.info(f"Vivian {employment_type} page {page}: {e}")
-        return [], 0, False
+        return [], 0, False, -1
 
-    results = data.get("results") or []
+    results = (data.get("results") if isinstance(data, dict) else None) or []
     if not results or not isinstance(results, list):
-        if page == 0:
-            logger.info(f"Vivian {employment_type}: unexpected shape, keys={list(data.keys())[:8]}")
-        return [], 0, False
+        logger.info(f"Vivian {employment_type} page {page}: unexpected shape, "
+                    f"keys={list(data.keys())[:8] if isinstance(data, dict) else type(data).__name__}")
+        return [], 0, False, -1
     first = results[0] if isinstance(results[0], dict) else {}
     hits = first.get("hits") or []
     total = first.get("nbHits") or 0
-    n_pages = first.get("nbPages") or 0
+    # A page is full at the size Algolia says it served (falls back to the
+    # size asked for), so a lowered hitsPerPage maximum still pages through.
+    page_size = first.get("hitsPerPage") or VIVIAN_HITS_PER_PAGE
 
     out: list[TravelJob] = []
     for j in hits:
@@ -18036,25 +18098,46 @@ async def scrape_vivian_page(session: aiohttp.ClientSession,
         except Exception as e:
             logger.info(f"Vivian parse error: {e}")
             continue
-    has_more = (page + 1) < n_pages and len(hits) >= VIVIAN_HITS_PER_PAGE
-    return out, total, has_more
+    # Full page => there may be another. Deliberately NOT gated on nbPages
+    # (an estimate that undercounts on shallow pages) and NOT on len(out)
+    # (a full page of slugless hits parses to nothing; see the 2026-10-13
+    # note above VIVIAN_HITS_PER_PAGE).
+    has_more = len(hits) > 0 and len(hits) >= page_size
+    return out, total, has_more, len(hits)
 
 
 async def run_vivian(session: aiohttp.ClientSession) -> list[TravelJob]:
     logger.info("Vivian Health: starting scrape (travel jobs)")
     all_jobs: list[TravelJob] = []
     for employment_type in VIVIAN_EMPLOYMENT_TYPES:
-        for page in range(0, VIVIAN_MAX_PAGES):
-            jobs, total, has_more = await scrape_vivian_page(session, employment_type, page)
+        max_pages = VIVIAN_MAX_PAGES.get(employment_type, VIVIAN_MAX_PAGES_DEFAULT)
+        job_pages_cap = VIVIAN_JOB_PAGES.get(employment_type, VIVIAN_JOB_PAGES_DEFAULT)
+        before = len(all_jobs)
+        scanned = job_pages = slugless_pages = 0
+        reason = f"page ceiling {max_pages}"
+        for page in range(0, max_pages):
+            jobs, total, has_more, n_hits = await scrape_vivian_page(session, employment_type, page)
             all_jobs.extend(jobs)
+            if n_hits > 0:
+                scanned += n_hits
+                if jobs:
+                    job_pages += 1
+                else:
+                    slugless_pages += 1
             if page == 0:
-                logger.info(f"  Vivian {employment_type}: total={total:,}, page 0: {len(jobs)} jobs")
-            if not has_more or not jobs:
-                logger.info(f"  Vivian {employment_type}: stopped at page {page+1} ({len(all_jobs):,} so far)")
+                logger.info(f"  Vivian {employment_type}: total~{total:,}, page 0: "
+                            f"{len(jobs)} jobs of {max(n_hits, 0)} hits")
+            if not has_more:
+                reason = (f"request failed on page {page}" if n_hits < 0
+                          else f"last page {page} ({n_hits} hits)")
                 break
-            await asyncio.sleep(0.3)
-        else:
-            logger.info(f"  Vivian {employment_type}: hit page cap {VIVIAN_MAX_PAGES}")
+            if job_pages >= job_pages_cap:
+                reason = f"{job_pages_cap} pages with jobs"
+                break
+            await asyncio.sleep(VIVIAN_PAGE_SLEEP)
+        logger.info(f"  Vivian {employment_type}: {len(all_jobs) - before:,} jobs from "
+                    f"{scanned:,} hits; {slugless_pages} page(s) had no job pages; "
+                    f"stopped: {reason}")
     # Dedupe within Vivian on agency_job_id
     seen, uniq = set(), []
     for j in all_jobs:

@@ -1,0 +1,252 @@
+{
+ "results": [
+  {
+   "exhaustive": {
+    "facetsCount": false,
+    "nbHits": false,
+    "typo": true
+   },
+   "exhaustiveNbHits": false,
+   "hits": [
+    {
+     "_geoloc": {
+      "lat": 36.16913,
+      "lng": -86.78479
+     },
+     "agencyId": 780,
+     "benefits": [
+      "401k retirement plan",
+      "Referral bonus"
+     ],
+     "bonusesAndBenefits": [
+      "401k retirement plan"
+     ],
+     "campaigns": [],
+     "cbsaName": "Nashville-Davidson--Murfreesboro--Franklin, TN",
+     "cityDataId": 53,
+     "contractLengthWeeks": "26 weeks",
+     "conversionRate": 5.708088440597472,
+     "cpc": 1,
+     "createdAt": 1788845780,
+     "createdAtDaysAgo": 35,
+     "createdAtDisplay": 1788845780,
+     "description": "<p>Travel Perfusionist, 26 weeks, days.</p><ul><li>5x8 hrs</li></ul>",
+     "disciplineId": 3,
+     "disciplineName": "Allied Health Professional",
+     "employerLogoUrl": "https://d2rzm9ueb9xn1f.cloudfront.net/agency_images/cross-country-allied-logo-1749154486029.png",
+     "employerName": "Cross Country Allied",
+     "employmentType": "Travel",
+     "experimentAssignments": {},
+     "facilityId": null,
+     "facilityName": null,
+     "fastTrackEligible": false,
+     "hidden": false,
+     "hiddenPostedBy": 0,
+     "hourlyNormalizedPay": 191,
+     "isLocationFocused": true,
+     "isManuallyPosted": false,
+     "isTestAgency": false,
+     "jobDetailsSlug": "bBxgnA8p-travel-perfusionist-allied-health-professional-nashville-tn",
+     "location": [
+      "Nashville, Tennessee",
+      "TN",
+      "Tennessee",
+      "Compact States"
+     ],
+     "locationDisplay": "Nashville, TN",
+     "mlScore": 7615,
+     "normalizedPay": 7615,
+     "objectID": "platform::780-1310211",
+     "organizationId": 42,
+     "origin": "platform",
+     "originObjectID": "780-1310211",
+     "originOrder": 1,
+     "paused": false,
+     "pay": {
+      "defaultPayPeriodData": {
+       "maxRate": 7615,
+       "minRate": 7615,
+       "payRates": [
+        7615
+       ],
+       "period": "week"
+      },
+      "display": {
+       "full": "$7,615/week",
+       "per": "$7,615 per week",
+       "period": "week",
+       "periodAdverb": "weekly",
+       "periodShort": "wk",
+       "rateOnly": "$7,615",
+       "short": "$7,615/wk",
+       "shortMax": "$7,615/wk"
+      },
+      "maxRate": 7615,
+      "minRate": 7615,
+      "period": "week"
+     },
+     "platformUpdatedAt": 1791839123415,
+     "promotionTags": [
+      "xmlFeeds",
+      "applyAdditionalJobs",
+      "landingPageJobSelector"
+     ],
+     "rawHash": "v3|3|173|53|Travel|7600",
+     "revPerAppDimensionKey": "AlliedHealthProfessional_Other_Other",
+     "revPerAppNormalized": 0.02345560980940174,
+     "revPerLead": 0.8230337078651685,
+     "score": 7615,
+     "searchDescription": "Travel Perfusionist, 26 weeks, days.",
+     "seniority": null,
+     "setting": "",
+     "shift": [
+      "Days"
+     ],
+     "shiftBreakdown": "5x8 hrs",
+     "shiftDetails": "8 hours, days",
+     "showHospital": false,
+     "specialtyIds": [
+      173
+     ],
+     "specialtyNames": [
+      "Perfusionist"
+     ],
+     "startDateDisplay": "Nov 2",
+     "startMonth": [
+      "Nov 2026"
+     ],
+     "titles": {
+      "seo": "Travel Perfusionists",
+      "simple": "Perfusionist",
+      "verbose": "Travel Perfusionist"
+     },
+     "valid": true,
+     "verified": false,
+     "weeklyNormalizedPay": 7615
+    },
+    {
+     "_geoloc": {
+      "lat": 36.16913,
+      "lng": -86.78479
+     },
+     "agencyId": 780,
+     "benefits": [
+      "401k retirement plan",
+      "Referral bonus"
+     ],
+     "bonusesAndBenefits": [
+      "401k retirement plan"
+     ],
+     "campaigns": [],
+     "cbsaName": "Nashville-Davidson--Murfreesboro--Franklin, TN",
+     "cityDataId": 53,
+     "contractLengthWeeks": "26 weeks",
+     "conversionRate": 5.708088440597472,
+     "cpc": 1,
+     "createdAt": 1788201832,
+     "createdAtDaysAgo": 42,
+     "createdAtDisplay": 1788201832,
+     "description": "<p>Travel Perfusionist, 26 weeks, days.</p><ul><li>5x8 hrs</li></ul>",
+     "disciplineId": 3,
+     "disciplineName": "Allied Health Professional",
+     "employerLogoUrl": "https://d2rzm9ueb9xn1f.cloudfront.net/agency_images/cross-country-allied-logo-1749154486029.png",
+     "employerName": "Cross Country Allied",
+     "employmentType": "Travel",
+     "experimentAssignments": {},
+     "facilityId": null,
+     "facilityName": null,
+     "fastTrackEligible": false,
+     "hidden": false,
+     "hiddenPostedBy": 0,
+     "hourlyNormalizedPay": 191,
+     "isLocationFocused": true,
+     "isManuallyPosted": false,
+     "isTestAgency": false,
+     "location": [
+      "Nashville, Tennessee",
+      "TN",
+      "Tennessee",
+      "Compact States"
+     ],
+     "locationDisplay": "Nashville, TN",
+     "mlScore": 7615,
+     "normalizedPay": 7615,
+     "objectID": "platform::780-1310210",
+     "organizationId": 42,
+     "origin": "platform",
+     "originObjectID": "780-1310210",
+     "originOrder": 1,
+     "paused": false,
+     "pay": {
+      "defaultPayPeriodData": {
+       "maxRate": 7615,
+       "minRate": 7615,
+       "payRates": [
+        7615
+       ],
+       "period": "week"
+      },
+      "display": {
+       "full": "$7,615/week",
+       "per": "$7,615 per week",
+       "period": "week",
+       "periodAdverb": "weekly",
+       "periodShort": "wk",
+       "rateOnly": "$7,615",
+       "short": "$7,615/wk",
+       "shortMax": "$7,615/wk"
+      },
+      "maxRate": 7615,
+      "minRate": 7615,
+      "period": "week"
+     },
+     "platformUpdatedAt": 1791839123415,
+     "promotionTags": [
+      "xmlFeeds",
+      "applyAdditionalJobs",
+      "landingPageJobSelector"
+     ],
+     "rawHash": "v3|3|173|53|Travel|7600",
+     "revPerAppDimensionKey": "AlliedHealthProfessional_Other_Other",
+     "revPerAppNormalized": 0.02345560980940174,
+     "revPerLead": 0.8230337078651685,
+     "score": 7615,
+     "searchDescription": "Travel Perfusionist, 26 weeks, days.",
+     "seniority": null,
+     "setting": "",
+     "shift": [
+      "Days"
+     ],
+     "shiftBreakdown": "5x8 hrs",
+     "shiftDetails": "8 hours, days",
+     "showHospital": false,
+     "specialtyIds": [
+      173
+     ],
+     "specialtyNames": [
+      "Perfusionist"
+     ],
+     "startDateDisplay": "Oct 26",
+     "startMonth": [
+      "Oct 2026",
+      "ASAP"
+     ],
+     "titles": {
+      "seo": "Travel Perfusionists",
+      "simple": "Perfusionist",
+      "verbose": "Travel Perfusionist"
+     },
+     "valid": true,
+     "verified": false,
+     "weeklyNormalizedPay": 7615
+    }
+   ],
+   "hitsPerPage": 250,
+   "index": "searchable-jobs-prod",
+   "nbHits": 378073,
+   "nbPages": 1513,
+   "page": 0,
+   "query": ""
+  }
+ ]
+}
