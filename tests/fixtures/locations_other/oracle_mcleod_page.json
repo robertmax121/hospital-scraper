@@ -1,0 +1,163 @@
+{
+ "items": [
+  {
+   "TotalJobsCount": 8,
+   "requisitionList": {
+    "items": [
+     {
+      "Id": "27547",
+      "Title": "Unit Coordinator - Day Hospital/Outpatient Surgery-Full-time",
+      "PrimaryLocation": "Florence, SC, United States",
+      "PrimaryLocationCountry": "US",
+      "JobFunction": null,
+      "WorkHours": null,
+      "PostedDate": "2026-10-12",
+      "workLocation": {
+       "items": [
+        {
+         "LocationName": "McLeod Pavilion",
+         "TownOrCity": "Florence",
+         "Region2": "SC",
+         "Country": "US",
+         "PostalCode": "29506"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "27751",
+      "Title": "Medical Surgical Technician - Observation- PRN",
+      "PrimaryLocation": "Florence, SC, United States",
+      "PrimaryLocationCountry": "US",
+      "JobFunction": null,
+      "WorkHours": null,
+      "PostedDate": "2026-10-12",
+      "workLocation": {
+       "items": [
+        {
+         "LocationName": "McLeod Health Tower",
+         "TownOrCity": "Florence",
+         "Region2": "SC",
+         "Country": "US",
+         "PostalCode": "29506"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "27906",
+      "Title": "Massage Therapist - Health & Fitness Center Part-Time",
+      "PrimaryLocation": "SC, United States",
+      "PrimaryLocationCountry": "US",
+      "JobFunction": null,
+      "WorkHours": null,
+      "PostedDate": "2026-10-12",
+      "workLocation": {
+       "items": [
+        {
+         "LocationName": "McLeod Health & Fitness",
+         "TownOrCity": "Florence",
+         "Region2": "SC",
+         "Country": "US",
+         "PostalCode": "29501"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "27912",
+      "Title": "Operator - McLeod HealthCall- PRN",
+      "PrimaryLocation": "Florence, SC, United States",
+      "PrimaryLocationCountry": "US",
+      "JobFunction": null,
+      "WorkHours": null,
+      "PostedDate": "2026-10-12",
+      "workLocation": {
+       "items": []
+      }
+     },
+     {
+      "Id": "27998",
+      "Title": "Medical Surgical Technician - Intermediate Intensive Care Unit (INCU)-PRN",
+      "PrimaryLocation": "Florence, SC, United States",
+      "PrimaryLocationCountry": "US",
+      "JobFunction": null,
+      "WorkHours": null,
+      "PostedDate": "2026-10-12",
+      "workLocation": {
+       "items": [
+        {
+         "LocationName": "McLeod Pavilion",
+         "TownOrCity": "Florence",
+         "Region2": "SC",
+         "Country": "US",
+         "PostalCode": "29506"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "28051",
+      "Title": "Security Officer - PRN Loris",
+      "PrimaryLocation": "SC, United States",
+      "PrimaryLocationCountry": "US",
+      "JobFunction": null,
+      "WorkHours": null,
+      "PostedDate": "2026-10-12",
+      "workLocation": {
+       "items": [
+        {
+         "LocationName": "McLeod Loris Hospital",
+         "TownOrCity": "Loris",
+         "Region2": "SC",
+         "Country": "US",
+         "PostalCode": "29569"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "28072",
+      "Title": "Medical Assistant - McLeod Digestive Health Center Seacoast PBC - FT",
+      "PrimaryLocation": "Little River, SC, United States",
+      "PrimaryLocationCountry": "US",
+      "JobFunction": null,
+      "WorkHours": null,
+      "PostedDate": "2026-10-12",
+      "workLocation": {
+       "items": [
+        {
+         "LocationName": "McLeod Seacoast Hospital",
+         "TownOrCity": "Little River",
+         "Region2": "SC",
+         "Country": "US",
+         "PostalCode": "29566"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "28070",
+      "Title": "Operator - McLeod HealthCall-Full time",
+      "PrimaryLocation": "Florence, SC, United States",
+      "PrimaryLocationCountry": "US",
+      "JobFunction": null,
+      "WorkHours": null,
+      "PostedDate": "2026-10-12",
+      "workLocation": {
+       "items": [
+        {
+         "LocationName": "McLeod Pavilion",
+         "TownOrCity": "Florence",
+         "Region2": "SC",
+         "Country": "US",
+         "PostalCode": "29506"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ ]
+}
