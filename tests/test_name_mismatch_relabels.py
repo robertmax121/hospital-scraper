@@ -147,3 +147,28 @@ def test_good_samaritan_rows_without_a_location_are_placed_in_vincennes():
     j.city, j.state = "Washington", "IN"
     d = scraper.normalize_job(j)
     assert (d["city"], d["state"]) == ("Washington", "IN")
+
+
+# ── St. Luke's split: the Kansas City town map follows the Kansas City name ─
+
+def _stlukes_row(system, city, state=""):
+    return scraper.Job(title="Registered Nurse", hospital_system=system, hospital_name=system,
+                       city=city, state=state, location="", specialty="", job_type="",
+                       url="https://saintlukes.wd1.myworkdayjobs.com/x/1", job_id="1",
+                       posted_date="", description="", ats_platform="Workday")
+
+
+def test_kansas_city_towns_key_on_the_kansas_city_name():
+    assert scraper.SYSTEM_CITY_STATE["saint luke's health system"]["overland park"] == "KS"
+    assert "st. luke's health system" not in scraper.SYSTEM_CITY_STATE
+    assert scraper.SYSTEM_LOCATION_DEFAULTS["saint luke's health system"] == ("Kansas City", "MO")
+    assert scraper.SYSTEM_LOCATION_DEFAULTS["st. luke's health system"] == ("Boise", "ID")
+    # a bare Kansas town on the Kansas City feed is KS, not the MO default
+    d = scraper.normalize_job(_stlukes_row("Saint Luke's Health System", "Overland Park"))
+    assert (d["city"], d["state"]) == ("Overland Park", "KS")
+    # a row with no location falls back to Kansas City MO
+    d = scraper.normalize_job(_stlukes_row("Saint Luke's Health System", ""))
+    assert (d["city"], d["state"]) == ("Kansas City", "MO")
+    # the Boise name never lands in Kansas City
+    d = scraper.normalize_job(_stlukes_row("St. Luke's Health System", ""))
+    assert (d["city"], d["state"]) == ("Boise", "ID")

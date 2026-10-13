@@ -2441,8 +2441,11 @@ SYSTEM_CITY_STATE: dict[str, dict[str, str]] = {
     "promedica": {"monroe": "MI", "adrian": "MI", "tecumseh": "MI", "lambertville": "MI",
                   "coldwater": "MI", "hillsdale": "MI", "dundee": "MI"},
     "legacy health": {"vancouver": "WA"},
-    "st. luke's health system": {"overland park": "KS", "iola": "KS", "lenexa": "KS",
-                                 "shawnee": "KS", "leawood": "KS", "olathe": "KS"},
+    # 2026-10-13: the Kansas City towns belong to the Workday feed, which
+    # writes "Saint Luke's Health System" (Kansas City MO/KS). The old key,
+    # "st. luke's health system", is the Boise ID name since the split.
+    "saint luke's health system": {"overland park": "KS", "iola": "KS", "lenexa": "KS",
+                                   "shawnee": "KS", "leawood": "KS", "olathe": "KS"},
     # 2026-10-04 coverage round 3: Northwell's Oracle sites give the town
     # alone and the "northwell health" default then wrote NY on the Nuvance
     # (Connecticut) hospitals it took over in 2025: Danbury (24 rows), Norwalk
@@ -2543,7 +2546,7 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "samaritan health ny":        ("Watertown",         "NY"),
     "duly health and care":       ("Downers Grove",     "IL"),
     "wellstar health (providers)": ("Marietta",         "GA"),
-    "st. luke's health system":   ("Kansas City",       "MO"),
+    "st. luke's health system":   ("Boise",             "ID"),   # 2026-10-13: Boise only since the split; Kansas City is "saint luke's health system"
     # 2026-09-17 (coverage lever 3): single-market systems added the same day.
     "trihealth":                  ("Cincinnati",        "OH"),
     "uc health":                  ("Cincinnati",        "OH"),
