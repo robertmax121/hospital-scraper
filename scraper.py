@@ -4668,9 +4668,9 @@ _WD_REMOTE_CITY_RE = re.compile(r"^(?:working at home|work from|remote)\b", re.I
 
 def _wd_city_space_state(loc: str, city: str, state: str) -> tuple[str, str]:
     """(city, state) for a locationsText that leads with "City ST"; "N
-    Locations" clears the city so the tenant default fills it, and a remote
-    row ("Working at Home - Ohio", "Work From Anywhere") keeps its state but
-    no town."""
+    Locations" clears the city (the path or facets place it; else the tenant
+    default gives the state alone, 2026-10-13), and a remote row ("Working at
+    Home - Ohio", "Work From Anywhere") keeps its state but no town."""
     text = (loc or "").strip()
     if not state:
         m = _WD_CITY_SPACE_ST_RE.match(text.split(",")[0].strip())
@@ -5042,6 +5042,17 @@ def _wd_segment_location(seg: str, spellings: dict | None = None) -> tuple[str, 
             pc = _wd_path_city(prev, code, spellings)
             if pc:
                 return pc, code
+            if ci > 1 and ci == len(chunks) - 1:
+                # 2026-10-13: "Bay-St-Louis---Gulf-Coast-Region---Mississippi"
+                # (Ochsner): the town leads and a region sits before the state.
+                # The first chunk counts only as a spelled town (the tenant's
+                # own or WD_PUNCT_CITIES), never as a guess.
+                first = [w for w in re.split(r"[-_\s]+", chunks[0]) if w]
+                k0 = (_wd_city_key(" ".join(first)), code)
+                if spellings and k0 in spellings:
+                    return spellings[k0], code
+                if k0 in WD_PUNCT_CITIES:
+                    return WD_PUNCT_CITIES[k0], code
         if not city:
             return "", code
         if spellings:
@@ -5274,6 +5285,17 @@ async def _wd_location_facets(session, working_url: str, system: str) -> tuple[d
     return path_city, path_state
 
 
+def _wd_path_names_town(external_path: str, town: str) -> bool:
+    """True when one whole "---" chunk of the externalPath site segment is
+    `town` ("/job/Little-Rock/..." names Little Rock; "North-Kansas-City-MO"
+    does not name Kansas City). A remote or home segment names no town."""
+    seg = _wd_path_segment(external_path)
+    key = _wd_city_key(town)
+    if not seg or not key or _WD_NONPLACE_RE.search(re.sub(r"[-_]+", " ", seg)):
+        return False
+    return any(_wd_city_key(ch) == key for ch in re.split(r"-{2,}|_{2,}", seg) if ch.strip("-_ "))
+
+
 def _wd_apply_locations(jobs: list, ext_by_job: dict, path_city: dict, path_state: dict,
                         default: tuple | None, site_default_city: bool = False) -> tuple[int, int]:
     """Fill blank states (and blank cities) from the facet maps, then the
@@ -5308,8 +5330,18 @@ def _wd_apply_locations(jobs: list, ext_by_job: dict, path_city: dict, path_stat
             # echoes a site name ("SE Health Hospital") used to block the
             # default town and was blanked later; elsewhere the HQ town would be
             # a guess for a site elsewhere, so the old rule stands.
-            if site_default_city and not is_plausible_city(clean_city(jb.city or "")):
+            # 2026-10-13 (review of 74b2e3a): the listing now blanks "2
+            # Locations" before this fill, so the old rule handed the HQ town
+            # to multi-site rows ("/job/Florence/" on MUSC -> Charleston). A
+            # row whose listing said "N Locations" and that neither the facets
+            # nor the path placed takes the state alone, as on origin/main,
+            # unless a whole path chunk is the default town itself
+            # ("/job/Charleston/", "/job/Tupelo---Retina-Clinic/").
+            no_town = not is_plausible_city(clean_city(jb.city or ""))
+            if site_default_city and no_town:
                 jb.city = default[0]
+            elif no_town and _WD_N_LOCATIONS_RE.match(getattr(jb, "location", "") or ""):
+                jb.city = default[0] if _wd_path_names_town(ext, default[0]) else ""
             else:
                 jb.city = jb.city or default[0]
             jb.state = default[1]
@@ -19872,7 +19904,11 @@ def normalize_job(j: Job) -> dict:
         lookup = FACILITY_LOCATION_MAP.get(hosp_name) or SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
         if lookup:
             fallback_city, fallback_state = lookup
-            if not city:
+            # 2026-10-13 (review of 74b2e3a): the head-office town only goes
+            # with its own state. A row the adapter placed in another state
+            # (Ochsner's "/job/Picayune---Gulf-Coast-Region---Mississippi/"
+            # gives MS alone) keeps a blank city instead of "New Orleans, MS".
+            if not city and (not state or state == fallback_state):
                 city = fallback_city
             if not state:
                 state = fallback_state
