@@ -93,6 +93,21 @@ def hash_notes(counts: dict) -> str:
             f"stamp not landed {g('stamp_failed'):,}, stamp back to upsert {g('stamp_missed'):,}" + tail)
 
 
+def travel_sweep_notes(counts: dict) -> str:
+    """The notes tail for the travel sweep (2026-10-13): the domains it held
+    and why, so a held source shows on the dashboard and not only in the
+    Railway log. Sources that returned nothing are left to meta. Empty when
+    nothing worth reading was held."""
+    ts = counts.get("travel_sweep") or {}
+    if ts.get("skipped"):
+        return f"; travel sweep skipped ({ts['skipped']})"
+    y = ts.get("yield") or {}
+    held = {d: r for d, r in (ts.get("held") or {}).items() if y.get(d)}
+    if not held:
+        return ""
+    return "; travel sweep held " + "; ".join(f"{d} ({r})" for d, r in sorted(held.items()))
+
+
 def run():
     os.makedirs("logs", exist_ok=True)
     start = datetime.now()
@@ -250,6 +265,7 @@ def run():
              f"{' (ABORTED)' if deact_stats.get('aborted') else ''}; partial adapters "
              f"{len(PARTIAL_SYSTEMS)}; active after run {shown}")
     notes += hash_notes(LAST_RUN_COUNTS)
+    notes += travel_sweep_notes(LAST_RUN_COUNTS)
     finish_run_record(run_id, status, datetime.now(timezone.utc).isoformat(),
                       rows_upserted=LAST_RUN_COUNTS.get("upsert_sent"),
                       deactivated=sweep_deact + layer4_deact + front_retired,
@@ -262,6 +278,7 @@ def run():
                             "layer4": {k: v for k, v in deact_stats.items()
                                        if k not in ("excluded_systems", "guarded_systems")},
                             "front_pool": front_summary,
+                            "travel_sweep": LAST_RUN_COUNTS.get("travel_sweep"),
                             "partial_systems": sorted(PARTIAL_SYSTEMS)[:50],
                             "guarded_systems": (deact_stats.get("guarded_systems") or [])[:50]})
 

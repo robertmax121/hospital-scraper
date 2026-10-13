@@ -22,7 +22,7 @@ import zlib
 from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 from dataclasses import dataclass, asdict, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Optional
 from city_utils import clean_city, is_plausible_city
 from specialty_canon import canonical_specialty
@@ -18745,73 +18745,96 @@ async def run_all_travel() -> list[dict]:
 # night before it returned ~22,000): its paging broke, it still cleared the
 # 100-row floor, and 13,550 open listings were retired. A domain is now swept
 # only when this run's yield for it is at least TRAVEL_SWEEP_MIN_RATIO of its
-# baseline: the domain's active rows last seen by the previous run, i.e. with
-# scraped_at in the TRAVEL_BASELINE_HOURS before this run's run_started and
-# not this run's own stamp. Rows retired on earlier nights are inactive and
-# older than the window, so they never enter the baseline and a source cannot
-# lock itself out of sweeping. The baseline is read BEFORE the upsert: the
-# upsert restamps every row seen again with this run's scraped_at, after
-# which the window would only hold the rows the sweep is about to retire.
-# A baseline that cannot be read holds that domain's sweep (logged); DEACT_MIN
-# stays as an extra floor.
+# baseline: the domain's active rows that carry the latest scraped_at before
+# this run's run_started, i.e. what the previous run that saw the domain
+# returned and the URL validator has not retired since. Every row of a run
+# carries the same stamp, so this works whatever the gap between runs (the
+# first version used a 36 h window, which read 0 after a skipped night).
+# Rows retired on earlier nights are inactive, so they never enter the
+# baseline and a source cannot lock itself out of sweeping.
+# The baseline is read BEFORE the upsert: the upsert restamps every row seen
+# again with this run's scraped_at. Each read is retried; one that still
+# fails holds that domain's sweep. A baseline of 0 (no active row from any
+# earlier run) holds too, as does a domain its adapter flagged incomplete
+# (TRAVEL_INCOMPLETE). DEACT_MIN stays as an extra floor. What was held, and
+# why, goes to LAST_RUN_COUNTS["travel_sweep"] -> scraper_runs.meta.
 TRAVEL_SWEEP_MIN_RATIO = 0.70
-TRAVEL_BASELINE_HOURS  = 36
+TRAVEL_BASELINE_ATTEMPTS = 3
 
 
-def _travel_baseline_window(run_started_iso: str,
-                            hours: float = TRAVEL_BASELINE_HOURS) -> tuple[str, str]:
-    """(lo, hi) ISO bounds of the baseline window: [run_started - hours, run_started)."""
-    t = datetime.fromisoformat(run_started_iso.replace("Z", "+00:00"))
-    if t.tzinfo is None:
-        t = t.replace(tzinfo=timezone.utc)
-    lo = (t - timedelta(hours=hours)).astimezone(timezone.utc)
-    return lo.strftime("%Y-%m-%dT%H:%M:%S.%fZ"), run_started_iso
+def _travel_pgrst_get(url: str, sb_key: str, count: bool = False):
+    """GET a PostgREST url, retried TRAVEL_BASELINE_ATTEMPTS times with a short
+    backoff. Returns (Content-Range header, body bytes); raises the last error."""
+    import urllib.request as _urlreq
+    headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}"}
+    if count:
+        headers.update({"Prefer": "count=exact", "Range": "0-0"})
+    last: Exception = RuntimeError("no attempt made")
+    for attempt in range(TRAVEL_BASELINE_ATTEMPTS):
+        try:
+            with _urlreq.urlopen(_urlreq.Request(url, headers=headers), timeout=60) as resp:
+                return resp.headers.get("Content-Range", ""), resp.read()
+        except Exception as e:
+            last = e
+            if attempt + 1 < TRAVEL_BASELINE_ATTEMPTS:
+                time.sleep(2 * (attempt + 1))
+    raise last
 
 
 def _travel_domain_baseline(sb_url: str, sb_key: str, domain: str,
-                            run_started_iso: str) -> Optional[int]:
-    """Active travel_jobs rows of `domain` whose scraped_at falls in the
-    previous run's window (see TRAVEL_BASELINE_HOURS). One count=exact head
-    read; None when it fails or the total cannot be read."""
-    import urllib.request as _urlreq
+                            run_started_iso: str) -> Optional[tuple[int, Optional[str]]]:
+    """(count, stamp): the active travel_jobs rows of `domain` carrying the
+    latest scraped_at before run_started, and that stamp. (0, None) when no
+    active row of the domain predates this run. None when a read still fails
+    after its retries (logged)."""
     from urllib.parse import quote as _q
+    base = (f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?is_active=eq.true"
+            f"&url=like.{_q('*' + domain + '*')}")
     try:
-        lo, hi = _travel_baseline_window(run_started_iso)
-        curl_ = (f"{sb_url.rstrip('/')}/rest/v1/travel_jobs"
-                 f"?select=id&is_active=eq.true"
-                 f"&scraped_at=gte.{_q(lo)}&scraped_at=lt.{_q(hi)}"
-                 f"&url=like.{_q('*' + domain + '*')}&limit=1")
-        crq = _urlreq.Request(curl_, headers={"apikey": sb_key,
-                                              "Authorization": f"Bearer {sb_key}",
-                                              "Prefer": "count=exact",
-                                              "Range": "0-0"})
-        with _urlreq.urlopen(crq, timeout=60) as resp:
-            cr = resp.headers.get("Content-Range", "")
+        _, body = _travel_pgrst_get(
+            f"{base}&scraped_at=lt.{_q(run_started_iso)}"
+            f"&select=scraped_at&order=scraped_at.desc&limit=1", sb_key)
+        latest = json.loads(body or b"[]")
+        if not latest:
+            return 0, None
+        stamp = latest[0].get("scraped_at")
+        if not stamp:
+            raise ValueError(f"no scraped_at in {latest[0]!r}")
+        cr, _ = _travel_pgrst_get(f"{base}&scraped_at=eq.{_q(stamp)}&select=id&limit=1",
+                                  sb_key, count=True)
         total = cr.split("/")[-1] if "/" in cr else ""
         if not total.isdigit():
             raise ValueError(f"unreadable Content-Range {cr!r}")
-        return int(total)
+        return int(total), stamp
     except Exception as e:
-        logger.warning(f"Travel sweep guard: baseline read failed for {domain} ({e})")
+        logger.warning(f"Travel sweep guard: baseline read failed for {domain} "
+                       f"after {TRAVEL_BASELINE_ATTEMPTS} attempts ({e})")
         return None
 
 
 def _travel_sweep_plan(domain_counts: dict[str, int], baselines: dict[str, Optional[int]],
-                       deact_min: int,
+                       deact_min: int, incomplete: Optional[dict[str, str]] = None,
                        ratio: float = TRAVEL_SWEEP_MIN_RATIO) -> tuple[list[str], dict[str, str]]:
     """Which domains to sweep. Returns (sweep, held) where held maps each
     domain that is NOT swept to the reason. A domain is swept only when its
-    yield is >= deact_min AND its baseline was read AND yield >= ratio x
-    baseline."""
+    yield is >= deact_min, its adapter did not flag the crawl incomplete,
+    its baseline was read and is above 0, and yield >= ratio x baseline."""
+    incomplete = incomplete or {}
     sweep: list[str] = []
     held: dict[str, str] = {}
     for d, n in domain_counts.items():
         if n < deact_min:
             held[d] = f"yield {n:,} below DEACT_MIN={deact_min}"
             continue
+        if d in incomplete:
+            held[d] = f"adapter crawl incomplete: {incomplete[d]}"
+            continue
         b = baselines.get(d)
         if b is None:
             held[d] = f"yield {n:,}; baseline unreadable"
+            continue
+        if b == 0:
+            held[d] = f"yield {n:,}; no rows from the previous run (baseline 0)"
             continue
         if n < ratio * b:
             held[d] = (f"yield {n:,} is {n / b:.0%} of baseline {b:,} "
@@ -18819,6 +18842,12 @@ def _travel_sweep_plan(domain_counts: dict[str, int], baselines: dict[str, Optio
             continue
         sweep.append(d)
     return sweep, held
+
+
+def _record_travel_sweep(**fields) -> None:
+    """What tonight's travel sweep did, for scraper_runs.meta (via
+    LAST_RUN_COUNTS, which the scheduler writes at the end of the run)."""
+    LAST_RUN_COUNTS["travel_sweep"] = fields
 
 
 def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
@@ -18829,6 +18858,7 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     url matches a domain we scraped this run AND whose scraped_at is older
     than this run's start gets is_active=false. That keeps the table from
     growing unboundedly with listings the source has removed."""
+    LAST_RUN_COUNTS.pop("travel_sweep", None)
     sb_url = os.environ.get("SUPABASE_URL", "")
     sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     if not sb_url or not sb_key:
@@ -18860,10 +18890,13 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     # rows seen again; see TRAVEL_SWEEP_MIN_RATIO. Only domains that clear
     # DEACT_MIN can be swept, so only those are read.
     baselines: dict[str, Optional[int]] = {}
+    stamps: dict[str, Optional[str]] = {}
     if run_started_iso:
         for d, n in domain_counts.items():
             if n >= DEACT_MIN:
-                baselines[d] = _travel_domain_baseline(sb_url, sb_key, d, run_started_iso)
+                got = _travel_domain_baseline(sb_url, sb_key, d, run_started_iso)
+                baselines[d], stamps[d] = got if got is not None else (None, None)
+    incomplete = dict(TRAVEL_INCOMPLETE)
     url = f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?on_conflict=agency_name,agency_job_id"
     headers = {
         "apikey":        sb_key,
@@ -18917,7 +18950,11 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     # Each source is swept independently, matched by its url domain
     # (KNOWN_DOMAINS, above the upsert). 2026-10-13: and only when its yield
     # is at least TRAVEL_SWEEP_MIN_RATIO of its previous-run baseline.
+    record = {"yield": domain_counts, "baseline": baselines, "baseline_stamp": stamps,
+              "incomplete": incomplete, "swept": [], "deactivated": 0}
     if sent == 0:
+        _record_travel_sweep(**record, held={d: "upsert landed no rows" for d in KNOWN_DOMAINS},
+                             skipped="upsert landed no rows")
         return sent
     # HARD GUARD (2026-08-06): a partial upsert must NEVER trigger the sweep.
     # Rows whose batch failed keep their old scraped_at, so sweeping now would
@@ -18930,12 +18967,16 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
             f"permanently failed ({sent}/{len(rows)} rows landed). Sweeping after a "
             f"partial upsert would deactivate live listings."
         )
+        why = f"{failed_batches} upsert batch(es) failed ({sent:,}/{len(rows):,} rows landed)"
+        _record_travel_sweep(**record, held={d: why for d in KNOWN_DOMAINS}, skipped=why)
         update_travel_site_stats()
         return sent
     if not run_started_iso:
         logger.info("Travel deactivate: no scraped_at on rows; skipping")
+        _record_travel_sweep(**record, held={d: "no scraped_at on rows" for d in KNOWN_DOMAINS},
+                             skipped="no scraped_at on rows")
         return sent
-    sweep, held = _travel_sweep_plan(domain_counts, baselines, DEACT_MIN)
+    sweep, held = _travel_sweep_plan(domain_counts, baselines, DEACT_MIN, incomplete)
     for d in KNOWN_DOMAINS:
         if domain_counts[d] < DEACT_MIN:
             continue
@@ -18943,8 +18984,8 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
         b_txt = "unreadable" if b is None else f"{b:,}"
         logger.info(
             f"Travel sweep guard {d}: yield {domain_counts[d]:,} vs baseline {b_txt} "
-            f"(active, seen in the {TRAVEL_BASELINE_HOURS}h before this run) -> "
-            f"{'sweep' if d in sweep else 'HOLD'}"
+            f"(active rows at the previous stamp {stamps.get(d) or '-'}) -> "
+            f"{'sweep' if d in sweep else 'HOLD: ' + held.get(d, '')}"
         )
     if held:
         logger.warning(
@@ -18996,6 +19037,8 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
             f"Travel deactivate: {total_deact:,} rows swept across {len(sweep)} source(s) "
             f"({failed_windows} failed windows, counts={domain_counts})"
         )
+    _record_travel_sweep(**{**record, "swept": sweep, "deactivated": total_deact},
+                         held=held, failed_windows=failed_windows)
 
     # Travel count → site_stats id=2. Written again at the very end of the
     # scheduler run (after the URL validator deactivates dead links) so the
