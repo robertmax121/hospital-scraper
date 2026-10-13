@@ -18,6 +18,8 @@ def test_city_state_forms():
     assert seg("Englewood-Colorado") == ("Englewood", "CO")
     assert seg("US-FL-Daytona-Beach") == ("Daytona Beach", "FL")
     assert seg("Charleston-West-Virginia") == ("Charleston", "WV")
+    assert seg("PARK-RIDGE-IL") == ("", "IL")          # 2026-10-13: two words, no known town
+    S.set_cms_lookup([{"hospital_name": "Lutheran General", "city": "Park Ridge", "state": "IL"}])
     assert seg("PARK-RIDGE-IL") == ("Park Ridge", "IL")
 
 
