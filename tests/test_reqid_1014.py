@@ -345,7 +345,10 @@ def test_rmk_arkansas_position_number_from_a_stored_body(fixture_text):
 @pytest.mark.parametrize("name,system,want", [
     ("townsen_tmscw1013.html", "Townsen Memorial Hospital", "TMSCW1013"),
     ("coon_218.html", "Coon Memorial Hospital", "218"),
-    ("insight_2713.html", "Insight Health", "2713"),     # the cell is in the HTML, hidden by Insight's CSS
+    # review 2026-10-14: the cell is in the HTML but the board's own CSS hides
+    # it, so people never see a number there and none is stored
+    ("insight_2713.html", "Insight Health", ""),
+    ("hereford_431.html", "Hereford Regional Medical Center", ""),
 ])
 def test_paycor_detail_reads_the_job_id_cell(fixture_text, monkeypatch, name, system, want):
     page = fixture_text(FX + "paycor/" + name)
@@ -357,7 +360,26 @@ def test_paycor_detail_reads_the_job_id_cell(fixture_text, monkeypatch, name, sy
     assert asyncio.run(scraper._paycor_detail(None, job)) is True
     assert job.req_id == want and job.job_id == hexid
     assert "Job Id" not in job.description
-    assert scraper.normalize_job(job)["posting_facts"]["req_id"] == want
+    facts = scraper.normalize_job(job)["posting_facts"]
+    if want:
+        assert facts["req_id"] == want
+    else:
+        assert "req_id" not in facts
+
+
+def test_paycor_hidden_cell_rules(fixture_text):
+    cell = '<td id="gnewtonJobID"><b>Job Id:</b>&nbsp; 2713</td>'
+    assert scraper._paycor_id_hidden(fixture_text(FX + "paycor/insight_2713.html"))
+    assert scraper._paycor_id_hidden(fixture_text(FX + "paycor/hereford_431.html"))
+    assert not scraper._paycor_id_hidden(fixture_text(FX + "paycor/townsen_tmscw1013.html"))
+    assert not scraper._paycor_id_hidden(fixture_text(FX + "paycor/coon_218.html"))
+    # another cell hidden, or the id cell styled but shown: the number stays
+    assert scraper.paycor_req_id("<style>#gnewtonJobOpening {display:none}</style>" + cell) == "2713"
+    assert scraper.paycor_req_id("<style>#gnewtonJobIDX {display:none}</style>" + cell) == "2713"
+    assert scraper.paycor_req_id("<style>#gnewtonJobID {font-weight: bold}</style>" + cell) == "2713"
+    # hidden by a <style> rule or by the cell's own style attribute
+    assert scraper.paycor_req_id("<style>td#gnewtonJobID{display:none}</style>" + cell) == ""
+    assert scraper.paycor_req_id('<td id="gnewtonJobID" style="display: none"><b>Job Id:</b> 2713</td>') == ""
 
 
 def test_paycor_req_id_edge_cases():

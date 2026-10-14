@@ -15187,18 +15187,38 @@ async def _paycor_detail(session, job) -> bool:
 # number is the page's <td id="gnewtonJobID"><b>Job Id:</b>&nbsp; 2713</td>
 # (Townsen "TMSCW1013", "TMSK100"; Coon "218"; Insight "2713"; Hereford
 # "431"). The list page carries only the hex id, so it is read on the rows
-# the detail pass fetches, inside PAYCOR_DESC_BUDGET. Insight Health and
-# Hereford keep the cell in their HTML but hide it with their own CSS
-# ("#gnewtonJobDescription #gnewtonJobID {display: none}"); it is still the
-# number their Paycor board files the posting under, so it is kept there too.
+# the detail pass fetches, inside PAYCOR_DESC_BUDGET.
+# Review 2026-10-14: the owner asked for the number the employer SHOWS
+# people. Insight Health and Hereford keep the cell in their HTML but hide it
+# with their own CSS ("#gnewtonJobDescription #gnewtonJobID {display: none}"
+# in the page's <style>; rendered, the page's text has no "Job Id"), so a page
+# that hides the cell stores no number (_paycor_id_hidden). Townsen and Coon
+# show it.
 _PAYCOR_JOB_ID_RX = re.compile(r'<td[^>]*\bid="gnewtonJobID"[^>]*>(.*?)</td>', re.S | re.I)
+_PAYCOR_STYLE_RX = re.compile(r"<style[^>]*>(.*?)</style>", re.S | re.I)
+_CSS_RULE_RX = re.compile(r"([^{}]*)\{([^{}]*)\}")
+_PAYCOR_ID_SEL_RX = re.compile(r"#gnewtonJobID(?![\w-])", re.I)
+_CSS_HIDE_RX = re.compile(r"display\s*:\s*none", re.I)
+
+
+def _paycor_id_hidden(html: str) -> bool:
+    """True when the page hides its "Job Id:" cell: a <style> rule whose
+    selector names #gnewtonJobID sets display: none, or the cell's own style
+    attribute does."""
+    css = re.sub(r"/\*.*?\*/", " ", " ".join(_PAYCOR_STYLE_RX.findall(html or "")), flags=re.S)
+    if any(_PAYCOR_ID_SEL_RX.search(sel) and _CSS_HIDE_RX.search(body)
+           for sel, body in _CSS_RULE_RX.findall(css)):
+        return True
+    m = re.search(r'<td[^>]*\bid="gnewtonJobID"[^>]*>', html or "", re.I)
+    return bool(m and re.search(r'\bstyle\s*=\s*"[^"]*display\s*:\s*none', m.group(0), re.I))
 
 
 def paycor_req_id(html: str, job_id="") -> str:
-    """The value of a Paycor job page's "Job Id:" cell, when it is a
-    requisition number (_hca_req_value) other than job_id; "" otherwise."""
+    """The value of a Paycor job page's "Job Id:" cell, when the page shows
+    it and it is a requisition number (_hca_req_value) other than job_id;
+    "" otherwise."""
     m = _PAYCOR_JOB_ID_RX.search(html or "")
-    if not m:
+    if not m or _paycor_id_hidden(html):
         return ""
     cell = re.sub(r"<!--.*?-->", " ", m.group(1), flags=re.S)
     text = _html_unescape(re.sub(r"<[^>]+>", " ", cell)).replace("\xa0", " ")
