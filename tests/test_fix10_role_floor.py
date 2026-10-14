@@ -44,6 +44,18 @@ def _rejections(caplog):
     "Physician Referral Representative",
     "Director, Physician Network",
     "Nurse Clinician - Carolinas Hospitalist Group - Full Time - AH Union",
+    # a setting in a title that names another role (fix 10 review)
+    "DIRECTOR-HOSPITALIST PRACTICE",                                   # Forrest 28621071: runs the group's business operations
+    "Director Physician Group 2",                                      # FMOL 32118481
+    "Coord, Physicians Group Practice - Neuro Surgery (Full-Time, 40 Hours, Day Shift)",   # Queen's 35493316
+    "Security Officer - HS - PE Physicians Enterprise StradaBldg - USA Health Physicians Group",
+    "Mgr- Physician Practice",                                         # Northern Light 38094470
+    "Physician Practice Reps - FT & Flex in Panama City Beach",
+    "Registered Dietician Physician Practice",
+    "Certified Athletic Trainer (Physician Practice) - Ortho & Sports Medicine Clinic - FT - Day",
+    "Physician Practice Controller - Finance",
+    "Director Physician Practice Operations",
+    "Physician Practice Operations",                                   # a function after a place
     # a labelled location is not a title
     "Site: Mass General Brigham Community Physicians, Inc.",
     "Site: Wentworth-Douglass Physician Corporation",
@@ -82,6 +94,14 @@ def test_not_the_floors_role(title):
     "Medical Director - Adult Primary Care - UVA Physicians Group",
     "CARDIOLOGY PHYSICIAN (FT; 40hrs/wk) - Temple Physicians Inc. @ Chestnut Hill Cardiology",
     "Rural Cardiologist Practice with the Oklahoma Heart Institute (Cushing, OK)",
+    # a setting alone does not take the floor away (fix 10 review)
+    "MD Physician Group",                                              # Wellstar 22077352: a staff pathologist
+    "MD Physician Group PRN",                                          # Wellstar 22077358
+    "Physician Practice Opportunities",                                # UnityPoint 35495110: recruiting physicians
+    "Physician Partner - Dermatology",
+    "Locum Physician Group Opportunity",
+    "Nocturnist Physician Group",
+    "Urgent Care Physician Clinic",
     "HealthLinkNow is currently looking for Psychiatrists interested in providing Telemedicine in California",
     "Physician - Family Medicine - Gerontology | Nursing Homes",
     "CRNA - Main OR",

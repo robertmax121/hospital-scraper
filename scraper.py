@@ -21536,13 +21536,38 @@ ROLE_FLOOR_HIGH_HOUR, ROLE_FLOOR_HIGH_YEAR, ROLE_CEILING_LOW_HOUR = 40.0, 100000
 # "Physician Executive" and "Hospice Team Physician" are physicians.
 # "Pharmacy Technician" never named a pharmacist, and "Executive Assistant"
 # never named an executive.
+# 2026-10-14 (fix 10 review): a setting alone does not say the job is not
+# a physician's. "MD Physician Group" (Wellstar 22077352, a staff
+# pathologist), "Physician Practice Opportunities" (UnityPoint 35495110,
+# recruiting physicians), "Physician Partner - Dermatology", "Nocturnist
+# Physician Group" and "Urgent Care Physician Clinic" are physician jobs. So
+# "Physician" / "Hospitalist" + a place or an organisation (Office,
+# Practice, Services, Group, Network, Partners, Clinic, Enterprise,
+# Organization, Alliance: _ROLE_HIGH_PLACE_RX) leaves the floor only when
+# the title names another role (_ROLE_HIGH_OTHER_ROLE_RX or a CNA / PCT /
+# EVS / dietary role): "Physician Office Supervisor", "Director Physician
+# Group 2", "Coord, Physicians Group Practice", "Security Officer - ... USA
+# Health Physicians Group", "DIRECTOR-HOSPITALIST PRACTICE" (Forrest
+# 28621071: the posting runs the group's business operations), "CNA -
+# Physician's Office". A function (Payment, Billing, Credentialing,
+# Recruiter, Liaison, Scheduler, Operations, Sales, Extender..., also after
+# a place: "Physician Practice Operations") or a legal name (Inc, LLC,
+# Corporation) is never the role: _ROLE_HIGH_FUNCTION_RX.
 _ROLE_HIGH_SETTING_WORD_RX = re.compile(r"physician|hospitalist", re.I)
-_ROLE_HIGH_SETTING_RX = re.compile(
-    r"(?:['\u2019]s|s['\u2019]?)?(?:,?\s+(?:inc|llc)|\s+(?:offices?|practices?|services?|groups?|networks?|partners?|"
-    r"clinics?|enterprise|organi[sz]ation|corporation|alliance|payments?|billing|coding|coders?|credentialing|"
+_ROLE_HIGH_PLACE_WORDS = (r"offices?|practices?|services?|groups?|networks?|partners?|clinics?|enterprise|"
+                          r"organi[sz]ation|alliance")
+_ROLE_HIGH_PLACE_RX = re.compile(r"(?:['\u2019]s|s['\u2019]?)?\s+(?:" + _ROLE_HIGH_PLACE_WORDS + r")\b", re.I)
+_ROLE_HIGH_FUNCTION_RX = re.compile(
+    r"(?:['\u2019]s|s['\u2019]?)?(?:,?\s+(?:inc|llc)|(?:\s+(?:" + _ROLE_HIGH_PLACE_WORDS + r"))?\s+(?:corporation|"
+    r"payments?|billing|coding|coders?|credentialing|"
     r"credentials?|recruiters?|recruitment|recruiting|liaisons?|schedulers?|scheduling|referrals?|relations|"
     r"relationships?|outreach|engagement|contracting|contracts?|compensation|operations|business|sales|support|"
     r"extenders?))\b", re.I)
+_ROLE_HIGH_OTHER_ROLE_RX = re.compile(
+    r"\b(?:supervisors?|directors?|managers?|mgr|coord|controller|auditor|educator|trainer|instructor|officer|"
+    r"psychologist|counsel|attorney|accountant|biller|dieti[ct]ian|reps|aide|agent|ambassador|concierge|courier|"
+    r"driver|operator|porter|transporter|custodian|engineer|developer|planner|buyer|optometrist|audiologist|"
+    r"podiatrist|chiropractor|dentist|paramedic|EMT)\b", re.I)
 _ROLE_HIGH_MEDICAL_DIRECTOR_RX = re.compile(r"medical\s+director", re.I)
 _ROLE_HIGH_LABEL_RX = re.compile(r"\s*(?:site|location)\s*:", re.I)
 _ROLE_HIGH_NURSE_RX = re.compile(r"\bnurse\b(?!\s+(?:anesthe|exec))", re.I)
@@ -21559,7 +21584,8 @@ def role_floor_high_title(title) -> bool:
     above): a high word in a title that is not a "Site:" label, names no
     other role (_ROLE_HIGH_SKIP_RX; an advanced practice word only when the
     title names no CRNA) and no nurse but a nurse anesthetist, where the
-    word is not a physician / hospitalist setting or function and not an
+    word is not a physician / hospitalist function, not a physician /
+    hospitalist setting in a title that names another role, and not an
     executive the job works for."""
     t = str(title or "")
     if _ROLE_HIGH_LABEL_RX.match(t) or _ROLE_HIGH_SKIP_RX.search(t):
@@ -21570,9 +21596,11 @@ def role_floor_high_title(title) -> bool:
     if _ROLE_HIGH_NURSE_RX.search(t) and not crna:
         return False
     for m in _ROLE_HIGH_RX.finditer(t):
-        if (_ROLE_HIGH_SETTING_WORD_RX.fullmatch(m.group(0)) and _ROLE_HIGH_SETTING_RX.match(t, m.end())
-                and not _ROLE_HIGH_MEDICAL_DIRECTOR_RX.search(t)):
-            continue                                          # "Physician Office", "Physician's Office", "Physicians, Inc."
+        if _ROLE_HIGH_SETTING_WORD_RX.fullmatch(m.group(0)) and not _ROLE_HIGH_MEDICAL_DIRECTOR_RX.search(t):
+            if _ROLE_HIGH_FUNCTION_RX.match(t, m.end()):
+                continue                                      # "Physician Payment Reviewer", "Physicians, Inc."
+            if _ROLE_HIGH_PLACE_RX.match(t, m.end()) and (_ROLE_HIGH_OTHER_ROLE_RX.search(t) or _ROLE_LOW_RX.search(t)):
+                continue                                      # "Physician Office Supervisor"; not "MD Physician Group"
         if _ROLE_HIGH_EXEC_WORD_RX.fullmatch(m.group(0)) and _ROLE_HIGH_PRINCIPAL_RX.search(t[:m.start()]):
             continue                                          # "Chief of Staff to the CEO"
         return True
