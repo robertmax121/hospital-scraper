@@ -1,0 +1,43 @@
+{
+ "current_page": 1,
+ "per_page": 5,
+ "total_entries": 1367,
+ "entries": [
+  {
+   "id": "18360497",
+   "talemetry_job_id": "18360497",
+   "permalink": "operations-consultant-associate",
+   "title": "Operations Consultant Associate",
+   "location": {
+    "street": "12605 E 16th Ave",
+    "locality": "Aurora",
+    "region_abbr": "CO",
+    "postal_code": "80045",
+    "country": "United States",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Colorado",
+    "name": "UCHlth Anschutz Inpt Pavilion"
+   }
+  },
+  {
+   "id": "18360496",
+   "talemetry_job_id": "18360496",
+   "permalink": "patient-access-registration-specialist",
+   "title": "Patient Access Registration Specialist",
+   "location": {
+    "street": "1400 E BOULDER",
+    "locality": "Colorado Springs",
+    "region_abbr": "CO",
+    "postal_code": "80903",
+    "country": "United States",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Colorado",
+    "name": "Memorial Hospital Central"
+   }
+  }
+ ]
+}
