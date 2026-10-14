@@ -20,7 +20,24 @@ VERDICTS (one per row, written to <out-dir>/<platform>.csv)
                        a tenant whose /jobs search does not answer gets
                        UNKNOWN for every row (canary), never CLOSED.
              Oracle    recruitingCEJobRequisitionDetails ById answers 200 with
-                       items = [].
+                       items = [], asked by the whole id ("2026-464305"; the
+                       10-14 fix: the id used to stop at the hyphen).
+                       An Oracle CLOSED verdict EXPIRES WITHIN HOURS:
+                       Ascension un-posts and re-posts requisitions. On
+                       10-14, 4 of 361 ids read items [] at 18:22-18:29 UTC
+                       and were posted again (ExternalPostedStartDate
+                       18:47-18:53) by 19:12; the Phenom widget still said
+                       hits 0 for one of them, so the Phenom board lags
+                       Oracle and cannot catch it. The scraped_at guard of
+                       the `sql` file cannot catch it either (the truncated
+                       Ascension crawl may never re-stamp the row), and a
+                       `check` re-run cannot either (it skips ids its CSVs
+                       already judged, and a CLOSED-only export fails the
+                       Phenom row canary). Right before a retire file is
+                       applied, run `recheck` (USAGE): it re-asks Oracle
+                       ById for every Oracle row the file retires and takes
+                       out of the file every id that does not read CLOSED
+                       again.
              HCA       (careers.hcahealthcare.com, Talemetry; curl_cffi
                        impersonate="firefox", no proxy) the job page answers
                        301 to /jobs?job_not_found=true, or 200 with "This job
@@ -46,20 +63,39 @@ VERDICTS (one per row, written to <out-dir>/<platform>.csv)
                        OPEN or UNKNOWN. OPEN = the widget returns the job. A
                        row whose url is a Workday job page is asked of
                        Workday first (rules above); only when Workday says
-                       UNKNOWN is the Phenom board asked.
+                       UNKNOWN is the Phenom board asked. A row whose url is
+                       an Oracle requisition (Ascension) is CLOSED when
+                       Oracle's ById answers items [] AND, past both
+                       canaries, the widget answers hits 0 for its job_id.
+             SmartRecruiters (jobs.smartrecruiters.com/{org}/{id}; measured
+                       2026-10-14, Northwestern) the public posting API
+                       (api.smartrecruiters.com/v1/companies/{org}/postings/
+                       {id}) answers 200 with "active": false. OPEN = active
+                       true and its applyUrl names the same id.
+             Jibe      (hosts of scraper.py JIBE_SITES; UHS rows are stored as
+                       iCIMS) the job page answers 500 "Oops! An error has
+                       occurred." on two separate fetches AND the front's
+                       /api/jobs?keywords={req} finds no job with that req_id.
+                       OPEN = 200 with a JobPosting naming the req_id.
              others    HTTP 404/410 on the job page, a redirect that drops the
                        job id and lands on a search/listing page, or an
                        explicit "no longer available" text with no posting
                        markup (JSON-LD JobPosting / apply button) on the page.
   OPEN     the board still serves the posting (stale here = a scraper gap).
+  MOVED    (SmartRecruiters) the old id still answers, but its apply link
+           names a new id: the board re-published the posting. Not closed;
+           `sql` never retires it. The row is a re-keyed duplicate when the
+           new id is an active row too (the duplicate cleanup's call).
   UNKNOWN  anything else: 403, 5xx, timeouts, 429 after backoff, login or bot
            walls, pages that say neither. UNKNOWN is never retired.
 
 CANARY (one per site, before any row of that site is judged)
   Workday: the board's /jobs search answers with a total > 0. HCA, PeopleSoft,
-  iCIMS and Phenom: a posting the board lists right now (first card of HCA's
-  Colorado search, first row of the PeopleSoft job list, first link of the
-  iCIMS portal search, first jobId on the Phenom search-results page) must
+  iCIMS, Phenom, SmartRecruiters and Jibe: a posting the board lists right
+  now (first card of HCA's Colorado search, first row of the PeopleSoft job
+  list, first link of the iCIMS portal search, first jobId on the Phenom
+  search-results page, first posting of the SmartRecruiters company list,
+  first job of the Jibe front's /api/jobs) must
   read OPEN through the same requests the rows go through (Phenom: and its
   job page must answer 200). If it does not, every row of that site is
   UNKNOWN ("board canary failed (...)"), never CLOSED.
@@ -154,6 +190,12 @@ USAGE
   python tools/verify_stale.py check --from-db --platform Workday --system "Sutter Health" --days 3
   python tools/verify_stale.py sql --out-sql 115_retire_verified_closed.sql \
          --out-restore 115r_retire_verified_closed.sql --stale-before "2026-10-12 21:00+00"
+  python tools/verify_stale.py recheck --sql 136c_stale_verified_closed.sql \
+         --out-sql 136c_stale_verified_closed.sql --out-dir <shared>/stale_verify_2026-10-14
+     (right before applying; about 1 request a second, one per Oracle row;
+     rewrites only the `id in (...)` lists; a list left empty becomes
+     id in (null); the verdicts go to <out-dir>/recheck/, which `sql` never
+     reads)
 """
 import argparse
 import collections
@@ -428,7 +470,13 @@ class WorkdayChecker:
 
 
 # ------------------------------------------------------------------ Oracle
-_ORA = re.compile(r"^https://([^/]+)/hcmUI/CandidateExperience/[a-z]{2}(?:-[A-Z]{2})?/sites/([^/]+)/(?:job|requisitions/preview)/(\d+)", re.I)
+# 2026-10-14: the requisition id keeps its hyphens. Ascension's newer
+# requisitions are numbered "2026-464305" (scraper fix b25710a, 10-09); the
+# old "(\d+)" stopped at the hyphen, asked ById "2026", got items [] and
+# called four Ascension rows CLOSED on their year alone. The id now runs to
+# the end of its path segment.
+_ORA = re.compile(r"^https://([^/]+)/hcmUI/CandidateExperience/[a-z]{2}(?:-[A-Z]{2})?/sites/([^/]+)/"
+                  r"(?:job|requisitions/preview)/([0-9A-Za-z][0-9A-Za-z-]*)(?=$|[/?#])", re.I)
 
 
 class OracleChecker:
@@ -534,6 +582,10 @@ def checker_for(platform, http, cache={}):  # noqa: B006 - per-run cache by desi
             cache[ck] = IcimsChecker(http)
         elif key == "hca":
             cache[ck] = HcaChecker(http)
+        elif key == "smartrecruiters":
+            cache[ck] = SmartRecruitersChecker(http)
+        elif key == "jibe":
+            cache[ck] = JibeChecker(http)
         else:
             cache[ck] = GenericChecker(http, platform)
     return cache[ck]
@@ -541,9 +593,12 @@ def checker_for(platform, http, cache={}):  # noqa: B006 - per-run cache by desi
 
 def checker_for_row(row, http):
     """The checker for one row: the url decides where it names a board this
-    script reads (HCA's Talemetry site, a PeopleSoft posting, an iCIMS
-    portal), else the row's ats_platform. Phenom rows stay with the Phenom
-    checker, which sends Workday-linked rows on to the Workday checker."""
+    script reads (HCA's Talemetry site, a PeopleSoft posting, a
+    SmartRecruiters posting, a Jibe front, an iCIMS portal, an Oracle
+    requisition), else the row's ats_platform. Phenom rows stay with the
+    Phenom checker, which sends Workday- and Oracle-linked rows on to those
+    checkers first. Jibe fronts come before iCIMS: the scraper stores their
+    rows as ats_platform iCIMS (UHS)."""
     url = row.get("url") or ""
     plat = slug(row.get("ats_platform"))
     if _host(url) == HCA_HOST:
@@ -552,8 +607,14 @@ def checker_for_row(row, http):
         return checker_for("Phenom", http)
     if _PS_POSTING_URL.match(url):
         return checker_for("PeopleSoft", http)
+    if _SR_URL.match(url):
+        return checker_for("SmartRecruiters", http)
+    if _host(url) in jibe_hosts():
+        return checker_for("Jibe", http)
     if plat == "icims" or _ICIMS_URL.match(url):
         return checker_for("iCIMS", http)
+    if _ORA.match(url):
+        return checker_for("Oracle", http)
     return checker_for(row.get("ats_platform"), http)
 
 
@@ -934,9 +995,16 @@ def _scraper_literal(name, _cache={}):  # noqa: B006 - parsed once per process
 
 def phenom_base(row):
     """The Phenom career site a row belongs to: PHENOM_ORGS[system], else the
-    row's own host when its url is a Phenom job page (BSW). "" if neither."""
+    row's own host when its url is a Phenom job page (BSW). "" if neither.
+    2026-10-14: a database export carries the aliased name (scraper emits
+    "Ascension Health", HOSPITAL_SYSTEM_ALIASES stores "Ascension"), so the
+    emit name that aliases to the row's system is looked up too."""
     orgs = _scraper_literal("PHENOM_ORGS") or {}
-    base = orgs.get(row.get("hospital_system") or "")
+    system = row.get("hospital_system") or ""
+    base = orgs.get(system)
+    if not base:
+        aliases = _scraper_literal("HOSPITAL_SYSTEM_ALIASES") or {}
+        base = next((orgs[e] for e, canon in aliases.items() if canon == system and e in orgs), "")
     if base:
         return base.rstrip("/")
     url = row.get("url") or ""
@@ -979,11 +1047,17 @@ class PhenomChecker:
              was never primed fails this canary.
     CLOSED also needs the row's url to be a Phenom /job/{id} page on the
     site's own host: a row whose id comes from job_id (Workday, Infor or other
-    apply links) can read OPEN or UNKNOWN through the widget, never CLOSED."""
+    apply links) can read OPEN or UNKNOWN through the widget, never CLOSED.
+    One exception (2026-10-14): a row whose url is an Oracle requisition
+    (Ascension's Phenom front of Oracle Recruiting) is CLOSED when Oracle's
+    ById answers items [] for the full id AND, past both canaries, the
+    Phenom jobDetail widget answers hits 0 for the row's job_id: two boards
+    agreeing, as Workday's detail and search must."""
 
-    def __init__(self, http, workday=None, canary=None):
+    def __init__(self, http, workday=None, canary=None, oracle=None):
         self.http = NativeUA(http)
         self.workday = workday or WorkdayChecker(http)
+        self.oracle = oracle or OracleChecker(http)
         self.canary = canary or Canary()
         self.site_rows = None   # (base, hospital_system) -> the export row the row canary reads
 
@@ -1105,6 +1179,16 @@ class PhenomChecker:
             if v[0] != "UNKNOWN":
                 return v
             pre = "workday: " + str(v[2])[:80] + "; phenom: "
+        oracle_closed = ""
+        if _ORA.match(url):
+            # Ascension: Oracle's answer is OPEN on its own; its items []
+            # needs the Phenom board's hits 0 below before it is CLOSED.
+            v = self.oracle.check(row)
+            if v[0] == "OPEN":
+                return v
+            if v[0] == "CLOSED":
+                oracle_closed = str(v[2])
+            pre = "oracle: " + str(v[2])[:80] + "; phenom: "
         base = phenom_base(row)
         if not base:
             return "UNKNOWN", "", pre + "no Phenom site known for this system"
@@ -1118,8 +1202,177 @@ class PhenomChecker:
         ok, note = self.canary.get(("row", base, system), lambda: self._row_probe(base, system))
         if not ok:
             return "UNKNOWN", "", pre + "row canary failed (" + note + ")"
+        if oracle_closed:
+            wst, w = self._widget(base, wid)
+            if w is None:
+                return "UNKNOWN", wst, pre + f"jobDetail widget answered {wst}"
+            if w[0] == 0:
+                return "CLOSED", wst, f"{oracle_closed}; Phenom jobDetail widget hits 0 for {wid}"
+            return "UNKNOWN", wst, pre + f"jobDetail widget hits {w[0]}, jobId {w[1][:40]!r}"
         v, st, ev = self.verdict(base, system, wid, url if on_site else "", closable=on_site)
         return v, st, pre + ev
+
+
+# ------------------------------------------------------- SmartRecruiters
+# Measured live 2026-10-14 (Northwestern Medicine, api.smartrecruiters.com,
+# public, no key): GET /v1/companies/{org}/postings/{id} answers 200 for an
+# old id too. A closed posting carries "active": false (744000150699610; its
+# job page says "Sorry, this job has expired"); a live one "active": true.
+# Northwestern re-published about 1,340 postings under new ids on 10-13: the
+# old id still answers active true, but its applyUrl names the NEW id
+# (744000150157032 -> 744000154749068, same refNumber 210742). That row is
+# not closed, it is a re-keyed copy: verdict MOVED, never retired by `sql`
+# (the duplicate cleanup decides it against the new id's row). An unknown id
+# answers 404, never measured for a real posting: UNKNOWN.
+SR_API = "https://api.smartrecruiters.com/v1/companies"
+_SR_URL = re.compile(r"^https://jobs\.smartrecruiters\.com/([^/?#]+)/(\d{6,})(?:[-/?#].*)?$", re.I)
+_SR_APPLY_ID = re.compile(r"^https://jobs\.smartrecruiters\.com/[^/?#]+/(\d{6,})", re.I)
+
+
+class SmartRecruitersChecker:
+    def __init__(self, http, canary=None):
+        self.http = NativeUA(http)
+        self.canary = canary or Canary()
+
+    def _detail(self, org, pid):
+        st, r = self.http.request("GET", f"{SR_API}/{org}/postings/{pid}", headers={"Accept": "application/json"})
+        if st != 200 or r is None:
+            return st, None
+        try:
+            d = r.json()
+        except Exception:  # noqa: BLE001
+            return "bad-json", None
+        if not isinstance(d, dict) or str(d.get("id") or "") != pid or not isinstance(d.get("active"), bool):
+            return "bad-shape", None
+        return st, d
+
+    def verdict(self, org, pid):
+        st, d = self._detail(org, pid)
+        if d is None:
+            return "UNKNOWN", st, f"posting api answered {st}"
+        ref = str(d.get("refNumber") or "")
+        tag = f" (refNumber {ref})" if ref else ""
+        if d["active"] is False:
+            return "CLOSED", st, "posting api active=false" + tag
+        m = _SR_APPLY_ID.match(str(d.get("applyUrl") or ""))
+        if m and m.group(1) != pid:
+            return "MOVED", st, f"posting api active=true; apply link moved to id {m.group(1)}{tag}"
+        return "OPEN", st, "posting api active=true" + tag
+
+    def _probe(self, org):
+        st, r = self.http.request("GET", f"{SR_API}/{org}/postings?limit=1&offset=0",
+                                  headers={"Accept": "application/json"})
+        if st != 200 or r is None:
+            return False, f"postings list answered {st}"
+        try:
+            d = r.json() or {}
+            first = str(((d.get("content") or [{}])[0] or {}).get("id") or "")
+        except Exception:  # noqa: BLE001
+            return False, "postings list bad json"
+        if not (d.get("totalFound") or 0) > 0 or not first:
+            return False, f"postings list total {d.get('totalFound')}"
+        v, _, ev = self.verdict(org, first)
+        return v == "OPEN", f"listed posting {first} read {v} ({ev})"
+
+    def check(self, row):
+        m = _SR_URL.match((row.get("url") or "").strip())
+        if not m:
+            return "UNKNOWN", "", "url is not a SmartRecruiters posting url"
+        org, pid = m.group(1).lower(), m.group(2)
+        ok, note = self.canary.get(("sr", org), lambda: self._probe(org))
+        if not ok:
+            return "UNKNOWN", "", "board canary failed (" + note + ")"
+        return self.verdict(org, pid)
+
+
+# -------------------------------------------------------------------- Jibe
+# Measured live 2026-10-14 on jobs.uhsinc.com (Universal Health Services'
+# Jibe front of iCIMS; the scraper stores these rows as ats_platform iCIMS):
+# an open posting's page (/jobs/{req}, redirected to /careers/jobs/{req})
+# answers 200 with a JSON-LD JobPosting and "req_id":"{req}" in its page
+# data; a closed one (371160, 369234; 999999999 alike) answers HTTP 500 with
+# the 275-byte "Oops! An error has occurred." page, and the front's own
+# search, GET {base}/api/jobs?keywords={req}, finds no job with that req_id
+# (totalCount 0; 375157 -> totalCount 1, req_id 375157). Every page carries
+# the site's NO_JOBS_404 text ("may be no longer available"), so the generic
+# checker read all 30 sampled UHS rows "page says neither". CLOSED needs the
+# Oops page on two separate fetches AND a search that does not find the
+# req_id. A 500 is also what a broken server says, hence the search.
+_JIBE_JOB_URL = re.compile(r"^(https://[^/?#]+)/(?:careers/)?jobs/([0-9A-Za-z][0-9A-Za-z-]*)(?:[/?#].*)?$")
+_JIBE_OOPS = re.compile(r"<title>\s*Oops! An error has occurred\.\s*</title>", re.I)
+
+
+def jibe_hosts(_cache={}):  # noqa: B006 - parsed once per process
+    """Hosts of scraper.py's JIBE_SITES (read with ast, not imported)."""
+    if "hosts" not in _cache:
+        sites = _scraper_literal("JIBE_SITES") or {}
+        _cache["hosts"] = frozenset(_host(u) for u in sites.values() if isinstance(u, str) and _host(u))
+    return _cache["hosts"]
+
+
+class JibeChecker:
+    def __init__(self, http, canary=None):
+        self.http = NativeUA(http)
+        self.canary = canary or Canary()
+
+    def _page(self, url, jid):
+        """('open' | 'oops' | 'other', status)."""
+        st, r = self.http.request("GET", url, headers={"Accept": "text/html,application/xhtml+xml"})
+        text = (r.text or "") if r is not None else ""
+        if st == 200 and _has_jobposting(text) and re.search(r'"(?:req_id|slug)"\s*:\s*"' + re.escape(jid) + '"', text):
+            return "open", st
+        if st == 500 and _JIBE_OOPS.search(text) and not _has_jobposting(text):
+            return "oops", st
+        return "other", st
+
+    def _search(self, base, jid):
+        """(status, total, [req_id, ...]) of the front's own search for jid."""
+        st, r = self.http.request("GET", f"{base}/api/jobs?page=1&limit=10&keywords={jid}",
+                                  headers={"Accept": "application/json"})
+        if st != 200 or r is None:
+            return st, None, []
+        try:
+            d = r.json() or {}
+            ids = [str(((w or {}).get("data") or w or {}).get("req_id") or "") for w in (d.get("jobs") or [])]
+            return st, int(d.get("totalCount") or 0), ids
+        except Exception:  # noqa: BLE001
+            return "bad-json", None, []
+
+    def verdict(self, base, url, jid):
+        kind, st = self._page(url, jid)
+        if kind == "open":
+            return "OPEN", st, "job page 200 with a JobPosting for this req_id"
+        if kind != "oops":
+            return "UNKNOWN", st, f"job page answered {st}"
+        sst, total, ids = self._search(base, jid)
+        if total is None:
+            return "UNKNOWN", st, f"job page 500 'Oops'; search answered {sst}"
+        if jid in ids:
+            return "UNKNOWN", st, f"job page 500 'Oops' but the search finds req {jid}"
+        if total > len(ids):
+            return "UNKNOWN", st, f"job page 500 'Oops'; search total {total}, req not on the first page"
+        kind2, st2 = self._page(url, jid)
+        if kind2 != "oops":
+            return "UNKNOWN", st2, f"first fetch 500 'Oops', the second read {kind2} ({st2})"
+        return "CLOSED", st2, f"job page 500 'Oops' on two fetches; search '{jid}' total {total}, no match"
+
+    def _probe(self, base):
+        sst, total, ids = self._search(base, "")
+        if not total or not ids or not ids[0]:
+            return False, f"job search answered {sst}, total {total}"
+        v, _, ev = self.verdict(base, f"{base}/jobs/{ids[0]}?lang=en-us", ids[0])
+        return v == "OPEN", f"listed req {ids[0]} read {v} ({ev})"
+
+    def check(self, row):
+        url = (row.get("url") or "").strip()
+        m = _JIBE_JOB_URL.match(url)
+        if not m or _host(url) not in jibe_hosts():
+            return "UNKNOWN", "", "url is not a Jibe job url"
+        base, jid = m.group(1), m.group(2)
+        ok, note = self.canary.get(("jibe", base), lambda: self._probe(base))
+        if not ok:
+            return "UNKNOWN", "", "board canary failed (" + note + ")"
+        return self.verdict(base, url, jid)
 
 
 # ------------------------------------------------------------------- rows
@@ -1166,7 +1419,7 @@ def done_ids(out_dir, platform, retry_unknown):
     if os.path.exists(p):
         with open(p, encoding="utf-8", newline="") as f:
             for r in csv.DictReader(f):
-                if r.get("verdict") in ("CLOSED", "OPEN") or (r.get("verdict") == "UNKNOWN" and not retry_unknown):
+                if r.get("verdict") in ("CLOSED", "OPEN", "MOVED") or (r.get("verdict") == "UNKNOWN" and not retry_unknown):
                     done.add(str(r.get("id")))
     return done
 
@@ -1353,6 +1606,86 @@ def run_sql(args):
     print(f"wrote {args.out_restore} (backup table {tbl})")
 
 
+# ---------------------------------------------------------------- recheck
+# 2026-10-14: an Oracle CLOSED verdict expires within hours (Ascension
+# re-posted 4 of 361 requisitions 20 minutes after they read items []; see
+# the Oracle note at the top). `recheck` re-asks Oracle ById, right before a
+# retire file is applied, for every Oracle row that file retires, and takes
+# every id that does not read CLOSED again out of the file's id lists.
+_ID_LIST = re.compile(r"\bid in \(([0-9,\s]+|null)\)")
+
+
+def sql_ids(text):
+    """Every id named in an `id in (...)` list of a retire file."""
+    ids = set()
+    for m in _ID_LIST.finditer(text):
+        ids.update(int(x) for x in m.group(1).split(",") if x.strip().isdigit())
+    return ids
+
+
+def prune_sql_ids(text, drop):
+    """The retire file with every id in `drop` taken out of its id lists and
+    nothing else changed. A list left empty becomes id in (null), which
+    matches no row."""
+    drop = {int(x) for x in drop}
+
+    def keep(m):
+        kept = [x.strip() for x in m.group(1).split(",") if x.strip().isdigit() and int(x) not in drop]
+        return "id in (" + (",".join(kept) if kept else "null") + ")"
+    return _ID_LIST.sub(keep, text)
+
+
+def run_recheck(args, http=None):
+    now = utcnow()
+    if in_quiet(now, (23, 15), (5, 30)):
+        raise SystemExit("refusing to start between 23:15 and 05:30 UTC (nightly window)")
+    with open(args.sql, encoding="utf-8", newline="") as f:
+        text = f.read()
+    ids = sql_ids(text)
+    verdicts = latest_verdicts(args.out_dir)
+    keep_sys = set(args.system or [])
+    rows = [verdicts[str(i)] for i in sorted(ids)
+            if str(i) in verdicts and (not keep_sys or verdicts[str(i)].get("hospital_system") in keep_sys)
+            and _ORA.match((verdicts[str(i)].get("url") or "").strip())]
+    print(f"{len(ids)} ids in {args.sql}; {len(rows)} Oracle rows to re-ask "
+          f"({sum(1 for i in ids if str(i) not in verdicts)} ids not in the CSVs of {args.out_dir}, left as they are)",
+          flush=True)
+    if http is None:
+        stop_at = now.replace(hour=23, minute=15, second=0, microsecond=0)
+        http = Http(Budget(len(rows) + 5, stop_at), per_host=1, pause=PAUSE)
+    oracle = OracleChecker(http)
+    log_dir = os.path.join(args.out_dir, "recheck")
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, os.path.splitext(os.path.basename(args.sql))[0]
+                            + "_" + now.strftime("%Y%m%d_%H%M%S") + ".csv")
+    drop, stats = [], collections.Counter()
+    out_of_budget = False
+    with open(log_path, "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=CSV_FIELDS, extrasaction="ignore")
+        w.writeheader()
+        for row in rows:
+            if out_of_budget:
+                v, st, ev = "UNKNOWN", "", "not re-asked (request budget or stop time)"
+            else:
+                try:
+                    v, st, ev = oracle.check(row)
+                except Http.OutOfBudget:
+                    out_of_budget = True
+                    v, st, ev = "UNKNOWN", "", "not re-asked (request budget or stop time)"
+            stats[v] += 1
+            if v != "CLOSED":
+                drop.append(int(row["id"]))
+                print(f"  drop {row['id']} {row.get('hospital_system')} {row.get('job_id')}: {v} ({ev})", flush=True)
+            w.writerow(dict(row, verdict=v, http_status=st, evidence=ev,
+                            checked_at=utcnow().strftime("%Y-%m-%d %H:%M:%S")))
+    pruned = prune_sql_ids(text, drop)
+    with open(args.out_sql, "w", encoding="utf-8", newline="") as f:
+        f.write(pruned)
+    print(f"re-asked: {dict(stats)}; dropped {len(drop)}; wrote {args.out_sql} with "
+          f"{len(sql_ids(pruned))} ids; verdicts in {log_path}", flush=True)
+    return drop
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1384,6 +1717,12 @@ def main():
                    help="table in schema public that saves the retired rows (default: by UTC date)")
     s.add_argument("--db-write", action="store_true",
                    help="db_write format: no comment or blank lines, one statement per line")
+    r = sub.add_parser("recheck", help="right before a retire file is applied: re-ask Oracle ById for its "
+                                       "Oracle rows and take out every id that does not read CLOSED again")
+    r.add_argument("--sql", required=True, help="the retire file (its id in (...) lists are read)")
+    r.add_argument("--out-sql", required=True, help="where the pruned file goes (may be the --sql path itself)")
+    r.add_argument("--out-dir", default=DEFAULT_OUT, help="the check run whose CSVs hold the rows' urls")
+    r.add_argument("--system", action="append", help="only re-ask rows of this hospital_system (repeatable)")
     args = ap.parse_args()
     if args.cmd == "check":
         if not args.rows_file and not args.from_db:
@@ -1393,6 +1732,8 @@ def main():
         if not 0.5 <= args.pause <= 30:
             ap.error("--pause is 0.5..30 seconds")
         run_check(args)
+    elif args.cmd == "recheck":
+        run_recheck(args)
     else:
         if args.batch > 1000:
             ap.error("--batch is at most 1000")
