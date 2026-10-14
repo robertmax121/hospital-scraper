@@ -120,8 +120,12 @@ def test_blank_or_odd_clientid_gives_blank():
 
 
 def test_other_findly_google_tenants_are_untouched(fixture_text):
-    assert scraper.FINDLY_GOOGLE_REQ_ID == {"AdventHealth": "clientid", "UCLA Health": "ref"}
-    jobs = _scrape(fixture_text, "UPMC", scraper.FINDLY_GOOGLE_ORGS["UPMC"])
+    # 2026-10-14: UPMC, University Hospitals, UT Southwestern and Scripps read
+    # ref (tests/test_reqid_1014_findly_google.py); AdventHealth keeps clientid.
+    assert scraper.FINDLY_GOOGLE_REQ_ID == {"AdventHealth": "clientid", "UCLA Health": "ref",
+                                            "UPMC": "ref", "University Hospitals": "ref",
+                                            "UT Southwestern Medical Center": "ref", "Scripps Health": "ref"}
+    jobs = _scrape(fixture_text, "Some Other Findly Tenant", scraper.FINDLY_GOOGLE_ORGS["UPMC"])
     assert len(jobs) == 5 and all(j.req_id == "" for j in jobs)
 
 

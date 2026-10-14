@@ -8077,7 +8077,25 @@ FINDLY_GOOGLE_PAY_KEY = {"UPMC": "salary", "University Hospitals": "relocation"}
 # too. The search payload carries it as job.ref; job.clientid is null on
 # every UCLA row. On 2026-10-14 ref was set, numeric and unique on all 681
 # listed rows, and equal to the page's "Job #" on 15 of 15 pages read.
-FINDLY_GOOGLE_REQ_ID = {"AdventHealth": "clientid", "UCLA Health": "ref"}
+#
+# 2026-10-14 (owner: "we need to fix those now"): UPMC, University Hospitals,
+# UT Southwestern and Scripps print job.ref. Read from the whole search
+# payload that day: ref set and a requisition number (_hca_req_value) on
+# 2,919 of 2,919 UPMC rows ("8457814813", older "26000051", "2600023K"),
+# 1,218 of 1,218 University Hospitals ("260008MP"), 907 of 907 UT Southwestern
+# ("978816", "260000KR") and 355 of 355 Scripps ("262005926"); no ref ends in
+# AdventHealth's per-location "-N". The job pages read that day print the
+# same value: UPMC "Job ID:" (24007855, 23971655, 23758364), University
+# Hospitals "Position #:" (23842240, 23856269, 23455340), UT Southwestern
+# "Job Number:" (23943857, 24007454, 23891515, 22650827, and 24007415, a
+# faculty row whose clientid is the Interfolio id 195567 and whose stored
+# Apply link is apply.interfolio.com: 368 of the 907 rows are such rows, so
+# clientid is NOT read there), Scripps "Job ID:" (24008661, 23911683,
+# 22560864); the JSON-LD identifier.value agrees on every one. Two UT
+# Southwestern refs sit on two rows each (one requisition posted twice).
+FINDLY_GOOGLE_REQ_ID = {"AdventHealth": "clientid", "UCLA Health": "ref",
+                        "UPMC": "ref", "University Hospitals": "ref",
+                        "UT Southwestern Medical Center": "ref", "Scripps Health": "ref"}
 
 
 def findly_google_req_id(job_json, key: str = "clientid") -> str:
