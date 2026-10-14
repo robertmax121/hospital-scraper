@@ -178,7 +178,9 @@ class Job:
     # TalentBrew tenants' job_id is TalentBrew's id, 101678237952, while the
     # page shows "Requisition ID 2026-495862", tb_req_id_from_page;
     # AdventHealth's job_id is the Findly URL id, 23744623, while the page
-    # shows "Req #: R-0379591", findly_google_req_id). Not a
+    # shows "Req #: R-0379591", findly_google_req_id; 2026-10-14: UCLA
+    # Health's is the Findly URL id, 23914219, while the page shows
+    # "Job #33102", the same function reading the tenant's key). Not a
     # column: normalize_job pops it into posting_facts["req_id"]. job_id and
     # the (job_id, hospital_system) upsert key stay exactly as they were.
     req_id: str = ""
@@ -7928,22 +7930,34 @@ FINDLY_GOOGLE_PAY_KEY = {"UPMC": "salary", "University Hospitals": "relocation"}
 # locations Findly gives each location row its own ref, the requisition plus
 # a "-N" suffix (job 23999932: ref and JSON-LD identifier.value
 # "R-0407667-1", page "Req #: R-0407667"; 429 of 4,367 listed rows that day),
-# so ref and the JSON-LD identifier are never read. Kept exactly as printed:
-# "R-0379591", the older "R-316207" and the pre-R numeric "315099". Several
-# rows can share one number (one requisition, several locations). Configured
-# per tenant, never guessed, like FINDLY_GOOGLE_PAY_KEY; it travels as
+# so AdventHealth's ref and the JSON-LD identifier are never read. Kept
+# exactly as printed: "R-0379591", the older "R-316207" and the pre-R numeric
+# "315099". Several rows can share one number (one requisition, several
+# locations). Configured per tenant, never guessed, like FINDLY_GOOGLE_PAY_KEY:
+# the tenant names the job key that carries the number. It travels as
 # posting_facts["req_id"] (Job.req_id, normalize_job).
-FINDLY_GOOGLE_REQ_ID = {"AdventHealth"}
+#
+# 2026-10-14 (owner: "ucla health is scraping wrong job id's"): UCLA Health.
+# job_id is the Findly posting id in the uclahealthcareers.org URL
+# (23914219); the page prints "Job #33102" (its <title> and the job card),
+# its Refer A Friend link is EmpRef/?ReqNo=33102, and UCLA's Avature apply
+# page (careers/JobDetail/33188, Avature's own page id) prints "Job # 33102"
+# too. The search payload carries it as job.ref; job.clientid is null on
+# every UCLA row. On 2026-10-14 ref was set, numeric and unique on all 681
+# listed rows, and equal to the page's "Job #" on 15 of 15 pages read.
+FINDLY_GOOGLE_REQ_ID = {"AdventHealth": "clientid", "UCLA Health": "ref"}
 
 
-def findly_google_req_id(job_json) -> str:
+def findly_google_req_id(job_json, key: str = "clientid") -> str:
     """The requisition number on a Findly Google CTS search result's job
-    object, exactly as the job page prints it under "Req #" ("R-0379591"):
-    job.clientid, or "" when it is not a requisition number (_hca_req_value).
-    job.ref is not read: it carries a per-location "-N" suffix."""
+    object, exactly as the job page prints it, read from the tenant's key
+    (FINDLY_GOOGLE_REQ_ID): AdventHealth's clientid ("R-0379591", printed
+    under "Req #"; its ref carries a per-location "-N" suffix and is not
+    read), UCLA Health's ref ("33102", printed as "Job #33102"). "" when the
+    value is not a requisition number (_hca_req_value)."""
     if not isinstance(job_json, dict):
         return ""
-    return _hca_req_value(job_json.get("clientid"))
+    return _hca_req_value(job_json.get(key))
 
 
 async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
@@ -8067,8 +8081,9 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
             ))
             if pay_key:
                 set_field_wage(jobs[-1], field_wage(j.get(pay_key)))
-            if system in FINDLY_GOOGLE_REQ_ID:
-                jobs[-1].req_id = findly_google_req_id(j)
+            req_key = FINDLY_GOOGLE_REQ_ID.get(system)
+            if req_key:
+                jobs[-1].req_id = findly_google_req_id(j, req_key)
 
         pages_fetched += 1
         next_page_token = data.get("nextPageToken")

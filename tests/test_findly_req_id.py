@@ -120,7 +120,7 @@ def test_blank_or_odd_clientid_gives_blank():
 
 
 def test_other_findly_google_tenants_are_untouched(fixture_text):
-    assert scraper.FINDLY_GOOGLE_REQ_ID == {"AdventHealth"}
+    assert scraper.FINDLY_GOOGLE_REQ_ID == {"AdventHealth": "clientid", "UCLA Health": "ref"}
     jobs = _scrape(fixture_text, "UPMC", scraper.FINDLY_GOOGLE_ORGS["UPMC"])
     assert len(jobs) == 5 and all(j.req_id == "" for j in jobs)
 
