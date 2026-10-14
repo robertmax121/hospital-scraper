@@ -74,3 +74,28 @@ def test_scrape_sets_it_and_normalize_sends_it(fixture_text, monkeypatch):
         # the payload body is short of DETAIL_MIN_CHARS here: whether facts are
         # read from it or not, the number goes out
         assert d["posting_facts"]["req_id"] == PRINTED[j.job_id]
+
+
+def test_a_result_with_no_facts_still_sends_the_number(fixture_text, monkeypatch):
+    """A search result whose body gives no facts tonight (no description, or
+    a teaser such as a Meriter body cut to its first line) has null facts.
+    LiquidCompass is on REQ_ID_ONLY_PLATFORMS, so the {"req_id"}-only object
+    goes out with REQ_ID_ONLY_FACTS off; the live trigger merges it into the
+    stored facts. Without the platform on that set the row would send null
+    (the second half), so dropping it from the set at a merge fails here."""
+    monkeypatch.setattr(scraper, "REQ_ID_ONLY_FACTS", False)
+    scraper.set_known_bodies([])
+    by_id = {str(r["id"]): r for r in _results(fixture_text)}
+    rows = []
+    for jid, desc in (("52810916", ""), ("52810673", "16903BR")):
+        j = scraper._liquidcompass_job(dict(by_id[jid], description=desc), "UnityPoint Health", "IA")
+        assert scraper.posting_facts_for(j.description, j.job_type, j.title) is None
+        d = scraper.normalize_job(j)
+        assert d["posting_facts"] == {"req_id": PRINTED[jid]}
+        assert "req_id" not in d and d["job_id"] == jid and d["url"] == by_id[jid]["detail_url"]
+        rows.append(j)
+    monkeypatch.setattr(scraper, "REQ_ID_ONLY_PLATFORMS",
+                        scraper.REQ_ID_ONLY_PLATFORMS - {"LiquidCompass"})
+    for j in rows:
+        j.description = "" if j.job_id == "52810916" else "16903BR"
+        assert scraper.normalize_job(j)["posting_facts"] is None
