@@ -1,0 +1,43 @@
+{
+ "current_page": 1,
+ "per_page": 5,
+ "total_entries": 812,
+ "entries": [
+  {
+   "id": "18360469",
+   "talemetry_job_id": "18360469",
+   "permalink": "ct-technologist-every-other-weekend-off-bellingham-wa",
+   "title": "CT Technologist | Every Other Weekend Off | Bellingham, WA",
+   "location": {
+    "street": "2901 Squalicum Pkwy",
+    "locality": "Bellingham",
+    "region_abbr": "WA",
+    "postal_code": "98225-1851",
+    "country": "United States",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Washington",
+    "name": "St. Joseph Medical Center"
+   }
+  },
+  {
+   "id": "18359324",
+   "talemetry_job_id": "18359324",
+   "permalink": "physician-general-surgeon",
+   "title": "Physician - General Surgeon",
+   "location": {
+    "street": "330 9th St",
+    "locality": "Florence",
+    "region_abbr": "OR",
+    "postal_code": "97439-9470",
+    "country": "United States",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Oregon",
+    "name": "General Surgery"
+   }
+  }
+ ]
+}

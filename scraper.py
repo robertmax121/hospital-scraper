@@ -180,7 +180,14 @@ class Job:
     # AdventHealth's job_id is the Findly URL id, 23744623, while the page
     # shows "Req #: R-0379591", findly_google_req_id; 2026-10-14: UCLA
     # Health's is the Findly URL id, 23914219, while the page shows
-    # "Job #33102", the same function reading the tenant's key). Not a
+    # "Job #33102", the same function reading the tenant's key; 2026-10-14:
+    # the classic iCIMS portals' is the iCIMS URL id, 276582, while the card
+    # and page show "ID 2026-276582", icims_req_id; the Jobvite Engage
+    # sites' is the Talemetry URL id, 18352345, while the page shows
+    # "Job ID: 348784", jobvite_req_id_from_page; the HCTS portals' is the
+    # page id, 2205205, while the card shows "Req #: 78905", hcts_req_id;
+    # SelectMinds' is the job_list id, 29195, while a /latest-jobs card
+    # shows "Requisition #" 83126). Not a
     # column: normalize_job pops it into posting_facts["req_id"]. job_id and
     # the (job_id, hospital_system) upsert key stay exactly as they were.
     req_id: str = ""
@@ -1369,6 +1376,24 @@ KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
 _KNOWN_BODIES: dict = {}
 _KNOWN_FACTS_V: dict = {}         # same keys -> posting_facts "v" of the stored row (None = unstamped)
 _KNOWN_FACTS_H: dict = {}         # (push 10) same keys, every platform -> posting_facts "h" of the stored row
+_KNOWN_HAS_REQ: set = set()       # (2026-10-14) same keys: REQ_ID_PAGE_PLATFORMS bodies whose stored facts hold a req_id
+
+# ── Job numbers read only from the job page (2026-10-14) ────────────────────
+# A Jobvite Engage posting prints the employer's job number only on its job
+# page (jobvite_req_id_from_page, read in the detail pass that already
+# fetches it). Jobvite is not a known-body platform, so its detail pass sees
+# every row as a candidate every night, transparency states first, and its
+# 1,500 fetches went to the same rows night after night: on 10-14 Penn NJ
+# held a body on 203 of 216 rows and PeaceHealth WA on 404 of 422, while
+# Penn PA held one on 391 of 1,555 and PeaceHealth OR/AK on 76 of 378, so
+# those rows would have waited months for their number. On these platforms
+# a row whose stored row already holds a body and a req_id (the known-body
+# load reads posting_facts->>'req_id' as rq) goes to the back of its pass's
+# line, behind every row still missing one or the other; the order inside
+# each group is unchanged. Nothing is skipped and no fetch is added: the
+# pass draws the same budget, and complete rows are read again with
+# whatever is left, as before.
+REQ_ID_PAGE_PLATFORMS = frozenset({"Jobvite"})
 
 # ── A known body is not known forever (2026-09-24, review of push 2) ─────────
 # Skipping every stored body left three holes: (1) facts, pay and type are
@@ -1502,9 +1527,13 @@ def set_known_bodies(rows) -> int:
     2026-10-14: a row on REQ_REREAD_PLATFORMS that carries the rq key
     (posting_facts->>'req_id') with no value joins _KNOWN_NOREQ; a row
     without the key does not (requisition-number re-reads).
+    2026-10-14: a row on REQ_ID_PAGE_PLATFORMS whose rq (posting_facts->>
+    'req_id') holds a value goes to _KNOWN_HAS_REQ, which sends it to the
+    back of its detail pass's line (see "Job numbers read only from the job
+    page").
     Returns the detail-pass map's size, as before."""
-    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H, _KNOWN_NOREQ
-    kb, fv, unpriced, fh, noreq = {}, {}, set(), {}, set()
+    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H, _KNOWN_NOREQ, _KNOWN_HAS_REQ
+    kb, fv, unpriced, fh, noreq, has_req = {}, {}, set(), {}, set(), set()
     for r in rows or []:
         try:
             n = int(r.get("desc_len") or 0)
@@ -1517,6 +1546,8 @@ def set_known_bodies(rows) -> int:
             if (isinstance(h, str) and h and _facts_version(r.get("fv")) == FACTS_VERSION
                     and n >= fh.get(k, (0, ""))[0]):
                 fh[k] = (n, h)
+            if r.get("ats_platform") in REQ_ID_PAGE_PLATFORMS and str(r.get("rq") or "").strip():
+                has_req.add(k)
             if "ats_platform" in r and r.get("ats_platform") not in KNOWN_BODY_PLATFORMS:
                 continue
             if n >= kb.get(k, 0):
@@ -1534,6 +1565,7 @@ def set_known_bodies(rows) -> int:
     _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED = kb, fv, unpriced
     _KNOWN_FACTS_H = {k: v[1] for k, v in fh.items()}
     _KNOWN_NOREQ = noreq
+    _KNOWN_HAS_REQ = has_req
     return len(kb)
 
 
@@ -1561,7 +1593,8 @@ def load_known_bodies() -> int:
             # KNOWN_BODY_PLATFORMS). The page walks the same id range as
             # before; only more of its rows come back.
             # 2026-10-14: rq (posting_facts->>req_id) feeds the
-            # requisition-number re-reads (_KNOWN_NOREQ); same rows, one more column.
+            # requisition-number re-reads (_KNOWN_NOREQ) and the job-page
+            # order (_KNOWN_HAS_REQ, REQ_ID_PAGE_PLATFORMS); same rows, one more column.
             u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,ats_platform,desc_len,wage_min,"
                  f"fv:posting_facts-%3E%3Ev,fh:posting_facts-%3E%3Eh,rq:posting_facts-%3E%3Ereq_id"
                  f"&is_active=is.true&desc_len=gte.200"
@@ -1584,7 +1617,8 @@ def load_known_bodies() -> int:
         logger.warning(f"Known bodies: load stopped after {len(rows):,} rows ({e}); the rest are fetched as before")
     n = set_known_bodies(rows)
     logger.info(f"Known bodies: {n:,} active rows on {', '.join(KNOWN_BODY_PLATFORMS)} already hold a body; "
-                f"{len(_KNOWN_FACTS_H):,} of {len(rows):,} active bodies carry a facts hash (push 10)")
+                f"{len(_KNOWN_FACTS_H):,} of {len(rows):,} active bodies carry a facts hash (push 10); "
+                f"{len(_KNOWN_HAS_REQ):,} on {', '.join(sorted(REQ_ID_PAGE_PLATFORMS))} already hold a body and a req_id")
     return n
 
 
@@ -3106,7 +3140,9 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     stored bodies of a FORCED_REFRESH tenant on their slot ("force", push 10),
     then stored bodies whose requisition number is missing ("req", 2026-10-14),
     then unpriced stored bodies due for their pay field ("pay", push 9), then
-    bodies cut at the old 8,000 cap. Each re-read, forced, req, pay or cut row is
+    bodies cut at the old 8,000 cap, then (2026-10-14) rows of
+    REQ_ID_PAGE_PLATFORMS whose stored row already holds a body and a
+    req_id (_KNOWN_HAS_REQ). Each re-read, forced, req, pay or cut row is
     appended to `held` as (item, list text, kind); the caller hands `held` to
     _settle_held after fetching, so a row no fetch refilled keeps its stored
     body. Without `held` every stored body is skipped, as before."""
@@ -3141,6 +3177,13 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
         # 2026-10-14: "req" (requisition-number re-reads) sits between the
         # forced re-reads and the pay re-reads.
         tier[id(it)] = {"cut": 4, "pay": 3, "req": 2, "force": 1}.get(kind, 0)
+        if (kind is None and getattr(j, "ats_platform", "") in REQ_ID_PAGE_PLATFORMS
+                and (canon, str(j.job_id)) in _KNOWN_HAS_REQ):
+            # 2026-10-14: body and job number already stored; behind the rows
+            # still missing either (see "Job numbers read only from the job page").
+            # Integration 2026-10-14: tier 5, after the cut bodies (tier 4 since
+            # the "req" kind joined); not a held kind, so it is never settled.
+            tier[id(it)] = 5
         cands.append(it)
     random.shuffle(cands)
     cands.sort(key=lambda it: (tier[id(it)], _detail_rank(job_of(it))))
@@ -4266,7 +4309,10 @@ def _hcts_posting(html: str) -> tuple[str, dict]:
 
 
 async def _hcts_detail(session, job) -> bool:
-    body, fields = _hcts_posting(await _fetch_html(session, job.url, timeout=30))
+    html = await _fetch_html(session, job.url, timeout=30)
+    if not job.req_id:                     # 2026-10-14: the card gave none
+        job.req_id = hcts_req_id(html, job.job_id)
+    body, fields = _hcts_posting(html)
     sched = fields.get("Schedule - Shift - Hours") or fields.get("Schedule") or ""
     if body and sched and "Schedule:" not in body:
         body = f"{body}\n\nSchedule: {sched}"
@@ -7086,6 +7132,37 @@ ICIMS_CITY_FACILITY = {
     },
 }
 
+# 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
+# a classic portal prints. job_id is the iCIMS id in the URL (/jobs/276582/),
+# while the card and the job page show the portal's own number: Prime "ID
+# 2026-276582", Covenant "ID 4625780", Legacy "Requisition ID 26-49582",
+# AHMC "Requisition ID req28956", Community Medical "Requisition ID
+# 2026-R6612", Tuality "Req #", Kettering "Job ID". Every card carries it as
+# one <dt>/<dd> pair of its <dl class="iCIMS_JobHeaderGroup"> (the fields
+# _parse_icims_cards already reads); Catholic Health (Long Island),
+# Dartmouth and Blythedale print it in the card header instead ("<span
+# class="sr-only field-label">ID</span><span> 2026-75455</span>"). The job
+# page header carries the same pair (_icims_header), read by the detail pass
+# for a row whose card gave none. Select Medical's "Job ID" and Emory's "Job
+# Number" equal job_id, so those rows get none (nothing to correct). Every
+# value seen on 2026-10-14 (20 portals, 2 postings each, card = page) fits
+# _hca_req_value. Travels as posting_facts["req_id"] (REQ_ID_ONLY_PLATFORMS).
+_ICIMS_REQ_LABELS = ("requisition id", "req #", "job number", "job id", "id")
+_ICIMS_ID_SPAN_RE = re.compile(r'field-label">\s*ID\s*</span>\s*<span[^>]*>(.*?)</span>', re.DOTALL)
+
+
+def icims_req_id(fields: dict, html: str, job_id) -> str:
+    """The requisition number on an iCIMS card or job page: the labelled
+    header pair in `fields` ({label lowercased: value}), else the header's
+    "ID" span in `html`. "" when absent, not a requisition number
+    (_hca_req_value), or the same as job_id."""
+    raw = next((fields[k] for k in _ICIMS_REQ_LABELS if (fields or {}).get(k)), "")
+    if not raw:
+        m = _ICIMS_ID_SPAN_RE.search(html or "")
+        raw = htmllib.unescape(re.sub(r"<[^>]+>", " ", m.group(1))) if m else ""
+    got = _hca_req_value(raw)
+    return got if got != str(job_id or "").strip() else ""
+
 
 def _parse_icims_cards(text: str, system: str, domain: str) -> list[Job]:
     import html as _html  # card text carries entities (&rsquo;) that strip_html leaves in place
@@ -7127,6 +7204,7 @@ def _parse_icims_cards(text: str, system: str, domain: str) -> list[Job]:
             posted_date=fields.get("posted date", "")[:10],
             description=_html.unescape(strip_html(d.group(1))).strip() if d else "",
             ats_platform="iCIMS",
+            req_id=icims_req_id(fields, card, m.group(2)),
         ))
     return jobs
 
@@ -7374,7 +7452,12 @@ def _icims_detail_url(url: str) -> str:
 
 def _icims_apply_page(job, html: str) -> bool:
     """iCIMS job page (in_iframe=1) -> Job: the JSON-LD body, type, date and
-    pay (_apply_posting), and a blank state from the posting's address."""
+    pay (_apply_posting), and a blank state from the posting's address.
+    2026-10-14: the requisition number from the header (icims_req_id) when
+    the card gave none; a search page (an expired posting redirects to one)
+    gives none."""
+    if not job.req_id and html and "iCIMS_JobCardItem" not in html:
+        job.req_id = icims_req_id(_icims_header(html), html, job.job_id)
     posting = _jobposting_from_html(html)
     if not posting:
         return False
@@ -11276,6 +11359,12 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
             city=city, state=st, location=f"{city}, {st}".strip(", ") if st else loc,
             specialty=category, job_type="", url=url, job_id=sid,
             posted_date="", description=teaser, ats_platform="SelectMinds",
+            # 2026-10-14: the card's "Requisition #" (job_external_id), the
+            # number the job page shows; job_id is the job_list id. Only the
+            # /latest-jobs cards print it (Main Line); the /jobs/search pages
+            # the crawl reads since fix 11 do not, and the job page is the
+            # only other place it is printed (SelectMinds has no detail pass).
+            req_id="" if _hca_req_value(req_no) == sid else _hca_req_value(req_no),
         ))
         if req_no and jobs[-1].description:
             jobs[-1].description = f"{jobs[-1].description}\n\nRequisition #: {req_no}"
@@ -15650,9 +15739,37 @@ def _talemetry_pay(html: str):
                                    for k, v in _TALEMETRY_HDR_RX.findall(html or "")])
 
 
+# 2026-10-14 (owner: "Yeah we need to fix those now"): the number a Jobvite
+# Engage posting shows. job_id is the Talemetry id in the URL
+# (/jobs/18352345-...), while the page header prints the employer's own
+# number, the one its recruiters look up. Each site prints the line its own
+# way: Penn Medicine "<strong>Job ID:</strong> 347741<br />", Asante
+# "<strong>Req #:</strong> 27555<br", UCHealth "<strong>Job ID</strong>:
+# 435091 <br>", PeaceHealth and LifeBridge a plain "Job ID: 143880<br>". The
+# JSON-LD identifier is not used: UCHealth's reads "1000-INFOR-435091" and
+# PeaceHealth's "PH-INFOR-143880", not what the page shows. search.json
+# entries carry only id, permalink, title and location, so the number is read
+# where the detail pass already fetches the page (TALEMETRY_DESC_BUDGET); a
+# page that prints two different numbers gives none. Values seen on
+# 2026-10-14 (5 sites, 2 postings each) are digits and fit _hca_req_value.
+_JOBVITE_REQ_RX = re.compile(r"\b(?:Job\s+ID|Req\s*#)\s*(?:</strong>\s*:|:\s*</strong>|:)\s*([^<]{0,80}?)\s*<br", re.I)
+
+
+def jobvite_req_id_from_page(page_html: str, job_id: str = "") -> str:
+    """The "Job ID:" / "Req #:" header value of a Jobvite Engage job page,
+    exactly as printed; "" when the page has none, two that disagree, or one
+    equal to job_id."""
+    got = {_hca_req_value(_html_unescape(v)) for v in _JOBVITE_REQ_RX.findall(page_html or "")}
+    got.discard("")
+    one = got.pop() if len(got) == 1 else ""
+    return one if one != str(job_id or "").strip() else ""
+
+
 async def _talemetry_detail(session, job) -> bool:
     html = await _curl_html(job.url, TALEMETRY_IMPERSONATE)
     set_field_wage(job, _talemetry_pay(html))
+    if not job.req_id:
+        job.req_id = jobvite_req_id_from_page(html, job.job_id)
     posting = _talemetry_posting(html)
     return _apply_posting(job, _posting_with_requirements(posting)) if posting else False
 
@@ -15848,6 +15965,31 @@ def _hcts_field(seg: str, label: str) -> str:
     return _html_unescape(m.group(1)).strip() if m else ""
 
 
+# 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
+# an HCTS portal prints. job_id is the page id in the URL (/jobs/2205205-...),
+# while every list card shows the portal's own "Req #", three ways: Samaritan
+# (both portals) an icon titled "Req #" and the text "Req #: 78905"; UMC El
+# Paso an icon titled "Req #" and the bare number; East Alabama no icon,
+# "<span class="text-muted">Req #:</span> &nbsp;30288". The job page's
+# sidebar prints the same value the same way (read by the detail pass for a
+# row whose card gave none). On 2026-10-14 every card of each portal's first
+# page carried exactly one value and two postings per portal matched their
+# pages. Digits only, so _hca_req_value fits.
+_HCTS_REQ_TEXT_RX = re.compile(
+    r"Req\s*#\s*:\s*(?:</span>\s*)?(?:&nbsp;|\s)*([A-Za-z0-9][A-Za-z0-9-]{0,23})(?![A-Za-z0-9-])", re.I)
+
+
+def hcts_req_id(seg: str, job_id: str = "") -> str:
+    """The "Req #" of one HCTS list card (or a job page): the icon-titled
+    field, prefix dropped, and every visible "Req #:" line; "" when there
+    is none, two that disagree, or one equal to job_id."""
+    got = {_hca_req_value(re.sub(r"^\s*Req\s*#\s*:\s*", "", _hcts_field(seg or "", "Req #"), flags=re.I))}
+    got.update(_hca_req_value(v) for v in _HCTS_REQ_TEXT_RX.findall(seg or ""))
+    got.discard("")
+    one = got.pop() if len(got) == 1 else ""
+    return one if one != str(job_id or "").strip() else ""
+
+
 def _parse_hcts_page(text: str, system: str, sub: str, default_state: str) -> list[Job]:
     jobs: list[Job] = []
     starts = [m.start() for m in _HCTS_ITEM_RE.finditer(text)]
@@ -15875,7 +16017,7 @@ def _parse_hcts_page(text: str, system: str, sub: str, default_state: str) -> li
             city=city, state=(st or default_state).upper(),
             location=f"{city}, {(st or default_state).upper()}".strip(", "),
             specialty="", job_type="", url=url, job_id=jid, posted_date=posted, description="",
-            ats_platform="HCTS",
+            ats_platform="HCTS", req_id=hcts_req_id(seg, jid),
         ))
     return jobs
 
@@ -17567,7 +17709,27 @@ REQ_ID_ONLY_FACTS = os.getenv("REQ_ID_ONLY_FACTS", "0") == "1"
 # while a stored body (_keep_stored_body) or a teaser with no facts sends
 # null facts. On 10-14 UHG had the number on 680 of 5,446 rows for that
 # reason. Every other platform is unchanged.
-REQ_ID_ONLY_PLATFORMS = frozenset({"TalentBrew", "WPJobBoard", "Findly-Google", "LiquidCompass"})
+# (group 1: TalentBrew, WPJobBoard, Findly-Google, LiquidCompass)
+# 2026-10-14: that merge is live (sql/113, applied 2026-10-12; read back with
+# pg_get_functiondef on 2026-10-14), so a row of these platforms whose facts
+# are null tonight sends {"req_id": ...} without the global switch. On most
+# nights most of their rows have null facts: a classic iCIMS card's teaser or
+# an HCTS card's blank is shorter than the stored body, so _keep_stored_body
+# sends a blank and posting_facts goes out null; a SelectMinds teaser often
+# states no facts; a Jobvite page can show its number while its JSON-LD gives
+# no body. The
+# trigger merges the object into the stored facts (old || new) and keeps a
+# stored req_id over a later object built without one; trg_zy_req_id_sync
+# copies it into hospital_jobs.req_id. Other platforms keep REQ_ID_ONLY_FACTS.
+# (group 2: iCIMS, Jobvite, HCTS, SelectMinds)
+# Integration 2026-10-14 (release/reqid-18-1014): ONE set, the union of every
+# group's platforms; normalize_job reads only this name.
+REQ_ID_ONLY_PLATFORMS = frozenset({
+    # group 1 (scraper/reqid-g1-1014)
+    "TalentBrew", "WPJobBoard", "Findly-Google", "LiquidCompass",
+    # group 2 (scraper/reqid-g2-1014)
+    "iCIMS", "Jobvite", "HCTS", "SelectMinds",
+})
 
 
 def _hca_total(page_html: str) -> int | None:
@@ -21358,6 +21520,9 @@ def normalize_job(j: Job) -> dict:
     # only req_id would wipe the stored certs, education and shift. That
     # object is sent only with REQ_ID_ONLY_FACTS=1, after the owner applies
     # sql/hca_req_id_trigger.sql, which merges it into the stored facts.
+    # 2026-10-14: a row on REQ_ID_ONLY_PLATFORMS sends that object without
+    # the switch (the merge is live), so its number lands on the night its
+    # list or page shows it, whether or not a body came with it.
     if h is not None and d["posting_facts"] is not None:
         d["posting_facts"]["h"] = h
     if req_id:

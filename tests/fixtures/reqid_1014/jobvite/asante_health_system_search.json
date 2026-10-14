@@ -1,0 +1,43 @@
+{
+ "current_page": 1,
+ "per_page": 5,
+ "total_entries": 258,
+ "entries": [
+  {
+   "id": "18360384",
+   "talemetry_job_id": "18360384",
+   "permalink": "medical-assistant-certified-slash-non-certified",
+   "title": "Medical Assistant - Certified/Non-Certified",
+   "location": {
+    "street": "537 SW Union Ave",
+    "locality": "Grants Pass",
+    "region_abbr": "OR",
+    "postal_code": "97527",
+    "country": "United States",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Oregon",
+    "name": "APP Asante Center OP Health"
+   }
+  },
+  {
+   "id": "18230356",
+   "talemetry_job_id": "18230356",
+   "permalink": "patient-safety-monitor-arrmc-resource-pool",
+   "title": "Patient Safety Monitor ARRMC (Resource Pool)",
+   "location": {
+    "street": "2825 E Barnett Rd",
+    "locality": "Medford",
+    "region_abbr": "OR",
+    "postal_code": "97504",
+    "country": "United States",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Oregon",
+    "name": "Asante Rogue Regnl Med Center"
+   }
+  }
+ ]
+}

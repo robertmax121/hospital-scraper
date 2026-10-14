@@ -1,0 +1,43 @@
+{
+ "current_page": 1,
+ "per_page": 5,
+ "total_entries": 575,
+ "entries": [
+  {
+   "id": "18360846",
+   "talemetry_job_id": "18360846",
+   "permalink": "equipment-tech",
+   "title": "EQUIPMENT TECH",
+   "location": {
+    "street": "5401 Old Court Road",
+    "locality": "Randallstown",
+    "region_abbr": "MD",
+    "postal_code": "21133",
+    "country": "\u00c9tats-Unis",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Maryland",
+    "name": null
+   }
+  },
+  {
+   "id": "18360847",
+   "talemetry_job_id": "18360847",
+   "permalink": "financial-coordinator",
+   "title": "Financial Coordinator",
+   "location": {
+    "street": "Remote Location",
+    "locality": "Owings Mills",
+    "region_abbr": "MD",
+    "postal_code": "21117",
+    "country": "\u00c9tats-Unis",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Maryland",
+    "name": null
+   }
+  }
+ ]
+}
