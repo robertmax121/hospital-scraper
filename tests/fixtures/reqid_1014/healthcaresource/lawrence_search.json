@@ -1,0 +1,425 @@
+{
+ "hits": {
+  "total": {
+   "value": 3,
+   "relation": "eq"
+  },
+  "hits": [
+   {
+    "_index": "jobpostings_v1",
+    "_id": "79_16735",
+    "_score": null,
+    "_routing": "79",
+    "_source": {
+     "datePosted": "2026-10-13T00:00:00Z",
+     "documentId": "79_16735",
+     "hiringOrganization": {
+      "legalName": "Merrimack Health",
+      "name": "Merrimack Health",
+      "subOrganization": {
+       "legalName": "Methuen Hospital",
+       "name": "Methuen Hospital",
+       "subOrganization": {
+        "legalName": "Methuen Hospital St. Mary's ",
+        "name": "Methuen Hospital St. Mary's "
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "Methuen",
+       "addressRegion": "MA",
+       "postalCode": "01844",
+       "streetAddress": "70 East Street",
+       "addressLocalityRegion": "Methuen, MA"
+      },
+      "geoLocation": {
+       "lat": 42.727525,
+       "lon": -71.167969
+      }
+     },
+     "lastIndexedDate": "2026-10-13T11:27:27.1378865Z",
+     "name": "Nursing Assistant",
+     "occupationalCategory": "Nursing",
+     "title": "Nursing Assistant",
+     "userArea": {
+      "active": true,
+      "requisitionID": 20753,
+      "requisitionNumber": "31844",
+      "jobCode": "NUA103",
+      "shift": "3:00pm - 11:30pm",
+      "formID": 38,
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       56,
+       57,
+       95
+      ],
+      "payGrade": "",
+      "salaryRange": "$17.07 -  $25.37",
+      "fTE": "0.8",
+      "customJobPostingFieldValues": {
+       "-1813165834": [
+        {
+         "internalNameID": -1813165834,
+         "metaTypeID": 10,
+         "metaValueID": 52674,
+         "name": "Salary Range",
+         "value": "$17.07 -  $25.37",
+         "sequence": 18
+        }
+       ],
+       "-2073073153": [
+        {
+         "internalNameID": -2073073153,
+         "metaTypeID": 50231,
+         "metaValueID": 52773,
+         "name": "Pay Type",
+         "value": "Hourly",
+         "sequence": 1
+        }
+       ]
+      },
+      "jobSummaryDisplay": "<p><strong>Position Summary:</strong></p>\r\n\r\n<p>Assists patients with activities of daily living, provides basic nursing care to patients and assists in maintenance of a safe and clean environment under the direction and supervision of the Registered Nurse in charge of the team and/or unit.&nbsp;</p>\r\n\r\n<p><strong>Education and Experience:</strong></p>\r\n\r\n<ul role=\"list\">\r\n\t<li aria-setsize=\"-1\" data-aria-level=\"1\" data-aria-posinset=\"1\" data-font=\"\" data-leveltext=\"%1.\" data-list-defn-props=\"{&quot;335552541&quot;:0,&quot;335559685&quot;:720,&quot;335559991&quot;:180,&quot;469769242&quot;:[65533,1],&quot;469777803&quot;:&quot;right&quot;,&quot;469777804&quot;:&quot;%1.&quot;,&quot;469777815&quot;:&quot;hybridMultilevel&quot;}\" data-listid=\"1\" role=\"listitem\">\r\n\t<p paraeid=\"{9abdf7cd-2093-4115-9a55-e06cc3710eea}{239}\" paraid=\"871307911\">Education: High School Diploma, GED or equivalent&nbsp;</p>\r\n\t</li>\r\n\t<li aria-setsize=\"-1\" data-aria-level=\"1\" data-aria-posinset=\"2\" data-font=\"\" data-leveltext=\"%1.\" data-list-defn-props=\"{&quot;335552541&quot;:0,&quot;335559685&quot;:720,&quot;335559991&quot;:180,&quot;469769242&quot;:[65533,1],&quot;469777803&quot;:&quot;right&quot;,&quot;469777804&quot;:&quot;%1.&quot;,&quot;469777815&quot;:&quot;hybridMultilevel&quot;}\" data-listid=\"1\" role=\"listitem\">\r\n\t<p paraeid=\"{9abdf7cd-2093-4115-9a55-e06cc3710eea}{247}\" paraid=\"1296140421\">Experience: Requires previous Nursing Assistant experience or for nursing students, one clinical rotation completed.&nbsp;</p>\r\n\t</li>\r\n\t<li aria-setsize=\"-1\" data-aria-level=\"1\" data-aria-posinset=\"3\" data-font=\"\" data-leveltext=\"%1.\" data-list-defn-props=\"{&quot;335552541&quot;:0,&quot;335559685&quot;:720,&quot;335559991&quot;:180,&quot;469769242&quot;:[65533,1],&quot;469777803&quot;:&quot;right&quot;,&quot;469777804&quot;:&quot;%1.&quot;,&quot;469777815&quot;:&quot;hybridMultilevel&quot;}\" data-listid=\"1\" role=\"listitem\">\r\n\t<p paraeid=\"{adca4d55-a751-4a52-897f-a80ebd2a52cb}{4}\" paraid=\"874633325\">Certification/Licensure: Current BLS required, Nursing Assistant or Certified Nursing Assistant License preferred.&nbsp;</p>\r\n\t</li>\r\n</ul>\r\n",
+      "businessEntityID": 253,
+      "jobPostingID": 16735,
+      "bELevel0": "Merrimack Health",
+      "bELevel1": "Methuen Hospital",
+      "bELevel2": "Methuen Hospital St. Mary's ",
+      "bELevel1DisplayName": "Methuen Hospital",
+      "bELevel2DisplayName": "Methuen Hospital St. Mary's ",
+      "fullyQualifiedBusinessEntityName": "Merrimack Health/Methuen Hospital/Methuen Hospital St. Mary's ",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 253,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 359,
+        "name": "Methuen Hospital St. Mary's ",
+        "alternateDisplayName": "Methuen Hospital St. Mary's ",
+        "path": "Merrimack Health^Methuen Hospital^Methuen Hospital St. Mary's ",
+        "code": "06.81505",
+        "streetAddress1": "70 East Street",
+        "city": "Methuen",
+        "state": "MA",
+        "zip": "01844"
+       },
+       {
+        "active": true,
+        "businessEntityID": 359,
+        "businessEntityTypeID": 1,
+        "level": 1,
+        "parentID": -1,
+        "name": "Methuen Hospital",
+        "alternateDisplayName": "Methuen Hospital",
+        "path": "Merrimack Health^Methuen Hospital",
+        "streetAddress1": "70 East Street",
+        "city": "Methuen",
+        "state": "MA",
+        "zip": "01844"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "Merrimack Health",
+        "alternateDisplayName": "Merrimack Health",
+        "path": "Merrimack Health"
+       }
+      ],
+      "clientExternalIdentifier": "lawrence",
+      "jobPostingModifiedDate": "2026-10-13T11:27:22Z",
+      "requisitionModifiedDate": "2026-10-13T11:27:22Z",
+      "jobTemplateInstanceModifiedDate": "2026-10-13T11:24:37Z",
+      "jobPostingLocationModifiedDate": "2026-10-13T11:27:22Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 79,
+      "clientInternalIdentifier": "1063",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "clientId": "79"
+    },
+    "sort": [
+     1791849600000,
+     450757
+    ]
+   },
+   {
+    "_index": "jobpostings_v1",
+    "_id": "79_16736",
+    "_score": null,
+    "_routing": "79",
+    "_source": {
+     "datePosted": "2026-10-13T00:00:00Z",
+     "documentId": "79_16736",
+     "hiringOrganization": {
+      "legalName": "Merrimack Health",
+      "name": "Merrimack Health",
+      "subOrganization": {
+       "legalName": "Methuen Hospital",
+       "name": "Methuen Hospital",
+       "subOrganization": {
+        "legalName": "Methuen Hospital St. Mary's ",
+        "name": "Methuen Hospital St. Mary's "
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "Methuen",
+       "addressRegion": "MA",
+       "postalCode": "01844",
+       "streetAddress": "70 East Street",
+       "addressLocalityRegion": "Methuen, MA"
+      },
+      "geoLocation": {
+       "lat": 42.727525,
+       "lon": -71.167969
+      }
+     },
+     "lastIndexedDate": "2026-10-13T11:28:43.2949978Z",
+     "name": "Nursing Assistant",
+     "occupationalCategory": "Nursing",
+     "title": "Nursing Assistant",
+     "userArea": {
+      "active": true,
+      "requisitionID": 20754,
+      "requisitionNumber": "31845",
+      "jobCode": "NUA103",
+      "shift": "11:00pm -7:00am",
+      "formID": 38,
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       56,
+       57,
+       95
+      ],
+      "payGrade": "",
+      "salaryRange": "$17.07 -  $25.37",
+      "fTE": "0.6",
+      "customJobPostingFieldValues": {
+       "-1813165834": [
+        {
+         "internalNameID": -1813165834,
+         "metaTypeID": 10,
+         "metaValueID": 52674,
+         "name": "Salary Range",
+         "value": "$17.07 -  $25.37",
+         "sequence": 18
+        }
+       ],
+       "-2073073153": [
+        {
+         "internalNameID": -2073073153,
+         "metaTypeID": 50231,
+         "metaValueID": 52773,
+         "name": "Pay Type",
+         "value": "Hourly",
+         "sequence": 1
+        }
+       ]
+      },
+      "jobSummaryDisplay": "<p><strong>Position Summary:</strong></p>\r\n\r\n<p>Assists patients with activities of daily living, provides basic nursing care to patients and assists in maintenance of a safe and clean environment under the direction and supervision of the Registered Nurse in charge of the team and/or unit.&nbsp;</p>\r\n\r\n<p><strong>Education and Experience:</strong></p>\r\n\r\n<ul role=\"list\">\r\n\t<li aria-setsize=\"-1\" data-aria-level=\"1\" data-aria-posinset=\"1\" data-font=\"\" data-leveltext=\"%1.\" data-list-defn-props=\"{&quot;335552541&quot;:0,&quot;335559685&quot;:720,&quot;335559991&quot;:180,&quot;469769242&quot;:[65533,1],&quot;469777803&quot;:&quot;right&quot;,&quot;469777804&quot;:&quot;%1.&quot;,&quot;469777815&quot;:&quot;hybridMultilevel&quot;}\" data-listid=\"1\" role=\"listitem\">\r\n\t<p paraeid=\"{9abdf7cd-2093-4115-9a55-e06cc3710eea}{239}\" paraid=\"871307911\">Education: High School Diploma, GED or equivalent&nbsp;</p>\r\n\t</li>\r\n\t<li aria-setsize=\"-1\" data-aria-level=\"1\" data-aria-posinset=\"2\" data-font=\"\" data-leveltext=\"%1.\" data-list-defn-props=\"{&quot;335552541&quot;:0,&quot;335559685&quot;:720,&quot;335559991&quot;:180,&quot;469769242&quot;:[65533,1],&quot;469777803&quot;:&quot;right&quot;,&quot;469777804&quot;:&quot;%1.&quot;,&quot;469777815&quot;:&quot;hybridMultilevel&quot;}\" data-listid=\"1\" role=\"listitem\">\r\n\t<p paraeid=\"{9abdf7cd-2093-4115-9a55-e06cc3710eea}{247}\" paraid=\"1296140421\">Experience: Requires previous Nursing Assistant experience or for nursing students, one clinical rotation completed.&nbsp;</p>\r\n\t</li>\r\n\t<li aria-setsize=\"-1\" data-aria-level=\"1\" data-aria-posinset=\"3\" data-font=\"\" data-leveltext=\"%1.\" data-list-defn-props=\"{&quot;335552541&quot;:0,&quot;335559685&quot;:720,&quot;335559991&quot;:180,&quot;469769242&quot;:[65533,1],&quot;469777803&quot;:&quot;right&quot;,&quot;469777804&quot;:&quot;%1.&quot;,&quot;469777815&quot;:&quot;hybridMultilevel&quot;}\" data-listid=\"1\" role=\"listitem\">\r\n\t<p paraeid=\"{adca4d55-a751-4a52-897f-a80ebd2a52cb}{4}\" paraid=\"874633325\">Certification/Licensure: Current BLS required, Nursing Assistant or Certified Nursing Assistant License preferred.&nbsp;</p>\r\n\t</li>\r\n</ul>\r\n",
+      "businessEntityID": 253,
+      "jobPostingID": 16736,
+      "bELevel0": "Merrimack Health",
+      "bELevel1": "Methuen Hospital",
+      "bELevel2": "Methuen Hospital St. Mary's ",
+      "bELevel1DisplayName": "Methuen Hospital",
+      "bELevel2DisplayName": "Methuen Hospital St. Mary's ",
+      "fullyQualifiedBusinessEntityName": "Merrimack Health/Methuen Hospital/Methuen Hospital St. Mary's ",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 253,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 359,
+        "name": "Methuen Hospital St. Mary's ",
+        "alternateDisplayName": "Methuen Hospital St. Mary's ",
+        "path": "Merrimack Health^Methuen Hospital^Methuen Hospital St. Mary's ",
+        "code": "06.81505",
+        "streetAddress1": "70 East Street",
+        "city": "Methuen",
+        "state": "MA",
+        "zip": "01844"
+       },
+       {
+        "active": true,
+        "businessEntityID": 359,
+        "businessEntityTypeID": 1,
+        "level": 1,
+        "parentID": -1,
+        "name": "Methuen Hospital",
+        "alternateDisplayName": "Methuen Hospital",
+        "path": "Merrimack Health^Methuen Hospital",
+        "streetAddress1": "70 East Street",
+        "city": "Methuen",
+        "state": "MA",
+        "zip": "01844"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "Merrimack Health",
+        "alternateDisplayName": "Merrimack Health",
+        "path": "Merrimack Health"
+       }
+      ],
+      "clientExternalIdentifier": "lawrence",
+      "jobPostingModifiedDate": "2026-10-13T11:28:40Z",
+      "requisitionModifiedDate": "2026-10-13T11:28:40Z",
+      "jobTemplateInstanceModifiedDate": "2026-10-13T11:28:13Z",
+      "jobPostingLocationModifiedDate": "2026-10-13T11:28:40Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 79,
+      "clientInternalIdentifier": "1063",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "clientId": "79"
+    },
+    "sort": [
+     1791849600000,
+     450770
+    ]
+   },
+   {
+    "_index": "jobpostings_v1",
+    "_id": "79_16737",
+    "_score": null,
+    "_routing": "79",
+    "_source": {
+     "datePosted": "2026-10-13T00:00:00Z",
+     "documentId": "79_16737",
+     "hiringOrganization": {
+      "legalName": "Merrimack Health",
+      "name": "Merrimack Health",
+      "subOrganization": {
+       "legalName": "Lawrence Hospital",
+       "name": "Lawrence Hospital",
+       "subOrganization": {
+        "legalName": "Maternity",
+        "name": "Maternity"
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "Lawrence",
+       "addressRegion": "MA",
+       "postalCode": "01842",
+       "streetAddress": "1 General Street",
+       "addressLocalityRegion": "Lawrence, MA"
+      }
+     },
+     "lastIndexedDate": "2026-10-13T16:00:08.6442306Z",
+     "name": "Director Maternal Child Health",
+     "occupationalCategory": "Administration",
+     "title": "Director Maternal Child Health",
+     "userArea": {
+      "active": true,
+      "requisitionID": 20758,
+      "requisitionNumber": "31849",
+      "jobCode": "DIR615",
+      "shift": "8:00am - 4:30pm",
+      "formID": 38,
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       56,
+       57,
+       95
+      ],
+      "payGrade": "",
+      "salaryRange": "$72.65 - $108.98",
+      "fTE": "1",
+      "customJobPostingFieldValues": {
+       "-1813165834": [
+        {
+         "internalNameID": -1813165834,
+         "metaTypeID": 10,
+         "metaValueID": 52789,
+         "name": "Salary Range",
+         "value": "$72.65 - $108.98",
+         "sequence": 151
+        }
+       ]
+      },
+      "jobSummaryDisplay": "<p><span style=\"font-size:12pt\"><span style=\"font-family:&quot;Times New Roman&quot;,serif\"><b><i>JOB SUMMARY: &nbsp;</i></b></span></span></p>\r\n\r\n<p><span style=\"font-size:12pt\"><span style=\"font-family:&quot;Times New Roman&quot;,serif\"><span style=\"layout-grid-mode:line\">Working independently, has the administrative responsibility for fiscal management, human resources, quality improvement programs, planning, organizing, directing, controlling, coordinating and promoting the Obstetrical, (LDR, Post Partum/Nursery), Level II Nursery, Pediatric and Childbirth Education areas in the delivery of patient care.</span></span></span></p>\r\n\r\n<p>&nbsp;</p>\r\n\r\n<p><span style=\"font-size:12pt\"><span style=\"font-family:&quot;Times New Roman&quot;,serif\"><b><i>EDUCATION AND RELATED EXPERIENCE:</i></b></span></span></p>\r\n\r\n<p><span style=\"font-size:12pt\"><span style=\"font-family:&quot;Times New Roman&quot;,serif\"><b>Required: </b></span></span></p>\r\n\r\n<ul>\r\n\t<li><span style=\"font-size:12pt\"><span style=\"font-family:&quot;Times New Roman&quot;,serif\">Master&rsquo;s Degree in nursing or healthcare administration.</span></span></li>\r\n\t<li><span style=\"font-size:12pt\"><span style=\"font-family:&quot;Times New Roman&quot;,serif\">Five years&rsquo; experience in the Maternal Child Health areas of an acute care</span></span>&nbsp;<span style=\"font-size:12pt\"><span style=\"font-family:&quot;Times New Roman&quot;,serif\">hospital, with three years of progressively more complex administrative &nbsp;responsibility.</span></span></li>\r\n</ul>\r\n\r\n<p style=\"margin-left:25px\">&nbsp;</p>\r\n",
+      "businessEntityID": 17,
+      "jobPostingID": 16737,
+      "bELevel0": "Merrimack Health",
+      "bELevel1": "Lawrence Hospital",
+      "bELevel2": "Maternity",
+      "bELevel1DisplayName": "Lawrence Hospital",
+      "bELevel2DisplayName": "Maternity",
+      "fullyQualifiedBusinessEntityName": "Merrimack Health/Lawrence Hospital/Maternity",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 17,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 1,
+        "name": "Maternity",
+        "alternateDisplayName": "Maternity",
+        "path": "Merrimack Health^Lawrence Hospital^Maternity",
+        "code": "01.70401"
+       },
+       {
+        "active": true,
+        "businessEntityID": 1,
+        "businessEntityTypeID": 1,
+        "level": 1,
+        "parentID": -1,
+        "name": "Lawrence Hospital",
+        "alternateDisplayName": "Lawrence Hospital",
+        "path": "Merrimack Health^Lawrence Hospital",
+        "streetAddress1": "1 General Street",
+        "city": "Lawrence",
+        "state": "MA",
+        "zip": "01842"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "Merrimack Health",
+        "alternateDisplayName": "Merrimack Health",
+        "path": "Merrimack Health"
+       }
+      ],
+      "clientExternalIdentifier": "lawrence",
+      "jobPostingModifiedDate": "2026-10-13T16:00:06Z",
+      "requisitionModifiedDate": "2026-10-13T16:00:06Z",
+      "jobTemplateInstanceModifiedDate": "2026-10-13T15:27:44Z",
+      "jobPostingLocationModifiedDate": "2026-10-13T16:00:05Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 79,
+      "clientInternalIdentifier": "1063",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "workHours": "Days",
+     "clientId": "79"
+    },
+    "sort": [
+     1791849600000,
+     462215
+    ]
+   }
+  ]
+ }
+}

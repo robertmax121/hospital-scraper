@@ -1,0 +1,373 @@
+{
+ "jobRequisitions": [
+  {
+   "itemID": "9201508956568_1",
+   "postingInstructions": [],
+   "links": [],
+   "additionalProperties": {},
+   "requisitionTitle": "Human Resources Manager",
+   "postDate": "2026-10-09T13:26:00.000-04:00",
+   "screeningRequirements": [],
+   "organizationalUnits": [],
+   "payGradeRange": {
+    "minimumRate": {
+     "amountValue": 110000.0,
+     "currencyCode": "USD"
+    },
+    "maximumRate": {
+     "amountValue": 120000.0,
+     "currencyCode": "USD"
+    }
+   },
+   "workLevelCode": {
+    "shortName": "Full-Time"
+   },
+   "sponsoredVisaTypeCodes": [],
+   "customFieldGroup": {
+    "codeFields": [
+     {
+      "codeValue": "AN",
+      "shortName": "Annually",
+      "nameCode": {
+       "codeValue": "SalaryType"
+      }
+     },
+     {
+      "codeValue": "RANGE",
+      "shortName": "RANGE",
+      "nameCode": {
+       "codeValue": "SalaryRangeType"
+      }
+     }
+    ],
+    "dateFields": [
+     {
+      "dateValue": "2026-10-09T13:26Z",
+      "nameCode": {
+       "codeValue": "PostingDate"
+      }
+     },
+     {
+      "dateValue": "2026-10-14T17:16Z",
+      "nameCode": {
+       "codeValue": "CurrentServerDateTime"
+      }
+     }
+    ],
+    "indicatorFields": [
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "PriortyStatusFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "InternalPostingFlag"
+      }
+     },
+     {
+      "indicatorValue": true,
+      "nameCode": {
+       "codeValue": "MinValue"
+      }
+     },
+     {
+      "indicatorValue": true,
+      "nameCode": {
+       "codeValue": "IsVsidApplicable"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsSassDlReqForExtPostFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsSassDlReqForIntPostFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsMonetaryFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsNonMonetaryFlag"
+      }
+     }
+    ],
+    "numberFields": [
+     {
+      "numberValue": 0.0,
+      "categoryCode": {
+       "codeValue": "ApplicantCount"
+      }
+     },
+     {
+      "categoryCode": {
+       "codeValue": "AwardAmount"
+      }
+     }
+    ],
+    "stringFields": [
+     {
+      "stringValue": "569394",
+      "nameCode": {
+       "codeValue": "ExternalJobID"
+      }
+     },
+     {
+      "nameCode": {
+       "codeValue": "CareerCenterRefId"
+      }
+     },
+     {
+      "nameCode": {
+       "codeValue": "GuidelineOid"
+      }
+     },
+     {
+      "nameCode": {
+       "codeValue": "CurrencySymbolOrCode"
+      }
+     },
+     {
+      "stringValue": "",
+      "nameCode": {
+       "codeValue": "HomeDepartment"
+      }
+     },
+     {
+      "stringValue": "MGR",
+      "nameCode": {
+       "codeValue": "JobClass"
+      }
+     },
+     {
+      "stringValue": "110000.00 To 120000.00 (USD) Annually",
+      "nameCode": {
+       "codeValue": "SalaryRange"
+      }
+     }
+    ]
+   },
+   "clientRequisitionID": "9219",
+   "requisitionLocations": [
+    {
+     "aliasNames": [],
+     "address": {
+      "cityName": "Santa Ana",
+      "countrySubdivisionLevel1": {
+       "codeValue": "CA"
+      },
+      "postalCode": "92704"
+     },
+     "nameCode": {
+      "shortName": " Santa Ana, CA, US"
+     }
+    },
+    {
+     "aliasNames": [],
+     "address": {
+      "cityName": "Anaheim",
+      "countrySubdivisionLevel1": {
+       "codeValue": "CA"
+      },
+      "postalCode": "92805"
+     },
+     "nameCode": {
+      "shortName": " Anaheim, CA, US"
+     }
+    }
+   ]
+  },
+  {
+   "itemID": "9201508809155_1",
+   "postingInstructions": [],
+   "links": [],
+   "additionalProperties": {},
+   "requisitionTitle": "Registered Nurse II, Part-time, Evening Shift (8 Hours)",
+   "postDate": "2026-10-09T11:37:00.000-04:00",
+   "screeningRequirements": [],
+   "organizationalUnits": [],
+   "payGradeRange": {
+    "minimumRate": {
+     "amountValue": 54.24,
+     "currencyCode": "USD"
+    },
+    "maximumRate": {
+     "amountValue": 77.66,
+     "currencyCode": "USD"
+    }
+   },
+   "workLevelCode": {
+    "shortName": "Part-Time"
+   },
+   "sponsoredVisaTypeCodes": [],
+   "customFieldGroup": {
+    "codeFields": [
+     {
+      "codeValue": "HR",
+      "shortName": "Hourly",
+      "nameCode": {
+       "codeValue": "SalaryType"
+      }
+     },
+     {
+      "codeValue": "RANGE",
+      "shortName": "RANGE",
+      "nameCode": {
+       "codeValue": "SalaryRangeType"
+      }
+     }
+    ],
+    "dateFields": [
+     {
+      "dateValue": "2026-10-09T11:37Z",
+      "nameCode": {
+       "codeValue": "PostingDate"
+      }
+     },
+     {
+      "dateValue": "2026-10-14T17:16Z",
+      "nameCode": {
+       "codeValue": "CurrentServerDateTime"
+      }
+     }
+    ],
+    "indicatorFields": [
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "PriortyStatusFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "InternalPostingFlag"
+      }
+     },
+     {
+      "indicatorValue": true,
+      "nameCode": {
+       "codeValue": "MinValue"
+      }
+     },
+     {
+      "indicatorValue": true,
+      "nameCode": {
+       "codeValue": "IsVsidApplicable"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsSassDlReqForExtPostFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsSassDlReqForIntPostFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsMonetaryFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsNonMonetaryFlag"
+      }
+     }
+    ],
+    "numberFields": [
+     {
+      "numberValue": 0.0,
+      "categoryCode": {
+       "codeValue": "ApplicantCount"
+      }
+     },
+     {
+      "categoryCode": {
+       "codeValue": "AwardAmount"
+      }
+     }
+    ],
+    "stringFields": [
+     {
+      "stringValue": "569382",
+      "nameCode": {
+       "codeValue": "ExternalJobID"
+      }
+     },
+     {
+      "nameCode": {
+       "codeValue": "CareerCenterRefId"
+      }
+     },
+     {
+      "nameCode": {
+       "codeValue": "GuidelineOid"
+      }
+     },
+     {
+      "nameCode": {
+       "codeValue": "CurrencySymbolOrCode"
+      }
+     },
+     {
+      "stringValue": "",
+      "nameCode": {
+       "codeValue": "HomeDepartment"
+      }
+     },
+     {
+      "stringValue": "RN",
+      "nameCode": {
+       "codeValue": "JobClass"
+      }
+     },
+     {
+      "stringValue": "54.24 To 77.66 (USD) Hourly",
+      "nameCode": {
+       "codeValue": "SalaryRange"
+      }
+     }
+    ]
+   },
+   "clientRequisitionID": "9218",
+   "requisitionLocations": [
+    {
+     "aliasNames": [],
+     "address": {
+      "cityName": "Anaheim",
+      "countrySubdivisionLevel1": {
+       "codeValue": "CA"
+      },
+      "postalCode": "92805"
+     },
+     "nameCode": {
+      "shortName": "Anaheim Global Medical Center, Inc, Anaheim, CA, US"
+     }
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "startSequence": 0,
+  "totalNumber": 2
+ }
+}

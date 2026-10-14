@@ -1,0 +1,45 @@
+{
+ "client": "HCSSYSTEM",
+ "clientID": 1,
+ "owner": 1,
+ "jobDetail": {
+  "hiringOrganization": {
+   "display": true,
+   "orgLevels": [
+    1,
+    2
+   ]
+  },
+  "jobLocation": {
+   "display": true
+  },
+  "occupationalCategory": {
+   "display": true
+  },
+  "employmentType": {
+   "display": true
+  },
+  "workHours": {
+   "display": true
+  },
+  "shift": {
+   "display": true
+  },
+  "datePosted": {
+   "display": true
+  },
+  "description": {
+   "display": true
+  },
+  "requisitionNumber": {
+   "display": true
+  },
+  "facilityDescription": {
+   "display": true
+  },
+  "contactInfo": {
+   "display": false
+  },
+  "enableShare": true
+ }
+}

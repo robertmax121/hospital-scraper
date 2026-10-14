@@ -1,0 +1,115 @@
+{
+ "count": 2,
+ "jobRequisitions": [
+  {
+   "organizationalUnits": [],
+   "workLocations": [],
+   "postingLocations": [],
+   "requisitionLocations": [
+    {
+     "itemID": "5000344241706",
+     "address": {
+      "country": {
+       "codeValue": "USA",
+       "longName": "United States"
+      },
+      "cityName": "Greenville",
+      "postalCode": "75243",
+      "lineOne": "4215 Joe Ramsey Blvd",
+      "countrySubdivisionLevel1": {
+       "codeValue": "TX",
+       "longName": "Texas"
+      },
+      "geoCoordinate": {
+       "latitude": 32.9087285,
+       "longitude": -96.7386946
+      }
+     },
+     "nameCode": {
+      "codeValue": "01",
+      "longName": "Greenville"
+     },
+     "aliasNames": [
+      {
+       "nameValue": "",
+       "typeCode": {
+        "codeValue": ""
+       }
+      }
+     ],
+     "postingIndicator": false,
+     "primaryIndicator": true
+    }
+   ],
+   "careerSiteDomains": [
+    "huntregional"
+   ],
+   "jobDescription": "<div><strong>POSITION SUMMARY</strong><br />Registered nurse is responsible for collaborating, planning, directing and implementing patients care for all ages. The RN develops and guides patient education and evaluates the process using standards of care. License vocational nurse assists in the assessing, planning, implementation and evaluating of patient's needs under the supervision and direction of the RN.</div>\n<div><br /><strong>POSITION REQUIREMENTS</strong><br />Minimum Education: None<br />Minimum Work Experience: None<br />Required Licenses/Certifications: Current licensure with the State of Texas, Appropriate CPR Certification. ICU-ACLS &amp; TNCC, Telemetry-ACLS, Surgical-ACLS &amp; TNCC. All required within 18 months of hire date. Certifications are to be obtained within one year of service.<br />Required Skills, Knowledge, and Abilities: General knowledge of basic bedside nursing. Must be able to demonstrate the knowledge and skills necessary to provide care, based on the physical, psychosocial, educational, safety and related criteria appropriate to age of the patients served in assigned area/department. The skills and knowledge to provide such care are gained through education, training, and/or experience.<br />Preferred Qualification: Specialty Certification.</div>\n<div> </div>\n<div><strong>JOB SPECIFIC FUNCTIONS </strong><br />1. Demonstrates an understanding of and adherence to the HMHD Compliance Plan. <br />2. Conduct reflects HMHD's values and a commitment to HMHD's Code of Conduct. <br />3. Attends the required corporate integrity and compliance training and education programs. <br />4. Demonstrates proficiency in understanding the materials presented during the corporate integrity and compliance training and education program. <br />5. Complies with all HIPAA standards.</div>",
+   "postingDate": "2026-10-12T19:31:55Z",
+   "clientRequisitionID": "26-2695",
+   "jobTitle": "RN- HRMP Urology FT",
+   "reqId": "5001231382806",
+   "easyApplyEnabled": false,
+   "workLevelCode": "Full-time",
+   "type": "Normal",
+   "publishedJobTitle": "RN- HRMP Urology FT",
+   "gridControl": "000002",
+   "canApply": true
+  },
+  {
+   "organizationalUnits": [],
+   "workLocations": [],
+   "postingLocations": [],
+   "requisitionLocations": [
+    {
+     "itemID": "5000344241706",
+     "address": {
+      "country": {
+       "codeValue": "USA",
+       "longName": "United States"
+      },
+      "cityName": "Greenville",
+      "postalCode": "75243",
+      "lineOne": "4215 Joe Ramsey Blvd",
+      "countrySubdivisionLevel1": {
+       "codeValue": "TX",
+       "longName": "Texas"
+      },
+      "geoCoordinate": {
+       "latitude": 32.9087285,
+       "longitude": -96.7386946
+      }
+     },
+     "nameCode": {
+      "codeValue": "01",
+      "longName": "Greenville"
+     },
+     "aliasNames": [
+      {
+       "nameValue": "",
+       "typeCode": {
+        "codeValue": ""
+       }
+      }
+     ],
+     "postingIndicator": false,
+     "primaryIndicator": true
+    }
+   ],
+   "careerSiteDomains": [
+    "huntregional"
+   ],
+   "jobDescription": "<div><strong>POSITION SUMMARY </strong><br />Under the Supervision or direction of a Shift Manager, performs various duties assisting the nursing staff in the treatment and care of patients of all ages, in accordance with the established methods and procedures of the hospital.</div>\n<div> </div>\n<div><strong>POSITION REQUIREMENTS </strong><br />Minimum Education: High School Diploma or GED and Completion of PCA II workshop and skills OR Graduate of a Medical Assistant program, Certified Nurse Assistant, Emergency Medical Technician, Paramedic, Student nurse in eighth month of an LVN program or last year of an RN program. Minimum Work Experience None <br />Required Licenses/Certifications: None</div>\n<div>Required Skills, Knowledge, and Abilities: General knowledge of basic bedside nursing. Must be able to demonstrate the knowledge and skills necessary to provide care, based on the physical, psychosocial, education, safety and related criteria appropriate to age of the patients served in assigned area/department. The skills and knowledge to provide such care is gained <br />through education, training, and/or experience.</div>\n<div>Preferred Qualification: None</div>\n<div> </div>",
+   "postingDate": "2026-10-12T16:16:23Z",
+   "clientRequisitionID": "26-2694",
+   "jobTitle": "Patient Care Associate II- Women's Center FT",
+   "reqId": "5001231190600",
+   "easyApplyEnabled": false,
+   "workLevelCode": "Full-time",
+   "type": "Normal",
+   "publishedJobTitle": "Patient Care Associate II- Women's Center FT",
+   "gridControl": "000002",
+   "canApply": true
+  }
+ ]
+}

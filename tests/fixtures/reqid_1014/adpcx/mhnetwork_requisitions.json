@@ -1,0 +1,113 @@
+{
+ "count": 2,
+ "jobRequisitions": [
+  {
+   "organizationalUnits": [],
+   "workLocations": [],
+   "postingLocations": [],
+   "requisitionLocations": [
+    {
+     "itemID": "5000214047206",
+     "address": {
+      "country": {
+       "codeValue": "USA",
+       "longName": "United States"
+      },
+      "cityName": "Huntington",
+      "postalCode": "25702",
+      "lineOne": "2900 1st Avenue",
+      "countrySubdivisionLevel1": {
+       "codeValue": "WV",
+       "longName": "West Virginia"
+      },
+      "geoCoordinate": {
+       "latitude": 38.443332,
+       "longitude": -82.344761
+      }
+     },
+     "nameCode": {
+      "codeValue": "SMMC",
+      "longName": "St Marys Medical Center-SMMC"
+     },
+     "aliasNames": [
+      {
+       "nameValue": "",
+       "typeCode": {
+        "codeValue": ""
+       }
+      }
+     ],
+     "postingIndicator": false,
+     "primaryIndicator": true
+    }
+   ],
+   "careerSiteDomains": [
+    "mhnetwork"
+   ],
+   "jobDescription": "<p><span><strong>St. Mary's Medical Center</strong> is offering a <strong>nurse extern</strong> position.  Nurse Externs assist in the delivery of patient care under the direction of a Registered Nurse or Licensed Practical Nurse.</span></p>",
+   "jobQualifications": "<p><span><strong>Education Requirements:  </strong></span><span>Documental proficiency of basic technical skills and current enrollment in an approved school of nursing or a graduate from an approved school of nursing in the process of receiving a temporary permit.</span></p>\n<p><span><strong> </strong></span></p>\n<p><span><strong>Work Requirement:  </strong></span><span>Each Nurse Extern (RN) must work a minimum twenty-four (24) hours a month, of which twelve (12) hours will occur during the weekend period.  Individual exceptions may be made by the Resource Center Clinical Manager related to school and clinical schedules.</span></p>\n<p><span><strong> </strong></span></p>\n<p><span><strong>Certifications/Skills:  </strong>BLS required.  Verbal ability required to communicate with patients and understand instructions received from nursing staff; manual dexterity required to use hands easily and skillfully while aiding patients.</span></p>",
+   "clientRequisitionID": "16288",
+   "jobTitle": "Nurse Extern (Casual) - 6015",
+   "reqId": "5001231580000",
+   "easyApplyEnabled": false,
+   "workLevelCode": "Part-time",
+   "type": "Normal",
+   "publishedJobTitle": "Nurse Extern (Casual) - 6015",
+   "canApply": true
+  },
+  {
+   "organizationalUnits": [],
+   "workLocations": [],
+   "postingLocations": [],
+   "requisitionLocations": [
+    {
+     "itemID": "5000214052106",
+     "address": {
+      "country": {
+       "codeValue": "USA",
+       "longName": "United States"
+      },
+      "cityName": "Huntington",
+      "postalCode": "25701",
+      "lineOne": "1340 Hal Greer Blvd",
+      "countrySubdivisionLevel1": {
+       "codeValue": "WV",
+       "longName": "West Virginia"
+      },
+      "geoCoordinate": {
+       "latitude": 38.368924,
+       "longitude": -82.412756
+      }
+     },
+     "nameCode": {
+      "codeValue": "CHH01",
+      "longName": "Cabell Huntington Hospital-CHH01"
+     },
+     "aliasNames": [
+      {
+       "nameValue": "",
+       "typeCode": {
+        "codeValue": ""
+       }
+      }
+     ],
+     "postingIndicator": false,
+     "primaryIndicator": true
+    }
+   ],
+   "careerSiteDomains": [
+    "mhnetwork"
+   ],
+   "jobDescription": "<p>Cabell Huntington Hospital is seeking a full-time MFM Sonographer to work with our Maternal Fetal Medicine Department. </p>\n<p> </p>\n<p>MFM Sonographers are responsible for ensuring and providing quality services in all US tests &amp; procedures performed at the main Perinatal center, 3North and PNC-MU locations of Cabell Huntington Hospital. </p>\n<p> </p>\n<p>Primary responsibilities include: </p>\n<ul>\n<li>Receiving, clarifying and/or confirming orders</li>\n<li>Accurate and timely documentation of procedures/tests</li>\n<li>Competent understanding and operation of all US equipment</li>\n<li>Understanding and performance of Disinfection and quality control procedures.</li>\n<li>Mentoring students and fostering an atmosphere of learning</li>\n<li>Participating in collection and reporting of data used in performance and process improvement activities</li>\n</ul>",
+   "jobQualifications": "<ul>\n<li><span>High School diploma or equivalent required. </span></li>\n<li><span>Junior College/Technical School required, Bachelor's Degree preferred.</span></li>\n<li><span>Registered sonographer (ARDMS) required. </span></li>\n<li><span> OB registry required. </span></li>\n<li><span>NT/NB certification preferred. </span></li>\n<li><span>Maternal fetal medicine experience preferred. </span></li>\n</ul>\n<p><span>The <strong>kind</strong> of position-related experience includes: </span></p>\n<ul>\n<li><span>Good working knowledge of anatomy, pathology, medical terminology and application software. Ability to skillfully operate US scanner and related patient support equipment is required.  Adherence to established procedure protocols.</span></li>\n<li><span>Working knowledge of all US examinations, exam preps and other information pertinent to placing orders and verifying appropriateness.</span></li>\n</ul>",
+   "clientRequisitionID": "16287",
+   "jobTitle": "Maternal Fetal Medicine Sonographer",
+   "reqId": "5001231559700",
+   "easyApplyEnabled": false,
+   "workLevelCode": "Full-time",
+   "type": "Normal",
+   "publishedJobTitle": "Maternal Fetal Medicine Sonographer",
+   "canApply": true
+  }
+ ]
+}

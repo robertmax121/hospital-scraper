@@ -1,0 +1,131 @@
+{
+ "hits": {
+  "total": {
+   "value": 1,
+   "relation": "eq"
+  },
+  "hits": [
+   {
+    "_index": "jobpostings_v1",
+    "_id": "2360_5054",
+    "_score": null,
+    "_routing": "2360",
+    "_source": {
+     "datePosted": "2026-07-15T00:00:00Z",
+     "documentId": "2360_5054",
+     "employmentType": "PRN",
+     "hiringOrganization": {
+      "legalName": "Cookeville Regional Medical Center",
+      "name": "Cookeville Regional Medical Center",
+      "subOrganization": {
+       "legalName": "Cookeville Regional Medical Center",
+       "name": "Cookeville Regional Medical Center",
+       "subOrganization": {
+        "legalName": "Magnetic Resonance Imaging Uni",
+        "name": "Magnetic Resonance Imaging Uni"
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "Cookeville",
+       "addressRegion": "TN",
+       "postalCode": "38501",
+       "streetAddress": "1 Medical Center Blvd",
+       "addressLocalityRegion": "Cookeville, TN"
+      },
+      "geoLocation": {
+       "lat": 36.169917,
+       "lon": -85.508112
+      }
+     },
+     "lastIndexedDate": "2026-07-15T18:52:30.2098955Z",
+     "name": "Technologist, MRI Student",
+     "occupationalCategory": "Clinical",
+     "title": "Technologist, MRI Student",
+     "userArea": {
+      "active": true,
+      "requisitionID": 5803,
+      "requisitionNumber": "7305",
+      "jobCode": "10-425000-25256",
+      "shift": "Varied",
+      "formID": 20,
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       57,
+       95
+      ],
+      "payGrade": "",
+      "salaryRange": "",
+      "fTE": "0.1",
+      "customJobPostingFieldValues": {},
+      "jobSummaryDisplay": "<div class=\"fieldValueText\">\r\n<div class=\"fieldValueText\">&nbsp;</div>\r\n</div>\r\n",
+      "businessEntityID": 42,
+      "jobPostingID": 5054,
+      "bELevel0": "Cookeville Regional Medical Center",
+      "bELevel1": "Cookeville Regional Medical Center",
+      "bELevel2": "Magnetic Resonance Imaging Uni",
+      "bELevel1DisplayName": "Cookeville Regional Medical Center",
+      "bELevel2DisplayName": "MRI Unit",
+      "fullyQualifiedBusinessEntityName": "Cookeville Regional Medical Center/Cookeville Regional Medical Center/MRI Unit",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 42,
+        "businessEntityTypeID": 3,
+        "level": 2,
+        "parentID": 7,
+        "name": "Magnetic Resonance Imaging Uni",
+        "alternateDisplayName": "MRI Unit",
+        "path": "Cookeville Regional Medical Center^Cookeville Regional Medical Center^MRI Unit",
+        "code": "425000"
+       },
+       {
+        "active": true,
+        "businessEntityID": 7,
+        "businessEntityTypeID": 2,
+        "level": 1,
+        "parentID": -1,
+        "name": "Cookeville Regional Medical Center",
+        "alternateDisplayName": "Cookeville Regional Medical Center",
+        "path": "Cookeville Regional Medical Center^Cookeville Regional Medical Center",
+        "code": "10",
+        "streetAddress1": "1 Medical Center Blvd",
+        "city": "Cookeville",
+        "state": "TN",
+        "zip": "38501"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "Cookeville Regional Medical Center",
+        "alternateDisplayName": "Cookeville Regional Medical Center",
+        "path": "Cookeville Regional Medical Center"
+       }
+      ],
+      "clientExternalIdentifier": "crmchealth",
+      "jobPostingModifiedDate": "2026-07-15T18:52:27Z",
+      "requisitionModifiedDate": "2026-07-15T18:52:27Z",
+      "jobTemplateInstanceModifiedDate": "2026-07-15T18:52:27Z",
+      "jobPostingLocationModifiedDate": "2026-07-15T18:52:27Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 2360,
+      "clientInternalIdentifier": "2360",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "workHours": "Varied",
+     "clientId": "2360"
+    },
+    "sort": [
+     1784073600000,
+     122190
+    ]
+   }
+  ]
+ }
+}

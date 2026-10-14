@@ -1,0 +1,99 @@
+{
+ "opportunities": [
+  {
+   "Id": "ab0da9df-98e7-4d1e-bca1-00a20bc5344d",
+   "Featured": false,
+   "Title": "Financial Analyst",
+   "RequisitionNumber": "FINAN020889",
+   "FullTime": true,
+   "JobCategoryName": "Financial Services",
+   "Locations": [
+    {
+     "Id": "950ecc6f-0e02-5f77-b0cc-330a4a57b399",
+     "LocalizedName": null,
+     "LocalizedLocationId": "HRMC",
+     "LocalizedDescription": "Deaconess IL Med Center",
+     "Address": {
+      "Line1": "3333 W Deyoung St",
+      "Line2": null,
+      "City": "Marion",
+      "PostalCode": "62959",
+      "State": {
+       "Code": "IL",
+       "Name": "Illinois"
+      },
+      "Country": {
+       "Code": "USA",
+       "Name": "United States"
+      }
+     },
+     "DisplayName": false,
+     "DisplayLocationId": false,
+     "DisplayAddress": true,
+     "DisplayStreetAddress": false,
+     "DisplayDescription": false,
+     "SourceOfTruth": 1,
+     "Coordinates": {
+      "Latitude": 37.74488660889942,
+      "Longitude": -88.99405084167371
+     }
+    }
+   ],
+   "PostedDate": "2026-10-13T14:42:53.476Z",
+   "BriefDescription": "Campus: Deaconess Illinois Medical Center\nHours: FT Days\nUnit/Department: Finance \nCompensation: $25.92-$38.28",
+   "MatchScore": 1.0,
+   "MatchedLocations": [],
+   "Distance": null,
+   "JobLocationType": null,
+   "OpportunityType": 0
+  },
+  {
+   "Id": "14763732-4238-438c-b6ac-1c511e1c60f2",
+   "Featured": false,
+   "Title": "Physician - Hospitalist PRN",
+   "RequisitionNumber": "PHYSI020776",
+   "FullTime": false,
+   "JobCategoryName": "Physician",
+   "Locations": [
+    {
+     "Id": "950ecc6f-0e02-5f77-b0cc-330a4a57b399",
+     "LocalizedName": null,
+     "LocalizedLocationId": "HRMC",
+     "LocalizedDescription": "Deaconess IL Med Center",
+     "Address": {
+      "Line1": "3333 W Deyoung St",
+      "Line2": null,
+      "City": "Marion",
+      "PostalCode": "62959",
+      "State": {
+       "Code": "IL",
+       "Name": "Illinois"
+      },
+      "Country": {
+       "Code": "USA",
+       "Name": "United States"
+      }
+     },
+     "DisplayName": false,
+     "DisplayLocationId": false,
+     "DisplayAddress": true,
+     "DisplayStreetAddress": false,
+     "DisplayDescription": false,
+     "SourceOfTruth": 1,
+     "Coordinates": {
+      "Latitude": 37.74488660889942,
+      "Longitude": -88.99405084167371
+     }
+    }
+   ],
+   "PostedDate": "2026-10-13T13:03:28.08Z",
+   "BriefDescription": "Deaconess IL Specialty Clinic is seeking a dedicated and skilled DSS (as needed) Board-Certified (BC) Hospitalist to join our team at Deaconess IL Medical Center in Marion, IL.\nPrimarily located at Deaconess Illinois Medical Center in Marion, IL. Shifts are 12 hours a day.",
+   "MatchScore": 1.0,
+   "MatchedLocations": [],
+   "Distance": null,
+   "JobLocationType": 1,
+   "OpportunityType": 0
+  }
+ ],
+ "totalCount": 2
+}
