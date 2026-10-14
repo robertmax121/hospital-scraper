@@ -1,0 +1,551 @@
+{
+ "hits": {
+  "total": {
+   "value": 4,
+   "relation": "eq"
+  },
+  "hits": [
+   {
+    "_index": "jobpostings_v1",
+    "_id": "637_40287",
+    "_score": null,
+    "_routing": "637",
+    "_source": {
+     "datePosted": "2026-05-19T00:00:00Z",
+     "documentId": "637_40287",
+     "employmentType": "Part-time (Non-Benefit Eligible)",
+     "hiringOrganization": {
+      "legalName": "Powers Health",
+      "name": "Powers Health",
+      "subOrganization": {
+       "legalName": "St. Mary Medical Center",
+       "name": "St. Mary Medical Center",
+       "subOrganization": {
+        "legalName": "Respiratory Therapy",
+        "name": "Respiratory Therapy"
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "Hobart",
+       "addressRegion": "IN",
+       "postalCode": "46342",
+       "streetAddress": "1500 S. Lake Park Ave",
+       "addressLocalityRegion": "Hobart, IN"
+      },
+      "geoLocation": {
+       "lat": 41.51257,
+       "lon": -87.2609
+      }
+     },
+     "lastIndexedDate": "2026-09-29T14:43:16.3033091Z",
+     "name": "Respiratory Therapist",
+     "occupationalCategory": "Therapy Services/Sports Medicine",
+     "title": "Respiratory Therapist",
+     "userArea": {
+      "active": true,
+      "requisitionID": 44456,
+      "requisitionNumber": "50055.1",
+      "jobCode": "1192",
+      "shift": "Days",
+      "formID": 17,
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       57,
+       95
+      ],
+      "payGrade": "385",
+      "salaryRange": "$28.54 - $44.32",
+      "fTE": "0.1",
+      "customJobPostingFieldValues": {},
+      "jobSummaryDisplay": "<div class=\"fieldValueText\">\r\n<div class=\"fieldValueText\">\r\n<div class=\"fieldValueText\">\r\n<div class=\"fieldValueText\">\r\n<p style=\"margin-bottom:11px\"><span style=\"font-size:12pt\"><span style=\"background:whitesmoke\"><span style=\"line-height:normal\"><span style=\"font-family:Aptos,sans-serif\"><span style=\"font-size:11.0pt\"><span style=\"font-family:&quot;Calibri&quot;,sans-serif\"><span style=\"color:#555555\"><img src=\"data:image/jpeg;base64,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",
+      "businessEntityID": 1207,
+      "businessEntityURL": "http://www.comhs.org/community/",
+      "jobPostingID": 40287,
+      "bELevel0": "Powers Health",
+      "bELevel1": "St. Mary Medical Center",
+      "bELevel2": "Respiratory Therapy",
+      "bELevel1DisplayName": "St. Mary Medical Center",
+      "bELevel2DisplayName": "Respiratory Therapy",
+      "fullyQualifiedBusinessEntityName": "Powers Health/St. Mary Medical Center/Respiratory Therapy",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 1207,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 3,
+        "name": "Respiratory Therapy",
+        "alternateDisplayName": "Respiratory Therapy",
+        "path": "Powers Health^St. Mary Medical Center^Respiratory Therapy",
+        "code": "27700"
+       },
+       {
+        "active": true,
+        "businessEntityID": 3,
+        "businessEntityTypeID": 1,
+        "level": 1,
+        "parentID": -1,
+        "name": "St. Mary Medical Center",
+        "alternateDisplayName": "St. Mary Medical Center",
+        "path": "Powers Health^St. Mary Medical Center",
+        "code": "SMM",
+        "streetAddress1": "1500 S. Lake Park Ave",
+        "city": "Hobart",
+        "state": "IN",
+        "zip": "46342"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "Powers Health",
+        "alternateDisplayName": "Powers Health",
+        "path": "Powers Health"
+       }
+      ],
+      "clientExternalIdentifier": "comhs",
+      "jobPostingModifiedDate": "2026-09-29T14:43:12Z",
+      "requisitionModifiedDate": "2026-05-19T21:22:13Z",
+      "jobTemplateInstanceModifiedDate": "2026-05-19T21:22:01Z",
+      "jobPostingLocationModifiedDate": "2026-05-19T21:22:13Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 637,
+      "clientInternalIdentifier": "8027",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "workHours": "8",
+     "clientId": "637"
+    },
+    "sort": [
+     1779148800000,
+     337768
+    ]
+   },
+   {
+    "_index": "jobpostings_v1",
+    "_id": "8245_16271",
+    "_score": null,
+    "_routing": "8245",
+    "_source": {
+     "datePosted": "2023-03-16T00:00:00Z",
+     "description": "As an EOE/AA employer, Union Hospital, Inc. will not discriminate in its employment practices due to an applicant's age, race, color, religion, sex, national origin,  veteran or disability status.",
+     "documentId": "8245_16271",
+     "employmentType": "07 - FULLTIME",
+     "hiringOrganization": {
+      "legalName": "Union Health ",
+      "name": "Union Health ",
+      "subOrganization": {
+       "legalName": "Union Hospital",
+       "name": "Union Hospital",
+       "subOrganization": {
+        "legalName": "Union Hospital Terre Haute",
+        "name": "Union Hospital Terre Haute",
+        "subOrganization": {
+         "legalName": "HUMAN RESOURCES(81500)",
+         "name": "HUMAN RESOURCES(81500)"
+        }
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "TERRE HAUTE",
+       "addressRegion": "IN",
+       "postalCode": "47804",
+       "streetAddress": "1530 N 7TH ST",
+       "addressLocalityRegion": "TERRE HAUTE, IN"
+      },
+      "geoLocation": {
+       "lat": 39.484529,
+       "lon": -87.407774
+      }
+     },
+     "lastIndexedDate": "2026-03-11T20:16:48.7465202Z",
+     "name": "ASSIST-PERSONAL-HUMAN RESOURCES",
+     "occupationalCategory": "Technicians, Technologists and Other Clinical",
+     "title": "General Imaging ",
+     "userArea": {
+      "active": true,
+      "requisitionID": 19684,
+      "requisitionNumber": "RAD OO1",
+      "jobCode": "81500080",
+      "shift": "ROTATING",
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       95,
+       56,
+       57,
+       58
+      ],
+      "payGrade": "",
+      "salaryRange": "",
+      "fTE": "1",
+      "customJobPostingFieldValues": {},
+      "jobSummaryDisplay": "<div class=\"fieldValueText\">\r\n<p style=\"margin-bottom:15px\"><br />\r\n<span style=\"font-size:11pt\"><span style=\"background:white\"><span style=\"line-height:normal\"><span style=\"font-family:Calibri,sans-serif\"><span style=\"font-family:&quot;Segoe UI&quot;,sans-serif\"><span style=\"color:black\">We are <i><u>actively</u></i> reviewing applicants for this position.<br />\r\nBe part of an organization that is dedicated to your growth and development.<br />\r\nWe welcome you to apply today!<br />\r\n<br />\r\n<br />\r\nWe welcome <b>U</b> to begin an incredible career with us because at<br />\r\nUnion Health, <b>U Matter</b> and <b>U Belong!</b><br />\r\n<br />\r\n<br />\r\n<b>Position Information:</b></span></span></span></span></span></span></p>\r\n\r\n<p style=\"margin-bottom:15px\"><span style=\"font-size:11pt\"><span style=\"background:white\"><span style=\"line-height:normal\"><span style=\"font-family:Calibri,sans-serif\"><span style=\"font-family:&quot;Segoe UI&quot;,sans-serif\"><span style=\"color:black\">Location:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1606 N. 7<sup>th</sup> Street, Terre Haute Indiana<br />\r\nHours:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; We have a variety of flexible shifts that are designed to match your schedule. &nbsp;</span></span><br />\r\n<br />\r\n<strong><span style=\"background:white\"><span style=\"font-family:&quot;Segoe UI&quot;,sans-serif\"><span style=\"color:black\">Union Health</span></span></span></strong><strong><span style=\"background:white\"><span style=\"font-family:&quot;Segoe UI&quot;,sans-serif\"><span style=\"color:black\"><span style=\"font-weight:normal\"> employees</span></span></span></span></strong><span style=\"background:white\"><span style=\"font-family:&quot;Segoe UI&quot;,sans-serif\"><span style=\"color:black\">&nbsp;serve in excellent working conditions, with state-of-the-art technology, and excellent patient-focused care.<br />\r\nOur employees enjoy excellent benefits, a competitive salary, abundant continuing education opportunities, work/life balance, a competitive benefit package and a sense of value and respect for the work they do.<br />\r\nAll these combined results in a high level of employee satisfaction. </span></span></span></span></span></span></span></p>\r\n\r",
+      "businessEntityID": 26,
+      "businessEntityURL": "http://www.myunionhospital.org",
+      "jobPostingID": 16271,
+      "bELevel0": "Union Health ",
+      "bELevel1": "Union Hospital",
+      "bELevel2": "Union Hospital Terre Haute",
+      "bELevel3": "HUMAN RESOURCES(81500)",
+      "bELevel1DisplayName": "Union Hospital",
+      "bELevel2DisplayName": "Union Hospital Terre Haute",
+      "bELevel3DisplayName": "Imaging Services",
+      "fullyQualifiedBusinessEntityName": "Union Health /Union Hospital/Union Hospital Terre Haute/Imaging Services",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 26,
+        "businessEntityTypeID": 3,
+        "level": 3,
+        "parentID": 3,
+        "name": "HUMAN RESOURCES(81500)",
+        "alternateDisplayName": "Imaging Services",
+        "path": "Union Health ^Union Hospital^Union Hospital Terre Haute^Imaging Services",
+        "code": "81500",
+        "streetAddress1": "1530 N 7TH ST",
+        "zip": "47804"
+       },
+       {
+        "active": true,
+        "businessEntityID": 3,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 1,
+        "name": "Union Hospital Terre Haute",
+        "alternateDisplayName": "Union Hospital Terre Haute",
+        "path": "Union Health ^Union Hospital^Union Hospital Terre Haute",
+        "code": "10",
+        "streetAddress1": "1606 N. Seventh Street",
+        "city": "Terre Haute",
+        "state": "IN",
+        "zip": "47804"
+       },
+       {
+        "active": true,
+        "businessEntityID": 1,
+        "businessEntityTypeID": 1,
+        "level": 1,
+        "parentID": -1,
+        "name": "Union Hospital",
+        "alternateDisplayName": "Union Hospital",
+        "path": "Union Health ^Union Hospital",
+        "code": "1"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "Union Health ",
+        "alternateDisplayName": "Union Health ",
+        "path": "Union Health "
+       }
+      ],
+      "clientExternalIdentifier": "unionhospital",
+      "jobPostingModifiedDate": "2025-10-16T14:39:51Z",
+      "requisitionModifiedDate": "2026-03-11T20:16:43Z",
+      "jobTemplateInstanceModifiedDate": "2025-10-06T21:08:59.197Z",
+      "jobPostingLocationModifiedDate": "2025-10-22T17:50:10Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 8245,
+      "clientInternalIdentifier": "8245",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "workHours": "Varied",
+     "clientId": "8245"
+    },
+    "sort": [
+     1678924800000,
+     178749
+    ]
+   },
+   {
+    "_index": "jobpostings_v1",
+    "_id": "1065_42398",
+    "_score": null,
+    "_routing": "1065",
+    "_source": {
+     "datePosted": "2026-05-06T00:00:00Z",
+     "documentId": "1065_42398",
+     "employmentType": "Full Time - Eligible for Benefits",
+     "hiringOrganization": {
+      "legalName": "Renown Health ",
+      "name": "Renown Health ",
+      "subOrganization": {
+       "legalName": "Renown Regional Med Cntr",
+       "name": "Renown Regional Med Cntr",
+       "subOrganization": {
+        "legalName": "200211 Pharmacy",
+        "name": "200211 Pharmacy"
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "Reno",
+       "addressRegion": "NV",
+       "postalCode": "89502",
+       "streetAddress": "1155 Mill Street",
+       "addressLocalityRegion": "Reno, NV"
+      },
+      "geoLocation": {
+       "lat": 39.52552,
+       "lon": -119.795212
+      }
+     },
+     "lastIndexedDate": "2026-05-07T00:23:57.8671426Z",
+     "name": "Clinical Pharmacist",
+     "occupationalCategory": "Allied Health",
+     "title": "Clinical Pharmacist - Critical Care",
+     "userArea": {
+      "active": true,
+      "requisitionID": 68977,
+      "requisitionNumber": "Critical Care",
+      "jobCode": "520111",
+      "shift": "Swing",
+      "formID": 98,
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       53,
+       57,
+       58,
+       95
+      ],
+      "payGrade": "",
+      "salaryRange": "",
+      "fTE": "",
+      "customJobPostingFieldValues": {
+       "477282419": [
+        {
+         "internalNameID": 477282419,
+         "metaTypeID": 65,
+         "name": "Sign on Bonus",
+         "value": "$30,000"
+        }
+       ]
+      },
+      "jobSummaryDisplay": "<p><span style=\"font-size:11.0pt\"><span style=\"font-family:&quot;Calibri&quot;,sans-serif\"><span style=\"color:#242424\">Renown Health is seeking a passionate and highly motivated Internal Medicine Clinical Pharmacist to join our team.&nbsp; This position is primarily responsible for providing quality pharmaceutical care and protocol implementation for patients on our medical, telemetry, neurosciences, and general surgery floors.&nbsp; </span></span></span><span style=\"font-size:11.0pt\"><span style=\"font-family:&quot;Calibri&quot;,sans-serif\"><span style=\"color:black\">The incumbent must be an experienced or trained internal medicine practitioner that is able to provide and be responsible for drug therapy outcomes for individual&nbsp;</span></span></span><span style=\"font-size:11.0pt\"><span style=\"font-family:&quot;Calibri&quot;,sans-serif\">patients as an integral member of the multidisciplinary healthcare team.</span></span></p>\r\n\r\n<table width=\"100%\">\r\n\t<tbody>\r\n\t\t<tr>\r\n\t\t\t<td style=\"width:20.0%; padding:.75pt .75pt .75pt .75pt\" valign=\"top\" width=\"20%\">\r\n\t\t\t<p><span style=\"font-size:11pt\"><span style=\"font-family:Calibri,sans-serif\"><span style=\"color:#212529\">Education:</span></span></span></p>\r\n\t\t\t</td>\r\n\t\t\t<td style=\"width:80.0%; padding:.75pt .75pt .75pt .75pt\" valign=\"top\" width=\"80%\">\r\n\t\t\t<p><span style=\"font-size:11pt\"><span style=\"font-family:Calibri,sans-serif\"><span style=\"color:#212529\">Must have working-level knowledge of the English language, including reading, writing and speaking English. Completion of Doctor of Pharmacy (Pharm.D.) degree from an ACPE accredited pharmacy program or 10 years of experience in acute care pharmacy is required. Completion of a Pharmacy Residency or equivalent training program in clinical pharmacy is preferred. </span></span></span></p>\r\n\t\t\t</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"border:none; width:20.0%; border-top:solid #dee2e6 1.0pt; padding:.75pt .75pt .75pt .75pt\" valign=\"top\" width=\"20%\">\r\n\t\t\t<p><span style=\"font-size:11pt\"><span style=\"font-family:Calibri,sans-serif\"><span style=\"color:#212529\">Experience:</span></span></span></p>\r\n\t\t\t</td>\r\n\t\t\t<td style=\"border:none; width:80.0%; border-top:solid #dee2e6 1.0pt; padding:.75pt .75pt .75pt .75pt\" valign=\"top\" width=\"80%\">\r\n\t\t\t<p><span style=\"font-size:11pt\"><span style=\"font-family:Calibri,sans-serif\"><span style=\"color:#212529\">Applicants with previous hospital pharmacy experience will be given preference.</span></span></span></p>\r\n\t\t\t</td>\r\n\t\t</tr>\r\n\t\t<tr>\r",
+      "businessEntityID": 2526,
+      "businessEntityURL": "www.renown.org",
+      "jobPostingID": 42398,
+      "bELevel0": "Renown Health ",
+      "bELevel1": "Renown Regional Med Cntr",
+      "bELevel2": "200211 Pharmacy",
+      "bELevel1DisplayName": "Renown Regional Med Cntr",
+      "bELevel2DisplayName": "200211 Pharmacy",
+      "fullyQualifiedBusinessEntityName": "Renown Health /Renown Regional Med Cntr/200211 Pharmacy",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 2526,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 2,
+        "name": "200211 Pharmacy",
+        "alternateDisplayName": "200211 Pharmacy",
+        "path": "Renown Health ^Renown Regional Med Cntr^200211 Pharmacy",
+        "code": "200211"
+       },
+       {
+        "active": true,
+        "businessEntityID": 2,
+        "businessEntityTypeID": 1,
+        "level": 1,
+        "parentID": -1,
+        "name": "Renown Regional Med Cntr",
+        "alternateDisplayName": "Renown Regional Med Cntr",
+        "path": "Renown Health ^Renown Regional Med Cntr",
+        "code": "200",
+        "streetAddress1": "1155 Mill Street",
+        "city": "Reno",
+        "state": "NV",
+        "zip": "89502"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "Renown Health ",
+        "alternateDisplayName": "Renown Health ",
+        "path": "Renown Health "
+       }
+      ],
+      "clientExternalIdentifier": "renownhealth",
+      "jobPostingModifiedDate": "2026-05-07T00:23:54Z",
+      "requisitionModifiedDate": "2026-05-07T00:23:38Z",
+      "jobTemplateInstanceModifiedDate": "2026-05-07T00:23:03Z",
+      "jobPostingLocationModifiedDate": "2022-06-14T18:39:33Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 1065,
+      "clientInternalIdentifier": "1065",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "workHours": "Vary",
+     "clientId": "1065"
+    },
+    "sort": [
+     1778025600000,
+     111586
+    ]
+   },
+   {
+    "_index": "jobpostings_v1",
+    "_id": "8245_13993",
+    "_score": null,
+    "_routing": "8245",
+    "_source": {
+     "datePosted": "2025-07-11T00:00:00Z",
+     "description": "As an EOE/AA employer, Union Hospital, Inc. will not discriminate in its employment practices due to an applicant's age, race, color, religion, sex, national origin,  veteran or disability status.",
+     "documentId": "8245_13993",
+     "employmentType": "01 - FULLTIME",
+     "hiringOrganization": {
+      "legalName": "Union Health ",
+      "name": "Union Health ",
+      "subOrganization": {
+       "legalName": "Union Hospital",
+       "name": "Union Hospital",
+       "subOrganization": {
+        "legalName": "Union Hospital Terre Haute",
+        "name": "Union Hospital Terre Haute",
+        "subOrganization": {
+         "legalName": "ADMINISTRATION(80000)",
+         "name": "ADMINISTRATION(80000)"
+        }
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "TERRE HAUTE",
+       "addressRegion": "IN",
+       "postalCode": "47804",
+       "streetAddress": "1530 N 7TH ST",
+       "addressLocalityRegion": "TERRE HAUTE, IN"
+      },
+      "geoLocation": {
+       "lat": 39.484529,
+       "lon": -87.407774
+      }
+     },
+     "lastIndexedDate": "2025-10-22T18:05:39.6825312Z",
+     "name": "CLERK-ADMINISTRATION",
+     "occupationalCategory": "Other",
+     "title": "Union Hospital Therapy | Site Coordinator PT | $20K Bonus | Terre Haute | East OP | Full-Time",
+     "userArea": {
+      "active": true,
+      "requisitionID": 17501,
+      "requisitionNumber": "PH-OT",
+      "jobCode": "80000135",
+      "shift": "DAY",
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       56,
+       53,
+       95,
+       57
+      ],
+      "payGrade": "",
+      "salaryRange": "",
+      "fTE": "1",
+      "customJobPostingFieldValues": {},
+      "jobSummaryDisplay": "<div class=\"fieldValueText\">\r\n<p style=\"margin-bottom:11px\"><span style=\"font-size:12pt\"><span style=\"line-height:115%\"><span style=\"font-family:Aptos,sans-serif\"><b><span style=\"color:#c00000\">*PLEASE DO NOT APPLY THROUGH UNION HEALTH. APPLY USING LINK BELOW*</span></b></span></span></span></p>\r\n\r\n<p style=\"margin-bottom:11px\"><span style=\"font-size:12pt\"><span style=\"line-height:115%\"><span style=\"font-family:Aptos,sans-serif\">&nbsp;</span></span></span></p>\r\n\r\n<p style=\"margin-bottom:11px\"><br />\r\n<span style=\"font-size:12pt\"><span style=\"line-height:115%\"><span style=\"font-family:Aptos,sans-serif\"><a href=\"https://recruiting2.ultipro.com/PRO1058PGHR/JobBoard/fbef633c-3604-4122-9e6f-180aa45f60de/Opportunity/OpportunityDetail?opportunityId=13ed5ab1-8f26-4e06-8386-e3b5ff0b7dfc\" style=\"color:#467886; text-decoration:underline\"><b>https://recruiting2.ultipro.com/PRO1058PGHR/JobBoard/fbef633c-3604-4122-9e6f-180aa45f60de/Opportunity/OpportunityDetail?opportunityId=13ed5ab1-8f26-4e06-8386-e3b5ff0b7dfc</b></a></span></span></span></p>\r\n\r\n<p style=\"margin-bottom:11px\"><span style=\"font-size:12pt\"><span style=\"line-height:115%\"><span style=\"font-family:Aptos,sans-serif\">&nbsp;</span></span></span></p>\r\n\r\n<p style=\"margin-bottom:11px\"><br />\r\n<span style=\"font-size:12pt\"><span style=\"line-height:115%\"><span style=\"font-family:Aptos,sans-serif\"><b><span style=\"color:#c00000\">*PLEASE DO NOT APPLY THROUGH UNION HEALTH. APPLY USING LINK ABOVE*</span></b></span></span></span></p>\r\n\r\n<p style=\"margin-bottom:11px\"><span style=\"font-size:12pt\"><span style=\"line-height:115%\"><span style=\"font-family:Aptos,sans-serif\">&nbsp;</span></span></span></p>\r\n\r\n<p style=\"margin-bottom:11px\"><span style=\"font-size:12pt\"><span style=\"line-height:115%\"><span style=\"font-family:Aptos,sans-serif\"><span style=\"font-size:9.0pt\"><span style=\"line-height:115%\">As an EOE/AA employer, Union Hospital, Inc. will not discriminate in its employment practices due to an applicant&#39;s age, race, color, religion, sex, national origin, veteran or disability status.</span></span></span></span></span></p>\r\n</div>\r\n",
+      "businessEntityID": 146,
+      "businessEntityURL": "http://www.myunionhospital.org",
+      "jobPostingID": 13993,
+      "bELevel0": "Union Health ",
+      "bELevel1": "Union Hospital",
+      "bELevel2": "Union Hospital Terre Haute",
+      "bELevel3": "ADMINISTRATION(80000)",
+      "bELevel1DisplayName": "Union Hospital Therapy",
+      "bELevel2DisplayName": "Union Hospital Therapy",
+      "bELevel3DisplayName": "Union Hospital Therapy",
+      "fullyQualifiedBusinessEntityName": "Union Health /Union Hospital Therapy/Union Hospital Therapy/Union Hospital Therapy",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 146,
+        "businessEntityTypeID": 3,
+        "level": 3,
+        "parentID": 3,
+        "name": "ADMINISTRATION(80000)",
+        "alternateDisplayName": "Union Hospital Therapy",
+        "path": "Union Health ^Union Hospital Therapy^Union Hospital Therapy^Union Hospital Therapy",
+        "code": "80000",
+        "streetAddress1": "1530 N 7TH ST",
+        "zip": "47804"
+       },
+       {
+        "active": true,
+        "businessEntityID": 3,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 1,
+        "name": "Union Hospital Terre Haute",
+        "alternateDisplayName": "Union Hospital Therapy",
+        "path": "Union Health ^Union Hospital Therapy^Union Hospital Therapy",
+        "code": "10",
+        "streetAddress1": "1606 N. Seventh Street",
+        "city": "Terre Haute",
+        "state": "IN",
+        "zip": "47804"
+       },
+       {
+        "active": true,
+        "businessEntityID": 1,
+        "businessEntityTypeID": 1,
+        "level": 1,
+        "parentID": -1,
+        "name": "Union Hospital",
+        "alternateDisplayName": "Union Hospital Therapy",
+        "path": "Union Health ^Union Hospital Therapy",
+        "code": "1"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "Union Health ",
+        "alternateDisplayName": "Union Health ",
+        "path": "Union Health "
+       }
+      ],
+      "clientExternalIdentifier": "unionhospital",
+      "jobPostingModifiedDate": "2025-10-22T18:05:37Z",
+      "requisitionModifiedDate": "2025-09-25T20:03:33Z",
+      "jobTemplateInstanceModifiedDate": "2025-10-06T21:08:59.197Z",
+      "jobPostingLocationModifiedDate": "2025-10-22T18:05:37Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 8245,
+      "clientInternalIdentifier": "8245",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "workHours": ".",
+     "clientId": "8245"
+    },
+    "sort": [
+     1752192000000,
+     63282
+    ]
+   }
+  ]
+ }
+}

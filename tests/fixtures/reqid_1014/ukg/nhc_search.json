@@ -1,0 +1,99 @@
+{
+ "opportunities": [
+  {
+   "Id": "83e87c9c-6384-4c38-8bb2-d5c52772961a",
+   "Featured": false,
+   "Title": "Behavioral Health Tech/CNA - NIGHT SHIFT",
+   "RequisitionNumber": "BEHAV042426",
+   "FullTime": true,
+   "JobCategoryName": "Behavioral Health",
+   "Locations": [
+    {
+     "Id": "2bd87e6f-30af-5024-b85b-9c7b5c6ba696",
+     "LocalizedName": "Center for Behavioral Health Maryland Heights",
+     "LocalizedLocationId": "MO6115",
+     "LocalizedDescription": "Maryland Hgts Behavior Me",
+     "Address": {
+      "Line1": "11100 Ayrshire Dr.",
+      "Line2": null,
+      "City": "Maryland Heights",
+      "PostalCode": "63043",
+      "State": {
+       "Code": "MO",
+       "Name": "Missouri"
+      },
+      "Country": {
+       "Code": "USA",
+       "Name": "United States"
+      }
+     },
+     "DisplayName": true,
+     "DisplayLocationId": false,
+     "DisplayAddress": true,
+     "DisplayStreetAddress": false,
+     "DisplayDescription": false,
+     "SourceOfTruth": 1,
+     "Coordinates": {
+      "Latitude": 38.72369035631573,
+      "Longitude": -90.41580466376888
+     }
+    }
+   ],
+   "PostedDate": "2026-10-13T13:27:07.67Z",
+   "BriefDescription": "Center for Behavioral Health Maryland Heights is looking for a Behavioral Health CNA Tech to join our team!",
+   "MatchScore": 1.0,
+   "MatchedLocations": [],
+   "Distance": null,
+   "JobLocationType": 1,
+   "OpportunityType": 0
+  },
+  {
+   "Id": "e6efa8de-a057-460e-b718-01fe8a72bb58",
+   "Featured": false,
+   "Title": "Behavioral Health Tech/CNA - Day Shift",
+   "RequisitionNumber": "BEHAV042110",
+   "FullTime": true,
+   "JobCategoryName": "Behavioral Health",
+   "Locations": [
+    {
+     "Id": "2bd87e6f-30af-5024-b85b-9c7b5c6ba696",
+     "LocalizedName": "Center for Behavioral Health Maryland Heights",
+     "LocalizedLocationId": "MO6115",
+     "LocalizedDescription": "Maryland Hgts Behavior Me",
+     "Address": {
+      "Line1": "11100 Ayrshire Dr.",
+      "Line2": null,
+      "City": "Maryland Heights",
+      "PostalCode": "63043",
+      "State": {
+       "Code": "MO",
+       "Name": "Missouri"
+      },
+      "Country": {
+       "Code": "USA",
+       "Name": "United States"
+      }
+     },
+     "DisplayName": true,
+     "DisplayLocationId": false,
+     "DisplayAddress": true,
+     "DisplayStreetAddress": false,
+     "DisplayDescription": false,
+     "SourceOfTruth": 1,
+     "Coordinates": {
+      "Latitude": 38.72369035631573,
+      "Longitude": -90.41580466376888
+     }
+    }
+   ],
+   "PostedDate": "2026-10-13T13:24:58.076Z",
+   "BriefDescription": "Center for Behavioral Health Maryland Heights is looking for a Behavioral Health CNA Tech to join our team!",
+   "MatchScore": 1.0,
+   "MatchedLocations": [],
+   "Distance": null,
+   "JobLocationType": 1,
+   "OpportunityType": 0
+  }
+ ],
+ "totalCount": 2
+}

@@ -1,0 +1,591 @@
+{
+ "hits": {
+  "total": {
+   "value": 3,
+   "relation": "eq"
+  },
+  "hits": [
+   {
+    "_index": "jobpostings_v1",
+    "_id": "2327_136024",
+    "_score": null,
+    "_routing": "2327",
+    "_source": {
+     "datePosted": "2026-10-14T00:00:00Z",
+     "documentId": "2327_136024",
+     "employmentType": "Full-Time",
+     "hiringOrganization": {
+      "legalName": "RWJBarnabas Health",
+      "name": "RWJBarnabas Health",
+      "subOrganization": {
+       "legalName": "MMC Southern Campus",
+       "name": "MMC Southern Campus",
+       "subOrganization": {
+        "legalName": "MMC Southern Campus",
+        "name": "MMC Southern Campus",
+        "subOrganization": {
+         "legalName": "Patient Access Services",
+         "name": "Patient Access Services",
+         "subOrganization": {
+          "legalName": "MMC Southern Campus",
+          "name": "MMC Southern Campus"
+         }
+        }
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "Lakewood",
+       "addressRegion": "NJ",
+       "postalCode": "08701",
+       "streetAddress": "600 River Road",
+       "addressLocalityRegion": "Lakewood, NJ"
+      },
+      "geoLocation": {
+       "lat": 0.0,
+       "lon": 0.0
+      }
+     },
+     "lastIndexedDate": "2026-10-14T14:56:03.7543044Z",
+     "name": "Patient Access Representative",
+     "occupationalCategory": "Healthcare Operations, Revenue Cycle, & Patient Access",
+     "title": "Patient Access Representative",
+     "userArea": {
+      "active": true,
+      "requisitionID": 146778,
+      "requisitionNumber": "0000264102",
+      "jobCode": "H0327",
+      "shift": "Day",
+      "formID": 73,
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       95
+      ],
+      "payGrade": "",
+      "salaryRange": "$20.63 - $25.71 per hour",
+      "fTE": "1",
+      "customJobPostingFieldValues": {
+       "-100006035": [
+        {
+         "internalNameID": -100006035,
+         "metaTypeID": 92,
+         "metaValueID": 52783,
+         "name": "Pay Status",
+         "value": "Hourly",
+         "sequence": 1
+        }
+       ],
+       "-1813165834": [
+        {
+         "internalNameID": -1813165834,
+         "metaTypeID": 10,
+         "metaValueID": 57990,
+         "name": "Salary Range",
+         "value": "$20.63 - $25.71 per hour",
+         "sequence": 444
+        }
+       ],
+       "1080890827": [
+        {
+         "internalNameID": 1080890827,
+         "metaTypeID": 50112,
+         "metaValueID": 52598,
+         "name": "Behavioral Assessment",
+         "value": "No",
+         "sequence": 2
+        }
+       ],
+       "-271000849": [
+        {
+         "internalNameID": -271000849,
+         "metaTypeID": 50116,
+         "metaValueID": 52602,
+         "name": "Job Category Updated",
+         "value": "Yes",
+         "sequence": 1
+        }
+       ]
+      },
+      "jobSummaryDisplay": "<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\">Job Title: Patient Access Representative</span></span></p>\r\n\r\n<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\">Location: MMC Southern Campus</span></span></p>\r\n\r\n<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\">Department Name: Patient Access Services</span></span></p>\r\n\r\n<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\">Req #: 0000264102</span></span></p>\r\n\r\n<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\">Status: Hourly</span></span></p>\r\n\r\n<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\">Shift: Day</span></span></p>\r\n\r\n<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\">Pay Range: $20.63 - $25.71 per hour</span></span></p>\r\n\r\n<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\"><strong>Pay Transparency: </strong></span></span></p>\r\n\r\n<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\">The above reflects the anticipated hourly wage range for this position if hired to work in New Jersey.</span></span></p>\r\n\r\n<p><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\">The compensation offered to the candidate selected for the position will depend on several factors, including the candidate&#39;s educational background, skills and professional experience.</span></span></p>\r\n\r\n<p style=\"margin-bottom:11px\"><span style=\"font-size:16px;\"><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"line-height:115%\"><b>Job Overview:</b></span></span></span></p>\r\n\r",
+      "businessEntityID": 6172,
+      "jobPostingID": 136024,
+      "bELevel0": "RWJBarnabas Health",
+      "bELevel1": "MMC Southern Campus",
+      "bELevel2": "MMC Southern Campus",
+      "bELevel3": "Patient Access Services",
+      "bELevel4": "MMC Southern Campus",
+      "bELevel1DisplayName": "MMC Southern Campus",
+      "bELevel2DisplayName": "MMC Southern Campus",
+      "bELevel3DisplayName": "Patient Access Services",
+      "bELevel4DisplayName": "MMC Southern Campus",
+      "fullyQualifiedBusinessEntityName": "RWJBarnabas Health/MMC Southern Campus/MMC Southern Campus/Patient Access Services/MMC Southern Campus",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 6172,
+        "businessEntityTypeID": 1001,
+        "level": 4,
+        "parentID": 4425,
+        "name": "MMC Southern Campus",
+        "alternateDisplayName": "MMC Southern Campus",
+        "path": "RWJBarnabas Health^MMC Southern Campus^MMC Southern Campus^Patient Access Services^MMC Southern Campus",
+        "code": "KMC",
+        "streetAddress1": "600 River Road",
+        "streetAddress2": "NJ",
+        "zip": "08701"
+       },
+       {
+        "active": true,
+        "businessEntityID": 4425,
+        "businessEntityTypeID": 3,
+        "level": 3,
+        "parentID": 2012,
+        "name": "Patient Access Services",
+        "alternateDisplayName": "Patient Access Services",
+        "path": "RWJBarnabas Health^MMC Southern Campus^MMC Southern Campus^Patient Access Services",
+        "code": "8252025"
+       },
+       {
+        "active": true,
+        "businessEntityID": 2012,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 1861,
+        "name": "MMC Southern Campus",
+        "alternateDisplayName": "MMC Southern Campus",
+        "path": "RWJBarnabas Health^MMC Southern Campus^MMC Southern Campus",
+        "code": "KMC01"
+       },
+       {
+        "active": true,
+        "businessEntityID": 1861,
+        "businessEntityTypeID": 1002,
+        "level": 1,
+        "parentID": -1,
+        "name": "MMC Southern Campus",
+        "alternateDisplayName": "MMC Southern Campus",
+        "path": "RWJBarnabas Health^MMC Southern Campus",
+        "code": "KMC"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "RWJBarnabas Health",
+        "alternateDisplayName": "RWJBarnabas Health",
+        "path": "RWJBarnabas Health"
+       }
+      ],
+      "clientExternalIdentifier": "rwjbarnabashealth",
+      "jobPostingModifiedDate": "2026-10-14T14:56:00Z",
+      "requisitionModifiedDate": "2026-10-14T14:56:00Z",
+      "jobTemplateInstanceModifiedDate": "2026-09-08T18:28:57Z",
+      "jobPostingLocationModifiedDate": "2026-09-02T13:29:03Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 2327,
+      "clientInternalIdentifier": "2327",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "workHours": "40",
+     "clientId": "2327"
+    },
+    "sort": [
+     1791936000000,
+     306010
+    ]
+   },
+   {
+    "_index": "jobpostings_v1",
+    "_id": "2327_129476",
+    "_score": null,
+    "_routing": "2327",
+    "_source": {
+     "datePosted": "2026-05-06T00:00:00Z",
+     "documentId": "2327_129476",
+     "employmentType": "Full-Time",
+     "hiringOrganization": {
+      "legalName": "RWJBarnabas Health",
+      "name": "RWJBarnabas Health",
+      "subOrganization": {
+       "legalName": "Newark Beth Israel",
+       "name": "Newark Beth Israel",
+       "subOrganization": {
+        "legalName": "Newark Beth Israel Med Ctr",
+        "name": "Newark Beth Israel Med Ctr",
+        "subOrganization": {
+         "legalName": "Medical-Surgical Unit-VIII",
+         "name": "Medical-Surgical Unit-VIII",
+         "subOrganization": {
+          "legalName": "Newark Beth Israel Medical Ctr",
+          "name": "Newark Beth Israel Medical Ctr"
+         }
+        }
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "NEWARK",
+       "addressRegion": "NJ",
+       "postalCode": "07112-2027",
+       "streetAddress": "201 LYONS AVENUE",
+       "addressLocalityRegion": "NEWARK, NJ"
+      },
+      "geoLocation": {
+       "lat": 0.0,
+       "lon": 0.0
+      }
+     },
+     "lastIndexedDate": "2026-10-13T14:01:52.2752272Z",
+     "name": "RN",
+     "occupationalCategory": "Nursing",
+     "title": "Registered Nurse (RN) Medical Surgical Unit VIII (B4) Full Time Nights",
+     "userArea": {
+      "active": true,
+      "requisitionID": 140228,
+      "requisitionNumber": "0000247083",
+      "jobCode": "H0087",
+      "shift": "Night",
+      "formID": 73,
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       95
+      ],
+      "payGrade": "",
+      "salaryRange": "$49.28 - $66.05 per hour",
+      "fTE": "0.9",
+      "customJobPostingFieldValues": {
+       "-100006035": [
+        {
+         "internalNameID": -100006035,
+         "metaTypeID": 92,
+         "metaValueID": 52783,
+         "name": "Pay Status",
+         "value": "Hourly",
+         "sequence": 1
+        }
+       ],
+       "-1813165834": [
+        {
+         "internalNameID": -1813165834,
+         "metaTypeID": 10,
+         "metaValueID": 58015,
+         "name": "Salary Range",
+         "value": "$49.28 - $66.05 per hour",
+         "sequence": 1169
+        }
+       ],
+       "1080890827": [
+        {
+         "internalNameID": 1080890827,
+         "metaTypeID": 50112,
+         "metaValueID": 52598,
+         "name": "Behavioral Assessment",
+         "value": "No",
+         "sequence": 2
+        }
+       ],
+       "-271000849": [
+        {
+         "internalNameID": -271000849,
+         "metaTypeID": 50116,
+         "metaValueID": 52602,
+         "name": "Job Category Updated",
+         "value": "Yes",
+         "sequence": 1
+        }
+       ]
+      },
+      "jobSummaryDisplay": "<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\">Job Title: RN</span></span></p>\r\n\r\n<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\">Location: Newark Beth Israel Medical Ctr</span></span></p>\r\n\r\n<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\">Department Name: Medical-Surgical Unit-VIII</span></span></p>\r\n\r\n<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\">Req #: 0000247083</span></span></p>\r\n\r\n<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\">Status: Hourly</span></span></p>\r\n\r\n<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\">Shift: Night</span></span></p>\r\n\r\n<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\">Pay Range: $49.28 - $66.05 per hour</span></span></p>\r\n\r\n<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\"><strong>Pay Transparency: </strong></span></span></p>\r\n\r\n<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\">The above reflects the anticipated hourly wage range for this position if hired to work in New Jersey.</span></span></p>\r\n\r\n<p><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\">The compensation offered to the candidate selected for the position will depend on several factors, including the candidate&#39;s educational background, skills and professional experience.</span></span></p>\r\n\r\n<p style=\"margin-top:16px; margin-bottom:16px\"><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\"><span style=\"line-height:normal\"><b>Job Overview:</b></span></span></span></p>\r\n\r\n<p style=\"margin-top:16px; margin-bottom:16px\"><span style=\"font-family:Times New Roman,Times,serif;\"><span style=\"font-size:16px;\"><span style=\"line-height:normal\">First established in 1901, Newark Beth Israel Medical Center is a 665-bed quaternary care, teaching hospital that provides comprehensive healthcare for the region. Staffed with more than 800 physicians, 3200 employees, and 150 volunteers, our hospital is ready to provide you and your family with the quality care you need.</span></span></span></p>\r\n\r",
+      "businessEntityID": 6519,
+      "jobPostingID": 129476,
+      "bELevel0": "RWJBarnabas Health",
+      "bELevel1": "Newark Beth Israel",
+      "bELevel2": "Newark Beth Israel Med Ctr",
+      "bELevel3": "Medical-Surgical Unit-VIII",
+      "bELevel4": "Newark Beth Israel Medical Ctr",
+      "bELevel1DisplayName": "Newark Beth Israel",
+      "bELevel2DisplayName": "Newark Beth Israel Med Ctr",
+      "bELevel3DisplayName": "Medical-Surgical Unit-VIII",
+      "bELevel4DisplayName": "Newark Beth Israel Medical Ctr",
+      "fullyQualifiedBusinessEntityName": "RWJBarnabas Health/Newark Beth Israel/Newark Beth Israel Med Ctr/Medical-Surgical Unit-VIII/Newark Beth Israel Medical Ctr",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 6519,
+        "businessEntityTypeID": 1001,
+        "level": 4,
+        "parentID": 2531,
+        "name": "Newark Beth Israel Medical Ctr",
+        "alternateDisplayName": "Newark Beth Israel Medical Ctr",
+        "path": "RWJBarnabas Health^Newark Beth Israel^Newark Beth Israel Med Ctr^Medical-Surgical Unit-VIII^Newark Beth Israel Medical Ctr",
+        "code": "NBI",
+        "streetAddress1": "201 LYONS AVENUE",
+        "streetAddress2": "NJ",
+        "zip": "07112-2027"
+       },
+       {
+        "active": true,
+        "businessEntityID": 2531,
+        "businessEntityTypeID": 3,
+        "level": 3,
+        "parentID": 2016,
+        "name": "Medical-Surgical Unit-VIII",
+        "alternateDisplayName": "Medical-Surgical Unit-VIII",
+        "path": "RWJBarnabas Health^Newark Beth Israel^Newark Beth Israel Med Ctr^Medical-Surgical Unit-VIII",
+        "code": "1103080"
+       },
+       {
+        "active": true,
+        "businessEntityID": 2016,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 1851,
+        "name": "Newark Beth Israel Med Ctr",
+        "alternateDisplayName": "Newark Beth Israel Med Ctr",
+        "path": "RWJBarnabas Health^Newark Beth Israel^Newark Beth Israel Med Ctr",
+        "code": "NBI01"
+       },
+       {
+        "active": true,
+        "businessEntityID": 1851,
+        "businessEntityTypeID": 1002,
+        "level": 1,
+        "parentID": -1,
+        "name": "Newark Beth Israel",
+        "alternateDisplayName": "Newark Beth Israel",
+        "path": "RWJBarnabas Health^Newark Beth Israel",
+        "code": "NBI"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "RWJBarnabas Health",
+        "alternateDisplayName": "RWJBarnabas Health",
+        "path": "RWJBarnabas Health"
+       }
+      ],
+      "clientExternalIdentifier": "rwjbarnabashealth",
+      "jobPostingModifiedDate": "2026-10-13T14:01:49Z",
+      "requisitionModifiedDate": "2026-10-13T14:01:49Z",
+      "jobTemplateInstanceModifiedDate": "2026-05-08T16:22:22Z",
+      "jobPostingLocationModifiedDate": "2026-05-08T16:22:22Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 2327,
+      "clientInternalIdentifier": "2327",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "workHours": "36",
+     "clientId": "2327"
+    },
+    "sort": [
+     1778025600000,
+     302552
+    ]
+   },
+   {
+    "_index": "jobpostings_v1",
+    "_id": "2327_138291",
+    "_score": null,
+    "_routing": "2327",
+    "_source": {
+     "datePosted": "2026-10-14T00:00:00Z",
+     "documentId": "2327_138291",
+     "employmentType": "Full-Time",
+     "hiringOrganization": {
+      "legalName": "RWJBarnabas Health",
+      "name": "RWJBarnabas Health",
+      "subOrganization": {
+       "legalName": "RWJ New Brunswick",
+       "name": "RWJ New Brunswick",
+       "subOrganization": {
+        "legalName": "RWJ New Brunswick",
+        "name": "RWJ New Brunswick",
+        "subOrganization": {
+         "legalName": "O/P Treatment Area CINJ",
+         "name": "O/P Treatment Area CINJ",
+         "subOrganization": {
+          "legalName": "Morris Cancer Center",
+          "name": "Morris Cancer Center"
+         }
+        }
+       }
+      }
+     },
+     "jobLocation": {
+      "address": {
+       "addressLocality": "New Brunswick",
+       "addressRegion": "NJ",
+       "postalCode": "08901",
+       "streetAddress": "165 Somerset Street",
+       "addressLocalityRegion": "New Brunswick, NJ"
+      },
+      "geoLocation": {
+       "lat": 40.496347,
+       "lon": -74.450547
+      }
+     },
+     "lastIndexedDate": "2026-10-14T14:11:24.864379Z",
+     "name": "Certified Medical Assistant",
+     "occupationalCategory": "Medical Assistant",
+     "title": "Certified Medical Assistant",
+     "userArea": {
+      "active": true,
+      "requisitionID": 149057,
+      "requisitionNumber": "48903",
+      "jobCode": "H1245",
+      "shift": "Day",
+      "formID": 73,
+      "isFeaturedJob": false,
+      "isInternalOnly": false,
+      "startAsInternalOnly": false,
+      "jobPostingVendorIDs": [
+       95
+      ],
+      "payGrade": "",
+      "salaryRange": "",
+      "fTE": "1",
+      "customJobPostingFieldValues": {
+       "-1813165834": [
+        {
+         "internalNameID": -1813165834,
+         "metaTypeID": 10,
+         "metaValueID": 58223,
+         "name": "Salary Range",
+         "value": "$23.06 - $29.35 per hour",
+         "sequence": 586
+        }
+       ],
+       "-100006035": [
+        {
+         "internalNameID": -100006035,
+         "metaTypeID": 92,
+         "metaValueID": 52783,
+         "name": "Pay Status",
+         "value": "Hourly",
+         "sequence": 1
+        }
+       ],
+       "1080890827": [
+        {
+         "internalNameID": 1080890827,
+         "metaTypeID": 50112,
+         "metaValueID": 52598,
+         "name": "Behavioral Assessment",
+         "value": "No",
+         "sequence": 2
+        }
+       ],
+       "-271000849": [
+        {
+         "internalNameID": -271000849,
+         "metaTypeID": 50116,
+         "metaValueID": 52602,
+         "name": "Job Category Updated",
+         "value": "Yes",
+         "sequence": 1
+        }
+       ]
+      },
+      "jobSummaryDisplay": "<p>Job Title: Certified Medical Assistant</p>\r\n\r\n<p>Location: Morris Cancer Center</p>\r\n\r\n<p>Department Name: OP Cancer Services CINJ</p>\r\n\r\n<p>Req #: 48903</p>\r\n\r\n<p>Status: Hourly</p>\r\n\r\n<p>Shift: Day</p>\r\n\r\n<p>Pay Range: $23.06 - $29.35 per hour</p>\r\n\r\n<p><strong>Pay Transparency:</strong></p>\r\n\r\n<p>The above reflects the anticipated hourly wage range for this position if hired to work in New Jersey.</p>\r\n\r\n<p>The compensation offered to the candidate selected for the position will depend on several factors, including the candidate&#39;s educational background, skills and professional experience.<br />\r\n&nbsp;</p>\r\n\r\n<p><b>Certified Medical Assistant (CMA) &ndash; RWJBarnabas Health</b></p>\r\n\r\n<p>At RWJBarnabas Health, Certified Medical Assistants become part of a purpose-driven environment where teamwork, compassion, and exceptional patient care create meaningful experiences every day. This CMA role offers opportunities for growth, supportive collaboration, and a culture committed to quality, safety, and continuous improvement. As a Certified Medical Assistant, you will play an essential role in supporting providers, enhancing patient care, and creating a welcoming experience for individuals and families across our organization. Joining RWJBarnabas Health means joining a community where every team member is encouraged to grow, contribute, and make a lasting impact.<br />\r\n&nbsp;</p>\r\n\r\n<p><b>A typical day for a Certified Medical Assistant may include:</b><br />\r\n&nbsp;</p>\r\n\r\n<ul>\r\n\t<li>Preparing patients for examinations by obtaining vital signs, documenting medical histories, and ensuring they feel comfortable and informed throughout their visit<br />\r\n\t&nbsp;</li>\r\n\t<li>Assisting physicians and advanced practice providers during examinations and procedures, anticipating clinical needs to support efficient, high-quality care<br />\r\n\t&nbsp;</li>\r\n\t<li>Performing clinical tasks such as administering injections, collecting specimens, conducting point-of-care testing, and completing other duties within scope of practice<br />\r\n\t&nbsp;</li>\r\n\t<li>Accurately documenting patient information, test results, and provider instructions within the electronic medical record to support continuity of care<br />\r\n\t&nbsp;</li>\r\n\t<li>Coordinating patient flow by preparing exam rooms, maintaining supplies, and helping ensure appointments run efficiently<br />\r\n\t&nbsp;</li>\r",
+      "businessEntityID": 12633,
+      "jobPostingID": 138291,
+      "bELevel0": "RWJBarnabas Health",
+      "bELevel1": "RWJ New Brunswick",
+      "bELevel2": "RWJ New Brunswick",
+      "bELevel3": "O/P Treatment Area CINJ",
+      "bELevel4": "Morris Cancer Center",
+      "bELevel1DisplayName": "RWJ New Brunswick",
+      "bELevel2DisplayName": "RWJ New Brunswick",
+      "bELevel3DisplayName": "O/P Treatment Area CINJ",
+      "bELevel4DisplayName": "Morris Cancer Center",
+      "fullyQualifiedBusinessEntityName": "RWJBarnabas Health/RWJ New Brunswick/RWJ New Brunswick/O/P Treatment Area CINJ/Morris Cancer Center",
+      "businessEntityHierarchy": [
+       {
+        "active": true,
+        "businessEntityID": 12633,
+        "businessEntityTypeID": 1001,
+        "level": 4,
+        "parentID": 3248,
+        "name": "Morris Cancer Center",
+        "alternateDisplayName": "Morris Cancer Center",
+        "path": "RWJBarnabas Health^RWJ New Brunswick^RWJ New Brunswick^O/P Treatment Area CINJ^Morris Cancer Center",
+        "code": "47001",
+        "streetAddress1": "165 Somerset Street",
+        "zip": "08901"
+       },
+       {
+        "active": true,
+        "businessEntityID": 3248,
+        "businessEntityTypeID": 3,
+        "level": 3,
+        "parentID": 2018,
+        "name": "O/P Treatment Area CINJ",
+        "alternateDisplayName": "O/P Treatment Area CINJ",
+        "path": "RWJBarnabas Health^RWJ New Brunswick^RWJ New Brunswick^O/P Treatment Area CINJ",
+        "code": "4051206"
+       },
+       {
+        "active": true,
+        "businessEntityID": 2018,
+        "businessEntityTypeID": 2,
+        "level": 2,
+        "parentID": 1855,
+        "name": "RWJ New Brunswick",
+        "alternateDisplayName": "RWJ New Brunswick",
+        "path": "RWJBarnabas Health^RWJ New Brunswick^RWJ New Brunswick",
+        "code": "RWJNB"
+       },
+       {
+        "active": true,
+        "businessEntityID": 1855,
+        "businessEntityTypeID": 1002,
+        "level": 1,
+        "parentID": -1,
+        "name": "RWJ New Brunswick",
+        "alternateDisplayName": "RWJ New Brunswick",
+        "path": "RWJBarnabas Health^RWJ New Brunswick",
+        "code": "NBR"
+       },
+       {
+        "active": true,
+        "businessEntityID": -1,
+        "businessEntityTypeID": -1,
+        "level": 0,
+        "name": "RWJBarnabas Health",
+        "alternateDisplayName": "RWJBarnabas Health",
+        "path": "RWJBarnabas Health"
+       }
+      ],
+      "clientExternalIdentifier": "rwjbarnabashealth",
+      "jobPostingModifiedDate": "2026-10-14T14:11:21Z",
+      "requisitionModifiedDate": "2026-10-14T14:11:21Z",
+      "jobTemplateInstanceModifiedDate": "2026-10-14T14:11:21Z",
+      "jobPostingLocationModifiedDate": "2026-10-14T14:11:21Z",
+      "isHiddenOnCareerSite": false,
+      "clientId": 2327,
+      "clientInternalIdentifier": "2327",
+      "easyApply": false,
+      "easyApplyType": 0
+     },
+     "workHours": "40",
+     "clientId": "2327"
+    },
+    "sort": [
+     1791936000000,
+     305945
+    ]
+   }
+  ]
+ }
+}

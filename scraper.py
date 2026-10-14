@@ -180,7 +180,13 @@ class Job:
     # AdventHealth's job_id is the Findly URL id, 23744623, while the page
     # shows "Req #: R-0379591", findly_google_req_id; 2026-10-14: UCLA
     # Health's is the Findly URL id, 23914219, while the page shows
-    # "Job #33102", the same function reading the tenant's key). Not a
+    # "Job #33102", the same function reading the tenant's key; 2026-10-14:
+    # HealthcareSource's is the posting id, 136024, while the page shows
+    # "Req # 0000264102"; UKG's is the opportunity GUID while the page shows
+    # "Requisition Number: BEHAV042110"; ADP's is the itemID, 9201508809155_1,
+    # while the page shows "Requisition ID: 9218"; ADP CX's is the reqId,
+    # 5001231190600, while the page shows "#26-2694"; all four read from the
+    # list payload the adapter already fetches, REQ_ID_LIST_PLATFORMS). Not a
     # column: normalize_job pops it into posting_facts["req_id"]. job_id and
     # the (job_id, hospital_system) upsert key stay exactly as they were.
     req_id: str = ""
@@ -10553,6 +10559,9 @@ def _adp_job(j: dict, system: str, cid: str, cc_id: str, default_state: str = ""
         wage_min=wage[0] if wage else None,
         wage_max=wage[1] if wage else None,
         wage_unit=wage[2] if wage else None,
+        # 2026-10-14: the career center prints "Requisition ID: 9218", the
+        # item's clientRequisitionID; job_id stays the itemID (REQ_ID_LIST_PLATFORMS).
+        req_id=_hca_req_value(j.get("clientRequisitionID")),
     )
 
 
@@ -10754,6 +10763,10 @@ def _adpcx_job(j: dict, system: str, domain: str, default_state: str = "") -> Jo
         posted_date=str(j.get("postingDate") or "")[:10],
         description=desc,
         ats_platform="ADP CX",
+        # 2026-10-14: the job page prints "#26-2694" under the title, the
+        # item's clientRequisitionID (already in _ADPCX_SELECT); job_id stays
+        # the reqId (REQ_ID_LIST_PLATFORMS).
+        req_id=_hca_req_value(j.get("clientRequisitionID")),
     )
 
 
@@ -12100,6 +12113,11 @@ def _ukg_job(j: dict, system: str, base_url: str, guid: str, default_state: str 
         posted_date=str(g("PostedDate", "postedDate"))[:10],
         description=strip_html(g("BriefDescription", "shortDescription", "description")),
         ats_platform="UKG",
+        # 2026-10-14: the OpportunityDetail page prints "Requisition Number:
+        # BEHAV042110", the opportunity's RequisitionNumber, which every
+        # LoadSearchResults item carries; job_id stays the GUID
+        # (REQ_ID_LIST_PLATFORMS).
+        req_id=_hca_req_value(g("RequisitionNumber", "requisitionNumber")),
     )
 
 
@@ -12767,6 +12785,36 @@ HEALTHCARESOURCE_ORGS = {
     "Willis Knighton Health System": "wkhs",      # 439, Shreveport LA
 }
 
+# 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
+# the career site prints. job_id is userArea.jobPostingID, the id in the page
+# URL (#/job/136024), while the page prints "Req # 0000264102": the SPA
+# renders "Req # " + userArea.requisitionNumber (client.bundle.js,
+# RequisitionNumber, jsonPath $.userArea.requisitionNumber; the jobDetail
+# config's requisitionNumber.display is true by default and no tenant's own
+# config turned it off on 2026-10-14). The search hit the adapter already
+# reads carries it, and the page's own data call (JobPostingV2) returns the
+# same value. Kept as printed, leading zeros included ("0000264102",
+# RWJBarnabas; "31844", Lawrence General). Not userArea.requisitionID (an
+# internal 146778) and not jobCode ("H0327").
+# Most tenants print digits only, but some print other characters, so
+# HealthcareSource has its own validator (the shared _hca_req_value takes
+# [A-Za-z0-9-] only): Powers Health "47834.1", Union Hospital "RAD OO1".
+# Letters, digits, space and - . / _ & ' ( ) #, a digit, at most 40
+# characters, runs of spaces folded. A value with no digit is a label, not a
+# number: Renown's evergreen postings print "Req # Critical Care", "OP CP",
+# "ExpRN-W&C" (47 of 488 on 2026-10-14) and Union Hospital's "PH-OT",
+# "UHTHRTOPTI" (16 of 287); those rows keep no req_id, as HCA and NEOGOV do.
+_HCS_REQ_RX = re.compile(r"^(?=[^\d]*\d)[A-Za-z0-9][A-Za-z0-9 ./_&'()#-]{0,39}$")
+
+
+def _hcs_req_value(raw) -> str:
+    """userArea.requisitionNumber as the HealthcareSource page prints it
+    ("0000264102", "31844", "47834.1"), or "" for anything else (blank, a
+    label with no digit, an over-long or odd value)."""
+    s = re.sub(r"\s+", " ", str(raw if raw is not None else "")).strip()
+    return s if _HCS_REQ_RX.match(s) else ""
+
+
 def _dig(d, *path, default=""):
     """Nested dict read: _dig(src, "jobLocation", "address", "addressLocality")."""
     cur = d
@@ -12831,6 +12879,9 @@ def _hcs_job(hit: dict, system: str, tenant: str) -> Job | None:
         posted_date=str(src_.get("datePosted") or src_.get("postedDate") or "")[:10],
         description=body,
         ats_platform="HealthcareSource",
+        # 2026-10-14: the career site prints "Req # " + userArea.requisitionNumber
+        # (_hcs_req_value); job_id stays userArea.jobPostingID (REQ_ID_LIST_PLATFORMS).
+        req_id=_hcs_req_value(ua.get("requisitionNumber")),
     )
     set_field_wage(job, _hcs_pay(ua))
     return job
@@ -17468,6 +17519,19 @@ HCA_ESTIMATE_PAY = True
 # posting_facts whole, so a {"req_id"} object would wipe the stored facts.
 # With the SQL applied the trigger merges it, and one push stamps every row.
 REQ_ID_ONLY_FACTS = os.getenv("REQ_ID_ONLY_FACTS", "0") == "1"
+# 2026-10-14 (owner: "Yeah we need to fix those now"): platforms whose list
+# payload, fetched for every row every night, carries the employer's
+# requisition number (HealthcareSource userArea.requisitionNumber, UKG
+# RequisitionNumber, ADP and ADP CX clientRequisitionID). A row of these
+# platforms whose facts are null tonight (a stored body the detail pass
+# skipped, so the upsert sends a blank one; a teaser with no facts) sends
+# {"req_id": ...} as its posting_facts, as REQ_ID_ONLY_FACTS=1 does for every
+# platform. The live enrichment trigger merges a req_id-only object into the
+# stored facts (sql/hca_req_id_trigger.sql, applied 2026-10-12; read back
+# from pg_get_functiondef on 2026-10-14), so nothing stored is replaced, and
+# every active row gets its number on the first run instead of only the rows
+# whose body is parsed that night.
+REQ_ID_LIST_PLATFORMS = frozenset({"HealthcareSource", "UKG", "ADP", "ADP CX"})
 
 
 def _hca_total(page_html: str) -> int | None:
@@ -21243,10 +21307,12 @@ def normalize_job(j: Job) -> dict:
     # sql/hca_req_id_trigger.sql, which merges it into the stored facts.
     if h is not None and d["posting_facts"] is not None:
         d["posting_facts"]["h"] = h
+    # 2026-10-14: a REQ_ID_LIST_PLATFORMS row sends it the same way without
+    # the switch (the merge trigger is live; see REQ_ID_LIST_PLATFORMS).
     if req_id:
         if d["posting_facts"] is not None:
             d["posting_facts"]["req_id"] = req_id
-        elif REQ_ID_ONLY_FACTS:
+        elif REQ_ID_ONLY_FACTS or d.get("ats_platform") in REQ_ID_LIST_PLATFORMS:
             d["posting_facts"] = {"req_id": req_id}
 
     return d

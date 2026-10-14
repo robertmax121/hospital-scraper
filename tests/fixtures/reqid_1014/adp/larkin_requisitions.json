@@ -1,0 +1,152 @@
+{
+ "jobRequisitions": [
+  {
+   "itemID": "9201252622316_1",
+   "postingInstructions": [],
+   "links": [],
+   "additionalProperties": {},
+   "requisitionTitle": "Nursing Supervisor Full-Time (Night Shift)",
+   "postDate": "2026-10-08T14:49:00.000-04:00",
+   "screeningRequirements": [],
+   "organizationalUnits": [],
+   "workLevelCode": {
+    "shortName": "Full-Time"
+   },
+   "sponsoredVisaTypeCodes": [],
+   "customFieldGroup": {
+    "dateFields": [
+     {
+      "dateValue": "2026-10-08T14:49Z",
+      "nameCode": {
+       "codeValue": "PostingDate"
+      }
+     },
+     {
+      "dateValue": "2026-10-14T17:16Z",
+      "nameCode": {
+       "codeValue": "CurrentServerDateTime"
+      }
+     }
+    ],
+    "indicatorFields": [
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "PriortyStatusFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "InternalPostingFlag"
+      }
+     },
+     {
+      "indicatorValue": true,
+      "nameCode": {
+       "codeValue": "MinValue"
+      }
+     },
+     {
+      "indicatorValue": true,
+      "nameCode": {
+       "codeValue": "IsVsidApplicable"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsSassDlReqForExtPostFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsSassDlReqForIntPostFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsMonetaryFlag"
+      }
+     },
+     {
+      "indicatorValue": false,
+      "nameCode": {
+       "codeValue": "IsNonMonetaryFlag"
+      }
+     }
+    ],
+    "numberFields": [
+     {
+      "numberValue": 0.0,
+      "categoryCode": {
+       "codeValue": "ApplicantCount"
+      }
+     },
+     {
+      "categoryCode": {
+       "codeValue": "AwardAmount"
+      }
+     }
+    ],
+    "stringFields": [
+     {
+      "stringValue": "549656",
+      "nameCode": {
+       "codeValue": "ExternalJobID"
+      }
+     },
+     {
+      "nameCode": {
+       "codeValue": "CareerCenterRefId"
+      }
+     },
+     {
+      "nameCode": {
+       "codeValue": "GuidelineOid"
+      }
+     },
+     {
+      "nameCode": {
+       "codeValue": "CurrencySymbolOrCode"
+      }
+     },
+     {
+      "stringValue": "",
+      "nameCode": {
+       "codeValue": "HomeDepartment"
+      }
+     },
+     {
+      "stringValue": "Professional",
+      "nameCode": {
+       "codeValue": "JobClass"
+      }
+     }
+    ]
+   },
+   "clientRequisitionID": "4664",
+   "requisitionLocations": [
+    {
+     "aliasNames": [],
+     "address": {
+      "cityName": "South Miami",
+      "countrySubdivisionLevel1": {
+       "codeValue": "FL"
+      },
+      "postalCode": "33143"
+     },
+     "nameCode": {
+      "shortName": "Larkin Community Hospital, South Miami, FL, US"
+     }
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "startSequence": 0,
+  "totalNumber": 1
+ }
+}
