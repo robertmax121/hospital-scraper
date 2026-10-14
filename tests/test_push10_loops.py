@@ -306,9 +306,12 @@ def test_talemetry_reports_site_total_vs_fetched_when_it_stops_early(monkeypatch
     with caplog.at_level(logging.WARNING):
         jobs = asyncio.run(scraper.scrape_talemetry(None, "UCHealth", "https://careers.uchealth.org"))
     assert len(jobs) == 100
-    assert any("Talemetry UCHealth: 100 of site total 1296 fetched; stopped early: page 2 failed 3 times (HTTP 403)"
-               in m for m in caplog.messages)
+    # 2026-10-14 (fix 11): pages 3-13 are still read and page 2 is tried once
+    # more after the cool-down; it stays unread, so the crawl is PARTIAL.
+    assert any("Talemetry UCHealth: 100 of site total 1296 fetched; pages [2] unread after the second try "
+               "(page 2 failed 3 times (HTTP 403)); PARTIAL" in m for m in caplog.messages)
     assert "UCHealth" not in scraper.COMPLETE_SYSTEMS
+    assert "UCHealth" in scraper.PARTIAL_SYSTEMS
 
 
 # ── 5. HealthcareSource: stable sort, dedupe, skip a failed page ────────────

@@ -15120,13 +15120,42 @@ TALEMETRY_SITES = {
     "LifeBridge Health":    "https://jobs.lifebridgehealth.org",   # 561; MD (Sinai, Northwest, Carroll, Levindale)
     "Asante Health System": "https://jobs.asante.org",             # 231; OR (Rogue Regional, Three Rivers, Ashland)
 }
-TALEMETRY_PER_PAGE = 100
+# 2026-10-14 (fix 11): the 10-14 run listed Penn Medicine 400 of 1,770,
+# UCHealth 500 of 1,341, Asante 200 of 258 and LifeBridge 0 of 577: whole
+# 100-row pages, the crawl ending at the first page that failed three times.
+# Nothing in the adapter caps them; read from a home address the same day
+# every page answered (Penn 1,770 of 1,770, UCHealth 1,341 of 1,341). All
+# five sites (and HCA's board) are one Cloudflare edge, lb.ttcportals.com,
+# which admits a datacenter address a few pages at a time; HCA has been
+# local-only since 09-16 for the same reason. Changes:
+#   - per_page 1000. PeaceHealth and Asante serve it, so the whole board is
+#     ONE request (811 and 257 jobs); Penn, UCHealth and LifeBridge clamp it
+#     to 100 and page exactly as before (page N with 1000 = page N with 100,
+#     measured). The crawl pages by the entries a page really carries, never
+#     by the per_page it asked for. PeaceHealth stopped at 800 of 811 every
+#     night with 100-row pages and still called that complete (98.6%).
+#   - a page that fails is skipped, not the end of the crawl; after the
+#     pass, the unread pages get one more try after TALEMETRY_COOLDOWN_S.
+#     Pages still unread make the crawl PARTIAL (HealthcareSource rule).
+#   - a 403 moves the next attempt to the next TLS profile: careers.uchealth.org
+#     answered curl_cffi 0.16's "chrome" (chrome150) and chrome136 with a 403
+#     challenge and chrome131 / safari17_0 with 200, three times in a row.
+#   - run_talemetry lists the sites one at a time, and only then runs the
+#     detail passes, which used to send job-page fetches to the same edge
+#     while the other sites were still paging.
+#   - rows lost to the order's ties at page boundaries (LifeBridge: 7 of 577,
+#     each id twice across a boundary) are looked for once more in title order.
+TALEMETRY_PER_PAGE = 1000
 TALEMETRY_PAGE_CAP = int(os.getenv("TALEMETRY_PAGE_CAP", "60"))
 TALEMETRY_IMPERSONATE = "chrome"
+TALEMETRY_IMPERSONATE_CHAIN = ("chrome", "chrome131", "safari17_0")
 # 2026-10-07 (push 10): a list page that fails is retried this many more
-# times, TALEMETRY_RETRY_BASE_S doubling each time, before the crawl stops.
+# times, TALEMETRY_RETRY_BASE_S doubling each time (2026-10-14: then skipped).
 TALEMETRY_PAGE_RETRIES = 2
 TALEMETRY_RETRY_BASE_S = 3.0
+TALEMETRY_MAX_CONSECUTIVE_FAILURES = 3      # failed pages in a row that end a pass
+TALEMETRY_COOLDOWN_S = float(os.getenv("TALEMETRY_COOLDOWN_S", "45"))
+TALEMETRY_RESORT = "title,asc"              # the site's other sort_by (search page: title / location_city)
 TALEMETRY_DESC_MAX_PER_RUN = int(os.getenv("TALEMETRY_DESC_MAX_PER_RUN", "1500"))   # job-page JSON-LD
 TALEMETRY_DESC_BUDGET = _DescBudget(TALEMETRY_DESC_MAX_PER_RUN)
 _TALEMETRY_BAD_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
@@ -15160,62 +15189,143 @@ def _talemetry_job(e: dict, system: str, base: str) -> Job | None:
     )
 
 
+async def _talemetry_page(system: str, base: str, page: int, state: dict, sort_by: str | None = None):
+    """(search.json payload, "") for one list page, or (None, problem) after
+    TALEMETRY_PAGE_RETRIES retries with a doubling backoff. A 403 (the edge's
+    challenge) moves state["imp"] to the next TALEMETRY_IMPERSONATE_CHAIN
+    profile for the next attempt, and the site keeps the profile that works."""
+    params = {"page": str(page), "per_page": str(TALEMETRY_PER_PAGE)}
+    if sort_by:
+        params["sort_by"] = sort_by
+    problem = ""
+    for attempt in range(TALEMETRY_PAGE_RETRIES + 1):
+        try:
+            # curl_cffi with a browser TLS profile: UCHealth answers aiohttp with 403.
+            r = await asyncio.to_thread(
+                _curl_fetch, "get", f"{base}/jobs/search.json", state["imp"], 40,
+                params=params, headers={"Accept": "application/json", "Referer": f"{base}/jobs/search"})
+            data = r.json()
+            if not isinstance(data, dict):
+                raise ValueError(f"not a search.json object ({type(data).__name__})")
+            return data, ""
+        except Exception as e:
+            m = re.search(r"\bHTTP (\d{3})\b", str(e))
+            problem = f"HTTP {m.group(1)}" if m else f"{type(e).__name__}: {e}"
+            nxt = ""
+            if m and m.group(1) == "403" and len(TALEMETRY_IMPERSONATE_CHAIN) > 1:
+                chain = TALEMETRY_IMPERSONATE_CHAIN
+                i = chain.index(state["imp"]) if state["imp"] in chain else -1
+                state["imp"] = chain[(i + 1) % len(chain)]
+                nxt = f" ({state['imp']} TLS next)"
+            if attempt < TALEMETRY_PAGE_RETRIES:
+                delay = TALEMETRY_RETRY_BASE_S * (2 ** attempt)
+                logger.warning(f"Talemetry {system}: page {page} failed ({problem}); "
+                               f"retry {attempt + 1}/{TALEMETRY_PAGE_RETRIES} in {delay:.0f}s{nxt}")
+                await _retry_sleep(delay)
+    return None, problem
+
+
 async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
+    """Every row of one Jobvite Engage board (search.json), see the 2026-10-14
+    note at TALEMETRY_PER_PAGE: biggest page the site serves, paged by the
+    entries a page carries, failed pages skipped and tried again after a
+    cool-down, ties recovered in title order, PARTIAL if a page stays unread."""
     base = base_url.rstrip("/")
     jobs: list[Job] = []
     seen: set[str] = set()
-    page, total = 1, None
-    stopped_early = ""
-    while page <= TALEMETRY_PAGE_CAP:
-        # curl_cffi with a Chrome TLS profile: UCHealth answers aiohttp with 403.
-        # 2026-10-07 (push 10): a page that fails is retried with a backoff
-        # before the crawl stops, and every failure is logged at WARNING with
-        # the status (Asante and LifeBridge stopped after page 1 on 10-06;
-        # UCHealth, PeaceHealth and Penn Medicine have never listed a row).
-        # Live on 2026-10-07: careers.uchealth.org answers a Cloudflare
-        # challenge (403 "Just a moment") to any plain-TLS client and 200 to
-        # curl_cffi chrome from a residential address, pages 1 and 2 alike.
-        data, problem = None, ""
-        for attempt in range(TALEMETRY_PAGE_RETRIES + 1):
-            try:
-                r = await asyncio.to_thread(
-                    _curl_fetch, "get", f"{base}/jobs/search.json", TALEMETRY_IMPERSONATE, 40,
-                    params={"page": str(page), "per_page": str(TALEMETRY_PER_PAGE)},
-                    headers={"Accept": "application/json", "Referer": f"{base}/jobs/search"})
-                data = r.json()
-                break
-            except Exception as e:
-                m = re.search(r"\bHTTP (\d{3})\b", str(e))
-                problem = f"HTTP {m.group(1)}" if m else f"{type(e).__name__}: {e}"
-                if attempt < TALEMETRY_PAGE_RETRIES:
-                    delay = TALEMETRY_RETRY_BASE_S * (2 ** attempt)
-                    logger.warning(f"Talemetry {system}: page {page} failed ({problem}); "
-                                   f"retry {attempt + 1}/{TALEMETRY_PAGE_RETRIES} in {delay:.0f}s")
-                    await _retry_sleep(delay)
-        if data is None:
-            stopped_early = f"page {page} failed {TALEMETRY_PAGE_RETRIES + 1} times ({problem})"
-            break
-        entries = (data or {}).get("entries") or []
-        if total is None:
-            try:
-                total = int((data or {}).get("total_entries") or 0)
-            except (TypeError, ValueError):
-                total = 0
+    state = {"imp": TALEMETRY_IMPERSONATE}
+    info = {"total": None, "page_len": 0, "last_page": TALEMETRY_PAGE_CAP, "problem": ""}
+
+    def done() -> bool:
+        return bool(info["total"]) and len(seen) >= info["total"]
+
+    def take(entries) -> None:
         for e in entries:
             job = _talemetry_job(e, system, base)
             if job and job.job_id not in seen:
                 seen.add(job.job_id)
                 jobs.append(job)
-        if not entries or len(entries) < TALEMETRY_PER_PAGE or (total and len(seen) >= total):
-            break
-        page += 1
-        await jitter()
-    else:
-        stopped_early = f"TALEMETRY_PAGE_CAP {TALEMETRY_PAGE_CAP} reached"
-    short = bool(total) and len(jobs) < COMPLETE_RATIO * total
-    if stopped_early or short:
+
+    async def one_pass(pages=None, sort_by=None) -> list[int]:
+        """Read `pages` (None: 1, 2, ... to the board's end). Returns the
+        pages left unread: failed ones, and those after
+        TALEMETRY_MAX_CONSECUTIVE_FAILURES failures in a row."""
+        queue = list(pages) if pages is not None else None
+        unread: list[int] = []
+        page, in_a_row = 0, 0
+        while True:
+            if queue is not None:
+                if not queue:
+                    break
+                page = queue.pop(0)
+            else:
+                page += 1
+                if page > info["last_page"]:
+                    break
+            if in_a_row >= TALEMETRY_MAX_CONSECUTIVE_FAILURES:
+                # the edge is refusing us: leave the rest for the cool-down round
+                rest = queue if queue is not None else (
+                    range(page + 1, info["last_page"] + 1) if info["total"] is not None else [])
+                unread.append(page)
+                unread.extend(rest)
+                break
+            data, problem = await _talemetry_page(system, base, page, state, sort_by)
+            if data is None:
+                unread.append(page)
+                in_a_row += 1
+                info["problem"] = f"page {page} failed {TALEMETRY_PAGE_RETRIES + 1} times ({problem})"
+                await jitter()
+                continue
+            in_a_row = 0
+            entries = data.get("entries") or []
+            if info["total"] is None:
+                try:
+                    info["total"] = int(data.get("total_entries") or 0)
+                except (TypeError, ValueError):
+                    info["total"] = 0
+            if entries and not info["page_len"]:
+                # the rows a full page really carries: 1,000 on PeaceHealth and
+                # Asante, 100 where the site clamps per_page
+                info["page_len"] = len(entries)
+                if info["total"]:
+                    info["last_page"] = min(TALEMETRY_PAGE_CAP, -(-info["total"] // info["page_len"]))
+            take(entries)
+            if queue is None and (not entries or done() or len(entries) < info["page_len"]):
+                break
+            await jitter()
+        return unread
+
+    unread = await one_pass()
+    if unread and not done():
+        logger.warning(f"Talemetry {system}: {len(jobs)} of site total {info['total']} after the first pass; "
+                       f"pages {unread[:12]}{'...' if len(unread) > 12 else ''} unread ({info['problem']}); "
+                       f"one more try in {TALEMETRY_COOLDOWN_S:.0f}s")
+        await _retry_sleep(TALEMETRY_COOLDOWN_S)
+        # page 1 never answered: the board's size is unknown, so read it from the start again
+        unread = await one_pass(None if info["total"] is None else unread)
+    elif unread:
+        unread = []            # every job is in hand: what failed was past the board's end
+    if not unread and info["total"] and not done():
+        # every page read, some ids twice: rows the order's ties moved across a
+        # page boundary between two requests are looked for in title order
+        before = len(seen)
+        await one_pass(None, sort_by=TALEMETRY_RESORT)
+        logger.info(f"  Talemetry {system}: title-order pass found {len(seen) - before} more "
+                    f"({len(seen)} of {info['total']})")
+
+    total = info["total"]
+    if unread and jobs:
+        # 2026-10-13 HealthcareSource rule: a page nobody read may hold live
+        # postings, so the sweep must not retire anything of this site tonight.
+        PARTIAL_SYSTEMS.add(system)
+        logger.warning(f"Talemetry {system}: {len(jobs)} of site total {total} fetched; pages "
+                       f"{unread[:12]}{'...' if len(unread) > 12 else ''} unread after the second try "
+                       f"({info['problem']}); PARTIAL, not swept tonight")
+    elif total and len(jobs) < COMPLETE_RATIO * total:
         logger.warning(f"Talemetry {system}: {len(jobs)} of site total {total} fetched"
-                       + (f"; stopped early: {stopped_early}" if stopped_early else ""))
+                       + (f" ({info['problem']})" if info["problem"] else ""))
+    if state["imp"] != TALEMETRY_IMPERSONATE:
+        logger.info(f"  Talemetry {system}: read with the {state['imp']} TLS profile")
     logger.info(f"  Talemetry {system}: {len(jobs)} jobs (site total {total})")
     report_complete(system, len(jobs), total, feed="TALEMETRY_SITES")
     return jobs
@@ -15256,24 +15366,34 @@ async def run_talemetry(session) -> list[Job]:
         return []
     logger.info(f"Talemetry: scraping {len(TALEMETRY_SITES)} career sites...")
 
-    async def _one(sys_, base):
-        jobs = await scrape_talemetry(session, sys_, base)
+    # 2026-10-14 (fix 11): every site is listed first, one at a time (they
+    # share one Cloudflare edge, lb.ttcportals.com), and only then do the
+    # detail passes start; they used to fetch job pages from that edge while
+    # the other sites were still paging, and the list pages are what decide
+    # the sweep.
+    if DETAIL_FETCH:
+        TALEMETRY_DESC_BUDGET.expect(TALEMETRY_SITES)
+    listed: dict[str, list[Job]] = {}
+    for n, (sys_, base) in enumerate(TALEMETRY_SITES.items()):
+        if n:
+            await jitter()
+        try:
+            listed[sys_] = await scrape_talemetry(session, sys_, base)
+        except Exception as e:
+            listed[sys_] = []
+            logger.info(f"  Talemetry {sys_}: ERROR {e}")
+
+    async def _details(sys_, jobs):
         if DETAIL_FETCH and jobs:
             try:
                 await _detail_pass(session, sys_, jobs, TALEMETRY_DESC_BUDGET,
                                    lambda j: _talemetry_detail(session, j), "Talemetry")
             except Exception as e:
                 logger.info(f"Talemetry {sys_}: detail pass failed ({e}); listed rows kept")
-        return jobs
 
-    if DETAIL_FETCH:
-        TALEMETRY_DESC_BUDGET.expect(TALEMETRY_SITES)
-    results = await asyncio.gather(*[_tenant_reporting(TALEMETRY_DESC_BUDGET, s, _one(s, b))
-                                     for s, b in TALEMETRY_SITES.items()], return_exceptions=True)
-    out = [j for r in results if isinstance(r, list) for j in r]
-    for s, r in zip(TALEMETRY_SITES, results):
-        if isinstance(r, Exception):
-            logger.info(f"  Talemetry {s}: ERROR {r}")
+    await asyncio.gather(*[_tenant_reporting(TALEMETRY_DESC_BUDGET, s, _details(s, listed[s]))
+                           for s in TALEMETRY_SITES], return_exceptions=True)
+    out = [j for s in TALEMETRY_SITES for j in listed[s]]
     logger.info(f"  Talemetry total: {len(out):,} jobs")
     return out
 
