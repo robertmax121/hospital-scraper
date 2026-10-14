@@ -1,0 +1,85 @@
+{
+ "refineSearch": {
+  "status": 200,
+  "hits": 3,
+  "totalHits": 3346,
+  "data": {
+   "jobs": [
+    {
+     "jobId": "R0471693",
+     "reqId": "R0471693",
+     "jobSeqNo": "DAVIUSR0471693WORKDAY",
+     "title": "Hemodialysis Patient Care Technician (CCHT or BONENT HIGHLY PREFERRED)",
+     "city": "FLOWER MOUND",
+     "state": "Texas",
+     "cityState": "FLOWER MOUND, Texas",
+     "country": "United States of America",
+     "postedDate": "2026-10-13T00:00:00.000+0000",
+     "dateCreated": "2026-08-03T18:46:51.337+0000",
+     "applyUrl": "https://davita.wd1.myworkdayjobs.com/DKC_External/job/12538---Renal-Center-of-Flower-Mound/Patient-Care-Technician_R0471693/apply",
+     "category": "Patient Care Technician",
+     "multi_category": [
+      "Patient Care Technician"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "We are looking for a Patient Care Technician to provide direct, hands-on care to patients with end-stage renal disease in an outpatient dialysis clinic. Key responsibilities include delivering safe and compassionate dialysis care and monitoring patient progress. Ideal candidates are comfortable with medical equipment and flexible to work varied shifts.",
+     "latitude": "33.01457",
+     "longitude": "-97.09696"
+    },
+    {
+     "jobId": "R0480962",
+     "reqId": "R0480962",
+     "jobSeqNo": "DAVIUSR0480962WORKDAY",
+     "title": "Patient Care Technician",
+     "city": "FRISCO",
+     "state": "Texas",
+     "cityState": "FRISCO, Texas",
+     "country": "United States of America",
+     "postedDate": "2026-10-06T00:00:00.000+0000",
+     "dateCreated": "2026-10-06T16:22:18.306+0000",
+     "applyUrl": "https://davita.wd1.myworkdayjobs.com/DKC_External/job/12528---Renal-Center-of-Frisco/Patient-Care-Technician_R0480962/apply",
+     "category": "Patient Care Technician",
+     "multi_category": [
+      "Patient Care Technician"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Become part of our team as a Patient Care Technician, supporting patients with end-stage renal disease in an outpatient dialysis clinic. Deliver direct, hands-on care under RN supervision, ensuring safe and compassionate dialysis treatment. Ideal for individuals with a high school diploma or GED and a commitment to patient care.",
+     "latitude": "33.15067",
+     "longitude": "-96.82361"
+    },
+    {
+     "jobId": "R0477569",
+     "reqId": "R0477569",
+     "jobSeqNo": "DAVIUSR0477569WORKDAY",
+     "title": "Patient Care Technician",
+     "city": "CARROLLTON",
+     "state": "Texas",
+     "cityState": "CARROLLTON, Texas",
+     "country": "United States of America",
+     "postedDate": "2026-09-11T00:00:00.000+0000",
+     "dateCreated": "2026-09-11T22:42:51.179+0000",
+     "applyUrl": "https://davita.wd1.myworkdayjobs.com/DKC_External/job/12524---Renal-Center-of-Carrollton/Patient-Care-Technician_R0477569/apply",
+     "category": "Patient Care Technician",
+     "multi_category": [
+      "Patient Care Technician"
+     ],
+     "type": "Full time",
+     "descriptionTeaser": "Join us as a Patient Care Technician supporting patients with end-stage renal disease in an outpatient dialysis clinic. Deliver direct, hands-on care under RN supervision, ensuring safe and compassionate dialysis treatment. Ideal for candidates with a high school diploma or GED and a commitment to patient care.",
+     "latitude": "32.95373",
+     "longitude": "-96.89028"
+    }
+   ],
+   "locationData": {}
+  },
+  "eid": {
+   "trialIndex": -1,
+   "eid": "6acfcce548b3535263e72ab7",
+   "searchType": "allJobs",
+   "isMultiLingualVectorApplied": false,
+   "query": "",
+   "variant": 0,
+   "banditId": "",
+   "keywordLanguage": "en"
+  }
+ }
+}

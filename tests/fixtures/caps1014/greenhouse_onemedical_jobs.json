@@ -1,0 +1,205 @@
+{
+ "jobs": [
+  {
+   "absolute_url": "http://www.onemedical.com/careers/all-departments/8282181?gh_jid=8282181",
+   "data_compliance": [
+    {
+     "type": "gdpr",
+     "requires_consent": false,
+     "requires_processing_consent": false,
+     "requires_retention_consent": false,
+     "retention_period": null,
+     "demographic_data_consent_applies": false
+    }
+   ],
+   "internal_job_id": 3339663,
+   "location": {
+    "name": "Strawberry Village,  CA"
+   },
+   "metadata": [
+    {
+     "id": 41427,
+     "name": "Employment Type",
+     "value": "Regular",
+     "value_type": "single_select"
+    },
+    {
+     "id": 919179,
+     "name": "Employee Time Type",
+     "value": "Full_time",
+     "value_type": "single_select"
+    },
+    {
+     "id": 919186,
+     "name": "Work Shift",
+     "value": "Regular Hours - Weekday (United States of America)",
+     "value_type": "single_select"
+    },
+    {
+     "id": 958130,
+     "name": "Holding Tank Job",
+     "value": "No Tank Req associated with this job",
+     "value_type": "single_select"
+    },
+    {
+     "id": 919159,
+     "name": "Target End Date",
+     "value": "",
+     "value_type": "date"
+    },
+    {
+     "id": 50100,
+     "name": "Provider Role",
+     "value": null,
+     "value_type": "single_select"
+    },
+    {
+     "id": 919238,
+     "name": "Clinical Specialty",
+     "value": null,
+     "value_type": "single_select"
+    },
+    {
+     "id": 50069,
+     "name": "Clinician Type",
+     "value": null,
+     "value_type": "multi_select"
+    },
+    {
+     "id": 86603,
+     "name": "Market",
+     "value": "San Francisco",
+     "value_type": "single_select"
+    },
+    {
+     "id": 65017,
+     "name": "Hours Per Week",
+     "value": "40",
+     "value_type": "short_text"
+    },
+    {
+     "id": 175576,
+     "name": "Operations Role",
+     "value": "MSS",
+     "value_type": "single_select"
+    },
+    {
+     "id": 476073,
+     "name": "Legal Entity",
+     "value": "One Medical Group Inc. (CA)",
+     "value_type": "single_select"
+    }
+   ],
+   "id": 8282181,
+   "updated_at": "2026-10-14T14:44:35-04:00",
+   "requisition_id": "TANK",
+   "title": "Administrative Assistant",
+   "company_name": "One Medical",
+   "first_published": "2026-10-14T14:44:35-04:00",
+   "language": "en",
+   "application_deadline": null
+  },
+  {
+   "absolute_url": "http://www.onemedical.com/careers/all-departments/8155555?gh_jid=8155555",
+   "data_compliance": [
+    {
+     "type": "gdpr",
+     "requires_consent": false,
+     "requires_processing_consent": false,
+     "requires_retention_consent": false,
+     "retention_period": null,
+     "demographic_data_consent_applies": false
+    }
+   ],
+   "internal_job_id": 3521427,
+   "location": {
+    "name": "Orange County, CA"
+   },
+   "metadata": [
+    {
+     "id": 41427,
+     "name": "Employment Type",
+     "value": "Regular",
+     "value_type": "single_select"
+    },
+    {
+     "id": 919179,
+     "name": "Employee Time Type",
+     "value": "Full_time",
+     "value_type": "single_select"
+    },
+    {
+     "id": 919186,
+     "name": "Work Shift",
+     "value": "Regular Hours - Weekday (United States of America)",
+     "value_type": "single_select"
+    },
+    {
+     "id": 958130,
+     "name": "Holding Tank Job",
+     "value": "No Tank Req associated with this job",
+     "value_type": "single_select"
+    },
+    {
+     "id": 919159,
+     "name": "Target End Date",
+     "value": "",
+     "value_type": "date"
+    },
+    {
+     "id": 50100,
+     "name": "Provider Role",
+     "value": null,
+     "value_type": "single_select"
+    },
+    {
+     "id": 919238,
+     "name": "Clinical Specialty",
+     "value": null,
+     "value_type": "single_select"
+    },
+    {
+     "id": 50069,
+     "name": "Clinician Type",
+     "value": null,
+     "value_type": "multi_select"
+    },
+    {
+     "id": 86603,
+     "name": "Market",
+     "value": "Orange County",
+     "value_type": "single_select"
+    },
+    {
+     "id": 65017,
+     "name": "Hours Per Week",
+     "value": "40",
+     "value_type": "short_text"
+    },
+    {
+     "id": 175576,
+     "name": "Operations Role",
+     "value": "MSS",
+     "value_type": "single_select"
+    },
+    {
+     "id": 476073,
+     "name": "Legal Entity",
+     "value": "One Medical Group Inc. (CA)",
+     "value_type": "single_select"
+    }
+   ],
+   "id": 8155555,
+   "updated_at": "2026-10-13T17:05:48-04:00",
+   "requisition_id": "TANK",
+   "title": "Administrative Assistant/Front Desk Coordinator (Aliso Viejo, CA) ",
+   "company_name": "One Medical",
+   "first_published": "2026-08-24T19:02:05-04:00",
+   "language": "en",
+   "application_deadline": null
+  }
+ ],
+ "meta": {
+  "total": 396
+ }
+}
