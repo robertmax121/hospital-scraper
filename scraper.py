@@ -1447,6 +1447,38 @@ def _pay_slot(canon: str, job_id: str, run_day: Optional[int] = None) -> bool:
     return zlib.crc32(f"pay|{canon}|{job_id}".encode("utf-8")) % PAY_REREAD_DAYS == day % PAY_REREAD_DAYS
 
 
+# ── Requisition-number re-reads (2026-10-14, owner: "we need to fix those now")
+# TalentBrew's search cards carry only TalentBrew's own id (CommonSpirit,
+# Kaiser, Enhabit, Maxim, ScionHealth, Hackensack, University Health,
+# MemorialCare; UHG's cards are the exception), so the employer's number
+# (tb_req_id_from_page) comes from the job page, and the detail pass skips a
+# stored body: on 2026-10-14 only 4,321 of 22,285 active TalentBrew rows had
+# one, though every row had been listed that day. Inside REQ_REREAD_WINDOW
+# (ISO dates, inclusive) a stored body on REQ_REREAD_PLATFORMS whose stored
+# posting_facts carry no req_id (the known-body load reads posting_facts->>
+# req_id as "rq") is a detail candidate again ("req"), after the tenant's
+# rows with no body, inside the tenant's share of the budget its pass
+# already has (no new budget, no new pass). A fetch that brings nothing
+# keeps the stored body (_settle_held). Backlog on 10-14: ~13,000 rows
+# outside UHG (whose cards give the number) against 1,500 a tenant a night:
+# ScionHealth, Hackensack, University Health, MemorialCare and Maxim clear
+# on the first night, Kaiser and Enhabit on the second, CommonSpirit (~5,100)
+# in about four. Outside the window nothing changes; drop it on a later push.
+REQ_REREAD_PLATFORMS = frozenset({"TalentBrew"})
+REQ_REREAD_WINDOW = ("2026-10-15", "2026-10-28")
+_KNOWN_NOREQ: set = set()         # (system, job_id) of REQ_REREAD_PLATFORMS bodies stored without a req_id
+
+
+def _req_reread_open() -> bool:
+    """True on a run day inside REQ_REREAD_WINDOW."""
+    try:
+        a = datetime.strptime(REQ_REREAD_WINDOW[0], "%Y-%m-%d").toordinal()
+        b = datetime.strptime(REQ_REREAD_WINDOW[1], "%Y-%m-%d").toordinal()
+    except (TypeError, ValueError, IndexError):
+        return False
+    return a <= _run_day() <= b
+
+
 def _facts_version(v):
     try:
         return int(str(v).strip())
@@ -1467,9 +1499,12 @@ def set_known_bodies(rows) -> int:
     Every row's fh (posting_facts->>'h') whose facts carry the current
     FACTS_VERSION goes to _KNOWN_FACTS_H, which normalize_job reads to skip
     re-parsing an unchanged body (facts from older rules are never skipped).
+    2026-10-14: a row on REQ_REREAD_PLATFORMS that carries the rq key
+    (posting_facts->>'req_id') with no value joins _KNOWN_NOREQ; a row
+    without the key does not (requisition-number re-reads).
     Returns the detail-pass map's size, as before."""
-    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H
-    kb, fv, unpriced, fh = {}, {}, set(), {}
+    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H, _KNOWN_NOREQ
+    kb, fv, unpriced, fh, noreq = {}, {}, set(), {}, set()
     for r in rows or []:
         try:
             n = int(r.get("desc_len") or 0)
@@ -1491,8 +1526,14 @@ def set_known_bodies(rows) -> int:
                     unpriced.add(k)
                 else:
                     unpriced.discard(k)
+                if (r.get("ats_platform") in REQ_REREAD_PLATFORMS and "rq" in r
+                        and not str(r.get("rq") or "").strip()):
+                    noreq.add(k)
+                else:
+                    noreq.discard(k)
     _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED = kb, fv, unpriced
     _KNOWN_FACTS_H = {k: v[1] for k, v in fh.items()}
+    _KNOWN_NOREQ = noreq
     return len(kb)
 
 
@@ -1519,8 +1560,10 @@ def load_known_bodies() -> int:
             # its facts hash (set_known_bodies keeps the detail-pass maps to
             # KNOWN_BODY_PLATFORMS). The page walks the same id range as
             # before; only more of its rows come back.
+            # 2026-10-14: rq (posting_facts->>req_id) feeds the
+            # requisition-number re-reads (_KNOWN_NOREQ); same rows, one more column.
             u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,ats_platform,desc_len,wage_min,"
-                 f"fv:posting_facts-%3E%3Ev,fh:posting_facts-%3E%3Eh"
+                 f"fv:posting_facts-%3E%3Ev,fh:posting_facts-%3E%3Eh,rq:posting_facts-%3E%3Ereq_id"
                  f"&is_active=is.true&desc_len=gte.200"
                  f"&id=gt.{last}&order=id.asc&limit={KNOWN_BODY_PAGE}")
             rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
@@ -1566,6 +1609,10 @@ def _known_kind(system: str, job):
       "force"  (push 10) a stored body of a FORCED_REFRESH tenant on its one
                night inside the tenant's window: a candidate after the rows
                with no body, before the pay re-reads
+      "req"    (2026-10-14) a stored body on REQ_REREAD_PLATFORMS whose stored
+               facts have no req_id, while REQ_REREAD_WINDOW is open and the
+               list gave none: a candidate after the force re-reads, before
+               the pay re-reads, so the page's requisition number is read
     Leaves the job unchanged."""
     key = (_canon_system(system), str(job.job_id))
     stored = _KNOWN_BODIES.get(key, 0)
@@ -1581,6 +1628,9 @@ def _known_kind(system: str, job):
         return "force"
     if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
         return "pay"
+    if (key in _KNOWN_NOREQ and getattr(job, "ats_platform", "") in REQ_REREAD_PLATFORMS
+            and not str(getattr(job, "req_id", "") or "").strip() and _req_reread_open()):
+        return "req"
     if v is not None and v < FACTS_VERSION and stored >= DETAIL_MIN_CHARS:
         return "stale"
     return "known"
@@ -1700,7 +1750,8 @@ def _held_note(held) -> str:
     return (f"{n.get('refresh', 0) + n.get('stale', 0)} stored bodies re-read ({n.get('stale', 0)} with older facts), "
             f"{n.get('cut', 0)} cut at the old 8,000 cap queued, "
             + (f"{n['force']} stored bodies queued on their forced slot, " if n.get("force") else "")
-            + (f"{n['pay']} unpriced stored bodies queued for their pay field, " if n.get("pay") else ""))
+            + (f"{n['pay']} unpriced stored bodies queued for their pay field, " if n.get("pay") else "")
+            + (f"{n['req']} stored bodies queued for their requisition number, " if n.get("req") else ""))
 
 
 def _settle_held(system: str, held, job_of=lambda it: it) -> None:
@@ -3053,8 +3104,9 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     stored bodies go first ("stale" facts, then those whose slot is tonight),
     then the rows with no body (transparency states, then the newest), then
     stored bodies of a FORCED_REFRESH tenant on their slot ("force", push 10),
+    then stored bodies whose requisition number is missing ("req", 2026-10-14),
     then unpriced stored bodies due for their pay field ("pay", push 9), then
-    bodies cut at the old 8,000 cap. Each re-read, forced, pay or cut row is
+    bodies cut at the old 8,000 cap. Each re-read, forced, req, pay or cut row is
     appended to `held` as (item, list text, kind); the caller hands `held` to
     _settle_held after fetching, so a row no fetch refilled keeps its stored
     body. Without `held` every stored body is skipped, as before."""
@@ -3086,7 +3138,9 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
             elif ok:
                 dup += 1
             continue
-        tier[id(it)] = {"cut": 3, "pay": 2, "force": 1}.get(kind, 0)
+        # 2026-10-14: "req" (requisition-number re-reads) sits between the
+        # forced re-reads and the pay re-reads.
+        tier[id(it)] = {"cut": 4, "pay": 3, "req": 2, "force": 1}.get(kind, 0)
         cands.append(it)
     random.shuffle(cands)
     cands.sort(key=lambda it: (tier[id(it)], _detail_rank(job_of(it))))
@@ -3100,8 +3154,9 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     if held is not None:
         stale_ids = {id(it) for it in stale}
         held.extend((it, job_of(it).description, "stale" if id(it) in stale_ids else "refresh") for it in refresh)
-        held.extend((it, job_of(it).description, "cut") for it in cands if tier[id(it)] == 3)
-        held.extend((it, job_of(it).description, "pay") for it in cands if tier[id(it)] == 2)
+        held.extend((it, job_of(it).description, "cut") for it in cands if tier[id(it)] == 4)
+        held.extend((it, job_of(it).description, "pay") for it in cands if tier[id(it)] == 3)
+        held.extend((it, job_of(it).description, "req") for it in cands if tier[id(it)] == 2)
         held.extend((it, job_of(it).description, "force") for it in cands if tier[id(it)] == 1)
     return refresh + cands, known, dup
 
@@ -8022,7 +8077,25 @@ FINDLY_GOOGLE_PAY_KEY = {"UPMC": "salary", "University Hospitals": "relocation"}
 # too. The search payload carries it as job.ref; job.clientid is null on
 # every UCLA row. On 2026-10-14 ref was set, numeric and unique on all 681
 # listed rows, and equal to the page's "Job #" on 15 of 15 pages read.
-FINDLY_GOOGLE_REQ_ID = {"AdventHealth": "clientid", "UCLA Health": "ref"}
+#
+# 2026-10-14 (owner: "we need to fix those now"): UPMC, University Hospitals,
+# UT Southwestern and Scripps print job.ref. Read from the whole search
+# payload that day: ref set and a requisition number (_hca_req_value) on
+# 2,919 of 2,919 UPMC rows ("8457814813", older "26000051", "2600023K"),
+# 1,218 of 1,218 University Hospitals ("260008MP"), 907 of 907 UT Southwestern
+# ("978816", "260000KR") and 355 of 355 Scripps ("262005926"); no ref ends in
+# AdventHealth's per-location "-N". The job pages read that day print the
+# same value: UPMC "Job ID:" (24007855, 23971655, 23758364), University
+# Hospitals "Position #:" (23842240, 23856269, 23455340), UT Southwestern
+# "Job Number:" (23943857, 24007454, 23891515, 22650827, and 24007415, a
+# faculty row whose clientid is the Interfolio id 195567 and whose stored
+# Apply link is apply.interfolio.com: 368 of the 907 rows are such rows, so
+# clientid is NOT read there), Scripps "Job ID:" (24008661, 23911683,
+# 22560864); the JSON-LD identifier.value agrees on every one. Two UT
+# Southwestern refs sit on two rows each (one requisition posted twice).
+FINDLY_GOOGLE_REQ_ID = {"AdventHealth": "clientid", "UCLA Health": "ref",
+                        "UPMC": "ref", "University Hospitals": "ref",
+                        "UT Southwestern Medical Center": "ref", "Scripps Health": "ref"}
 
 
 def findly_google_req_id(job_json, key: str = "clientid") -> str:
@@ -16307,6 +16380,21 @@ def _lc_facility(system: str, name: str, city: str = "") -> str:
     return out or name
 
 
+# 2026-10-14 (owner: "we need to fix those now"): the employer's job number.
+# job_id is LiquidCompass's own id (52810916, also in the careers.unitypoint
+# .org URL); the posting prints UnityPoint's number: "Job ID: 188593" in its
+# attribute list, or, on Meriter (Madison) postings, the BrassRing number as
+# the body's first line ("16903BR"). The v1/search result carries it as
+# ats_id (data.originalObject.id holds the same value; cp_up_job_id does not).
+# On 2026-10-14, 1,660 of 1,660 listed rows: ats_id equal to the body's
+# "Job ID:" line on 1,507 and to its first line on the 153 Meriter rows; the
+# rendered pages 52810916 ("Job ID: 188593") and 52810673 ("16903BR") agree.
+# Kept as printed (digits, or digits + "BR"); _hca_req_value fits.
+def liquidcompass_req_id(r) -> str:
+    """UnityPoint's job number on a LiquidCompass search result (ats_id), or ""."""
+    return _hca_req_value((r or {}).get("ats_id")) if isinstance(r, dict) else ""
+
+
 def _liquidcompass_job(r: dict, system: str, default_state: str) -> Job | None:
     jid = str((r or {}).get("id") or "").strip()
     title = _html_unescape(str(r.get("raw_title") or r.get("title") or "")).strip()
@@ -16333,6 +16421,7 @@ def _liquidcompass_job(r: dict, system: str, default_state: str) -> Job | None:
         url=url, job_id=jid, posted_date=posted,
         description=strip_html(str(r.get("description") or ""))[:12000],
         ats_platform="LiquidCompass",
+        req_id=liquidcompass_req_id(r),
     )
 
 
@@ -17468,6 +17557,17 @@ HCA_ESTIMATE_PAY = True
 # posting_facts whole, so a {"req_id"} object would wipe the stored facts.
 # With the SQL applied the trigger merges it, and one push stamps every row.
 REQ_ID_ONLY_FACTS = os.getenv("REQ_ID_ONLY_FACTS", "0") == "1"
+# 2026-10-14 (owner: "we need to fix those now"): the merge is live. Read
+# with pg_get_functiondef on 2026-10-14, preserve_scraped_enrichment() merges
+# an object holding only req_id into the stored facts (old || new) and keeps
+# a stored req_id under an object built without one. These platforms send
+# the {"req_id"}-only object on a row whose facts are null tonight whatever
+# REQ_ID_ONLY_FACTS says: UHG's cards, CHS's cards (WPJobBoard) and the
+# Findly-Google / LiquidCompass search payloads give the number on every row,
+# while a stored body (_keep_stored_body) or a teaser with no facts sends
+# null facts. On 10-14 UHG had the number on 680 of 5,446 rows for that
+# reason. Every other platform is unchanged.
+REQ_ID_ONLY_PLATFORMS = frozenset({"TalentBrew", "WPJobBoard", "Findly-Google", "LiquidCompass"})
 
 
 def _hca_total(page_html: str) -> int | None:
@@ -18022,6 +18122,22 @@ async def run_oceans(session=None) -> list[Job]:
 #  COMMUNITY HEALTH SYSTEMS (CHS) — WordPress WPJobBoard
 # ══════════════════════════════════════════════════════════════════════════
 CHS_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end the crawl
+# 2026-10-14 (owner: "we need to fix those now"): the requisition number. job_id
+# is the WordPress card's data-id (145981); the job page prints CHS's Oracle
+# requisition number above the title (span.requisition-number, title
+# "Requisition Number", "#167235"; the JSON-LD identifier.value is "167235").
+# Every card in the wp_job_grid payload the crawl already reads carries it in
+# its Apply link, .../hcmUI/CandidateExperience/en/sites/CX_1/job/167235:
+# 2,571 of 2,571 cards on 2026-10-14, and the pages of 145981, 135518 and
+# 144247 print the card's number. Stored without the "#" label, as the
+# JSON-LD gives it.
+_CHS_APPLY_REQ_RX = re.compile(r'href="https?://[^"]*/hcmUI/CandidateExperience/[^"]*?/sites/CX_\d+/job/(\d+)(?=[/?#"])')
+
+
+def chs_req_id_from_card(card: str) -> str:
+    """The Oracle requisition number in a CHS card's Apply link, or ""."""
+    m = _CHS_APPLY_REQ_RX.search(card or "")
+    return _hca_req_value(m.group(1)) if m else ""
 
 
 async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
@@ -18171,6 +18287,7 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
                     posted_date="",
                     description="",
                     ats_platform="WPJobBoard",
+                    req_id=chs_req_id_from_card(card),
                 ))
                 parsed_count += 1
             if unparsed:
@@ -21246,7 +21363,8 @@ def normalize_job(j: Job) -> dict:
     if req_id:
         if d["posting_facts"] is not None:
             d["posting_facts"]["req_id"] = req_id
-        elif REQ_ID_ONLY_FACTS:
+        elif REQ_ID_ONLY_FACTS or d.get("ats_platform") in REQ_ID_ONLY_PLATFORMS:
+            # 2026-10-14: per platform, the live trigger merges it (REQ_ID_ONLY_PLATFORMS)
             d["posting_facts"] = {"req_id": req_id}
 
     return d

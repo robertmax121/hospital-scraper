@@ -1,0 +1,71 @@
+{
+ "total_count": 1660,
+ "page_count": 83,
+ "count": 3,
+ "current_page": 1,
+ "results": [
+  {
+   "id": 52810916,
+   "raw_title": "RN Clinic Specialty",
+   "title": "RN - CV",
+   "is_active": true,
+   "city": "Cedar Rapids",
+   "state": "IA",
+   "employment_type": "Not Stated",
+   "posted_at": "2026-10-14 21:02:22",
+   "detail_url": "https://careers.unitypoint.org/job/52810916/rn-cv",
+   "location_name": "Cedar Rapids PCI Building",
+   "description": "<div><ul><li><strong>Area of Interest:</strong> Nursing</li><li><strong>Sign On Bonus:</strong> $5,000</li><li><strong>FTE/Hours per pay period:</strong> 1.0</li><li><strong>Department:</strong> Cardiology Clinic</li><li><strong>Shift:</strong> Monday-Friday- 8:30am-5:00pm</li><li><strong>Job ID:</strong> 188593</li></ul></div><br /><strong>Overview</strong><p style=\"margin: 0px;\"><span style=\"font-size: 16px;\"><strong>Location: </strong>202 10th St SE, Cedar Rapids, IA</span></p><p style=\"margin: 0px;\"><span style=\"font-size: 16px;\"><strong>Shift: </strong>Full-Time, 40 hours/week, 8:30am-5:00pm</span></p><p style=\"margin: 0px;\"> </p><p style=\"margin: 0px;\"><span style=\"font-size: 12pt;\"><strong>5,000 Sign on Bonus for New Hires</strong></span></p><p style=\"margin: 0px;\" data-start=\"182\" data-end=\"646\"> </p>",
+   "ats_id": "188593",
+   "cp_up_job_id": "2026-188593",
+   "data": {
+    "originalObject": {
+     "id": 188593,
+     "portalUrl": "https://careers-unitypoint.icims.com/jobs/188593/job"
+    }
+   }
+  },
+  {
+   "id": 52617561,
+   "raw_title": "RN-Labor and Delivery- Indeed Virtual Hiring Event",
+   "title": "Career Fair",
+   "is_active": true,
+   "city": "Dubuque",
+   "state": "IA",
+   "employment_type": "Full Time",
+   "posted_at": "2026-10-05 21:02:49",
+   "detail_url": "https://careers.unitypoint.org/job/52617561/career-fair",
+   "location_name": "Dubuque Finley Hospital",
+   "description": "<div><ul><li><strong>Area of Interest:</strong> Nursing</li><li><strong>Sign On Bonus:</strong> $10,000</li><li><strong>FTE/Hours per pay period:</strong> .90</li><li><strong>Department:</strong> Maternity Unit - OB</li><li><strong>Shift:</strong> We have Night openings 7p-7am with weekend /holiday rotation/on-call</li><li><strong>Job ID:</strong> 188154</li></ul></div><br /><strong>Overview</strong><h1><span style=\"font-size: 12pt;\"><span style=\"font-family: 'Aptos',sans-serif;\">Labor &amp; Delivery Registered Nurse Virtual Interview Event | Dubuque, IA<br /></span><strong>Tuesday, October 20, 2026 | 8:30 a.m.&ndash;3:30 p.m.</strong></span></h1><p style=\"margin: 0px;\"><span style=\"font-size: 12pt;\"><strong>Now hiring Labor &amp; Delivery Registered Nurses&mdash;support families through life-changing moments!</strong></span></p>",
+   "ats_id": "188154",
+   "cp_up_job_id": "2026-188154",
+   "data": {
+    "originalObject": {
+     "id": 188154,
+     "portalUrl": "https://careers-unitypoint.icims.com/jobs/188154/job"
+    }
+   }
+  },
+  {
+   "id": 52810673,
+   "raw_title": "Nursing Assistant - Med/Surgical 9T; 0.6 FTE; Day/Night Shift",
+   "title": "Surgery Aide",
+   "is_active": true,
+   "city": "Madison",
+   "state": "WI",
+   "employment_type": "Not Stated",
+   "posted_at": "2026-10-14 21:01:31",
+   "detail_url": "https://careers.unitypoint.org/job/52810673/surgery-aide",
+   "location_name": "Madison Meriter Hospital",
+   "description": "<div><div><strong>16903BR</strong></div><div><strong>FTE:</strong> 0.6</div><div><strong>Shift:</strong> Rotate between Day and Night shifts; 8 hour shifts with e/o weekend and holiday rotation</div><div><strong>Compensation:</strong> $21.04+</div><div><strong>Hours Per Week:</strong> 24</div><div><strong>Weekends:</strong> Yes</div><div><strong>Benefit Eligible</strong></div></div><br /><br><strong>Shifts: Rotate between Days and Nights; 8 hour shifts with e/o weekend and  holiday rotation</strong><br><br>The <strong>Nursing Assistant (CNA) </strong>practices and performs the basic nursing assistant procedures which were taught during their outside training and certification program. The CNA is expected to practice medical asepsis, respect the dignity and privacy of every patient, maintain objectivity during patient care, adhere to basic hospital safety policies and procedures, and prac",
+   "ats_id": "16903BR",
+   "cp_up_job_id": "16903BR",
+   "data": {
+    "originalObject": {
+     "id": "16903BR",
+     "portalUrl": null
+    }
+   }
+  }
+ ]
+}

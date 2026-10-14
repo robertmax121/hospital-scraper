@@ -112,9 +112,10 @@ def test_odd_ref_gives_blank():
 
 
 def test_other_findly_google_tenants_are_untouched(fixture_text):
-    jobs = _scrape(fixture_text, "UPMC", scraper.FINDLY_GOOGLE_ORGS["UPMC"])
-    assert len(jobs) == 5 and all(j.req_id == "" for j in jobs)
-    jobs = _scrape(fixture_text, "University Hospitals", scraper.FINDLY_GOOGLE_ORGS["University Hospitals"])
+    # 2026-10-14: UPMC and University Hospitals now read ref too
+    # (tests/test_reqid_1014_findly_google.py); a tenant with no entry in
+    # FINDLY_GOOGLE_REQ_ID still gets no number.
+    jobs = _scrape(fixture_text, "Some Other Findly Tenant", scraper.FINDLY_GOOGLE_ORGS["UPMC"])
     assert len(jobs) == 5 and all(j.req_id == "" for j in jobs)
 
 
