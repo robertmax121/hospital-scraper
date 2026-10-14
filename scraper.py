@@ -1194,6 +1194,22 @@ SYSTEM_FAMILIES = {
     "Summit Health (Physicians)": "CityMD",
 }
 
+# ── One requisition on two career sites of one tenant (2026-10-14, fix 12) ──
+# Wellstar's Workday tenant runs two sites, wellstarcareers ("Wellstar
+# Health") and wellstarprovidercareers ("Wellstar Health (Providers)"), and
+# 14 provider requisitions are listed on both (JR-75922, JR-77942, ...):
+# each was two active rows, same requisition, same body. Keyed on the
+# requisition id (Workday's job_id is the bullet req number), not on the
+# title: the two sites title one requisition differently ("Pharmacist -
+# Clinical Specialist" / "Clinical Pharmacy Specialist") and two
+# requisitions can share a title. Value = (family, rank); when two members
+# emit one job_id, the lower rank keeps the row and the other copy is not
+# emitted (the nightly sweep then retires it). Emit names, before aliases.
+SYSTEM_REQ_FAMILIES = {
+    "Wellstar Health":             ("Wellstar", 0),
+    "Wellstar Health (Providers)": ("Wellstar", 1),
+}
+
 # ── CMS blank-state fill (2026-09-10, S-scraper-2) ──────────────────────────
 # 24,158 active rows (14.4%) had no state on 2026-09-10, in 85 (system,
 # hospital_name) groups whose hospital_name is the system itself (WVU
@@ -16737,8 +16753,28 @@ async def scrape_html_list(session, system: str, cfg: dict) -> list[Job]:
             seen.update(j.job_id for j in batch)
             jobs.extend(batch)
             await jitter()
-    logger.info(f"  HTML list {system}: {len(jobs)} jobs")
-    return jobs
+    kept = _hl_collapse_same_url(jobs, cfg)
+    if len(kept) < len(jobs):
+        logger.info(f"  HTML list {system}: {len(jobs) - len(kept)} id-less cards dropped "
+                    f"(their link is listed with its own id)")
+    logger.info(f"  HTML list {system}: {len(kept)} jobs")
+    return kept
+
+
+def _hl_collapse_same_url(jobs: list, cfg: dict) -> list:
+    """2026-10-14 (fix 12, duplicates): one link, one row. Every UVM list page
+    ends with three "latest jobs" cards that print no Job Ref, so each took
+    its link's site id ("12449") while the full card of the same posting
+    gave the requisition ("R0090954"): two active rows behind one Apply link,
+    and three new pairs a night as the newest postings rotate. On a site
+    with a job_id field, a card whose id fell back to its link's id is
+    dropped when another card of the run has the same link and an id of its
+    own. A card with an id of its own is never dropped, even when two such
+    cards share a link."""
+    if not (cfg.get("fields") or {}).get("job_id"):
+        return jobs
+    named = {j.url for j in jobs if j.job_id != _hl_job_id(j.url, cfg)}
+    return [j for j in jobs if j.url not in named or j.job_id != _hl_job_id(j.url, cfg)]
 
 
 def _html_list_body(html: str, rx: str) -> str:
@@ -24451,6 +24487,30 @@ def extract_posted_wage(text, job_type=None):
     return cands[0][2]
 
 
+def _drop_req_family_copies(jobs: list) -> list:
+    """SYSTEM_REQ_FAMILIES: of the copies of one requisition (same family,
+    same job_id) emitted by different member systems, only the lowest-ranked
+    member's copy is kept; every other job passes through untouched, in
+    order."""
+    rank: dict[tuple, int] = {}
+    for job in jobs:
+        rf = SYSTEM_REQ_FAMILIES.get(job.hospital_system)
+        if rf:
+            k = (rf[0], str(job.job_id))
+            rank[k] = min(rf[1], rank.get(k, rf[1]))
+    out, dropped = [], {}
+    for job in jobs:
+        rf = SYSTEM_REQ_FAMILIES.get(job.hospital_system)
+        if rf and rf[1] > rank[(rf[0], str(job.job_id))]:
+            dropped[job.hospital_system] = dropped.get(job.hospital_system, 0) + 1
+            continue
+        out.append(job)
+    if dropped:
+        logger.info(f"Same-requisition dedupe: dropped {sum(dropped.values())} copies listed on a "
+                    f"sibling career site (SYSTEM_REQ_FAMILIES) {dropped}")
+    return out
+
+
 def finalize_jobs(all_jobs: list) -> list[dict]:
     """The tail every push shares (run_all and hca_local_push.py), hoisted
     2026-09-10 (S-scraper-2): exact dedupe on (ats, post-alias system,
@@ -24499,6 +24559,7 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if non_us:
         top = sorted(non_us.items(), key=lambda kv: -kv[1])
         logger.info(f"Non-US postings dropped: {sum(non_us.values()):,} rows {dict(top[:12])}")
+    kept = _drop_req_family_copies(kept)
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
     unique = []
