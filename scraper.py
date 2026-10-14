@@ -3767,11 +3767,45 @@ def _wd_req_value(raw) -> str:
 
 
 def wd_req_id(info, job_id) -> str:
-    """jobPostingInfo.jobReqId when it is a requisition number and differs
-    from our job_id; "" otherwise (the row already carries the number, or
-    the payload has none)."""
+    """jobPostingInfo.jobReqId for a row keyed by its externalPath (job_id
+    "/job/..."); "" otherwise (a bullet-keyed row already carries the
+    number, or the payload has none).
+    Review 2026-10-14: a row keyed by a list bullet that is not the
+    requisition stands for whichever posting comes first for that bullet:
+    Rochester Regional's bullet is a ZIP code (1,331 postings on 53 rows),
+    and its url moves to another posting while a stored body is not read
+    again, so a number read from one night's page would drift from the
+    row's url. Rochester's number comes from the list instead
+    (WD_REQ_BULLET), every night, with the url."""
+    jid = str(job_id or "").strip()
+    if not jid.startswith("/"):
+        return ""
     rid = _wd_req_value((info or {}).get("jobReqId") if isinstance(info, dict) else "")
-    return rid if rid and rid != str(job_id or "").strip() else ""
+    return rid if rid and rid != jid else ""
+
+
+# Review 2026-10-14: tenants whose job_id is a list bullet that is not the
+# requisition, with the bullet that is. Rochester Regional's bulletFields are
+# [site, ZIP, "REQ_237858", town]: the ZIP matches _WD_REQ_ID_RE first and
+# keys the row (pre-existing; re-keying is a separate job), the "REQ_" bullet
+# is the number the page prints (JSON-LD identifier.value REQ_237858 and
+# REQ_240770 on 2026-10-14). It is read from the same list item that gives
+# the row its url, so the two always name the same posting.
+WD_REQ_BULLET = {
+    "Rochester Regional Health": re.compile(r"^REQ_[A-Za-z0-9_]*\d[A-Za-z0-9_]*$"),
+}
+
+
+def wd_list_req_id(system: str, bullets, job_id) -> str:
+    """The WD_REQ_BULLET bullet of a list item, as printed, when the row is
+    keyed by another bullet; "" otherwise."""
+    rx = WD_REQ_BULLET.get(system)
+    jid = str(job_id or "").strip()
+    if rx is None or not jid or jid.startswith("/"):
+        return ""
+    rid = next((str(b).strip() for b in (bullets or []) if rx.match(str(b).strip())), "")
+    rid = _wd_req_value(rid)
+    return rid if rid and rid != jid else ""
 
 
 async def _phenom_workday_detail(session, cxs_url: str, job) -> bool:
@@ -5695,6 +5729,9 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         posted_date=j.get("postedOn", ""),
                         description=strip_html(str(j.get("jobDescription", ""))),
                         ats_platform="Workday",
+                        # Review 2026-10-14: the printed number where the
+                        # bullet keying the row is not it (WD_REQ_BULLET).
+                        req_id=wd_list_req_id(system, _bf, _jid),
                     ))
                     _ext = j.get("externalPath", "")
                     if _ext:

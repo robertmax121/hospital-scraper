@@ -1,0 +1,88 @@
+{
+ "_meta": {
+  "system": "Rochester Regional Health",
+  "source": "POST https://rrhs.wd5.myworkdayjobs.com/wday/cxs/rrhs/RRH/jobs {limit: 20, offset: 0}",
+  "fetched": "2026-10-14",
+  "live_total": 1331,
+  "trimmed": "first 6 of 20 postings; total set to 6 so the test needs one page",
+  "page_identifier": {
+   "REQ_237858": "JSON-LD identifier.value on the posting page",
+   "REQ_240770": "JSON-LD identifier.value on the posting page"
+  }
+ },
+ "total": 6,
+ "jobPostings": [
+  {
+   "title": "Clinical Trials Project Manager",
+   "externalPath": "/job/ACM---Remote/Clinical-Trials-Project-Manager_REQ_237858-1",
+   "locationsText": "2 Locations",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "ACM - Remote",
+    "14624",
+    "REQ_237858",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Team Case Assistant- Home Care (Part time, Weekends)",
+   "externalPath": "/job/Rochester-Regional-Health-Home-Care---Monroe-Ave/Team-Case-Assistant--Home-Care--Part-time--Weekends-_REQ_238008",
+   "locationsText": "Rochester Regional Health Home Care - Monroe Ave",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Rochester Regional Health Home Care - Monroe Ave",
+    "14607",
+    "REQ_238008",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Telemed Technician-Home Care (Full time, day shift)",
+   "externalPath": "/job/Rochester-Regional-Health-Home-Care---Monroe-Ave/Telemed-Technician-Home-Care--Full-time--day-shift-_REQ_240770",
+   "locationsText": "Rochester Regional Health Home Care - Monroe Ave",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Rochester Regional Health Home Care - Monroe Ave",
+    "14607",
+    "REQ_240770",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Medical Records Clerk 1",
+   "externalPath": "/job/Rochester-Regional-Health-Home-Care---Monroe-Ave/Medical-Records-Clerk-1_REQ_243079",
+   "locationsText": "Rochester Regional Health Home Care - Monroe Ave",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Rochester Regional Health Home Care - Monroe Ave",
+    "14607",
+    "REQ_243079",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Nurse Practitioner - Perinton Internal Medicine",
+   "externalPath": "/job/Primary-Care---Perinton-LH/Nurse-Practitioner---Perinton-Internal-Medicine_REQ_194790",
+   "locationsText": "Primary Care - Perinton LH",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Primary Care - Perinton LH",
+    "14534",
+    "REQ_194790",
+    "Pittsford"
+   ]
+  },
+  {
+   "title": "Safety and Security Officer",
+   "externalPath": "/job/Newark-Wayne-Community-Hospital/Safety-and-Security-Officer_REQ_241533",
+   "locationsText": "Newark-Wayne Community Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Newark-Wayne Community Hospital",
+    "14513",
+    "REQ_241533",
+    "Newark"
+   ]
+  }
+ ]
+}

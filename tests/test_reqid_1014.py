@@ -104,7 +104,11 @@ WD_CASES = [
     ("marinhealth.json", "14976 - AC307"),       # path suffix "_JR102021" is not the number
     ("kaweah.json", "R26_0000002352"),
     ("samaritan.json", "02.6025.0414.5"),
-    ("rochester_numeric.json", "REQ_243958"),    # job_id "14468" came from a bullet that is not the req
+    # job_id "14468" is Rochester's ZIP bullet: the row stands for whichever
+    # posting comes first for that ZIP, so the detail page's number would
+    # drift from the row's url; Rochester's number comes from the list
+    # (test_rochester_number_comes_from_the_list_item_that_gives_the_url)
+    ("rochester_numeric.json", ""),
     ("rochester_same.json", ""),                 # job_id already is the printed number
     ("prisma_blank.json", ""),                   # the payload carries none
 ]
@@ -462,3 +466,58 @@ def test_a_forced_workday_row_is_fetched_and_gets_its_number(fixture_text, monke
     assert len(seen) == 1 and job.req_id == "27_322"
     row = scraper.normalize_job(job)
     assert row["posting_facts"]["req_id"] == "27_322" and row["job_id"] == d["_meta"]["our_job_id"]
+
+
+# ── Rochester Regional (Workday list bullet) ────────────────────────────
+def _rochester_list(fixture_text, monkeypatch, drop=()):
+    page = _json(fixture_text, "workday/rochester_list.json")
+    page["jobPostings"] = [p for k, p in enumerate(page["jobPostings"]) if k not in drop]
+    page["total"] = len(page["jobPostings"])
+
+    def fake_req(session, method, url, **kw):
+        body = kw.get("json") or {}
+        if body.get("offset", 0) == 0 and not body.get("appliedFacets"):
+            return _Ctx(_R(200, page))
+        return _Ctx(_R(200, {"total": 0, "jobPostings": []}))
+    monkeypatch.setattr(scraper, "req", fake_req)
+    monkeypatch.setattr(scraper, "WD_FETCH_DESCRIPTIONS", False)
+    return asyncio.run(scraper.scrape_workday(None, "Rochester Regional Health",
+                                              scraper.WORKDAY_TENANTS["Rochester Regional Health"]))
+
+
+def test_rochester_number_comes_from_the_list_item_that_gives_the_url(fixture_text, monkeypatch):
+    jobs = _rochester_list(fixture_text, monkeypatch)
+    got = [(j.job_id, j.req_id, j.url.rsplit("_REQ_", 1)[-1].split("-")[0]) for j in jobs]
+    # the ZIP keys the row (pre-existing; three Monroe Ave postings share 14607)
+    assert got == [("14624", "REQ_237858", "237858"), ("14607", "REQ_238008", "238008"),
+                   ("14534", "REQ_194790", "194790"), ("14513", "REQ_241533", "241533")]
+    # the page's JSON-LD identifier is the bullet (checked live 2026-10-14)
+    meta = _json(fixture_text, "workday/rochester_list.json")["_meta"]
+    assert jobs[0].req_id in meta["page_identifier"]
+    # another night the ZIP's first posting is another one: the number follows the url
+    later = _rochester_list(fixture_text, monkeypatch, drop={1})
+    row = next(j for j in later if j.job_id == "14607")
+    assert row.req_id == "REQ_240770" and row.url.endswith("_REQ_240770")
+    assert row.req_id in meta["page_identifier"]
+
+
+def test_rochester_number_reaches_a_stored_row_every_night(fixture_text, monkeypatch):
+    jobs = _rochester_list(fixture_text, monkeypatch)
+    job = jobs[1]
+    scraper.set_known_bodies([_known(job)])
+    scraper._keep_stored_body(job.hospital_system, job)
+    row = scraper.normalize_job(job)
+    assert row["posting_facts"] == {"req_id": "REQ_238008"}
+    assert row["job_id"] == "14607" and "req_id" not in row
+
+
+def test_wd_list_req_id_rules():
+    roch = "Rochester Regional Health"
+    assert scraper.wd_list_req_id(roch, ["Site", "14624", "REQ_237858", "Rochester"], "14624") == "REQ_237858"
+    assert scraper.wd_list_req_id(roch, ["Site", "REQ_223614"], "REQ_223614") == ""      # already the job_id
+    assert scraper.wd_list_req_id(roch, ["Site", "14624"], "14624") == ""
+    assert scraper.wd_list_req_id(roch, ["REQ_EG_17"], "/job/Pulmonary_REQ_EG_17") == ""  # path rows: detail
+    assert scraper.wd_list_req_id("WVU Medicine", ["14624", "REQ_237858"], "14624") == ""   # other tenants
+    # the detail reader leaves bullet-keyed rows alone
+    assert scraper.wd_req_id({"jobReqId": "REQ_243958"}, "14468") == ""
+    assert scraper.wd_req_id({"jobReqId": "REQ_EG_17"}, "/job/Pulmonary_REQ_EG_17") == "REQ_EG_17"
