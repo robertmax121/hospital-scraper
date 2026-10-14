@@ -1382,6 +1382,8 @@ KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
 _KNOWN_BODIES: dict = {}
 _KNOWN_FACTS_V: dict = {}         # same keys -> posting_facts "v" of the stored row (None = unstamped)
 _KNOWN_FACTS_H: dict = {}         # (push 10) same keys, every platform -> posting_facts "h" of the stored row
+_KNOWN_REQ: set = set()           # (2026-10-14) keys of stored bodies whose posting_facts already carry req_id
+_KNOWN_REQ_READ: list = [False]   # True when the load reported req_id ("rq"); the req_id re-read needs it
 _KNOWN_HAS_REQ: set = set()       # (2026-10-14) same keys: REQ_ID_PAGE_PLATFORMS bodies whose stored facts hold a req_id
 
 # ── Job numbers read only from the job page (2026-10-14) ────────────────────
@@ -1496,7 +1498,25 @@ def _pay_slot(canon: str, job_id: str, run_day: Optional[int] = None) -> bool:
 # on the first night, Kaiser and Enhabit on the second, CommonSpirit (~5,100)
 # in about four. Outside the window nothing changes; drop it on a later push.
 REQ_REREAD_PLATFORMS = frozenset({"TalentBrew"})
-REQ_REREAD_WINDOW = ("2026-10-15", "2026-10-28")
+# Integration 2026-10-14 (release/reqid-18-1014): both requisition-number
+# re-read windows (this one, TalentBrew's "req" kind, and REQ_ID_REREAD_WINDOW,
+# the Workday/CSOD/RMK/Paycor 5-night cycle) open on REQ_ID_WINDOW_START, the
+# first nightly run after the push: 2026-10-15 (the 00:09 UTC run) when the
+# push lands before 00:00 UTC 2026-10-15, else 2026-10-16. Moving both
+# windows is this ONE line; each keeps REQ_ID_WINDOW_NIGHTS nights
+# (2026-10-15..2026-10-28 as set), so the end moves with the start.
+REQ_ID_WINDOW_START = "2026-10-15"
+REQ_ID_WINDOW_NIGHTS = 14
+
+
+def _req_id_window(start: str = REQ_ID_WINDOW_START, nights: int = REQ_ID_WINDOW_NIGHTS) -> tuple:
+    """(first night, last night) as ISO dates, inclusive: `nights` run days
+    from `start`."""
+    a = datetime.strptime(start, "%Y-%m-%d").toordinal()
+    return (start, datetime.fromordinal(a + max(1, int(nights)) - 1).strftime("%Y-%m-%d"))
+
+
+REQ_REREAD_WINDOW = _req_id_window()
 _KNOWN_NOREQ: set = set()         # (system, job_id) of REQ_REREAD_PLATFORMS bodies stored without a req_id
 
 
@@ -1537,9 +1557,13 @@ def set_known_bodies(rows) -> int:
     'req_id') holds a value goes to _KNOWN_HAS_REQ, which sends it to the
     back of its detail pass's line (see "Job numbers read only from the job
     page").
+    2026-10-14 (req_id re-read): a row's rq (posting_facts->>'req_id') puts
+    its key in _KNOWN_REQ; rows that carry the rq key at all (the run-start
+    load always asks for it) switch the re-read on (_KNOWN_REQ_READ), so a
+    map built without it (tests, other callers) never forces a read.
     Returns the detail-pass map's size, as before."""
-    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H, _KNOWN_NOREQ, _KNOWN_HAS_REQ
-    kb, fv, unpriced, fh, noreq, has_req = {}, {}, set(), {}, set(), set()
+    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H, _KNOWN_NOREQ, _KNOWN_HAS_REQ, _KNOWN_REQ
+    kb, fv, unpriced, fh, noreq, has_req, reqs, rq_read = {}, {}, set(), {}, set(), set(), set(), False
     for r in rows or []:
         try:
             n = int(r.get("desc_len") or 0)
@@ -1548,6 +1572,10 @@ def set_known_bodies(rows) -> int:
         sysname, jid = r.get("hospital_system"), r.get("job_id")
         if n >= 200 and sysname and jid not in (None, ""):
             k = (str(sysname), str(jid))
+            if "rq" in r:
+                rq_read = True
+                if str(r.get("rq") or "").strip():
+                    reqs.add(k)
             h = r.get("fh")
             if (isinstance(h, str) and h and _facts_version(r.get("fv")) == FACTS_VERSION
                     and n >= fh.get(k, (0, ""))[0]):
@@ -1572,6 +1600,7 @@ def set_known_bodies(rows) -> int:
     _KNOWN_FACTS_H = {k: v[1] for k, v in fh.items()}
     _KNOWN_NOREQ = noreq
     _KNOWN_HAS_REQ = has_req
+    _KNOWN_REQ, _KNOWN_REQ_READ[0] = reqs, rq_read
     return len(kb)
 
 
@@ -1599,8 +1628,9 @@ def load_known_bodies() -> int:
             # KNOWN_BODY_PLATFORMS). The page walks the same id range as
             # before; only more of its rows come back.
             # 2026-10-14: rq (posting_facts->>req_id) feeds the
-            # requisition-number re-reads (_KNOWN_NOREQ) and the job-page
-            # order (_KNOWN_HAS_REQ, REQ_ID_PAGE_PLATFORMS); same rows, one more column.
+            # requisition-number re-reads (_KNOWN_NOREQ, TalentBrew; _KNOWN_REQ,
+            # the Workday/CSOD/RMK/Paycor cycle) and the job-page order
+            # (_KNOWN_HAS_REQ, REQ_ID_PAGE_PLATFORMS); same rows, one more column.
             u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,ats_platform,desc_len,wage_min,"
                  f"fv:posting_facts-%3E%3Ev,fh:posting_facts-%3E%3Eh,rq:posting_facts-%3E%3Ereq_id"
                  f"&is_active=is.true&desc_len=gte.200"
@@ -1647,12 +1677,16 @@ def _known_kind(system: str, job):
                has no wage, on its _pay_slot night: a candidate after the rows
                with no body, so the page's pay field is read
       "force"  (push 10) a stored body of a FORCED_REFRESH tenant on its one
-               night inside the tenant's window: a candidate after the rows
-               with no body, before the pay re-reads
+               night inside the tenant's window, or (2026-10-14) a stored body
+               still without its job number on its _req_reread_slot night: a
+               candidate after the rows with no body, before the pay re-reads
       "req"    (2026-10-14) a stored body on REQ_REREAD_PLATFORMS whose stored
                facts have no req_id, while REQ_REREAD_WINDOW is open and the
                list gave none: a candidate after the force re-reads, before
-               the pay re-reads, so the page's requisition number is read
+               the pay re-reads, so the page's requisition number is read.
+               Integration 2026-10-14: the two re-reads never touch the same
+               row (_req_reread_slot leaves REQ_REREAD_PLATFORMS to "req"),
+               and a row gets one kind a night, so it is queued once.
     Leaves the job unchanged."""
     key = (_canon_system(system), str(job.job_id))
     stored = _KNOWN_BODIES.get(key, 0)
@@ -1664,7 +1698,7 @@ def _known_kind(system: str, job):
     v = _KNOWN_FACTS_V.get(key)
     if v is None and OLD_BODY_CAP[0] <= stored <= OLD_BODY_CAP[1]:
         return "cut"
-    if _force_slot(*key):
+    if _force_slot(*key) or _req_reread_slot(key, job):
         return "force"
     if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
         return "pay"
@@ -1749,9 +1783,79 @@ def _refresh_slot(canon: str, job_id: str, run_day: Optional[int] = None) -> boo
 # the budget; a fetch that brings nothing keeps the stored body
 # (_settle_held). Outside the window the entry does nothing: drop it on the
 # push after the window ends.
+#
 FORCED_REFRESH = {
     "Hackensack Meridian Health": ("2026-10-08", "2026-10-14"),   # TB_PAGE_DETAIL_ORGS since push 10
 }
+
+# 2026-10-14 (req_id; owner: "Yeah we need to fix those now"): the rows whose
+# number lives only on the detail page (Workday jobReqId, CSOD data.ref, the
+# RMK label line, Paycor's Job Id cell) get it on the nights their pass reads
+# the page, and the known-body skip does not read a stored body again for
+# ~30+ nights (the refresh share is ~5% of a tenant's floor; WVU Medicine's
+# 3,220 rows would take about a year). So, inside REQ_ID_REREAD_WINDOW, a
+# stored body whose posting_facts carry no req_id yet (_KNOWN_REQ, from the
+# run-start load) is read again on its _req_reread_slot night, one night in
+# every REQ_ID_REREAD_CYCLE, as a "force" candidate: after the rows with no
+# body, on the same passes, gates and budgets (no new request type, no cap
+# raised). Which rows:
+#   * Workday rows keyed by their externalPath (job_id "/job/..."): 4,787 on
+#     21 tenants on 2026-10-14 (WVU Medicine 3,220, Monument 573, ThedaCare
+#     473, Kaweah 211, MarinHealth 136, Broadlawns 73, Cape Fear 37,
+#     Montefiore 21, Samaritan 20, Prisma 9, 14 on 11 others). Rows keyed by a
+#     list bullet already carry the requisition as job_id, or (Rochester
+#     Regional) take it from the list (WD_REQ_BULLET), so none is re-read.
+#   * REQ_ID_REREAD_SYSTEMS below (CSOD, RMK, the Paycor boards that show
+#     the number).
+# Review 2026-10-14: the window is not tied to the push night. Any 5
+# consecutive run nights inside it read every such row once (on the live
+# job_ids of 2026-10-14: 1,026 to 1,126 reads a night, 5,328 in all; WVU
+# Medicine 597 to 697 a night against its 3,000 tenant cap and the 26,000
+# run budget), so a push that lands by 2026-10-24 still covers every row; a
+# row whose fetch failed or was left for another night is tried again 5
+# nights later, and a row drops out as soon as its number is stored. Drop
+# the window and the set on the push after 2026-10-28.
+# Integration 2026-10-14: the window opens on REQ_ID_WINDOW_START (one line,
+# shared with REQ_REREAD_WINDOW; see there), 2026-10-15..2026-10-28 as set.
+REQ_ID_REREAD_WINDOW = _req_id_window()
+REQ_ID_REREAD_CYCLE = 5
+REQ_ID_REREAD_SYSTEMS = frozenset({
+    # CSOD (CSOD_REQ_ID)
+    "JPS Health Network", "UI Health",
+    # SuccessFactors RMK (SF_RMK_REQ_LABEL)
+    "Texas Health and Human Services", "Florida Department of Children and Families",
+    "Illinois Department of Human Services", "Arkansas Department of Human Services",
+    # Paycor boards whose page shows the Job Id cell (Insight Health and
+    # Hereford hide it with their own CSS: paycor_req_id stores none there)
+    "Townsen Memorial Hospital", "Coon Memorial Hospital",
+})
+
+
+def _req_reread_slot(key, job) -> bool:
+    """True when this stored body (key = (canonical system, job_id)) still
+    has no req_id and tonight is its night to be read for it (see
+    REQ_ID_REREAD_WINDOW). Off unless the run-start load reported req_id."""
+    if not _KNOWN_REQ_READ[0] or key in _KNOWN_REQ:
+        return False
+    # Integration 2026-10-14: a REQ_REREAD_PLATFORMS row (TalentBrew) is read
+    # for its number by the "req" kind (_known_kind); never by this cycle too,
+    # so no row is queued by both re-reads.
+    if getattr(job, "ats_platform", "") in REQ_REREAD_PLATFORMS:
+        return False
+    canon, jid = key
+    if not ((getattr(job, "ats_platform", "") == "Workday" and jid.startswith("/"))
+            or canon in REQ_ID_REREAD_SYSTEMS):
+        return False
+    try:
+        a = datetime.strptime(REQ_ID_REREAD_WINDOW[0], "%Y-%m-%d").toordinal()
+        b = datetime.strptime(REQ_ID_REREAD_WINDOW[1], "%Y-%m-%d").toordinal()
+    except (TypeError, ValueError):
+        return False
+    today = _run_day()
+    if today < a or today > b:
+        return False
+    n = max(1, REQ_ID_REREAD_CYCLE)
+    return zlib.crc32(f"reqid|{canon}|{jid}".encode("utf-8")) % n == today % n
 
 
 def _force_slot(canon: str, job_id: str) -> bool:
@@ -3305,10 +3409,16 @@ async def _workday_fetch_details(session, working_url, targets, system):
             # also sets the ISO startDate over the list's relative label and
             # the employment type when the list had none.)
             was_date, was_type = job.posted_date, job.job_type
-            if _apply_wd_posting_info(job, (data or {}).get("jobPostingInfo") or {}):
+            info = (data or {}).get("jobPostingInfo") or {}
+            if _apply_wd_posting_info(job, info):
                 filled += 1
             dated += job.posted_date != was_date
             typed += job.job_type != was_type
+            # 2026-10-14: the requisition number the page prints, when our
+            # job_id is another value (wd_req_id).
+            rid = wd_req_id(info, job.job_id)
+            if rid:
+                job.req_id = rid
             # Throttle inside the semaphore so this genuinely paces requests
             # rather than just staggering their completion.
             await asyncio.sleep(random.uniform(0.15, 0.45))
@@ -3809,6 +3919,73 @@ def _apply_wd_posting_info(job, info: dict) -> bool:
     if _ISO_DATE_RX.match(start) and not _ISO_DATE_RX.match(str(job.posted_date or "").strip()[:10]):
         job.posted_date = start
     return ok
+
+
+# 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
+# a Workday job page prints ("job requisition id", and the JSON-LD
+# identifier.value) is the CXS detail payload's jobPostingInfo.jobReqId. Where
+# the list's bulletFields carry it, job_id already is that number (139 of 139
+# checkable tenants, 2026-10-14 audit). Where they do not, job_id fell back to
+# the externalPath ("/job/United-Hospital-Center-UHC/Housekeeper_JR26-47425";
+# WVU Medicine, Monument, ThedaCare, Kaweah, MarinHealth, Broadlawns, a few
+# Cape Fear / Montefiore / Samaritan / Prisma rows), or a bullet that is not
+# the requisition (Rochester Regional "14468" vs "REQ_243958"). The path's
+# suffix is not the number (MarinHealth "_JR102021" prints "14976 - AC307",
+# Monument adds a "-2" copy suffix to "27_322"), so it is never parsed.
+# Workday prints underscores, spaces, dots ("02.6025.0414.5", Samaritan), so
+# _hca_req_value's [A-Za-z0-9-] does not fit: this validator keeps letters,
+# digits, ".", "_", "-" and single spaces, at least one digit, up to 40
+# characters, exactly as printed.
+_WD_REQ_VALUE_RE = re.compile(r"^(?=.*\d)[A-Za-z0-9](?:[A-Za-z0-9._-]| (?=[A-Za-z0-9._-]))*$")
+
+
+def _wd_req_value(raw) -> str:
+    """A Workday requisition number as printed ("JR26-47425", "27_322",
+    "14976 - AC307"), or "" for anything else."""
+    s = str(raw or "").strip()
+    return s if len(s) <= 40 and _WD_REQ_VALUE_RE.match(s) else ""
+
+
+def wd_req_id(info, job_id) -> str:
+    """jobPostingInfo.jobReqId for a row keyed by its externalPath (job_id
+    "/job/..."); "" otherwise (a bullet-keyed row already carries the
+    number, or the payload has none).
+    Review 2026-10-14: a row keyed by a list bullet that is not the
+    requisition stands for whichever posting comes first for that bullet:
+    Rochester Regional's bullet is a ZIP code (1,331 postings on 53 rows),
+    and its url moves to another posting while a stored body is not read
+    again, so a number read from one night's page would drift from the
+    row's url. Rochester's number comes from the list instead
+    (WD_REQ_BULLET), every night, with the url."""
+    jid = str(job_id or "").strip()
+    if not jid.startswith("/"):
+        return ""
+    rid = _wd_req_value((info or {}).get("jobReqId") if isinstance(info, dict) else "")
+    return rid if rid and rid != jid else ""
+
+
+# Review 2026-10-14: tenants whose job_id is a list bullet that is not the
+# requisition, with the bullet that is. Rochester Regional's bulletFields are
+# [site, ZIP, "REQ_237858", town]: the ZIP matches _WD_REQ_ID_RE first and
+# keys the row (pre-existing; re-keying is a separate job), the "REQ_" bullet
+# is the number the page prints (JSON-LD identifier.value REQ_237858 and
+# REQ_240770 on 2026-10-14). It is read from the same list item that gives
+# the row its url, so the two always name the same posting.
+WD_REQ_BULLET = {
+    "Rochester Regional Health": re.compile(r"^REQ_[A-Za-z0-9_]*\d[A-Za-z0-9_]*$"),
+}
+
+
+def wd_list_req_id(system: str, bullets, job_id) -> str:
+    """The WD_REQ_BULLET bullet of a list item, as printed, when the row is
+    keyed by another bullet; "" otherwise."""
+    rx = WD_REQ_BULLET.get(system)
+    jid = str(job_id or "").strip()
+    if rx is None or not jid or jid.startswith("/"):
+        return ""
+    rid = next((str(b).strip() for b in (bullets or []) if rx.match(str(b).strip())), "")
+    rid = _wd_req_value(rid)
+    return rid if rid and rid != jid else ""
 
 
 async def _phenom_workday_detail(session, cxs_url: str, job) -> bool:
@@ -4392,8 +4569,31 @@ async def _csod_detail(session, job) -> bool:
             data = await r.json(content_type=None)
     except Exception:
         return False
-    body, posted = _csod_posting_text((data or {}).get("data") if isinstance(data, dict) else {})
+    d = (data or {}).get("data") if isinstance(data, dict) else {}
+    rid = csod_req_id(job.hospital_system, d, job.job_id)
+    if rid:
+        job.req_id = rid
+    body, posted = _csod_posting_text(d)
     return _apply_body(job, body, "", posted)
+
+
+# 2026-10-14 (owner: "Yeah we need to fix those now"): CSOD's job_id is the
+# requisition id in the URL (/requisition/30790); the page prints the
+# requisition's own reference under the location, which the jobDetails payload
+# carries as data.ref: JPS 30790 -> "46562", UI Health 20550 -> "1042207"
+# (2026-10-14, 2 of 2 each). Billings Clinic prints "req" + job_id
+# ("req12479"): the same number, so it is not configured. Read only on the
+# rows the detail pass fetches (the search list carries no ref).
+CSOD_REQ_ID = frozenset({"JPS Health Network", "UI Health"})
+
+
+def csod_req_id(system: str, d, job_id) -> str:
+    """data.ref of a jobDetails payload on a CSOD_REQ_ID tenant, when it is a
+    requisition number (_hca_req_value) other than job_id; "" otherwise."""
+    if system not in CSOD_REQ_ID or not isinstance(d, dict):
+        return ""
+    rid = _hca_req_value(d.get("ref"))
+    return rid if rid and rid != str(job_id or "") else ""
 
 
 # 2026-09-16 (NY coverage): Montefiore's Workday tenant lists postings by street
@@ -5712,6 +5912,9 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         posted_date=j.get("postedOn", ""),
                         description=strip_html(str(j.get("jobDescription", ""))),
                         ats_platform="Workday",
+                        # Review 2026-10-14: the printed number where the
+                        # bullet keying the row is not it (WD_REQ_BULLET).
+                        req_id=wd_list_req_id(system, _bf, _jid),
                     ))
                     _ext = j.get("externalPath", "")
                     if _ext:
@@ -10360,6 +10563,24 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
 # state (full name), country, postalCode, category, multi_category_array, type,
 # postedDate, dateCreated, applyUrl, externalApply, jobShift,
 # location (e.g. "Waxahachie, Texas, United States"), descriptionTeaser.
+#
+# 2026-10-14 (owner: "Yeah we need to fix those now"): job_id is the
+# jobSeqNo ("BSWHUS26019024EXTERNALENUS"), which BSW's page never prints; the
+# page shows the requisition, 26019024 (its job-info reqId line, the JSON-LD
+# identifier.value, and the /us/en/job/26019024 URL). Every listing row carries
+# it as reqId and jobId: equal on 300 of 300 rows read 2026-10-14. It rides as
+# Job.req_id -> posting_facts["req_id"] on every row every night (no extra
+# request; REQ_ID_ONLY_PLATFORMS covers the nights a row's facts are null).
+def bsw_req_id(j, job_id="") -> str:
+    """The requisition number a BSW listing row's page prints: reqId, else
+    jobId, when it is a requisition number (_hca_req_value) and not already
+    the row's job_id; "" otherwise."""
+    if not isinstance(j, dict):
+        return ""
+    rid = _hca_req_value(j.get("reqId")) or _hca_req_value(j.get("jobId"))
+    return rid if rid and rid != str(job_id or "") else ""
+
+
 async def _scrape_bsw(session) -> list[Job]:
     logger.info("BSW: scraping Baylor Scott & White via Phenom refineSearch...")
     base_url   = "https://jobs.bswhealth.com"
@@ -10468,6 +10689,7 @@ async def _scrape_bsw(session) -> list[Job]:
                     posted_date=str(j.get("postedDate") or j.get("dateCreated") or "")[:10],
                     description=strip_html(str(j.get("descriptionTeaser") or "")),
                     ats_platform="Phenom",
+                    req_id=bsw_req_id(j, job_seq),
                 ))
             except Exception as e:
                 logger.info(f"BSW: row parse error: {e}")
@@ -14270,7 +14492,42 @@ def _rmk_posting(html: str) -> tuple[str, object]:
 async def _rmk_detail(session, job) -> bool:
     body, pay = _rmk_posting(await _fetch_html(session, job.url, timeout=40))
     set_field_wage(job, pay)
+    rid = rmk_req_id(job.hospital_system, body, job.job_id)
+    if rid:
+        job.req_id = rid
     return _apply_body(job, body)
+
+
+# 2026-10-14 (owner: "Yeah we need to fix those now"): an RMK row's job_id is
+# the board's URL id (/1439766300/); the posting's own number is the labelled
+# line at the top of its body, one label per board (2026-10-14, 2 of 2 pages
+# each): Texas HHS "Posting Number: 22217", Florida DCF "Requisition No:
+# 873803" (its later "Position Number: 60010695" is the budget position, not
+# the posting), Illinois DHS "Job Requisition ID: 58304", Arkansas DHS
+# "Position Number: 22150905" (its only number). Configured per board, never
+# guessed. Read on the rows the detail pass fetches.
+SF_RMK_REQ_LABEL = {
+    "Texas Health and Human Services": "Posting Number",
+    "Florida Department of Children and Families": "Requisition No",
+    "Illinois Department of Human Services": "Job Requisition ID",
+    "Arkansas Department of Human Services": "Position Number",
+}
+
+
+def rmk_req_id(system: str, body: str, job_id="") -> str:
+    """The value on the board's SF_RMK_REQ_LABEL line among the body's first
+    60 lines (a leading zero-width space, Illinois, is ignored), when it is a
+    requisition number (_hca_req_value) other than job_id; "" otherwise."""
+    label = SF_RMK_REQ_LABEL.get(system)
+    if not label:
+        return ""
+    rx = re.compile(r"^[\s\u200b\ufeff]*" + re.escape(label) + r"\s*:\s*(\S+)\s*$", re.I)
+    for line in (body or "").split("\n")[:60]:
+        m = rx.match(line)
+        if m:
+            rid = _hca_req_value(m.group(1))
+            return rid if rid and rid != str(job_id or "") else ""
+    return ""
 
 
 async def run_sf_rmk(session) -> list[Job]:
@@ -15252,6 +15509,9 @@ async def _paycor_detail(session, job) -> bool:
     sits in <td id="gnewtonJobDescriptionText">, which holds nested markup,
     so the block runs to the apply-button cell that follows it."""
     html = await _fetch_html(session, job.url, timeout=30)
+    rid = paycor_req_id(html, job.job_id)
+    if rid:
+        job.req_id = rid
     i = html.find('id="gnewtonJobDescriptionText"')
     if i < 0:
         return False
@@ -15264,6 +15524,51 @@ async def _paycor_detail(session, job) -> bool:
         job.description = desc
         return True
     return False
+
+
+# 2026-10-14 (owner: "Yeah we need to fix those now"): a Paycor row's job_id is
+# the 32-hex posting id in the JobIntroduction.action URL; the employer's own
+# number is the page's <td id="gnewtonJobID"><b>Job Id:</b>&nbsp; 2713</td>
+# (Townsen "TMSCW1013", "TMSK100"; Coon "218"; Insight "2713"; Hereford
+# "431"). The list page carries only the hex id, so it is read on the rows
+# the detail pass fetches, inside PAYCOR_DESC_BUDGET.
+# Review 2026-10-14: the owner asked for the number the employer SHOWS
+# people. Insight Health and Hereford keep the cell in their HTML but hide it
+# with their own CSS ("#gnewtonJobDescription #gnewtonJobID {display: none}"
+# in the page's <style>; rendered, the page's text has no "Job Id"), so a page
+# that hides the cell stores no number (_paycor_id_hidden). Townsen and Coon
+# show it.
+_PAYCOR_JOB_ID_RX = re.compile(r'<td[^>]*\bid="gnewtonJobID"[^>]*>(.*?)</td>', re.S | re.I)
+_PAYCOR_STYLE_RX = re.compile(r"<style[^>]*>(.*?)</style>", re.S | re.I)
+_CSS_RULE_RX = re.compile(r"([^{}]*)\{([^{}]*)\}")
+_PAYCOR_ID_SEL_RX = re.compile(r"#gnewtonJobID(?![\w-])", re.I)
+_CSS_HIDE_RX = re.compile(r"display\s*:\s*none", re.I)
+
+
+def _paycor_id_hidden(html: str) -> bool:
+    """True when the page hides its "Job Id:" cell: a <style> rule whose
+    selector names #gnewtonJobID sets display: none, or the cell's own style
+    attribute does."""
+    css = re.sub(r"/\*.*?\*/", " ", " ".join(_PAYCOR_STYLE_RX.findall(html or "")), flags=re.S)
+    if any(_PAYCOR_ID_SEL_RX.search(sel) and _CSS_HIDE_RX.search(body)
+           for sel, body in _CSS_RULE_RX.findall(css)):
+        return True
+    m = re.search(r'<td[^>]*\bid="gnewtonJobID"[^>]*>', html or "", re.I)
+    return bool(m and re.search(r'\bstyle\s*=\s*"[^"]*display\s*:\s*none', m.group(0), re.I))
+
+
+def paycor_req_id(html: str, job_id="") -> str:
+    """The value of a Paycor job page's "Job Id:" cell, when the page shows
+    it and it is a requisition number (_hca_req_value) other than job_id;
+    "" otherwise."""
+    m = _PAYCOR_JOB_ID_RX.search(html or "")
+    if not m or _paycor_id_hidden(html):
+        return ""
+    cell = re.sub(r"<!--.*?-->", " ", m.group(1), flags=re.S)
+    text = _html_unescape(re.sub(r"<[^>]+>", " ", cell)).replace("\xa0", " ")
+    text = re.sub(r"^\s*Job\s*Id\s*:\s*", "", text, flags=re.I).strip()
+    rid = _hca_req_value(text)
+    return rid if rid and rid != str(job_id or "") else ""
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -17253,12 +17558,20 @@ HTML_LIST_SITES: dict[str, dict] = {
     # prices through extract_posted_wage. The 206 rows still without a body
     # on 10-07 (311 on 10-06) were waiting on the shared budget
     # (HTML_LIST_DESC_MAX_PER_RUN), not on the parser.
+    # 2026-10-14 (owner: "Yeah we need to fix those now"): job_id is the FX
+    # page id (/13191); the job page prints Rush's own number under the title,
+    # beside a suitcase icon with no label (<div class="job-text"> 31067
+    # </div>), the Apply link's JobReq=31067 (Infor GHR) carries it, and the
+    # feed item says "Ref: 31067". Read from the feed (every row, every
+    # night, no extra request) as req_id, exactly as printed: 548 of 568
+    # items are numeric; 20 multi-town items print "21729rxv_7_1" on the page
+    # as in the feed (2026-10-14, 4 of 4 pages read).
     "Rush": {
         "mode": "rss",
         "body": r'class="job-description-bg">.*?<div class="col-12">(.*?)<a[^>]+class="apply-btn"',
         "url": "https://rush.fxrecruiter.com/feeds/jobs-rss",
         "id": r"/(\d+)(?:\?|$)",
-        "fields": {"state": r",\s*([A-Z]{2})\s*,"},
+        "fields": {"state": r",\s*([A-Z]{2})\s*,", "req_id": r"\bRef:\s*([A-Za-z0-9_-]+)"},
         "hospital_map": _RUSH_HOSPITALS,
         "hospital": "Rush University Medical Center",
         "state": "IL", "platform": "FXRecruiter",
@@ -17369,15 +17682,32 @@ def _hl_make_job(system: str, cfg: dict, url: str, title: str, f: dict) -> Job |
     desc = teaser
     if shift and shift.lower() not in teaser.lower():
         desc = f"Shift: {shift}\n{desc}".strip()
+    job_id = _hl_job_id(url, cfg, f.get("job_id", ""))
+    # 2026-10-14: a site's "req_id" field (Rush's feed "Ref: 31067") is the
+    # number the job page prints when job_id is another value.
+    req_id = _hl_req_value(f.get("req_id", ""))
     return Job(
         title=title, hospital_system=system, hospital_name=hospital or system,
         city=city, state=state,
         location=f"{city}, {state}".strip(", ") if (city or state) else "",
         specialty=f.get("department", ""), job_type=job_type,
-        url=url, job_id=_hl_job_id(url, cfg, f.get("job_id", "")),
+        url=url, job_id=job_id,
         posted_date=_hl_date(f.get("posted", ""), cfg.get("date_fmts", ())),
         description=desc, ats_platform=cfg.get("platform", "Custom"),
+        req_id=req_id if req_id != job_id else "",
     )
+
+
+# 2026-10-14: Rush prints its multi-town postings' numbers with underscores
+# ("21729rxv_7_1"), which _hca_req_value's [A-Za-z0-9-] rejects; this keeps
+# letters, digits, "_" and "-", at least one digit, up to 40 characters.
+_HL_REQ_VALUE_RE = re.compile(r"^(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
+
+
+def _hl_req_value(raw) -> str:
+    """An HTML-list site's requisition number as printed, or ""."""
+    s = str(raw or "").strip()
+    return s if _HL_REQ_VALUE_RE.match(s) else ""
 
 
 def _parse_html_list_page(text: str, system: str, cfg: dict) -> list[Job]:
@@ -17806,8 +18136,21 @@ REQ_ID_LIST_PLATFORMS = frozenset({"HealthcareSource", "UKG", "ADP", "ADP CX"})
 # stored req_id over a later object built without one; trg_zy_req_id_sync
 # copies it into hospital_jobs.req_id. Other platforms keep REQ_ID_ONLY_FACTS.
 # (group 2: iCIMS, Jobvite, HCTS, SelectMinds)
+# 2026-10-14 (owner: "Yeah we need to fix those now"): the platforms whose rows
+# send that req_id-only object on a night their facts go out null (no body in
+# hand: the known-body skip blanks it, or the list carries none), whatever
+# REQ_ID_ONLY_FACTS says. The merge is live: pg_get_functiondef of
+# preserve_scraped_enrichment, read 2026-10-14, carries
+# "new.posting_facts := old.posting_facts || new.posting_facts" (sql/113), so
+# the object is merged into the stored facts, never swapped in. Only a row
+# whose adapter read a number sends one (Job.req_id is "" on every other row
+# of these platforms). Baylor Scott & White (Phenom) and Rush (FXRecruiter)
+# read it from the list every night; Workday, CSOD, SuccessFactorsRMK and
+# Paycor on the nights their detail pass reads the page.
+# (group 4: Workday, Phenom (BSW), CSOD, SuccessFactorsRMK, Paycor, FXRecruiter (Rush))
 # Integration 2026-10-14 (release/reqid-18-1014): ONE set, the union of every
-# group's platforms; normalize_job reads only this name.
+# group's platforms (18; NEOGOV is mothballed and not in it); normalize_job
+# reads only this name.
 REQ_ID_ONLY_PLATFORMS = frozenset({
     # group 1 (scraper/reqid-g1-1014)
     "TalentBrew", "WPJobBoard", "Findly-Google", "LiquidCompass",
@@ -17815,6 +18158,8 @@ REQ_ID_ONLY_PLATFORMS = frozenset({
     "iCIMS", "Jobvite", "HCTS", "SelectMinds",
     # group 3 (scraper/reqid-g3-1014): HealthcareSource, UKG, ADP, ADP CX
     *REQ_ID_LIST_PLATFORMS,
+    # group 4 (scraper/reqid-g4-1014)
+    "Workday", "Phenom", "CSOD", "SuccessFactorsRMK", "Paycor", "FXRecruiter",
 })
 
 

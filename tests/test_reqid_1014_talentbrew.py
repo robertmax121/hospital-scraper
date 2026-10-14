@@ -216,8 +216,11 @@ def test_uhg_card_number_goes_out_on_a_night_its_body_is_not_read(monkeypatch):
     d = scraper.normalize_job(j)
     assert d["posting_facts"] == {"req_id": "2386735"}
     assert d["job_id"] == "101871518032" and "req_id" not in d
-    # a platform outside REQ_ID_ONLY_PLATFORMS still sends null
-    other = scraper.normalize_job(dataclasses.replace(j, ats_platform="Phenom", hospital_system="Jackson Health System"))
+    # a platform outside REQ_ID_ONLY_PLATFORMS still sends null (integration
+    # 2026-10-14: Phenom joined the set with group 4's BSW numbers, so the
+    # outside platform is Oracle HCM)
+    assert "Oracle HCM" not in scraper.REQ_ID_ONLY_PLATFORMS
+    other = scraper.normalize_job(dataclasses.replace(j, ats_platform="Oracle HCM", hospital_system="Jackson Health System"))
     assert other["posting_facts"] is None
 
 
