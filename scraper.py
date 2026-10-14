@@ -1659,8 +1659,36 @@ def _refresh_slot(canon: str, job_id: str, run_day: Optional[int] = None) -> boo
 # the budget; a fetch that brings nothing keeps the stored body
 # (_settle_held). Outside the window the entry does nothing: drop it on the
 # push after the window ends.
+#
+# 2026-10-14 (req_id; owner: "Yeah we need to fix those now"): the tenants
+# whose number lives only on the detail page (Workday jobReqId, CSOD data.ref,
+# the RMK label line, Paycor's Job Id cell) get it on the nights their pass
+# reads the page. Their stored bodies are not read again for ~30+ nights
+# (the refresh share is ~5% of a tenant's floor), so each stored body is read
+# once inside REQ_ID_REREAD_WINDOW, on the same passes and budgets: ~4.9k
+# Workday CXS details (WVU Medicine 3,220, the most, ~1,100 a night against
+# the 3,000 tenant cap and the 26,000 run budget, on ~3,000 new rows a
+# night), ~283 CSOD, 186 RMK and 411 Paycor pages. Tenants with a few
+# affected rows among many (Montefiore 21 of 480, Samaritan 20 of 256, Prisma
+# 9 of 2,233) are left to the refresh share. The window must be the first
+# nights the change runs: move it if the push lands after 00:00 UTC
+# 2026-10-15, and drop the entries on the push after it ends.
+REQ_ID_REREAD_WINDOW = ("2026-10-15", "2026-10-17")
+REQ_ID_REREAD_SYSTEMS = (
+    # Workday: job_id is the externalPath (or Rochester's non-req bullet)
+    "WVU Medicine", "Monument Health", "ThedaCare", "Kaweah Health", "MarinHealth",
+    "Broadlawns Medical Center", "Cape Fear Valley Health", "Rochester Regional Health",
+    # CSOD (CSOD_REQ_ID)
+    "JPS Health Network", "UI Health",
+    # SuccessFactors RMK (SF_RMK_REQ_LABEL)
+    "Texas Health and Human Services", "Florida Department of Children and Families",
+    "Illinois Department of Human Services", "Arkansas Department of Human Services",
+    # Paycor (paycor_req_id)
+    "Insight Health", "Townsen Memorial Hospital", "Coon Memorial Hospital", "Hereford Regional Medical Center",
+)
 FORCED_REFRESH = {
     "Hackensack Meridian Health": ("2026-10-08", "2026-10-14"),   # TB_PAGE_DETAIL_ORGS since push 10
+    **{s: REQ_ID_REREAD_WINDOW for s in REQ_ID_REREAD_SYSTEMS},
 }
 
 

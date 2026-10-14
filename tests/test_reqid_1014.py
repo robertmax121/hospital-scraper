@@ -394,3 +394,49 @@ def test_html_list_req_value():
     # a site without the field: no req_id, as before
     j = scraper._hl_make_job("X", {"id": r"/(\d+)$"}, "https://x.org/jobs/5", "RN", {})
     assert j.job_id == "5" and j.req_id == ""
+
+
+# ── One-time re-read of the stored bodies (REQ_ID_REREAD_WINDOW) ────────
+def test_reread_window_lists_only_tenants_with_a_detail_reader():
+    from datetime import datetime
+    lo, hi = (datetime.strptime(x, "%Y-%m-%d") for x in scraper.REQ_ID_REREAD_WINDOW)
+    assert 1 <= (hi - lo).days + 1 <= 7
+    for s in scraper.REQ_ID_REREAD_SYSTEMS:
+        assert scraper._canon_system(s) == s
+        assert scraper.FORCED_REFRESH[s] == scraper.REQ_ID_REREAD_WINDOW
+        assert (s in scraper.WORKDAY_TENANTS or s in scraper.CSOD_REQ_ID
+                or s in scraper.SF_RMK_REQ_LABEL or s in scraper.PAYCOR_ORGS), s
+    # list-source tenants need no re-read; the big tenants with a handful of rows are left out
+    for s in ("Baylor Scott & White", "Rush", "Billings Clinic", "Prisma Health", "Montefiore"):
+        assert s not in scraper.FORCED_REFRESH
+
+
+def test_each_stored_body_is_read_once_inside_the_window(monkeypatch):
+    from datetime import datetime
+    a = datetime.strptime(scraper.REQ_ID_REREAD_WINDOW[0], "%Y-%m-%d").toordinal()
+    b = datetime.strptime(scraper.REQ_ID_REREAD_WINDOW[1], "%Y-%m-%d").toordinal()
+    ids = [f"/job/Town/Role_JR26-{n}" for n in range(3220)]          # WVU Medicine's size
+    hits, per_night = dict.fromkeys(ids, 0), {}
+    for d in range(a - 2, b + 3):
+        monkeypatch.setattr(scraper, "_run_day", lambda d=d: d)
+        n = sum(scraper._force_slot("WVU Medicine", j) for j in ids)
+        per_night[d] = n
+        for j in ids:
+            hits[j] += scraper._force_slot("WVU Medicine", j)
+    assert set(hits.values()) == {1}
+    assert per_night[a - 1] == per_night[b + 1] == 0
+    assert max(per_night.values()) <= scraper.WD_DESC_TENANT_MAX          # one tenant's nightly cap
+
+
+def test_a_forced_workday_row_is_fetched_and_gets_its_number(fixture_text, monkeypatch):
+    d, job, path = _wd_target(fixture_text, "monument.json")
+    scraper.set_known_bodies([_known(job)])
+    monkeypatch.setattr(scraper, "_refresh_slot", lambda *a, **k: False)
+    monkeypatch.setattr(scraper, "_force_slot", lambda canon, jid: canon == "Monument Health")
+    assert scraper._known_kind("Monument Health", job) == "force"
+    seen = _serve(monkeypatch, [("/wday/cxs/", 200, d)])
+    working = "https://monumenthealth.wd1.myworkdayjobs.com/wday/cxs/monumenthealth/Goldcareers/jobs"
+    asyncio.run(scraper._workday_fetch_details(None, working, [(job, path)], "Monument Health"))
+    assert len(seen) == 1 and job.req_id == "27_322"
+    row = scraper.normalize_job(job)
+    assert row["posting_facts"]["req_id"] == "27_322" and row["job_id"] == d["_meta"]["our_job_id"]
