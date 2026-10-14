@@ -5907,7 +5907,11 @@ TALENTBREW_ORGS = {
     # aiohttp client and with curl_cffi the same day; its iCIMS portal
     # (careers-hackensackmeridianhealth.icims.com) answers the classic path
     # with an AWS WAF challenge, so the TalentBrew front stays the source.
-    "Hackensack Meridian Health": ("https://jobs.hackensackmeridianhealth.org/search-jobs", 15),
+    # 2026-10-14 (fix 11): 100 a page. The 10-14 run listed 1,281 of 1,637,
+    # whole 15-card pages missing across the board (110 requests); the site
+    # serves RecordsPerPage=100 (17 pages, 1,637 of 1,637 distinct, read with
+    # a new session per page), the same order and the same cards.
+    "Hackensack Meridian Health": ("https://jobs.hackensackmeridianhealth.org/search-jobs", 100),
     # 2026-10-04 coverage round 3: MemorialCare (Long Beach, Saddleback,
     # Orange Coast, Miller Children's; label = public.hospitals.hospital_system).
     # /results with the generic module names: 216 jobs, 15 a page, "City, CA"
@@ -6057,6 +6061,24 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
     MAX_RETRIES = 10         # max retries per page before giving up on that page
     BASE_BACKOFF = 3.0       # seconds — doubles each retry
 
+    # 2026-10-14 (fix 11): the results fragment carries the board's own count
+    # (data-total-results); the crawl reports complete against it, and a crawl
+    # that stopped on a failed page is PARTIAL (the HealthcareSource rule).
+    # Hackensack Meridian came back 1,281 of 1,637 on 10-14, whole 15-card
+    # pages missing, and nothing told the sweep whether the board was read.
+    tb_total = 0
+
+    def _finish(failed: bool) -> list[Job]:
+        listed = len({j.job_id for j in jobs})
+        if failed and jobs and (not tb_total or listed < tb_total):
+            PARTIAL_SYSTEMS.add(system)
+            logger.warning(f"TalentBrew {system}: PARTIAL, stopped on page {page} after its retries; "
+                           f"{listed} of {tb_total or '?'} listed; not swept tonight")
+        elif tb_total and listed < COMPLETE_RATIO * tb_total:
+            logger.warning(f"TalentBrew {system}: listed {listed} of {tb_total} advertised")
+        report_complete(system, listed, tb_total, feed="TALENTBREW_ORGS")
+        return jobs
+
     # ── Session warmup — required by Kaiser / NYP (Apr 29 2026 HAR pattern) ──
     # Sending null/empty geo causes their /results endpoint to respond with
     # `hasContent:false` and a 61-byte shell. The fix (verified live against
@@ -6151,13 +6173,17 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     results_html = html
                     has_jobs = True
 
+                mt = re.search(r'data-total-results="(\d+)"', results_html or "")
+                if mt:
+                    tb_total = max(tb_total, int(mt.group(1)))
+
                 if not has_jobs or not results_html:
                     if page == 1 and mod_idx == 0 and not jobs:
                         logger.info(f"TalentBrew {system}: empty with the Section 6 module names; retrying page 1 with the generic names")
                         mod_idx, retry_modules = 1, True
                         break
                     logger.info(f"TalentBrew {system}: hasJobs={has_jobs}, empty on page {page} — done")
-                    return jobs
+                    return _finish(False)
 
                 # ── Card-level parse (2026-07-28 rewrite) ─────────────────
                 # Each result card carries everything we need — no more city-slug
@@ -6255,13 +6281,13 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                         mod_idx, retry_modules = 1, True
                         break
                     logger.info(f"TalentBrew {system}: no job cards on page {page} — done")
-                    return jobs
+                    return _finish(False)
 
                 logger.info(f"TalentBrew {system}: page {page} → {len(seen)} jobs (total so far: {len(jobs)})")
                 page_succeeded = True
 
                 if len(seen) < rpp:
-                    return jobs  # last page — we're done
+                    return _finish(False)  # last page — we're done
                 break  # success — move to next page
 
             except Exception as e:
@@ -6279,14 +6305,14 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     # proxies.get() will automatically rotate to next proxy on next call
                 else:
                     logger.info(f"TalentBrew {system}: page {page} failed after {MAX_RETRIES} retries — stopping at {len(jobs)} jobs")
-                    return jobs  # give up on this system
+                    return _finish(True)  # give up on this system
 
         if retry_modules:
             retry_modules = False
             continue                      # same page, generic module names
 
         if not page_succeeded:
-            return jobs
+            return _finish(True)
 
         page += 1
         await jitter()
@@ -8267,6 +8293,15 @@ async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: st
                 ats_platform="Greenhouse",
                 wage_min=_greenhouse_pay(j)[0], wage_max=_greenhouse_pay(j)[1], wage_unit=_greenhouse_pay(j)[2],
             ))
+        # 2026-10-14 (fix 11): the board answers in one response with its own
+        # count (meta.total), so a response read whole is a complete crawl.
+        # One Medical listed 393 of 394 on 10-14 and the yield guard still
+        # held its 124 closed rows (393 vs 569 active): nothing claimed it.
+        try:
+            advertised = int(((data.get("meta") or {}).get("total")) or 0)
+        except (TypeError, ValueError, AttributeError):
+            advertised = 0
+        report_complete(system, len({j.job_id for j in jobs if j.job_id}), advertised, feed="GREENHOUSE_ORGS")
         return jobs
     except Exception as e:
         logger.info(f"Greenhouse {system}: {e}")
@@ -12024,6 +12059,14 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
     # Confirmed endpoint from network intercept on Deaconess
     api = f"{base_url}/JobBoard/{guid}/JobBoardView/LoadSearchResults"
     offset = 0
+    # 2026-10-14 (fix 11): the board's totalCount against every posting read
+    # (non-US ones included) is a complete claim; a page that fails after the
+    # first makes the crawl PARTIAL (HealthcareSource rule). North Carolina
+    # Specialty Hospital read 25 of its 25 on 10-14 and the yield guard held
+    # its 11 closed rows (25 vs 36 active).
+    read_ids: set[str] = set()
+    advertised = 0
+    cut_short = False
     while True:
         try:
             payload = {
@@ -12044,6 +12087,7 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
                     logger.info(f"UKG {system}: HTTP {r.status}")
+                    cut_short = offset > 0
                     break
                 data = await r.json(content_type=None)
             # Response: {"opportunities": [...], "totalCount": N}
@@ -12051,20 +12095,30 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
             if not items:
                 break
             for j in items:
+                if isinstance(j, dict):
+                    read_ids.add(str(j.get("Id") or j.get("id") or j.get("OpportunityId") or j.get("opportunityId") or ""))
                 if _ukg_non_us(j):
                     continue          # 2026-10-13: the posting's own country is not the US
                 job = _ukg_job(j, system, base_url, guid, default_state)
                 if job.job_id and job.title:
                     jobs.append(job)
             total = int(data.get("totalCount", data.get("total", data.get("Total", 0))) or 0)
+            advertised = max(advertised, total)
             offset += _UKG_PAGE
             if offset >= total or len(items) < _UKG_PAGE:
                 break
             await jitter()
         except Exception as e:
             logger.info(f"UKG {system}: {e}")
+            cut_short = offset > 0
             break
+    read_ids.discard("")
+    if cut_short and jobs:
+        PARTIAL_SYSTEMS.add(system)
+        logger.warning(f"UKG {system}: PARTIAL, stopped at offset {offset}; {len(read_ids)} of {advertised} "
+                       f"read; not swept tonight")
     logger.info(f"  UKG {system}: {len(jobs)} jobs")
+    report_complete(system, len(read_ids), advertised, feed="UKG_ORGS")
     return jobs
 
 async def run_ukg(session) -> list[Job]:
@@ -13528,13 +13582,22 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
     dept_rx = re.compile(dept_pat, re.I) if dept_pat else None
     jobs: list[Job] = []
     page, total = 1, 0
+    # 2026-10-14 (fix 11): every card read (all departments) against the
+    # board's own job-postings-number is a complete claim for the hospital's
+    # rows; a page that fails after the first makes the crawl PARTIAL. On
+    # 10-14 Riverside's county board read 86 distinct of 87 cards (22 RUHS)
+    # and the yield guard held its 15 closed rows (22 vs 41 active).
+    card_ids: set[str] = set()
+    cut_short = False
     while True:
         try:
             status, html_ = await _neogov_fetch_page(session, agency, page)
             if status != 200:
                 logger.info(f"NeoGov {system}: HTTP {status} (agency {agency}, page {page})")
+                cut_short = page > 1
                 break
             got, total, cards = _parse_neogov_page(html_, system, agency, state, city, hospital_name, dept_rx)
+            card_ids.update(c.split('"', 1)[0] for c in (html_ or "").split('<li class="list-item" data-job-id="')[1:])
             jobs.extend(got)
             if not cards or page * 10 >= total or page >= NEOGOV_MAX_PAGES:
                 break
@@ -13542,8 +13605,15 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
             await jitter()
         except Exception as e:
             logger.info(f"NeoGov {system}: {e}")
+            cut_short = page > 1
             break
+    card_ids.discard("")
+    if cut_short and jobs:
+        PARTIAL_SYSTEMS.add(system)
+        logger.warning(f"NeoGov {system}: PARTIAL, page {page} unread; {len(card_ids)} of {total} cards read; "
+                       f"not swept tonight")
     logger.info(f"  NeoGov {system}: {len(jobs)} jobs kept of {total} on the {agency} board")
+    report_complete(system, len(card_ids), total, feed="NEOGOV_AGENCIES")
     return jobs
 
 
@@ -14159,6 +14229,15 @@ async def scrape_applicantpro(session: aiohttp.ClientSession, system: str, org_d
                 description="",
                 ats_platform="ApplicantPro",
             ))
+        # 2026-10-14 (fix 11): the one response carries the board's own count
+        # (data.jobCount, "Number of Jobs: 78" on Cayuga that day), so reading
+        # it whole is a complete crawl.
+        meta = data.get("data") if isinstance(data, dict) and isinstance(data.get("data"), dict) else {}
+        try:
+            advertised = int(meta.get("jobCount") or 0)
+        except (TypeError, ValueError):
+            advertised = 0
+        report_complete(system, len({j.job_id for j in jobs if j.job_id}), advertised, feed="APPLICANTPRO_ORGS")
     except Exception as e:
         logger.info(f"ApplicantPro {system}: {e}")
 

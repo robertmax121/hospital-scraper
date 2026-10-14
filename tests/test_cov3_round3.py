@@ -357,7 +357,8 @@ def test_tenant_lines_carry_the_probed_identifiers():
     assert scraper.JIBE_SITES["Care New England Health System"] == "https://careers.carenewengland.org"
     assert scraper.JIBE_FACILITY_TAG["Care New England Health System"] == "tags2"
     assert scraper.TALENTBREW_ORGS["MemorialCare"] == ("https://careers.memorialcare.org/search-jobs", 15)
-    assert scraper.TALENTBREW_ORGS["Hackensack Meridian Health"] == ("https://jobs.hackensackmeridianhealth.org/search-jobs", 15)
+    # 2026-10-14 (fix 11): 100 cards a page (the site serves it; 17 requests instead of 110)
+    assert scraper.TALENTBREW_ORGS["Hackensack Meridian Health"] == ("https://jobs.hackensackmeridianhealth.org/search-jobs", 100)
     assert scraper.GREENHOUSE_ORGS["Luminis Health"] == "luminishealth"
     assert scraper.TALEMETRY_SITES["LifeBridge Health"] == "https://jobs.lifebridgehealth.org"
     assert scraper.TALEMETRY_SITES["Asante Health System"] == "https://jobs.asante.org"
