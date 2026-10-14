@@ -308,7 +308,7 @@ def test_talemetry_reports_site_total_vs_fetched_when_it_stops_early(monkeypatch
     assert len(jobs) == 100
     # 2026-10-14 (fix 11): pages 3-13 are still read and page 2 is tried once
     # more after the cool-down; it stays unread, so the crawl is PARTIAL.
-    assert any("Talemetry UCHealth: 100 of site total 1296 fetched; pages [2] unread after the second try "
+    assert any("Talemetry UCHealth: 100 of site total 1296 fetched; pages [2] still unread "
                "(page 2 failed 3 times (HTTP 403)); PARTIAL" in m for m in caplog.messages)
     assert "UCHealth" not in scraper.COMPLETE_SYSTEMS
     assert "UCHealth" in scraper.PARTIAL_SYSTEMS

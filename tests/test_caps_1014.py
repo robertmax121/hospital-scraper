@@ -581,6 +581,8 @@ def test_talentbrew_crawl_that_stops_on_a_failed_page_is_partial(monkeypatch):
 #    report nothing and the yield guard (backstop included) held them; as plain
 #    PARTIAL_SYSTEMS entries a board refused every night (Penn Medicine and
 #    UCHealth from Railway) would never retire a closed row.
+# b) Talemetry lists its sites one after another, so one site's list crawl has
+#    a wall-clock budget (TALEMETRY_SITE_BUDGET_S).
 
 import database        # noqa: E402
 import retire_guard    # noqa: E402
@@ -684,3 +686,51 @@ def test_mark_inactive_jobs_passes_the_partial_systems_to_the_plan(monkeypatch, 
     assert [ids for p, ids in updates if p.get("is_active") is False] == [[19, 20]]
     assert any("LAYER4 GUARD UCHealth: partial crawl 16/20" in m for m in caplog.messages)
 
+
+def test_talemetry_list_budget_ends_a_slow_crawl_as_partial(monkeypatch, caplog):
+    clock, asked = {"t": 0.0}, []
+    monkeypatch.setattr(scraper, "_talemetry_now", lambda: clock["t"])
+    monkeypatch.setattr(scraper, "TALEMETRY_SITE_BUDGET_S", 600.0)
+
+    def fake_fetch(method, url, impersonate, timeout=60, **kw):
+        page = int(kw["params"]["page"])
+        asked.append((page, timeout))
+        clock["t"] += 45                      # a hanging proxy, then the direct answer
+        return _CurlResp({"total_entries": 1770,
+                          "entries": _tal_entries(range((page - 1) * 100, min(page * 100, 1770)))})
+    monkeypatch.setattr(scraper, "_curl_fetch", fake_fetch)
+    with caplog.at_level(logging.WARNING):
+        jobs = asyncio.run(scraper.scrape_talemetry(None, "Penn Medicine", "https://careers.pennmedicine.org"))
+    # pages start at 0, 45, ..., 585 s; page 14 gets the 15 s left; page 15 never starts
+    assert [p for p, _ in asked] == list(range(1, 15))
+    assert [t for _, t in asked] == [40] * 13 + [15]
+    assert len(jobs) == 1400
+    assert "Penn Medicine" in scraper.PARTIAL_BACKSTOP_SYSTEMS and "Penn Medicine" not in scraper.COMPLETE_SYSTEMS
+    assert any("no second try, the 600s list budget is spent" in m for m in caplog.messages)
+    assert any("pages [15, 16, 17, 18] still unread (list budget of 600s spent at page 15); PARTIAL" in m
+               for m in caplog.messages)
+
+
+def test_talemetry_retry_does_not_start_past_the_list_budget(monkeypatch):
+    clock, waits, asked = {"t": 0.0}, [], []
+    monkeypatch.setattr(scraper, "_talemetry_now", lambda: clock["t"])
+    monkeypatch.setattr(scraper, "TALEMETRY_SITE_BUDGET_S", 600.0)
+
+    async def fake_sleep(seconds):
+        waits.append(seconds)
+        clock["t"] += seconds
+
+    def fake_fetch(method, url, impersonate, timeout=60, **kw):
+        page = int(kw["params"]["page"])
+        asked.append(page)
+        if page == 1:
+            clock["t"] += 10
+            return _CurlResp({"total_entries": 300, "entries": _tal_entries(range(100))})
+        clock["t"] += 300                     # proxy and direct both time out
+        raise RuntimeError("Timeout")
+    monkeypatch.setattr(scraper, "_curl_fetch", fake_fetch)
+    monkeypatch.setattr(scraper, "_retry_sleep", fake_sleep)
+    jobs = asyncio.run(scraper.scrape_talemetry(None, "UCHealth", "https://careers.uchealth.org"))
+    # page 2: tries at 10 s and 313 s; the third would start after 619 s, so it never does
+    assert asked == [1, 2, 2] and waits == [3.0]
+    assert len(jobs) == 100 and "UCHealth" in scraper.PARTIAL_BACKSTOP_SYSTEMS

@@ -15324,6 +15324,15 @@ TALEMETRY_PAGE_RETRIES = 2
 TALEMETRY_RETRY_BASE_S = 3.0
 TALEMETRY_MAX_CONSECUTIVE_FAILURES = 3      # failed pages in a row that end a pass
 TALEMETRY_COOLDOWN_S = float(os.getenv("TALEMETRY_COOLDOWN_S", "45"))
+# 2026-10-14 (fix 11 review): wall-clock budget for one site's list crawl.
+# The sites are listed one after another, and a page whose every attempt
+# hangs costs about 250 s (3 attempts x 40 s through the proxy + 40 s direct,
+# plus the backoff), so a bad night could hold the whole gather for tens of
+# minutes per site. Once the budget is spent no new page or retry starts
+# (an attempt in flight gets at most the time left), the pages not read stay
+# unread and the site is PARTIAL (report_partial). Normal case from a home
+# address: Penn Medicine, 18 pages, about 40 s.
+TALEMETRY_SITE_BUDGET_S = float(os.getenv("TALEMETRY_SITE_BUDGET_S", "600"))
 TALEMETRY_RESORT = "title,asc"              # the site's other sort_by (search page: title / location_city)
 TALEMETRY_DESC_MAX_PER_RUN = int(os.getenv("TALEMETRY_DESC_MAX_PER_RUN", "1500"))   # job-page JSON-LD
 TALEMETRY_DESC_BUDGET = _DescBudget(TALEMETRY_DESC_MAX_PER_RUN)
@@ -15358,20 +15367,33 @@ def _talemetry_job(e: dict, system: str, base: str) -> Job | None:
     )
 
 
-async def _talemetry_page(system: str, base: str, page: int, state: dict, sort_by: str | None = None):
+def _talemetry_now() -> float:
+    """The clock TALEMETRY_SITE_BUDGET_S is kept on (the tests replace it)."""
+    return time.monotonic()
+
+
+async def _talemetry_page(system: str, base: str, page: int, state: dict, sort_by: str | None = None,
+                          deadline: float | None = None):
     """(search.json payload, "") for one list page, or (None, problem) after
     TALEMETRY_PAGE_RETRIES retries with a doubling backoff. A 403 (the edge's
     challenge) moves state["imp"] to the next TALEMETRY_IMPERSONATE_CHAIN
-    profile for the next attempt, and the site keeps the profile that works."""
+    profile for the next attempt, and the site keeps the profile that works.
+    `deadline` (_talemetry_now() time): no attempt or retry starts after it,
+    and an attempt gets at most the time left (2026-10-14)."""
     params = {"page": str(page), "per_page": str(TALEMETRY_PER_PAGE)}
     if sort_by:
         params["sort_by"] = sort_by
     problem = ""
     for attempt in range(TALEMETRY_PAGE_RETRIES + 1):
+        left = None if deadline is None else deadline - _talemetry_now()
+        if left is not None and left <= 0:
+            problem = f"{problem}; list budget spent" if problem else "list budget spent"
+            break
+        timeout = 40 if left is None else int(min(40, max(5, left)))
         try:
             # curl_cffi with a browser TLS profile: UCHealth answers aiohttp with 403.
             r = await asyncio.to_thread(
-                _curl_fetch, "get", f"{base}/jobs/search.json", state["imp"], 40,
+                _curl_fetch, "get", f"{base}/jobs/search.json", state["imp"], timeout,
                 params=params, headers={"Accept": "application/json", "Referer": f"{base}/jobs/search"})
             data = r.json()
             if not isinstance(data, dict):
@@ -15388,6 +15410,9 @@ async def _talemetry_page(system: str, base: str, page: int, state: dict, sort_b
                 nxt = f" ({state['imp']} TLS next)"
             if attempt < TALEMETRY_PAGE_RETRIES:
                 delay = TALEMETRY_RETRY_BASE_S * (2 ** attempt)
+                if deadline is not None and _talemetry_now() + delay >= deadline:
+                    problem += "; list budget spent"
+                    break
                 logger.warning(f"Talemetry {system}: page {page} failed ({problem}); "
                                f"retry {attempt + 1}/{TALEMETRY_PAGE_RETRIES} in {delay:.0f}s{nxt}")
                 await _retry_sleep(delay)
@@ -15404,6 +15429,10 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
     seen: set[str] = set()
     state = {"imp": TALEMETRY_IMPERSONATE}
     info = {"total": None, "page_len": 0, "last_page": TALEMETRY_PAGE_CAP, "problem": ""}
+    deadline = _talemetry_now() + TALEMETRY_SITE_BUDGET_S
+
+    def time_left() -> float:
+        return deadline - _talemetry_now()
 
     def done() -> bool:
         return bool(info["total"]) and len(seen) >= info["total"]
@@ -15418,7 +15447,8 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
     async def one_pass(pages=None, sort_by=None) -> list[int]:
         """Read `pages` (None: 1, 2, ... to the board's end). Returns the
         pages left unread: failed ones, and those after
-        TALEMETRY_MAX_CONSECUTIVE_FAILURES failures in a row."""
+        TALEMETRY_MAX_CONSECUTIVE_FAILURES failures in a row or once the
+        site's list budget (TALEMETRY_SITE_BUDGET_S) is spent."""
         queue = list(pages) if pages is not None else None
         unread: list[int] = []
         page, in_a_row = 0, 0
@@ -15431,14 +15461,18 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
                 page += 1
                 if page > info["last_page"]:
                     break
-            if in_a_row >= TALEMETRY_MAX_CONSECUTIVE_FAILURES:
-                # the edge is refusing us: leave the rest for the cool-down round
+            out_of_time = time_left() <= 0
+            if out_of_time or in_a_row >= TALEMETRY_MAX_CONSECUTIVE_FAILURES:
+                # the edge is refusing us (or the budget is spent): leave the
+                # rest for the cool-down round, or unread
+                if out_of_time:
+                    info["problem"] = f"list budget of {TALEMETRY_SITE_BUDGET_S:.0f}s spent at page {page}"
                 rest = queue if queue is not None else (
                     range(page + 1, info["last_page"] + 1) if info["total"] is not None else [])
                 unread.append(page)
                 unread.extend(rest)
                 break
-            data, problem = await _talemetry_page(system, base, page, state, sort_by)
+            data, problem = await _talemetry_page(system, base, page, state, sort_by, deadline)
             if data is None:
                 unread.append(page)
                 in_a_row += 1
@@ -15465,7 +15499,11 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
         return unread
 
     unread = await one_pass()
-    if unread and not done():
+    if unread and not done() and time_left() < TALEMETRY_COOLDOWN_S:
+        logger.warning(f"Talemetry {system}: {len(jobs)} of site total {info['total']} after the first pass; "
+                       f"pages {unread[:12]}{'...' if len(unread) > 12 else ''} unread ({info['problem']}); "
+                       f"no second try, the {TALEMETRY_SITE_BUDGET_S:.0f}s list budget is spent")
+    elif unread and not done():
         logger.warning(f"Talemetry {system}: {len(jobs)} of site total {info['total']} after the first pass; "
                        f"pages {unread[:12]}{'...' if len(unread) > 12 else ''} unread ({info['problem']}); "
                        f"one more try in {TALEMETRY_COOLDOWN_S:.0f}s")
@@ -15474,7 +15512,7 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
         unread = await one_pass(None if info["total"] is None else unread)
     elif unread:
         unread = []            # every job is in hand: what failed was past the board's end
-    if not unread and info["total"] and not done():
+    if not unread and info["total"] and not done() and time_left() > 0:
         # every page read, some ids twice: rows the order's ties moved across a
         # page boundary between two requests are looked for in title order
         before = len(seen)
@@ -15488,7 +15526,7 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
         # postings, so the sweep must not retire anything of this site tonight.
         report_partial(system)
         logger.warning(f"Talemetry {system}: {len(jobs)} of site total {total} fetched; pages "
-                       f"{unread[:12]}{'...' if len(unread) > 12 else ''} unread after the second try "
+                       f"{unread[:12]}{'...' if len(unread) > 12 else ''} still unread "
                        f"({info['problem']}); PARTIAL, not swept tonight")
     elif total and len(jobs) < COMPLETE_RATIO * total:
         logger.warning(f"Talemetry {system}: {len(jobs)} of site total {total} fetched"
