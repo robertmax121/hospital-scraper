@@ -114,3 +114,40 @@ def test_a_row_read_by_the_detail_pass_rebuilds_its_facts_with_the_number(fixtur
     j.description = ("The Physical Therapist evaluates patients and plans, delivers and documents treatment. " * 25)
     d = scraper.normalize_job(j)
     assert d["posting_facts"]["req_id"] == "155930" and d["posting_facts"]["h"]
+
+
+def test_the_number_adds_no_nightly_write(fixture_text, monkeypatch):
+    """Content hash across nights for a row the detail pass read: the night
+    after the fetch is a full write anyway (the body goes from the fetched
+    text to the blank _keep_stored_body sends), with or without the
+    {"req_id"}-only object; every night after it hashes alike, so the row
+    is stamped, not rewritten."""
+    monkeypatch.setattr(scraper, "REQ_ID_ONLY_FACTS", False)
+    jobs = _run_chs(fixture_text, monkeypatch)
+    body = "The Physical Therapist evaluates patients and plans, delivers and documents treatment. " * 25
+
+    def night(desc, platforms):
+        monkeypatch.setattr(scraper, "REQ_ID_ONLY_PLATFORMS", platforms)
+        j = next(x for x in jobs if x.job_id == "135518")
+        j.description = desc
+        if not desc:
+            scraper._keep_stored_body("Community Health Systems", j)
+        d = scraper.normalize_job(j)
+        return d, scraper.content_hash_for(d)
+
+    with_set = scraper.REQ_ID_ONLY_PLATFORMS
+    try:
+        scraper.set_known_bodies([])
+        a, ha = night(body, with_set)                       # the fetch night
+        pf = a["posting_facts"]
+        scraper.set_known_bodies([{"hospital_system": "CHS", "job_id": "135518",
+                                   "ats_platform": "WPJobBoard", "desc_len": len(body),
+                                   "fv": pf["v"], "fh": pf["h"], "rq": pf["req_id"]}])
+        b, hb = night("", with_set)
+        c, hc = night("", with_set)
+        assert b["posting_facts"] == {"req_id": "155930"} and hb != ha and hc == hb
+        b0, hb0 = night("", with_set - {"WPJobBoard"})       # as before 10-14
+        assert b0["posting_facts"] is None and hb0 != ha
+        assert scraper._facts_token(b0) == ["h", pf["h"]]                # same facts token as the fetch night
+    finally:
+        scraper.set_known_bodies([])
