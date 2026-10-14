@@ -21463,10 +21463,25 @@ _ROLE_HIGH_RX = re.compile(
     r"rheumatologist|pulmonologist|ophthalmologist|obstetrician|gynecologist|pediatrician|internist|physiatrist|"
     r"\bCRNA\b|nurse\s+anesthetist|pharmacist|chief\s+(?:executive|medical|nursing|financial|operating|information)\s+officer|"
     r"\b(?:CEO|CFO|COO|CNO|CMO|CIO)\b|vice\s+president|\bVP\b", re.I)
+# 2026-10-14 (fix 10 review): a skip word is the word, not a piece of
+# another one. "resident" matched inside "President" (no VP or Sr VP title
+# met the executive floor), "\bintern" inside "Internal" and "Internist"
+# (no Internal Medicine physician or internist met the physician floor),
+# "International", "extern" inside "External", "\btech" inside
+# "Technology", "fellow" inside "Fellowship-Trained", "recruit" inside a
+# physician's "$150,000 Recruitment Incentive", "contract" inside
+# "Independent Contractor", "support" inside "Supportive and Palliative
+# Care Physician", "specialist" inside "Subspecialist". A pending licence is
+# license-pending in either order ("International Pharmacist Pending
+# License"). A state or a system name is not a role either: see
+# _role_floor_skip_text.
 _ROLE_HIGH_SKIP_RX = re.compile(
-    r"resident|fellow|\bintern|student|trainee|extern|apprentice|assistant|associate|scribe|\btech|coordinator|liaison|"
-    r"recruit|support|coding|coder|specialist|engagement|pathways|navigator|secretary|clerk|billing|scheduler|"
-    r"analyst|manager|administrator|relations|advocate|services|outreach|enrollment|credential|contract|compensation|"
+    r"\bresidents?\b|fellow(?!ship[\s-]*trained)|\bintern(?:s|ships?)?\b|student|trainee|"
+    r"\bextern(?:s|ships?)?\b|apprentice|assistant|associate|scribe|\btech(?!nolog(?:y|ies)\b)|coordinator|liaison|"
+    r"recruit(?!ment\s+incentive)|support(?!ive|ed)|coding|coder|(?<!sub)specialist|engagement|pathways|navigator|"
+    r"secretary|clerk|billing|scheduler|"
+    r"analyst|manager|administrator|relations|advocate|services|outreach|enrollment|credential|contract(?!or)|"
+    r"compensation|pending\s+licen[cs]e|"
     # 2026-10-14 (fix 10): a "Certified Registered Nurse Anesthetist" is a
     # CRNA (581 active titles never met the floor; none holds pay under it)
     r"speech|language|\bRN\b|registered\s+nurse(?!\s+anesthetist)|\bLPN\b|\bLVN\b|office\s+nurse|\bPA\b|\bNP\b|"
@@ -21487,6 +21502,28 @@ _ROLE_HIGH_SKIP_RX = re.compile(
 # intern is still off the floor (_ROLE_HIGH_SKIP_RX).
 _ROLE_HIGH_APP_SKIP_RX = re.compile(
     r"\bAPPs?\b|\bAPRN|\bAPC\b|advanced\s+practice\s+(?:provider|professional|clinician|nurse)", re.I)
+# 2026-10-14 (fix 10 review): "PA" after a town is Pennsylvania, not a
+# physician assistant ("Outpatient Family Medicine Physician - Manheim, PA",
+# "CRNA, UPMC West Shore, Mechanicsburg, PA", "Pathology Institute -
+# Pathologist - Pittsburgh, Pa": 62 active titles off the floor), and
+# "Advocate" after a separator is the Advocate system ("CRNA - Advocate
+# Condell - PRN", "Clinical Pharmacist - Pediatrics - Advocate Christ"), not
+# a patient advocate. Both are case-sensitive: a town ends in a lower-case
+# letter, so "NIGHT SHIFT PA", "GI PA Hospitalist", "Pediatric Hospitalist -
+# PA (Nights)", "PA-C" and a PA after a high word ("Hospitalist PA") stay
+# physician assistants.
+_ROLE_HIGH_STATE_PA_RX = re.compile(r"(?<=[a-z])(?:,\s*|\s+)P[Aa]\b(?![-/]?C\b)")
+_ROLE_HIGH_ADVOCATE_NAME_RX = re.compile(r"(?:(?<=[-–—,|(@/]\s)|(?<=\bat\s))Advocate(?=\s+[A-Z])")
+_ROLE_HIGH_LAST_WORD_RX = re.compile(r"[A-Za-z]+$")
+
+
+def _role_floor_skip_text(t):
+    """`t` without a Pennsylvania state code or the Advocate system's name,
+    the text _ROLE_HIGH_SKIP_RX reads (see above)."""
+    def state(m):
+        prev = _ROLE_HIGH_LAST_WORD_RX.search(t, 0, m.start())
+        return m.group(0) if prev and _ROLE_HIGH_RX.search(prev.group(0)) else ""
+    return _ROLE_HIGH_ADVOCATE_NAME_RX.sub("", _ROLE_HIGH_STATE_PA_RX.sub(state, t))
 _ROLE_LOW_RX = re.compile(
     r"\bCNA\b|certified\s+nurs(?:e|ing)\s+(?:assistant|aide)|nurs(?:e|ing)\s+(?:assistant|aide)|\bPCT\b|patient\s+care\s+tech|"
     r"\bEVS\b|environmental\s+services|housekeep|dietary|food\s+service|dishwasher|\bcook\b", re.I)
@@ -21588,7 +21625,7 @@ def role_floor_high_title(title) -> bool:
     hospitalist setting in a title that names another role, and not an
     executive the job works for."""
     t = str(title or "")
-    if _ROLE_HIGH_LABEL_RX.match(t) or _ROLE_HIGH_SKIP_RX.search(t):
+    if _ROLE_HIGH_LABEL_RX.match(t) or _ROLE_HIGH_SKIP_RX.search(_role_floor_skip_text(t)):
         return False
     crna = _ROLE_HIGH_CRNA_RX.search(t)
     if _ROLE_HIGH_APP_SKIP_RX.search(t) and not crna:         # "Hospitalist APP"; "APP - CRNA" is a CRNA

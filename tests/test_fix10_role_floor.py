@@ -65,6 +65,24 @@ def _rejections(caplog):
     "Advanced Practice Provider - Hospitalist",
     "Student Registered Nurse Anesthetist - APP Pathway",              # a CRNA student is still a student
     "CRNA Resident",
+    # the trainees and physician assistants stay off it (fix 10 review)
+    "Resident Physician PRN",
+    "Physician Resident",
+    "Pharmacist Intern",
+    "Intern Pharmacist PT24",
+    "Pharmacy Internship - Pharmacist Candidate",
+    "Cardiology Fellow Physician",
+    "International Pharmacist Pending License",
+    "Pediatric Hospitalist - PA (Nights)",
+    "GI PA Hospitalist Opportunity in Tulsa, OK",
+    "Experienced NIGHT SHIFT PA - IM Hospitalist - Bedford, TX",
+    "PA or CRNP, Neurology – Division of Neurohospitalist",
+    "Hospitalist PA",
+    "AGACNP/PA-C - Medical Hospitalist - Night Shift",
+    "Patient Advocate - Physician Office",
+    "Customer Service Advocate | UMC Internal Medicine at Medical Office Plaza II | UMC Physicians",
+    "Radiology Technologist - Radiologists",
+    "Radiology Technologist - Physician Practice (Varied) Urgent Care - Norton, VA",   # Ballad 32711005
     "Certified Nurse Midwife OB Hospitalist - Part Time",
     "Pathologists' Asst",
     "Anesthesiologist Asst PRN Pflugerville",
@@ -102,6 +120,32 @@ def test_not_the_floors_role(title):
     "Locum Physician Group Opportunity",
     "Nocturnist Physician Group",
     "Urgent Care Physician Clinic",
+    # a skip word inside another word or a name (fix 10 review)
+    "Sr Vice President of Finance and Chief Financial Officer (CFO)",  # "resident" in "President"
+    "Vice President, Chief Nursing Officer",
+    "Vice President Information Technology",                           # "tech" in "Technology"
+    "Vice President, External Communications",                         # "extern" in "External"
+    "Physician - Internal Medicine - Hospitalist",                      # "intern" in "Internal"
+    "Staff Physician Internist - Hospital at Home",                    # ... and in "Internist"
+    "Regional Medical Director Internal Medicine Physician",           # HCA 13439580
+    "PHYSICIAN - Family Medicine, no OB - International Falls, MN",
+    "Faculty Physician - Academic Residency Clinic",                   # residency is not a resident
+    "Fellowship Trained Radiologist",
+    "Fellowship-Trained Electrophysiology Cardiology Physician  - Saint Luke's - Kansas City, MO",
+    "Trauma Surgery - Physician - Des Moines - $150,000 Recruitment Incentive",
+    "Physician - Anesthesiologist - Independent Contractor - Richland",
+    "Palliative and Supportive Care Physician - Thomas Hospitals",
+    "Physician - Hematology/Oncology Subspecialist",
+    "Technology Pharmacist - Beacon Team",
+    # a state code or the Advocate system is not a role
+    "Outpatient Family Medicine Physician - Manheim, PA",
+    "CRNA, UPMC West Shore, Mechanicsburg, PA",
+    "CRNA Part-Time UPMC Leader Surgery Center, York PA",
+    "Pathology Institute - Surgical Pathologist - Pittsburgh, Pa",
+    "Physician- Breast Imaging (Uniontown, PA)",
+    "CRNA - Advocate Condell - PRN",
+    "Certified Registered Nurse Anesthetist (CRNA) - Advocate Christ Medical Center, Oak Lawn, IL",
+    "Clinical Pharmacist - Pediatrics - Advocate Christ",
     "HealthLinkNow is currently looking for Psychiatrists interested in providing Telemedicine in California",
     "Physician - Family Medicine - Gerontology | Nursing Homes",
     "CRNA - Main OR",
@@ -162,6 +206,18 @@ def test_real_physician_placeholders_stay_refused(caplog):
     msgs = _rejections(caplog)
     assert len(msgs) == 2 and all(FLOOR in m for m in msgs)
     assert any("'OB Hospitalist Full Time'" in m and "19-23 hour" in m for m in msgs)
+
+
+def test_president_and_internal_medicine_placeholders_are_refused(caplog):
+    # "resident" no longer matches inside "President", nor "\bintern" inside
+    # "Internal": both titles meet the floor on the text path
+    with caplog.at_level(logging.WARNING, logger=scraper.logger.name):
+        assert extract_posted_wage("Vice President of Finance\nSalary: $50,000.00 per year") is None
+        assert extract_posted_wage("Internal Medicine Physician\nPay Range: $20.00 per hour") is None
+        assert extract_posted_wage("Vice President of Finance\nSalary: $250,000.00 per year") == \
+            (250000.0, 250000.0, "year")
+    msgs = _rejections(caplog)
+    assert len(msgs) == 2 and all(FLOOR in m for m in msgs)
 
 
 def test_an_app_crna_split_salary_stays_refused(caplog):
