@@ -139,8 +139,15 @@ def upsert_jobs(jobs: list[dict]) -> dict:
 def mark_inactive_jobs(current_jobs: list[dict],
                        miss_threshold: int = MISS_THRESHOLD,
                        exclude_systems: set[str] | None = None,
-                       complete_systems: set[str] | None = None) -> dict:
+                       complete_systems: set[str] | None = None,
+                       partial_systems: set[str] | None = None) -> dict:
     """Layer 4 deactivation: multi-run miss confirmation.
+
+    2026-10-14 (fix 11 review): `partial_systems` (canonical labels, from
+    scraper.layer4_partial_sets) left list pages unread tonight. They are
+    yield-guarded whatever their ratio, so their unseen rows keep their miss
+    count, and the BACKSTOP_DAYS backstop still retires a row nobody has seen
+    that long; `exclude_systems` would freeze them backstop included.
 
     2026-10-07 (push 10): `complete_systems` (canonical labels, from
     scraper.COMPLETE_SYSTEMS) read their whole board tonight, so the yield
@@ -273,7 +280,7 @@ def mark_inactive_jobs(current_jobs: list[dict],
     # rows tonight, or under 80% of 20+ active rows) keep their count unless
     # nobody has seen them for BACKSTOP_DAYS.
     plan = plan_layer4(active, current_keys, miss_threshold, exclude_systems,
-                       complete_systems=complete_systems)
+                       complete_systems=complete_systems, partial_systems=partial_systems)
     found_ids: list[int] = plan["found_ids"]
     deactivate_ids: list[int] = plan["deactivate_ids"]
     bump_by_new_count: dict[int, list[int]] = plan["bump_by_new_count"]

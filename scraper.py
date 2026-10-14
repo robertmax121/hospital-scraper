@@ -1038,6 +1038,41 @@ def priority_states_first(items, state_of):
 # that (per-state counts of 1000 / 500 / 500 / 500 = page boundaries).
 PARTIAL_SYSTEMS: set[str] = set()
 
+# 2026-10-14 (fix 11 review): partial reports that keep Layer 4's backstop.
+# An adapter whose list crawl skipped pages tonight (report_partial: Talemetry,
+# Phenom, TalentBrew, SelectMinds, UKG, NeoGov) is in PARTIAL_SYSTEMS as well,
+# so the sweep leaves it alone and it cannot claim a complete crawl. In Layer 4
+# it is yield-guarded instead of excluded: its unseen rows keep their miss
+# count, but a row nobody has seen for retire_guard.BACKSTOP_DAYS still
+# retires. Before fix 11 these adapters reported nothing and the yield guard
+# (backstop included) held them; a plain PARTIAL_SYSTEMS entry would freeze a
+# board refused every night (Penn Medicine and UCHealth behind
+# lb.ttcportals.com from Railway, ~3,300 rows) with no retirement at all.
+# Full exclusion stays for rows another process maintains (HCA's residential
+# push) and for the other adapters' partial reports (HealthcareSource, Infor,
+# PeopleSoft's 500-row cap, LiquidCompass, SuccessFactors), as before.
+PARTIAL_BACKSTOP_SYSTEMS: set[str] = set()
+
+
+def report_partial(system: str) -> None:
+    """The list crawl of `system` left pages unread tonight: not swept, no
+    complete claim, and Layer 4 guards its unseen rows with the backstop
+    (PARTIAL_BACKSTOP_SYSTEMS) rather than excluding them."""
+    PARTIAL_SYSTEMS.add(system)
+    PARTIAL_BACKSTOP_SYSTEMS.add(system)
+
+
+def layer4_partial_sets(hca_nightly: bool = False) -> tuple[set[str], set[str]]:
+    """(exclude, guard) for Layer 4 in post-alias names. exclude: systems left
+    untouched, backstop included (partial reports other than report_partial,
+    and HCA unless the nightly crawls it). guard: report_partial systems,
+    held by the yield guard with the backstop. A system in both is excluded."""
+    exclude = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS - PARTIAL_BACKSTOP_SYSTEMS}
+    if not hca_nightly:
+        exclude.add("HCA Healthcare")
+    guard = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_BACKSTOP_SYSTEMS & PARTIAL_SYSTEMS}
+    return exclude, guard - exclude
+
 # ── Complete-crawl reports (2026-10-07, push 10) ────────────────────────────
 # The inverse of PARTIAL_SYSTEMS. An adapter that read a board whose site
 # advertises its total (TalentBrew's data-total-results, Talemetry's
@@ -5907,7 +5942,11 @@ TALENTBREW_ORGS = {
     # aiohttp client and with curl_cffi the same day; its iCIMS portal
     # (careers-hackensackmeridianhealth.icims.com) answers the classic path
     # with an AWS WAF challenge, so the TalentBrew front stays the source.
-    "Hackensack Meridian Health": ("https://jobs.hackensackmeridianhealth.org/search-jobs", 15),
+    # 2026-10-14 (fix 11): 100 a page. The 10-14 run listed 1,281 of 1,637,
+    # whole 15-card pages missing across the board (110 requests); the site
+    # serves RecordsPerPage=100 (17 pages, 1,637 of 1,637 distinct, read with
+    # a new session per page), the same order and the same cards.
+    "Hackensack Meridian Health": ("https://jobs.hackensackmeridianhealth.org/search-jobs", 100),
     # 2026-10-04 coverage round 3: MemorialCare (Long Beach, Saddleback,
     # Orange Coast, Miller Children's; label = public.hospitals.hospital_system).
     # /results with the generic module names: 216 jobs, 15 a page, "City, CA"
@@ -6057,6 +6096,24 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
     MAX_RETRIES = 10         # max retries per page before giving up on that page
     BASE_BACKOFF = 3.0       # seconds — doubles each retry
 
+    # 2026-10-14 (fix 11): the results fragment carries the board's own count
+    # (data-total-results); the crawl reports complete against it, and a crawl
+    # that stopped on a failed page is PARTIAL (the HealthcareSource rule).
+    # Hackensack Meridian came back 1,281 of 1,637 on 10-14, whole 15-card
+    # pages missing, and nothing told the sweep whether the board was read.
+    tb_total = 0
+
+    def _finish(failed: bool) -> list[Job]:
+        listed = len({j.job_id for j in jobs})
+        if failed and jobs and (not tb_total or listed < tb_total):
+            report_partial(system)
+            logger.warning(f"TalentBrew {system}: PARTIAL, stopped on page {page} after its retries; "
+                           f"{listed} of {tb_total or '?'} listed; not swept tonight")
+        elif tb_total and listed < COMPLETE_RATIO * tb_total:
+            logger.warning(f"TalentBrew {system}: listed {listed} of {tb_total} advertised")
+        report_complete(system, listed, tb_total, feed="TALENTBREW_ORGS")
+        return jobs
+
     # ── Session warmup — required by Kaiser / NYP (Apr 29 2026 HAR pattern) ──
     # Sending null/empty geo causes their /results endpoint to respond with
     # `hasContent:false` and a 61-byte shell. The fix (verified live against
@@ -6151,13 +6208,17 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     results_html = html
                     has_jobs = True
 
+                mt = re.search(r'data-total-results="(\d+)"', results_html or "")
+                if mt:
+                    tb_total = max(tb_total, int(mt.group(1)))
+
                 if not has_jobs or not results_html:
                     if page == 1 and mod_idx == 0 and not jobs:
                         logger.info(f"TalentBrew {system}: empty with the Section 6 module names; retrying page 1 with the generic names")
                         mod_idx, retry_modules = 1, True
                         break
                     logger.info(f"TalentBrew {system}: hasJobs={has_jobs}, empty on page {page} — done")
-                    return jobs
+                    return _finish(False)
 
                 # ── Card-level parse (2026-07-28 rewrite) ─────────────────
                 # Each result card carries everything we need — no more city-slug
@@ -6255,13 +6316,13 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                         mod_idx, retry_modules = 1, True
                         break
                     logger.info(f"TalentBrew {system}: no job cards on page {page} — done")
-                    return jobs
+                    return _finish(False)
 
                 logger.info(f"TalentBrew {system}: page {page} → {len(seen)} jobs (total so far: {len(jobs)})")
                 page_succeeded = True
 
                 if len(seen) < rpp:
-                    return jobs  # last page — we're done
+                    return _finish(False)  # last page — we're done
                 break  # success — move to next page
 
             except Exception as e:
@@ -6279,14 +6340,14 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     # proxies.get() will automatically rotate to next proxy on next call
                 else:
                     logger.info(f"TalentBrew {system}: page {page} failed after {MAX_RETRIES} retries — stopping at {len(jobs)} jobs")
-                    return jobs  # give up on this system
+                    return _finish(True)  # give up on this system
 
         if retry_modules:
             retry_modules = False
             continue                      # same page, generic module names
 
         if not page_succeeded:
-            return jobs
+            return _finish(True)
 
         page += 1
         await jitter()
@@ -8267,6 +8328,15 @@ async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: st
                 ats_platform="Greenhouse",
                 wage_min=_greenhouse_pay(j)[0], wage_max=_greenhouse_pay(j)[1], wage_unit=_greenhouse_pay(j)[2],
             ))
+        # 2026-10-14 (fix 11): the board answers in one response with its own
+        # count (meta.total), so a response read whole is a complete crawl.
+        # One Medical listed 393 of 394 on 10-14 and the yield guard still
+        # held its 124 closed rows (393 vs 569 active): nothing claimed it.
+        try:
+            advertised = int(((data.get("meta") or {}).get("total")) or 0)
+        except (TypeError, ValueError, AttributeError):
+            advertised = 0
+        report_complete(system, len({j.job_id for j in jobs if j.job_id}), advertised, feed="GREENHOUSE_ORGS")
         return jobs
     except Exception as e:
         logger.info(f"Greenhouse {system}: {e}")
@@ -9439,6 +9509,31 @@ PHENOM_ORGS = {
 
 PHENOM_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end a crawl
 
+# 2026-10-14 (fix 11): ten Phenom tenants came back at 56-78% of their rows
+# every night since 10-07 (DaVita 2,102 of 3,333, Ascension 2,248 of 3,288,
+# Duke 683 of 991, UMMS 1,055 of 1,594, ...), held by the yield guard so
+# their closed postings were never retired. The rows a run missed were spread
+# over every page of the board, not cut off at an offset: 1,132 of DaVita's
+# 1,283 unseen rows were still on the site, in every 50-row block of it.
+# Cause: with an empty locationData, refineSearch orders these tenants by
+# distance from the CALLER'S IP (from Texas, DaVita's first page was 42 Texas
+# and 8 Oklahoma jobs; Duke's started in Mooresville, its westernmost site),
+# and every list page leaves through the next proxy of the pool, so each page
+# was a slice of a different ordering. 67 such slices of 3,333 reach about
+# 1 - 1/e of the board: 2,113 expected, 2,102 listed. Tenants whose default
+# order is not geographic (SSM, Hartford, Corewell) were not affected.
+# A fixed locationData makes the order the same from every address, and
+# 500-row pages (the most refineSearch serves; size 1,000 answers 500) cut a
+# DaVita crawl from 67 requests to 7. Measured 2026-10-14 on all 32
+# refineSearch tenants: totalHits identical with and without the location,
+# and a crawl with a new session per page listed every job (DaVita 3,333 of
+# 3,333, UMMS 1,593 of 1,593, Ascension 3,287 of 3,288).
+PHENOM_PAGE_SIZE = int(os.getenv("PHENOM_PAGE_SIZE", "500"))
+PHENOM_FIXED_LOCATION = {   # the geographic centre of the contiguous US; aboveMaxRadius keeps every job
+    "sliderRadius": 50, "aboveMaxRadius": True, "LocationUnit": "miles", "placeID": "",
+    "latitude": 39.8283, "longitude": -98.5795, "place": "United States",
+}
+
 
 def _phenom_list_pay(doc: dict):
     """(min, max, unit) from the pay keys some Phenom tenants put in the
@@ -9547,6 +9642,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     use_post = False
     widget_payload_template = None   # set only if widgets endpoint works
     widget_response_key = None       # nested key to unwrap in widget response
+    probe_total = 0                  # the probe's totalHits (no location sent)
     probe_headers = {
         **HEADERS,
         "Accept": "application/json",
@@ -9757,6 +9853,10 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                             use_post = True
                             widget_payload_template = payload.copy()
                             widget_response_key = nested_key
+                            try:
+                                probe_total = int(nested.get("totalHits") or 0)
+                            except (TypeError, ValueError):
+                                probe_total = 0
                             logger.info(f"Phenom {system}: widgets/{nested_key} has nested job data!")
                             break
                         # Diagnostic — log inner shape when nested key matches but no job data.
@@ -9808,7 +9908,17 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     # ended it silently. Such a page is now skipped and the next offset
     # read; PHENOM_MAX_CONSECUTIVE_FAILURES in a row stop the crawl, with
     # the reason and the offset at WARNING.
+    # 2026-10-14 (fix 11): the refineSearch crawl sends PHENOM_FIXED_LOCATION
+    # and asks PHENOM_PAGE_SIZE rows a page (see the note at the constants:
+    # with no location the order follows the caller's IP, and every page
+    # left from another proxy). `located` falls back to the old payload if
+    # the located total ever reads lower than the probe's.
+    located = bool(is_widgets and widget_payload_template.get("ddoKey") == "refineSearch"
+                   and widget_payload_template.get("pageId"))
+    page_size = PHENOM_PAGE_SIZE if located else 50
+    eff_size = page_size             # rows a full page actually carries (the site may clamp)
     page_failures = 0
+    pages_skipped = 0
     site_total = 0
     while True:
         try:
@@ -9817,7 +9927,9 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
             if is_widgets:
                 payload = widget_payload_template.copy()
                 payload["from"] = offset
-                payload["size"] = 50
+                payload["size"] = page_size
+                if located:
+                    payload["locationData"] = dict(PHENOM_FIXED_LOCATION)
                 fetch_kwargs = {"json": payload}
                 http_method = "post"
             elif use_post:
@@ -9837,7 +9949,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 api_url, **fetch_kwargs,
                 headers=fetch_headers,
                 proxy=proxies.get(), ssl=False,
-                timeout=aiohttp.ClientTimeout(total=25),
+                timeout=aiohttp.ClientTimeout(total=45 if page_size > 50 else 25),
             ) as r:
                 if r.status != 200:
                     raise RuntimeError(f"HTTP {r.status}")
@@ -9846,6 +9958,21 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
             # Unwrap nested widget response if needed
             if widget_response_key and isinstance(data.get(widget_response_key), dict):
                 data = data[widget_response_key]
+
+            # 2026-10-14 (fix 11): the located total must be the whole board.
+            # Measured on all 32 refineSearch tenants that day it was; should a
+            # tenant ever filter by the location, the crawl starts over
+            # without it rather than call a subset the board.
+            if located and offset == 0 and probe_total:
+                try:
+                    located_total = int(data.get("totalHits") or 0)
+                except (TypeError, ValueError):
+                    located_total = 0
+                if located_total < probe_total:
+                    logger.warning(f"Phenom {system}: the located search reports {located_total} of "
+                                   f"{probe_total} jobs; paging without the fixed location")
+                    located = False
+                    continue
 
             if offset == 0:
                 logger.info(f"Phenom {system}: response keys={list(data.keys())[:8]}")
@@ -9971,23 +10098,33 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     set_field_wage(job, _phenom_list_pay(doc))
                     jobs.append(job)
 
+            hits_v = data.get("hits")
             total = (
                 data.get("total") or data.get("count") or data.get("total_entries") or
                 data.get("totalCount") or data.get("totalHits") or
-                (data.get("hits", {}) or {}).get("total", {}).get("value") or
+                ((hits_v.get("total") or {}).get("value") if isinstance(hits_v, dict) else None) or
                 len(listings)
             )
             if isinstance(total, dict):
                 total = total.get("value", len(listings))
             if int(total) > len(listings):
                 site_total = max(site_total, int(total))
+            # 2026-10-14 (fix 11): refineSearch's totalHits is the board's own
+            # count even when the whole board fits in one 500-row page (Roper
+            # 327, Temple 449); the rule above only believes a total larger
+            # than the page, which a one-page board never shows.
+            elif widget_response_key == "refineSearch" and data.get("totalHits"):
+                site_total = max(site_total, int(data.get("totalHits") or 0))
+            if offset == 0 and site_total > len(listings) and len(listings) < page_size:
+                eff_size = len(listings)      # the site serves fewer rows a page than asked
             page_failures = 0
-            offset += 50
-            if offset >= int(total) or len(listings) < 50:
+            offset += len(listings)
+            if offset >= int(total) or len(listings) < eff_size:
                 break
             await jitter()
         except Exception as e:
             page_failures += 1
+            pages_skipped += 1
             logger.warning(f"Phenom {system}: page at offset {offset} failed ({type(e).__name__}: {e}); "
                            f"skipping it ({page_failures}/{PHENOM_MAX_CONSECUTIVE_FAILURES} in a row)")
             if page_failures >= PHENOM_MAX_CONSECUTIVE_FAILURES:
@@ -9995,7 +10132,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                                f"page failures; {len(jobs)} rows listed"
                                + (f" of {site_total} advertised" if site_total else ""))
                 break
-            offset += 50
+            offset += eff_size
             if site_total and offset >= site_total:
                 break
             await jitter()
@@ -10003,6 +10140,13 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     listed = len({j.job_id for j in jobs})
     if site_total and listed < COMPLETE_RATIO * site_total:
         logger.warning(f"Phenom {system}: listed {listed} of {site_total} advertised")
+    # 2026-10-14 (fix 11): as in HealthcareSource (2026-10-13 review), any
+    # skipped page makes the crawl PARTIAL. A skipped 500-row page can leave
+    # the yield above GUARD_RATIO, and the sweep would retire its live rows.
+    if pages_skipped and jobs:
+        report_partial(system)
+        logger.warning(f"Phenom {system}: PARTIAL, {pages_skipped} page(s) skipped, {listed} listed"
+                       + (f" of {site_total} advertised" if site_total else "") + "; not swept tonight")
     report_complete(system, listed, site_total, feed="PHENOM_ORGS")
 
     drop_rx = PHENOM_DROP_EMPLOYERS.get(system)
@@ -10965,8 +11109,14 @@ SELECTMINDS_ORGS = {
 SELECTMINDS_MAX_PAGES = int(os.getenv("SELECTMINDS_MAX_PAGES", "80"))
 _SM_CARD_RE = re.compile(r'<div id="job_list_(\d+)"[^>]*class="job_list_row[^"]*"[^>]*>(.*?)(?=<div id="job_list_\d+"|\Z)', re.S)
 _SM_TITLE_RE = re.compile(r'<a href="([^"]+)"[^>]*class="job_link[^"]*"[^>]*>(.*?)</a>', re.S)
-_SM_LOC_RE = re.compile(r'class="location"[^>]*>(.*?)</a>', re.S)
-_SM_CAT_RE = re.compile(r'job_category.*?<span class="jlr_value[^"]*">(.*?)</span>', re.S)
+# Two card shapes: /latest-jobs links the town (<a class="location">) and
+# puts the category in a jlr_value span; the /jobs/search pages (2026-10-14,
+# fix 11) write <span class="location"> and <span class="category">.
+_SM_LOC_RE = re.compile(r'<a [^>]*class="location"[^>]*>(.*?)</a>|<span class="location">(.*?)</span>', re.S)
+_SM_CAT_RE = re.compile(r'job_category.*?<span class="jlr_value[^"]*">(.*?)</span>|<span class="category">(.*?)</span>', re.S)
+_SM_TOTAL_RE = re.compile(r'class="total_results">\s*([\d,]+)')
+_SM_PAGES_RE = re.compile(r'id="jPaginateNumPages"[^>]*>\s*([\d.]+)')
+_SM_SEARCH_ID_RE = re.compile(r'/ajax/jobs/(\d+)/')
 _SM_REQ_RE = re.compile(r'job_external_id.*?<span class="field_value">(.*?)</span>', re.S)
 _SM_DESC_RE = re.compile(r'class="jlr_description"[^>]*>(.*?)</p>', re.S)
 # Rows whose title, category or teaser names a hospital take it as hospital_name.
@@ -11015,12 +11165,12 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
         if url.startswith("/"):
             url = base + url
         lm = _SM_LOC_RE.search(card)
-        loc = _html_unescape(strip_html(lm.group(1))).strip() if lm else ""
+        loc = _html_unescape(strip_html(lm.group(1) or lm.group(2) or "")).strip() if lm else ""
         # the link opens with a magnifier glyph (&#128269;) before the town
         loc = re.sub(r",\s*United States\s*$", "", re.sub(r"^[^A-Za-z]+", "", loc)).strip()
         city, st = parse_city_state(loc)
         cm = _SM_CAT_RE.search(card)
-        category = _html_unescape(strip_html(cm.group(1))).strip() if cm else ""
+        category = _html_unescape(strip_html(cm.group(1) or cm.group(2) or "")).strip() if cm else ""
         rm = _SM_REQ_RE.search(card)
         req_no = _html_unescape(strip_html(rm.group(1))).strip() if rm else ""
         dm = _SM_DESC_RE.search(card)
@@ -11043,35 +11193,84 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
     return jobs
 
 
+async def _selectminds_get(session, system: str, url: str, params=None):
+    """(status, html, final url) of one SelectMinds page; (0, "", url) on an
+    exception. aiohttp follows the /jobs/search/ redirect, so the final url
+    carries the search id."""
+    try:
+        async with req(session, "get", url, params=params,
+                       headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+            html = await r.text() if r.status == 200 else ""
+            return r.status, html, str(getattr(r, "url", "") or url)
+    except Exception as e:
+        logger.info(f"SelectMinds {system}: {url}: {type(e).__name__}: {e}")
+        return 0, "", url
+
+
 async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
-    """HTML list pages: /latest-jobs?page=N (every open job, newest first),
-    /jobs/search/?page=N when the first answers no cards. A page that adds no
-    new id ends the crawl (SELECTMINDS_MAX_PAGES x 20-card pages otherwise)."""
+    """Every card of the board's job search, by path.
+
+    2026-10-14 (fix 11): the ?page=N this adapter sent is ignored on both
+    boards; /latest-jobs and /jobs/search/ answer the same first 10 cards
+    whatever N, so the 10-14 run read Main Line 10 of 346 and Iowa 6 of 696
+    (and the "no new card" rule stopped it at page 2). /jobs/search/
+    redirects to /jobs/search/<search id>, its pages are
+    /jobs/search/<search id>/page<N> (10 cards each; measured: 35 pages, 346
+    distinct cards, from a new session per page too), and the first page
+    carries the board's total_results and page count. A page past the end
+    wraps to page 1, which adds no new id and ends the crawl. /latest-jobs
+    (the 10 newest) is kept as the fallback when the search answers no card.
+    A page that fails mid-crawl makes the crawl PARTIAL (the HealthcareSource
+    rule); the cards read against total_results decide a complete claim."""
     base = f"https://{org}.referrals.selectminds.com"
     jobs: list[Job] = []
     seen: set[str] = set()
-    for path in ("/latest-jobs", "/jobs/search/"):
-        for page in range(1, SELECTMINDS_MAX_PAGES + 1):
-            try:
-                async with req(session, "get", base + path, params={"page": str(page)},
-                               headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
-                               ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
-                    if r.status != 200:
-                        logger.info(f"SelectMinds {system}: HTTP {r.status} on {path} page {page}")
-                        break
-                    html = await r.text()
-            except Exception as e:
-                logger.info(f"SelectMinds {system}: {path} page {page}: {e}")
-                break
-            cards = [j for j in _parse_selectminds_page(html, system, base) if j.job_id not in seen]
-            if not cards:
-                break
-            seen.update(j.job_id for j in cards)
-            jobs.extend(j for j in cards if _selectminds_keep(system, j))
+
+    def take(html) -> int:
+        cards = [j for j in _parse_selectminds_page(html, system, base) if j.job_id not in seen]
+        seen.update(j.job_id for j in cards)
+        jobs.extend(j for j in cards if _selectminds_keep(system, j))
+        return len(cards)
+
+    status, html, final = await _selectminds_get(session, system, base + "/jobs/search/")
+    total = pages = 0
+    failed: list[int] = []
+    if status == 200 and take(html):
+        m = _SM_TOTAL_RE.search(html)
+        total = int(m.group(1).replace(",", "")) if m else 0
+        m = _SM_PAGES_RE.search(html)
+        pages = int(float(m.group(1))) if m else 0
+        m = re.search(r"/jobs/search/(\d+)", final) or _SM_SEARCH_ID_RE.search(html)
+        search_url = f"{base}/jobs/search/{m.group(1)}" if m else ""
+        if pages > 1 and not search_url:
+            logger.warning(f"SelectMinds {system}: no search id on the first page; {len(seen)} of {total} read")
+        for page in range(2, min(pages, SELECTMINDS_MAX_PAGES) + 1) if search_url else ():
             await jitter()
-        if seen:
-            break
-    logger.info(f"  SelectMinds {system}: {len(jobs)} jobs ({len(seen)} cards read)")
+            status, html, _ = await _selectminds_get(session, system, f"{search_url}/page{page}")
+            if status != 200:
+                logger.info(f"SelectMinds {system}: HTTP {status} on page {page}")
+                failed.append(page)
+                if len(failed) >= 3 and failed[-3:] == list(range(page - 2, page + 1)):
+                    failed.extend(range(page + 1, min(pages, SELECTMINDS_MAX_PAGES) + 1))
+                    break
+                continue
+            if not take(html):
+                break                    # wrapped round to page 1: the board's end
+    else:
+        if status != 200:
+            logger.info(f"SelectMinds {system}: HTTP {status} on /jobs/search/; trying /latest-jobs")
+        status, html, _ = await _selectminds_get(session, system, base + "/latest-jobs")
+        if status == 200:
+            take(html)
+    if failed and jobs:
+        report_partial(system)
+        logger.warning(f"SelectMinds {system}: PARTIAL, pages {failed[:10]} unread; {len(seen)} of {total} "
+                       f"cards read; not swept tonight")
+    elif total and len(seen) < COMPLETE_RATIO * total:
+        logger.warning(f"SelectMinds {system}: {len(seen)} of {total} cards read")
+    logger.info(f"  SelectMinds {system}: {len(jobs)} jobs ({len(seen)} cards read of {total or '?'})")
+    report_complete(system, len(seen), total, feed="SELECTMINDS_ORGS")
     return jobs
 
 async def run_selectminds(session) -> list[Job]:
@@ -11895,6 +12094,14 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
     # Confirmed endpoint from network intercept on Deaconess
     api = f"{base_url}/JobBoard/{guid}/JobBoardView/LoadSearchResults"
     offset = 0
+    # 2026-10-14 (fix 11): the board's totalCount against every posting read
+    # (non-US ones included) is a complete claim; a page that fails after the
+    # first makes the crawl PARTIAL (HealthcareSource rule). North Carolina
+    # Specialty Hospital read 25 of its 25 on 10-14 and the yield guard held
+    # its 11 closed rows (25 vs 36 active).
+    read_ids: set[str] = set()
+    advertised = 0
+    cut_short = False
     while True:
         try:
             payload = {
@@ -11915,6 +12122,7 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
                     logger.info(f"UKG {system}: HTTP {r.status}")
+                    cut_short = offset > 0
                     break
                 data = await r.json(content_type=None)
             # Response: {"opportunities": [...], "totalCount": N}
@@ -11922,20 +12130,30 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
             if not items:
                 break
             for j in items:
+                if isinstance(j, dict):
+                    read_ids.add(str(j.get("Id") or j.get("id") or j.get("OpportunityId") or j.get("opportunityId") or ""))
                 if _ukg_non_us(j):
                     continue          # 2026-10-13: the posting's own country is not the US
                 job = _ukg_job(j, system, base_url, guid, default_state)
                 if job.job_id and job.title:
                     jobs.append(job)
             total = int(data.get("totalCount", data.get("total", data.get("Total", 0))) or 0)
+            advertised = max(advertised, total)
             offset += _UKG_PAGE
             if offset >= total or len(items) < _UKG_PAGE:
                 break
             await jitter()
         except Exception as e:
             logger.info(f"UKG {system}: {e}")
+            cut_short = offset > 0
             break
+    read_ids.discard("")
+    if cut_short and jobs:
+        report_partial(system)
+        logger.warning(f"UKG {system}: PARTIAL, stopped at offset {offset}; {len(read_ids)} of {advertised} "
+                       f"read; not swept tonight")
     logger.info(f"  UKG {system}: {len(jobs)} jobs")
+    report_complete(system, len(read_ids), advertised, feed="UKG_ORGS")
     return jobs
 
 async def run_ukg(session) -> list[Job]:
@@ -13399,13 +13617,22 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
     dept_rx = re.compile(dept_pat, re.I) if dept_pat else None
     jobs: list[Job] = []
     page, total = 1, 0
+    # 2026-10-14 (fix 11): every card read (all departments) against the
+    # board's own job-postings-number is a complete claim for the hospital's
+    # rows; a page that fails after the first makes the crawl PARTIAL. On
+    # 10-14 Riverside's county board read 86 distinct of 87 cards (22 RUHS)
+    # and the yield guard held its 15 closed rows (22 vs 41 active).
+    card_ids: set[str] = set()
+    cut_short = False
     while True:
         try:
             status, html_ = await _neogov_fetch_page(session, agency, page)
             if status != 200:
                 logger.info(f"NeoGov {system}: HTTP {status} (agency {agency}, page {page})")
+                cut_short = page > 1
                 break
             got, total, cards = _parse_neogov_page(html_, system, agency, state, city, hospital_name, dept_rx)
+            card_ids.update(c.split('"', 1)[0] for c in (html_ or "").split('<li class="list-item" data-job-id="')[1:])
             jobs.extend(got)
             if not cards or page * 10 >= total or page >= NEOGOV_MAX_PAGES:
                 break
@@ -13413,8 +13640,15 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
             await jitter()
         except Exception as e:
             logger.info(f"NeoGov {system}: {e}")
+            cut_short = page > 1
             break
+    card_ids.discard("")
+    if cut_short and jobs:
+        report_partial(system)
+        logger.warning(f"NeoGov {system}: PARTIAL, page {page} unread; {len(card_ids)} of {total} cards read; "
+                       f"not swept tonight")
     logger.info(f"  NeoGov {system}: {len(jobs)} jobs kept of {total} on the {agency} board")
+    report_complete(system, len(card_ids), total, feed="NEOGOV_AGENCIES")
     return jobs
 
 
@@ -14030,6 +14264,15 @@ async def scrape_applicantpro(session: aiohttp.ClientSession, system: str, org_d
                 description="",
                 ats_platform="ApplicantPro",
             ))
+        # 2026-10-14 (fix 11): the one response carries the board's own count
+        # (data.jobCount, "Number of Jobs: 78" on Cayuga that day), so reading
+        # it whole is a complete crawl.
+        meta = data.get("data") if isinstance(data, dict) and isinstance(data.get("data"), dict) else {}
+        try:
+            advertised = int(meta.get("jobCount") or 0)
+        except (TypeError, ValueError):
+            advertised = 0
+        report_complete(system, len({j.job_id for j in jobs if j.job_id}), advertised, feed="APPLICANTPRO_ORGS")
     except Exception as e:
         logger.info(f"ApplicantPro {system}: {e}")
 
@@ -15046,13 +15289,51 @@ TALEMETRY_SITES = {
     "LifeBridge Health":    "https://jobs.lifebridgehealth.org",   # 561; MD (Sinai, Northwest, Carroll, Levindale)
     "Asante Health System": "https://jobs.asante.org",             # 231; OR (Rogue Regional, Three Rivers, Ashland)
 }
-TALEMETRY_PER_PAGE = 100
+# 2026-10-14 (fix 11): the 10-14 run listed Penn Medicine 400 of 1,770,
+# UCHealth 500 of 1,341, Asante 200 of 258 and LifeBridge 0 of 577: whole
+# 100-row pages, the crawl ending at the first page that failed three times.
+# Nothing in the adapter caps them; read from a home address the same day
+# every page answered (Penn 1,770 of 1,770, UCHealth 1,341 of 1,341). All
+# five sites (and HCA's board) are one Cloudflare edge, lb.ttcportals.com,
+# which admits a datacenter address a few pages at a time; HCA has been
+# local-only since 09-16 for the same reason. Changes:
+#   - per_page 1000. PeaceHealth and Asante serve it, so the whole board is
+#     ONE request (811 and 257 jobs); Penn, UCHealth and LifeBridge clamp it
+#     to 100 and page exactly as before (page N with 1000 = page N with 100,
+#     measured). The crawl pages by the entries a page really carries, never
+#     by the per_page it asked for. PeaceHealth stopped at 800 of 811 every
+#     night with 100-row pages and still called that complete (98.6%).
+#   - a page that fails is skipped, not the end of the crawl; after the
+#     pass, the unread pages get one more try after TALEMETRY_COOLDOWN_S.
+#     Pages still unread make the crawl PARTIAL (HealthcareSource rule).
+#   - a 403 moves the next attempt to the next TLS profile: careers.uchealth.org
+#     answered curl_cffi 0.16's "chrome" (chrome150) and chrome136 with a 403
+#     challenge and chrome131 / safari17_0 with 200, three times in a row.
+#   - run_talemetry lists the sites one at a time, and only then runs the
+#     detail passes, which used to send job-page fetches to the same edge
+#     while the other sites were still paging.
+#   - rows lost to the order's ties at page boundaries (LifeBridge: 7 of 577,
+#     each id twice across a boundary) are looked for once more in title order.
+TALEMETRY_PER_PAGE = 1000
 TALEMETRY_PAGE_CAP = int(os.getenv("TALEMETRY_PAGE_CAP", "60"))
 TALEMETRY_IMPERSONATE = "chrome"
+TALEMETRY_IMPERSONATE_CHAIN = ("chrome", "chrome131", "safari17_0")
 # 2026-10-07 (push 10): a list page that fails is retried this many more
-# times, TALEMETRY_RETRY_BASE_S doubling each time, before the crawl stops.
+# times, TALEMETRY_RETRY_BASE_S doubling each time (2026-10-14: then skipped).
 TALEMETRY_PAGE_RETRIES = 2
 TALEMETRY_RETRY_BASE_S = 3.0
+TALEMETRY_MAX_CONSECUTIVE_FAILURES = 3      # failed pages in a row that end a pass
+TALEMETRY_COOLDOWN_S = float(os.getenv("TALEMETRY_COOLDOWN_S", "45"))
+# 2026-10-14 (fix 11 review): wall-clock budget for one site's list crawl.
+# The sites are listed one after another, and a page whose every attempt
+# hangs costs about 250 s (3 attempts x 40 s through the proxy + 40 s direct,
+# plus the backoff), so a bad night could hold the whole gather for tens of
+# minutes per site. Once the budget is spent no new page or retry starts
+# (an attempt in flight gets at most the time left), the pages not read stay
+# unread and the site is PARTIAL (report_partial). Normal case from a home
+# address: Penn Medicine, 18 pages, about 40 s.
+TALEMETRY_SITE_BUDGET_S = float(os.getenv("TALEMETRY_SITE_BUDGET_S", "600"))
+TALEMETRY_RESORT = "title,asc"              # the site's other sort_by (search page: title / location_city)
 TALEMETRY_DESC_MAX_PER_RUN = int(os.getenv("TALEMETRY_DESC_MAX_PER_RUN", "1500"))   # job-page JSON-LD
 TALEMETRY_DESC_BUDGET = _DescBudget(TALEMETRY_DESC_MAX_PER_RUN)
 _TALEMETRY_BAD_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
@@ -15086,62 +15367,172 @@ def _talemetry_job(e: dict, system: str, base: str) -> Job | None:
     )
 
 
+def _talemetry_now() -> float:
+    """The clock TALEMETRY_SITE_BUDGET_S is kept on (the tests replace it)."""
+    return time.monotonic()
+
+
+async def _talemetry_page(system: str, base: str, page: int, state: dict, sort_by: str | None = None,
+                          deadline: float | None = None):
+    """(search.json payload, "") for one list page, or (None, problem) after
+    TALEMETRY_PAGE_RETRIES retries with a doubling backoff. A 403 (the edge's
+    challenge) moves state["imp"] to the next TALEMETRY_IMPERSONATE_CHAIN
+    profile for the next attempt, and the site keeps the profile that works.
+    `deadline` (_talemetry_now() time): no attempt or retry starts after it,
+    and an attempt gets at most the time left (2026-10-14)."""
+    params = {"page": str(page), "per_page": str(TALEMETRY_PER_PAGE)}
+    if sort_by:
+        params["sort_by"] = sort_by
+    problem = ""
+    for attempt in range(TALEMETRY_PAGE_RETRIES + 1):
+        left = None if deadline is None else deadline - _talemetry_now()
+        if left is not None and left <= 0:
+            problem = f"{problem}; list budget spent" if problem else "list budget spent"
+            break
+        timeout = 40 if left is None else int(min(40, max(5, left)))
+        try:
+            # curl_cffi with a browser TLS profile: UCHealth answers aiohttp with 403.
+            r = await asyncio.to_thread(
+                _curl_fetch, "get", f"{base}/jobs/search.json", state["imp"], timeout,
+                params=params, headers={"Accept": "application/json", "Referer": f"{base}/jobs/search"})
+            data = r.json()
+            if not isinstance(data, dict):
+                raise ValueError(f"not a search.json object ({type(data).__name__})")
+            return data, ""
+        except Exception as e:
+            m = re.search(r"\bHTTP (\d{3})\b", str(e))
+            problem = f"HTTP {m.group(1)}" if m else f"{type(e).__name__}: {e}"
+            nxt = ""
+            if m and m.group(1) == "403" and len(TALEMETRY_IMPERSONATE_CHAIN) > 1:
+                chain = TALEMETRY_IMPERSONATE_CHAIN
+                i = chain.index(state["imp"]) if state["imp"] in chain else -1
+                state["imp"] = chain[(i + 1) % len(chain)]
+                nxt = f" ({state['imp']} TLS next)"
+            if attempt < TALEMETRY_PAGE_RETRIES:
+                delay = TALEMETRY_RETRY_BASE_S * (2 ** attempt)
+                if deadline is not None and _talemetry_now() + delay >= deadline:
+                    problem += "; list budget spent"
+                    break
+                logger.warning(f"Talemetry {system}: page {page} failed ({problem}); "
+                               f"retry {attempt + 1}/{TALEMETRY_PAGE_RETRIES} in {delay:.0f}s{nxt}")
+                await _retry_sleep(delay)
+    return None, problem
+
+
 async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
+    """Every row of one Jobvite Engage board (search.json), see the 2026-10-14
+    note at TALEMETRY_PER_PAGE: biggest page the site serves, paged by the
+    entries a page carries, failed pages skipped and tried again after a
+    cool-down, ties recovered in title order, PARTIAL if a page stays unread."""
     base = base_url.rstrip("/")
     jobs: list[Job] = []
     seen: set[str] = set()
-    page, total = 1, None
-    stopped_early = ""
-    while page <= TALEMETRY_PAGE_CAP:
-        # curl_cffi with a Chrome TLS profile: UCHealth answers aiohttp with 403.
-        # 2026-10-07 (push 10): a page that fails is retried with a backoff
-        # before the crawl stops, and every failure is logged at WARNING with
-        # the status (Asante and LifeBridge stopped after page 1 on 10-06;
-        # UCHealth, PeaceHealth and Penn Medicine have never listed a row).
-        # Live on 2026-10-07: careers.uchealth.org answers a Cloudflare
-        # challenge (403 "Just a moment") to any plain-TLS client and 200 to
-        # curl_cffi chrome from a residential address, pages 1 and 2 alike.
-        data, problem = None, ""
-        for attempt in range(TALEMETRY_PAGE_RETRIES + 1):
-            try:
-                r = await asyncio.to_thread(
-                    _curl_fetch, "get", f"{base}/jobs/search.json", TALEMETRY_IMPERSONATE, 40,
-                    params={"page": str(page), "per_page": str(TALEMETRY_PER_PAGE)},
-                    headers={"Accept": "application/json", "Referer": f"{base}/jobs/search"})
-                data = r.json()
-                break
-            except Exception as e:
-                m = re.search(r"\bHTTP (\d{3})\b", str(e))
-                problem = f"HTTP {m.group(1)}" if m else f"{type(e).__name__}: {e}"
-                if attempt < TALEMETRY_PAGE_RETRIES:
-                    delay = TALEMETRY_RETRY_BASE_S * (2 ** attempt)
-                    logger.warning(f"Talemetry {system}: page {page} failed ({problem}); "
-                                   f"retry {attempt + 1}/{TALEMETRY_PAGE_RETRIES} in {delay:.0f}s")
-                    await _retry_sleep(delay)
-        if data is None:
-            stopped_early = f"page {page} failed {TALEMETRY_PAGE_RETRIES + 1} times ({problem})"
-            break
-        entries = (data or {}).get("entries") or []
-        if total is None:
-            try:
-                total = int((data or {}).get("total_entries") or 0)
-            except (TypeError, ValueError):
-                total = 0
+    state = {"imp": TALEMETRY_IMPERSONATE}
+    info = {"total": None, "page_len": 0, "last_page": TALEMETRY_PAGE_CAP, "problem": ""}
+    deadline = _talemetry_now() + TALEMETRY_SITE_BUDGET_S
+
+    def time_left() -> float:
+        return deadline - _talemetry_now()
+
+    def done() -> bool:
+        return bool(info["total"]) and len(seen) >= info["total"]
+
+    def take(entries) -> None:
         for e in entries:
             job = _talemetry_job(e, system, base)
             if job and job.job_id not in seen:
                 seen.add(job.job_id)
                 jobs.append(job)
-        if not entries or len(entries) < TALEMETRY_PER_PAGE or (total and len(seen) >= total):
-            break
-        page += 1
-        await jitter()
-    else:
-        stopped_early = f"TALEMETRY_PAGE_CAP {TALEMETRY_PAGE_CAP} reached"
-    short = bool(total) and len(jobs) < COMPLETE_RATIO * total
-    if stopped_early or short:
+
+    async def one_pass(pages=None, sort_by=None) -> list[int]:
+        """Read `pages` (None: 1, 2, ... to the board's end). Returns the
+        pages left unread: failed ones, and those after
+        TALEMETRY_MAX_CONSECUTIVE_FAILURES failures in a row or once the
+        site's list budget (TALEMETRY_SITE_BUDGET_S) is spent."""
+        queue = list(pages) if pages is not None else None
+        unread: list[int] = []
+        page, in_a_row = 0, 0
+        while True:
+            if queue is not None:
+                if not queue:
+                    break
+                page = queue.pop(0)
+            else:
+                page += 1
+                if page > info["last_page"]:
+                    break
+            out_of_time = time_left() <= 0
+            if out_of_time or in_a_row >= TALEMETRY_MAX_CONSECUTIVE_FAILURES:
+                # the edge is refusing us (or the budget is spent): leave the
+                # rest for the cool-down round, or unread
+                if out_of_time:
+                    info["problem"] = f"list budget of {TALEMETRY_SITE_BUDGET_S:.0f}s spent at page {page}"
+                rest = queue if queue is not None else (
+                    range(page + 1, info["last_page"] + 1) if info["total"] is not None else [])
+                unread.append(page)
+                unread.extend(rest)
+                break
+            data, problem = await _talemetry_page(system, base, page, state, sort_by, deadline)
+            if data is None:
+                unread.append(page)
+                in_a_row += 1
+                info["problem"] = f"page {page} failed {TALEMETRY_PAGE_RETRIES + 1} times ({problem})"
+                await jitter()
+                continue
+            in_a_row = 0
+            entries = data.get("entries") or []
+            if info["total"] is None:
+                try:
+                    info["total"] = int(data.get("total_entries") or 0)
+                except (TypeError, ValueError):
+                    info["total"] = 0
+            if entries and not info["page_len"]:
+                # the rows a full page really carries: 1,000 on PeaceHealth and
+                # Asante, 100 where the site clamps per_page
+                info["page_len"] = len(entries)
+                if info["total"]:
+                    info["last_page"] = min(TALEMETRY_PAGE_CAP, -(-info["total"] // info["page_len"]))
+            take(entries)
+            if queue is None and (not entries or done() or len(entries) < info["page_len"]):
+                break
+            await jitter()
+        return unread
+
+    unread = await one_pass()
+    if unread and not done() and time_left() < TALEMETRY_COOLDOWN_S:
+        logger.warning(f"Talemetry {system}: {len(jobs)} of site total {info['total']} after the first pass; "
+                       f"pages {unread[:12]}{'...' if len(unread) > 12 else ''} unread ({info['problem']}); "
+                       f"no second try, the {TALEMETRY_SITE_BUDGET_S:.0f}s list budget is spent")
+    elif unread and not done():
+        logger.warning(f"Talemetry {system}: {len(jobs)} of site total {info['total']} after the first pass; "
+                       f"pages {unread[:12]}{'...' if len(unread) > 12 else ''} unread ({info['problem']}); "
+                       f"one more try in {TALEMETRY_COOLDOWN_S:.0f}s")
+        await _retry_sleep(TALEMETRY_COOLDOWN_S)
+        # page 1 never answered: the board's size is unknown, so read it from the start again
+        unread = await one_pass(None if info["total"] is None else unread)
+    elif unread:
+        unread = []            # every job is in hand: what failed was past the board's end
+    if not unread and info["total"] and not done() and time_left() > 0:
+        # every page read, some ids twice: rows the order's ties moved across a
+        # page boundary between two requests are looked for in title order
+        before = len(seen)
+        await one_pass(None, sort_by=TALEMETRY_RESORT)
+        logger.info(f"  Talemetry {system}: title-order pass found {len(seen) - before} more "
+                    f"({len(seen)} of {info['total']})")
+
+    total = info["total"]
+    if unread and jobs:
+        # 2026-10-13 HealthcareSource rule: a page nobody read may hold live
+        # postings, so the sweep must not retire anything of this site tonight.
+        report_partial(system)
+        logger.warning(f"Talemetry {system}: {len(jobs)} of site total {total} fetched; pages "
+                       f"{unread[:12]}{'...' if len(unread) > 12 else ''} still unread "
+                       f"({info['problem']}); PARTIAL, not swept tonight")
+    elif total and len(jobs) < COMPLETE_RATIO * total:
         logger.warning(f"Talemetry {system}: {len(jobs)} of site total {total} fetched"
-                       + (f"; stopped early: {stopped_early}" if stopped_early else ""))
+                       + (f" ({info['problem']})" if info["problem"] else ""))
+    if state["imp"] != TALEMETRY_IMPERSONATE:
+        logger.info(f"  Talemetry {system}: read with the {state['imp']} TLS profile")
     logger.info(f"  Talemetry {system}: {len(jobs)} jobs (site total {total})")
     report_complete(system, len(jobs), total, feed="TALEMETRY_SITES")
     return jobs
@@ -15182,24 +15573,34 @@ async def run_talemetry(session) -> list[Job]:
         return []
     logger.info(f"Talemetry: scraping {len(TALEMETRY_SITES)} career sites...")
 
-    async def _one(sys_, base):
-        jobs = await scrape_talemetry(session, sys_, base)
+    # 2026-10-14 (fix 11): every site is listed first, one at a time (they
+    # share one Cloudflare edge, lb.ttcportals.com), and only then do the
+    # detail passes start; they used to fetch job pages from that edge while
+    # the other sites were still paging, and the list pages are what decide
+    # the sweep.
+    if DETAIL_FETCH:
+        TALEMETRY_DESC_BUDGET.expect(TALEMETRY_SITES)
+    listed: dict[str, list[Job]] = {}
+    for n, (sys_, base) in enumerate(TALEMETRY_SITES.items()):
+        if n:
+            await jitter()
+        try:
+            listed[sys_] = await scrape_talemetry(session, sys_, base)
+        except Exception as e:
+            listed[sys_] = []
+            logger.info(f"  Talemetry {sys_}: ERROR {e}")
+
+    async def _details(sys_, jobs):
         if DETAIL_FETCH and jobs:
             try:
                 await _detail_pass(session, sys_, jobs, TALEMETRY_DESC_BUDGET,
                                    lambda j: _talemetry_detail(session, j), "Talemetry")
             except Exception as e:
                 logger.info(f"Talemetry {sys_}: detail pass failed ({e}); listed rows kept")
-        return jobs
 
-    if DETAIL_FETCH:
-        TALEMETRY_DESC_BUDGET.expect(TALEMETRY_SITES)
-    results = await asyncio.gather(*[_tenant_reporting(TALEMETRY_DESC_BUDGET, s, _one(s, b))
-                                     for s, b in TALEMETRY_SITES.items()], return_exceptions=True)
-    out = [j for r in results if isinstance(r, list) for j in r]
-    for s, r in zip(TALEMETRY_SITES, results):
-        if isinstance(r, Exception):
-            logger.info(f"  Talemetry {s}: ERROR {r}")
+    await asyncio.gather(*[_tenant_reporting(TALEMETRY_DESC_BUDGET, s, _details(s, listed[s]))
+                           for s in TALEMETRY_SITES], return_exceptions=True)
+    out = [j for s in TALEMETRY_SITES for j in listed[s]]
     logger.info(f"  Talemetry total: {len(out):,} jobs")
     return out
 

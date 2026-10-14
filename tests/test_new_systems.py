@@ -73,13 +73,18 @@ def test_scrape_talemetry_pages_until_total(monkeypatch):
     assert len(jobs) == 230 and len({j.job_id for j in jobs}) == 230
     assert [c[1] for c in calls] == [1, 2, 3]
     assert calls[0][0] == "https://careers.uchealth.org/jobs/search.json"
-    assert calls[0][2] == "100" and calls[0][3] == "chrome"
+    # 2026-10-14 (fix 11): per_page 1000; a site that clamps it to 100 (this
+    # fake, like Penn / UCHealth / LifeBridge) is paged by the 100 it serves.
+    assert calls[0][2] == "1000" and calls[0][3] == "chrome"
 
 
-def test_scrape_talemetry_stops_on_error_and_keeps_rows(monkeypatch):
+def test_scrape_talemetry_skips_a_failed_page_and_marks_partial(monkeypatch):
     # 2026-10-07 (push 10): a failed page is retried TALEMETRY_PAGE_RETRIES
-    # times with a doubling backoff before the crawl stops; the rows already
-    # listed are kept either way.
+    # times with a doubling backoff; the rows already listed are kept.
+    # 2026-10-14 (fix 11): the crawl no longer ends there (Penn Medicine
+    # stopped at 400 of 1,770 on 10-14): the next pages are read, the failed
+    # page gets one more try after TALEMETRY_COOLDOWN_S, and a page still
+    # unread makes the crawl PARTIAL so the sweep keeps its live rows.
     attempts = []
 
     def fake_fetch(method, url, impersonate, timeout=60, **kw):
@@ -100,8 +105,12 @@ def test_scrape_talemetry_stops_on_error_and_keeps_rows(monkeypatch):
     monkeypatch.setattr(scraper, "_retry_sleep", fake_sleep)
     jobs = asyncio.run(scraper.scrape_talemetry(None, "Penn Medicine", "https://careers.pennmedicine.org"))
     assert len(jobs) == 100
-    assert attempts == ["1"] + ["2"] * (scraper.TALEMETRY_PAGE_RETRIES + 1)
-    assert waits == [scraper.TALEMETRY_RETRY_BASE_S * (2 ** i) for i in range(scraper.TALEMETRY_PAGE_RETRIES)]
+    tries = ["2"] * (scraper.TALEMETRY_PAGE_RETRIES + 1)
+    assert attempts == ["1"] + tries + ["3", "4", "5"] + tries
+    backoff = [scraper.TALEMETRY_RETRY_BASE_S * (2 ** i) for i in range(scraper.TALEMETRY_PAGE_RETRIES)]
+    assert waits == backoff + [scraper.TALEMETRY_COOLDOWN_S] + backoff
+    assert "Penn Medicine" in scraper.PARTIAL_SYSTEMS
+    assert "Penn Medicine" not in scraper.COMPLETE_SYSTEMS
 
 
 def _page(ld_text):

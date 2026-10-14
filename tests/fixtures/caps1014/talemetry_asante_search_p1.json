@@ -1,0 +1,61 @@
+{
+ "current_page": 1,
+ "per_page": 3,
+ "total_entries": 257,
+ "entries": [
+  {
+   "id": "18230356",
+   "talemetry_job_id": "18230356",
+   "permalink": "patient-safety-monitor-arrmc-resource-pool",
+   "title": "Patient Safety Monitor ARRMC (Resource Pool)",
+   "location": {
+    "street": "2825 E Barnett Rd",
+    "locality": "Medford",
+    "region_abbr": "OR",
+    "postal_code": "97504",
+    "country": "United States",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Oregon",
+    "name": "Asante Rogue Regnl Med Center"
+   }
+  },
+  {
+   "id": "17855497",
+   "talemetry_job_id": "17855497",
+   "permalink": "registered-nurse-arrmc-ashland-emergency-room",
+   "title": "Registered Nurse ARRMC (Ashland - Emergency Room)",
+   "location": {
+    "street": "280 Maple St",
+    "locality": "Ashland",
+    "region_abbr": "OR",
+    "postal_code": "97520",
+    "country": "United States",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Oregon",
+    "name": "Asante Ashland"
+   }
+  },
+  {
+   "id": "17920812",
+   "talemetry_job_id": "17920812",
+   "permalink": "registered-nurse-post-surgical",
+   "title": "Registered Nurse (Post Surgical)",
+   "location": {
+    "street": "2825 E Barnett Rd",
+    "locality": "Medford",
+    "region_abbr": "OR",
+    "postal_code": "97504",
+    "country": "United States",
+    "phone": null,
+    "email": null,
+    "extra": null,
+    "region_full": "Oregon",
+    "name": "Asante Rogue Regnl Med Center"
+   }
+  }
+ ]
+}
