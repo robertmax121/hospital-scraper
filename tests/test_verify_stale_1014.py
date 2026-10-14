@@ -301,3 +301,94 @@ def test_checker_for_row_dispatch_1014():
     assert pick(ora_row("2026-464305", system="Lifepoint Health", platform="Custom")) == "OracleChecker"
     assert pick(ora_row("2026-464305")) == "PhenomChecker"           # Ascension: Phenom asks Oracle first
     assert "jobs.uhsinc.com" in vs.jibe_hosts()
+
+
+# ----------------------------------------------------------------- recheck
+# 2026-10-14 review: Ascension re-posted 4 of the 361 requisitions 136c
+# retired about 20 minutes after they read items []. `recheck` re-asks Oracle
+# ById right before a retire file is applied and takes every id that does not
+# read CLOSED again out of the file's id lists, and nothing else.
+RETIRE = ("set lock_timeout = '3s'; insert into public.retired_closed_backup_20261014 (id, is_active, scraped_at) "
+          "select id, is_active, scraped_at from public.hospital_jobs where is_active and scraped_at < "
+          "'2026-10-14 18:19:00+00' and id in ({ids}) on conflict (id) do nothing;\n"
+          "set lock_timeout = '3s'; update public.hospital_jobs set is_active = false where is_active and "
+          "scraped_at < '2026-10-14 18:19:00+00' and id in ({ids});\n"
+          "select h.hospital_system, count(*) from public.hospital_jobs h join "
+          "public.retired_closed_backup_20261014 b using (id) group by 1;\n")
+
+
+def test_prune_sql_ids_changes_only_the_id_lists():
+    text = RETIRE.format(ids="101,102,103")
+    assert vs.sql_ids(text) == {101, 102, 103}
+    pruned = vs.prune_sql_ids(text, [102])
+    assert pruned == RETIRE.format(ids="101,103")
+    empty = vs.prune_sql_ids(text, {101, 102, 103})
+    assert empty == RETIRE.format(ids="null") and vs.sql_ids(empty) == set()
+    assert vs.prune_sql_ids(empty, [101]) == empty
+    other = "update t set x = 1 where keep_id in (101) and id in (101,7);"
+    assert vs.prune_sql_ids(other, [101]) == "update t set x = 1 where keep_id in (101) and id in (7);"
+
+
+def _recheck_setup(tmp_path, monkeypatch, hour=19):
+    from datetime import datetime, timezone
+    monkeypatch.setattr(vs, "utcnow", lambda: datetime(2026, 10, 14, hour, 30, tzinfo=timezone.utc))
+    out = tmp_path / "sv"
+    out.mkdir()
+    rows = [(101, "Ascension", "Phenom", "2026-449522", ORA + "2026-449522"),
+            (102, "Ascension", "Phenom", "2026-464305", ORA + "2026-464305"),
+            (103, "Ascension", "Phenom", "2026-111111", ORA + "2026-111111"),
+            (104, "DaVita", "Phenom", "R1", "https://davita.wd1.myworkdayjobs.com/DKC_External/job/x_R1")]
+    with open(out / "phenom.csv", "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=vs.CSV_FIELDS)
+        w.writeheader()
+        for i, s, p, j, u in rows:
+            w.writerow({"id": i, "hospital_system": s, "ats_platform": p, "job_id": j, "url": u, "verdict": "CLOSED"})
+    sql = tmp_path / "136c.sql"
+    sql.write_text(RETIRE.format(ids="101,102,103,104,105"), encoding="utf-8")
+    import argparse
+    return out, sql, argparse.Namespace(sql=str(sql), out_sql=str(sql), out_dir=str(out), system=None)
+
+
+def test_recheck_drops_reposted_and_unanswered_oracle_ids_only(tmp_path, monkeypatch):
+    out, sql, args = _recheck_setup(tmp_path, monkeypatch)
+
+    def answer(u, kw):
+        if "Id=%222026-111111%22," in u:
+            return Resp(500, "busy")
+        return ora_http(found=("2026-449522",))(u, kw)
+    http = FakeHttp([("GET", "recruitingCEJobRequisitionDetails", answer)])
+    assert vs.run_recheck(args, http=http) == [101, 103]
+    # 101 is posted again, 103 did not answer: both out. 102 still items [];
+    # 104 (Workday) and 105 (in no CSV) are not Oracle rows and stay as they were.
+    assert sql.read_text(encoding="utf-8") == RETIRE.format(ids="102,104,105")
+    assert len(http.calls) == 3 and urls(http, "myworkdayjobs") == []
+    logs = list((out / "recheck").iterdir())
+    assert len(logs) == 1
+    with open(logs[0], encoding="utf-8", newline="") as f:
+        got = {r["id"]: r["verdict"] for r in csv.DictReader(f)}
+    assert got == {"101": "OPEN", "102": "CLOSED", "103": "UNKNOWN"}
+    # `sql` reads only the run's own CSVs, never the recheck log
+    assert vs.latest_verdicts(str(out))["101"]["verdict"] == "CLOSED"
+
+
+def test_recheck_drops_rows_it_could_not_re_ask(tmp_path, monkeypatch):
+    out, sql, args = _recheck_setup(tmp_path, monkeypatch)
+    calls = []
+
+    class Budgeted:
+        def request(self, method, url, **kw):
+            calls.append(url)
+            if len(calls) > 1:
+                raise vs.Http.OutOfBudget()
+            return 200, Resp(200, json.dumps({"items": []}))
+    assert vs.run_recheck(args, http=Budgeted()) == [102, 103]
+    assert sql.read_text(encoding="utf-8") == RETIRE.format(ids="101,104,105")
+    assert len(calls) == 2
+
+
+def test_recheck_refuses_the_nightly_window(tmp_path, monkeypatch):
+    out, sql, args = _recheck_setup(tmp_path, monkeypatch, hour=23)
+    before = sql.read_text(encoding="utf-8")
+    with pytest.raises(SystemExit):
+        vs.run_recheck(args, http=FakeHttp([]))
+    assert sql.read_text(encoding="utf-8") == before

@@ -22,6 +22,22 @@ VERDICTS (one per row, written to <out-dir>/<platform>.csv)
              Oracle    recruitingCEJobRequisitionDetails ById answers 200 with
                        items = [], asked by the whole id ("2026-464305"; the
                        10-14 fix: the id used to stop at the hyphen).
+                       An Oracle CLOSED verdict EXPIRES WITHIN HOURS:
+                       Ascension un-posts and re-posts requisitions. On
+                       10-14, 4 of 361 ids read items [] at 18:22-18:29 UTC
+                       and were posted again (ExternalPostedStartDate
+                       18:47-18:53) by 19:12; the Phenom widget still said
+                       hits 0 for one of them, so the Phenom board lags
+                       Oracle and cannot catch it. The scraped_at guard of
+                       the `sql` file cannot catch it either (the truncated
+                       Ascension crawl may never re-stamp the row), and a
+                       `check` re-run cannot either (it skips ids its CSVs
+                       already judged, and a CLOSED-only export fails the
+                       Phenom row canary). Right before a retire file is
+                       applied, run `recheck` (USAGE): it re-asks Oracle
+                       ById for every Oracle row the file retires and takes
+                       out of the file every id that does not read CLOSED
+                       again.
              HCA       (careers.hcahealthcare.com, Talemetry; curl_cffi
                        impersonate="firefox", no proxy) the job page answers
                        301 to /jobs?job_not_found=true, or 200 with "This job
@@ -174,6 +190,12 @@ USAGE
   python tools/verify_stale.py check --from-db --platform Workday --system "Sutter Health" --days 3
   python tools/verify_stale.py sql --out-sql 115_retire_verified_closed.sql \
          --out-restore 115r_retire_verified_closed.sql --stale-before "2026-10-12 21:00+00"
+  python tools/verify_stale.py recheck --sql 136c_stale_verified_closed.sql \
+         --out-sql 136c_stale_verified_closed.sql --out-dir <shared>/stale_verify_2026-10-14
+     (right before applying; about 1 request a second, one per Oracle row;
+     rewrites only the `id in (...)` lists; a list left empty becomes
+     id in (null); the verdicts go to <out-dir>/recheck/, which `sql` never
+     reads)
 """
 import argparse
 import collections
@@ -1584,6 +1606,86 @@ def run_sql(args):
     print(f"wrote {args.out_restore} (backup table {tbl})")
 
 
+# ---------------------------------------------------------------- recheck
+# 2026-10-14: an Oracle CLOSED verdict expires within hours (Ascension
+# re-posted 4 of 361 requisitions 20 minutes after they read items []; see
+# the Oracle note at the top). `recheck` re-asks Oracle ById, right before a
+# retire file is applied, for every Oracle row that file retires, and takes
+# every id that does not read CLOSED again out of the file's id lists.
+_ID_LIST = re.compile(r"\bid in \(([0-9,\s]+|null)\)")
+
+
+def sql_ids(text):
+    """Every id named in an `id in (...)` list of a retire file."""
+    ids = set()
+    for m in _ID_LIST.finditer(text):
+        ids.update(int(x) for x in m.group(1).split(",") if x.strip().isdigit())
+    return ids
+
+
+def prune_sql_ids(text, drop):
+    """The retire file with every id in `drop` taken out of its id lists and
+    nothing else changed. A list left empty becomes id in (null), which
+    matches no row."""
+    drop = {int(x) for x in drop}
+
+    def keep(m):
+        kept = [x.strip() for x in m.group(1).split(",") if x.strip().isdigit() and int(x) not in drop]
+        return "id in (" + (",".join(kept) if kept else "null") + ")"
+    return _ID_LIST.sub(keep, text)
+
+
+def run_recheck(args, http=None):
+    now = utcnow()
+    if in_quiet(now, (23, 15), (5, 30)):
+        raise SystemExit("refusing to start between 23:15 and 05:30 UTC (nightly window)")
+    with open(args.sql, encoding="utf-8", newline="") as f:
+        text = f.read()
+    ids = sql_ids(text)
+    verdicts = latest_verdicts(args.out_dir)
+    keep_sys = set(args.system or [])
+    rows = [verdicts[str(i)] for i in sorted(ids)
+            if str(i) in verdicts and (not keep_sys or verdicts[str(i)].get("hospital_system") in keep_sys)
+            and _ORA.match((verdicts[str(i)].get("url") or "").strip())]
+    print(f"{len(ids)} ids in {args.sql}; {len(rows)} Oracle rows to re-ask "
+          f"({sum(1 for i in ids if str(i) not in verdicts)} ids not in the CSVs of {args.out_dir}, left as they are)",
+          flush=True)
+    if http is None:
+        stop_at = now.replace(hour=23, minute=15, second=0, microsecond=0)
+        http = Http(Budget(len(rows) + 5, stop_at), per_host=1, pause=PAUSE)
+    oracle = OracleChecker(http)
+    log_dir = os.path.join(args.out_dir, "recheck")
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, os.path.splitext(os.path.basename(args.sql))[0]
+                            + "_" + now.strftime("%Y%m%d_%H%M%S") + ".csv")
+    drop, stats = [], collections.Counter()
+    out_of_budget = False
+    with open(log_path, "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=CSV_FIELDS, extrasaction="ignore")
+        w.writeheader()
+        for row in rows:
+            if out_of_budget:
+                v, st, ev = "UNKNOWN", "", "not re-asked (request budget or stop time)"
+            else:
+                try:
+                    v, st, ev = oracle.check(row)
+                except Http.OutOfBudget:
+                    out_of_budget = True
+                    v, st, ev = "UNKNOWN", "", "not re-asked (request budget or stop time)"
+            stats[v] += 1
+            if v != "CLOSED":
+                drop.append(int(row["id"]))
+                print(f"  drop {row['id']} {row.get('hospital_system')} {row.get('job_id')}: {v} ({ev})", flush=True)
+            w.writerow(dict(row, verdict=v, http_status=st, evidence=ev,
+                            checked_at=utcnow().strftime("%Y-%m-%d %H:%M:%S")))
+    pruned = prune_sql_ids(text, drop)
+    with open(args.out_sql, "w", encoding="utf-8", newline="") as f:
+        f.write(pruned)
+    print(f"re-asked: {dict(stats)}; dropped {len(drop)}; wrote {args.out_sql} with "
+          f"{len(sql_ids(pruned))} ids; verdicts in {log_path}", flush=True)
+    return drop
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1615,6 +1717,12 @@ def main():
                    help="table in schema public that saves the retired rows (default: by UTC date)")
     s.add_argument("--db-write", action="store_true",
                    help="db_write format: no comment or blank lines, one statement per line")
+    r = sub.add_parser("recheck", help="right before a retire file is applied: re-ask Oracle ById for its "
+                                       "Oracle rows and take out every id that does not read CLOSED again")
+    r.add_argument("--sql", required=True, help="the retire file (its id in (...) lists are read)")
+    r.add_argument("--out-sql", required=True, help="where the pruned file goes (may be the --sql path itself)")
+    r.add_argument("--out-dir", default=DEFAULT_OUT, help="the check run whose CSVs hold the rows' urls")
+    r.add_argument("--system", action="append", help="only re-ask rows of this hospital_system (repeatable)")
     args = ap.parse_args()
     if args.cmd == "check":
         if not args.rows_file and not args.from_db:
@@ -1624,6 +1732,8 @@ def main():
         if not 0.5 <= args.pause <= 30:
             ap.error("--pause is 0.5..30 seconds")
         run_check(args)
+    elif args.cmd == "recheck":
+        run_recheck(args)
     else:
         if args.batch > 1000:
             ap.error("--batch is at most 1000")
