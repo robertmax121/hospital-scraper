@@ -1,0 +1,78 @@
+{
+ "refineSearch": {
+  "totalHits": 2258,
+  "data": {
+   "jobs": [
+    {
+     "jobId": "26018384",
+     "jobSeqNo": "BSWHUS26018384EXTERNALENUS",
+     "reqId": "26018384",
+     "title": "Access Services Rep 1",
+     "workLocation": "BRMC At Plano - 1st Floor",
+     "city": "Plano",
+     "state": "Texas",
+     "country": "United States",
+     "location": "Plano, Texas, United States",
+     "cityStateCountry": "Plano, Texas, United States",
+     "category": "Shared Services",
+     "multi_category_array": [
+      {
+       "category": "Shared Services"
+      }
+     ],
+     "type": "Full Time",
+     "postedDate": "2026-10-06T11:12:15.000+0000",
+     "dateCreated": "2026-09-30T07:27:54.656+0000",
+     "applyUrl": "https://bswhealth.taleo.net/careersection/ex/jobapply.ftl?job=26018384&lang=en&csNo=2&portal=101430233",
+     "descriptionTeaser": "Embrace the role of an Access Services Representative I and play a vital role in patient registration, insurance verification, and customer service. If you excel at multitasking, communication, and supporting patients through registration and billing, this is your opportunity to make a difference in a dynamic healthcare environment."
+    },
+    {
+     "jobId": "26015583",
+     "jobSeqNo": "BSWHUS26015583EXTERNALENUS",
+     "reqId": "26015583",
+     "title": "Surgical Technologist 2",
+     "workLocation": "Main Hospital - 2nd floor",
+     "city": "Temple",
+     "state": "Texas",
+     "country": "United States",
+     "location": "Temple, Texas, United States",
+     "cityStateCountry": "Temple, Texas, United States",
+     "category": "Patient & Clinical Support",
+     "multi_category_array": [
+      {
+       "category": "Patient & Clinical Support"
+      }
+     ],
+     "type": "Full Time",
+     "postedDate": "2026-09-03T13:51:51.000+0000",
+     "dateCreated": "2026-09-03T07:28:23.897+0000",
+     "applyUrl": "https://bswhealth.taleo.net/careersection/ex/jobapply.ftl?job=26015583&lang=en&csNo=2&portal=101430233",
+     "descriptionTeaser": "Embrace the opportunity to become a Surgical Technologist II and play a vital role in supporting surgical teams at Baylor Scott & White Health. Utilize your expertise in sterile technique, instrumentation, and infection control to ensure safe and efficient procedures. Grow your career in a collaborative environment dedicated to patient care and operational excellence."
+    },
+    {
+     "jobId": "24004886",
+     "jobSeqNo": "BSWHUS24004886EXTERNALENUS",
+     "reqId": "24004886",
+     "title": "Physical Therapist PRN",
+     "workLocation": "Hillcrest Baptist Medical Ctr",
+     "city": "Waco",
+     "state": "Texas",
+     "country": "United States",
+     "location": "Waco, Texas, United States",
+     "cityStateCountry": "Waco, Texas, United States",
+     "category": "Allied Health",
+     "multi_category_array": [
+      {
+       "category": "Allied Health"
+      }
+     ],
+     "type": "PRN",
+     "postedDate": "2025-09-11T15:40:15.000+0000",
+     "dateCreated": "2024-09-10T13:13:20.971+0000",
+     "applyUrl": "https://bswhealth.taleo.net/careersection/ex/jobapply.ftl?job=24004886&lang=en&csNo=2&portal=101430233",
+     "descriptionTeaser": "Are you experienced in providing exceptional patient care? Join our team as a Physical Therapist PRN, where you will evaluate and treat patients, implement treatment plans, and educate families while advancing your clinical skills in a supportive environment."
+    }
+   ]
+  }
+ }
+}

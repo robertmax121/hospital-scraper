@@ -3201,10 +3201,16 @@ async def _workday_fetch_details(session, working_url, targets, system):
             # also sets the ISO startDate over the list's relative label and
             # the employment type when the list had none.)
             was_date, was_type = job.posted_date, job.job_type
-            if _apply_wd_posting_info(job, (data or {}).get("jobPostingInfo") or {}):
+            info = (data or {}).get("jobPostingInfo") or {}
+            if _apply_wd_posting_info(job, info):
                 filled += 1
             dated += job.posted_date != was_date
             typed += job.job_type != was_type
+            # 2026-10-14: the requisition number the page prints, when our
+            # job_id is another value (wd_req_id).
+            rid = wd_req_id(info, job.job_id)
+            if rid:
+                job.req_id = rid
             # Throttle inside the semaphore so this genuinely paces requests
             # rather than just staggering their completion.
             await asyncio.sleep(random.uniform(0.15, 0.45))
@@ -3705,6 +3711,39 @@ def _apply_wd_posting_info(job, info: dict) -> bool:
     if _ISO_DATE_RX.match(start) and not _ISO_DATE_RX.match(str(job.posted_date or "").strip()[:10]):
         job.posted_date = start
     return ok
+
+
+# 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
+# a Workday job page prints ("job requisition id", and the JSON-LD
+# identifier.value) is the CXS detail payload's jobPostingInfo.jobReqId. Where
+# the list's bulletFields carry it, job_id already is that number (139 of 139
+# checkable tenants, 2026-10-14 audit). Where they do not, job_id fell back to
+# the externalPath ("/job/United-Hospital-Center-UHC/Housekeeper_JR26-47425";
+# WVU Medicine, Monument, ThedaCare, Kaweah, MarinHealth, Broadlawns, a few
+# Cape Fear / Montefiore / Samaritan / Prisma rows), or a bullet that is not
+# the requisition (Rochester Regional "14468" vs "REQ_243958"). The path's
+# suffix is not the number (MarinHealth "_JR102021" prints "14976 - AC307",
+# Monument adds a "-2" copy suffix to "27_322"), so it is never parsed.
+# Workday prints underscores, spaces, dots ("02.6025.0414.5", Samaritan), so
+# _hca_req_value's [A-Za-z0-9-] does not fit: this validator keeps letters,
+# digits, ".", "_", "-" and single spaces, at least one digit, up to 40
+# characters, exactly as printed.
+_WD_REQ_VALUE_RE = re.compile(r"^(?=.*\d)[A-Za-z0-9](?:[A-Za-z0-9._-]| (?=[A-Za-z0-9._-]))*$")
+
+
+def _wd_req_value(raw) -> str:
+    """A Workday requisition number as printed ("JR26-47425", "27_322",
+    "14976 - AC307"), or "" for anything else."""
+    s = str(raw or "").strip()
+    return s if len(s) <= 40 and _WD_REQ_VALUE_RE.match(s) else ""
+
+
+def wd_req_id(info, job_id) -> str:
+    """jobPostingInfo.jobReqId when it is a requisition number and differs
+    from our job_id; "" otherwise (the row already carries the number, or
+    the payload has none)."""
+    rid = _wd_req_value((info or {}).get("jobReqId") if isinstance(info, dict) else "")
+    return rid if rid and rid != str(job_id or "").strip() else ""
 
 
 async def _phenom_workday_detail(session, cxs_url: str, job) -> bool:
@@ -4285,8 +4324,31 @@ async def _csod_detail(session, job) -> bool:
             data = await r.json(content_type=None)
     except Exception:
         return False
-    body, posted = _csod_posting_text((data or {}).get("data") if isinstance(data, dict) else {})
+    d = (data or {}).get("data") if isinstance(data, dict) else {}
+    rid = csod_req_id(job.hospital_system, d, job.job_id)
+    if rid:
+        job.req_id = rid
+    body, posted = _csod_posting_text(d)
     return _apply_body(job, body, "", posted)
+
+
+# 2026-10-14 (owner: "Yeah we need to fix those now"): CSOD's job_id is the
+# requisition id in the URL (/requisition/30790); the page prints the
+# requisition's own reference under the location, which the jobDetails payload
+# carries as data.ref: JPS 30790 -> "46562", UI Health 20550 -> "1042207"
+# (2026-10-14, 2 of 2 each). Billings Clinic prints "req" + job_id
+# ("req12479"): the same number, so it is not configured. Read only on the
+# rows the detail pass fetches (the search list carries no ref).
+CSOD_REQ_ID = frozenset({"JPS Health Network", "UI Health"})
+
+
+def csod_req_id(system: str, d, job_id) -> str:
+    """data.ref of a jobDetails payload on a CSOD_REQ_ID tenant, when it is a
+    requisition number (_hca_req_value) other than job_id; "" otherwise."""
+    if system not in CSOD_REQ_ID or not isinstance(d, dict):
+        return ""
+    rid = _hca_req_value(d.get("ref"))
+    return rid if rid and rid != str(job_id or "") else ""
 
 
 # 2026-09-16 (NY coverage): Montefiore's Workday tenant lists postings by street
@@ -10198,6 +10260,24 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
 # state (full name), country, postalCode, category, multi_category_array, type,
 # postedDate, dateCreated, applyUrl, externalApply, jobShift,
 # location (e.g. "Waxahachie, Texas, United States"), descriptionTeaser.
+#
+# 2026-10-14 (owner: "Yeah we need to fix those now"): job_id is the
+# jobSeqNo ("BSWHUS26019024EXTERNALENUS"), which BSW's page never prints; the
+# page shows the requisition, 26019024 (its job-info reqId line, the JSON-LD
+# identifier.value, and the /us/en/job/26019024 URL). Every listing row carries
+# it as reqId and jobId: equal on 300 of 300 rows read 2026-10-14. It rides as
+# Job.req_id -> posting_facts["req_id"] on every row every night (no extra
+# request; REQ_ID_ONLY_PLATFORMS covers the nights a row's facts are null).
+def bsw_req_id(j, job_id="") -> str:
+    """The requisition number a BSW listing row's page prints: reqId, else
+    jobId, when it is a requisition number (_hca_req_value) and not already
+    the row's job_id; "" otherwise."""
+    if not isinstance(j, dict):
+        return ""
+    rid = _hca_req_value(j.get("reqId")) or _hca_req_value(j.get("jobId"))
+    return rid if rid and rid != str(job_id or "") else ""
+
+
 async def _scrape_bsw(session) -> list[Job]:
     logger.info("BSW: scraping Baylor Scott & White via Phenom refineSearch...")
     base_url   = "https://jobs.bswhealth.com"
@@ -10306,6 +10386,7 @@ async def _scrape_bsw(session) -> list[Job]:
                     posted_date=str(j.get("postedDate") or j.get("dateCreated") or "")[:10],
                     description=strip_html(str(j.get("descriptionTeaser") or "")),
                     ats_platform="Phenom",
+                    req_id=bsw_req_id(j, job_seq),
                 ))
             except Exception as e:
                 logger.info(f"BSW: row parse error: {e}")
@@ -14039,7 +14120,42 @@ def _rmk_posting(html: str) -> tuple[str, object]:
 async def _rmk_detail(session, job) -> bool:
     body, pay = _rmk_posting(await _fetch_html(session, job.url, timeout=40))
     set_field_wage(job, pay)
+    rid = rmk_req_id(job.hospital_system, body, job.job_id)
+    if rid:
+        job.req_id = rid
     return _apply_body(job, body)
+
+
+# 2026-10-14 (owner: "Yeah we need to fix those now"): an RMK row's job_id is
+# the board's URL id (/1439766300/); the posting's own number is the labelled
+# line at the top of its body, one label per board (2026-10-14, 2 of 2 pages
+# each): Texas HHS "Posting Number: 22217", Florida DCF "Requisition No:
+# 873803" (its later "Position Number: 60010695" is the budget position, not
+# the posting), Illinois DHS "Job Requisition ID: 58304", Arkansas DHS
+# "Position Number: 22150905" (its only number). Configured per board, never
+# guessed. Read on the rows the detail pass fetches.
+SF_RMK_REQ_LABEL = {
+    "Texas Health and Human Services": "Posting Number",
+    "Florida Department of Children and Families": "Requisition No",
+    "Illinois Department of Human Services": "Job Requisition ID",
+    "Arkansas Department of Human Services": "Position Number",
+}
+
+
+def rmk_req_id(system: str, body: str, job_id="") -> str:
+    """The value on the board's SF_RMK_REQ_LABEL line among the body's first
+    60 lines (a leading zero-width space, Illinois, is ignored), when it is a
+    requisition number (_hca_req_value) other than job_id; "" otherwise."""
+    label = SF_RMK_REQ_LABEL.get(system)
+    if not label:
+        return ""
+    rx = re.compile(r"^[\s​﻿]*" + re.escape(label) + r"\s*:\s*(\S+)\s*$", re.I)
+    for line in (body or "").split("\n")[:60]:
+        m = rx.match(line)
+        if m:
+            rid = _hca_req_value(m.group(1))
+            return rid if rid and rid != str(job_id or "") else ""
+    return ""
 
 
 async def run_sf_rmk(session) -> list[Job]:
@@ -15021,6 +15137,9 @@ async def _paycor_detail(session, job) -> bool:
     sits in <td id="gnewtonJobDescriptionText">, which holds nested markup,
     so the block runs to the apply-button cell that follows it."""
     html = await _fetch_html(session, job.url, timeout=30)
+    rid = paycor_req_id(html, job.job_id)
+    if rid:
+        job.req_id = rid
     i = html.find('id="gnewtonJobDescriptionText"')
     if i < 0:
         return False
@@ -15033,6 +15152,31 @@ async def _paycor_detail(session, job) -> bool:
         job.description = desc
         return True
     return False
+
+
+# 2026-10-14 (owner: "Yeah we need to fix those now"): a Paycor row's job_id is
+# the 32-hex posting id in the JobIntroduction.action URL; the employer's own
+# number is the page's <td id="gnewtonJobID"><b>Job Id:</b>&nbsp; 2713</td>
+# (Townsen "TMSCW1013", "TMSK100"; Coon "218"; Insight "2713"; Hereford
+# "431"). The list page carries only the hex id, so it is read on the rows
+# the detail pass fetches, inside PAYCOR_DESC_BUDGET. Insight Health and
+# Hereford keep the cell in their HTML but hide it with their own CSS
+# ("#gnewtonJobDescription #gnewtonJobID {display: none}"); it is still the
+# number their Paycor board files the posting under, so it is kept there too.
+_PAYCOR_JOB_ID_RX = re.compile(r'<td[^>]*\bid="gnewtonJobID"[^>]*>(.*?)</td>', re.S | re.I)
+
+
+def paycor_req_id(html: str, job_id="") -> str:
+    """The value of a Paycor job page's "Job Id:" cell, when it is a
+    requisition number (_hca_req_value) other than job_id; "" otherwise."""
+    m = _PAYCOR_JOB_ID_RX.search(html or "")
+    if not m:
+        return ""
+    cell = re.sub(r"<!--.*?-->", " ", m.group(1), flags=re.S)
+    text = _html_unescape(re.sub(r"<[^>]+>", " ", cell)).replace("\xa0", " ")
+    text = re.sub(r"^\s*Job\s*Id\s*:\s*", "", text, flags=re.I).strip()
+    rid = _hca_req_value(text)
+    return rid if rid and rid != str(job_id or "") else ""
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -16953,12 +17097,20 @@ HTML_LIST_SITES: dict[str, dict] = {
     # prices through extract_posted_wage. The 206 rows still without a body
     # on 10-07 (311 on 10-06) were waiting on the shared budget
     # (HTML_LIST_DESC_MAX_PER_RUN), not on the parser.
+    # 2026-10-14 (owner: "Yeah we need to fix those now"): job_id is the FX
+    # page id (/13191); the job page prints Rush's own number under the title,
+    # beside a suitcase icon with no label (<div class="job-text"> 31067
+    # </div>), the Apply link's JobReq=31067 (Infor GHR) carries it, and the
+    # feed item says "Ref: 31067". Read from the feed (every row, every
+    # night, no extra request) as req_id, exactly as printed: 548 of 568
+    # items are numeric; 20 multi-town items print "21729rxv_7_1" on the page
+    # as in the feed (2026-10-14, 4 of 4 pages read).
     "Rush": {
         "mode": "rss",
         "body": r'class="job-description-bg">.*?<div class="col-12">(.*?)<a[^>]+class="apply-btn"',
         "url": "https://rush.fxrecruiter.com/feeds/jobs-rss",
         "id": r"/(\d+)(?:\?|$)",
-        "fields": {"state": r",\s*([A-Z]{2})\s*,"},
+        "fields": {"state": r",\s*([A-Z]{2})\s*,", "req_id": r"\bRef:\s*([A-Za-z0-9_-]+)"},
         "hospital_map": _RUSH_HOSPITALS,
         "hospital": "Rush University Medical Center",
         "state": "IL", "platform": "FXRecruiter",
@@ -17069,15 +17221,32 @@ def _hl_make_job(system: str, cfg: dict, url: str, title: str, f: dict) -> Job |
     desc = teaser
     if shift and shift.lower() not in teaser.lower():
         desc = f"Shift: {shift}\n{desc}".strip()
+    job_id = _hl_job_id(url, cfg, f.get("job_id", ""))
+    # 2026-10-14: a site's "req_id" field (Rush's feed "Ref: 31067") is the
+    # number the job page prints when job_id is another value.
+    req_id = _hl_req_value(f.get("req_id", ""))
     return Job(
         title=title, hospital_system=system, hospital_name=hospital or system,
         city=city, state=state,
         location=f"{city}, {state}".strip(", ") if (city or state) else "",
         specialty=f.get("department", ""), job_type=job_type,
-        url=url, job_id=_hl_job_id(url, cfg, f.get("job_id", "")),
+        url=url, job_id=job_id,
         posted_date=_hl_date(f.get("posted", ""), cfg.get("date_fmts", ())),
         description=desc, ats_platform=cfg.get("platform", "Custom"),
+        req_id=req_id if req_id != job_id else "",
     )
+
+
+# 2026-10-14: Rush prints its multi-town postings' numbers with underscores
+# ("21729rxv_7_1"), which _hca_req_value's [A-Za-z0-9-] rejects; this keeps
+# letters, digits, "_" and "-", at least one digit, up to 40 characters.
+_HL_REQ_VALUE_RE = re.compile(r"^(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
+
+
+def _hl_req_value(raw) -> str:
+    """An HTML-list site's requisition number as printed, or ""."""
+    s = str(raw or "").strip()
+    return s if _HL_REQ_VALUE_RE.match(s) else ""
 
 
 def _parse_html_list_page(text: str, system: str, cfg: dict) -> list[Job]:
@@ -17468,6 +17637,18 @@ HCA_ESTIMATE_PAY = True
 # posting_facts whole, so a {"req_id"} object would wipe the stored facts.
 # With the SQL applied the trigger merges it, and one push stamps every row.
 REQ_ID_ONLY_FACTS = os.getenv("REQ_ID_ONLY_FACTS", "0") == "1"
+# 2026-10-14 (owner: "Yeah we need to fix those now"): the platforms whose rows
+# send that req_id-only object on a night their facts go out null (no body in
+# hand: the known-body skip blanks it, or the list carries none), whatever
+# REQ_ID_ONLY_FACTS says. The merge is live: pg_get_functiondef of
+# preserve_scraped_enrichment, read 2026-10-14, carries
+# "new.posting_facts := old.posting_facts || new.posting_facts" (sql/113), so
+# the object is merged into the stored facts, never swapped in. Only a row
+# whose adapter read a number sends one (Job.req_id is "" on every other row
+# of these platforms). Baylor Scott & White (Phenom) and Rush (FXRecruiter)
+# read it from the list every night; Workday, CSOD, SuccessFactorsRMK and
+# Paycor on the nights their detail pass reads the page.
+REQ_ID_ONLY_PLATFORMS = frozenset({"Workday", "Phenom", "CSOD", "SuccessFactorsRMK", "Paycor", "FXRecruiter"})
 
 
 def _hca_total(page_html: str) -> int | None:
@@ -21246,7 +21427,8 @@ def normalize_job(j: Job) -> dict:
     if req_id:
         if d["posting_facts"] is not None:
             d["posting_facts"]["req_id"] = req_id
-        elif REQ_ID_ONLY_FACTS:
+        elif REQ_ID_ONLY_FACTS or d.get("ats_platform") in REQ_ID_ONLY_PLATFORMS:
+            # 2026-10-14: REQ_ID_ONLY_PLATFORMS send it without the switch.
             d["posting_facts"] = {"req_id": req_id}
 
     return d
