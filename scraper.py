@@ -1376,6 +1376,24 @@ KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
 _KNOWN_BODIES: dict = {}
 _KNOWN_FACTS_V: dict = {}         # same keys -> posting_facts "v" of the stored row (None = unstamped)
 _KNOWN_FACTS_H: dict = {}         # (push 10) same keys, every platform -> posting_facts "h" of the stored row
+_KNOWN_HAS_REQ: set = set()       # (2026-10-14) same keys: REQ_ID_PAGE_PLATFORMS bodies whose stored facts hold a req_id
+
+# ── Job numbers read only from the job page (2026-10-14) ────────────────────
+# A Jobvite Engage posting prints the employer's job number only on its job
+# page (jobvite_req_id_from_page, read in the detail pass that already
+# fetches it). Jobvite is not a known-body platform, so its detail pass sees
+# every row as a candidate every night, transparency states first, and its
+# 1,500 fetches went to the same rows night after night: on 10-14 Penn NJ
+# held a body on 203 of 216 rows and PeaceHealth WA on 404 of 422, while
+# Penn PA held one on 391 of 1,555 and PeaceHealth OR/AK on 76 of 378, so
+# those rows would have waited months for their number. On these platforms
+# a row whose stored row already holds a body and a req_id (the known-body
+# load reads posting_facts->>'req_id' as rq) goes to the back of its pass's
+# line, behind every row still missing one or the other; the order inside
+# each group is unchanged. Nothing is skipped and no fetch is added: the
+# pass draws the same budget, and complete rows are read again with
+# whatever is left, as before.
+REQ_ID_PAGE_PLATFORMS = frozenset({"Jobvite"})
 
 # ── A known body is not known forever (2026-09-24, review of push 2) ─────────
 # Skipping every stored body left three holes: (1) facts, pay and type are
@@ -1474,9 +1492,13 @@ def set_known_bodies(rows) -> int:
     Every row's fh (posting_facts->>'h') whose facts carry the current
     FACTS_VERSION goes to _KNOWN_FACTS_H, which normalize_job reads to skip
     re-parsing an unchanged body (facts from older rules are never skipped).
+    2026-10-14: a row on REQ_ID_PAGE_PLATFORMS whose rq (posting_facts->>
+    'req_id') holds a value goes to _KNOWN_HAS_REQ, which sends it to the
+    back of its detail pass's line (see "Job numbers read only from the job
+    page").
     Returns the detail-pass map's size, as before."""
-    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H
-    kb, fv, unpriced, fh = {}, {}, set(), {}
+    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H, _KNOWN_HAS_REQ
+    kb, fv, unpriced, fh, has_req = {}, {}, set(), {}, set()
     for r in rows or []:
         try:
             n = int(r.get("desc_len") or 0)
@@ -1489,6 +1511,8 @@ def set_known_bodies(rows) -> int:
             if (isinstance(h, str) and h and _facts_version(r.get("fv")) == FACTS_VERSION
                     and n >= fh.get(k, (0, ""))[0]):
                 fh[k] = (n, h)
+            if r.get("ats_platform") in REQ_ID_PAGE_PLATFORMS and str(r.get("rq") or "").strip():
+                has_req.add(k)
             if "ats_platform" in r and r.get("ats_platform") not in KNOWN_BODY_PLATFORMS:
                 continue
             if n >= kb.get(k, 0):
@@ -1500,6 +1524,7 @@ def set_known_bodies(rows) -> int:
                     unpriced.discard(k)
     _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED = kb, fv, unpriced
     _KNOWN_FACTS_H = {k: v[1] for k, v in fh.items()}
+    _KNOWN_HAS_REQ = has_req
     return len(kb)
 
 
@@ -1525,9 +1550,10 @@ def load_known_bodies() -> int:
             # 2026-10-07 (push 10): every active body, with its platform and
             # its facts hash (set_known_bodies keeps the detail-pass maps to
             # KNOWN_BODY_PLATFORMS). The page walks the same id range as
-            # before; only more of its rows come back.
+            # before; only more of its rows come back. 2026-10-14: rq, the
+            # stored posting_facts.req_id (REQ_ID_PAGE_PLATFORMS).
             u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,ats_platform,desc_len,wage_min,"
-                 f"fv:posting_facts-%3E%3Ev,fh:posting_facts-%3E%3Eh"
+                 f"fv:posting_facts-%3E%3Ev,fh:posting_facts-%3E%3Eh,rq:posting_facts-%3E%3Ereq_id"
                  f"&is_active=is.true&desc_len=gte.200"
                  f"&id=gt.{last}&order=id.asc&limit={KNOWN_BODY_PAGE}")
             rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
@@ -1548,7 +1574,8 @@ def load_known_bodies() -> int:
         logger.warning(f"Known bodies: load stopped after {len(rows):,} rows ({e}); the rest are fetched as before")
     n = set_known_bodies(rows)
     logger.info(f"Known bodies: {n:,} active rows on {', '.join(KNOWN_BODY_PLATFORMS)} already hold a body; "
-                f"{len(_KNOWN_FACTS_H):,} of {len(rows):,} active bodies carry a facts hash (push 10)")
+                f"{len(_KNOWN_FACTS_H):,} of {len(rows):,} active bodies carry a facts hash (push 10); "
+                f"{len(_KNOWN_HAS_REQ):,} on {', '.join(sorted(REQ_ID_PAGE_PLATFORMS))} already hold a body and a req_id")
     return n
 
 
@@ -3061,7 +3088,9 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     then the rows with no body (transparency states, then the newest), then
     stored bodies of a FORCED_REFRESH tenant on their slot ("force", push 10),
     then unpriced stored bodies due for their pay field ("pay", push 9), then
-    bodies cut at the old 8,000 cap. Each re-read, forced, pay or cut row is
+    bodies cut at the old 8,000 cap, then (2026-10-14) rows of
+    REQ_ID_PAGE_PLATFORMS whose stored row already holds a body and a
+    req_id (_KNOWN_HAS_REQ). Each re-read, forced, pay or cut row is
     appended to `held` as (item, list text, kind); the caller hands `held` to
     _settle_held after fetching, so a row no fetch refilled keeps its stored
     body. Without `held` every stored body is skipped, as before."""
@@ -3094,6 +3123,11 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
                 dup += 1
             continue
         tier[id(it)] = {"cut": 3, "pay": 2, "force": 1}.get(kind, 0)
+        if (kind is None and getattr(j, "ats_platform", "") in REQ_ID_PAGE_PLATFORMS
+                and (canon, str(j.job_id)) in _KNOWN_HAS_REQ):
+            # 2026-10-14: body and job number already stored; behind the rows
+            # still missing either (see "Job numbers read only from the job page")
+            tier[id(it)] = 4
         cands.append(it)
     random.shuffle(cands)
     cands.sort(key=lambda it: (tier[id(it)], _detail_rank(job_of(it))))
