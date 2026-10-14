@@ -9439,6 +9439,31 @@ PHENOM_ORGS = {
 
 PHENOM_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end a crawl
 
+# 2026-10-14 (fix 11): ten Phenom tenants came back at 56-78% of their rows
+# every night since 10-07 (DaVita 2,102 of 3,333, Ascension 2,248 of 3,288,
+# Duke 683 of 991, UMMS 1,055 of 1,594, ...), held by the yield guard so
+# their closed postings were never retired. The rows a run missed were spread
+# over every page of the board, not cut off at an offset: 1,132 of DaVita's
+# 1,283 unseen rows were still on the site, in every 50-row block of it.
+# Cause: with an empty locationData, refineSearch orders these tenants by
+# distance from the CALLER'S IP (from Texas, DaVita's first page was 42 Texas
+# and 8 Oklahoma jobs; Duke's started in Mooresville, its westernmost site),
+# and every list page leaves through the next proxy of the pool, so each page
+# was a slice of a different ordering. 67 such slices of 3,333 reach about
+# 1 - 1/e of the board: 2,113 expected, 2,102 listed. Tenants whose default
+# order is not geographic (SSM, Hartford, Corewell) were not affected.
+# A fixed locationData makes the order the same from every address, and
+# 500-row pages (the most refineSearch serves; size 1,000 answers 500) cut a
+# DaVita crawl from 67 requests to 7. Measured 2026-10-14 on all 32
+# refineSearch tenants: totalHits identical with and without the location,
+# and a crawl with a new session per page listed every job (DaVita 3,333 of
+# 3,333, UMMS 1,593 of 1,593, Ascension 3,287 of 3,288).
+PHENOM_PAGE_SIZE = int(os.getenv("PHENOM_PAGE_SIZE", "500"))
+PHENOM_FIXED_LOCATION = {   # the geographic centre of the contiguous US; aboveMaxRadius keeps every job
+    "sliderRadius": 50, "aboveMaxRadius": True, "LocationUnit": "miles", "placeID": "",
+    "latitude": 39.8283, "longitude": -98.5795, "place": "United States",
+}
+
 
 def _phenom_list_pay(doc: dict):
     """(min, max, unit) from the pay keys some Phenom tenants put in the
@@ -9547,6 +9572,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     use_post = False
     widget_payload_template = None   # set only if widgets endpoint works
     widget_response_key = None       # nested key to unwrap in widget response
+    probe_total = 0                  # the probe's totalHits (no location sent)
     probe_headers = {
         **HEADERS,
         "Accept": "application/json",
@@ -9757,6 +9783,10 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                             use_post = True
                             widget_payload_template = payload.copy()
                             widget_response_key = nested_key
+                            try:
+                                probe_total = int(nested.get("totalHits") or 0)
+                            except (TypeError, ValueError):
+                                probe_total = 0
                             logger.info(f"Phenom {system}: widgets/{nested_key} has nested job data!")
                             break
                         # Diagnostic — log inner shape when nested key matches but no job data.
@@ -9808,7 +9838,17 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     # ended it silently. Such a page is now skipped and the next offset
     # read; PHENOM_MAX_CONSECUTIVE_FAILURES in a row stop the crawl, with
     # the reason and the offset at WARNING.
+    # 2026-10-14 (fix 11): the refineSearch crawl sends PHENOM_FIXED_LOCATION
+    # and asks PHENOM_PAGE_SIZE rows a page (see the note at the constants:
+    # with no location the order follows the caller's IP, and every page
+    # left from another proxy). `located` falls back to the old payload if
+    # the located total ever reads lower than the probe's.
+    located = bool(is_widgets and widget_payload_template.get("ddoKey") == "refineSearch"
+                   and widget_payload_template.get("pageId"))
+    page_size = PHENOM_PAGE_SIZE if located else 50
+    eff_size = page_size             # rows a full page actually carries (the site may clamp)
     page_failures = 0
+    pages_skipped = 0
     site_total = 0
     while True:
         try:
@@ -9817,7 +9857,9 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
             if is_widgets:
                 payload = widget_payload_template.copy()
                 payload["from"] = offset
-                payload["size"] = 50
+                payload["size"] = page_size
+                if located:
+                    payload["locationData"] = dict(PHENOM_FIXED_LOCATION)
                 fetch_kwargs = {"json": payload}
                 http_method = "post"
             elif use_post:
@@ -9837,7 +9879,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 api_url, **fetch_kwargs,
                 headers=fetch_headers,
                 proxy=proxies.get(), ssl=False,
-                timeout=aiohttp.ClientTimeout(total=25),
+                timeout=aiohttp.ClientTimeout(total=45 if page_size > 50 else 25),
             ) as r:
                 if r.status != 200:
                     raise RuntimeError(f"HTTP {r.status}")
@@ -9846,6 +9888,21 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
             # Unwrap nested widget response if needed
             if widget_response_key and isinstance(data.get(widget_response_key), dict):
                 data = data[widget_response_key]
+
+            # 2026-10-14 (fix 11): the located total must be the whole board.
+            # Measured on all 32 refineSearch tenants that day it was; should a
+            # tenant ever filter by the location, the crawl starts over
+            # without it rather than call a subset the board.
+            if located and offset == 0 and probe_total:
+                try:
+                    located_total = int(data.get("totalHits") or 0)
+                except (TypeError, ValueError):
+                    located_total = 0
+                if located_total < probe_total:
+                    logger.warning(f"Phenom {system}: the located search reports {located_total} of "
+                                   f"{probe_total} jobs; paging without the fixed location")
+                    located = False
+                    continue
 
             if offset == 0:
                 logger.info(f"Phenom {system}: response keys={list(data.keys())[:8]}")
@@ -9971,23 +10028,33 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     set_field_wage(job, _phenom_list_pay(doc))
                     jobs.append(job)
 
+            hits_v = data.get("hits")
             total = (
                 data.get("total") or data.get("count") or data.get("total_entries") or
                 data.get("totalCount") or data.get("totalHits") or
-                (data.get("hits", {}) or {}).get("total", {}).get("value") or
+                ((hits_v.get("total") or {}).get("value") if isinstance(hits_v, dict) else None) or
                 len(listings)
             )
             if isinstance(total, dict):
                 total = total.get("value", len(listings))
             if int(total) > len(listings):
                 site_total = max(site_total, int(total))
+            # 2026-10-14 (fix 11): refineSearch's totalHits is the board's own
+            # count even when the whole board fits in one 500-row page (Roper
+            # 327, Temple 449); the rule above only believes a total larger
+            # than the page, which a one-page board never shows.
+            elif widget_response_key == "refineSearch" and data.get("totalHits"):
+                site_total = max(site_total, int(data.get("totalHits") or 0))
+            if offset == 0 and site_total > len(listings) and len(listings) < page_size:
+                eff_size = len(listings)      # the site serves fewer rows a page than asked
             page_failures = 0
-            offset += 50
-            if offset >= int(total) or len(listings) < 50:
+            offset += len(listings)
+            if offset >= int(total) or len(listings) < eff_size:
                 break
             await jitter()
         except Exception as e:
             page_failures += 1
+            pages_skipped += 1
             logger.warning(f"Phenom {system}: page at offset {offset} failed ({type(e).__name__}: {e}); "
                            f"skipping it ({page_failures}/{PHENOM_MAX_CONSECUTIVE_FAILURES} in a row)")
             if page_failures >= PHENOM_MAX_CONSECUTIVE_FAILURES:
@@ -9995,7 +10062,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                                f"page failures; {len(jobs)} rows listed"
                                + (f" of {site_total} advertised" if site_total else ""))
                 break
-            offset += 50
+            offset += eff_size
             if site_total and offset >= site_total:
                 break
             await jitter()
@@ -10003,6 +10070,13 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     listed = len({j.job_id for j in jobs})
     if site_total and listed < COMPLETE_RATIO * site_total:
         logger.warning(f"Phenom {system}: listed {listed} of {site_total} advertised")
+    # 2026-10-14 (fix 11): as in HealthcareSource (2026-10-13 review), any
+    # skipped page makes the crawl PARTIAL. A skipped 500-row page can leave
+    # the yield above GUARD_RATIO, and the sweep would retire its live rows.
+    if pages_skipped and jobs:
+        PARTIAL_SYSTEMS.add(system)
+        logger.warning(f"Phenom {system}: PARTIAL, {pages_skipped} page(s) skipped, {listed} listed"
+                       + (f" of {site_total} advertised" if site_total else "") + "; not swept tonight")
     report_complete(system, listed, site_total, feed="PHENOM_ORGS")
 
     drop_rx = PHENOM_DROP_EMPLOYERS.get(system)
