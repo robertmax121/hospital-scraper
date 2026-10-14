@@ -24,9 +24,11 @@ import pytest
 
 import scraper
 
-DAY_IN = date(2026, 10, 15).toordinal()
-DAY_LAST = date(2026, 10, 28).toordinal()
-DAY_OUT = date(2026, 10, 29).toordinal()
+# integration 2026-10-14: read from the window itself (REQ_ID_WINDOW_START is
+# the one line that moves it), 2026-10-15 / 10-28 / 10-29 as set
+DAY_IN = date.fromisoformat(scraper.REQ_REREAD_WINDOW[0]).toordinal()
+DAY_LAST = date.fromisoformat(scraper.REQ_REREAD_WINDOW[1]).toordinal()
+DAY_OUT = DAY_LAST + 1
 CS_JOB = "97195133472"          # CommonSpirit, page prints "Requisition ID 2026-480318"
 KP_JOB = "100095074928"         # Kaiser, page prints "Job Number 1436888"
 
