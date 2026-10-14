@@ -14177,7 +14177,7 @@ def rmk_req_id(system: str, body: str, job_id="") -> str:
     label = SF_RMK_REQ_LABEL.get(system)
     if not label:
         return ""
-    rx = re.compile(r"^[\s​﻿]*" + re.escape(label) + r"\s*:\s*(\S+)\s*$", re.I)
+    rx = re.compile(r"^[\s\u200b\ufeff]*" + re.escape(label) + r"\s*:\s*(\S+)\s*$", re.I)
     for line in (body or "").split("\n")[:60]:
         m = rx.match(line)
         if m:
