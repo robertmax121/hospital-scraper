@@ -18095,7 +18095,7 @@ VIVIAN_EMPLOYMENT_TYPES = ["Travel", "Permanent", "Local Contract", "Per Diem / 
 # Permanent page: longer descriptions).
 VIVIAN_HITS_PER_PAGE   = 1000         # Algolia's hitsPerPage maximum; accepted live 2026-10-13
 VIVIAN_JOB_PAGES = {                  # pages that yielded jobs, per employmentType
-    "Travel":         450,            # 2026-10-14 (owner OK): read until Algolia's first empty page (~151-175k hits deep today); 40 read only the 40k best-paying hits (~5.2k rows) and swept live rows below them
+    "Travel":         400,            # 2026-10-14 (owner OK): read until Algolia's first empty page (~151-175k hits deep today); 40 read only the 40k best-paying hits (~5.2k rows) and swept live rows below them
     "Permanent":      25,             # same 25k hits as the old 100 x 250
     "Local Contract": 25,             # whole category (16k+ hits live)
     "Per Diem / PRN": 25,             # whole category (~1k hits live)

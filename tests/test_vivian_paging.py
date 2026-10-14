@@ -306,7 +306,10 @@ def test_request_asks_for_1000_hits_and_only_the_parsed_attributes():
 def test_budgets_stay_within_a_few_hundred_requests():
     ceiling = sum(scraper.VIVIAN_MAX_PAGES.get(t, scraper.VIVIAN_MAX_PAGES_DEFAULT)
                   for t in scraper.VIVIAN_EMPLOYMENT_TYPES)
-    assert ceiling <= 300
+    # 2026-10-14 (owner OK): Travel's ceiling is 450 so a deep night ends on
+    # Algolia's first empty page (~151-175 pages today), not on the ceiling;
+    # the real request count is that depth, the ceiling only a backstop.
+    assert ceiling <= 600
     for t in scraper.VIVIAN_EMPLOYMENT_TYPES:
         assert (scraper.VIVIAN_JOB_PAGES.get(t, scraper.VIVIAN_JOB_PAGES_DEFAULT)
                 <= scraper.VIVIAN_MAX_PAGES.get(t, scraper.VIVIAN_MAX_PAGES_DEFAULT))
