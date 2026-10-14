@@ -18106,6 +18106,22 @@ async def run_oceans(session=None) -> list[Job]:
 #  COMMUNITY HEALTH SYSTEMS (CHS) — WordPress WPJobBoard
 # ══════════════════════════════════════════════════════════════════════════
 CHS_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end the crawl
+# 2026-10-14 (owner: "we need to fix those now"): the requisition number. job_id
+# is the WordPress card's data-id (145981); the job page prints CHS's Oracle
+# requisition number above the title (span.requisition-number, title
+# "Requisition Number", "#167235"; the JSON-LD identifier.value is "167235").
+# Every card in the wp_job_grid payload the crawl already reads carries it in
+# its Apply link, .../hcmUI/CandidateExperience/en/sites/CX_1/job/167235:
+# 2,571 of 2,571 cards on 2026-10-14, and the pages of 145981, 135518 and
+# 144247 print the card's number. Stored without the "#" label, as the
+# JSON-LD gives it.
+_CHS_APPLY_REQ_RX = re.compile(r'href="https?://[^"]*/hcmUI/CandidateExperience/[^"]*?/sites/CX_\d+/job/(\d+)(?=[/?#"])')
+
+
+def chs_req_id_from_card(card: str) -> str:
+    """The Oracle requisition number in a CHS card's Apply link, or ""."""
+    m = _CHS_APPLY_REQ_RX.search(card or "")
+    return _hca_req_value(m.group(1)) if m else ""
 
 
 async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
@@ -18255,6 +18271,7 @@ async def run_chs(session: aiohttp.ClientSession) -> list[Job]:
                     posted_date="",
                     description="",
                     ats_platform="WPJobBoard",
+                    req_id=chs_req_id_from_card(card),
                 ))
                 parsed_count += 1
             if unparsed:
