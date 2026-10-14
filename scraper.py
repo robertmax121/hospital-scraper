@@ -12802,17 +12802,35 @@ HEALTHCARESOURCE_ORGS = {
 # Letters, digits, space and - . / _ & ' ( ) #, a digit, at most 40
 # characters, runs of spaces folded. A value with no digit is a label, not a
 # number: Renown's evergreen postings print "Req # Critical Care", "OP CP",
-# "ExpRN-W&C" (47 of 488 on 2026-10-14) and Union Hospital's "PH-OT",
-# "UHTHRTOPTI" (16 of 287); those rows keep no req_id, as HCA and NEOGOV do.
+# "ExpRN-W&C" (47 of 488 on 2026-10-14); those rows keep no req_id, as HCA
+# and NEOGOV do.
 _HCS_REQ_RX = re.compile(r"^(?=[^\d]*\d)[A-Za-z0-9][A-Za-z0-9 ./_&'()#-]{0,39}$")
+# 2026-10-14 (review): Union Hospital's other 16 of 287 print a requisition
+# CODE with no digit, one per posting and never repeated: "Req # PH-OT"
+# (job_id 13993), "Req # UHTHRTOPTIII" (24214), "APP-GC", "SYSDRPLANT",
+# "EMRACUTECLINICALDOCANALYST" (rendered pages read 2026-10-14). Our job_id
+# appears nowhere on those pages, so the code is the number to show. For that
+# tenant only, an all-capitals code (letter groups joined by "-", 4 to 40
+# characters) is kept as printed; placeholders are not. Renown's labels stay
+# skipped (other tenants are unchanged).
+_HCS_REQ_CODE_TENANTS = frozenset({"unionhospital"})
+_HCS_REQ_CODE_RX = re.compile(r"^[A-Z]{2,}(?:-[A-Z]{2,})*$")
+_HCS_REQ_PLACEHOLDERS = frozenset({"NONE", "NULL", "OPEN", "POOL", "TEMP", "VARIOUS", "PENDING",
+                                   "EVERGREEN", "GENERAL", "UNKNOWN"})
 
 
-def _hcs_req_value(raw) -> str:
+def _hcs_req_value(raw, tenant: str = "") -> str:
     """userArea.requisitionNumber as the HealthcareSource page prints it
-    ("0000264102", "31844", "47834.1"), or "" for anything else (blank, a
-    label with no digit, an over-long or odd value)."""
+    ("0000264102", "31844", "47834.1"; for Union Hospital also a code such as
+    "PH-OT"), or "" for anything else (blank, a label with no digit, an
+    over-long or odd value)."""
     s = re.sub(r"\s+", " ", str(raw if raw is not None else "")).strip()
-    return s if _HCS_REQ_RX.match(s) else ""
+    if _HCS_REQ_RX.match(s):
+        return s
+    if (tenant in _HCS_REQ_CODE_TENANTS and 4 <= len(s) <= 40 and _HCS_REQ_CODE_RX.match(s)
+            and s not in _HCS_REQ_PLACEHOLDERS):
+        return s
+    return ""
 
 
 def _dig(d, *path, default=""):
@@ -12881,7 +12899,7 @@ def _hcs_job(hit: dict, system: str, tenant: str) -> Job | None:
         ats_platform="HealthcareSource",
         # 2026-10-14: the career site prints "Req # " + userArea.requisitionNumber
         # (_hcs_req_value); job_id stays userArea.jobPostingID (REQ_ID_LIST_PLATFORMS).
-        req_id=_hcs_req_value(ua.get("requisitionNumber")),
+        req_id=_hcs_req_value(ua.get("requisitionNumber"), tenant),
     )
     set_field_wage(job, _hcs_pay(ua))
     return job

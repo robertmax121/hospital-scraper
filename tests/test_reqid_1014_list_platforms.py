@@ -132,7 +132,7 @@ def test_hcs_odd_values_keep_their_printed_form_and_labels_are_skipped():
         "40287": ("50055.1", "50055.1"),            # Powers Health prints a dot
         "16271": ("RAD OO1", "RAD OO1"),            # Union Hospital prints a space
         "42398": ("Critical Care", ""),             # Renown evergreen label, no digit
-        "13993": ("PH-OT", ""),                     # Union Hospital label, no digit
+        "13993": ("PH-OT", "PH-OT"),                # Union Hospital prints a code (review 10-14)
     }
     # the shared validator other builders use is unchanged (and would drop them)
     assert scraper._hca_req_value("50055.1") == "" and scraper._hca_req_value("RAD OO1") == ""
@@ -154,6 +154,56 @@ def test_hcs_odd_values_keep_their_printed_form_and_labels_are_skipped():
 ])
 def test_hcs_req_value(raw, want):
     assert scraper._hcs_req_value(raw) == want
+
+
+# 2026-10-14 (review): Union Hospital prints a digit-less requisition code on
+# 16 of 287 postings ("Req # PH-OT", "Req # UHTHRTOPTIII"; rendered pages read
+# 2026-10-14). Kept for that tenant only; Renown's labels and every other
+# tenant are unchanged.
+@pytest.mark.parametrize("raw,tenant,want", [
+    ("PH-OT", "unionhospital", "PH-OT"),
+    ("UHTHRTOPTIII", "unionhospital", "UHTHRTOPTIII"),
+    ("APP-GC", "unionhospital", "APP-GC"),
+    ("PH-PTTHPTORFT", "unionhospital", "PH-PTTHPTORFT"),
+    ("EMRACUTECLINICALDOCANALYST", "unionhospital", "EMRACUTECLINICALDOCANALYST"),
+    ("30722", "unionhospital", "30722"),
+    ("RAD OO1", "unionhospital", "RAD OO1"),
+    ("PH-OT", "", ""),                              # default: digit rule as before
+    ("PH-OT", "renownhealth", ""),
+    ("PICURN", "renownhealth", ""),                 # Renown's labels stay skipped
+    ("ICU-RN", "renownhealth", ""),
+    ("Critical Care", "unionhospital", ""),         # not an all-capitals code
+    ("ExpRN-W&C", "unionhospital", ""),
+    ("OP CP", "unionhospital", ""),
+    ("ER-RN-", "unionhospital", ""),
+    ("ABC", "unionhospital", ""),                   # too short
+    ("NONE", "unionhospital", ""),                  # placeholders are not numbers
+    ("EVERGREEN", "unionhospital", ""),
+    ("A" * 41, "unionhospital", ""),
+    ("", "unionhospital", ""),
+    (None, "unionhospital", ""),
+])
+def test_hcs_req_value_union_codes(raw, tenant, want):
+    assert scraper._hcs_req_value(raw, tenant) == want
+
+
+def test_union_rows_carry_the_code_the_page_prints_through_normalize_job(monkeypatch):
+    jobs = _hcs(monkeypatch, "healthcaresource/union_codes_search.json", "Union Hospital")
+    assert [(j.job_id, j.req_id) for j in jobs] == [
+        ("24214", "UHTHRTOPTIII"), ("23359", "EMRACUTECLINICALDOCANALYST"), ("25059", "30722")]
+    ex = jobs[0]
+    assert ex.url == "https://pm.healthcaresource.com/cs/unionhospital#/job/24214"
+    # the 16 rows have a stored body and facts built without the number:
+    # req_id joins the facts hash, so the first run rebuilds them with it
+    old_h = scraper.normalize_job(dataclasses.replace(ex, req_id=""))["posting_facts"]["h"]
+    scraper.set_known_bodies([_stored(ex, old_h)])
+    row = scraper.normalize_job(ex)
+    assert row["job_id"] == "24214" and row["posting_facts"]["req_id"] == "UHTHRTOPTIII"
+    assert row["posting_facts"]["h"] != old_h
+    # a night whose facts are null still sends the code alone
+    blank = dataclasses.replace(ex, description="")
+    scraper.set_known_bodies([])
+    assert scraper.normalize_job(blank)["posting_facts"] == {"req_id": "UHTHRTOPTIII"}
 
 
 # ── UKG ─────────────────────────────────────────────────────────────────────
@@ -309,6 +359,19 @@ def test_adpcx_row_sends_full_facts_with_req_id(monkeypatch):
     job = next(j for j in jobs if j.job_id == "5001231190600")
     pf = scraper.normalize_job(job)["posting_facts"]
     assert pf["req_id"] == "26-2694" and "h" in pf and pf["v"] == scraper.FACTS_VERSION
+
+
+@pytest.mark.parametrize("platform", ["HealthcareSource", "UKG", "ADP", "ADP CX"])
+def test_every_list_platform_takes_the_req_only_path(platform):
+    """Merge guard (review 10-14): the parallel req_id branches edit the same
+    normalize_job line, so after integration each of these four platforms
+    must still send {"req_id"} when its facts are null, with the global
+    REQ_ID_ONLY_FACTS switch off."""
+    assert platform in scraper.REQ_ID_LIST_PLATFORMS and scraper.REQ_ID_ONLY_FACTS is False
+    hit = _json("healthcaresource/crmc_blank_body_search.json")["hits"]["hits"][0]
+    job = dataclasses.replace(scraper._hcs_job(hit, "CRMC Health", "crmchealth"), ats_platform=platform)
+    assert job.description == "" and job.req_id == "7305"
+    assert scraper.normalize_job(job)["posting_facts"] == {"req_id": "7305"}
 
 
 def test_rows_without_a_number_and_other_platforms_are_unchanged():
