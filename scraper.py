@@ -21472,11 +21472,21 @@ _ROLE_HIGH_SKIP_RX = re.compile(
     r"speech|language|\bRN\b|registered\s+nurse(?!\s+anesthetist)|\bLPN\b|\bLVN\b|office\s+nurse|\bPA\b|\bNP\b|"
     r"nurse\s+practitioner|"
     # 2026-10-14 (fix 10): another role the title names (see below)
-    r"house\s+officer|limited\s+permit|graduate\s+pharmacist|license\s+pending|\bCMA\b|\bAPPs?\b|\bAPRN|\bAPC\b|"
-    r"advanced\s+practice\s+(?:provider|professional|clinician|nurse)|midwife|therapist|sonographer|dietitian|"
+    r"house\s+officer|limited\s+permit|graduate\s+pharmacist|license\s+pending|\bCMA\b|"
+    r"midwife|therapist|sonographer|dietitian|"
     r"dosimetrist|social\s+worker|counselor|representative|\brep\b|receptionist|front\s+desk|registrar|"
     r"\basst\b(?!\s*[/.,]?\s*(?:assoc|prof))|\b(?:pathologists?['\u2019]?|physician)\s+assist\b|"
     r"surgical\s+first\s+assist", re.I)
+# 2026-10-14 (fix 10 review): the advanced practice words are their own list
+# because a CRNA IS an advanced practice provider. "APP - CRNA - Blodgett",
+# "APP Nurse Anesthetist/UKHC" and "Advanced Practice Provider - OB CRNA,
+# North" (13 active rows: Corewell, Sanford, Benefis, Community Health
+# Network, UK HealthCare) name a CRNA and keep its floor, so Corewell
+# 29387089's "Competitive annual base salary of $28 5,000" (a split
+# $285,000, read as $28 an hour) stays refused. A CRNA student, resident or
+# intern is still off the floor (_ROLE_HIGH_SKIP_RX).
+_ROLE_HIGH_APP_SKIP_RX = re.compile(
+    r"\bAPPs?\b|\bAPRN|\bAPC\b|advanced\s+practice\s+(?:provider|professional|clinician|nurse)", re.I)
 _ROLE_LOW_RX = re.compile(
     r"\bCNA\b|certified\s+nurs(?:e|ing)\s+(?:assistant|aide)|nurs(?:e|ing)\s+(?:assistant|aide)|\bPCT\b|patient\s+care\s+tech|"
     r"\bEVS\b|environmental\s+services|housekeep|dietary|food\s+service|dishwasher|\bcook\b", re.I)
@@ -21518,8 +21528,9 @@ ROLE_FLOOR_HIGH_HOUR, ROLE_FLOOR_HIGH_YEAR, ROLE_CEILING_LOW_HOUR = 40.0, 100000
 #     Rep I - Physician Practice Central Ops", Northern Light 37597448;
 #     "Hospitalist APP"; "Pathologists' Asst"; "House Officer (Limited Permit
 #     Physician)", Wyckoff $75,000; "Graduate Pharmacist", Bassett $95,992).
-#     An "Advanced Practice Pharmacist" is a pharmacist, and a "Certified
-#     Registered Nurse Anesthetist" is a CRNA, not an RN.
+#     An "Advanced Practice Pharmacist" is a pharmacist, a "Certified
+#     Registered Nurse Anesthetist" is a CRNA, not an RN, and an "APP -
+#     CRNA" is a CRNA (_ROLE_HIGH_APP_SKIP_RX).
 # Every physician title keeps its floor: "OB Hospitalist Full Time" at
 # $19-$23 is still refused, and "Physician Advisor", "Physician Reviewer",
 # "Physician Executive" and "Hospice Team Physician" are physicians.
@@ -21546,13 +21557,17 @@ def role_floor_high_title(title) -> bool:
     """True when the ROLE of `title` is a physician, surgeon, CRNA,
     anesthesiologist, pharmacist or executive (the floor's roles, fix 10
     above): a high word in a title that is not a "Site:" label, names no
-    other role (_ROLE_HIGH_SKIP_RX) and no nurse but a nurse anesthetist,
-    where the word is not a physician / hospitalist setting or function and
-    not an executive the job works for."""
+    other role (_ROLE_HIGH_SKIP_RX; an advanced practice word only when the
+    title names no CRNA) and no nurse but a nurse anesthetist, where the
+    word is not a physician / hospitalist setting or function and not an
+    executive the job works for."""
     t = str(title or "")
     if _ROLE_HIGH_LABEL_RX.match(t) or _ROLE_HIGH_SKIP_RX.search(t):
         return False
-    if _ROLE_HIGH_NURSE_RX.search(t) and not _ROLE_HIGH_CRNA_RX.search(t):
+    crna = _ROLE_HIGH_CRNA_RX.search(t)
+    if _ROLE_HIGH_APP_SKIP_RX.search(t) and not crna:         # "Hospitalist APP"; "APP - CRNA" is a CRNA
+        return False
+    if _ROLE_HIGH_NURSE_RX.search(t) and not crna:
         return False
     for m in _ROLE_HIGH_RX.finditer(t):
         if (_ROLE_HIGH_SETTING_WORD_RX.fullmatch(m.group(0)) and _ROLE_HIGH_SETTING_RX.match(t, m.end())

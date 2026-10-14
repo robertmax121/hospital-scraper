@@ -51,6 +51,8 @@ def _rejections(caplog):
     "Clinical Nurse II:Medical/Surgical Hospitalist (M4)- 36 hrs/wk, Nights",   # Albany Med 34170593
     "Hospitalist APP",
     "Advanced Practice Provider - Hospitalist",
+    "Student Registered Nurse Anesthetist - APP Pathway",              # a CRNA student is still a student
+    "CRNA Resident",
     "Certified Nurse Midwife OB Hospitalist - Part Time",
     "Pathologists' Asst",
     "Anesthesiologist Asst PRN Pflugerville",
@@ -85,6 +87,13 @@ def test_not_the_floors_role(title):
     "CRNA - Main OR",
     "Certified Registered Nurse Anesthetist (CRNA)",                  # a CRNA, not an RN
     "NURSE ANESTHETIST NURSE SR NEX",
+    # an advanced practice provider who is a CRNA is a CRNA (fix 10 review)
+    "APP - CRNA - Blodgett",                                           # Corewell 29387417
+    "APP - Pediatric CRNA - Helen DeVos Children's Hospital",          # Corewell 29387089
+    "APP - CRNA | Anesthesia",                                         # Sanford 2633395
+    "APP Nurse Anesthetist/UKHC",                                      # UK HealthCare 35499264
+    "Advanced Practice Provider - OB CRNA, North",                     # Community Health Network 35498591
+    "APRN - CRNA - Main OR",
     "Staff Pharmacist Part Time",                                      # UnitedHealth 37648689: a tech's $16-$29 band
     "Advanced Practice Pharmacist - Specialty Pharmacy",
     "Pharmacy Supervisor - Pharmacist - FT",
@@ -133,6 +142,23 @@ def test_real_physician_placeholders_stay_refused(caplog):
     msgs = _rejections(caplog)
     assert len(msgs) == 2 and all(FLOOR in m for m in msgs)
     assert any("'OB Hospitalist Full Time'" in m and "19-23 hour" in m for m in msgs)
+
+
+def test_an_app_crna_split_salary_stays_refused(caplog):
+    # Corewell 29387089 prints "$28 5,000" for $285,000. The CRNA floor is
+    # what keeps $28 an hour off the row; "APP" does not lift it.
+    title = "APP - Pediatric CRNA - Helen DeVos Children's Hospital"
+    body = ("Join our dedicated team of pediatric anesthesia providers at Helen DeVos Children's Hospital.\n\n"
+            "Competitive annual base salary of $28 5,000 . Apply today and learn more about our competitive "
+            "rates and earning potential opportunities!\n\nCorewell Health is offering a $100,000 starting bonus "
+            "for a three-year commitment - with a relocation allowance of up to $12,000.\n\n"
+            "CME allowance of $2,500 annually with rollover of unused funds with an annual maximum of $5,000.")
+    with caplog.at_level(logging.WARNING, logger=scraper.logger.name):
+        assert extract_posted_wage(f"{title}\n{body}") is None
+    msgs = _rejections(caplog)
+    assert len(msgs) == 1 and FLOOR in msgs[0] and "28-28 hour" in msgs[0]
+    d = scraper.normalize_job(_job(title=title, hospital_system="Corewell Health", description=body + FILLER))
+    assert d["wage_min"] is None and d["wage_unit"] is None
 
 
 def test_normalize_job_stores_the_physician_office_lpn_pay():
