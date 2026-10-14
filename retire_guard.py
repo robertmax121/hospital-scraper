@@ -57,6 +57,14 @@ untouched, backstop included, because another process maintains them.
   redeploy). Parkview Health went dark around 09-28 and lost ~600 rows to the
   backstop with nothing louder than the nightly guard line.
 
+2026-10-14 (fix 11 review): partial crawls that keep the backstop
+(partial_systems: scraper.report_partial, the adapters that skip a failed
+list page and carry on). Such a system is guarded whatever its yield ratio,
+reason "partial crawl": its unseen rows keep their miss count, and those
+nobody has seen for BACKSTOP_DAYS count as usual. A partial report never
+counts as a complete crawl. As exclusions, a board refused every night
+(Penn Medicine and UCHealth from Railway) would never retire a closed row.
+
 Pure Python on purpose: no database, no network, importable from the tests.
 """
 
@@ -149,7 +157,8 @@ def plan_layer4(active_rows: list[dict],
                 now: datetime | None = None,
                 backstop_days: int = BACKSTOP_DAYS,
                 complete_systems: set[str] | None = None,
-                backstop_exempt: frozenset[str] | set[str] = BACKSTOP_EXEMPT) -> dict:
+                backstop_exempt: frozenset[str] | set[str] = BACKSTOP_EXEMPT,
+                partial_systems: set[str] | None = None) -> dict:
     """Decide, without touching the database, what Layer 4 does to each row.
 
     active_rows:  dicts with id, job_id, hospital_system,
@@ -160,6 +169,10 @@ def plan_layer4(active_rows: list[dict],
                   guarded, their unseen rows count as usual (2026-10-07).
     backstop_exempt: guarded systems whose unseen rows stay frozen past the
                   backstop as well (BACKSTOP_EXEMPT, 2026-10-07).
+    partial_systems: systems whose adapter reported a partial crawl that
+                  keeps the backstop (scraper.report_partial, post-alias
+                  names): guarded whatever the yield, reason "partial crawl"
+                  unless the ratio gives one, never a complete crawl (2026-10-14).
 
     Returns a dict:
       found_ids          seen tonight with a non-zero miss count: reset to 0
@@ -180,6 +193,7 @@ def plan_layer4(active_rows: list[dict],
     exclude = exclude_systems or set()
     complete = complete_systems or set()
     exempt = backstop_exempt or frozenset()
+    partial = partial_systems or set()
     now = now or datetime.now(timezone.utc)
     cutoff = now - timedelta(days=backstop_days)
 
@@ -193,9 +207,13 @@ def plan_layer4(active_rows: list[dict],
             continue
         yield_n = yield_by_system.get(system, 0)
         reason = guard_reason(active_n, yield_n)
+        if not reason and system in partial:
+            # pages went unread tonight: whatever the ratio, the unseen rows
+            # may be live (2026-10-14); the backstop still applies below
+            reason = "partial crawl"
         if not reason:
             continue
-        if system in complete:
+        if system in complete and system not in partial:
             if yield_n >= COMPLETE_MIN_ACTIVE_RATIO * active_n:
                 complete_bypassed[system] = {"reason": reason, "active": active_n, "yield": yield_n}
                 continue

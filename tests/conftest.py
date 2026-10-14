@@ -23,6 +23,7 @@ def _clean_module_state(tmp_path, monkeypatch):
     lookup, no rows left over from an earlier upsert, and the Layer 4
     zero-yield history in a temp file (2026-10-07) rather than state/."""
     scraper.PARTIAL_SYSTEMS.clear()
+    scraper.PARTIAL_BACKSTOP_SYSTEMS.clear()
     scraper.COMPLETE_SYSTEMS.clear()
     scraper.LISTED_SYSTEMS.clear()
     scraper.EMITTED_SYSTEMS.clear()
@@ -37,6 +38,7 @@ def _clean_module_state(tmp_path, monkeypatch):
     monkeypatch.delenv("HASH_SKIP", raising=False)
     yield
     scraper.PARTIAL_SYSTEMS.clear()
+    scraper.PARTIAL_BACKSTOP_SYSTEMS.clear()
     scraper.COMPLETE_SYSTEMS.clear()
     scraper.LISTED_SYSTEMS.clear()
     scraper.EMITTED_SYSTEMS.clear()

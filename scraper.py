@@ -1038,6 +1038,41 @@ def priority_states_first(items, state_of):
 # that (per-state counts of 1000 / 500 / 500 / 500 = page boundaries).
 PARTIAL_SYSTEMS: set[str] = set()
 
+# 2026-10-14 (fix 11 review): partial reports that keep Layer 4's backstop.
+# An adapter whose list crawl skipped pages tonight (report_partial: Talemetry,
+# Phenom, TalentBrew, SelectMinds, UKG, NeoGov) is in PARTIAL_SYSTEMS as well,
+# so the sweep leaves it alone and it cannot claim a complete crawl. In Layer 4
+# it is yield-guarded instead of excluded: its unseen rows keep their miss
+# count, but a row nobody has seen for retire_guard.BACKSTOP_DAYS still
+# retires. Before fix 11 these adapters reported nothing and the yield guard
+# (backstop included) held them; a plain PARTIAL_SYSTEMS entry would freeze a
+# board refused every night (Penn Medicine and UCHealth behind
+# lb.ttcportals.com from Railway, ~3,300 rows) with no retirement at all.
+# Full exclusion stays for rows another process maintains (HCA's residential
+# push) and for the other adapters' partial reports (HealthcareSource, Infor,
+# PeopleSoft's 500-row cap, LiquidCompass, SuccessFactors), as before.
+PARTIAL_BACKSTOP_SYSTEMS: set[str] = set()
+
+
+def report_partial(system: str) -> None:
+    """The list crawl of `system` left pages unread tonight: not swept, no
+    complete claim, and Layer 4 guards its unseen rows with the backstop
+    (PARTIAL_BACKSTOP_SYSTEMS) rather than excluding them."""
+    PARTIAL_SYSTEMS.add(system)
+    PARTIAL_BACKSTOP_SYSTEMS.add(system)
+
+
+def layer4_partial_sets(hca_nightly: bool = False) -> tuple[set[str], set[str]]:
+    """(exclude, guard) for Layer 4 in post-alias names. exclude: systems left
+    untouched, backstop included (partial reports other than report_partial,
+    and HCA unless the nightly crawls it). guard: report_partial systems,
+    held by the yield guard with the backstop. A system in both is excluded."""
+    exclude = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS - PARTIAL_BACKSTOP_SYSTEMS}
+    if not hca_nightly:
+        exclude.add("HCA Healthcare")
+    guard = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_BACKSTOP_SYSTEMS & PARTIAL_SYSTEMS}
+    return exclude, guard - exclude
+
 # ── Complete-crawl reports (2026-10-07, push 10) ────────────────────────────
 # The inverse of PARTIAL_SYSTEMS. An adapter that read a board whose site
 # advertises its total (TalentBrew's data-total-results, Talemetry's
@@ -6071,7 +6106,7 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
     def _finish(failed: bool) -> list[Job]:
         listed = len({j.job_id for j in jobs})
         if failed and jobs and (not tb_total or listed < tb_total):
-            PARTIAL_SYSTEMS.add(system)
+            report_partial(system)
             logger.warning(f"TalentBrew {system}: PARTIAL, stopped on page {page} after its retries; "
                            f"{listed} of {tb_total or '?'} listed; not swept tonight")
         elif tb_total and listed < COMPLETE_RATIO * tb_total:
@@ -10109,7 +10144,7 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
     # skipped page makes the crawl PARTIAL. A skipped 500-row page can leave
     # the yield above GUARD_RATIO, and the sweep would retire its live rows.
     if pages_skipped and jobs:
-        PARTIAL_SYSTEMS.add(system)
+        report_partial(system)
         logger.warning(f"Phenom {system}: PARTIAL, {pages_skipped} page(s) skipped, {listed} listed"
                        + (f" of {site_total} advertised" if site_total else "") + "; not swept tonight")
     report_complete(system, listed, site_total, feed="PHENOM_ORGS")
@@ -11229,7 +11264,7 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
         if status == 200:
             take(html)
     if failed and jobs:
-        PARTIAL_SYSTEMS.add(system)
+        report_partial(system)
         logger.warning(f"SelectMinds {system}: PARTIAL, pages {failed[:10]} unread; {len(seen)} of {total} "
                        f"cards read; not swept tonight")
     elif total and len(seen) < COMPLETE_RATIO * total:
@@ -12114,7 +12149,7 @@ async def scrape_ukg(session: aiohttp.ClientSession, system: str, org_data: tupl
             break
     read_ids.discard("")
     if cut_short and jobs:
-        PARTIAL_SYSTEMS.add(system)
+        report_partial(system)
         logger.warning(f"UKG {system}: PARTIAL, stopped at offset {offset}; {len(read_ids)} of {advertised} "
                        f"read; not swept tonight")
     logger.info(f"  UKG {system}: {len(jobs)} jobs")
@@ -13609,7 +13644,7 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
             break
     card_ids.discard("")
     if cut_short and jobs:
-        PARTIAL_SYSTEMS.add(system)
+        report_partial(system)
         logger.warning(f"NeoGov {system}: PARTIAL, page {page} unread; {len(card_ids)} of {total} cards read; "
                        f"not swept tonight")
     logger.info(f"  NeoGov {system}: {len(jobs)} jobs kept of {total} on the {agency} board")
@@ -15451,7 +15486,7 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
     if unread and jobs:
         # 2026-10-13 HealthcareSource rule: a page nobody read may hold live
         # postings, so the sweep must not retire anything of this site tonight.
-        PARTIAL_SYSTEMS.add(system)
+        report_partial(system)
         logger.warning(f"Talemetry {system}: {len(jobs)} of site total {total} fetched; pages "
                        f"{unread[:12]}{'...' if len(unread) > 12 else ''} unread after the second try "
                        f"({info['problem']}); PARTIAL, not swept tonight")

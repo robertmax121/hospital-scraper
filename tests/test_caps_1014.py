@@ -218,6 +218,7 @@ def test_phenom_skipped_page_makes_the_crawl_partial(monkeypatch, caplog):
     assert len(jobs) == 900
     assert [c["from"] for c in _list_calls(board)] == [0, 500, 1000]
     assert "Test Phenom" in scraper.PARTIAL_SYSTEMS and "Test Phenom" not in scraper.COMPLETE_SYSTEMS
+    assert "Test Phenom" in scraper.PARTIAL_BACKSTOP_SYSTEMS        # Layer 4 keeps the 7-day backstop
     assert any("Phenom Test Phenom: PARTIAL, 1 page(s) skipped, 900 listed of 1400 advertised" in m
                for m in caplog.messages)
 
@@ -437,6 +438,7 @@ def test_selectminds_failed_page_makes_the_crawl_partial(monkeypatch):
     jobs = asyncio.run(scraper.scrape_selectminds(None, "Main Line Health", "mainline"))
     assert len(jobs) == 4
     assert "Main Line Health" in scraper.PARTIAL_SYSTEMS and "Main Line Health" not in scraper.COMPLETE_SYSTEMS
+    assert "Main Line Health" in scraper.PARTIAL_BACKSTOP_SYSTEMS
 
 
 def test_selectminds_falls_back_to_latest_jobs_when_the_search_has_no_card(monkeypatch):
@@ -508,6 +510,7 @@ def test_ukg_page_that_fails_after_the_first_makes_the_crawl_partial(monkeypatch
     jobs = asyncio.run(scraper.scrape_ukg(None, "Test UKG", ("https://recruiting.ultipro.com/X", "g", "NC")))
     assert len(jobs) == scraper._UKG_PAGE and asked == [0, scraper._UKG_PAGE]
     assert "Test UKG" in scraper.PARTIAL_SYSTEMS and "Test UKG" not in scraper.COMPLETE_SYSTEMS
+    assert "Test UKG" in scraper.PARTIAL_BACKSTOP_SYSTEMS
 
 
 def test_neogov_board_read_whole_is_complete_and_a_failed_page_partial(monkeypatch):
@@ -528,6 +531,7 @@ def test_neogov_board_read_whole_is_complete_and_a_failed_page_partial(monkeypat
     monkeypatch.setattr(scraper, "_neogov_fetch_page", second_fails)
     asyncio.run(scraper.scrape_neogov(None, "Riverside University Health System", cfg))
     assert "Riverside University Health System" in scraper.PARTIAL_SYSTEMS
+    assert "Riverside University Health System" in scraper.PARTIAL_BACKSTOP_SYSTEMS
     assert "Riverside University Health System" not in scraper.COMPLETE_SYSTEMS
 
 
@@ -568,4 +572,115 @@ def test_talentbrew_crawl_that_stops_on_a_failed_page_is_partial(monkeypatch):
                                                  "https://jobs.hackensackmeridianhealth.org/search-jobs", 2))
     assert len(jobs) == 2 and asked == [1, 2]
     assert "Hackensack Meridian Health" in scraper.PARTIAL_SYSTEMS
+    assert "Hackensack Meridian Health" in scraper.PARTIAL_BACKSTOP_SYSTEMS
     assert "Hackensack Meridian Health" not in scraper.COMPLETE_SYSTEMS
+
+
+# ══ 5. Review fixes (2026-10-14) ═══════════════════════════════════════════
+# a) report_partial keeps Layer 4's 7-day backstop. These six adapters used to
+#    report nothing and the yield guard (backstop included) held them; as plain
+#    PARTIAL_SYSTEMS entries a board refused every night (Penn Medicine and
+#    UCHealth from Railway) would never retire a closed row.
+
+import database        # noqa: E402
+import retire_guard    # noqa: E402
+from datetime import datetime, timedelta, timezone   # noqa: E402
+
+_NOW = datetime(2026, 10, 15, 2, 0, tzinfo=timezone.utc)
+
+
+def _l4_rows(system, n, start_id=1, misses=0, age_days=1):
+    ts = (_NOW - timedelta(days=age_days)).isoformat()
+    return [{"id": start_id + i, "job_id": f"{system}-{start_id + i}", "hospital_system": system,
+             "consecutive_scrape_misses": misses, "scraped_at": ts} for i in range(n)]
+
+
+def test_report_partial_is_guarded_with_the_backstop_and_other_partials_stay_excluded():
+    scraper.report_partial("Penn Medicine")
+    scraper.PARTIAL_SYSTEMS.add("NYC Health + Hospitals")      # PeopleSoft's 500-row cap, as before
+    exclude, guard = scraper.layer4_partial_sets()
+    assert guard == {"Penn Medicine"}
+    assert exclude == {"NYC Health + Hospitals", "HCA Healthcare"}
+    assert scraper.layer4_partial_sets(hca_nightly=True)[0] == {"NYC Health + Hospitals"}
+    # still not swept tonight and never a complete crawl
+    assert "Penn Medicine" in scraper.PARTIAL_SYSTEMS
+    assert not scraper.report_complete("Penn Medicine", 1770, 1770, feed="TALEMETRY_SITES")
+    # alias keys map to the canonical name; a full exclusion of the same system wins
+    key, canon = next((k, v) for k, v in scraper.HOSPITAL_SYSTEM_ALIASES.items() if k != v)
+    scraper.report_partial(key)
+    assert canon in scraper.layer4_partial_sets()[1]
+    scraper.PARTIAL_SYSTEMS.add(canon)
+    exclude, guard = scraper.layer4_partial_sets()
+    assert canon in exclude and canon not in guard
+
+
+def test_layer4_partial_crawl_freezes_recent_rows_and_retires_past_the_backstop():
+    """A Talemetry night that read 90 of 100 rows with pages unread: above the
+    80% ratio, so only the partial report guards it. Unseen rows seen within
+    7 days keep their count; rows nobody has seen for 9 days retire."""
+    seen = _l4_rows("Penn Medicine", 90)
+    recent = _l4_rows("Penn Medicine", 6, start_id=91, misses=2)
+    stale = _l4_rows("Penn Medicine", 4, start_id=97, misses=2, age_days=9)
+    active = seen + recent + stale
+    keys = {("Penn Medicine", r["job_id"]) for r in seen}
+    plan = retire_guard.plan_layer4(active, keys, 3, now=_NOW, partial_systems={"Penn Medicine"})
+    g = plan["guarded"]["Penn Medicine"]
+    assert (g["reason"], g["frozen"], g["backstop"]) == ("partial crawl", 6, 4)
+    assert sorted(plan["deactivate_ids"]) == [97, 98, 99, 100]
+    # no report: 90% is healthy and every unseen row counts (the sweep's rule too)
+    plain = retire_guard.plan_layer4(active, keys, 3, now=_NOW)
+    assert plain["guarded"] == {} and len(plain["deactivate_ids"]) == 10
+    # an exclusion (what a PARTIAL_SYSTEMS entry meant): nothing retires, ever
+    frozen = retire_guard.plan_layer4(active, keys, 3, now=_NOW, exclude_systems={"Penn Medicine"})
+    assert frozen["deactivate_ids"] == [] and frozen["excluded_rows"] == 100
+    # under the ratio the ratio's own reason is kept (the zero-yield ALARM reads it)
+    dark = retire_guard.plan_layer4(active, set(), 3, now=_NOW, partial_systems={"Penn Medicine"})
+    assert dark["guarded"]["Penn Medicine"]["reason"] == "zero-yield"
+    # a partial report outranks a complete claim
+    both = retire_guard.plan_layer4(active, keys, 3, now=_NOW, partial_systems={"Penn Medicine"},
+                                    complete_systems={"Penn Medicine"})
+    assert both["complete_bypassed"] == {} and "Penn Medicine" in both["guarded"]
+
+
+def test_mark_inactive_jobs_passes_the_partial_systems_to_the_plan(monkeypatch, caplog):
+    rows = _l4_rows("UCHealth", 18) + _l4_rows("UCHealth", 2, start_id=19, misses=2, age_days=9)
+    updates = []
+
+    class _Q:
+        def __init__(self, rows):
+            self._rows, self._patch = rows, None
+
+        def select(self, *_a, **_k): return self
+        def eq(self, *_a): return self
+
+        def gt(self, _col, last_id):
+            self._rows = [r for r in self._rows if r["id"] > last_id]
+            return self
+
+        def order(self, *_a, **_k): return self
+        def limit(self, _n): return self
+
+        def update(self, patch):
+            self._patch = patch
+            return self
+
+        def in_(self, _col, ids):
+            updates.append((self._patch, list(ids)))
+            return self
+
+        def execute(self):
+            class R: pass
+            r = R(); r.data = list(self._rows) if self._patch is None else []
+            return r
+
+    class _DB:
+        def table(self, _name): return _Q(rows)
+    monkeypatch.setattr(database, "client", lambda: _DB())
+    seen = [{"hospital_system": "UCHealth", "job_id": f"UCHealth-{i}"} for i in range(1, 17)]   # 16 of 20
+    with caplog.at_level(logging.WARNING):
+        out = database.mark_inactive_jobs(seen, miss_threshold=3, exclude_systems=set(),
+                                          partial_systems={"UCHealth"})
+    assert out["guarded_systems"] == ["UCHealth"] and out["deactivated"] == 2
+    assert [ids for p, ids in updates if p.get("is_active") is False] == [[19, 20]]
+    assert any("LAYER4 GUARD UCHealth: partial crawl 16/20" in m for m in caplog.messages)
+

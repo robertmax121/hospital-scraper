@@ -9,9 +9,9 @@ Cron: 0 20 * * *  (8 PM nightly)
 import logging
 import os
 from datetime import datetime, timezone
-from scraper import (scrape, PARTIAL_SYSTEMS, COMPLETE_SYSTEMS, HOSPITAL_SYSTEM_ALIASES,
+from scraper import (scrape, PARTIAL_SYSTEMS, COMPLETE_SYSTEMS,
                      LAST_UPSERT_FAILED, LAST_RUN_COUNTS, proxies, fix_run_day,
-                     complete_canonical)
+                     complete_canonical, layer4_partial_sets)
 from database import (mark_inactive_jobs, get_stats, active_total_after_passes,
                       start_run_record, finish_run_record)
 
@@ -167,16 +167,20 @@ def run():
     # applies the sweep's yield guard to every system (retire_guard.py): a
     # system that yielded 0 rows, or under 80% of 20+ active rows, keeps its
     # unseen rows' miss counts, with a 7-day scraped_at backstop.
-    layer4_exempt = {HOSPITAL_SYSTEM_ALIASES.get(s, s) for s in PARTIAL_SYSTEMS}
-    if os.environ.get("HCA_NIGHTLY") != "1":
-        layer4_exempt.add("HCA Healthcare")
+    # 2026-10-14 (fix 11 review): layer4_partial_sets splits the partial
+    # reports. Adapters that skipped list pages (scraper.report_partial) are
+    # yield-guarded with the 7-day backstop instead of excluded, so a board
+    # refused every night still retires its closed rows; the rest (and HCA)
+    # stay excluded, backstop included.
+    layer4_exempt, layer4_partial = layer4_partial_sets(hca_nightly=os.environ.get("HCA_NIGHTLY") == "1")
     # 2026-10-07 (push 10): adapters that read their whole board
     # (COMPLETE_SYSTEMS) bypass the yield guard; a partial report wins.
     # 2026-10-12: complete_canonical, the sweep's rule: a system is complete
     # only when every configured feed of it (each tenant, each other adapter
     # that emits it, each alias key) returned rows and claimed a whole crawl.
     layer4_complete = complete_canonical(layer4_exempt)
-    deact_stats = mark_inactive_jobs(jobs, exclude_systems=layer4_exempt, complete_systems=layer4_complete)
+    deact_stats = mark_inactive_jobs(jobs, exclude_systems=layer4_exempt, complete_systems=layer4_complete,
+                                     partial_systems=layer4_partial)
     logger.info(f"  Layer 4 deactivation: {deact_stats}")
 
     # ── Step 2b: travel URL liveness sweep (added 2026-07-20) ─────

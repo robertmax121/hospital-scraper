@@ -312,6 +312,7 @@ def test_talemetry_reports_site_total_vs_fetched_when_it_stops_early(monkeypatch
                "(page 2 failed 3 times (HTTP 403)); PARTIAL" in m for m in caplog.messages)
     assert "UCHealth" not in scraper.COMPLETE_SYSTEMS
     assert "UCHealth" in scraper.PARTIAL_SYSTEMS
+    assert "UCHealth" in scraper.PARTIAL_BACKSTOP_SYSTEMS          # 2026-10-14 review: backstop kept
 
 
 # ── 5. HealthcareSource: stable sort, dedupe, skip a failed page ────────────
