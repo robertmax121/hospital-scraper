@@ -16380,6 +16380,21 @@ def _lc_facility(system: str, name: str, city: str = "") -> str:
     return out or name
 
 
+# 2026-10-14 (owner: "we need to fix those now"): the employer's job number.
+# job_id is LiquidCompass's own id (52810916, also in the careers.unitypoint
+# .org URL); the posting prints UnityPoint's number: "Job ID: 188593" in its
+# attribute list, or, on Meriter (Madison) postings, the BrassRing number as
+# the body's first line ("16903BR"). The v1/search result carries it as
+# ats_id (data.originalObject.id holds the same value; cp_up_job_id does not).
+# On 2026-10-14, 1,660 of 1,660 listed rows: ats_id equal to the body's
+# "Job ID:" line on 1,507 and to its first line on the 153 Meriter rows; the
+# rendered pages 52810916 ("Job ID: 188593") and 52810673 ("16903BR") agree.
+# Kept as printed (digits, or digits + "BR"); _hca_req_value fits.
+def liquidcompass_req_id(r) -> str:
+    """UnityPoint's job number on a LiquidCompass search result (ats_id), or ""."""
+    return _hca_req_value((r or {}).get("ats_id")) if isinstance(r, dict) else ""
+
+
 def _liquidcompass_job(r: dict, system: str, default_state: str) -> Job | None:
     jid = str((r or {}).get("id") or "").strip()
     title = _html_unescape(str(r.get("raw_title") or r.get("title") or "")).strip()
@@ -16406,6 +16421,7 @@ def _liquidcompass_job(r: dict, system: str, default_state: str) -> Job | None:
         url=url, job_id=jid, posted_date=posted,
         description=strip_html(str(r.get("description") or ""))[:12000],
         ats_platform="LiquidCompass",
+        req_id=liquidcompass_req_id(r),
     )
 
 
