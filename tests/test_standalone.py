@@ -11,7 +11,10 @@ STANDALONE = {
                     "Putnam County Hospital", "Gibson Community Hospital"],
     "PAYLOCITY_ORGS": ["Jerold Phelps Community Hospital", "Coalinga Regional Medical Center", "Lake Butler Hospital",
                        "Ellenville Regional Hospital", "Brattleboro Retreat", "Western Missouri Medical Center"],
-    "ADP_ORGS": ["Catalina Island Medical Center", "Northern Inyo Hospital", "Chapman Global Medical Center",
+    # "Chapman Global Medical Center" left this list 2026-10-13: its cid is KPC
+    # Health's second career center (Anaheim, Orange, Santa Ana); see
+    # tests/test_name_mismatch_relabels.py.
+    "ADP_ORGS": ["Catalina Island Medical Center", "Northern Inyo Hospital",
                  "Hollywood Presbyterian Medical Center", "Johnson Memorial Hospital"],
     "HEALTHCARESOURCE_ORGS": ["San Gorgonio Memorial Hospital", "Pacifica Hospital of the Valley", "Marion Health",
                               "Mary Greeley Medical Center", "Sheridan Memorial Hospital", "North Star Health Alliance"],
@@ -80,7 +83,10 @@ def test_no_duplicate_board_for_existing_configs():
     # Victor Valley rides the existing "ADP Health System 9" cid; Clifton-Fine
     # rides Samaritan; Tidelands Georgetown rides Tidelands Health. None of
     # those boards is configured twice.
-    cids = [v if isinstance(v, str) else v[0] for v in scraper.ADP_ORGS.values()]
+    # (2026-10-13: read through _adp_centers, since KPC Health's value is now
+    # a list of two centers.)
+    cids = [c[0] for v in scraper.ADP_ORGS.values() for c in scraper._adp_centers(v)]
     assert cids.count("1a214979-2739-4245-a1d1-38dc8531018f") == 1
+    assert cids.count("a45074b6-b45e-424e-9e71-c45a4d73c34b") == 1
     tenants = [v[0] for v in scraper.WORKDAY_TENANTS.values()]
     assert tenants.count("samaritanhealth") == 1 and tenants.count("tidelandshealth") == 1

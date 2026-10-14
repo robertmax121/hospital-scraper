@@ -12,7 +12,7 @@ from scraper import _wd_facility
 
 WORKDAY = {
     "North Mississippi Medical":      ("nmhs", "108", "NMHS", "MS"),
-    "Memorial Health System":         ("memorialhealth", "108", "Memorial_Health_External_Career_Site", "IL"),
+    "Memorial Health":                ("memorialhealth", "108", "Memorial_Health_External_Career_Site", "IL"),
     "Valley Health (VA)":             ("valleyhealthlink", "115", "valleyhealthcareers", "VA"),
     "Brown University Health":        ("brownhealth", "12", "External_Careers", "RI"),
     "Keck Medicine of USC":           ("usc", "5", "ExternalUSCCareers", "CA"),
@@ -73,9 +73,9 @@ def test_town_facility_locations_take_the_map_town():
 
 def test_facility_maps_name_the_cms_hospitals():
     cases = [
-        ("Memorial Health System", "Decatur Memorial Hospital", ("Decatur Memorial Hospital", "Decatur", "IL")),
-        ("Memorial Health System", "MMC", ("Springfield Memorial Hospital", "Springfield", "IL")),
-        ("Memorial Health System", "Lincoln Memorial Hospital", ("Abraham Lincoln Memorial Hospital", "Lincoln", "IL")),
+        ("Memorial Health", "Decatur Memorial Hospital", ("Decatur Memorial Hospital", "Decatur", "IL")),
+        ("Memorial Health", "MMC", ("Springfield Memorial Hospital", "Springfield", "IL")),
+        ("Memorial Health", "Lincoln Memorial Hospital", ("Abraham Lincoln Memorial Hospital", "Lincoln", "IL")),
         ("Brown University Health", "Rhode Island Hospital", ("Rhode Island Hospital", "Providence", "RI")),
         ("Brown University Health", "Saint Annes Hospital", ("Saint Anne's Hospital", "Fall River", "MA")),
         ("Brown University Health", "Morton Hospital", ("Morton Hospital", "Taunton", "MA")),
@@ -170,11 +170,14 @@ def test_paycom_memorial_health_system_ohio():
     assert (j.city, j.state) == ("Parkersburg", "WV")
     j = scraper._paycom_job({"jobId": "43", "jobTitle": "Cook"}, None, "Memorial Health System", key, st)
     assert j.state == "OH"
-    # the label's two boards: Springfield IL on Workday, Marietta OH on Paycom; the FL
-    # rows under it come from the "Memorial Healthcare System" Workday tenant via the alias
-    assert scraper.WORKDAY_TENANTS["Memorial Health System"][0] == "memorialhealth"
+    # 2026-10-13 (sql/131): the label is Marietta OH's alone. Springfield IL is
+    # its own Workday key ("Memorial Health") and Hollywood FL writes its own
+    # name ("Memorial Healthcare System"); no alias folds either into this one.
+    assert "Memorial Health System" not in scraper.WORKDAY_TENANTS
+    assert scraper.WORKDAY_TENANTS["Memorial Health"][0] == "memorialhealth"
     assert scraper.WORKDAY_TENANTS["Memorial Healthcare System"][0] == "memorialhealthcare"
-    assert scraper.HOSPITAL_SYSTEM_ALIASES["Memorial Healthcare System"] == "Memorial Health System"
+    assert "Memorial Healthcare System" not in scraper.HOSPITAL_SYSTEM_ALIASES
+    assert "Memorial Health System" not in scraper.HOSPITAL_SYSTEM_ALIASES.values()
     assert "memorial health system" not in scraper.SYSTEM_LOCATION_DEFAULTS   # the Savannah GA default is gone
 
 

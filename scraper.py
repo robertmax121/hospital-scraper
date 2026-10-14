@@ -1706,13 +1706,24 @@ HOSPITAL_SYSTEM_ALIASES = {
     # writes under the AHRQ label like the staff portal.
     "Samaritan Health Services (Clinicians)": "Samaritan Health Services",
     "Ascension Health":            "Ascension",
-    "Saint Luke's Health System":  "St. Luke's Health System",
+    # "Saint Luke's Health System": "St. Luke's Health System" removed
+    # 2026-10-13: the saintlukes.wd1 tenant is Saint Luke's Health System of
+    # KANSAS CITY (MO/KS), a different system from St. Luke's of Boise (ID).
+    # The alias filed 532 active Kansas City postings under the Boise name;
+    # each tenant now writes its own label. The stored KC rows and their
+    # hospital_cms_alias rows (KS/MO CCNs) are relabelled by
+    # sql/131_name_mismatch_relabels.sql, keyed on the Workday host.
     # 2026-10-04 (coverage round 3): the Boise Avature tenant (HTML_LIST_SITES)
     # keeps its own name for tenant reporting and location defaults; the DB
     # label is the one public.ahrq_system_label resolves with the state guard.
     "St. Luke's Health System (Boise)": "St. Luke's Health System",
     "Bon Secours Mercy":           "Bon Secours Mercy Health",
-    "Memorial Healthcare System":  "Memorial Health System",
+    # "Memorial Healthcare System": "Memorial Health System" removed
+    # 2026-10-13: the memorialhealthcare.wd1 tenant is Memorial Healthcare
+    # System (Hollywood FL), and the shared label also carried Memorial Health
+    # (Springfield IL, now its own WORKDAY_TENANTS key) and Memorial Health
+    # System (Marietta OH, PAYCOM_ORGS), three unrelated systems. Each feed
+    # writes its own name now; sql/131 relabels the stored FL and IL rows.
     "Vanderbilt (VUMC)":           "Vanderbilt",
     "Montefiore Health":           "Montefiore",
     "Cone Health":                 "ConeHealth",
@@ -1734,7 +1745,10 @@ HOSPITAL_SYSTEM_ALIASES = {
     "MultiCare Health":            "MultiCare",
     "Erlanger Health System":      "Erlanger",
     "Guthrie Health":              "Guthrie",
-    "Southwest Health":            "Southwest Healthcare",
+    # "Southwest Health": "Southwest Healthcare" removed 2026-10-13: the only
+    # feed that wrote "Southwest Health" was the fa-exgl Oracle site, which is
+    # Good Samaritan (Vincennes IN); see ORACLE_ORGS. "Southwest Healthcare"
+    # stays the UHS brand (Temecula / Murrieta CA) in UHS_BRANDS.
     # 2026-09-10 (S-scraper-2): CityMD's two Workday entries pointed at ONE
     # site (shm.wd5 Summit_CityMD / summit_citymd) and doubled every row (608
     # under each name on 2026-09-10). The second entry is gone from
@@ -2141,11 +2155,16 @@ WORKDAY_TENANTS = {
     # ── 2026-10-04 coverage round 3 (cov3/workday-oracle-infor): AHRQ systems with no
     # rows, tenant and site read off each system's own careers page; CXS totals that
     # day in brackets. Labels follow public.ahrq_system_label where a row exists
-    # ("North Mississippi Medical", "Memorial Health System"); the rest use the
-    # system's own name. Towns for facility-only locations: WD_FACILITY_MAP; single-
-    # market fallbacks: WD_TENANT_DEFAULT.
+    # ("North Mississippi Medical"); the rest use the system's own name. Towns
+    # for facility-only locations: WD_FACILITY_MAP; single-market fallbacks:
+    # WD_TENANT_DEFAULT.
     "North Mississippi Medical": ("nmhs",                "108", "NMHS"),                              # [531] Tupelo MS + Hamilton AL; was the mislabelled NOR1041NAHO UKG board (now Humboldt Park Health)
-    "Memorial Health System":    ("memorialhealth",      "108", "Memorial_Health_External_Career_Site"),  # [407] Springfield IL; the FL rows under this label come from memorialhealthcare.wd1 (req ids "JR-nnnnn" vs "JRnnnnnn" here)
+    # Relabelled 2026-10-13: this tenant is Memorial Health of Springfield IL
+    # (memorial.health; its hospital_wages rows are "Memorial Health"). Under
+    # "Memorial Health System" it shared one label with Memorial Healthcare
+    # System (Hollywood FL, memorialhealthcare.wd1) and Memorial Health System
+    # (Marietta OH, PAYCOM_ORGS). sql/131 relabels the stored rows by host.
+    "Memorial Health":           ("memorialhealth",      "108", "Memorial_Health_External_Career_Site"),  # [407] Springfield IL
     "Valley Health (VA)":        ("valleyhealthlink",    "115", "valleyhealthcareers"),               # [341] Winchester VA + Romney / Berkeley Springs WV; not "Valley Health (NV)" (Catawba Valley, NC)
     "Brown University Health":   ("brownhealth",         "12",  "External_Careers"),                  # [1,531] Lifespan RI + ex-Steward Morton / Saint Anne's MA
     "Keck Medicine of USC":      ("usc",                 "5",   "ExternalUSCCareers"),                # [733 university-wide; ~490 inside WD_TENANT_FACETS] Health Sciences Campus, Verdugo Hills, Arcadia, Pasadena
@@ -2422,8 +2441,11 @@ SYSTEM_CITY_STATE: dict[str, dict[str, str]] = {
     "promedica": {"monroe": "MI", "adrian": "MI", "tecumseh": "MI", "lambertville": "MI",
                   "coldwater": "MI", "hillsdale": "MI", "dundee": "MI"},
     "legacy health": {"vancouver": "WA"},
-    "st. luke's health system": {"overland park": "KS", "iola": "KS", "lenexa": "KS",
-                                 "shawnee": "KS", "leawood": "KS", "olathe": "KS"},
+    # 2026-10-13: the Kansas City towns belong to the Workday feed, which
+    # writes "Saint Luke's Health System" (Kansas City MO/KS). The old key,
+    # "st. luke's health system", is the Boise ID name since the split.
+    "saint luke's health system": {"overland park": "KS", "iola": "KS", "lenexa": "KS",
+                                   "shawnee": "KS", "leawood": "KS", "olathe": "KS"},
     # 2026-10-04 coverage round 3: Northwell's Oracle sites give the town
     # alone and the "northwell health" default then wrote NY on the Nuvance
     # (Connecticut) hospitals it took over in 2025: Danbury (24 rows), Norwalk
@@ -2464,6 +2486,10 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "inspira health network":     ("Vineland",         "NJ"),
     "catawba valley health system": ("Hickory",        "NC"),
     "bryan health":               ("Lincoln",          "NE"),
+    # 2026-10-13: the relabelled fa-exgl Oracle site (Good Samaritan,
+    # Vincennes IN; was "Southwest Health"): 49 of its 321 stored rows carry no
+    # location at all and were stored with no state.
+    "good samaritan (vincennes)": ("Vincennes",        "IN"),
     # 2026-10-04 coverage round 3: home market of each new tenant (the
     # board's own city/state wins when the posting carries one).
     "community medical centers":  ("Fresno",           "CA"),
@@ -2520,7 +2546,7 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "samaritan health ny":        ("Watertown",         "NY"),
     "duly health and care":       ("Downers Grove",     "IL"),
     "wellstar health (providers)": ("Marietta",         "GA"),
-    "st. luke's health system":   ("Kansas City",       "MO"),
+    "st. luke's health system":   ("Boise",             "ID"),   # 2026-10-13: Boise only since the split; Kansas City is "saint luke's health system"
     # 2026-09-17 (coverage lever 3): single-market systems added the same day.
     "trihealth":                  ("Cincinnati",        "OH"),
     "uc health":                  ("Cincinnati",        "OH"),
@@ -2705,7 +2731,6 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "Brattleboro Retreat": ("Brattleboro", "VT"),
     "Casa Colina Hospital": ("Pomona", "CA"),
     "Catalina Island Medical Center": ("Avalon", "CA"),
-    "Chapman Global Medical Center": ("Orange", "CA"),
     "North Star Health Alliance": ("Ogdensburg", "NY"),
     "Coalinga Regional Medical Center": ("Coalinga", "CA"),
     "Columbia Memorial Hospital": ("Astoria", "OR"),
@@ -4299,7 +4324,7 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "hamilton, al":                       (None, "Hamilton", "AL"),
         "south marion winfield":              (None, "Winfield", "AL"),
     },
-    "Memorial Health System": {
+    "Memorial Health": {
         "springfield memorial hospital":      ("Springfield Memorial Hospital", "Springfield", "IL"),
         "mmc":                                ("Springfield Memorial Hospital", "Springfield", "IL"),
         "decatur memorial hospital":          ("Decatur Memorial Hospital", "Decatur", "IL"),
@@ -4654,7 +4679,7 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     # (Valley Health VA/WV, Brown RI/MA, Mercyhealth WI/IL, ChristianaCare
     # DE/MD) have their out-of-state sites in WD_FACILITY_MAP first.
     "North Mississippi Medical": ("Tupelo", "MS"),
-    "Memorial Health System":    ("Springfield", "IL"),   # the tenant key, not the FL tenant ("Memorial Healthcare System")
+    "Memorial Health":           ("Springfield", "IL"),   # the IL tenant key, not the FL tenant ("Memorial Healthcare System") or Marietta OH ("Memorial Health System", Paycom)
     "Valley Health (VA)":        ("Winchester", "VA"),
     "Brown University Health":   ("Providence", "RI"),
     "Keck Medicine of USC":      ("Los Angeles", "CA"),
@@ -10174,6 +10199,9 @@ async def run_phenom(session) -> list[Job]:
 #  cid identifies the client, ccId the career center INSIDE the client
 #  (Wooster runs two: hospital positions and Bloomington Medical Services).
 #  Format: "System": (cid, ccId, state[, hospital_name]) | [tuples] | bare cid
+#  hospital_name may also be a {city: facility} dict: the requisition's own
+#  facility (the head of nameCode.shortName) still wins, then the city's
+#  facility, then the system name (KPC Health, 2026-10-13).
 ##############################################################################
 ADP_ORGS = {
     # 2026-09-10 (S-scraper-2): contract client, both career centers linked
@@ -10227,14 +10255,25 @@ ADP_ORGS = {
     "Missouri Delta Medical Center":       ("171c7aca-96cb-44e7-95db-7545554c14e8", "19000101_000001", "MO"),  # Sikeston
     "South Central Regional Medical Center": ("c155faa0-8c71-47b0-bbaa-2b7939324014", "19000101_000001", "MS"),  # Laurel + Magee General; 96/120
     "Touchette Regional Hospital":         ("a074e043-a14e-4f2d-8cf7-bee3e0a7ac61", "19000101_000001", "IL"),  # Centreville / East St. Louis; 16/32
-    "KPC Health":                          ("1a214979-2739-4245-a1d1-38dc8531018f", "19000101_000001", "CA"),  # Hemet, Menifee, Victor Valley Global Medical Centers
+    # 2026-10-13: KPC Health runs two career centers. The second cid
+    # (a45074b6) was labelled "Chapman Global Medical Center" with that name
+    # forced on every row, but it lists KPC's Anaheim (154 rows), Orange (49)
+    # and Santa Ana (49) postings. The API names the facility on some rows
+    # ("Anaheim Global Medical Center", "South Coast Global Medical Center");
+    # a row that only names its city takes that city's KPC hospital, except
+    # Santa Ana, which has two (Orange County Global and South Coast Global)
+    # and keeps the system name. Stored rows: sql/131.
+    "KPC Health": [
+        ("1a214979-2739-4245-a1d1-38dc8531018f", "19000101_000001", "CA"),  # Hemet, Menifee, Victor Valley Global Medical Centers
+        ("a45074b6-b45e-424e-9e71-c45a4d73c34b", "19000101_000001", "CA",
+         {"Anaheim": "Anaheim Global Medical Center", "Orange": "Chapman Global Medical Center"}),
+    ],
     "Larkin Community Hospital":           ("5ffc5741-7db3-4aa8-a16a-e19abed9677e", "19000101_000001", "FL"),  # South Miami, Palm Springs, Behavioral
     "Union General Health System":         ("58af5ddf-316e-4ac8-bc2f-471750cda3c7", "19000101_000001", "GA"),  # Blairsville + Chatuge Regional, Hiawassee
     "Hudson Regional Health":              ("bb661c48-7edc-400c-adfb-40f8f7743374", "19000101_000001", "NJ"),  # Bayonne, Hoboken, Secaucus
     # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
     "Bear Valley Community Hospital": ("623d6b00-0ac6-45cb-9f80-96cd30ac65ea", "19000101_000001", "CA", "Bear Valley Community Hospital"),   # 7, Big Bear Lake CA
     "Catalina Island Medical Center": ("000c35c7-aac0-47bb-b34d-e0366b957c9d", "19000101_000001", "CA", "Catalina Island Medical Center"),   # 18, Avalon CA
-    "Chapman Global Medical Center": ("a45074b6-b45e-424e-9e71-c45a4d73c34b", "19000101_000001", "CA", "Chapman Global Medical Center"),   # 239, Orange CA
     "Hollywood Presbyterian Medical Center": ("5d0945d2-39da-4a4c-88e4-b8c167c5a4f2", "19000101_000001", "CA", "Hollywood Presbyterian Medical Center"),   # 138, Los Angeles CA
     "Northern Inyo Hospital": ("6fa6d2e5-a3ca-49c9-86f1-49e7d152cd55", "19000101_000001", "CA", "Northern Inyo Hospital"),   # 22, Bishop CA
     "Watsonville Community Hospital": ("1dc6b9d0-c77c-49e5-bf72-a60615cda53e", "19000101_000001", "CA", "Watsonville Community Hospital"),   # 24, Watsonville CA
@@ -10261,8 +10300,10 @@ def _adp_centers(value):
 
 
 def _adp_job(j: dict, system: str, cid: str, cc_id: str, default_state: str = "",
-             hospital_name: str = ""):
-    """One jobRequisitions item -> Job, or None when it has no id / title."""
+             hospital_name=""):
+    """One jobRequisitions item -> Job, or None when it has no id / title.
+    hospital_name: a fixed facility name, or a {city: facility} dict used
+    only when the requisition does not name its own facility."""
     item_id = str(j.get("itemID") or j.get("itemId") or j.get("requisitionID") or j.get("id") or "").strip()
     title = str(j.get("requisitionTitle") or j.get("jobTitle") or j.get("title") or "").strip()
     if not item_id or not title:
@@ -10311,10 +10352,15 @@ def _adp_job(j: dict, system: str, cid: str, cc_id: str, default_state: str = ""
         annual = "annual" in stl or "year" in stl or stl in ("sa", "yr")
         if pair and ((hourly and pair[2] == "hour") or (annual and pair[2] == "year") or not stl):
             wage = pair
+    by_city = hospital_name if isinstance(hospital_name, dict) else None
+    if by_city is not None:
+        hospital_name = ""
     if not hospital_name:
         head = str(((loc0.get("nameCode") or {}).get("shortName") or "")).split(",")[0].strip()
         if head and head.lower() != city.lower() and not re.search(r"\d", head):
             hospital_name = head
+    if not hospital_name and by_city:
+        hospital_name = by_city.get(city, "")
     ptype = str((j.get("workLevelCode") or {}).get("shortName") or j.get("positionType") or "").strip()
     return Job(
         title=title,
@@ -11582,9 +11628,23 @@ UKG_ORGS = {
     # Catawba Valley (NC). The adapter had never written a row, so no old rows
     # carry the wrong name.
     "Columbia County Health System": ("https://cchsconnect.rec.pro.ukg.net/COL1053CCHD", "c6df4630-7da9-4627-af22-819e939d86fa", "WA"),
-    "Augusta University Health":    ("https://recruiting.ultipro.com/AUG1000AUG",        "02a29cd6-e7aa-4501-96be-6336647e3184"),
-    "Cape Regional Health":         ("https://crhukg.rec.pro.ukg.net/CHE1503CHPE",       "09584b08-b32f-4882-8c7b-223bbd8e3851"),
-    "Northwest Medical Center":     ("https://nwmedicalctr.rec.pro.ukg.net/NOR1080NWMC", "f22ba272-5440-48f3-9f0f-84f6f384d461"),
+    # Relabelled 2026-10-13 (name-mismatch pass; evidence from the board's own
+    # org address, links and posting bodies, checked against the stored rows).
+    # The stored rows, and the hospital_cms_alias rows that carried the old
+    # labels, are relabelled by sql/131_name_mismatch_relabels.sql, keyed on
+    # the board code:
+    #   AUG1000AUG  was "Augusta University Health": Augusta Health,
+    #               Fishersville VA (78 Medical Center Dr; 292 of 344 bodies
+    #               say Augusta Health), not Augusta University (GA).
+    #   CHE1503CHPE was "Cape Regional Health": Chesapeake Regional Healthcare,
+    #               Chesapeake VA (CRMG clinics in northeast NC), not Cape
+    #               Regional (Cape May NJ).
+    #   NOR1080NWMC was "Northwest Medical Center": Northwestern Medical
+    #               Center, St. Albans VT (every row says Northwestern Medical
+    #               Ctr; the board links northwesternmedicalcenter.org).
+    "Augusta Health":               ("https://recruiting.ultipro.com/AUG1000AUG",        "02a29cd6-e7aa-4501-96be-6336647e3184"),
+    "Chesapeake Regional Healthcare": ("https://crhukg.rec.pro.ukg.net/CHE1503CHPE",     "09584b08-b32f-4882-8c7b-223bbd8e3851"),
+    "Northwestern Medical Center":  ("https://nwmedicalctr.rec.pro.ukg.net/NOR1080NWMC", "f22ba272-5440-48f3-9f0f-84f6f384d461"),
     "Guadalupe Regional Medical":   ("https://grmedcenter.rec.pro.ukg.net/GUA1500GDRM",  "42079bd4-4198-48a9-b64a-26c8b01496d6"),
     # ── 2026-09-22 Texas resume (dry-run counts): Surgery Partners' shared
     # SUR1004SRGY board hosts two Texas hospitals under their own guids;
@@ -11601,11 +11661,28 @@ UKG_ORGS = {
     "South Texas Spine & Surgical Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "ea3a4692-77b7-4cea-96ad-69072d0a99f4", "TX"),  # 9, San Antonio
     "Goodall-Witcher Healthcare":        ("https://recruiting2.ultipro.com/GOO1036GDWH",  "4a69c263-bfc3-4e3e-b725-bbb1535d1cff", "TX"),   # 10, Clifton
     "Big Bend Regional Medical Center":  ("https://recruiting2.ultipro.com/QHC1000QHCS",  "b3394170-e409-475c-a2dd-95d53697602f", "TX"),   # 20, Alpine
-    "Granite Hills Medical":        ("https://recruiting.ultipro.com/GRE1050GNHP",       "2b67ecb4-00fb-4863-931a-7bf0ebcb493a"),
-    "Medical Associates":           ("https://recruiting.ultipro.com/MEA1004MEVM",       "d561e1d3-aa5e-4c1b-bcf5-5319c6abdcac"),
-    "Excela Health":                ("https://recruiting.ultipro.com/EXC1005EXCEH",      "a00363e2-39d4-4408-a790-fbd62f4846d8"),
-    "Heritage Health":              ("https://recruiting.ultipro.com/HER1004HERIT",      "68189271-8c8d-4634-bb50-bd2edf375278"),
-    "Alliant Health":               ("https://recruiting.ultipro.com/ALL1034ABHC",       "ad28382f-2fcd-4cbb-bb18-24dd71b05bce"),
+    # Relabelled 2026-10-13 (name-mismatch pass, sql/131 relabels the stored
+    # rows by board code):
+    #   GRE1050GNHP  was "Granite Hills Medical": Self Regional Healthcare,
+    #                Greenwood SC (the board's logo is Self Regional; rows are
+    #                Self Regional and its Abbeville / Edgefield affiliates).
+    #   MEA1004MEVM  was "Medical Associates": Meadville Medical Center,
+    #                Meadville PA (Liberty St and Grove St hospitals, mmchs.org).
+    #   EXC1005EXCEH was "Excela Health": the board is Independence Health
+    #                System's and every row is one of its members (Excela's
+    #                Westmoreland / Latrobe / Frick, Butler, Clarion, ACMH
+    #                Kittanning and their practices).
+    #   HER1004HERIT was "Heritage Health": Heritage Valley Health System
+    #                (Beaver, Kennedy, Sewickley PA).
+    #   ALL1034ABHC  was "Alliant Health": Alliance Health, Morrisville NC
+    #                (formerly Alliance Behavioral Healthcare). "(NC)" keeps it
+    #                apart from AllianceHealth (Durant / Madill OK, a CHS brand)
+    #                in the wage-table name match.
+    "Self Regional Healthcare":     ("https://recruiting.ultipro.com/GRE1050GNHP",       "2b67ecb4-00fb-4863-931a-7bf0ebcb493a"),
+    "Meadville Medical Center":     ("https://recruiting.ultipro.com/MEA1004MEVM",       "d561e1d3-aa5e-4c1b-bcf5-5319c6abdcac"),
+    "Independence Health System":   ("https://recruiting.ultipro.com/EXC1005EXCEH",      "a00363e2-39d4-4408-a790-fbd62f4846d8"),
+    "Heritage Valley Health System": ("https://recruiting.ultipro.com/HER1004HERIT",     "68189271-8c8d-4634-bb50-bd2edf375278"),
+    "Alliance Health (NC)":         ("https://recruiting.ultipro.com/ALL1034ABHC",       "ad28382f-2fcd-4cbb-bb18-24dd71b05bce"),
     "Erie County Medical Center":   ("https://ecmc462.rec.pro.ukg.net/ERI1003ECMC",      "4d1858fb-5b2a-499b-a320-4f1f4e5bcb06"),
     # Relabelled 2026-10-13: WYC1000WHMC is Wyckoff Heights Medical Center
     # (Brooklyn NY, CCN 330221; the board's one location is that hospital),
@@ -11629,9 +11706,14 @@ UKG_ORGS = {
     # stored rows and the 070031 hospital_cms_alias row are relabelled by
     # sql/119b_ukg_relabel.sql, keyed on the board code.
     "Griffin Health":               ("https://recruiting.ultipro.com/GRI1004GHSC",       "f5d979ef-386f-4469-8178-a3801183d063"),
-    "Columbia Regional Medical":    ("https://recruiting.ultipro.com/COL1042CRME",       "5ac3f35f-7e01-49ff-ad53-0acc27b4cee7"),
+    # Relabelled 2026-10-13 (sql/131, by board code): COL1042CRME was
+    # "Columbia Regional Medical"; its address is 3131 South Main St, Moultrie
+    # GA: Colquitt Regional Medical Center. SOU1076SOUG (sghsukg) was "South
+    # Georgia Health"; its rows are in Brunswick and St. Marys GA: Southeast
+    # Georgia Health System, not South Georgia Medical Center (Valdosta).
+    "Colquitt Regional Medical Center": ("https://recruiting.ultipro.com/COL1042CRME",   "5ac3f35f-7e01-49ff-ad53-0acc27b4cee7"),
     "Crisp Regional Health":        ("https://recruiting.ultipro.com/CRI1005CRISP",      "c74342f0-7984-4858-8545-16e720353c82"),
-    "South Georgia Health":         ("https://sghsukg.rec.pro.ukg.net/SOU1076SOUG",      "2de20fad-cb3f-4525-87cd-7bd1d3c2a720"),
+    "Southeast Georgia Health System": ("https://sghsukg.rec.pro.ukg.net/SOU1076SOUG",   "2de20fad-cb3f-4525-87cd-7bd1d3c2a720"),
     "Murray-Calloway County":       ("https://murray.rec.pro.ukg.net/MUR1004MCCH",       "78a4032f-cda1-471d-86f1-9e64991ed7d2"),
     "TJ Regional Health":           ("https://tjregional.rec.pro.ukg.net/TJS1500TJSC",   "a4b9e606-5dc1-4c8c-ba68-83fd41e97ade"),
     "Lakewood Health":              ("https://recruiting2.ultipro.com/SKY1006LAKES",     "9dcd58e9-9155-4226-9b21-f476fcd1d29b"),
@@ -11671,7 +11753,7 @@ _UKG_PAGE = 50
 # City "Shelton" and LocalizedName "Shelton"), hospital_name is the system
 # name, since normalize_job blanks a city equal to hospital_name.
 UKG_LOCATION_TOWNS: dict[str, dict[str, tuple[str, str]]] = {
-    "EXC1005EXCEH": {                         # Excela Health, Westmoreland / Butler counties PA
+    "EXC1005EXCEH": {                         # Independence Health System (Excela, Butler, Clarion), Westmoreland / Butler counties PA
         "latrobe": ("Latrobe", "PA"),
         "butler": ("Butler", "PA"),
         "butler city": ("Butler", "PA"),
@@ -11977,7 +12059,12 @@ ORACLE_ORGS = {
     # unique key collapses cross-site duplicates on upsert.
     "Northwell Health (CX_1)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_1"),
     "Northwell Health (CX_3)":   ("https://eppr.fa.us2.oraclecloud.com",                      "CX_3"),
-    "Jackson Hospital":          ("https://ejid.fa.us6.oraclecloud.com",                      "CX_1001"),
+    # ejid/CX_1001 was labelled "Jackson Hospital", but its rows are in
+    # Lynchburg / Bedford / Farmville VA and the bodies name Centra Lynchburg
+    # General, Virginia Baptist and Centra Bedford: it is CENTRA HEALTH.
+    # Relabelled 2026-10-13; the stored rows and the three hospital_cms_alias
+    # rows (CCNs 490021, 490088, 490090) are relabelled by sql/131.
+    "Centra Health":             ("https://ejid.fa.us6.oraclecloud.com",                      "CX_1001"),
     # 2026-09-16 (NY coverage): careers.mountsinai.org fronts this instance;
     # TotalJobsCount 1,770 on 2026-09-16, New York NY primary locations.
     "Mount Sinai Health System": ("https://ejis.fa.us6.oraclecloud.com",                      "CX_1"),
@@ -12029,7 +12116,11 @@ ORACLE_ORGS = {
     # ADVENTIST HEALTH (validated 2026-08-28, TotalJobsCount=1,430). Renamed;
     # the old Cape Cod rows need a one-shot DB relabel (post-push step).
     "Adventist Health":          ("https://ecvz.fa.us2.oraclecloud.com",                      "CX_1"),
-    "Flagler Health":            ("https://erou.fa.us2.oraclecloud.com",                      "CX_1"),
+    # erou/CX_1 was labelled "Flagler Health" (St. Augustine FL), but every
+    # row is in Fairfield / Vacaville / Napa CA and the bodies open "At
+    # NorthBay Health": it is NORTHBAY HEALTH. Relabelled 2026-10-13; the
+    # stored rows and the 050367 hospital_cms_alias row move in sql/131.
+    "NorthBay Health":           ("https://erou.fa.us2.oraclecloud.com",                      "CX_1"),
     # eglz/CX was labelled "Eastern Connecticut Health"; every row it writes
     # is in Santa Barbara / Goleta / Solvang CA, and a live posting read on
     # 2026-10-07 places the role "within Cottage Medical Group (CMG)": it is
@@ -12040,7 +12131,13 @@ ORACLE_ORGS = {
     "Cottage Health":            ("https://eglz.fa.us2.oraclecloud.com",                      "CX"),
     "Guthrie Health":            ("https://elfw.fa.us2.oraclecloud.com",                      "CX_1001"),  # confirmed
     "Valley Children's":         ("https://epyz.fa.us2.oraclecloud.com",                      "CX_1"),
-    "Southwest Health":          ("https://fa-exgl-saasfaprod1.fa.ocs.oraclecloud.com",       "JoinOurTeam"),
+    # fa-exgl/JoinOurTeam was labelled "Southwest Health" (aliased to
+    # "Southwest Healthcare", the UHS brand in Temecula CA), but the site is
+    # "Good Samaritan Careers" (og:image from gshvin.org) and its rows are in
+    # Vincennes and Washington IN: GOOD SAMARITAN, Vincennes IN. "(Vincennes)"
+    # keeps it apart from the other Good Samaritan hospitals. Relabelled
+    # 2026-10-13; the stored rows move in sql/131.
+    "Good Samaritan (Vincennes)": ("https://fa-exgl-saasfaprod1.fa.ocs.oraclecloud.com",      "JoinOurTeam"),
     "HealthPartners":            ("https://fa-etnv-saasfaprod1.fa.ocs.oraclecloud.com",       "healthpartners"),
     # erqh/CX_1001 was labelled "United Regional" (the Wichita Falls TX
     # system is iaoxqy above). Its rows are Morristown / Summit / Newton /
@@ -12368,7 +12465,11 @@ HEALTHCARESOURCE_ORGS = {
     "ECHN":                     "echn",
     "Archbold Medical":         "archbold",
     "Kootenai Health":          "kootenai",
-    "Community Memorial":       "comhs",
+    # Relabelled 2026-10-13: tenant comhs is POWERS HEALTH (formerly Community
+    # Healthcare System: Community Hospital Munster, St. Catherine East Chicago,
+    # St. Mary Hobart IN), not Community Memorial (Ventura CA). sql/131
+    # relabels the stored rows.
+    "Powers Health":            "comhs",
     "Union Hospital":           "unionhospital",
     "Hays Medical Center":      "haysmed",
     "CHC Healthcare":           "chc",

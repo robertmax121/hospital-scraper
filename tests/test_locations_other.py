@@ -116,7 +116,7 @@ def test_erym_is_mcleod_health():
 
 # ── UKG: location name as the town ─────────────────────────────────────────
 
-EXCELA = scraper.UKG_ORGS["Excela Health"]
+EXCELA = scraper.UKG_ORGS["Independence Health System"]   # EXC1005EXCEH (was "Excela Health")
 GRIFFIN = scraper.UKG_ORGS["Griffin Health"]                  # GRI1004GHSC
 WYCKOFF = scraper.UKG_ORGS["Wyckoff Heights Medical Center"]  # WYC1000WHMC
 
@@ -135,9 +135,9 @@ def test_ukg_excela_town_names():
     for name, city in (("Latrobe", "Latrobe"), ("Butler", "Butler"), ("Delmont", "Delmont"),
                        ("Butler City", "Butler"), ("East Butler", "East Butler"),
                        ("Slippery Rock Boro", "Slippery Rock"), ("Seven Fields Boro", "Seven Fields")):
-        j = _ukg(EXCELA, "Excela Health", _opp(desc=name))
+        j = _ukg(EXCELA, "Independence Health System", _opp(desc=name))
         assert (j.city, j.state) == (city, "PA"), name
-        assert j.hospital_name == "Excela Health", name          # a town is not a facility
+        assert j.hospital_name == "Independence Health System", name          # a town is not a facility
         assert scraper.normalize_job(j)["city"] == city, name     # and is not blanked as one
 
 
@@ -174,7 +174,7 @@ def test_ukg_griffin_located_town_postings_stay_listed():
 
 def test_ukg_located_swap_stays_narrow():
     # A facility name that is not exactly one of the board's towns stays.
-    j = _ukg(EXCELA, "Excela Health", _opp(desc="Butler Hospital", city="Butler"))
+    j = _ukg(EXCELA, "Independence Health System", _opp(desc="Butler Hospital", city="Butler"))
     assert (j.city, j.hospital_name) == ("Butler", "Butler Hospital")
     # Another board's "Shelton" location keeps its name (no table for it).
     j = _ukg(scraper.UKG_ORGS["Deaconess Health"], "Deaconess Health", _opp(desc="Shelton", city="Shelton", state="IN"))
@@ -206,16 +206,16 @@ def test_ukg_boards_carry_their_real_systems():
 def test_ukg_town_rules_stay_narrow():
     # A located posting keeps its own city; a town-name location is still not
     # a facility.
-    j = _ukg(EXCELA, "Excela Health", _opp(desc="Latrobe", city="Greensburg"))
-    assert j.city == "Greensburg" and j.hospital_name == "Excela Health"
+    j = _ukg(EXCELA, "Independence Health System", _opp(desc="Latrobe", city="Greensburg"))
+    assert j.city == "Greensburg" and j.hospital_name == "Independence Health System"
     # Another board's "Latrobe" is not Excela's.
     j = _ukg(scraper.UKG_ORGS["Deaconess Health"], "Deaconess Health", _opp(desc="Latrobe"))
     assert j.city == ""
     # A state that disagrees with the table is left alone.
-    j = _ukg(EXCELA, "Excela Health", _opp(desc="Latrobe", state="OH"))
+    j = _ukg(EXCELA, "Independence Health System", _opp(desc="Latrobe", state="OH"))
     assert (j.city, j.state) == ("", "OH")
     # Only exact names: "Butler Hospital" is not the town.
-    j = _ukg(EXCELA, "Excela Health", _opp(desc="Butler Hospital"))
+    j = _ukg(EXCELA, "Independence Health System", _opp(desc="Butler Hospital"))
     assert j.city == ""
 
 
