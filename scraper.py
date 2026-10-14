@@ -1369,6 +1369,8 @@ KNOWN_BODY_RETRIES   = 3          # attempts per page before the load gives up
 _KNOWN_BODIES: dict = {}
 _KNOWN_FACTS_V: dict = {}         # same keys -> posting_facts "v" of the stored row (None = unstamped)
 _KNOWN_FACTS_H: dict = {}         # (push 10) same keys, every platform -> posting_facts "h" of the stored row
+_KNOWN_REQ: set = set()           # (2026-10-14) keys of stored bodies whose posting_facts already carry req_id
+_KNOWN_REQ_READ: list = [False]   # True when the load reported req_id ("rq"); the req_id re-read needs it
 
 # ── A known body is not known forever (2026-09-24, review of push 2) ─────────
 # Skipping every stored body left three holes: (1) facts, pay and type are
@@ -1467,9 +1469,13 @@ def set_known_bodies(rows) -> int:
     Every row's fh (posting_facts->>'h') whose facts carry the current
     FACTS_VERSION goes to _KNOWN_FACTS_H, which normalize_job reads to skip
     re-parsing an unchanged body (facts from older rules are never skipped).
+    2026-10-14 (req_id re-read): a row's rq (posting_facts->>'req_id') puts
+    its key in _KNOWN_REQ; rows that carry the rq key at all (the run-start
+    load always asks for it) switch the re-read on (_KNOWN_REQ_READ), so a
+    map built without it (tests, other callers) never forces a read.
     Returns the detail-pass map's size, as before."""
-    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H
-    kb, fv, unpriced, fh = {}, {}, set(), {}
+    global _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED, _KNOWN_FACTS_H, _KNOWN_REQ
+    kb, fv, unpriced, fh, reqs, rq_read = {}, {}, set(), {}, set(), False
     for r in rows or []:
         try:
             n = int(r.get("desc_len") or 0)
@@ -1478,6 +1484,10 @@ def set_known_bodies(rows) -> int:
         sysname, jid = r.get("hospital_system"), r.get("job_id")
         if n >= 200 and sysname and jid not in (None, ""):
             k = (str(sysname), str(jid))
+            if "rq" in r:
+                rq_read = True
+                if str(r.get("rq") or "").strip():
+                    reqs.add(k)
             h = r.get("fh")
             if (isinstance(h, str) and h and _facts_version(r.get("fv")) == FACTS_VERSION
                     and n >= fh.get(k, (0, ""))[0]):
@@ -1493,6 +1503,7 @@ def set_known_bodies(rows) -> int:
                     unpriced.discard(k)
     _KNOWN_BODIES, _KNOWN_FACTS_V, _KNOWN_UNPRICED = kb, fv, unpriced
     _KNOWN_FACTS_H = {k: v[1] for k, v in fh.items()}
+    _KNOWN_REQ, _KNOWN_REQ_READ[0] = reqs, rq_read
     return len(kb)
 
 
@@ -1519,8 +1530,10 @@ def load_known_bodies() -> int:
             # its facts hash (set_known_bodies keeps the detail-pass maps to
             # KNOWN_BODY_PLATFORMS). The page walks the same id range as
             # before; only more of its rows come back.
+            # 2026-10-14: rq (posting_facts->>'req_id') tells the req_id
+            # re-read which stored bodies already carry their number.
             u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,ats_platform,desc_len,wage_min,"
-                 f"fv:posting_facts-%3E%3Ev,fh:posting_facts-%3E%3Eh"
+                 f"fv:posting_facts-%3E%3Ev,fh:posting_facts-%3E%3Eh,rq:posting_facts-%3E%3Ereq_id"
                  f"&is_active=is.true&desc_len=gte.200"
                  f"&id=gt.{last}&order=id.asc&limit={KNOWN_BODY_PAGE}")
             rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
@@ -1564,8 +1577,9 @@ def _known_kind(system: str, job):
                has no wage, on its _pay_slot night: a candidate after the rows
                with no body, so the page's pay field is read
       "force"  (push 10) a stored body of a FORCED_REFRESH tenant on its one
-               night inside the tenant's window: a candidate after the rows
-               with no body, before the pay re-reads
+               night inside the tenant's window, or (2026-10-14) a stored body
+               still without its job number on its _req_reread_slot night: a
+               candidate after the rows with no body, before the pay re-reads
     Leaves the job unchanged."""
     key = (_canon_system(system), str(job.job_id))
     stored = _KNOWN_BODIES.get(key, 0)
@@ -1577,7 +1591,7 @@ def _known_kind(system: str, job):
     v = _KNOWN_FACTS_V.get(key)
     if v is None and OLD_BODY_CAP[0] <= stored <= OLD_BODY_CAP[1]:
         return "cut"
-    if _force_slot(*key):
+    if _force_slot(*key) or _req_reread_slot(key, job):
         return "force"
     if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
         return "pay"
@@ -1660,36 +1674,71 @@ def _refresh_slot(canon: str, job_id: str, run_day: Optional[int] = None) -> boo
 # (_settle_held). Outside the window the entry does nothing: drop it on the
 # push after the window ends.
 #
-# 2026-10-14 (req_id; owner: "Yeah we need to fix those now"): the tenants
-# whose number lives only on the detail page (Workday jobReqId, CSOD data.ref,
-# the RMK label line, Paycor's Job Id cell) get it on the nights their pass
-# reads the page. Their stored bodies are not read again for ~30+ nights
-# (the refresh share is ~5% of a tenant's floor), so each stored body is read
-# once inside REQ_ID_REREAD_WINDOW, on the same passes and budgets: ~4.9k
-# Workday CXS details (WVU Medicine 3,220, the most, ~1,100 a night against
-# the 3,000 tenant cap and the 26,000 run budget, on ~3,000 new rows a
-# night), ~283 CSOD, 186 RMK and 411 Paycor pages. Tenants with a few
-# affected rows among many (Montefiore 21 of 480, Samaritan 20 of 256, Prisma
-# 9 of 2,233) are left to the refresh share. The window must be the first
-# nights the change runs: move it if the push lands after 00:00 UTC
-# 2026-10-15, and drop the entries on the push after it ends.
-REQ_ID_REREAD_WINDOW = ("2026-10-15", "2026-10-17")
-REQ_ID_REREAD_SYSTEMS = (
-    # Workday: job_id is the externalPath (or Rochester's non-req bullet)
-    "WVU Medicine", "Monument Health", "ThedaCare", "Kaweah Health", "MarinHealth",
-    "Broadlawns Medical Center", "Cape Fear Valley Health", "Rochester Regional Health",
+FORCED_REFRESH = {
+    "Hackensack Meridian Health": ("2026-10-08", "2026-10-14"),   # TB_PAGE_DETAIL_ORGS since push 10
+}
+
+# 2026-10-14 (req_id; owner: "Yeah we need to fix those now"): the rows whose
+# number lives only on the detail page (Workday jobReqId, CSOD data.ref, the
+# RMK label line, Paycor's Job Id cell) get it on the nights their pass reads
+# the page, and the known-body skip does not read a stored body again for
+# ~30+ nights (the refresh share is ~5% of a tenant's floor; WVU Medicine's
+# 3,220 rows would take about a year). So, inside REQ_ID_REREAD_WINDOW, a
+# stored body whose posting_facts carry no req_id yet (_KNOWN_REQ, from the
+# run-start load) is read again on its _req_reread_slot night, one night in
+# every REQ_ID_REREAD_CYCLE, as a "force" candidate: after the rows with no
+# body, on the same passes, gates and budgets (no new request type, no cap
+# raised). Which rows:
+#   * Workday rows keyed by their externalPath (job_id "/job/..."): 4,787 on
+#     21 tenants on 2026-10-14 (WVU Medicine 3,220, Monument 573, ThedaCare
+#     473, Kaweah 211, MarinHealth 136, Broadlawns 73, Cape Fear 37,
+#     Montefiore 21, Samaritan 20, Prisma 9, 14 on 11 others). Rows keyed by a
+#     list bullet already carry the requisition as job_id, or (Rochester
+#     Regional) take it from the list (WD_REQ_BULLET), so none is re-read.
+#   * REQ_ID_REREAD_SYSTEMS below (CSOD, RMK, the Paycor boards that show
+#     the number).
+# Review 2026-10-14: the window is not tied to the push night. Any 5
+# consecutive run nights inside it read every such row once (on the live
+# job_ids of 2026-10-14: 1,026 to 1,126 reads a night, 5,328 in all; WVU
+# Medicine 597 to 697 a night against its 3,000 tenant cap and the 26,000
+# run budget), so a push that lands by 2026-10-24 still covers every row; a
+# row whose fetch failed or was left for another night is tried again 5
+# nights later, and a row drops out as soon as its number is stored. Drop
+# the window and the set on the push after 2026-10-28.
+REQ_ID_REREAD_WINDOW = ("2026-10-15", "2026-10-28")
+REQ_ID_REREAD_CYCLE = 5
+REQ_ID_REREAD_SYSTEMS = frozenset({
     # CSOD (CSOD_REQ_ID)
     "JPS Health Network", "UI Health",
     # SuccessFactors RMK (SF_RMK_REQ_LABEL)
     "Texas Health and Human Services", "Florida Department of Children and Families",
     "Illinois Department of Human Services", "Arkansas Department of Human Services",
-    # Paycor (paycor_req_id)
-    "Insight Health", "Townsen Memorial Hospital", "Coon Memorial Hospital", "Hereford Regional Medical Center",
-)
-FORCED_REFRESH = {
-    "Hackensack Meridian Health": ("2026-10-08", "2026-10-14"),   # TB_PAGE_DETAIL_ORGS since push 10
-    **{s: REQ_ID_REREAD_WINDOW for s in REQ_ID_REREAD_SYSTEMS},
-}
+    # Paycor boards whose page shows the Job Id cell (Insight Health and
+    # Hereford hide it with their own CSS: paycor_req_id stores none there)
+    "Townsen Memorial Hospital", "Coon Memorial Hospital",
+})
+
+
+def _req_reread_slot(key, job) -> bool:
+    """True when this stored body (key = (canonical system, job_id)) still
+    has no req_id and tonight is its night to be read for it (see
+    REQ_ID_REREAD_WINDOW). Off unless the run-start load reported req_id."""
+    if not _KNOWN_REQ_READ[0] or key in _KNOWN_REQ:
+        return False
+    canon, jid = key
+    if not ((getattr(job, "ats_platform", "") == "Workday" and jid.startswith("/"))
+            or canon in REQ_ID_REREAD_SYSTEMS):
+        return False
+    try:
+        a = datetime.strptime(REQ_ID_REREAD_WINDOW[0], "%Y-%m-%d").toordinal()
+        b = datetime.strptime(REQ_ID_REREAD_WINDOW[1], "%Y-%m-%d").toordinal()
+    except (TypeError, ValueError):
+        return False
+    today = _run_day()
+    if today < a or today > b:
+        return False
+    n = max(1, REQ_ID_REREAD_CYCLE)
+    return zlib.crc32(f"reqid|{canon}|{jid}".encode("utf-8")) % n == today % n
 
 
 def _force_slot(canon: str, job_id: str) -> bool:

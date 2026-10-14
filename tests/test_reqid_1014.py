@@ -91,10 +91,11 @@ def _serving(page):
     return fetch
 
 
-def _known(job, desc_len=4000, fh=None):
-    """The known-body row the run-start load gives for a stored posting."""
+def _known(job, desc_len=4000, fh=None, **extra):
+    """The known-body row the run-start load gives for a stored posting
+    (pass rq=... for the req_id the run-start load reports)."""
     return {"hospital_system": job.hospital_system, "job_id": job.job_id, "ats_platform": job.ats_platform,
-            "desc_len": desc_len, "wage_min": None, "fv": scraper.FACTS_VERSION, "fh": fh}
+            "desc_len": desc_len, "wage_min": None, "fv": scraper.FACTS_VERSION, "fh": fh, **extra}
 
 
 # ── Workday ──────────────────────────────────────────────────────────────
@@ -422,43 +423,135 @@ def test_html_list_req_value():
     assert j.job_id == "5" and j.req_id == ""
 
 
-# ── One-time re-read of the stored bodies (REQ_ID_REREAD_WINDOW) ────────
-def test_reread_window_lists_only_tenants_with_a_detail_reader():
+# ── Re-read of the stored bodies still without a number (REQ_ID_REREAD_WINDOW) ──
+# Review 2026-10-14: not tied to the push night. Inside the window a stored
+# body whose posting_facts carry no req_id (the run-start load's rq) is read
+# on its night in every REQ_ID_REREAD_CYCLE; it drops out once its number is
+# stored, and a fetch that failed is tried again a cycle later.
+def _day(s):
     from datetime import datetime
-    lo, hi = (datetime.strptime(x, "%Y-%m-%d") for x in scraper.REQ_ID_REREAD_WINDOW)
-    assert 1 <= (hi - lo).days + 1 <= 7
+    return datetime.strptime(s, "%Y-%m-%d").toordinal()
+
+
+def _wd_job(system, jid):
+    return Job(title="RN", hospital_system=system, hospital_name=system, city="", state="", location="",
+               specialty="", job_type="", url="https://x.myworkdayjobs.com/en-US/X" + jid, job_id=jid,
+               posted_date="", description="", ats_platform="Workday")
+
+
+def _forced(job):
+    return scraper._known_kind(job.hospital_system, job) == "force"
+
+
+def _first_forced_night(monkeypatch, job):
+    a = _day(scraper.REQ_ID_REREAD_WINDOW[0])
+    for x in range(a, a + scraper.REQ_ID_REREAD_CYCLE):
+        monkeypatch.setattr(scraper, "_run_day", lambda x=x: x)
+        if _forced(job):
+            return x
+    raise AssertionError("never forced")
+
+
+def test_reread_set_lists_only_tenants_whose_page_shows_a_number():
+    a, b = (_day(x) for x in scraper.REQ_ID_REREAD_WINDOW)
+    assert b - a + 1 >= 2 * scraper.REQ_ID_REREAD_CYCLE      # a late push still gets a full cycle
+    assert b <= _day("2026-10-31")                            # it ends; drop it on the push after
     for s in scraper.REQ_ID_REREAD_SYSTEMS:
         assert scraper._canon_system(s) == s
-        assert scraper.FORCED_REFRESH[s] == scraper.REQ_ID_REREAD_WINDOW
-        assert (s in scraper.WORKDAY_TENANTS or s in scraper.CSOD_REQ_ID
-                or s in scraper.SF_RMK_REQ_LABEL or s in scraper.PAYCOR_ORGS), s
-    # list-source tenants need no re-read; the big tenants with a handful of rows are left out
-    for s in ("Baylor Scott & White", "Rush", "Billings Clinic", "Prisma Health", "Montefiore"):
+        assert s in scraper.CSOD_REQ_ID or s in scraper.SF_RMK_REQ_LABEL or s in scraper.PAYCOR_ORGS, s
         assert s not in scraper.FORCED_REFRESH
+    # list-source tenants, a tenant whose job_id is the number, and the Paycor
+    # boards that hide the cell are never re-read for it (Workday rows are
+    # chosen by their path key, not by tenant)
+    for s in ("Baylor Scott & White", "Rush", "Billings Clinic", "Insight Health",
+              "Hereford Regional Medical Center", "WVU Medicine", "Rochester Regional Health"):
+        assert s not in scraper.REQ_ID_REREAD_SYSTEMS
 
 
-def test_each_stored_body_is_read_once_inside_the_window(monkeypatch):
-    from datetime import datetime
-    a = datetime.strptime(scraper.REQ_ID_REREAD_WINDOW[0], "%Y-%m-%d").toordinal()
-    b = datetime.strptime(scraper.REQ_ID_REREAD_WINDOW[1], "%Y-%m-%d").toordinal()
+def test_each_row_is_read_once_in_any_cycle_of_nights_however_late_the_push(monkeypatch):
     ids = [f"/job/Town/Role_JR26-{n}" for n in range(3220)]          # WVU Medicine's size
-    hits, per_night = dict.fromkeys(ids, 0), {}
+    jobs = [_wd_job("WVU Medicine", j) for j in ids]
+    scraper.set_known_bodies([_known(j, rq=None) for j in jobs])
+    a, b = (_day(x) for x in scraper.REQ_ID_REREAD_WINDOW)
+    n = scraper.REQ_ID_REREAD_CYCLE
+    per_night = {}
     for d in range(a - 2, b + 3):
         monkeypatch.setattr(scraper, "_run_day", lambda d=d: d)
-        n = sum(scraper._force_slot("WVU Medicine", j) for j in ids)
-        per_night[d] = n
-        for j in ids:
-            hits[j] += scraper._force_slot("WVU Medicine", j)
-    assert set(hits.values()) == {1}
-    assert per_night[a - 1] == per_night[b + 1] == 0
-    assert max(per_night.values()) <= scraper.WD_DESC_TENANT_MAX          # one tenant's nightly cap
+        per_night[d] = {j.job_id for j in jobs if _forced(j)}
+    assert not per_night[a - 1] and not per_night[b + 1]
+    # a push landing on any night up to the window's last n nights reads
+    # every row exactly once in the n nights after it
+    for push in range(a, b - n + 2):
+        hits = dict.fromkeys(ids, 0)
+        for d in range(push, push + n):
+            for j in per_night[d]:
+                hits[j] += 1
+        assert set(hits.values()) == {1}, push
+    biggest = max(len(v) for v in per_night.values())
+    assert biggest <= scraper.WD_DESC_TENANT_MAX                  # one tenant's nightly cap
+    assert biggest < 2 * len(ids) // n                            # about a fifth a night
+
+
+def test_rows_with_their_number_or_without_one_to_get_are_not_reread(monkeypatch):
+    a = _day(scraper.REQ_ID_REREAD_WINDOW[0])
+    path = _wd_job("Montefiore", "/job/Bronx-NY/Registered-Nurse_R1")
+    stored = _wd_job("WVU Medicine", "/job/Morgantown/RN_JR26-1")
+    bullet = _wd_job("Rochester Regional Health", "14468")           # its number comes from the list
+    bswrow = dataclasses.replace(path, hospital_system="Baylor Scott & White", job_id="BSWHUS1EXTERNALENUS",
+                                 ats_platform="Phenom")
+    billings = dataclasses.replace(path, hospital_system="Billings Clinic", job_id="12479", ats_platform="CSOD")
+    insight = dataclasses.replace(path, hospital_system="Insight Health", job_id="8a78839e", ats_platform="Paycor")
+    jps = dataclasses.replace(path, hospital_system="JPS Health Network", job_id="30426", ats_platform="CSOD")
+    rows = [path, bullet, bswrow, billings, insight, jps, stored]
+    scraper.set_known_bodies([_known(j, rq=None) for j in rows[:-1]] + [_known(stored, rq="JR26-1")])
+    hits = [0] * len(rows)
+    for d in range(a, a + scraper.REQ_ID_REREAD_CYCLE):
+        monkeypatch.setattr(scraper, "_run_day", lambda d=d: d)
+        for k, j in enumerate(rows):
+            hits[k] += _forced(j)
+    assert hits == [1, 0, 0, 0, 0, 1, 0]
+    # a map built without the rq key (tests, other callers) never forces a read
+    scraper.set_known_bodies([_known(path), _known(jps)])
+    for d in range(a, a + scraper.REQ_ID_REREAD_CYCLE):
+        monkeypatch.setattr(scraper, "_run_day", lambda d=d: d)
+        assert not _forced(path) and not _forced(jps)
+
+
+def test_a_failed_read_is_tried_again_a_cycle_later_and_a_stored_number_ends_it(monkeypatch):
+    job = _wd_job("WVU Medicine", "/job/Morgantown/RN_JR26-7")
+    scraper.set_known_bodies([_known(job, rq=None)])
+    a, b = (_day(x) for x in scraper.REQ_ID_REREAD_WINDOW)
+    nights = []
+    for d in range(a, b + 1):
+        monkeypatch.setattr(scraper, "_run_day", lambda d=d: d)
+        if _forced(job):
+            nights.append(d)
+    n = scraper.REQ_ID_REREAD_CYCLE
+    assert len(nights) >= 2 and all(y - x == n for x, y in zip(nights, nights[1:]))
+    scraper.set_known_bodies([_known(job, rq="JR26-7")])                # the number landed
+    for d in nights:
+        monkeypatch.setattr(scraper, "_run_day", lambda d=d: d)
+        assert not _forced(job)
+
+
+def test_the_run_start_load_reports_the_stored_number():
+    j = _wd_job("WVU Medicine", "/job/Morgantown/RN_JR26-9")
+    scraper.set_known_bodies([_known(j, rq="JR26-9")])
+    assert scraper._KNOWN_REQ_READ[0] and ("WVU Medicine", j.job_id) in scraper._KNOWN_REQ
+    scraper.set_known_bodies([_known(j, rq=" ")])
+    assert scraper._KNOWN_REQ_READ[0] and not scraper._KNOWN_REQ
+    scraper.set_known_bodies([_known(j)])
+    assert not scraper._KNOWN_REQ_READ[0]
+    with open(scraper.__file__, encoding="utf-8") as f:
+        assert "rq:posting_facts-%3E%3Ereq_id" in f.read()
 
 
 def test_a_forced_workday_row_is_fetched_and_gets_its_number(fixture_text, monkeypatch):
     d, job, path = _wd_target(fixture_text, "monument.json")
-    scraper.set_known_bodies([_known(job)])
+    scraper.set_known_bodies([_known(job, rq=None)])
     monkeypatch.setattr(scraper, "_refresh_slot", lambda *a, **k: False)
-    monkeypatch.setattr(scraper, "_force_slot", lambda canon, jid: canon == "Monument Health")
+    night = _first_forced_night(monkeypatch, job)
+    monkeypatch.setattr(scraper, "_run_day", lambda: night)
     assert scraper._known_kind("Monument Health", job) == "force"
     seen = _serve(monkeypatch, [("/wday/cxs/", 200, d)])
     working = "https://monumenthealth.wd1.myworkdayjobs.com/wday/cxs/monumenthealth/Goldcareers/jobs"
@@ -466,6 +559,20 @@ def test_a_forced_workday_row_is_fetched_and_gets_its_number(fixture_text, monke
     assert len(seen) == 1 and job.req_id == "27_322"
     row = scraper.normalize_job(job)
     assert row["posting_facts"]["req_id"] == "27_322" and row["job_id"] == d["_meta"]["our_job_id"]
+
+
+def test_a_forced_csod_row_is_a_detail_candidate(monkeypatch):
+    job = _csod_job("JPS Health Network", "30790")
+    scraper.set_known_bodies([_known(job, rq=None)])
+    monkeypatch.setattr(scraper, "_refresh_slot", lambda *a, **k: False)
+    night = _first_forced_night(monkeypatch, job)
+    monkeypatch.setattr(scraper, "_run_day", lambda: night)
+    held = []
+    cands, known, dup = scraper._detail_candidates("JPS Health Network", [job], scraper.CSOD_DESC_BUDGET, held=held)
+    assert cands == [job] and known == 0 and [k for _, _, k in held] == ["force"]
+    monkeypatch.setattr(scraper, "_run_day", lambda: night + 1)          # not its night: skipped as before
+    cands, known, dup = scraper._detail_candidates("JPS Health Network", [job], scraper.CSOD_DESC_BUDGET, held=[])
+    assert cands == [] and known == 1
 
 
 # ── Rochester Regional (Workday list bullet) ────────────────────────────
