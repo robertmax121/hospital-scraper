@@ -20,7 +20,7 @@ import unicodedata
 import weakref
 import zlib
 from email.utils import parsedate_to_datetime
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
@@ -1693,8 +1693,9 @@ FORCED_REFRESH = {
 #     21 tenants on 2026-10-14 (WVU Medicine 3,220, Monument 573, ThedaCare
 #     473, Kaweah 211, MarinHealth 136, Broadlawns 73, Cape Fear 37,
 #     Montefiore 21, Samaritan 20, Prisma 9, 14 on 11 others). Rows keyed by a
-#     list bullet already carry the requisition as job_id, or (Rochester
-#     Regional) take it from the list (WD_REQ_BULLET), so none is re-read.
+#     list bullet already carry the requisition as job_id (Rochester Regional
+#     too since its re-key, wd_list_job_id; a row a ZIP still keys takes the
+#     number from the list, WD_REQ_BULLET), so none is re-read.
 #   * REQ_ID_REREAD_SYSTEMS below (CSOD, RMK, the Paycor boards that show
 #     the number).
 # Review 2026-10-14: the window is not tied to the push night. Any 5
@@ -3821,10 +3822,11 @@ def wd_req_id(info, job_id) -> str:
     number, or the payload has none).
     Review 2026-10-14: a row keyed by a list bullet that is not the
     requisition stands for whichever posting comes first for that bullet:
-    Rochester Regional's bullet is a ZIP code (1,331 postings on 53 rows),
+    Rochester Regional's bullet was a ZIP code (1,331 postings on 53 rows;
+    keyed by the requisition since the 2026-10-14 re-key, wd_list_job_id),
     and its url moves to another posting while a stored body is not read
     again, so a number read from one night's page would drift from the
-    row's url. Rochester's number comes from the list instead
+    row's url. Such a row's number comes from the list instead
     (WD_REQ_BULLET), every night, with the url."""
     jid = str(job_id or "").strip()
     if not jid.startswith("/"):
@@ -3833,13 +3835,15 @@ def wd_req_id(info, job_id) -> str:
     return rid if rid and rid != jid else ""
 
 
-# Review 2026-10-14: tenants whose job_id is a list bullet that is not the
+# Review 2026-10-14: tenants whose job_id may be a list bullet that is not the
 # requisition, with the bullet that is. Rochester Regional's bulletFields are
-# [site, ZIP, "REQ_237858", town]: the ZIP matches _WD_REQ_ID_RE first and
-# keys the row (pre-existing; re-keying is a separate job), the "REQ_" bullet
-# is the number the page prints (JSON-LD identifier.value REQ_237858 and
-# REQ_240770 on 2026-10-14). It is read from the same list item that gives
-# the row its url, so the two always name the same posting.
+# [site, ZIP, "REQ_237858", town]: the "REQ_" bullet is the number the page
+# prints (JSON-LD identifier.value REQ_237858 and REQ_240770 on 2026-10-14).
+# Since the re-key (wd_list_job_id) that bullet is the job_id whenever it is
+# the posting's own id (all 1,331 postings on 2026-10-14), and this returns
+# nothing; it still names the number if a ZIP ever keys a row again. It is
+# read from the same list item that gives the row its url, so the two always
+# name the same posting.
 WD_REQ_BULLET = {
     "Rochester Regional Health": re.compile(r"^REQ_[A-Za-z0-9_]*\d[A-Za-z0-9_]*$"),
 }
@@ -4501,6 +4505,44 @@ def _montefiore_loc(loc: str, city: str, state: str) -> tuple[str, str, str]:
 # A Workday bulletField that is a requisition number: optional letter prefix,
 # optional separator, 3+ digits, optional suffix, no spaces.
 _WD_REQ_ID_RE = re.compile(r"^[A-Za-z]{0,12}[-_ ]?\d{3,}[A-Za-z0-9._-]*$")
+
+# 2026-10-14 (Rochester Regional re-key): a bare five-digit bullet can be a
+# ZIP code. Rochester's bulletFields are [site, ZIP, "REQ_237858", town]; the
+# ZIP matched _WD_REQ_ID_RE first, keyed the row, and seen_ids folded the
+# 1,331 live postings into 53 rows, one per ZIP (48 ZIP-keyed active rows on
+# 2026-10-14). A posting's own id is the last segment of its externalPath,
+# "<Title>_<requisition>" with an optional "-N" copy suffix
+# ("Clinical-Trials-Project-Manager_REQ_237858-1"), and Workday prints that
+# requisition as the page's JSON-LD identifier.value (REQ_237858, REQ_240770).
+_WD_ZIP_BULLET_RE = re.compile(r"^\d{5}$")
+
+
+def _wd_path_id_is(bullet: str, external_path) -> bool:
+    """True when the posting's externalPath ends "_<bullet>" or
+    "_<bullet>-N" (its own id), the test tools/verify_stale.py makes."""
+    tail = unquote(str(external_path or "").rsplit("/", 1)[-1])
+    return bool(bullet) and re.search("_" + re.escape(bullet) + r"(?:-\d+)?$", tail) is not None
+
+
+def wd_list_job_id(bullets, external_path) -> str:
+    """The bullet that keys a Workday list item, or "" (the caller falls back
+    to the externalPath): the first bullet shaped like a requisition
+    (_WD_REQ_ID_RE, 2026-09-17), except that a bare five-digit bullet that is
+    not the posting's own id gives way to another bullet that is (Rochester
+    Regional's "REQ_237858", and its "REQ_EG_93", which _WD_REQ_ID_RE does not
+    match). Measured 2026-10-14: of 95,961 active bullet-keyed Workday rows,
+    only Rochester's 48 and Altru's 8 have a five-digit job_id that their url
+    does not end with, and Altru's other bullet is its state (["North
+    Dakota", "30005"], path "_R5"), so only Rochester changes."""
+    bf = [str(b).strip() for b in (bullets or [])]
+    jid = next((b for b in bf if _WD_REQ_ID_RE.match(b)), "")
+    if _WD_ZIP_BULLET_RE.match(jid) and not _wd_path_id_is(jid, external_path):
+        own = next((b for b in bf if b != jid and _wd_req_value(b) and " " not in b
+                    and _wd_path_id_is(b, external_path)), "")
+        if own:
+            return own
+    return jid
+
 
 # 2026-09-17 (blank states): tenants whose locationsText is a facility name
 # ("Ruby Memorial Hospital (WVUH)", "Strong Memorial Hospital", "SJHSYR-
@@ -5748,9 +5790,11 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         _facility, _city, _state = _tf
                     # job_id (2026-05-29): first digit-bearing bulletField is the
                     # req number (some tenants put the state in [0]); fall back to
-                    # the always-unique externalPath.
+                    # the always-unique externalPath. 2026-10-14: a five-digit
+                    # bullet that is not the posting's own id (a ZIP) gives way
+                    # to the one that is (wd_list_job_id).
                     _bf = j.get("bulletFields") or []
-                    _jid = next((str(b).strip() for b in _bf if _WD_REQ_ID_RE.match(str(b).strip())), "")
+                    _jid = wd_list_job_id(_bf, j.get("externalPath", ""))
                     if not _jid:
                         # 2026-09-17: only a bullet shaped like a req number
                         # ("JR11450", "R-53741", "JobReq0059731", "202500779")
