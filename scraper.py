@@ -21463,12 +21463,67 @@ _ROLE_HIGH_RX = re.compile(
     r"rheumatologist|pulmonologist|ophthalmologist|obstetrician|gynecologist|pediatrician|internist|physiatrist|"
     r"\bCRNA\b|nurse\s+anesthetist|pharmacist|chief\s+(?:executive|medical|nursing|financial|operating|information)\s+officer|"
     r"\b(?:CEO|CFO|COO|CNO|CMO|CIO)\b|vice\s+president|\bVP\b", re.I)
+# 2026-10-14 (fix 10 review): a skip word is the word, not a piece of
+# another one. "resident" matched inside "President" (no VP or Sr VP title
+# met the executive floor), "\bintern" inside "Internal" and "Internist"
+# (no Internal Medicine physician or internist met the physician floor),
+# "International", "extern" inside "External", "\btech" inside
+# "Technology", "fellow" inside "Fellowship-Trained", "recruit" inside a
+# physician's "$150,000 Recruitment Incentive", "contract" inside
+# "Independent Contractor", "support" inside "Supportive and Palliative
+# Care Physician", "specialist" inside "Subspecialist". A pending licence is
+# license-pending in either order ("International Pharmacist Pending
+# License"). A state or a system name is not a role either: see
+# _role_floor_skip_text.
 _ROLE_HIGH_SKIP_RX = re.compile(
-    r"resident|fellow|\bintern|student|trainee|extern|apprentice|assistant|associate|scribe|\btech|coordinator|liaison|"
-    r"recruit|support|coding|coder|specialist|engagement|pathways|navigator|secretary|clerk|billing|scheduler|"
-    r"analyst|manager|administrator|relations|advocate|services|outreach|enrollment|credential|contract|compensation|"
-    r"speech|language|\bRN\b|registered\s+nurse|\bLPN\b|\bLVN\b|office\s+nurse|\bPA\b|\bNP\b|"
-    r"nurse\s+practitioner", re.I)
+    r"\bresidents?\b|fellow(?!ship[\s-]*trained)|\bintern(?:s|ships?)?\b|student|trainee|"
+    r"\bextern(?:s|ships?)?\b|apprentice|assistant|associate|scribe|\btech(?!nolog(?:y|ies)\b)|coordinator|liaison|"
+    r"recruit(?!ment\s+incentive)|support(?!ive|ed)|coding|coder|(?<!sub)specialist|engagement|pathways|navigator|"
+    r"secretary|clerk|billing|scheduler|"
+    r"analyst|manager|administrator|relations|advocate|services|outreach|enrollment|credential|contract(?!or)|"
+    r"compensation|pending\s+licen[cs]e|"
+    # 2026-10-14 (fix 10): a "Certified Registered Nurse Anesthetist" is a
+    # CRNA (581 active titles never met the floor; none holds pay under it)
+    r"speech|language|\bRN\b|registered\s+nurse(?!\s+anesthetist)|\bLPN\b|\bLVN\b|office\s+nurse|\bPA\b|\bNP\b|"
+    r"nurse\s+practitioner|"
+    # 2026-10-14 (fix 10): another role the title names (see below)
+    r"house\s+officer|limited\s+permit|graduate\s+pharmacist|license\s+pending|\bCMA\b|"
+    r"midwife|therapist|sonographer|dietitian|"
+    r"dosimetrist|social\s+worker|counselor|representative|\brep\b|receptionist|front\s+desk|registrar|"
+    r"\basst\b(?!\s*[/.,]?\s*(?:assoc|prof))|\b(?:pathologists?['\u2019]?|physician)\s+assist\b|"
+    r"surgical\s+first\s+assist", re.I)
+# 2026-10-14 (fix 10 review): the advanced practice words are their own list
+# because a CRNA IS an advanced practice provider. "APP - CRNA - Blodgett",
+# "APP Nurse Anesthetist/UKHC" and "Advanced Practice Provider - OB CRNA,
+# North" (13 active rows: Corewell, Sanford, Benefis, Community Health
+# Network, UK HealthCare) name a CRNA and keep its floor, so Corewell
+# 29387089's "Competitive annual base salary of $28 5,000" (a split
+# $285,000, read as $28 an hour) stays refused. A CRNA student, resident or
+# intern is still off the floor (_ROLE_HIGH_SKIP_RX).
+_ROLE_HIGH_APP_SKIP_RX = re.compile(
+    r"\bAPPs?\b|\bAPRN|\bAPC\b|advanced\s+practice\s+(?:provider|professional|clinician|nurse)", re.I)
+# 2026-10-14 (fix 10 review): "PA" after a town is Pennsylvania, not a
+# physician assistant ("Outpatient Family Medicine Physician - Manheim, PA",
+# "CRNA, UPMC West Shore, Mechanicsburg, PA", "Pathology Institute -
+# Pathologist - Pittsburgh, Pa": 62 active titles off the floor), and
+# "Advocate" after a separator is the Advocate system ("CRNA - Advocate
+# Condell - PRN", "Clinical Pharmacist - Pediatrics - Advocate Christ"), not
+# a patient advocate. Both are case-sensitive: a town ends in a lower-case
+# letter, so "NIGHT SHIFT PA", "GI PA Hospitalist", "Pediatric Hospitalist -
+# PA (Nights)", "PA-C" and a PA after a high word ("Hospitalist PA") stay
+# physician assistants.
+_ROLE_HIGH_STATE_PA_RX = re.compile(r"(?<=[a-z])(?:,\s*|\s+)P[Aa]\b(?![-/]?C\b)")
+_ROLE_HIGH_ADVOCATE_NAME_RX = re.compile(r"(?:(?<=[-–—,|(@/]\s)|(?<=\bat\s))Advocate(?=\s+[A-Z])")
+_ROLE_HIGH_LAST_WORD_RX = re.compile(r"[A-Za-z]+$")
+
+
+def _role_floor_skip_text(t):
+    """`t` without a Pennsylvania state code or the Advocate system's name,
+    the text _ROLE_HIGH_SKIP_RX reads (see above)."""
+    def state(m):
+        prev = _ROLE_HIGH_LAST_WORD_RX.search(t, 0, m.start())
+        return m.group(0) if prev and _ROLE_HIGH_RX.search(prev.group(0)) else ""
+    return _ROLE_HIGH_ADVOCATE_NAME_RX.sub("", _ROLE_HIGH_STATE_PA_RX.sub(state, t))
 _ROLE_LOW_RX = re.compile(
     r"\bCNA\b|certified\s+nurs(?:e|ing)\s+(?:assistant|aide)|nurs(?:e|ing)\s+(?:assistant|aide)|\bPCT\b|patient\s+care\s+tech|"
     r"\bEVS\b|environmental\s+services|housekeep|dietary|food\s+service|dishwasher|\bcook\b", re.I)
@@ -21476,6 +21531,117 @@ _ROLE_LOW_SKIP_RX = re.compile(
     r"\bRN\b|\bRNFA\b|registered\s+nurse|\bLPN\b|\bLVN\b|\bAPRN\b|\bNP\b|\bPA\b|manager|director|supervisor|coordinator|"
     r"instructor|educator|\blead\b|chief|dietitian|nutritionist|charge", re.I)
 ROLE_FLOOR_HIGH_HOUR, ROLE_FLOOR_HIGH_YEAR, ROLE_CEILING_LOW_HOUR = 40.0, 100000.0, 45.0
+
+# 2026-10-14 (fix 10, owner: "okay those should be properly sorted"): the
+# floor reads the title's ROLE, not every high word in it (10-14 run log).
+#   * "Physician" or "Hospitalist" followed by a setting or a function names
+#     where, or for whom, the job works: "Licensed Practical Nurse Physician
+#     Office" ($23.65-$35.50, Advocate 15267942), "CMA - Physician's Office
+#     (Mahomet) FT", "Physician Office Front Desk Float Pool", "Physician
+#     Office Supervisor", "Physician Payment Reviewer", "Clinical Supervisor -
+#     Urgent Care - Physician Practice" (Hackensack 35421007), "Athletic
+#     Trainer / Physician Extender", "Receptionist, Physician Group". Only
+#     those two words: "Rural Cardiologist Practice" is a cardiologist, and
+#     "VP Operations" / "VP Business Development" are executives. A title
+#     that names a medical director keeps the floor ("Physician Clinic
+#     Medical Director", Concentra).
+#   * A labelled location is not a title ("Site: Mass General Brigham
+#     Community Physicians, Inc.").
+#   * An executive the job works for is not its role ("Chief of Staff to the
+#     CEO"); "looking for Psychiatrists" is still a psychiatrist.
+#   * A nurse is not a physician: "Clinical Nurse II:Medical/Surgical
+#     Hospitalist (M4)" (Albany Med 34170593, $85,280-$95,514 refused),
+#     "Licensed Practical Nurse - Pediatrics - Physician Practice", "Nurse
+#     Clinician - Physician Primary Care". A nurse anesthetist is a CRNA
+#     ("NURSE ANESTHETIST NURSE SR NEX"), "Nursing Home" is a setting, and a
+#     "Nurse Executive" is an executive.
+#   * A title that names another role (house officer / limited permit, a
+#     graduate or license-pending pharmacist, CMA, APP, APRN, APC, an
+#     advanced practice provider / professional / clinician / nurse,
+#     midwife, therapist, sonographer, dietitian, dosimetrist, social
+#     worker, counselor, representative, receptionist, front desk,
+#     registrar, "Asst") is that role; those words join the skip list above
+#     with the resident, intern and student already there ("Patient Service
+#     Rep I - Physician Practice Central Ops", Northern Light 37597448;
+#     "Hospitalist APP"; "Pathologists' Asst"; "House Officer (Limited Permit
+#     Physician)", Wyckoff $75,000; "Graduate Pharmacist", Bassett $95,992).
+#     An "Advanced Practice Pharmacist" is a pharmacist, a "Certified
+#     Registered Nurse Anesthetist" is a CRNA, not an RN, and an "APP -
+#     CRNA" is a CRNA (_ROLE_HIGH_APP_SKIP_RX).
+# Every physician title keeps its floor: "OB Hospitalist Full Time" at
+# $19-$23 is still refused, and "Physician Advisor", "Physician Reviewer",
+# "Physician Executive" and "Hospice Team Physician" are physicians.
+# "Pharmacy Technician" never named a pharmacist, and "Executive Assistant"
+# never named an executive.
+# 2026-10-14 (fix 10 review): a setting alone does not say the job is not
+# a physician's. "MD Physician Group" (Wellstar 22077352, a staff
+# pathologist), "Physician Practice Opportunities" (UnityPoint 35495110,
+# recruiting physicians), "Physician Partner - Dermatology", "Nocturnist
+# Physician Group" and "Urgent Care Physician Clinic" are physician jobs. So
+# "Physician" / "Hospitalist" + a place or an organisation (Office,
+# Practice, Services, Group, Network, Partners, Clinic, Enterprise,
+# Organization, Alliance: _ROLE_HIGH_PLACE_RX) leaves the floor only when
+# the title names another role (_ROLE_HIGH_OTHER_ROLE_RX or a CNA / PCT /
+# EVS / dietary role): "Physician Office Supervisor", "Director Physician
+# Group 2", "Coord, Physicians Group Practice", "Security Officer - ... USA
+# Health Physicians Group", "DIRECTOR-HOSPITALIST PRACTICE" (Forrest
+# 28621071: the posting runs the group's business operations), "CNA -
+# Physician's Office". A function (Payment, Billing, Credentialing,
+# Recruiter, Liaison, Scheduler, Operations, Sales, Extender..., also after
+# a place: "Physician Practice Operations") or a legal name (Inc, LLC,
+# Corporation) is never the role: _ROLE_HIGH_FUNCTION_RX.
+_ROLE_HIGH_SETTING_WORD_RX = re.compile(r"physician|hospitalist", re.I)
+_ROLE_HIGH_PLACE_WORDS = (r"offices?|practices?|services?|groups?|networks?|partners?|clinics?|enterprise|"
+                          r"organi[sz]ation|alliance")
+_ROLE_HIGH_PLACE_RX = re.compile(r"(?:['\u2019]s|s['\u2019]?)?\s+(?:" + _ROLE_HIGH_PLACE_WORDS + r")\b", re.I)
+_ROLE_HIGH_FUNCTION_RX = re.compile(
+    r"(?:['\u2019]s|s['\u2019]?)?(?:,?\s+(?:inc|llc)|(?:\s+(?:" + _ROLE_HIGH_PLACE_WORDS + r"))?\s+(?:corporation|"
+    r"payments?|billing|coding|coders?|credentialing|"
+    r"credentials?|recruiters?|recruitment|recruiting|liaisons?|schedulers?|scheduling|referrals?|relations|"
+    r"relationships?|outreach|engagement|contracting|contracts?|compensation|operations|business|sales|support|"
+    r"extenders?))\b", re.I)
+_ROLE_HIGH_OTHER_ROLE_RX = re.compile(
+    r"\b(?:supervisors?|directors?|managers?|mgr|coord|controller|auditor|educator|trainer|instructor|officer|"
+    r"psychologist|counsel|attorney|accountant|biller|dieti[ct]ian|reps|aide|agent|ambassador|concierge|courier|"
+    r"driver|operator|porter|transporter|custodian|engineer|developer|planner|buyer|optometrist|audiologist|"
+    r"podiatrist|chiropractor|dentist|paramedic|EMT)\b", re.I)
+_ROLE_HIGH_MEDICAL_DIRECTOR_RX = re.compile(r"medical\s+director", re.I)
+_ROLE_HIGH_LABEL_RX = re.compile(r"\s*(?:site|location)\s*:", re.I)
+_ROLE_HIGH_NURSE_RX = re.compile(r"\bnurse\b(?!\s+(?:anesthe|exec))", re.I)
+_ROLE_HIGH_CRNA_RX = re.compile(r"\bCRNA\b|nurse\s+anesthe", re.I)
+_ROLE_HIGH_EXEC_WORD_RX = re.compile(
+    r"chief\s+(?:executive|medical|nursing|financial|operating|information)\s+officer|CEO|CFO|COO|CNO|CMO|CIO|"
+    r"vice\s+president|VP", re.I)
+_ROLE_HIGH_PRINCIPAL_RX = re.compile(r"\b(?:to|for)\s+(?:the\s+)?$", re.I)
+
+
+def role_floor_high_title(title) -> bool:
+    """True when the ROLE of `title` is a physician, surgeon, CRNA,
+    anesthesiologist, pharmacist or executive (the floor's roles, fix 10
+    above): a high word in a title that is not a "Site:" label, names no
+    other role (_ROLE_HIGH_SKIP_RX; an advanced practice word only when the
+    title names no CRNA) and no nurse but a nurse anesthetist, where the
+    word is not a physician / hospitalist function, not a physician /
+    hospitalist setting in a title that names another role, and not an
+    executive the job works for."""
+    t = str(title or "")
+    if _ROLE_HIGH_LABEL_RX.match(t) or _ROLE_HIGH_SKIP_RX.search(_role_floor_skip_text(t)):
+        return False
+    crna = _ROLE_HIGH_CRNA_RX.search(t)
+    if _ROLE_HIGH_APP_SKIP_RX.search(t) and not crna:         # "Hospitalist APP"; "APP - CRNA" is a CRNA
+        return False
+    if _ROLE_HIGH_NURSE_RX.search(t) and not crna:
+        return False
+    for m in _ROLE_HIGH_RX.finditer(t):
+        if _ROLE_HIGH_SETTING_WORD_RX.fullmatch(m.group(0)) and not _ROLE_HIGH_MEDICAL_DIRECTOR_RX.search(t):
+            if _ROLE_HIGH_FUNCTION_RX.match(t, m.end()):
+                continue                                      # "Physician Payment Reviewer", "Physicians, Inc."
+            if _ROLE_HIGH_PLACE_RX.match(t, m.end()) and (_ROLE_HIGH_OTHER_ROLE_RX.search(t) or _ROLE_LOW_RX.search(t)):
+                continue                                      # "Physician Office Supervisor"; not "MD Physician Group"
+        if _ROLE_HIGH_EXEC_WORD_RX.fullmatch(m.group(0)) and _ROLE_HIGH_PRINCIPAL_RX.search(t[:m.start()]):
+            continue                                          # "Chief of Staff to the CEO"
+        return True
+    return False
 
 
 def role_floor_reason(title, got) -> str | None:
@@ -21488,7 +21654,7 @@ def role_floor_reason(title, got) -> str | None:
         return None
     t = str(title)
     top = hi if hi is not None else lo
-    if _ROLE_HIGH_RX.search(t) and not _ROLE_HIGH_SKIP_RX.search(t):
+    if role_floor_high_title(t):                              # 2026-10-14 (fix 10): the title's role, not any high word
         if (unit == "hour" and top < ROLE_FLOOR_HIGH_HOUR) or (unit == "year" and top < ROLE_FLOOR_HIGH_YEAR):
             return "under the physician / CRNA / pharmacist / executive floor ($40 an hour, $100,000 a year)"
     elif _ROLE_LOW_RX.search(t) and not _ROLE_LOW_SKIP_RX.search(t):
@@ -22664,7 +22830,7 @@ def extract_posting_facts(text, job_type=None, title=None):
     # 2026-10-04 (S11): a flat figure the posting labels "up to" ("Pay: Up to
     # $248 per hour", SonderMind) is stored as the pair it is, with
     # pay_note = "up_to" so a display can say so. Set only when it applies.
-    note = _pay_note(t, job_type)
+    note = _pay_note(t, job_type, title)
     if note:
         out["pay_note"] = note
     if not (out["certs"] or out["education"] or out["shift"] or out["experience"]
@@ -22681,10 +22847,22 @@ _WAGE_UP_TO_RX = re.compile(
     r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
 
 
-def _pay_note(t, job_type=None):
+def _pay_note(t, job_type=None, title=None):
     """"up_to" when the stored wage is a flat figure that a pay label in the
-    text introduces with "up to"; else None."""
-    w = extract_posted_wage(t, job_type)
+    text introduces with "up to"; else None.
+    2026-10-14 (fix 10): the wage is read as normalize_job reads it, under
+    the job's own title (title, newline, body). Before, the body's first
+    line stood in for the title, so the role floor judged a body label:
+    "Site: Mass General Brigham Community Physicians, Inc." and
+    UnitedHealth's LHC Group opening "Explore opportunities with Elite
+    Hospice, a part of LHC Group, a leading post-acute care partner for
+    hospitals, physicians and families nationwide" read as physician
+    titles. Their figures were logged as refused on CNA, LPN and RN rows
+    (29 of the 43 "Pay rejected" lines in the 10-14 run) and an "up to"
+    figure under such a label lost its note. The stored wage never came
+    from this read, and normalize_job's read already logs what the floor
+    refuses, so this one logs nothing."""
+    w = extract_posted_wage(f"{title or ''}\n{t}", job_type, log_rejects=False)
     if not w or w[0] != w[1]:
         return None
     for m in _WAGE_UP_TO_RX.finditer(t):
@@ -24270,7 +24448,7 @@ def extract_requirements(text, title=None) -> dict:
     return out
 
 
-def extract_posted_wage(text, job_type=None):
+def extract_posted_wage(text, job_type=None, log_rejects=True):
     """Best-effort (min, max, unit) from posting text, or None.
 
     Every dollar figure that survives _wage_is_noise is a candidate. A dollar
@@ -24443,7 +24621,7 @@ def extract_posted_wage(text, job_type=None):
         got = _wage_pair(v, v)
         if got and not prorated(m.start(), m.end(), got):
             consider(m, got, -1)
-    if rejected:
+    if rejected and log_rejects:                              # (fix 10: _pay_note re-reads normalize_job's text quietly)
         _role_floor_log(title_line, rejected, rejected_why[0], "text")
     if not cands:
         return None
