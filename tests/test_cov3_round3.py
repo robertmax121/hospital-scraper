@@ -113,32 +113,21 @@ def test_selectminds_keep_rule_only_filters_the_iowa_board():
     assert scraper._selectminds_keep("Main Line Health", job("Dining Services Associate")) is True
 
 
-def test_selectminds_scrape_pages_latest_jobs_until_no_new_card(monkeypatch):
+def test_selectminds_scrape_reads_latest_jobs_when_the_search_answers_no_card(monkeypatch):
+    # 2026-10-14 (fix 11): /jobs/search/ (paged by path) comes first now, and
+    # ?page=N is no longer sent: both boards ignored it (Main Line read 10 of
+    # 346). /latest-jobs, the ten newest, is the fallback; paging by path is
+    # tested in tests/test_caps_1014.py.
     page_html = _read("selectminds_mainline_cards.html")
 
     def answer(method, url, kw):
-        assert url.endswith("/latest-jobs")
-        return (page_html, 200)   # every page repeats the same two cards
+        return (page_html if url.endswith("/latest-jobs") else "<html></html>", 200)
 
     calls = _fake_req(monkeypatch, answer)
     jobs = asyncio.run(scraper.scrape_selectminds(None, "Main Line Health", "mainline"))
     assert len(jobs) == 2
-    assert [c[2]["page"] for c in calls] == ["1", "2"]       # page 2 added nothing -> stop, no /jobs/search fallback
-
-
-def test_selectminds_scrape_falls_back_to_jobs_search_when_latest_is_empty(monkeypatch):
-    page_html = _read("selectminds_mainline_cards.html")
-
-    def answer(method, url, kw):
-        if url.endswith("/latest-jobs"):
-            return ("<html></html>", 200)
-        return (page_html if kw["params"]["page"] == "1" else "<html></html>", 200)
-
-    calls = _fake_req(monkeypatch, answer)
-    jobs = asyncio.run(scraper.scrape_selectminds(None, "Main Line Health", "mainline"))
-    assert len(jobs) == 2
-    assert [c[1].rsplit("/", 1)[-1] or "jobs/search" for c in calls][:1] == ["latest-jobs"]
-    assert any(c[1].endswith("/jobs/search/") for c in calls)
+    assert [c[1].split(".com", 1)[1] for c in calls] == ["/jobs/search/", "/latest-jobs"]
+    assert all(not c[2] for c in calls)                      # no ?page= parameter any more
 
 
 def test_selectminds_tenants_configured():

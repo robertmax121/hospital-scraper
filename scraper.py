@@ -11039,8 +11039,14 @@ SELECTMINDS_ORGS = {
 SELECTMINDS_MAX_PAGES = int(os.getenv("SELECTMINDS_MAX_PAGES", "80"))
 _SM_CARD_RE = re.compile(r'<div id="job_list_(\d+)"[^>]*class="job_list_row[^"]*"[^>]*>(.*?)(?=<div id="job_list_\d+"|\Z)', re.S)
 _SM_TITLE_RE = re.compile(r'<a href="([^"]+)"[^>]*class="job_link[^"]*"[^>]*>(.*?)</a>', re.S)
-_SM_LOC_RE = re.compile(r'class="location"[^>]*>(.*?)</a>', re.S)
-_SM_CAT_RE = re.compile(r'job_category.*?<span class="jlr_value[^"]*">(.*?)</span>', re.S)
+# Two card shapes: /latest-jobs links the town (<a class="location">) and
+# puts the category in a jlr_value span; the /jobs/search pages (2026-10-14,
+# fix 11) write <span class="location"> and <span class="category">.
+_SM_LOC_RE = re.compile(r'<a [^>]*class="location"[^>]*>(.*?)</a>|<span class="location">(.*?)</span>', re.S)
+_SM_CAT_RE = re.compile(r'job_category.*?<span class="jlr_value[^"]*">(.*?)</span>|<span class="category">(.*?)</span>', re.S)
+_SM_TOTAL_RE = re.compile(r'class="total_results">\s*([\d,]+)')
+_SM_PAGES_RE = re.compile(r'id="jPaginateNumPages"[^>]*>\s*([\d.]+)')
+_SM_SEARCH_ID_RE = re.compile(r'/ajax/jobs/(\d+)/')
 _SM_REQ_RE = re.compile(r'job_external_id.*?<span class="field_value">(.*?)</span>', re.S)
 _SM_DESC_RE = re.compile(r'class="jlr_description"[^>]*>(.*?)</p>', re.S)
 # Rows whose title, category or teaser names a hospital take it as hospital_name.
@@ -11089,12 +11095,12 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
         if url.startswith("/"):
             url = base + url
         lm = _SM_LOC_RE.search(card)
-        loc = _html_unescape(strip_html(lm.group(1))).strip() if lm else ""
+        loc = _html_unescape(strip_html(lm.group(1) or lm.group(2) or "")).strip() if lm else ""
         # the link opens with a magnifier glyph (&#128269;) before the town
         loc = re.sub(r",\s*United States\s*$", "", re.sub(r"^[^A-Za-z]+", "", loc)).strip()
         city, st = parse_city_state(loc)
         cm = _SM_CAT_RE.search(card)
-        category = _html_unescape(strip_html(cm.group(1))).strip() if cm else ""
+        category = _html_unescape(strip_html(cm.group(1) or cm.group(2) or "")).strip() if cm else ""
         rm = _SM_REQ_RE.search(card)
         req_no = _html_unescape(strip_html(rm.group(1))).strip() if rm else ""
         dm = _SM_DESC_RE.search(card)
@@ -11117,35 +11123,84 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
     return jobs
 
 
+async def _selectminds_get(session, system: str, url: str, params=None):
+    """(status, html, final url) of one SelectMinds page; (0, "", url) on an
+    exception. aiohttp follows the /jobs/search/ redirect, so the final url
+    carries the search id."""
+    try:
+        async with req(session, "get", url, params=params,
+                       headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+            html = await r.text() if r.status == 200 else ""
+            return r.status, html, str(getattr(r, "url", "") or url)
+    except Exception as e:
+        logger.info(f"SelectMinds {system}: {url}: {type(e).__name__}: {e}")
+        return 0, "", url
+
+
 async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
-    """HTML list pages: /latest-jobs?page=N (every open job, newest first),
-    /jobs/search/?page=N when the first answers no cards. A page that adds no
-    new id ends the crawl (SELECTMINDS_MAX_PAGES x 20-card pages otherwise)."""
+    """Every card of the board's job search, by path.
+
+    2026-10-14 (fix 11): the ?page=N this adapter sent is ignored on both
+    boards; /latest-jobs and /jobs/search/ answer the same first 10 cards
+    whatever N, so the 10-14 run read Main Line 10 of 346 and Iowa 6 of 696
+    (and the "no new card" rule stopped it at page 2). /jobs/search/
+    redirects to /jobs/search/<search id>, its pages are
+    /jobs/search/<search id>/page<N> (10 cards each; measured: 35 pages, 346
+    distinct cards, from a new session per page too), and the first page
+    carries the board's total_results and page count. A page past the end
+    wraps to page 1, which adds no new id and ends the crawl. /latest-jobs
+    (the 10 newest) is kept as the fallback when the search answers no card.
+    A page that fails mid-crawl makes the crawl PARTIAL (the HealthcareSource
+    rule); the cards read against total_results decide a complete claim."""
     base = f"https://{org}.referrals.selectminds.com"
     jobs: list[Job] = []
     seen: set[str] = set()
-    for path in ("/latest-jobs", "/jobs/search/"):
-        for page in range(1, SELECTMINDS_MAX_PAGES + 1):
-            try:
-                async with req(session, "get", base + path, params={"page": str(page)},
-                               headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
-                               ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
-                    if r.status != 200:
-                        logger.info(f"SelectMinds {system}: HTTP {r.status} on {path} page {page}")
-                        break
-                    html = await r.text()
-            except Exception as e:
-                logger.info(f"SelectMinds {system}: {path} page {page}: {e}")
-                break
-            cards = [j for j in _parse_selectminds_page(html, system, base) if j.job_id not in seen]
-            if not cards:
-                break
-            seen.update(j.job_id for j in cards)
-            jobs.extend(j for j in cards if _selectminds_keep(system, j))
+
+    def take(html) -> int:
+        cards = [j for j in _parse_selectminds_page(html, system, base) if j.job_id not in seen]
+        seen.update(j.job_id for j in cards)
+        jobs.extend(j for j in cards if _selectminds_keep(system, j))
+        return len(cards)
+
+    status, html, final = await _selectminds_get(session, system, base + "/jobs/search/")
+    total = pages = 0
+    failed: list[int] = []
+    if status == 200 and take(html):
+        m = _SM_TOTAL_RE.search(html)
+        total = int(m.group(1).replace(",", "")) if m else 0
+        m = _SM_PAGES_RE.search(html)
+        pages = int(float(m.group(1))) if m else 0
+        m = re.search(r"/jobs/search/(\d+)", final) or _SM_SEARCH_ID_RE.search(html)
+        search_url = f"{base}/jobs/search/{m.group(1)}" if m else ""
+        if pages > 1 and not search_url:
+            logger.warning(f"SelectMinds {system}: no search id on the first page; {len(seen)} of {total} read")
+        for page in range(2, min(pages, SELECTMINDS_MAX_PAGES) + 1) if search_url else ():
             await jitter()
-        if seen:
-            break
-    logger.info(f"  SelectMinds {system}: {len(jobs)} jobs ({len(seen)} cards read)")
+            status, html, _ = await _selectminds_get(session, system, f"{search_url}/page{page}")
+            if status != 200:
+                logger.info(f"SelectMinds {system}: HTTP {status} on page {page}")
+                failed.append(page)
+                if len(failed) >= 3 and failed[-3:] == list(range(page - 2, page + 1)):
+                    failed.extend(range(page + 1, min(pages, SELECTMINDS_MAX_PAGES) + 1))
+                    break
+                continue
+            if not take(html):
+                break                    # wrapped round to page 1: the board's end
+    else:
+        if status != 200:
+            logger.info(f"SelectMinds {system}: HTTP {status} on /jobs/search/; trying /latest-jobs")
+        status, html, _ = await _selectminds_get(session, system, base + "/latest-jobs")
+        if status == 200:
+            take(html)
+    if failed and jobs:
+        PARTIAL_SYSTEMS.add(system)
+        logger.warning(f"SelectMinds {system}: PARTIAL, pages {failed[:10]} unread; {len(seen)} of {total} "
+                       f"cards read; not swept tonight")
+    elif total and len(seen) < COMPLETE_RATIO * total:
+        logger.warning(f"SelectMinds {system}: {len(seen)} of {total} cards read")
+    logger.info(f"  SelectMinds {system}: {len(jobs)} jobs ({len(seen)} cards read of {total or '?'})")
+    report_complete(system, len(seen), total, feed="SELECTMINDS_ORGS")
     return jobs
 
 async def run_selectminds(session) -> list[Job]:
