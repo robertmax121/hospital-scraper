@@ -455,7 +455,9 @@ def _first_forced_night(monkeypatch, job):
 def test_reread_set_lists_only_tenants_whose_page_shows_a_number():
     a, b = (_day(x) for x in scraper.REQ_ID_REREAD_WINDOW)
     assert b - a + 1 >= 2 * scraper.REQ_ID_REREAD_CYCLE      # a late push still gets a full cycle
-    assert b <= _day("2026-10-31")                            # it ends; drop it on the push after
+    # it ends about two weeks after it opens, whichever night the push moves
+    # the start to (REQ_ID_WINDOW_START); drop it on the push after
+    assert b - a + 1 <= 21
     for s in scraper.REQ_ID_REREAD_SYSTEMS:
         assert scraper._canon_system(s) == s
         assert s in scraper.CSOD_REQ_ID or s in scraper.SF_RMK_REQ_LABEL or s in scraper.PAYCOR_ORGS, s

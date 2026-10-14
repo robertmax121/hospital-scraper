@@ -367,8 +367,11 @@ def test_dry_normalize_each_platform(platform, fixture_text, monkeypatch):
 
 # ── the two re-reads together ───────────────────────────────────────────────
 def test_both_windows_open_on_one_start_line(monkeypatch):
-    # 2026-10-15 when the push lands before 00:00 UTC 2026-10-15, else 2026-10-16
-    assert scraper.REQ_ID_WINDOW_START in ("2026-10-15", "2026-10-16")
+    # 2026-10-15 when the push lands before 00:00 UTC 2026-10-15, else the
+    # first nightly run after the push: any ISO date from 2026-10-15 on, so
+    # moving it stays a one-line change in scraper.py whatever night it is
+    start = date.fromisoformat(scraper.REQ_ID_WINDOW_START)
+    assert start.isoformat() == scraper.REQ_ID_WINDOW_START and start >= date(2026, 10, 15)
     assert scraper.REQ_REREAD_WINDOW == scraper.REQ_ID_REREAD_WINDOW == scraper._req_id_window(scraper.REQ_ID_WINDOW_START)
     assert scraper._req_id_window("2026-10-15") == ("2026-10-15", "2026-10-28")      # as set
     # moving the start moves both windows, end included
@@ -461,3 +464,25 @@ def test_re_reads_stay_inside_the_tenants_budget(monkeypatch):
     assert budget.spent == 10 and len(fetched) == 10
     assert set(fetched[:5]) == {f"n{i}" for i in range(5)}
     assert all(j in old for j in fetched[5:])
+
+
+# ── iCIMS rows that come from a Jibe front (Amedisys) ───────────────────────
+def test_jibe_rows_send_no_req_id(fixture_text, monkeypatch):
+    """Amedisys's iCIMS rows come from its Jibe front (careers.amedisys.com,
+    JIBE_SITES; every stored Amedisys row, active or not, is on that host on
+    2026-10-14), not from the classic careersen-amedisys.icims.com cards.
+    The Jibe req_id is already the job_id, scrape_jibe sets no req_id, and the
+    iCIMS detail pass skips a url off *.icims.com, so iCIMS being on
+    REQ_ID_ONLY_PLATFORMS sends these rows no number, on any night."""
+    assert scraper.JIBE_SITES["Amedisys"] == "https://careers.amedisys.com"
+    data = json.loads(fixture_text("push10/jibe_mymichigan_jobs.json"))
+    _serve(monkeypatch, lambda m, u, kw: data if "/api/jobs" in u else "")
+    monkeypatch.setattr(scraper, "_fetch_html", _page(""))
+    jobs = asyncio.run(scraper.scrape_jibe(None, "Amedisys", "https://careers.amedisys.com"))
+    assert jobs and all(j.ats_platform == "iCIMS" and j.req_id == "" for j in jobs)
+    for j in jobs:
+        assert not scraper._ICIMS_JOB_URL_RX.match(j.url)          # no iCIMS detail read
+        row = scraper.normalize_job(j)
+        assert "req_id" not in (row["posting_facts"] or {})
+        bare = scraper.normalize_job(dataclasses.replace(j, description=""))
+        assert "req_id" not in (bare["posting_facts"] or {})
