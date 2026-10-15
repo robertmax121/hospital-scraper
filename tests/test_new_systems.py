@@ -127,7 +127,10 @@ def test_talemetry_posting_valid_and_repaired():
     bad = good.replace("Sterile processing", "Sterile \\- processing", 1)
     assert scraper._jobposting_from_html(_page(bad)) is None
     fixed = scraper._talemetry_posting(_page(bad))
-    assert fixed is not None and "Sterile \\- processing" in fixed["description"]
+    # 2026-10-15: the stray backslash is dropped, as the page shows it (it was
+    # doubled and stored, and "\\$35.29 - \\$54.71" broke the pay range).
+    assert fixed is not None and "Sterile - processing" in fixed["description"]
+    assert "\\" not in fixed["description"]
     # Legitimate escapes survive the repair untouched.
     esc = json.dumps({"@type": "JobPosting", "title": "A \"quoted\" title", "description": BODY + "\nline"})
     assert scraper._talemetry_posting(_page(esc.replace("Sterile", "St\\-erile", 1)))["title"] == 'A "quoted" title'
