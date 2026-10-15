@@ -14,6 +14,10 @@ no database.
    DETAIL_PRIORITY_STATES (order only).
 4. USAJOBS: every results page, the hiring facility as hospital_name, and
    annual federal pay stored hourly at 2,087 hours.
+5. Review fixes: an add-on range is refused whole (never its high end
+   alone), labels that describe the pay are not add-ons, the orientation
+   rate is not the pay, a field spanning the levels the body prices stays,
+   and the USAJOBS city / territory / facility edge cases.
 """
 import asyncio
 import json
@@ -379,3 +383,139 @@ def test_usajobs_facility_names(sub, summary, want):
     m = {"OrganizationName": "Veterans Health Administration",
          "UserArea": {"Details": {"SubAgencyName": sub, "JobSummary": summary}}}
     assert scraper.usajobs_facility(m, "VA Hospitals") == want
+
+
+# ── 5. review fixes (2026-10-15) ─────────────────────────────────────────────
+# Each body line is quoted from a stored hospital_jobs row (id in the comment)
+# or from the review's own cases.
+
+@pytest.mark.parametrize("title, line", [
+    # a range that prices an add-on is one add-on: its high end is not the pay
+    ("Registered Nurse", "Weekend premium $38.50 - $52.00 per hour"),
+    ("Registered Nurse", "Location adjustment: $62.00 - $75.00 per hour"),
+    ("Registered Nurse", "Shift differential $3.00 - $5.00 per hour"),
+    ("Registered Nurse", "Sign-on Bonus Pay: $5,000"),
+    ("Registered Nurse", "Shift Differential Pay Rate: $3/hr"),
+    # Penn 37067651: the orientation rate under a pay label, beside a placeholder band
+    ("PRN Home Health Physical Therapist -Days-Princeton",
+     "Salary: \\$26/Hr Orientation, Paid Per Visit\n\nSalary Range:\n\n\\$7.25 - \\$120.00/Hourly"),
+    ("Registered Nurse", "Pay Rate: $30.00/hr (orientation)"),
+])
+def test_add_on_ranges_and_orientation_rates_store_nothing(title, line):
+    assert extract_posted_wage(f"{title}\n{line}") is None
+
+
+@pytest.mark.parametrize("title, line, want", [
+    # the same label words describing the pay itself
+    ("Registered Nurse", "Employment type: On Call $38.50 - $52.00 per hour", (38.5, 52.0, "hour")),
+    ("Registered Nurse", "The pay range, with location adjustment, is $80,000 - $110,000 annually",
+     (80000.0, 110000.0, "year")),
+    ("Nurse Practitioner", "Pay range after geographic adjustment $120,000 - $150,000", (120000.0, 150000.0, "year")),
+    ("Nurse Practitioner", "Salary: Increased Hiring Rate $150,000 - $175,000", (150000.0, 175000.0, "year")),
+    # a pay label after the words of an earlier figure or an aside heads its own figure
+    ("Registered Nurse RN FT ICU Nights", "$20,000 Sign on Bonus- Pay range: $51.19 - $63.65/Hr\n\nKindred Hospital",
+     (51.19, 63.65, "hour")),                                                                    # ScionHealth 32101894
+    ("Registered Nurse (RN) - Emergency Department",
+     "** Relocation Provided if not local **Compensation range: $44.92-$70.08/hour based on...",
+     (44.92, 70.08, "hour")),                                                                    # Main Line 38277794
+    ("Partial Hospitalization Clinician",
+     "**Currently offering up to a $5k Signing Bonus for this role** Pay: $28.00-$38.00/hour Schedule/Location: Full Time",
+     (28.0, 38.0, "hour")),                                                                      # UHS 26531686
+    # an aside or a joiner after a range's own unit
+    ("Admissions RN - Nights", "Salary range\n\n$41 - $50 / hour (Including shift differential)\n\nBENEFITS:",
+     (41.0, 50.0, "hour")),                                                                      # Acadia 34836759
+    ("Weekend Home Health Visits Registered Nurse",
+     "Base Pay, depending on qualifications\n\n$60.00 - $65.00 per point Plus Weekend Differential",
+     (60.0, 65.0, "visit")),                                                                     # BAYADA 38060992
+    ("RN New Grad Residency",
+     "Graduated pay scale during nurse residency program from $28-30/ hour with various incentives",
+     (28.0, 30.0, "hour")),                                                                      # BAYADA 36615018
+    ("Registered Nurse", "$30 - $40 per hour, shift differential", (30.0, 40.0, "hour")),    # as before
+    # orientation words that do not name the figure
+    ("Registered Nurse - Part Time Weekends",
+     "Attractive pay\n\n$36.00 to $40.00 per hour for Orientation and will then convert to a per point pay "
+     "system with a base rate of $48.00 to $50.00 per point.", (36.0, 40.0, "hour")),             # Amedisys 14792756
+    ("Registered Nurse", "Pay rate: $45.00/hr after orientation", (45.0, 45.0, "hour")),
+])
+def test_pay_described_by_add_on_words_is_read_whole(title, line, want):
+    assert extract_posted_wage(f"{title}\n{line}") == want
+
+
+ASANTE_PHARM = ("Pharmacy Technician 1 and 2 positions. Starting wages for each level are noted below.\n\n"
+                "Starting Wage:\n\nPharmacy Tech 1: \\$21.15-\\$29.09 per hour, depending on experience\n\n"
+                "Pharmacy Tech 2: \\$22.53-\\$30.98 per hour, depending on experience")     # Asante 36434610
+
+
+def test_field_spanning_the_levels_the_body_prices_stays():
+    # Asante's header spans Tech 1 and Tech 2 (21.15-30.98); the text rule
+    # read Tech 1 alone once "\$" parsed.
+    assert extract_posted_wage("Pharmacy Technician\n" + ASANTE_PHARM) == (21.15, 29.09, "hour")
+    field, text = (21.15, 30.98, "hour"), (21.15, 29.09, "hour")
+    assert scraper.pay_text_overrides(field, text) is True
+    assert scraper.pay_text_overrides(field, text, "Pharmacy Technician\n" + ASANTE_PHARM) is False
+    j = _job(title="Pharmacy Technician", hospital_system="Asante Health System", description=ASANTE_PHARM + FILLER,
+             wage_min=21.15, wage_max=30.98, wage_unit="hour")
+    d = scraper.normalize_job(j)
+    assert _pay(d) == (21.15, 30.98, "hour") and d["posting_facts"]["pay_src"] == "field"
+
+
+@pytest.mark.parametrize("title, body, field, want", [
+    # a field figure the body never prints: the text wins, as push 10 decided
+    ("Registered Nurse RRMC (Ashland-Endoscopy)", "Salary Range: \\$53.99 - \\$72.47\n\nShift Differentials:",
+     (53.99, 77.79, "hour"), (53.99, 72.47, "hour")),                                           # Asante 35489890
+    # a field that does not hold the text's range (another role's band) is replaced
+    ("Registered Nurse (RN) - Cove's Edge",
+     "The pay range for this position for an LPN is $27.27 to $36.88 per hour.\n\n"
+     "The pay range for this position for an RN is $31.79 to $43.02 per hour.",
+     (27.27, 36.88, "hour"), (31.79, 43.02, "hour")),                                           # MaineHealth 32717085
+])
+def test_text_still_replaces_a_field_the_body_disagrees_with(title, body, field, want):
+    j = _job(title=title, description=body + FILLER, wage_min=field[0], wage_max=field[1], wage_unit=field[2])
+    d = scraper.normalize_job(j)
+    assert _pay(d) == want and d["posting_facts"]["pay_src"] == "text"
+
+
+@pytest.mark.parametrize("name, want", [
+    ("Cincinnati, Ohio", "Cincinnati"),
+    ("Point Loma Complex, San Diego, California", "San Diego"),      # the API docs' own example
+    ("Washington, District of Columbia", "Washington"),
+    ("Anywhere in the U.S. (remote job)", "Anywhere in the U.S. (remote job)"),
+    ("", ""),
+])
+def test_usajobs_city_is_the_part_before_the_state(name, want):
+    assert scraper._usajobs_city(name) == want
+
+
+@pytest.mark.parametrize("code, want", [
+    ("Ohio", "OH"), ("District of Columbia", "DC"), ("TX", "TX"),
+    ("Puerto Rico", "PR"), ("Guam", "GU"), ("Virgin Islands", "VI"), ("U.S. Virgin Islands", "VI"),
+    ("Ontario", ""), ("", ""),
+])
+def test_usajobs_state_codes_include_the_territories(code, want):
+    assert scraper._usajobs_state(code) == want
+
+
+@pytest.mark.parametrize("summary, want", [
+    ("Summary The Lt. Col. Luke Weathers, Jr. VA Medical Center in Memphis is hiring.",
+     "Lt. Col. Luke Weathers, Jr. VA Medical Center"),
+    ("Join the team at Phoenix Indian Medical Center today.", "Phoenix Indian Medical Center"),
+    ("Gallup Indian Medical Center serves the Navajo Nation.", "Gallup Indian Medical Center"),
+    ("Work at the Indian Health Service Hospital in your area.", ""),
+    ("Join the Jr. VA Medical Center team.", ""),
+])
+def test_usajobs_facility_names_from_text_edge_cases(summary, want):
+    assert scraper._fed_facility_from_text(summary) == want
+
+
+def test_usajobs_job_location_for_a_complex_and_a_territory():
+    item = _usaj_item("880000001", "Registered Nurse", "Veterans Health Administration", "x", "California",
+                      87457, 153766)
+    loc = item["MatchedObjectDescriptor"]["PositionLocation"][0]
+    loc["CityName"] = "Point Loma Complex, San Diego, California"
+    j = scraper._usajobs_job(item, "VA Hospitals")
+    assert (j.city, j.state, j.location) == ("San Diego", "CA", "San Diego, CA")
+    pr = _usaj_item("880000002", "Staff Nurse", "VA Caribbean Healthcare System", "San Juan", "Puerto Rico",
+                    70000, 120000)
+    j = scraper._usajobs_job(pr, "VA Hospitals")
+    assert (j.city, j.state, j.hospital_name) == ("San Juan", "PR", "VA Caribbean Healthcare System")
+    assert scraper.non_us_reason(j.location, j.city, j.state, j.url) is None

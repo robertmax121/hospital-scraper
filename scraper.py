@@ -9706,7 +9706,8 @@ USAJOBS_ORGS = [
 #     hospital's hourly rate (usajobs_pay). An hourly posting stays hourly;
 #     any other interval (per day, bi-weekly, without compensation) stores none.
 #   * CityName reads "Cincinnati, Ohio" and CountrySubDivisionCode "Ohio":
-#     the city is the part before the comma and the state its two-letter code.
+#     the city is the part just before the state (_usajobs_city) and the
+#     state its two-letter code, the territories included.
 USAJOBS_PAGE_SIZE = 500
 USAJOBS_PAGE_CAP = int(os.getenv("USAJOBS_PAGE_CAP", "40"))
 USAJOBS_PAGE_RETRIES = 1
@@ -9718,12 +9719,23 @@ _FED_GENERIC_SEG_RX = re.compile(
     r"^(?:(?:department\s+of\s+)?veterans'?\s+(?:health\s+administration|affairs)|VHA|VA|"
     r"veterans\s+affairs,?\s+veterans\s+health\s+administration|indian\s+health\s+service|IHS|"
     r"defense\s+health\s+agency|DHA|national\s+institutes\s+of\s+health|NIH)$", re.I)
+# 2026-10-15 (review): a name may carry ", Jr." / ", Sr." ("Lt. Col. Luke
+# Weathers, Jr. VA Medical Center" read "Jr. VA Medical Center"), and an
+# Indian Health Service facility is named the same way ("Phoenix Indian
+# Medical Center", "Gallup Indian Medical Center").
 _FED_FACILITY_TEXT_RX = re.compile(
-    r"((?:[A-Z][\w.'’/-]*\s+){0,6}?(?:VA|VHA|Veterans'?|Veterans\s+Affairs)\s+"
+    r"((?:[A-Z][\w.'’/-]*(?:,(?=\s+(?:Jr|Sr)\b))?\s+){0,7}?(?:VA|VHA|Veterans'?|Veterans\s+Affairs|Indian)\s+"
     r"(?:[A-Z][\w.'’/-]*\s+){0,4}?(?:Medical\s+Center|Health\s*Care\s+System|Healthcare\s+System|"
     r"Health\s+System|Hospital))\b")
 _FED_NAME_FILLER = {"the", "va", "vha", "veterans", "veterans'", "affairs", "medical", "center", "health",
-                    "care", "healthcare", "system", "hospital", "summary", "this", "our", "a", "an"}
+                    "care", "healthcare", "system", "hospital", "summary", "this", "our", "a", "an",
+                    "indian", "service"}
+# 2026-10-15 (review): the territories' VA and IHS sites (VA Caribbean HCS in
+# San Juan, Guam's and the Virgin Islands' clinics) carry the territory's
+# name in CountrySubDivisionCode; non_us_reason keeps PR, GU and VI as US.
+_USAJOBS_TERRITORIES = {"puerto rico": "PR", "guam": "GU", "virgin islands": "VI",
+                        "u.s. virgin islands": "VI", "us virgin islands": "VI",
+                        "united states virgin islands": "VI", "virgin islands of the u.s.": "VI"}
 # Capitalised words a sentence can start with ahead of the name ("Join VA
 # Western Colorado Health Care System", "The Cincinnati VHA Medical Center").
 _FED_NAME_LEAD = {"the", "this", "our", "at", "a", "an", "join", "welcome", "about", "summary", "come", "work",
@@ -9734,7 +9746,17 @@ def _usajobs_state(code) -> str:
     s = str(code or "").strip()
     if re.fullmatch(r"[A-Za-z]{2}", s):
         return s.upper()
-    return _STATE_CODE_BY_NAME.get(s.lower(), "")
+    key = re.sub(r"\s+", " ", s.lower())
+    return _STATE_CODE_BY_NAME.get(key) or _USAJOBS_TERRITORIES.get(key, "")
+
+
+def _usajobs_city(name) -> str:
+    """The city of a CityName: the part just before the state ("Cincinnati,
+    Ohio"; 2026-10-15 review: "Point Loma Complex, San Diego, California",
+    the API docs' own example, is San Diego), or the whole value when it has
+    no comma."""
+    segs = [p.strip() for p in str(name or "").split(",")]
+    return segs[-2] if len(segs) >= 2 else segs[0]
 
 
 def _fed_facility_from_sub(sub) -> str:
@@ -9757,6 +9779,8 @@ def _fed_facility_from_text(text) -> str:
             parts.pop(0)
         name = " ".join(parts)
         words = {w.lower().strip(".,") for w in parts}
+        if parts[0].rstrip(".") in ("Jr", "Sr"):   # a cut name ("Jr. VA Medical Center")
+            continue
         if words - _FED_NAME_FILLER:            # a proper name, not "the VA Medical Center"
             return name
     return ""
@@ -9797,7 +9821,7 @@ def _usajobs_job(item: dict, system_name: str) -> Job | None:
     if not title or not jid:
         return None
     loc = (m.get("PositionLocation") or [{}])[0] or {}
-    city = clean_city(str(loc.get("CityName") or "").split(",")[0].strip())
+    city = clean_city(_usajobs_city(loc.get("CityName")))
     state = _usajobs_state(loc.get("CountrySubDivisionCode"))
     w = usajobs_pay((m.get("PositionRemuneration") or [{}])[0])
     return Job(
@@ -22065,7 +22089,7 @@ def normalize_job(j: Job) -> dict:
         # 2026-10-07 (push 10, item 1): the body's own range replaces a
         # structured field that disagrees with it (pay_text_overrides).
         text = extract_posted_wage(body, d.get("job_type"))
-        if pay_text_overrides(field, text):
+        if pay_text_overrides(field, text, body):
             d["wage_min"], d["wage_max"], d["wage_unit"] = text
             pay_src = "text"
             _PAY_TEXT_OVER_FIELD["n"] += 1
@@ -22266,13 +22290,45 @@ _WAGE_NOISE_LABEL_RX = re.compile(r"(?:^|[^A-Za-z$])(" + _WAGE_NOISE_WORDS + r")
 _WAGE_NONBASE_BEFORE_RX = re.compile(
     r"(\b(?:premiums?|differentials?|diff|bonus(?:es)?|incentives?|stipends?|relocation|loans?|repayment|"
     r"match(?:ing)?|additional|increased?\s+hiring\s+rate|(?:downstate|geographic|location)\s+adjustment)\b|rate\s*\+)", re.I)
+# 2026-10-15 (review): the hiring-rate and adjustment words are the pay's own
+# description when a pay label opens the clause ahead of them ("The pay
+# range, with location adjustment, is $80,000 - $110,000", "Pay range after
+# geographic adjustment $120,000", "Salary: Increased Hiring Rate $150,000").
+_WAGE_ADJUST_WORD_RX = re.compile(r"(?:increased?\s+hiring\s+rate|(?:downstate|geographic|location)\s+adjustment)$", re.I)
+_WAGE_ADJUST_PAY_LABEL_RX = re.compile(r"\b(?:pay|salary|wage|compensation)\b", re.I)
 # 2026-10-15 (pay accuracy): a figure labelled as call pay ("Call: $250 per
 # point", Intermountain 8687958, which outranked "Annual Base Salary:
 # $221,000" as a per-visit figure; "On-call pay of $5/hr") prices call
 # coverage, not the base pay. Only a label right before the figure counts.
+# 2026-10-15 (review): the label needs a pay word or a marker (":", "=",
+# "of", "at", "is"), or a dash after a pay word: "Employment type: On Call
+# $38.50 - $52.00 per hour" names a per-diem job's pay, not call pay.
 _WAGE_CALL_LABEL_RX = re.compile(
-    r"(?:^|[^A-Za-z])(?:on[\s-]?)?call(?:\s+(?:pay|rate|stipend|coverage|premium))?\s*"
-    r"(?::|-|–|=|\bof\b|\bat\b|\bis\b)?\s*(?:up\s+to\s+)?$", re.I)
+    r"(?:^|[^A-Za-z])(?:on[\s-]?)?call(?:\s+(?:pay|rate|stipend|coverage|premium)\s*(?::|-|–|=|\bof\b|\bat\b|\bis\b)?"
+    r"|\s*(?::|=|\bof\b|\bat\b|\bis\b))\s*(?:up\s+to\s+)?$", re.I)
+# 2026-10-15 (review): a figure named by the word right after it as the
+# orientation rate ("Salary: \$26/Hr Orientation, Paid Per Visit", Penn
+# 37067651, a per-visit PT whose placeholder band is refused; "$30.00/hr
+# (orientation)") is not the pay, even under a pay label. Only the word
+# itself: Amedisys's "$36.00 to $40.00 per hour for Orientation and will then
+# convert to a per point pay system" reads as before.
+_WAGE_ORIENTATION_AFTER_RX = re.compile(
+    r"\s*(?:/\s*(?:hour|hr)\b\.?|per\s+hour|an\s+hour|hourly)?\s*\(?\s*orientation\b", re.I)
+# 2026-10-15 (review): a pay label that opens the figure's own phrase after
+# other words ends the reach of a non-base word before it: "$20,000 Sign on
+# Bonus- Pay range: $51.19 - $63.65/Hr" (ScionHealth 32101894), "Relocation
+# Provided if not local **Compensation range: $44.92-$70.08/hour" (Main Line
+# 38277794), "a $5k Signing Bonus for this role** Pay: $28.00-$38.00/hour"
+# (UHS 26531686). The label must carry "range" / "scale" or a colon, and
+# something must stand between it and the non-base word, so "Weekend Premium
+# Pay $12/hr" and "Sign-on Bonus Pay: $5,000" stay add-ons.
+_WAGE_GAP_PAY_LABEL_RX = re.compile(
+    r"\s*\S.*?(?:\b(?:pay|salary|compensation|wage)\s*(?:range|scale)\s*(?::|-|–|\bof\b|\bis\b)?"
+    r"|\b(?:pay|salary|compensation|wage)\s*(?:rate\s*)?:)\s*$", re.I | re.S)
+_WAGE_AFTER_UNIT_RX = re.compile(
+    r"\s*(?:/\s*(?:hour|hr|year|yr|annum|visit|point|session)\b\.?|per\s+(?:hour|year|annum|visit|point|session)\b|"
+    r"an?\s+(?:hour|year)\b|hourly\b|annually\b)", re.I)
+_WAGE_ASIDE_OR_JOIN_RX = re.compile(r"[\s,.]*(?:\(|\+|&|(?:plus|and|with|including|incl\.?|in addition to|or)\b)", re.I)
 _WAGE_NONBASE_JOIN_RX = re.compile(r"\b(?:and|plus|or|with|including|incl)\b|\+|&", re.I)
 # Words that make a bonus part of the pay description rather than a priced
 # extra: "(base + bonus) $70,000", "$70,000 plus bonus", "$70,000, bonus eligible".
@@ -22368,6 +22424,8 @@ def _wage_is_noise(t, start, end):
     call_seg = before.rsplit("$", 1)[-1] if "$" in before else before
     if not ("$" in before and re.match(r"\s*\d", call_seg)) and _WAGE_CALL_LABEL_RX.search(call_seg):
         return True
+    if _WAGE_ORIENTATION_AFTER_RX.match(after):
+        return True
     # 2026-10-07 (push 10, item 4): the non-base guard reads the words after
     # the last earlier figure (or the whole clause), before the split below
     # hands those words to that figure.
@@ -22377,7 +22435,9 @@ def _wage_is_noise(t, start, end):
         nb = hits[-1]
         gap = seg[nb.end():]
         if not _WAGE_NONBASE_JOIN_RX.search(gap) and not _WAGE_BONUS_DESCR_RX.match(gap) \
-                and not (_WAGE_COMPONENT_WORD.match(nb.group(1)) and _WAGE_COMPOSITION_RX.search(seg[:nb.start()])):
+                and not (_WAGE_COMPONENT_WORD.match(nb.group(1)) and _WAGE_COMPOSITION_RX.search(seg[:nb.start()])) \
+                and not (_WAGE_ADJUST_WORD_RX.match(nb.group(1)) and _WAGE_ADJUST_PAY_LABEL_RX.search(seg[:nb.start()])) \
+                and not _WAGE_GAP_PAY_LABEL_RX.match(gap):
             return True
     if "$" in before:
         before = before.rsplit("$", 1)[-1]
@@ -22407,6 +22467,15 @@ def _wage_is_noise(t, start, end):
     # figure's identity ("$55/hr + shift differential"); and a bonus word
     # that heads its own dollar figure belongs to that one.
     tail = after
+    # 2026-10-15 (review): a range's high end stops before its unit, so an
+    # aside or a joiner after "/ hour" or "per point" is passed over as the
+    # single rule passes it over after its own unit: "$41 - $50 / hour
+    # (Including shift differential)" (Acadia 34836759) and "$60.00 - $65.00
+    # per point Plus Weekend Differential" (BAYADA 38060992) were refused,
+    # while their "$50 / hour" and "$65.00 per point" were not.
+    um2 = _WAGE_AFTER_UNIT_RX.match(tail)
+    if um2 and _WAGE_ASIDE_OR_JOIN_RX.match(tail, um2.end()):
+        tail = tail[um2.end():]
     while True:
         pm = re.match(r"[\s,.]*\(([^)]{0,60})\)", tail)
         if not pm or _WAGE_NEAR_NOISE.match(pm.group(1).strip()):
@@ -23056,11 +23125,38 @@ def role_floor_rejects(title, got, src="text") -> bool:
 # 33.15-46.69 vs 32.50-45.33, is within 5% and keeps its field).
 PAY_TEXT_OVER_FIELD_TOL = 0.05
 _PAY_TEXT_OVER_FIELD = {"n": 0}
+# 2026-10-15 (review): a field range that holds the text's range, and whose
+# two ends the body itself prints, spans levels the body prices one by one,
+# so it stays. Asante's bodies price each level of a posting ("Pharmacy Tech
+# 1: $21.15-$29.09 ... Pharmacy Tech 2: $22.53-$30.98", "RCP 1 - Salary:
+# $36.79 - $50.59 ... RCP 2 ... $54.89"); the header field spans them
+# (21.15-30.98, 36.79-54.89), and the text rule, once "\$" parsed, put the
+# first level's range in its place (7 of 11 Asante rows). A field figure the
+# body never prints (UCI's grade maximum, Asante 35489890's 77.79 against
+# "Salary Range: $53.99 - $72.47") or a field that does not hold the text's
+# range (another role's or level's band: MaineHealth's LPN range on an RN
+# posting) is still replaced by the text, as push 10 decided.
+_PAY_BODY_FIGURE_RX = re.compile(r"\$\s*(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(k\b)?", re.I)
 
 
-def pay_text_overrides(field, text) -> bool:
+def _body_prints(body, *values) -> bool:
+    """True when every value is a dollar figure printed in body (to the cent)."""
+    t = _WAGE_DOLLAR_RUN_RX.sub("$", str(body or "")[:12000])
+    seen = set()
+    for m in _PAY_BODY_FIGURE_RX.finditer(t):
+        try:
+            v = float(m.group(1).replace(",", ""))
+        except ValueError:
+            continue
+        seen.add(round(v * (1000 if m.group(2) else 1), 2))
+    return all(round(float(v), 2) in seen for v in values)
+
+
+def pay_text_overrides(field, text, body=None) -> bool:
     """True when the body's own (min, max, unit) `text` should replace the
-    structured field's `field` (see above)."""
+    structured field's `field` (see above). With `body`, a field range that
+    holds the text's range and whose two ends the body prints stays (the
+    note above)."""
     if not field or not text or field[2] != text[2]:
         return False
     flo, fhi, _ = field
@@ -23070,7 +23166,9 @@ def pay_text_overrides(field, text) -> bool:
     if tlo == thi and flo != fhi:
         return False
     off = lambda a, b: abs(a - b) > PAY_TEXT_OVER_FIELD_TOL * abs(b)
-    return off(tlo, flo) or off(thi, fhi)
+    if not (off(tlo, flo) or off(thi, fhi)):
+        return False
+    return not (body and flo < fhi and flo <= tlo and thi <= fhi and _body_prints(body, flo, fhi))
 
 
 # 2026-10-07 (push 10, item 5): HCA's own printed estimate line, behind
@@ -25868,6 +25966,15 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
 
     for m in _WAGE_RANGE_RX.finditer(t):
         if _wage_is_noise(t, m.start(), m.end()):
+            # 2026-10-15 (review): a range that prices an add-on is one
+            # add-on; its high end is not the pay alone ("Weekend premium
+            # $38.50 - $52.00 per hour" stored $52 an hour, the single rule
+            # reading "$52.00 per hour" with the words before it handed to
+            # "$38.50"). Both "$" are dead, as for a band too wide (S2).
+            dead.add(m.start())
+            second = t.rfind("$", m.end(1), m.start(3))
+            if second >= 0:
+                dead.add(second)
             continue
         # 2026-10-04 (S7): a "k" suffix carries to the other end only when
         # that end has no comma group and is under 1,000 ("$70-80K"); in
