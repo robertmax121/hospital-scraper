@@ -179,8 +179,12 @@ def run():
     # only when every configured feed of it (each tenant, each other adapter
     # that emits it, each alias key) returned rows and claimed a whole crawl.
     layer4_complete = complete_canonical(layer4_exempt)
+    # 2026-10-15 (review): a complete system with rows that still did not
+    # land after the delayed retry never takes the first-miss path
+    # (RETIRE_FIRST_MISS_WHEN_COMPLETE); its unseen rows count misses.
+    upsert_failed = {r.get("hospital_system") for r in LAST_UPSERT_FAILED if r.get("hospital_system")}
     deact_stats = mark_inactive_jobs(jobs, exclude_systems=layer4_exempt, complete_systems=layer4_complete,
-                                     partial_systems=layer4_partial)
+                                     partial_systems=layer4_partial, upsert_failed_systems=upsert_failed)
     logger.info(f"  Layer 4 deactivation: {deact_stats}")
 
     # ── Step 2b: travel URL liveness sweep (added 2026-07-20) ─────

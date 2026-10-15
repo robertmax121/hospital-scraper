@@ -112,10 +112,16 @@ BACKSTOP_EXEMPT = frozenset({"UnitedHealth Group"})
 # rows has every unseen row retired by Layer 4 at once instead of after
 # MISS_THRESHOLD runs. The per-system sweep already retires such a system's
 # unseen rows at once when it yields DEACT_MIN (10) rows or more; this covers
-# the rest: a complete board under 10 rows, a system the sweep skipped because
-# an upsert batch did not land or its active count failed. Partial, capped
-# and flaky feeds (no complete claim) keep the 3-miss count and the yield
-# guard exactly as before. "0" (or false / off / no) turns it off.
+# the rest: a complete board under 10 rows, a system whose sweep active count
+# failed, and one the sweep skipped because a first-pass upsert batch failed
+# but the delayed retry then landed every row. A system with rows that still
+# did not land tonight (scraper.LAST_UPSERT_FAILED, plan_layer4's
+# first_miss_hold) keeps the 3-miss count: Layer 4 keys on the run's rows in
+# memory, so a re-keyed board (the Rochester ZIP to REQ_ re-key) whose new
+# rows never landed would otherwise lose its old rows and go dark for a
+# night (2026-10-15 review). Partial, capped and flaky feeds (no complete
+# claim) keep the 3-miss count and the yield guard exactly as before. "0"
+# (or false / off / no) turns it off.
 RETIRE_FIRST_MISS_WHEN_COMPLETE = os.getenv("RETIRE_FIRST_MISS_WHEN_COMPLETE", "1").strip().lower() \
     not in ("0", "false", "off", "no")
 # 2026-10-07 (push 10): zero-yield ALARM thresholds (see the module docstring).
@@ -181,7 +187,8 @@ def plan_layer4(active_rows: list[dict],
                 complete_systems: set[str] | None = None,
                 backstop_exempt: frozenset[str] | set[str] = BACKSTOP_EXEMPT,
                 partial_systems: set[str] | None = None,
-                first_miss_complete: bool = False) -> dict:
+                first_miss_complete: bool = False,
+                first_miss_hold: set[str] | None = None) -> dict:
     """Decide, without touching the database, what Layer 4 does to each row.
 
     active_rows:  dicts with id, job_id, hospital_system,
@@ -202,6 +209,10 @@ def plan_layer4(active_rows: list[dict],
                   has its unseen rows retired on their first miss. Off by
                   default here (a pure function); database.mark_inactive_jobs
                   passes the setting.
+    first_miss_hold: (2026-10-15 review) systems with rows that did not land
+                  in the database tonight (scraper.LAST_UPSERT_FAILED after
+                  the delayed retry, post-alias names): never on the first-
+                  miss path; their unseen rows count misses as usual.
 
     Returns a dict:
       found_ids          seen tonight with a non-zero miss count: reset to 0
@@ -222,11 +233,14 @@ def plan_layer4(active_rows: list[dict],
                          systems whose unseen rows retire on their first miss
                          (first_miss_complete); retired counts those rows
       first_miss_rows    their unseen rows, all in deactivate_ids
+      first_miss_held    systems that qualified for the first miss but are
+                         in first_miss_hold (sorted); they count misses
     """
     exclude = exclude_systems or set()
     complete = complete_systems or set()
     exempt = backstop_exempt or frozenset()
     partial = partial_systems or set()
+    hold = first_miss_hold or set()
     now = now or datetime.now(timezone.utc)
     cutoff = now - timedelta(days=backstop_days)
 
@@ -236,16 +250,22 @@ def plan_layer4(active_rows: list[dict],
     guarded: dict[str, dict] = {}
     complete_bypassed: dict[str, dict] = {}
     first_miss: dict[str, dict] = {}
+    first_miss_held: list[str] = []
     for system, active_n in active_by_system.items():
         if system in exclude:
             continue
         yield_n = yield_by_system.get(system, 0)
         if (first_miss_complete and system in complete and system not in partial
                 and yield_n > 0 and yield_n >= COMPLETE_MIN_ACTIVE_RATIO * active_n):
-            # The employer's feed came back whole tonight: what it no longer
-            # lists is closed (2026-10-15). The checks are the bypass's below,
-            # so such a system is never guarded either.
-            first_miss[system] = {"active": active_n, "yield": yield_n, "retired": 0}
+            if system in hold:
+                # rows of it did not land tonight: the run's keys are not all
+                # in the database, so its unseen rows count misses as usual
+                first_miss_held.append(system)
+            else:
+                # The employer's feed came back whole tonight: what it no
+                # longer lists is closed (2026-10-15). The checks are the
+                # bypass's below, so such a system is never guarded either.
+                first_miss[system] = {"active": active_n, "yield": yield_n, "retired": 0}
         reason = guard_reason(active_n, yield_n)
         if not reason and system in partial:
             # pages went unread tonight: whatever the ratio, the unseen rows
@@ -319,6 +339,7 @@ def plan_layer4(active_rows: list[dict],
         "complete_bypassed": complete_bypassed,
         "first_miss": first_miss,
         "first_miss_rows": first_miss_rows,
+        "first_miss_held": sorted(first_miss_held),
     }
 
 

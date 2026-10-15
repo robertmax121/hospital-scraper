@@ -375,9 +375,12 @@ def test_oracle_whole_board_is_complete(monkeypatch):
 
 
 def test_oracle_cut_short_is_not_complete(monkeypatch):
+    """Review: a crawl that ends on an error after rows were stored is
+    PARTIAL (75 of 100 is under the 80% guard here, but 85 would not be)."""
     _oracle_board(monkeypatch, 100, 100, fail_at=75)
     jobs = asyncio.run(scraper.scrape_oracle(None, "Tenet Healthcare", ("https://x.oraclecloud.com", "CX_1")))
     assert len(jobs) == 75 and "Tenet Healthcare" not in scraper.COMPLETE_SYSTEMS
+    assert "Tenet Healthcare" in scraper.PARTIAL_SYSTEMS and "Tenet Healthcare" in scraper.PARTIAL_BACKSTOP_SYSTEMS
 
 
 def _sr_board(monkeypatch, total, served, fail_at=None):
@@ -405,6 +408,7 @@ def test_smartrecruiters_cut_short_is_not_complete(monkeypatch):
     _sr_board(monkeypatch, 250, 250, fail_at=200)
     jobs = asyncio.run(scraper.scrape_smartrecruiters(None, "Northwestern Medicine", "NorthwesternMedicine"))
     assert len(jobs) == 200 and "Northwestern Medicine" not in scraper.COMPLETE_SYSTEMS
+    assert "Northwestern Medicine" in scraper.PARTIAL_SYSTEMS   # review: 200 of 250 is 80%, the sweep's bar
 
 
 def test_oracle_non_us_requisitions_count_as_served(monkeypatch):
@@ -412,3 +416,192 @@ def test_oracle_non_us_requisitions_count_as_served(monkeypatch):
     _oracle_board(monkeypatch, 50, 50, non_us={3, 40})
     jobs = asyncio.run(scraper.scrape_oracle(None, "Tenet Healthcare", ("https://x.oraclecloud.com", "CX_1")))
     assert len(jobs) == 48 and "Tenet Healthcare" in scraper.COMPLETE_SYSTEMS
+
+
+# -- 4. review fixes (2026-10-15) ---------------------------------------------
+# A posting counts as served only once it is stored (or skipped on purpose);
+# a crawl with rows that raised, or that ended on an error, is PARTIAL; the
+# Jibe ceiling clears UHS; the first miss waits for rows that did not land;
+# the SelectMinds stored-number read runs off the event loop.
+
+def _bad_jibe_item(rid):
+    item = _jibe_item(rid)
+    item["data"]["city"] = 12345          # not a string: the row raises in parse
+    return item
+
+
+def test_jibe_rows_that_raise_are_not_served_and_make_the_crawl_partial(monkeypatch):
+    """The reviewer's probe: a 1,000-row board where 30% of rows raise used to
+    claim complete (700 jobs) and first-miss Layer 4 retired the 300 live
+    rows. Now: not served, PARTIAL, no claim, and Layer 4 retires nothing."""
+    items = [(_bad_jibe_item if i % 10 < 3 else _jibe_item)(str(60000 + i)) for i in range(1000)]
+    _jibe_board(monkeypatch, [items[i:i + 100] for i in range(0, 1000, 100)], 1000)
+    jobs = asyncio.run(scraper.scrape_jibe(None, "Novant Health", "https://jobs.novanthealth.org"))
+    assert len(jobs) == 700
+    assert "Novant Health" in scraper.PARTIAL_SYSTEMS and "Novant Health" in scraper.PARTIAL_BACKSTOP_SYSTEMS
+    assert "Novant Health" not in scraper.COMPLETE_SYSTEMS
+    assert ("JIBE_SITES", "Novant Health") not in scraper.COMPLETE_FEEDS
+    complete = scraper.complete_canonical(emitted={"Novant Health"})
+    assert "Novant Health" not in complete
+    _exclude, partial = scraper.layer4_partial_sets()
+    active = [{"id": 60000 + i, "job_id": str(60000 + i), "hospital_system": "Novant Health",
+               "consecutive_scrape_misses": 0, "scraped_at": FRESH} for i in range(1000)]
+    keys = {("Novant Health", j.job_id) for j in jobs}
+    plan = plan_layer4(active, keys, 3, now=NOW, complete_systems=complete,
+                       partial_systems=partial, first_miss_complete=True)
+    assert plan["deactivate_ids"] == [] and plan["first_miss"] == {}
+    assert plan["guarded"]["Novant Health"]["frozen"] == 300
+
+
+def test_jibe_one_bad_row_on_a_whole_board_is_partial(monkeypatch):
+    """Even 1 row in 1,216 that raises: served is 1,215 (98%+ of the total),
+    which would claim complete and retire that live row. PARTIAL instead."""
+    items = [_jibe_item(str(50000 + i)) for i in range(1216)]
+    items[700] = _bad_jibe_item("50700")
+    _jibe_board(monkeypatch, [items[i:i + 100] for i in range(0, 1216, 100)], 1216)
+    jobs = asyncio.run(scraper.scrape_jibe(None, "Amedisys", "https://careers.amedisys.com"))
+    assert len(jobs) == 1215
+    assert "Amedisys" in scraper.PARTIAL_SYSTEMS and "Amedisys" not in scraper.COMPLETE_SYSTEMS
+
+
+def test_jibe_ceiling_clears_uhs_and_a_uhs_size_board_is_complete(monkeypatch):
+    """UHS listed 5,969 on 2026-10-15, 31 under the old 60-page ceiling."""
+    assert scraper.JIBE_MAX_PAGES >= 100
+    calls = _jibe_board(monkeypatch, _pages(6150, start=300000), 6150)
+    jobs = asyncio.run(scraper.scrape_jibe(None, "Universal Health Services", "https://jobs.uhsinc.com"))
+    assert len(jobs) == 6150 and calls == list(range(1, 63))
+    assert "Universal Health Services" in scraper.COMPLETE_SYSTEMS
+    assert "Universal Health Services" not in scraper.PARTIAL_SYSTEMS
+
+
+def test_jibe_board_near_the_ceiling_logs_its_margin(monkeypatch, caplog):
+    monkeypatch.setattr(scraper, "JIBE_MAX_PAGES", 3)
+    _jibe_board(monkeypatch, _pages(250), 250)
+    with caplog.at_level("WARNING", logger=scraper.logger.name):
+        asyncio.run(scraper.scrape_jibe(None, "Universal Health Services", "https://jobs.uhsinc.com"))
+    assert any("83% of the 3-page ceiling" in r.getMessage() for r in caplog.records)
+    assert "Universal Health Services" in scraper.COMPLETE_SYSTEMS     # under the ceiling: still whole
+    caplog.clear()
+    _jibe_board(monkeypatch, _pages(150), 150)
+    with caplog.at_level("WARNING", logger=scraper.logger.name):
+        asyncio.run(scraper.scrape_jibe(None, "Amedisys", "https://careers.amedisys.com"))
+    assert not any("ceiling" in r.getMessage() for r in caplog.records)
+
+
+def test_smartrecruiters_row_that_raises_is_partial(monkeypatch):
+    """The reviewer's probe: releasedDate null on row 61 of 100. It used to
+    claim complete (the page counted before parse) with 60 jobs, and with
+    100 active the sweep's 50% complete bar retired 40 live rows."""
+    def fake_req(session, method, url, **kw):
+        items = [{"id": str(700 + i), "name": f"RN {i}", "location": {"city": "Chicago", "region": "IL"},
+                  "releasedDate": None if i == 60 else "2026-10-01T00:00:00Z"} for i in range(100)]
+        return _Ctx(_R({"content": items, "totalFound": 100}))
+    monkeypatch.setattr(scraper, "req", fake_req)
+    jobs = asyncio.run(scraper.scrape_smartrecruiters(None, "Northwestern Medicine", "NorthwesternMedicine"))
+    assert len(jobs) == 60
+    assert "Northwestern Medicine" not in scraper.COMPLETE_SYSTEMS
+    assert ("SMARTRECRUITERS_ORGS", "Northwestern Medicine") not in scraper.COMPLETE_FEEDS
+    assert "Northwestern Medicine" in scraper.PARTIAL_SYSTEMS
+
+
+def test_smartrecruiters_first_page_failing_reports_nothing(monkeypatch):
+    _sr_board(monkeypatch, 250, 250, fail_at=0)
+    jobs = asyncio.run(scraper.scrape_smartrecruiters(None, "Northwestern Medicine", "NorthwesternMedicine"))
+    assert jobs == [] and "Northwestern Medicine" not in scraper.PARTIAL_SYSTEMS
+    assert "Northwestern Medicine" not in scraper.COMPLETE_SYSTEMS
+
+
+def test_oracle_row_that_raises_is_partial(monkeypatch):
+    """A row that raises mid-page breaks the loop with part of the page
+    stored: that page never counts as served, and the crawl is PARTIAL."""
+    _oracle_board(monkeypatch, 50, 50)
+    real = scraper._oracle_location
+
+    def flaky(j):
+        if j.get("Id") == "300030":
+            raise ValueError("bad location")
+        return real(j)
+    monkeypatch.setattr(scraper, "_oracle_location", flaky)
+    jobs = asyncio.run(scraper.scrape_oracle(None, "Tenet Healthcare", ("https://x.oraclecloud.com", "CX_1")))
+    assert len(jobs) == 30
+    assert "Tenet Healthcare" in scraper.PARTIAL_SYSTEMS and "Tenet Healthcare" not in scraper.COMPLETE_SYSTEMS
+
+
+def test_oracle_first_page_failing_reports_nothing(monkeypatch):
+    _oracle_board(monkeypatch, 100, 100, fail_at=0)
+    jobs = asyncio.run(scraper.scrape_oracle(None, "Tenet Healthcare", ("https://x.oraclecloud.com", "CX_1")))
+    assert jobs == [] and "Tenet Healthcare" not in scraper.PARTIAL_SYSTEMS
+
+
+def test_first_miss_waits_for_rows_that_did_not_land():
+    """A complete board re-keyed tonight whose new rows did not land: the old
+    rows must not all go at once (the system would be dark for a night).
+    They count misses as usual; other complete systems are unaffected."""
+    active = _rows("Rochester Regional Health", 40) + _rows("Amedisys", 20, start_id=101)
+    keys = _keys("Rochester Regional Health", range(1, 31)) | _keys("Amedisys", range(101, 119))
+    plan = plan_layer4(active, keys, 3, now=NOW, complete_systems={"Rochester Regional Health", "Amedisys"},
+                       first_miss_complete=True, first_miss_hold={"Rochester Regional Health"})
+    assert plan["first_miss_held"] == ["Rochester Regional Health"]
+    assert set(plan["first_miss"]) == {"Amedisys"} and sorted(plan["deactivate_ids"]) == [119, 120]
+    assert sorted(plan["bump_by_new_count"][1]) == list(range(31, 41))
+    assert "Rochester Regional Health" in plan["complete_bypassed"]     # still never yield-guarded
+
+
+def test_mark_inactive_jobs_holds_systems_whose_upsert_failed(monkeypatch):
+    fresh = datetime.now(timezone.utc).isoformat()
+    active = [{"id": i, "job_id": str(i), "hospital_system": "Amedisys", "consecutive_scrape_misses": 0,
+               "scraped_at": fresh} for i in range(1, 21)]
+    seen = [{"hospital_system": "Amedisys", "job_id": str(i)} for i in range(1, 19)]
+    database, updates = _fake_layer4_db(monkeypatch, active)
+    out = database.mark_inactive_jobs(seen, complete_systems={"Amedisys"}, upsert_failed_systems={"Amedisys"})
+    assert out["first_miss_held"] == ["Amedisys"] and out["first_miss_retired"] == 0
+    assert out["deactivated"] == 0 and out["misses_pending"] == 2
+
+
+def test_scheduler_passes_the_rows_that_did_not_land(monkeypatch):
+    import scheduler
+
+    class _Stop(Exception):
+        pass
+    got = {}
+
+    def fake_scrape():
+        scraper.LAST_UPSERT_FAILED[:] = [{"hospital_system": "Rochester Regional Health", "job_id": "REQ_1"},
+                                         {"hospital_system": None, "job_id": "x"}]
+        return [{"hospital_system": "Amedisys", "job_id": "1"}]
+
+    def fake_mark(jobs, **kw):
+        got.update(kw)
+        raise _Stop()
+    monkeypatch.setattr(scheduler, "fix_run_day", lambda: "2026-10-16")
+    monkeypatch.setattr(scheduler, "start_run_record", lambda *a, **k: None)
+    monkeypatch.setattr(scheduler, "scrape", fake_scrape)
+    monkeypatch.setattr(scheduler, "mark_inactive_jobs", fake_mark)
+    with pytest.raises(_Stop):
+        scheduler.run()
+    assert got["upsert_failed_systems"] == {"Rochester Regional Health"}
+
+
+def test_selectminds_stored_read_runs_off_the_event_loop(monkeypatch):
+    import threading
+    threads = {}
+
+    def fake_stored(system):
+        threads["read"] = threading.get_ident()
+        return set()
+
+    async def fake_get(session, system, url, params=None):
+        return (404, "", url)
+
+    async def no_jitter():
+        return None
+    monkeypatch.setattr(scraper, "_stored_req_job_ids", fake_stored)
+    monkeypatch.setattr(scraper, "_selectminds_get", fake_get)
+    monkeypatch.setattr(scraper, "jitter", no_jitter)
+
+    async def go():
+        threads["loop"] = threading.get_ident()
+        return await scraper._selectminds_req_pass(None, "Main Line Health",
+                                                   [_sm_job("28195", "medical-assistant-28195")])
+    assert asyncio.run(go()) == 0
+    assert threads["read"] != threads["loop"]

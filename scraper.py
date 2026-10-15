@@ -7919,9 +7919,13 @@ JIBE_SITES = {
     "Care New England Health System": "https://careers.carenewengland.org",     # 588; RI (Kent, Women & Infants, Butler)
 }
 
-# Pages of 100 read per Jibe board (6,000 postings). A board past it is read
+# Pages of 100 read per Jibe board (10,000 postings). A board past it is read
 # up to the ceiling and reported PARTIAL (2026-10-15), never called complete.
-JIBE_MAX_PAGES = 60
+# 100, not 60 (2026-10-15 review): UHS's feed listed 5,969 that day, 31 short
+# of a 60-page ceiling past which it would report PARTIAL every night and
+# never be swept. A board past JIBE_CEILING_WARN of the ceiling logs a warning.
+JIBE_MAX_PAGES = 100
+JIBE_CEILING_WARN = 0.8
 
 # Jibe feeds whose location_name is a facility (not a street or a region):
 # rows take it as hospital_name so the CMS coverage count and the job page
@@ -8025,12 +8029,16 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
     jobs: list[Job] = []
     raw_tags: dict = {}            # job_id -> the row's tagsN fields (push 9, pay tags)
     page, total = 1, None
-    # 2026-10-15: every posting the feed served (req_id, else slug), the rows
-    # this adapter skips included (UHS's provider postings carry no req_id),
-    # for the complete claim against totalCount; and whether a page failed.
+    # 2026-10-15: every posting the feed served (req_id, else slug) that this
+    # adapter stored or skipped on purpose (UHS's provider postings carry no
+    # req_id), for the complete claim against totalCount; whether a page
+    # failed; and rows that raised (review: a row that fails to parse is a
+    # live posting not stored tonight, so it is never counted as served and
+    # any such row makes the crawl PARTIAL).
     served: set[str] = set()
     failed_at = None
-    while page <= JIBE_MAX_PAGES:  # 60 x 100 = 6,000/site ceiling; UHS (~6,000) is the largest
+    bad_rows = 0
+    while page <= JIBE_MAX_PAGES:  # 100 x 100 = 10,000/site ceiling; UHS (~6,000) is the largest
         try:
             async with req(session, "get", f"{base_url}/api/jobs",
                            params={"page": str(page), "limit": "100"},
@@ -8049,6 +8057,11 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
         items = data.get("jobs") or []
         if total is None:
             total = data.get("totalCount") or 0
+            ceiling = JIBE_MAX_PAGES * 100
+            if total and total > JIBE_CEILING_WARN * ceiling:
+                logger.warning(f"Jibe {system}: totalCount {total:,} is {100 * total // ceiling}% of the "
+                               f"{JIBE_MAX_PAGES}-page ceiling ({ceiling:,}); raise JIBE_MAX_PAGES before the "
+                               f"board passes it (past it the board reports PARTIAL every night)")
         if not items:
             break
         row_errors = 0
@@ -8058,10 +8071,10 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                 j = (wrap or {}).get("data") or wrap
                 rid = str(j.get("req_id") or "").strip()
                 tag = rid or str(j.get("slug") or "").strip()
-                if tag:
-                    served.add(tag)
                 title = (j.get("title") or "").strip()
                 if not rid or not title:
+                    if tag:
+                        served.add(tag)     # read, and left out on purpose
                     continue
                 # `state` arrives as a FULL name ("Maryland"); parse_city_state
                 # owns the full-name -> 2-letter mapping (its STATE_ABBR table
@@ -8103,6 +8116,7 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                     # are not re-parsed for it (sql/146b fills stored rows).
                     req_id=rid,
                 ))
+                served.add(tag)             # stored: only now does it count as served
                 if _jibe_has_figure(j):
                     raw_tags.setdefault(rid, {k: v for k, v in j.items() if k.startswith("tags") and k != "tags"})
             except Exception as e:
@@ -8114,6 +8128,7 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                     first_err = repr(e)
                 continue
         if row_errors:
+            bad_rows += row_errors
             logger.info(f"Jibe {system}: page {page}: {row_errors} row errors (first: {first_err})")
         if len(items) < 100 or (total and page * 100 >= total):
             break
@@ -8130,16 +8145,20 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
         seen.add(jb.job_id)
         uniq.append(jb)
     # 2026-10-15: what decides tonight's retirement. A page that failed (or
-    # the page ceiling) before the board's end leaves live postings unread:
-    # PARTIAL, so the sweep must not retire anything of this system tonight
-    # (it used to, when the pages read before the failure came to 80% of the
-    # active rows). A feed that served COMPLETE_RATIO of its own totalCount
-    # is complete: the sweep and Layer 4 retire what it no longer lists on
-    # the first miss (retire_guard.RETIRE_FIRST_MISS_WHEN_COMPLETE).
-    if failed_at is not None and uniq and not (total and len(served) >= total):
+    # the page ceiling) before the board's end leaves live postings unread,
+    # and a row that raised is a live posting not stored: PARTIAL, so the
+    # sweep must not retire anything of this system tonight (it used to, when
+    # the rows read came to 80% of the active rows). A feed that served
+    # COMPLETE_RATIO of its own totalCount with no failure is complete: the
+    # sweep and Layer 4 retire what it no longer lists on the first miss
+    # (retire_guard.RETIRE_FIRST_MISS_WHEN_COMPLETE).
+    cut_short = failed_at is not None and not (total and len(served) >= total)
+    if uniq and (cut_short or bad_rows):
         report_partial(system)
-        logger.warning(f"Jibe {system}: PARTIAL, page {failed_at} unread; {len(served)} of {total} "
-                       f"postings served; not swept tonight")
+        why = "; ".join(x for x in ((f"page {failed_at} unread" if cut_short else ""),
+                                    (f"{bad_rows} rows failed to parse" if bad_rows else "")) if x)
+        logger.warning(f"Jibe {system}: PARTIAL, {why}; {len(served)} of {total} postings served; "
+                       f"not swept tonight")
     report_complete(system, len(served), total, feed="JIBE_SITES")
     if raw_tags and uniq:
         try:
@@ -8821,7 +8840,12 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
     jobs, offset = [], 0
     # 2026-10-15: the board's own totalFound against every posting the pages
     # served, for a complete claim (a failed page ends the loop short of it).
-    total, listed = None, 0
+    # Review: a page counts only once every row of it is stored, and a crawl
+    # that ends on an error (HTTP, network or a row that raised) after rows
+    # were stored is PARTIAL: the rows not stored are live postings, which
+    # the sweep would otherwise retire whenever the rest came to 80% (or,
+    # with a claim, 50%) of the active rows.
+    total, listed, cut_short = None, 0, False
     while True:
         try:
             async with req(session, "get",
@@ -8830,12 +8854,12 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
                 headers=HEADERS, ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=25)) as r:
                 if r.status != 200:
                     logger.info(f"SmartRecruiters {system}: HTTP {r.status}")
+                    cut_short = True
                     break
                 data = await r.json()
             listings = data.get("content", [])
             if total is None:
                 total = data.get("totalFound")
-            listed += len(listings)
             if not listings: break
             for j in listings:
                 loc_d  = j.get("location", {})
@@ -8857,12 +8881,18 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
                     ats_platform="SmartRecruiters",
                 ))
                 set_field_wage(jobs[-1], _sr_pay(j))
+            listed += len(listings)          # the whole page is stored
             offset += 100
             if offset >= data.get("totalFound", 0): break
             await jitter()
         except Exception as e:
             logger.info(f"SmartRecruiters {system}: {e}")
+            cut_short = True
             break
+    if cut_short and jobs:
+        report_partial(system)
+        logger.warning(f"SmartRecruiters {system}: PARTIAL, crawl ended on an error; {listed} of {total} "
+                       f"postings stored in whole pages; not swept tonight")
     report_complete(system, listed, total, feed="SMARTRECRUITERS_ORGS")
     return jobs
 
@@ -11742,7 +11772,9 @@ async def _selectminds_req_pass(session, system: str, jobs: list) -> int:
     cap = max(0, SELECTMINDS_REQ_MAX_PER_TENANT)
     if not cap or not jobs:
         return 0
-    known = _stored_req_job_ids(system) or set()
+    # a blocking read (urllib): off the event loop, so a slow database does
+    # not stall the other adapters' requests (2026-10-15 review)
+    known = await asyncio.to_thread(_stored_req_job_ids, system) or set()
     todo = [j for j in jobs if not j.req_id and str(j.job_id) not in known and j.url]
     got = failed = 0
     for j in todo[:cap]:
@@ -13133,8 +13165,11 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
     limit  = 25
     # 2026-10-15: TotalJobsCount against every requisition the pages served
     # (non-US ones included: they are read, then left out), for a complete
-    # claim; a failed page ends the loop short of it.
-    advertised, listed = None, 0
+    # claim; a failed page ends the loop short of it. Review: a page counts
+    # only once every row of it is stored, and a crawl that ends on an error
+    # (HTTP, network or a row that raised) after rows were stored is PARTIAL,
+    # so the sweep never retires the live rows it did not store.
+    advertised, listed, cut_short = None, 0, False
     while True:
         try:
             # Bug fix (2026-05-29): the top-level limit/offset query params
@@ -13160,6 +13195,7 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                 ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
                     logger.info(f"Oracle {system}: HTTP {r.status}")
+                    cut_short = True
                     break
                 data = await r.json(content_type=None)
             search_results = data.get("items", [])
@@ -13173,7 +13209,6 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
             page_items = req_list_wrapper.get("items", []) if isinstance(req_list_wrapper, dict) else []
             if not page_items:
                 break
-            listed += len(page_items)
             for j in page_items:
                 # 2026-10-13: a posting whose own country field is not the
                 # US is not listed; a missing city or state comes from the
@@ -13204,6 +13239,7 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                     description="",
                     ats_platform="Oracle HCM",
                 ))
+            listed += len(page_items)        # the whole page is stored (or left out on purpose)
             # Pagination: Oracle's top-level limit/offset paginate the
             # requisitionList contents. Stop when we've fetched the reported
             # total, or when the page came back short.
@@ -13215,7 +13251,12 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
             await jitter()
         except Exception as e:
             logger.info(f"Oracle {system}: {e}")
+            cut_short = True
             break
+    if cut_short and jobs:
+        report_partial(system)
+        logger.warning(f"Oracle {system}: PARTIAL, crawl ended on an error; {listed} of {advertised} "
+                       f"requisitions stored in whole pages; not swept tonight")
     report_complete(system, listed, advertised, feed="ORACLE_ORGS")
     if DETAIL_FETCH and jobs:
         try:

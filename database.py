@@ -142,7 +142,8 @@ def mark_inactive_jobs(current_jobs: list[dict],
                        exclude_systems: set[str] | None = None,
                        complete_systems: set[str] | None = None,
                        partial_systems: set[str] | None = None,
-                       first_miss_complete: bool | None = None) -> dict:
+                       first_miss_complete: bool | None = None,
+                       upsert_failed_systems: set[str] | None = None) -> dict:
     """Layer 4 deactivation: multi-run miss confirmation.
 
     2026-10-15: `first_miss_complete` (None reads the setting
@@ -152,6 +153,10 @@ def mark_inactive_jobs(current_jobs: list[dict],
     retired on their first miss, not after miss_threshold runs. Its feed
     listed the whole board the employer advertises, so a row missing from it
     is a closed posting. Everything else counts misses as before.
+    `upsert_failed_systems` (post-alias, from scraper.LAST_UPSERT_FAILED
+    after the delayed retry): systems with rows that did not land tonight
+    never take the first-miss path (2026-10-15 review: a re-keyed board whose
+    new rows did not land would lose its old ones and go dark for a night).
 
     2026-10-14 (fix 11 review): `partial_systems` (canonical labels, from
     scraper.layer4_partial_sets) left list pages unread tonight. They are
@@ -293,7 +298,8 @@ def mark_inactive_jobs(current_jobs: list[dict],
                      else bool(first_miss_complete))
     plan = plan_layer4(active, current_keys, miss_threshold, exclude_systems,
                        complete_systems=complete_systems, partial_systems=partial_systems,
-                       first_miss_complete=first_miss_on)
+                       first_miss_complete=first_miss_on,
+                       first_miss_hold=set(upsert_failed_systems or ()))
     found_ids: list[int] = plan["found_ids"]
     deactivate_ids: list[int] = plan["deactivate_ids"]
     bump_by_new_count: dict[int, list[int]] = plan["bump_by_new_count"]
@@ -307,6 +313,10 @@ def mark_inactive_jobs(current_jobs: list[dict],
             logger.info(f"  LAYER4 first miss {system}: complete crawl {fm['yield']}/{fm['active']} "
                         f"(yield/active); {fm['retired']} unseen rows retired at once "
                         f"(RETIRE_FIRST_MISS_WHEN_COMPLETE)")
+    held_fm = plan.get("first_miss_held") or []
+    if held_fm:
+        logger.warning(f"  LAYER4 first miss held for {len(held_fm)} complete system(s) with rows that did "
+                       f"not land tonight (they count misses as usual): {held_fm[:20]}")
     for system in sorted(bypassed, key=lambda s: -bypassed[s]["active"]):
         c = bypassed[system]
         logger.info(f"  LAYER4 complete crawl {system}: {c['reason']} {c['yield']}/{c['active']} "
@@ -379,6 +389,7 @@ def mark_inactive_jobs(current_jobs: list[dict],
         "first_miss_on": first_miss_on,
         "first_miss_retired": plan.get("first_miss_rows", 0),
         "first_miss_systems": sorted(s for s, v in first_miss.items() if v["retired"]),
+        "first_miss_held": plan.get("first_miss_held") or [],
     }
     logger.info(f"Layer 4 deactivation: {summary}")
     return summary
