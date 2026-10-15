@@ -55,6 +55,8 @@ from urllib.parse import urlparse, urljoin
 
 import aiohttp
 
+import site_revalidate
+
 logger = logging.getLogger(__name__)
 
 STATES = [
@@ -245,13 +247,14 @@ async def _check(session, sem, row) -> tuple:
     return row["id"], row.get("hospital_system") or "", st
 
 
-async def _patch(session, sb_url, headers, ids, body) -> int:
+async def _patch(session, sb_url, headers, ids, body, landed: list | None = None) -> int:
     """PATCH body onto ids in PATCH_BATCH-row statements. 2026-10-07
     (push 10): a batch the database cannot finish (57014 statement timeout,
     any 5xx, 408/429, a network fault) is split in half down to
     PATCH_MIN_BATCH and the pieces are retried with backoff, the
     scraper._post_hospital_rows pattern; a piece that still fails is logged
-    and skipped, and the loop continues. Returns rows landed."""
+    and skipped, and the loop continues. Returns rows landed; `landed`
+    (2026-10-15) collects their ids."""
     hdrs = dict(headers, **{"Content-Type": "application/json", "Prefer": "return=minimal"})
 
     async def _send_once(chunk) -> tuple:
@@ -268,10 +271,15 @@ async def _patch(session, sb_url, headers, ids, body) -> int:
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
             return False, True, f"{type(e).__name__}: {e}"
 
+    def _done(chunk) -> int:
+        if landed is not None:
+            landed.extend(chunk)
+        return len(chunk)
+
     async def _send(chunk, where) -> int:
         ok, retryable, detail = await _send_once(chunk)
         if ok:
-            return len(chunk)
+            return _done(chunk)
         if len(chunk) > PATCH_MIN_BATCH:
             logger.warning(f"  patch {where} ({len(chunk)} rows): {detail}; splitting in half")
             if retryable:
@@ -282,7 +290,7 @@ async def _patch(session, sb_url, headers, ids, body) -> int:
             await asyncio.sleep(pause)
             ok, retryable, detail = await _send_once(chunk)
             if ok:
-                return len(chunk)
+                return _done(chunk)
             if not retryable:
                 break
         logger.warning(f"  patch {where} ({len(chunk)} rows) FAILED, skipped: {detail}")
@@ -374,8 +382,13 @@ async def main() -> dict:
 
         now_iso = datetime.now(timezone.utc).isoformat()
         if retire:
+            # 2026-10-15: the retired ids are noted for the site's page purge
+            # (site_revalidate; the nightly flushes after this pass, STEP 2f).
+            retired_ids: list = []
             summary["retired"] = await _patch(session, sb_url, sb_headers, retire,
-                                              {"is_active": False, "last_dead_check_at": now_iso})
+                                              {"is_active": False, "last_dead_check_at": now_iso},
+                                              landed=retired_ids)
+            site_revalidate.note_retired(retired_ids, "front-pool")
         if live:
             summary["stamped"] = await _patch(session, sb_url, sb_headers, live,
                                               {"last_dead_check_at": now_iso})
@@ -387,3 +400,4 @@ async def main() -> dict:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     asyncio.run(main())
+    site_revalidate.flush("front-pool")

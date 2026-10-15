@@ -9,12 +9,15 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIXTURES = os.path.join(REPO, "tests", "fixtures")
 os.chdir(REPO)
 sys.path.insert(0, REPO)
-for _k in ("SUPABASE_URL", "SUPABASE_KEY", "SUPABASE_SERVICE_ROLE_KEY"):
+# 2026-10-15: CRON_SECRET / SITE_URL too, so no test can reach the site's
+# revalidate endpoint (site_revalidate skips without the secret).
+for _k in ("SUPABASE_URL", "SUPABASE_KEY", "SUPABASE_SERVICE_ROLE_KEY", "CRON_SECRET", "SITE_URL"):
     os.environ.pop(_k, None)
 
 import pytest  # noqa: E402
 import retire_guard  # noqa: E402
 import scraper  # noqa: E402
+import site_revalidate  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -30,6 +33,7 @@ def _clean_module_state(tmp_path, monkeypatch):
     scraper.COMPLETE_FEEDS.clear()
     scraper.set_cms_lookup([])
     scraper.LAST_UPSERT_FAILED.clear()
+    site_revalidate.clear()
     monkeypatch.setattr(retire_guard, "YIELD_HISTORY_PATH", str(tmp_path / "layer4_yields.json"))
     # 2026-10-11: the fake databases in the older tests predate content_hash
     # (sql/100), so they model a table without it: the upsert path exactly as
@@ -45,6 +49,7 @@ def _clean_module_state(tmp_path, monkeypatch):
     scraper.COMPLETE_FEEDS.clear()
     scraper.set_cms_lookup([])
     scraper.LAST_UPSERT_FAILED.clear()
+    site_revalidate.clear()
 
 
 @pytest.fixture

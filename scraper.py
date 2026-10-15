@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from city_utils import clean_city, is_plausible_city
 from specialty_canon import canonical_specialty
+import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -7828,7 +7829,8 @@ async def run_icims(session) -> list[Job]:
 #  URL: meta_data.canonical_url is the public posting page (validated live —
 #  /jobs/{req_id} 302s to it). Do NOT use apply_url: it points at the iCIMS
 #  /login gate, which is exactly the broken-apply-link shape the QA guardrails
-#  exist to prevent.
+#  exist to prevent. Exception (2026-10-15): a board whose canonical host is
+#  dead takes a JIBE_POSTING_URL template on the Jibe host (Norton).
 # ══════════════════════════════════════════════════════════════════════════
 
 JIBE_SITES = {
@@ -7926,6 +7928,33 @@ JIBE_SITES = {
 # never be swept. A board past JIBE_CEILING_WARN of the ceiling logs a warning.
 JIBE_MAX_PAGES = 100
 JIBE_CEILING_WARN = 0.8
+
+# 2026-10-15: Jibe boards whose feed names a dead host in
+# meta_data.canonical_url. Norton's points at www.nortonhealthcarecareers.com/
+# jobs/<slug>?lang=en-us, which answered 404 for every posting on 10-15 (all
+# 713 active Norton rows linked there); the same postings answer 200 on the
+# Jibe host itself at /careers-home/jobs/<slug>?lang=en-us (curl on 5
+# postings, each page titled with its own posting; a made-up id answers 404;
+# /jobs/<slug> 302s to the same page). {base} is the JIBE_SITES base, {slug}
+# the feed's slug (equal to req_id on all 693 Norton postings that day). The
+# other 32 Jibe boards' canonical URLs answered 200 the same day.
+JIBE_POSTING_URL: dict[str, str] = {
+    "Norton Healthcare": "{base}/careers-home/jobs/{slug}?lang=en-us",
+}
+
+
+def _jibe_posting_url(system: str, base_url: str, j: dict, rid: str) -> str:
+    """The public posting page of one /api/jobs row: the JIBE_POSTING_URL
+    template when the system has one, else meta_data.canonical_url, else
+    {base}/jobs/{req_id} (which 302s to the posting)."""
+    tmpl = JIBE_POSTING_URL.get(system)
+    if tmpl:
+        from urllib.parse import quote as _qs
+        slug = str(j.get("slug") or "").strip() or rid
+        return tmpl.format(base=base_url.rstrip("/"), slug=_qs(slug, safe=""))
+    meta = j.get("meta_data") or {}
+    return str(meta.get("canonical_url") or f"{base_url}/jobs/{rid}")
+
 
 # Jibe feeds whose location_name is a facility (not a street or a region):
 # rows take it as hospital_name so the CMS coverage count and the job page
@@ -8083,9 +8112,7 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                 # yielding "0 jobs (site reports 1175)" on the first test run).
                 city, st = parse_city_state(
                     f"{(j.get('city') or '').strip()}, {(j.get('state') or '').strip()}")
-                meta = j.get("meta_data") or {}
-                url = (meta.get("canonical_url")
-                       or f"{base_url}/jobs/{rid}")
+                url = _jibe_posting_url(system, base_url, j, rid)
                 cat = j.get("category")
                 if isinstance(cat, list):
                     cat = cat[0] if cat else None
@@ -21526,6 +21553,24 @@ def _stamp_post(sb_url: str, sb_key: str, run_started_iso: str, ids: dict,
     return post
 
 
+def _patched_ids(resp) -> list[int]:
+    """The ids a PATCH with select=id and return=representation flipped
+    ([{"id": 1}, ...]). An empty or unreadable body gives [] (2026-10-15)."""
+    try:
+        data = json.loads(resp.read() or b"[]")
+    except Exception:
+        return []
+    if not isinstance(data, list):
+        return []
+    out: list[int] = []
+    for r in data:
+        try:
+            out.append(int(r["id"]))
+        except (TypeError, KeyError, ValueError):
+            continue
+    return out
+
+
 # ── Hospital upsert + deactivation pass (added 2026-05-12) ─────────────────
 # Mirrors _upsert_travel_jobs_to_supabase. The hospital pipeline previously
 # had no deactivation step, so when a hospital filled or removed a posting it
@@ -21841,11 +21886,15 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
     if guarded:
         logger.warning(f"Sweep guard protected {len(guarded)} system(s): {guarded}")
 
+    # 2026-10-15: the PATCH answers with the ids it flipped (select=id,
+    # return=representation) so the site's cached pages of those rows can be
+    # purged after the run (site_revalidate; scheduler STEP 2f). Only the id
+    # column comes back, a few KB for a few thousand rows.
     patch_headers = {
         "apikey":        sb_key,
         "Authorization": f"Bearer {sb_key}",
         "Content-Type":  "application/json",
-        "Prefer":        "return=minimal,count=exact",
+        "Prefer":        "return=representation,count=exact",
     }
     body = json.dumps({"is_active": False}).encode()
     total_deactivated = 0
@@ -21853,12 +21902,16 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
         purl = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs"
                 f"?is_active=eq.true"
                 f"&hospital_system=eq.{_q(system)}"
-                f"&scraped_at=lt.{_q(run_started_iso)}")
+                f"&scraped_at=lt.{_q(run_started_iso)}"
+                f"&select=id")
         rq = _urlreq.Request(purl, data=body, headers=patch_headers, method="PATCH")
         try:
             with _urlreq.urlopen(rq, timeout=60) as resp:
                 cr = resp.headers.get("Content-Range", "")
-                n  = int(cr.split("/")[-1]) if "/" in cr and cr.split("/")[-1].isdigit() else 0
+                flipped = _patched_ids(resp)
+                n  = (int(cr.split("/")[-1]) if "/" in cr and cr.split("/")[-1].isdigit()
+                      else len(flipped))
+                site_revalidate.note_retired(flipped, "sweep")
                 if n:
                     logger.info(f"  Deactivated {n} stale rows for {system}")
                     total_deactivated += n

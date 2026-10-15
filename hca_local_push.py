@@ -76,10 +76,15 @@ def _load_shared_env() -> None:
                               "https://tlzxajgonuevbqaelhvf.supabase.co"))
         if shared.get("SUPABASE_SERVICE_ROLE_KEY"):
             os.environ.setdefault("SUPABASE_KEY", shared["SUPABASE_SERVICE_ROLE_KEY"])
+        # 2026-10-15: the site's cron credential, for the page purge after the
+        # sweep (site_revalidate); absent, the purge logs a line and skips.
+        if shared.get("CRON_SECRET"):
+            os.environ.setdefault("CRON_SECRET", shared["CRON_SECRET"])
         break
 
 
 import scraper  # noqa: E402
+import site_revalidate  # noqa: E402
 
 HCA_SYSTEM = "HCA Healthcare"
 LOGS_DIR = os.path.join(HERE, "logs")
@@ -262,6 +267,13 @@ def push_rows(rows: list[dict], run_started_iso: str, saved_path: str | None = N
           f"to Supabase (upsert + per-system sweep, run_started={run_started_iso})...")
     sent = scraper._upsert_hospital_jobs_to_supabase(rows, run_started_iso)
     print(f"DONE: {sent:,} of {len(rows):,} rows sent.")
+    # 2026-10-15: purge the site's cached pages of the rows the sweep retired
+    # (site_revalidate; needs CRON_SECRET, skips with a log line without it).
+    purge = site_revalidate.flush("hca push")
+    if purge.get("ids"):
+        print(f"Site page purge: {purge.get('sent', 0):,} of {purge['ids']:,} retired rows sent"
+              + (f" (skipped: {purge['skipped']})" if purge.get("skipped") else "")
+              + (f" (stopped: {purge['stopped']})" if purge.get("stopped") else ""))
     if sent < len(rows):
         how = (f"python hca_local_push.py --replay {saved_path}" if saved_path
                else "no saved file; re-run the crawl")

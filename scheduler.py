@@ -243,6 +243,22 @@ def run():
     except Exception as e:
         logger.warning(f"front-pool link check failed (non-fatal): {e}")
 
+    # ── Step 2f: purge the site's pages of the rows retired tonight ──
+    # (added 2026-10-15). The job page is ISR for 6 h and its row read is
+    # cached 6 h more, so a retired posting kept offering Apply for up to
+    # ~12 h (owner, 10-15: Amedisys 56815). The sweep, Layer 4 (first miss
+    # included) and the front-pool check noted the ids they flipped; this
+    # POSTs them to the site's /api/revalidate/jobs with CRON_SECRET, in
+    # batches. Without CRON_SECRET it logs one line and skips; a failure
+    # never fails the run.
+    revalidate_summary: dict = {}
+    try:
+        import site_revalidate
+        logger.info("\n[ STEP 2f ] Purging the site's pages of retired jobs...")
+        revalidate_summary = site_revalidate.flush("nightly") or {}
+    except Exception as e:
+        logger.warning(f"site page purge failed (non-fatal): {e}")
+
     # ── Step 3: Summary ───────────────────────────────────────────
     # 2026-10-07 (push 10): the active total is arithmetic on what the run
     # already knows (Layer 4 active_before minus its deactivations minus the
@@ -286,6 +302,7 @@ def run():
                             "layer4": {k: v for k, v in deact_stats.items()
                                        if k not in ("excluded_systems", "guarded_systems")},
                             "front_pool": front_summary,
+                            "site_revalidate": revalidate_summary,
                             "travel_sweep": LAST_RUN_COUNTS.get("travel_sweep"),
                             "partial_systems": sorted(PARTIAL_SYSTEMS)[:50],
                             "guarded_systems": (deact_stats.get("guarded_systems") or [])[:50]})

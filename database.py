@@ -9,6 +9,7 @@ import logging
 from datetime import datetime, timezone
 from supabase import create_client, Client
 import retire_guard
+import site_revalidate
 from retire_guard import (BACKSTOP_DAYS, plan_layer4, load_yield_history, save_yield_history,
                           zero_yield_alarms)
 
@@ -349,8 +350,9 @@ def mark_inactive_jobs(current_jobs: list[dict],
     except Exception as e:
         logger.warning(f"  Layer 4 zero-yield alarm bookkeeping failed (non-fatal): {e}")
 
-    # Helper for batched updates.
-    def _batch_update(ids: list[int], patch: dict, label: str) -> int:
+    # Helper for batched updates. `landed` (2026-10-15) collects the ids of
+    # the chunks that went through.
+    def _batch_update(ids: list[int], patch: dict, label: str, landed: list | None = None) -> int:
         n = 0
         for i in range(0, len(ids), 500):
             chunk = ids[i:i+500]
@@ -358,15 +360,22 @@ def mark_inactive_jobs(current_jobs: list[dict],
                 (db.table("hospital_jobs").update(patch)
                    .in_("id", chunk).execute())
                 n += len(chunk)
+                if landed is not None:
+                    landed.extend(chunk)
             except Exception as e:
                 logger.warning(f"  Update {label} chunk {i//500}: {e}")
         return n
 
     # Apply: reset found, deactivate threshold-hit, bump others.
     reset_n = _batch_update(found_ids, {"consecutive_scrape_misses": 0}, "reset-found")
+    # 2026-10-15: the retired ids (the 3-miss count, the backstop and the
+    # first-miss path) are noted for the site's page purge, which the
+    # nightly sends after the last retirement pass (scheduler STEP 2f).
+    retired_ids: list[int] = []
     deact_n = _batch_update(deactivate_ids,
                             {"is_active": False, "consecutive_scrape_misses": 0},
-                            "deactivate-at-threshold")
+                            "deactivate-at-threshold", landed=retired_ids)
+    site_revalidate.note_retired(retired_ids, "layer4")
     bump_n = 0
     for new_count, ids in bump_by_new_count.items():
         bump_n += _batch_update(ids,
