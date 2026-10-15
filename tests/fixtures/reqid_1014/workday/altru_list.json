@@ -1,0 +1,57 @@
+{
+ "_meta": {
+  "system": "Altru Health System",
+  "source": "POST https://altru.wd503.myworkdayjobs.com/wday/cxs/altru/careers/jobs {limit: 20}, every page",
+  "fetched": "2026-10-14T22:42:02Z",
+  "live_total": 159,
+  "trimmed": "5 postings: physician rows whose five-digit bullet is not the path id, one whose is, one R-number row"
+ },
+ "total": 5,
+ "jobPostings": [
+  {
+   "title": "Registered Nurse RN Medical Surgical",
+   "externalPath": "/job/Grand-Forks-ND/Registered-Nurse-RN-Medical-Surgical_R6177",
+   "locationsText": "Grand Forks, ND",
+   "bulletFields": [
+    "North Dakota",
+    "R6177"
+   ]
+  },
+  {
+   "title": "Neurology Physician",
+   "externalPath": "/job/Grand-Forks-ND/Neurology_R19",
+   "locationsText": "Grand Forks, ND",
+   "bulletFields": [
+    "North Dakota",
+    "30019"
+   ]
+  },
+  {
+   "title": "Registered Nurse, RN - New Grads - Residency Program",
+   "externalPath": "/job/Grand-Forks-ND/Registered-Nurse-Residency-Program-New-Grads_28258",
+   "locationsText": "Grand Forks, ND",
+   "bulletFields": [
+    "North Dakota",
+    "28258"
+   ]
+  },
+  {
+   "title": "Cardiologist - Non-interventional/non-invasive - GF",
+   "externalPath": "/job/Grand-Forks-ND/Cardiology---Non-interventional-non-invasive---GF_R5",
+   "locationsText": "Grand Forks, ND",
+   "bulletFields": [
+    "North Dakota",
+    "30005"
+   ]
+  },
+  {
+   "title": "Urology",
+   "externalPath": "/job/Altru-Professional-Center/Urology_R32-1",
+   "locationsText": "Altru Professional Center",
+   "bulletFields": [
+    "North Dakota",
+    "30032"
+   ]
+  }
+ ]
+}

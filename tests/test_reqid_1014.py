@@ -105,10 +105,9 @@ WD_CASES = [
     ("marinhealth.json", "14976 - AC307"),       # path suffix "_JR102021" is not the number
     ("kaweah.json", "R26_0000002352"),
     ("samaritan.json", "02.6025.0414.5"),
-    # job_id "14468" is Rochester's ZIP bullet: the row stands for whichever
-    # posting comes first for that ZIP, so the detail page's number would
-    # drift from the row's url; Rochester's number comes from the list
-    # (test_rochester_number_comes_from_the_list_item_that_gives_the_url)
+    # job_id "14468" was Rochester's ZIP bullet (re-keyed 2026-10-14,
+    # tests/test_wd_zip_rekey_1014.py): a bullet-keyed row never takes the
+    # detail page's number, which would drift from a ZIP row's url
     ("rochester_numeric.json", ""),
     ("rochester_same.json", ""),                 # job_id already is the printed number
     ("prisma_blank.json", ""),                   # the payload carries none
@@ -594,34 +593,34 @@ def _rochester_list(fixture_text, monkeypatch, drop=()):
                                               scraper.WORKDAY_TENANTS["Rochester Regional Health"]))
 
 
-def test_rochester_number_comes_from_the_list_item_that_gives_the_url(fixture_text, monkeypatch):
+def test_rochester_rows_are_keyed_by_the_number_the_page_prints(fixture_text, monkeypatch):
     jobs = _rochester_list(fixture_text, monkeypatch)
     got = [(j.job_id, j.req_id, j.url.rsplit("_REQ_", 1)[-1].split("-")[0]) for j in jobs]
-    # the ZIP keys the row (pre-existing; three Monroe Ave postings share 14607)
-    assert got == [("14624", "REQ_237858", "237858"), ("14607", "REQ_238008", "238008"),
-                   ("14534", "REQ_194790", "194790"), ("14513", "REQ_241533", "241533")]
-    # the page's JSON-LD identifier is the bullet (checked live 2026-10-14)
+    # 2026-10-14 re-key (wd_list_job_id): one row per posting, keyed by its
+    # REQ_ bullet; the three Monroe Ave postings used to share the ZIP row 14607
+    assert got == [("REQ_237858", "", "237858"), ("REQ_238008", "", "238008"), ("REQ_240770", "", "240770"),
+                   ("REQ_243079", "", "243079"), ("REQ_194790", "", "194790"), ("REQ_241533", "", "241533")]
+    # the page's JSON-LD identifier is the job_id (checked live 2026-10-14)
     meta = _json(fixture_text, "workday/rochester_list.json")["_meta"]
-    assert jobs[0].req_id in meta["page_identifier"]
-    # another night the ZIP's first posting is another one: the number follows the url
+    assert set(meta["page_identifier"]) <= {j.job_id for j in jobs}
+    # another night without one posting: every other row keeps its id and its url
     later = _rochester_list(fixture_text, monkeypatch, drop={1})
-    row = next(j for j in later if j.job_id == "14607")
-    assert row.req_id == "REQ_240770" and row.url.endswith("_REQ_240770")
-    assert row.req_id in meta["page_identifier"]
+    assert {(j.job_id, j.url) for j in later} == {(j.job_id, j.url) for j in jobs if j.job_id != "REQ_238008"}
 
 
-def test_rochester_number_reaches_a_stored_row_every_night(fixture_text, monkeypatch):
+def test_a_rochester_row_needs_no_separate_number(fixture_text, monkeypatch):
     jobs = _rochester_list(fixture_text, monkeypatch)
     job = jobs[1]
     scraper.set_known_bodies([_known(job)])
     scraper._keep_stored_body(job.hospital_system, job)
     row = scraper.normalize_job(job)
-    assert row["posting_facts"] == {"req_id": "REQ_238008"}
-    assert row["job_id"] == "14607" and "req_id" not in row
+    assert row["job_id"] == "REQ_238008" and "req_id" not in row
+    assert "req_id" not in (row.get("posting_facts") or {})
 
 
 def test_wd_list_req_id_rules():
     roch = "Rochester Regional Health"
+    # a row a ZIP still keys (none on 2026-10-14 since the re-key) names the number
     assert scraper.wd_list_req_id(roch, ["Site", "14624", "REQ_237858", "Rochester"], "14624") == "REQ_237858"
     assert scraper.wd_list_req_id(roch, ["Site", "REQ_223614"], "REQ_223614") == ""      # already the job_id
     assert scraper.wd_list_req_id(roch, ["Site", "14624"], "14624") == ""
