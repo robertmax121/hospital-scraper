@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from city_utils import clean_city, is_plausible_city
 from specialty_canon import canonical_specialty
+import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a system name
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -3795,6 +3796,21 @@ _ORACLE_PREVIEW_RE = re.compile(
 # (313 active on 09-24); they are left exactly as they were before push 1.
 PHENOM_ORACLE_FRONTS = {"Ascension Health"}
 
+# 2026-10-15 (wages, facility): the Phenom list field that names the hospital
+# where the tenant leaves `facility` blank. Baptist Health South Florida's
+# `brand` is the hospital ("Boca Raton Regional Hospital", "Bethesda
+# Hospital, Inc.") on 795 of 1,300 rows read that day; the rest are
+# "Corporate", "Baptist Health Medical Group" and the like and keep the system.
+PHENOM_FACILITY_KEY = {"Baptist Health (FL)": "brand"}
+
+
+def _phenom_list_facility(system: str, doc: dict, city: str = "", state: str = "", title: str = "") -> str:
+    """The hospital a Phenom row's PHENOM_FACILITY_KEY field names, or ""."""
+    key = PHENOM_FACILITY_KEY.get(system)
+    if not key:
+        return ""
+    return facility_names.list_facility(system, str(doc.get(key) or ""), city, state, title)
+
 
 def _phenom_oracle_job_url(system: str, url: str) -> str:
     """For a PHENOM_ORACLE_FRONTS tenant, Oracle's e-mail apply step
@@ -3918,7 +3934,25 @@ def _apply_wd_posting_info(job, info: dict) -> bool:
     start = str(info.get("startDate") or "")[:10]
     if _ISO_DATE_RX.match(start) and not _ISO_DATE_RX.match(str(job.posted_date or "").strip()[:10]):
         job.posted_date = start
+    if job.hospital_system in WD_LOCATION_FACILITY:
+        _wd_location_facility(job, info)
     return ok
+
+
+def _wd_location_facility(job, info: dict) -> None:
+    """2026-10-15 (wages): a WD_LOCATION_FACILITY row takes the hospital its
+    jobRequisitionLocation names. A site that is no hospital (an office
+    building, a clinic) leaves the row as it is and says so, so the hospital
+    stored on an earlier night is not put back (facility_names.mark_seen)."""
+    loc = info.get("jobRequisitionLocation")
+    desc = str(loc.get("descriptor") or "") if isinstance(loc, dict) else ""
+    if not desc.strip():
+        return
+    hit = facility_names.descriptor_facility(job.hospital_system, desc, job.city, job.state, job.title)
+    if hit:
+        job.hospital_name = hit[0]
+    else:
+        facility_names.mark_seen(job)
 
 
 # 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
@@ -5537,6 +5571,18 @@ def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | No
 # community-program jobs in Augusta or Columbus must not become hospital
 # rows. For a system listed here a posting is kept only when its title names
 # one of the hospitals, and takes that hospital's name, CMS town and state.
+# 2026-10-15 (wages, facility): tenants whose list bulletFields carry the
+# hiring entity, which for a hospital is the hospital: MultiCare
+# ["Covington, Washington", "JR82034", "Covington Medical Center", "Variable"].
+# 863 of 1,378 rows read that day name a hospital; "MultiCare Health System",
+# "MultiCare Clinics", "Indigo Urgent Care" and the like keep the system.
+WD_BULLET_FACILITY = frozenset({"MultiCare Health"})
+# 2026-10-15 (wages, facility): tenants whose detail jobRequisitionLocation
+# is the site: Vanderbilt "VANDERBILT WILSON COUNTY HOSPITAL (LOC02029)",
+# Corewell "SITE - Dearborn Hospital - 18101 Oakwood Blvd - Dearborn" (read
+# by _apply_wd_posting_info on every Workday detail pass, Phenom rows that
+# link to Workday included).
+WD_LOCATION_FACILITY = frozenset({"Vanderbilt (VUMC)", "Corewell Health"})
 WD_TITLE_FACILITY: dict[str, tuple[tuple[re.Pattern, str, str, str], ...]] = {
     "Georgia DBHDD": (
         (re.compile(r"East Central Regional Hospital|\bECRH\b|Gracewood", re.I),
@@ -5880,6 +5926,10 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         if _tf is None:
                             continue   # statewide board: only postings that name a CMS hospital
                         _facility, _city, _state = _tf
+                    if system in WD_BULLET_FACILITY:
+                        # 2026-10-15 (wages): the hiring entity bullet names the hospital.
+                        _facility = facility_names.bullet_facility(
+                            system, j.get("bulletFields") or [], _city, _state, j.get("title", "")) or _facility
                     # job_id (2026-05-29): first digit-bearing bulletField is the
                     # req number (some tenants put the state in [0]); fall back to
                     # the always-unique externalPath.
@@ -7924,10 +7974,20 @@ JIBE_FACILITY_NAME = {"Garnet Health", "Maimonides Health", "Bassett Healthcare 
 # entry of that list is the hospital_name; a blank list leaves the system.
 JIBE_FACILITY_TAG: dict[str, str] = {"Care New England Health System": "tags2"}
 
+# 2026-10-15 (wages, facility): feeds whose location_name is a site code plus
+# a site ("PHO - Presbyterian Medical Center", "CIG - Cancer Institute"):
+# the row takes the hospital that site is, or the system when the site is a
+# clinic, an office or a region. Novant on 2026-10-15: 930 of 1,588 rows at a
+# hospital (facility_names.novant_facility).
+JIBE_FACILITY_RESOLVER = {"Novant Health": facility_names.novant_facility}
+
 
 def _jibe_facility(system: str, j: dict) -> str:
     """hospital_name for one /api/jobs row: the configured tag list's first
     entry, else location_name for JIBE_FACILITY_NAME systems, else the system."""
+    resolver = JIBE_FACILITY_RESOLVER.get(system)
+    if resolver:
+        return resolver(j.get("location_name") or "") or system
     tag = JIBE_FACILITY_TAG.get(system)
     if tag:
         vals = j.get(tag)
@@ -8345,6 +8405,15 @@ FINDLY_GOOGLE_ORGS = {
 # 1 - 1,000,000 placeholder and is never read either.
 FINDLY_GOOGLE_PAY_KEY = {"UPMC": "salary", "University Hospitals": "relocation"}
 
+# 2026-10-15 (wages, facility): the hospital a tenant's search payload names.
+# UPMC's company_name is "UPMC - Pittsburgh Medical Center" on every row; the
+# hospital is job.business_unit ("UPMC Memorial"), refined by job.brand where
+# one unit spans hospitals ("UPMC Susquehanna Soldiers+Sail" is UPMC
+# Wellsboro). Read from the whole payload 2026-10-15: 1,878 of 2,918 rows name
+# a hospital; the rest are physicians, corporate, home care and the like and
+# keep company_name. facility_names.upmc_facility.
+FINDLY_GOOGLE_FACILITY = {"UPMC": facility_names.upmc_facility}
+
 # 2026-10-12: the employer's requisition number. AdventHealth's job_id is the
 # Findly posting id in its jobs.adventhealth.com URL (23744623); the job page
 # prints "Req #: R-0379591", the Workday requisition its recruiters use. The
@@ -8506,10 +8575,12 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
                    or (f"{base_site}/job/{ref}/" if ref else base_site))
 
             pay_key = FINDLY_GOOGLE_PAY_KEY.get(system)
+            fac_of = FINDLY_GOOGLE_FACILITY.get(system)
+            hospital = fac_of(j.get("brand"), j.get("business_unit")) if fac_of else ""
             jobs.append(Job(
                 title=title,
                 hospital_system=system,
-                hospital_name=brand if brand else system,
+                hospital_name=hospital or (brand if brand else system),
                 city=city,
                 state=state,
                 location=f"{city}, {state}".strip(", "),
@@ -10454,7 +10525,8 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     job = Job(
                         title=title,
                         hospital_system=system,
-                        hospital_name=doc.get("facility", "") or doc.get("company", "") or system,
+                        hospital_name=(_phenom_list_facility(system, doc, city, state, title)
+                                       or doc.get("facility", "") or doc.get("company", "") or system),
                         city=city, state=state,
                         location=loc or f"{city}, {state}",
                         specialty=specialty_val,
@@ -12893,6 +12965,23 @@ def _oracle_items(v) -> list:
     return [x for x in v if isinstance(x, dict)] if isinstance(v, list) else []
 
 
+# 2026-10-15 (wages, facility): tenants whose requisition work location (the
+# workLocation child the list already expands) is the hospital: Guthrie
+# "HCM - Corning Hospital", Tenet "Delray Medical Center". On 2026-10-15:
+# Guthrie 561 of 756 rows at a hospital, Tenet 2,533 of 2,992; the rest are
+# clinics, physician networks and offices, and keep the system.
+ORACLE_LOCATION_FACILITY = frozenset({"Guthrie Health", "Tenet Healthcare"})
+
+
+def _oracle_work_location_facility(system: str, j: dict, city: str = "", state: str = "") -> str:
+    """The hospital the requisition's first work location names, or ""."""
+    for w in _oracle_items(j.get("workLocation", j.get("WorkLocation"))):
+        name = str(w.get("LocationName") or "").strip()
+        if name:
+            return facility_names.list_facility(system, name, city, state, j.get("Title", j.get("title", "")))
+    return ""
+
+
 def _oracle_location(j: dict) -> tuple[str, str, str]:
     """(location text, city, state) of one Oracle requisition.
 
@@ -13015,6 +13104,8 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                 _facility = system
                 if system == "Mount Sinai Health System":
                     _facility, _city, _state = _mount_sinai_loc(j.get("Title", j.get("title", "")), _city, _state)
+                elif system in ORACLE_LOCATION_FACILITY:
+                    _facility = _oracle_work_location_facility(system, j, _city, _state) or system
                 func = j.get("JobFunction", j.get("jobFunction", ""))
                 if isinstance(func, dict):
                     func = func.get("Name", func.get("name", ""))
@@ -25857,6 +25948,13 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         top = sorted(non_us.items(), key=lambda kv: -kv[1])
         logger.info(f"Non-US postings dropped: {sum(non_us.values()):,} rows {dict(top[:12])}")
     kept = _drop_req_family_copies(kept)
+    # 2026-10-15 (wages): the hospital on rows of the systems that file every
+    # posting under the system's name (facility_names), before normalize_job
+    # so a hospital's town fills a blank or head-office location.
+    fac = facility_names.apply_facilities(kept)
+    if fac:
+        logger.info("Facilities: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fac.items())))
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
     unique = []
@@ -26020,7 +26118,12 @@ async def run_all() -> list[dict]:
     # no-op without credentials).
     # 2026-09-24 (budget): the known-body map loads alongside it, so the
     # detail passes skip rows the database already holds a body for.
-    await asyncio.gather(asyncio.to_thread(load_cms_lookup), asyncio.to_thread(load_known_bodies))
+    # 2026-10-15 (wages): and the hospitals stored on the body-derived
+    # systems' rows, kept on nights a row's body is not read again.
+    _, _, n_fac = await asyncio.gather(asyncio.to_thread(load_cms_lookup), asyncio.to_thread(load_known_bodies),
+                                       asyncio.to_thread(facility_names.load_known_facilities))
+    logger.info(f"Known facilities: {n_fac:,} stored rows of {', '.join(facility_names.FALLBACK_DB_LABELS)} "
+                f"name a hospital")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool

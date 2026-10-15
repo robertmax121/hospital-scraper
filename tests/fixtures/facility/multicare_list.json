@@ -1,0 +1,75 @@
+{
+ "total": 7,
+ "jobPostings": [
+  {
+   "title": "RN PCU",
+   "externalPath": "/job/Covington-Washington/RN-PCU_JR82034-1",
+   "bulletFields": [
+    "Covington, Washington",
+    "JR82034",
+    "Covington Medical Center",
+    "Variable"
+   ]
+  },
+  {
+   "title": "CNA - Pediatric Patient Care Technician",
+   "externalPath": "/job/Tacoma-Washington/CNA---Pediatric-Patient-Care-Technician_JR83905-1",
+   "bulletFields": [
+    "Tacoma, Washington",
+    "JR83905",
+    "Mary Bridge Children's Hospital & Health Network",
+    "Night"
+   ]
+  },
+  {
+   "title": "CNA MED/SURG FLOAT POOL",
+   "externalPath": "/job/Spokane-Valley-Washington/CNA-MED-SURG-FLOAT-POOL_JR83430-1",
+   "bulletFields": [
+    "Spokane Valley, Washington",
+    "JR83430",
+    "Valley Hospital",
+    "Day"
+   ]
+  },
+  {
+   "title": "Patient Care Assistant- PCU",
+   "externalPath": "/job/Puyallup-Washington/Patient-Care-Assistant--PCU_JR85439",
+   "bulletFields": [
+    "Puyallup, Washington",
+    "JR85439",
+    "Good Samaritan Hospital",
+    "Day"
+   ]
+  },
+  {
+   "title": "Pharmacist",
+   "externalPath": "/job/Seattle-Washington/Pharmacist_JR70845-1",
+   "bulletFields": [
+    "Seattle, Washington",
+    "JR70845",
+    "MultiCare Health System",
+    "Variable"
+   ]
+  },
+  {
+   "title": "Emergency Services Technician - Nights",
+   "externalPath": "/job/Yakima-Washington/Emergency-Services-Technician---Nights_JR83861-1",
+   "bulletFields": [
+    "Yakima, Washington",
+    "JR83861",
+    "Yakima Memorial Hospital",
+    "Night"
+   ]
+  },
+  {
+   "title": "Physician Assistant (PA) or Nurse Practitioner (ARNP) - Urgent Care",
+   "externalPath": "/job/Renton-Washington/Physician-Assistant--PA--or-Nurse-Practitioner--ARNP----Urgent-Care_JR84350",
+   "bulletFields": [
+    "Renton, Washington",
+    "JR84350",
+    "Indigo Urgent Care",
+    "Day"
+   ]
+  }
+ ]
+}

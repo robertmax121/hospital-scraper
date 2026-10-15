@@ -1,0 +1,245 @@
+{
+ "items": [
+  {
+   "TotalJobsCount": 10,
+   "Limit": 25,
+   "Offset": 0,
+   "requisitionList": {
+    "items": [
+     {
+      "Id": "2503001195",
+      "Title": "RN Med Surg Travel and Local contract Rock Hill SC",
+      "PostedDate": "2026-10-14",
+      "PrimaryLocation": "Rock Hill, SC, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025063989,
+         "LocationName": "Rock Hill Hospital, Piedmont Medical Network",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "2603024560",
+      "Title": "Pharmacist - Staff",
+      "PostedDate": "2026-10-15",
+      "PrimaryLocation": "West Palm Beach, FL, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025068083,
+         "LocationName": "St. Marys Medical Center",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "2603025910",
+      "Title": "Certified Surgical Tech (CST)",
+      "PostedDate": "2026-10-14",
+      "PrimaryLocation": "El Paso, TX, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025070820,
+         "LocationName": "Thop Memorial Campus",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "2603018161",
+      "Title": "Echo Tech",
+      "PostedDate": "2026-10-13",
+      "PrimaryLocation": "Bartlett, TN, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025023681,
+         "LocationName": "Saint Francis Hospital-Bartlett",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "2603022430",
+      "Title": "Nursing Supervisor (RN) - ER",
+      "PostedDate": "2026-10-14",
+      "PrimaryLocation": "Joshua Tree, CA, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025028214,
+         "LocationName": "Hdmc Holdings, LLC DBA Hi-Desert Medical Center",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "2603023101",
+      "Title": "Family Medicine Physician - Core Faculty",
+      "PostedDate": "2026-09-11",
+      "PrimaryLocation": "Detroit, MI, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025065242,
+         "LocationName": "3990 John R. Street, Detroit, Mi 48201-2018",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "2603026074",
+      "Title": "Physician Assistant / Nurse Practitioner - General Surgery (clinical support) in San Antonio, TX near St. Luke's Baptist",
+      "PostedDate": "2026-10-14",
+      "PrimaryLocation": "San Antonio, TX, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025056936,
+         "LocationName": "BHS Phys Network",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "2603008243",
+      "Title": "Multimodality Tech - Off Site",
+      "PostedDate": "2026-04-13",
+      "PrimaryLocation": "West Palm Beach, FL, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025017613,
+         "LocationName": "Oced - Good Samaritan Medical Center",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "2603025298",
+      "Title": "Laboratory Assistant II",
+      "PostedDate": "2026-10-14",
+      "PrimaryLocation": "Framingham, MA, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025067139,
+         "LocationName": "Metrowest Medical Center - Framingham Union Campus",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "2603024334",
+      "Title": "EVS Tech III",
+      "PostedDate": "2026-10-13",
+      "PrimaryLocation": "San Antonio, TX, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000025028176,
+         "LocationName": "Healthlink (Fitness Center)",
+         "TownOrCity": null,
+         "Region2": null,
+         "Country": null
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     }
+    ],
+    "count": 10,
+    "hasMore": false
+   }
+  }
+ ]
+}
