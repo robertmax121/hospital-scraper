@@ -176,6 +176,54 @@ def test_cap_and_deadline_bound_a_flush():
     assert out["unsent"] == 2000 - out["sent"]
 
 
+
+class _Clock:
+    """A fake clock: sleep() and every request advance it."""
+
+    def __init__(self):
+        self.t = 0.0
+
+    def __call__(self):
+        return self.t
+
+    def sleep(self, s):
+        self.t += s
+
+
+def test_the_deadline_is_checked_before_each_retry():
+    # review 10-15: a retry must not start past the deadline (it used to be
+    # checked only between batches).
+    clock, timeouts = _Clock(), []
+
+    def slow_503(rq, timeout=None):
+        timeouts.append(timeout)
+        clock.t += 4
+        raise urllib.error.HTTPError(rq.full_url, 503, "err", {}, io.BytesIO(b""))
+    out = R.post_ids(list(range(1, 11)), secret="s", opener=slow_503, sleep=clock.sleep,
+                     clock=clock, deadline_sec=10)
+    # call at 0 (ends 4); retry after 3 s (7, ends 11); the 8 s retry would end past 10: stop
+    assert len(timeouts) == 2 and out["stopped"] == "deadline 10 s"
+    assert out["failed_batches"] == 1 and out["sent"] == 0 and out["unsent"] == 10
+    assert set(timeouts) == {R.TIMEOUT_SEC}
+
+
+def test_a_hanging_site_ends_the_flush_by_deadline_plus_timeout(monkeypatch):
+    # Every request hangs for the full client timeout and fails; even with
+    # the three-in-a-row stop lifted, the flush ends by DEADLINE + TIMEOUT.
+    monkeypatch.setattr(R, "MAX_FAILED_IN_A_ROW", 10_000)
+    clock = _Clock()
+
+    def hang(rq, timeout=None):
+        clock.t += timeout
+        raise TimeoutError("timed out")
+    out = R.post_ids(list(range(1, 20_001)), secret="s", opener=hang, sleep=clock.sleep, clock=clock)
+    assert out["stopped"].startswith("deadline") and out["sent"] == 0
+    assert clock.t <= R.DEADLINE_SEC + R.TIMEOUT_SEC
+    # and the client timeout leaves the site's own worst case for a 500-id
+    # batch (3 lookups x 8 s) room, inside the route's 60 s maxDuration
+    assert 24 < R.TIMEOUT_SEC < 60 and R.BATCH <= 500
+
+
 def test_note_retired_dedupes_across_passes_and_flush_clears(monkeypatch):
     monkeypatch.setenv("CRON_SECRET", "s")
     assert R.note_retired([1, 2, "3", "x", None, 2], "sweep") == 3
@@ -251,6 +299,22 @@ def test_sweep_count_still_reads_content_range_when_the_body_is_empty(monkeypatc
     _sweep_db(monkeypatch, {"Big Board": [1, 2]}, body=False)
     scraper._upsert_hospital_jobs_to_supabase([_job("Big Board", i) for i in range(40)], "2026-10-16T00:09:00.000000Z")
     assert scraper.LAST_RUN_COUNTS["sweep_deactivated"] == 2 and R.pending() == []
+
+
+
+def test_sweep_warns_when_fewer_ids_come_back_than_were_retired(monkeypatch, caplog):
+    _sweep_db(monkeypatch, {"Big Board": [1, 2, 3]}, body=False)
+    with caplog.at_level(logging.WARNING):
+        scraper._upsert_hospital_jobs_to_supabase([_job("Big Board", i) for i in range(40)],
+                                                  "2026-10-16T00:09:00.000000Z")
+    assert scraper.LAST_RUN_COUNTS["sweep_deactivated"] == 3
+    assert any("3 rows retired but 0 ids came back" in r.getMessage() for r in caplog.records)
+    caplog.clear()
+    _sweep_db(monkeypatch, {"Big Board": [1, 2, 3]})
+    with caplog.at_level(logging.WARNING):
+        scraper._upsert_hospital_jobs_to_supabase([_job("Big Board", i) for i in range(40)],
+                                                  "2026-10-16T00:09:00.000000Z")
+    assert not any("ids came back" in r.getMessage() for r in caplog.records)
 
 
 def test_patched_ids_reads_only_ids():
@@ -601,3 +665,35 @@ def test_tool_sql_is_read_only_and_kept_out_of_the_quiet_window():
     assert T.in_quiet_window(datetime(2026, 10, 16, 5, 29, tzinfo=timezone.utc))
     assert not T.in_quiet_window(datetime(2026, 10, 16, 5, 30, tzinfo=timezone.utc))
     assert not T.in_quiet_window(datetime(2026, 10, 15, 17, 0, tzinfo=timezone.utc))
+
+
+def test_tool_batch_is_capped_at_500(monkeypatch, tmp_path):
+    # review 10-15: a 2,000-id call can outlive the route's 60 s on a slow
+    # database, and then the site purges nothing.
+    T = _tool()
+    monkeypatch.setenv("CRON_SECRET", "s")
+    site = FakeSite()
+    monkeypatch.setattr(urllib.request, "urlopen", site)
+    monkeypatch.setattr(R.time, "sleep", _no_sleep)
+    assert T.main(["--batch", "2000", "--ids", ",".join(str(i) for i in range(1, 1201))]) == 0
+    assert [len(c["ids"]) for c in site.calls] == [500, 500, 200]
+
+
+def test_tool_sql_failure_sends_nothing(monkeypatch, tmp_path):
+    import sys
+    import types
+    T = _tool()
+    (tmp_path / "wp.py").write_text("# stand-in", encoding="utf-8")
+    fake = types.ModuleType("wp")
+
+    def sql(q):
+        raise RuntimeError('relation "public.retired_closed_backup_20261015" does not exist')
+    fake.sql = sql
+    monkeypatch.setattr(T, "WP_DIRS", [str(tmp_path)])
+    monkeypatch.setitem(sys.modules, "wp", fake)
+    with pytest.raises(SystemExit) as e:
+        T.ids_from_sql("select id from public.retired_closed_backup_20261015",
+                       now=datetime(2026, 10, 15, 18, 0, tzinfo=timezone.utc))
+    assert "nothing sent" in str(e.value) and "does not exist" in str(e.value)
+    fake.sql = lambda q: [{"id": 5}, {"id": "6"}, {"id": 5}, {"x": None}]
+    assert T.ids_from_sql("select id from t", now=datetime(2026, 10, 15, 18, 0, tzinfo=timezone.utc)) == [5, 6]

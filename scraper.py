@@ -21912,6 +21912,13 @@ def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) ->
                 n  = (int(cr.split("/")[-1]) if "/" in cr and cr.split("/")[-1].isdigit()
                       else len(flipped))
                 site_revalidate.note_retired(flipped, "sweep")
+                if n and len(flipped) < n:
+                    # Review 10-15: a short id list (a row cap on the
+                    # answer, an unreadable body) only means those pages
+                    # wait out the site's cache TTL; say so rather than
+                    # purge less than was retired without a word.
+                    logger.warning(f"  Sweep {system}: {n} rows retired but {len(flipped)} ids came back; "
+                                   f"{n - len(flipped)} job page(s) will not be purged on the site")
                 if n:
                     logger.info(f"  Deactivated {n} stale rows for {system}")
                     total_deactivated += n

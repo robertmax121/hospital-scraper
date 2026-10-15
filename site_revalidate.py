@@ -26,9 +26,11 @@ pages then expire on their own TTL, as before. SITE_URL (optional, as in the
 site's ops scripts) points it at a preview deployment.
 
 Never raises and never fails a run: every error is logged and counted.
-Rate-safe: POSTs of BATCH ids, PAUSE_SEC apart, at most MAX_IDS ids and
-DEADLINE_SEC seconds per flush; a 401/403/404 stops at once (wrong secret, or
-the endpoint is not deployed), three failed batches in a row stop the rest.
+Rate-safe: POSTs of BATCH ids, PAUSE_SEC apart, at most MAX_IDS ids per
+flush; the deadline is checked before every batch and before every retry, so
+a flush ends within DEADLINE_SEC + TIMEOUT_SEC (about 5.5 min) even when the
+site hangs; a 401/403/404 stops at once (wrong secret, or the endpoint is not
+deployed), three failed batches in a row stop the rest.
 Idempotent on both sides: ids are deduplicated here, and a repeated purge only
 makes the next visit re-read one row.
 """
@@ -53,8 +55,12 @@ BATCH = 500             # the site's recommended batch (its ceiling is 2,000 per
 MIN_BATCH = 50          # a 413 / 400 halves a batch down to this
 PAUSE_SEC = 1.0         # between batches
 RETRY_PAUSES = (3.0, 8.0)   # before each retry of a 429 / 5xx / network fault
-TIMEOUT_SEC = 45        # the route's maxDuration is 60 s
-DEADLINE_SEC = 300      # the whole flush
+# Per request (review 10-15: was 45). Not 20: the site looks up a 500-id
+# batch in 3 chunks with an 8 s abort each (lib/job-revalidate.js), so a
+# slow database can legitimately take ~24 s, and cutting that off would
+# only make the batch run twice. Half the route's maxDuration (60 s).
+TIMEOUT_SEC = 30
+DEADLINE_SEC = 300      # no batch or retry starts after this (a flush ends by DEADLINE_SEC + TIMEOUT_SEC)
 MAX_IDS = 20000         # per flush; the rest expire on their own TTL
 MAX_FAILED_IN_A_ROW = 3
 USER_AGENT = "WaypointScraper/1.0 (job page revalidate)"
@@ -212,8 +218,19 @@ def post_ids(ids, *, secret: str | None = None, site: str | None = None, label: 
             for pause in RETRY_PAUSES:
                 if not (status == 0 or status == 429 or status >= 500):
                     break
+                # review 10-15: the deadline holds between retries too, so a
+                # hanging site cannot keep the nightly here for minutes.
+                if clock() - started + pause > deadline_sec:
+                    out["stopped"] = f"deadline {int(deadline_sec)} s"
+                    break
                 sleep(pause)
                 status, data, detail = _post_once(url, secret, chunk, opener)
+            if out["stopped"]:
+                out["failed_batches"] += 1
+                logger.warning(f"{tag}: batch of {len(chunk)} ids failed "
+                               f"({'HTTP ' + str(status) if status else 'no answer'}) and the "
+                               f"{int(deadline_sec)} s deadline leaves no time to retry it")
+                break
             if 200 <= status < 300:
                 out["ok_batches"] += 1
                 out["sent"] += len(chunk)

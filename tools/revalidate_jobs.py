@@ -21,9 +21,23 @@ Ids, any mix (deduplicated, order kept):
 --sql reads through the read-only wp.sql helper (claud_outputinput/tools/wp.py),
 data project only, and refuses to start between 23:30 and 05:30 UTC.
 
+Release steps of 2026-10-15 (run once each, after the site endpoint is live):
+    # the owner's example plus the hand retirements of the day (145, 146, 146c;
+    # the backup table exists only once 146 or 146c is applied, else just the id):
+    python -I tools/revalidate_jobs.py 28140695 --sql "select id from
+        public.retired_closed_backup_20261015 where flipped_at is not null"
+    # Norton's new Apply links (after the first nightly on JIBE_POSTING_URL, or
+    # after sql/150, whichever moved them; nothing purges a changed URL by itself):
+    python -I tools/revalidate_jobs.py --sql "select id from public.hospital_jobs
+        where hospital_system = 'Norton Healthcare' and is_active"
+
+
 Credential: CRON_SECRET from the environment, or --env-file PATH (a dotenv
 file; only CRON_SECRET and SITE_URL are read from it, nothing is printed).
 --site URL (or SITE_URL) points at a preview deployment; https only.
+--batch is at most 500 ids per POST (review 10-15: the site looks ids up in
+200-id chunks with an 8 s abort each and purges nothing if a call outlives
+its 60 s maxDuration, so a 2,000-id call could time out on a slow database).
 --dry-run shows what would be sent and sends nothing.
 
 Exit: 0 every id sent (or none to send), 1 some ids not sent, 2 not run
@@ -51,6 +65,7 @@ WP_DIRS = [
     r"C:\Users\rober\OneDrive\claud_outputinput\tools",
 ]
 QUIET_UTC = (23 * 60 + 30, 5 * 60 + 30)   # --sql refuses to start in this window (UTC minutes)
+MAX_BATCH = 500   # ids per POST; see --batch above
 _ID_RX = re.compile(r"\d+")
 _READ_ONLY_RX = re.compile(r"^\s*(select|with)\b", re.I)
 _WRITE_RX = re.compile(r"\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|call|do)\b", re.I)
@@ -104,7 +119,10 @@ def ids_from_sql(query: str, now: datetime | None = None) -> list[int]:
             break
     if wp is None:
         raise SystemExit("wp.py (the read-only SQL helper) was not found in " + " / ".join(WP_DIRS))
-    rows = wp.sql(query) or []
+    try:
+        rows = wp.sql(query) or []
+    except Exception as e:     # a missing table (SQL not applied yet), a syntax error, ...
+        raise SystemExit(f"--sql failed, nothing sent: {str(e)[:300]}")
     out, seen = [], set()
     for r in rows:
         v = r.get("id") if isinstance(r, dict) else None
@@ -128,7 +146,7 @@ def _parse_args(argv):
     p.add_argument("--sql", help="a read-only SELECT returning an id column (wp.sql)")
     p.add_argument("--env-file", help="dotenv file to read CRON_SECRET (and SITE_URL) from")
     p.add_argument("--site", help="site origin (default SITE_URL or https://jobs.waypointrecruit.com)")
-    p.add_argument("--batch", type=int, default=site_revalidate.BATCH, help="ids per POST (max 2000)")
+    p.add_argument("--batch", type=int, default=site_revalidate.BATCH, help=f"ids per POST (max {MAX_BATCH})")
     p.add_argument("--max-ids", type=int, default=100000, help="refuse more ids than this")
     p.add_argument("--dry-run", action="store_true", help="show what would be sent; send nothing")
     return p.parse_args(argv)
@@ -150,7 +168,7 @@ def main(argv=None) -> int:
     if len(ids) > args.max_ids:
         print(f"REFUSED: {len(ids):,} ids is over --max-ids {args.max_ids:,}")
         return 2
-    batch = max(1, min(int(args.batch), 2000))
+    batch = max(1, min(int(args.batch), MAX_BATCH))
     secret = os.environ.get(site_revalidate.SECRET_ENV, "")
     site = args.site
     if args.env_file:
