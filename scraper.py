@@ -289,6 +289,14 @@ _SPLIT_FIG_TAGS_RX = re.compile(r"(?:</?(?:span|font|b|strong|i|em|u)\b[^>]*>)+"
 _SPLIT_FIG_LEFT_GROUP_RX = re.compile(r"\d,(\d{0,2})$")
 _SPLIT_FIG_LEFT_CENTS_RX = re.compile(r"\$\s?\d[\d,]*\.(\d?)$")
 _SPLIT_FIG_RIGHT_RX = re.compile(r"^(\d+)(<?)")
+# 2026-10-15 (pay accuracy): "$28</span><span>5,000" is $285,000 on the page
+# (Corewell 29387089, an APP CRNA stored at $28 an hour). A dollar figure of
+# one or two digits with no comma or cents yet, followed across inline tags
+# by the rest of its first thousands group, is one figure: the two lead parts
+# together are at most three digits ("$28" + "5,000", "$2" + "85,000").
+# "$25" + "38,000" (four lead digits) and "$25.00" + "38.50" stay apart.
+_SPLIT_FIG_LEFT_LEAD_RX = re.compile(r"\$\s?(\d{1,2})$")
+_SPLIT_FIG_RIGHT_GROUP_RX = re.compile(r"^(\d{1,2}),\d{3}(?!\d)")
 
 
 def _join_split_figure(m):
@@ -298,6 +306,9 @@ def _join_split_figure(m):
     left = re.sub(r"<[^>]*>", "", m.string[max(0, m.start() - 80):m.start()])
     right = m.string[m.end():m.end() + 20]
     if left.endswith("$") and right[:1].isdigit():
+        return ""
+    lead, group = _SPLIT_FIG_LEFT_LEAD_RX.search(left), _SPLIT_FIG_RIGHT_GROUP_RX.match(right)
+    if lead and group and len(lead.group(1)) + len(group.group(1)) <= 3:
         return ""
     # (push3 integration) a word split across inline tags stays one word, as the
     # browser shows it: HCA 32557542 "<span>Mu</span><span>st be licensed"
@@ -560,8 +571,12 @@ DETAIL_BARRIER_WAIT     = float(os.getenv("DETAIL_BARRIER_WAIT", "1800"))
 ORACLE_DESC_BUDGET      = _DescBudget(ORACLE_DESC_MAX_PER_RUN)
 TB_DESC_BUDGET          = _DescBudget(TB_DESC_MAX_PER_RUN)
 PHENOM_DESC_BUDGET      = _DescBudget(PHENOM_DESC_MAX_PER_RUN, PHENOM_DESC_TENANT_MAX)
-DETAIL_PRIORITY_STATES  = {"CA", "CO", "CT", "DC", "HI", "IL", "MD", "MN", "NJ", "NY", "VT", "WA"}
-DETAIL_MIN_CHARS        = int(os.getenv("DETAIL_MIN_CHARS", "1500"))  # shorter than this = a teaser, worth a detail fetch
+# 2026-10-15 (pay accuracy): + MA (pay ranges in postings since 2025-10-29),
+# VA (2026-07-01, SB 215 / HB 636) and ME (2026-07-29). Order only: the set
+# decides which rows of a tenant are fetched first (_detail_rank and
+# hca_local_push), never how many, so the run's time budget is unchanged.
+DETAIL_PRIORITY_STATES  = {"CA", "CO", "CT", "DC", "HI", "IL", "MA", "MD", "ME", "MN", "NJ", "NY", "VA", "VT", "WA"}
+DETAIL_MIN_CHARS       = int(os.getenv("DETAIL_MIN_CHARS", "1500"))  # shorter than this = a teaser, worth a detail fetch
 
 # 2026-09-24 (owner: rows show no qualifications although the posting lists
 # them): detail passes for the runners whose list carries no body at all.
@@ -1028,7 +1043,10 @@ class _ListFirstConnector(aiohttp.TCPConnector):
 # detail fetches are spent in). Ordering is the whole mechanism: nothing is
 # skipped, but when a per-run cap or a Cloudflare rate-limit bites mid-run,
 # it bites the non-transparency states. Documented in reports/S-scraper-2.md.
-TRANSPARENCY_STATES = ("CO", "WA", "CA", "NY", "IL", "MN", "MD", "HI", "DC", "NJ", "MA", "VT")
+# 2026-10-15 (pay accuracy): + CT (ranges in every posting since 2026-10-01,
+# Public Act 26-12), VA (2026-07-01, SB 215 / HB 636) and ME (2026-07-29),
+# behind the twelve older laws. Order only, as above: no request is added.
+TRANSPARENCY_STATES = ("CO", "WA", "CA", "NY", "IL", "MN", "MD", "HI", "DC", "NJ", "MA", "VT", "CT", "VA", "ME")
 _TRANSPARENCY_RANK = {s: i for i, s in enumerate(TRANSPARENCY_STATES)}
 
 
@@ -9861,6 +9879,169 @@ USAJOBS_ORGS = [
 ]
 
 
+# 2026-10-15 (pay accuracy, audit item 12d and decision D9):
+#   * every results page is read. The search answers at most 500 rows a page
+#     (ResultsPerPage's ceiling) and says how many pages the search holds
+#     (SearchResult.UserArea.NumberOfPages, SearchResultCountAll); the old
+#     call read page 1 only. USAJOBS_PAGE_CAP bounds one org's crawl.
+#   * each posting names its hospital: the hiring organization USAJOBS shows
+#     under the agency (UserArea.Details.SubAgencyName: "Cincinnati VHA
+#     Medical Center", "Veterans' Health Administration/Oklahoma City VA
+#     Health Care System/Nursing/Acute Care", "North Florida/South Georgia
+#     Healthcare System"), else a medical-center name in the job summary
+#     ("... covered by the Michael E. DeBakey VA Medical Center"), else the
+#     agency as before (usajobs_facility).
+#   * annual federal pay is stored hourly at OPM's 2,087 hours a year
+#     (5 U.S.C. 5504(b)), so a VA nurse's GS/VA scale sits beside every other
+#     hospital's hourly rate (usajobs_pay). An hourly posting stays hourly;
+#     any other interval (per day, bi-weekly, without compensation) stores none.
+#   * CityName reads "Cincinnati, Ohio" and CountrySubDivisionCode "Ohio":
+#     the city is the part just before the state (_usajobs_city) and the
+#     state its two-letter code, the territories included.
+USAJOBS_PAGE_SIZE = 500
+USAJOBS_PAGE_CAP = int(os.getenv("USAJOBS_PAGE_CAP", "40"))
+USAJOBS_PAGE_RETRIES = 1
+FEDERAL_HOURS_PER_YEAR = 2087
+_FED_FACILITY_WORD_RX = re.compile(
+    r"\b(?:medical\s+cent(?:er|re)s?|health\s*care\s+systems?|health\s+systems?|hospitals?|VAMC|"
+    r"health\s+cent(?:er|re)|veterans'?\s+home|indian\s+health\s+cent(?:er|re)|service\s+unit)\b", re.I)
+_FED_GENERIC_SEG_RX = re.compile(
+    r"^(?:(?:department\s+of\s+)?veterans'?\s+(?:health\s+administration|affairs)|VHA|VA|"
+    r"veterans\s+affairs,?\s+veterans\s+health\s+administration|indian\s+health\s+service|IHS|"
+    r"defense\s+health\s+agency|DHA|national\s+institutes\s+of\s+health|NIH)$", re.I)
+# 2026-10-15 (review): a name may carry ", Jr." / ", Sr." ("Lt. Col. Luke
+# Weathers, Jr. VA Medical Center" read "Jr. VA Medical Center"), and an
+# Indian Health Service facility is named the same way ("Phoenix Indian
+# Medical Center", "Gallup Indian Medical Center").
+_FED_FACILITY_TEXT_RX = re.compile(
+    r"((?:[A-Z][\w.'’/-]*(?:,(?=\s+(?:Jr|Sr)\b))?\s+){0,7}?(?:VA|VHA|Veterans'?|Veterans\s+Affairs|Indian)\s+"
+    r"(?:[A-Z][\w.'’/-]*\s+){0,4}?(?:Medical\s+Center|Health\s*Care\s+System|Healthcare\s+System|"
+    r"Health\s+System|Hospital))\b")
+_FED_NAME_FILLER = {"the", "va", "vha", "veterans", "veterans'", "affairs", "medical", "center", "health",
+                    "care", "healthcare", "system", "hospital", "summary", "this", "our", "a", "an",
+                    "indian", "service"}
+# 2026-10-15 (review): the territories' VA and IHS sites (VA Caribbean HCS in
+# San Juan, Guam's and the Virgin Islands' clinics) carry the territory's
+# name in CountrySubDivisionCode; non_us_reason keeps PR, GU and VI as US.
+_USAJOBS_TERRITORIES = {"puerto rico": "PR", "guam": "GU", "virgin islands": "VI",
+                        "u.s. virgin islands": "VI", "us virgin islands": "VI",
+                        "united states virgin islands": "VI", "virgin islands of the u.s.": "VI"}
+# Capitalised words a sentence can start with ahead of the name ("Join VA
+# Western Colorado Health Care System", "The Cincinnati VHA Medical Center").
+_FED_NAME_LEAD = {"the", "this", "our", "at", "a", "an", "join", "welcome", "about", "summary", "come", "work",
+                  "located", "from", "with", "for", "to", "in", "and", "all", "both", "each", "apply", "serve"}
+
+
+def _usajobs_state(code) -> str:
+    s = str(code or "").strip()
+    if re.fullmatch(r"[A-Za-z]{2}", s):
+        return s.upper()
+    key = re.sub(r"\s+", " ", s.lower())
+    return _STATE_CODE_BY_NAME.get(key) or _USAJOBS_TERRITORIES.get(key, "")
+
+
+def _usajobs_city(name) -> str:
+    """The city of a CityName: the part just before the state ("Cincinnati,
+    Ohio"; 2026-10-15 review: "Point Loma Complex, San Diego, California",
+    the API docs' own example, is San Diego), or the whole value when it has
+    no comma."""
+    segs = [p.strip() for p in str(name or "").split(",")]
+    return segs[-2] if len(segs) >= 2 else segs[0]
+
+
+def _fed_facility_from_sub(sub) -> str:
+    """The facility segment of a SubAgencyName, or "" when it names none."""
+    segs = [s.strip() for s in str(sub or "").split("/")]
+    hits = [i for i, s in enumerate(segs) if s and _FED_FACILITY_WORD_RX.search(s)]
+    if not hits:
+        return ""
+    keep = segs[:hits[-1] + 1]
+    while keep and (not keep[0] or _FED_GENERIC_SEG_RX.match(keep[0])):
+        keep.pop(0)
+    return re.sub(r"\s+", " ", "/".join(keep)).strip()
+
+
+def _fed_facility_from_text(text) -> str:
+    """The first named VA medical center / health care system in text, or ""."""
+    for m in _FED_FACILITY_TEXT_RX.finditer(str(text or "")):
+        parts = re.sub(r"\s+", " ", m.group(1)).strip().split(" ")
+        while len(parts) > 1 and parts[0].lower() in _FED_NAME_LEAD:
+            parts.pop(0)
+        name = " ".join(parts)
+        words = {w.lower().strip(".,") for w in parts}
+        if parts[0].rstrip(".") in ("Jr", "Sr"):   # a cut name ("Jr. VA Medical Center")
+            continue
+        if words - _FED_NAME_FILLER:            # a proper name, not "the VA Medical Center"
+            return name
+    return ""
+
+
+def usajobs_facility(m: dict, default: str) -> str:
+    """The hospital a USAJOBS posting is for (see the note above)."""
+    details = ((m or {}).get("UserArea") or {}).get("Details") or {}
+    return (_fed_facility_from_sub(details.get("SubAgencyName"))
+            or _fed_facility_from_text(details.get("JobSummary"))
+            or _fed_facility_from_text(m.get("QualificationSummary"))
+            or m.get("OrganizationName") or default)
+
+
+def usajobs_pay(rem: dict):
+    """(min, max, "hour") from one PositionRemuneration entry, or None.
+    PA (per annum) is divided by FEDERAL_HOURS_PER_YEAR and rounded to the
+    cent; PH stays as posted; every other RateIntervalCode stores none. The
+    hourly pair goes through _wage_pair (band and width tests)."""
+    rem = rem or {}
+    lo = _wage_num(str(rem.get("MinimumRange") or ""))
+    hi = _wage_num(str(rem.get("MaximumRange") or ""))
+    code = str(rem.get("RateIntervalCode") or "").strip().upper()
+    if lo is None or hi is None:
+        return None
+    if code == "PA":
+        lo, hi = round(lo / FEDERAL_HOURS_PER_YEAR, 2), round(hi / FEDERAL_HOURS_PER_YEAR, 2)
+    elif code != "PH":
+        return None
+    got = _wage_pair(lo, hi)
+    return got if got and got[2] == "hour" else None
+
+
+def _usajobs_job(item: dict, system_name: str) -> Job | None:
+    m = (item or {}).get("MatchedObjectDescriptor") or {}
+    title = str(m.get("PositionTitle") or "").strip()
+    jid = str(m.get("PositionID") or "").strip()
+    if not title or not jid:
+        return None
+    loc = (m.get("PositionLocation") or [{}])[0] or {}
+    city = clean_city(_usajobs_city(loc.get("CityName")))
+    state = _usajobs_state(loc.get("CountrySubDivisionCode"))
+    w = usajobs_pay((m.get("PositionRemuneration") or [{}])[0])
+    return Job(
+        title=title,
+        hospital_system=system_name,
+        hospital_name=usajobs_facility(m, system_name),
+        city=city, state=state,
+        location=f"{city}, {state}" if city and state else city or state,
+        specialty=(m.get("JobCategory") or [{}])[0].get("Name", ""),
+        job_type=(m.get("PositionSchedule") or [{}])[0].get("Name", ""),
+        url=m.get("PositionURI", ""),
+        job_id=jid,
+        posted_date=str(m.get("PublicationStartDate") or "")[:10],
+        description=str(m.get("QualificationSummary") or "")[:500],
+        ats_platform="USAJOBS",
+        wage_min=w[0] if w else None,
+        wage_max=w[1] if w else None,
+        wage_unit=w[2] if w else None,
+    )
+
+
+async def _usajobs_page(session, params: dict, headers: dict):
+    """(status, payload) for one search page; payload is None unless 200."""
+    async with session.get("https://data.usajobs.gov/api/search", params=params, headers=headers,
+                           timeout=aiohttp.ClientTimeout(total=30)) as r:
+        if r.status != 200:
+            return r.status, None
+        return 200, await r.json()
+
+
 async def run_usajobs(session) -> list[Job]:
     logger.info("USAJOBS: scraping VA + federal hospitals...")
     jobs = []
@@ -9868,61 +10049,78 @@ async def run_usajobs(session) -> list[Job]:
     ORGS = USAJOBS_ORGS
     usajobs_key = os.environ.get("USAJOBS_API_KEY", "")
     usajobs_email = os.environ.get("USAJOBS_EMAIL", "")
+    if not usajobs_key:
+        logger.warning("USAJOBS: USAJOBS_API_KEY is not set, so no federal postings are read "
+                       "(free key: developer.usajobs.gov/apirequest; set USAJOBS_API_KEY and USAJOBS_EMAIL)")
+        return jobs
     usajobs_headers = {
         **HEADERS,
         "Host": "data.usajobs.gov",
         "User-Agent": usajobs_email or "hospitalJobScraper@example.com",
         "Authorization-Key": usajobs_key,
     }
+    unauthorized = False
     for system_name, org_code in ORGS:
-        try:
-            async with session.get(
-                "https://data.usajobs.gov/api/search",
-                params={"Organization": org_code, "ResultsPerPage": 500, "JobCategoryCode": MEDICAL_SERIES},
-                headers=usajobs_headers,
-                timeout=aiohttp.ClientTimeout(total=30)) as r:
-                if r.status == 401:
-                    logger.info(f"USAJOBS: 401 — set USAJOBS_API_KEY and USAJOBS_EMAIL env vars (free at usajobs.gov/Applicant/ProfileDashboard/Home)")
+        if unauthorized:
+            break
+        seen: set[str] = set()
+        org_jobs, pages_read = 0, 0
+        total, pages, page, read_all = None, 1, 1, False
+        while page <= min(pages, USAJOBS_PAGE_CAP):
+            params = {"Organization": org_code, "ResultsPerPage": USAJOBS_PAGE_SIZE,
+                      "JobCategoryCode": MEDICAL_SERIES, "Page": page}
+            status, data = None, None
+            for attempt in range(USAJOBS_PAGE_RETRIES + 1):
+                try:
+                    status, data = await _usajobs_page(session, params, usajobs_headers)
+                except Exception as e:
+                    status, data = f"{type(e).__name__}: {e}", None
+                if data is not None or status == 401:
                     break
-                if r.status != 200:
-                    logger.info(f"USAJOBS {system_name}: HTTP {r.status}")
-                    continue
-                data = await r.json()
-            for item in data.get("SearchResult", {}).get("SearchResultItems", []):
-                m = item.get("MatchedObjectDescriptor", {})
-                loc = (m.get("PositionLocation") or [{}])[0]
-                city  = loc.get("CityName", "")
-                state = loc.get("CountrySubDivisionCode", "")
-                # Federal postings ALWAYS carry an exact pay range (2026-08-21).
-                # RateIntervalCode: PA = Per Annum, PH = Per Hour; anything
-                # else (per-day/bi-weekly oddities) is left for the regex path.
-                rem = (m.get("PositionRemuneration") or [{}])[0]
-                _wmin = _wage_num(str(rem.get("MinimumRange") or ""))
-                _wmax = _wage_num(str(rem.get("MaximumRange") or ""))
-                _code = str(rem.get("RateIntervalCode") or "").upper()
-                _unit = {"PA": "year", "PH": "hour"}.get(_code)
-                _w = _wage_pair(_wmin, _wmax) if _unit else None
-                if _w and _w[2] != _unit:
-                    _w = None
-                jobs.append(Job(
-                    title=m.get("PositionTitle", ""),
-                    hospital_system=system_name,
-                    hospital_name=m.get("OrganizationName", system_name),
-                    city=city, state=state, location=f"{city}, {state}",
-                    specialty=(m.get("JobCategory") or [{}])[0].get("Name", ""),
-                    job_type=(m.get("PositionSchedule") or [{}])[0].get("Name", ""),
-                    url=m.get("PositionURI", ""),
-                    job_id=m.get("PositionID", ""),
-                    posted_date=m.get("PublicationStartDate", "")[:10],
-                    description=m.get("QualificationSummary", "")[:500],
-                    ats_platform="USAJOBS",
-                    wage_min=_w[0] if _w else None,
-                    wage_max=_w[1] if _w else None,
-                    wage_unit=_w[2] if _w else None,
-                ))
+                if attempt < USAJOBS_PAGE_RETRIES:
+                    await _retry_sleep(3.0)
+            if status == 401:
+                logger.info("USAJOBS: 401 — set USAJOBS_API_KEY and USAJOBS_EMAIL env vars (free at developer.usajobs.gov/apirequest)")
+                unauthorized = True
+                break
+            if data is None:
+                logger.info(f"USAJOBS {system_name}: page {page} failed ({status}); "
+                            f"{org_jobs} rows kept, the rest of the search unread")
+                break
+            sr = data.get("SearchResult") or {}
+            items = sr.get("SearchResultItems") or []
+            if total is None:
+                try:
+                    total = int(sr.get("SearchResultCountAll") or 0)
+                except (TypeError, ValueError):
+                    total = 0
+                try:
+                    pages = int((sr.get("UserArea") or {}).get("NumberOfPages") or 0)
+                except (TypeError, ValueError):
+                    pages = 0
+                if pages <= 0:
+                    pages = max(1, -(-total // USAJOBS_PAGE_SIZE)) if total else 1
+            pages_read += 1
+            for item in items:
+                job = _usajobs_job(item, system_name)
+                if job and job.job_id not in seen:
+                    seen.add(job.job_id)
+                    jobs.append(job)
+                    org_jobs += 1
+            if not items or page >= pages:
+                read_all = True
+                break
+            page += 1
             await jitter()
-        except Exception as e:
-            logger.info(f"USAJOBS {system_name}: {e}")
+        if pages > USAJOBS_PAGE_CAP:
+            logger.warning(f"USAJOBS {system_name}: {pages} pages, read the first {USAJOBS_PAGE_CAP} (USAJOBS_PAGE_CAP)")
+        if org_jobs and not read_all:
+            # pages left unread may hold live postings: not swept tonight (the
+            # HealthcareSource rule, as in scrape_talemetry). No complete claim
+            # is made either way; the sweep's own ratio guard judges the rest.
+            report_partial(system_name)
+        logger.info(f"  USAJOBS {system_name}: {org_jobs:,} jobs (search total {total}, {pages_read} of {pages} pages)")
+        await jitter()
 
     logger.info(f"  USAJOBS: {len(jobs):,} jobs")
     return jobs
@@ -16225,7 +16423,7 @@ TALEMETRY_SITE_BUDGET_S = float(os.getenv("TALEMETRY_SITE_BUDGET_S", "600"))
 TALEMETRY_RESORT = "title,asc"              # the site's other sort_by (search page: title / location_city)
 TALEMETRY_DESC_MAX_PER_RUN = int(os.getenv("TALEMETRY_DESC_MAX_PER_RUN", "1500"))   # job-page JSON-LD
 TALEMETRY_DESC_BUDGET = _DescBudget(TALEMETRY_DESC_MAX_PER_RUN)
-_TALEMETRY_BAD_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
+_TALEMETRY_BAD_ESCAPE = re.compile(r'\\(.)', re.S)    # every escape pair; the valid ones are kept (_talemetry_unescape)
 
 
 def _talemetry_job(e: dict, system: str, base: str) -> Job | None:
@@ -16427,13 +16625,25 @@ async def scrape_talemetry(session: aiohttp.ClientSession, system: str, base_url
     return jobs
 
 
+def _talemetry_unescape(m):
+    return m.group(0) if m.group(1) in '"\\/bfnrtu' else m.group(1)
+
+
 def _talemetry_posting(html: str):
     """The page's JSON-LD JobPosting; a second try with each stray backslash
-    (one before a hyphen, ampersand or apostrophe) doubled, which json.loads
-    otherwise rejects."""
+    (one before a hyphen, ampersand, apostrophe or dollar sign) dropped, which
+    json.loads otherwise rejects.
+    2026-10-15 (pay accuracy): the stray backslash used to be doubled, so it
+    survived into the stored body as a literal "\\": UCHealth's "Pay: \\$35.29
+    - \\$54.71 / hour" (the page itself shows "$35.29 - $54.71") reached the
+    wage parser as "$35.29 - \\$54.71", the range never matched, and the
+    single "$54.71 / hour" was stored as the floor and the ceiling (731 of 733
+    priced UCHealth rows, 165 of 166 Penn Medicine, 99 of 100 PeaceHealth).
+    A browser reads "\\$" in a script string as "$"; so does this repair now.
+    Valid escape pairs ("\\\\", "\\n", "\\u00e9", "\\/") are kept whole."""
     posting = _jobposting_from_html(html)
     if posting is None and html:
-        posting = _jobposting_from_html(_TALEMETRY_BAD_ESCAPE.sub(r"\\\\", html))
+        posting = _jobposting_from_html(_TALEMETRY_BAD_ESCAPE.sub(_talemetry_unescape, html))
     return posting
 
 
@@ -22249,7 +22459,7 @@ def normalize_job(j: Job) -> dict:
         # 2026-10-07 (push 10, item 1): the body's own range replaces a
         # structured field that disagrees with it (pay_text_overrides).
         text = extract_posted_wage(body, d.get("job_type"))
-        if pay_text_overrides(field, text):
+        if pay_text_overrides(field, text, body):
             d["wage_min"], d["wage_max"], d["wage_unit"] = text
             pay_src = "text"
             _PAY_TEXT_OVER_FIELD["n"] += 1
@@ -22450,9 +22660,52 @@ _WAGE_NOISE_LABEL_RX = re.compile(r"(?:^|[^A-Za-z$])(" + _WAGE_NOISE_WORDS + r")
 # bonus and $70,000": the bonus is the earlier figure's). "up to" alone is
 # not a trigger: "Up to $248 per hour" is a ceiling the site prints as one
 # (pay_note "up_to").
+# 2026-10-15 (pay accuracy): New York State's "an Increase Hiring Rate of
+# $30,771" and "Downstate Adjustment" are add-ons summed into the posted
+# salary (OMH 35485301: the $30,771 add-on would have replaced the $210,226
+# salary field); they price an extra like a differential.
 _WAGE_NONBASE_BEFORE_RX = re.compile(
     r"(\b(?:premiums?|differentials?|diff|bonus(?:es)?|incentives?|stipends?|relocation|loans?|repayment|"
-    r"match(?:ing)?|additional)\b|rate\s*\+)", re.I)
+    r"match(?:ing)?|additional|increased?\s+hiring\s+rate|(?:downstate|geographic|location)\s+adjustment)\b|rate\s*\+)", re.I)
+# 2026-10-15 (review): the hiring-rate and adjustment words are the pay's own
+# description when a pay label opens the clause ahead of them ("The pay
+# range, with location adjustment, is $80,000 - $110,000", "Pay range after
+# geographic adjustment $120,000", "Salary: Increased Hiring Rate $150,000").
+_WAGE_ADJUST_WORD_RX = re.compile(r"(?:increased?\s+hiring\s+rate|(?:downstate|geographic|location)\s+adjustment)$", re.I)
+_WAGE_ADJUST_PAY_LABEL_RX = re.compile(r"\b(?:pay|salary|wage|compensation)\b", re.I)
+# 2026-10-15 (pay accuracy): a figure labelled as call pay ("Call: $250 per
+# point", Intermountain 8687958, which outranked "Annual Base Salary:
+# $221,000" as a per-visit figure; "On-call pay of $5/hr") prices call
+# coverage, not the base pay. Only a label right before the figure counts.
+# 2026-10-15 (review): the label needs a pay word or a marker (":", "=",
+# "of", "at", "is"), or a dash after a pay word: "Employment type: On Call
+# $38.50 - $52.00 per hour" names a per-diem job's pay, not call pay.
+_WAGE_CALL_LABEL_RX = re.compile(
+    r"(?:^|[^A-Za-z])(?:on[\s-]?)?call(?:\s+(?:pay|rate|stipend|coverage|premium)\s*(?::|-|–|=|\bof\b|\bat\b|\bis\b)?"
+    r"|\s*(?::|=|\bof\b|\bat\b|\bis\b))\s*(?:up\s+to\s+)?$", re.I)
+# 2026-10-15 (review): a figure named by the word right after it as the
+# orientation rate ("Salary: \$26/Hr Orientation, Paid Per Visit", Penn
+# 37067651, a per-visit PT whose placeholder band is refused; "$30.00/hr
+# (orientation)") is not the pay, even under a pay label. Only the word
+# itself: Amedisys's "$36.00 to $40.00 per hour for Orientation and will then
+# convert to a per point pay system" reads as before.
+_WAGE_ORIENTATION_AFTER_RX = re.compile(
+    r"\s*(?:/\s*(?:hour|hr)\b\.?|per\s+hour|an\s+hour|hourly)?\s*\(?\s*orientation\b", re.I)
+# 2026-10-15 (review): a pay label that opens the figure's own phrase after
+# other words ends the reach of a non-base word before it: "$20,000 Sign on
+# Bonus- Pay range: $51.19 - $63.65/Hr" (ScionHealth 32101894), "Relocation
+# Provided if not local **Compensation range: $44.92-$70.08/hour" (Main Line
+# 38277794), "a $5k Signing Bonus for this role** Pay: $28.00-$38.00/hour"
+# (UHS 26531686). The label must carry "range" / "scale" or a colon, and
+# something must stand between it and the non-base word, so "Weekend Premium
+# Pay $12/hr" and "Sign-on Bonus Pay: $5,000" stay add-ons.
+_WAGE_GAP_PAY_LABEL_RX = re.compile(
+    r"\s*\S.*?(?:\b(?:pay|salary|compensation|wage)\s*(?:range|scale)\s*(?::|-|–|\bof\b|\bis\b)?"
+    r"|\b(?:pay|salary|compensation|wage)\s*(?:rate\s*)?:)\s*$", re.I | re.S)
+_WAGE_AFTER_UNIT_RX = re.compile(
+    r"\s*(?:/\s*(?:hour|hr|year|yr|annum|visit|point|session)\b\.?|per\s+(?:hour|year|annum|visit|point|session)\b|"
+    r"an?\s+(?:hour|year)\b|hourly\b|annually\b)", re.I)
+_WAGE_ASIDE_OR_JOIN_RX = re.compile(r"[\s,.]*(?:\(|\+|&|(?:plus|and|with|including|incl\.?|in addition to|or)\b)", re.I)
 _WAGE_NONBASE_JOIN_RX = re.compile(r"\b(?:and|plus|or|with|including|incl)\b|\+|&", re.I)
 # Words that make a bonus part of the pay description rather than a priced
 # extra: "(base + bonus) $70,000", "$70,000 plus bonus", "$70,000, bonus eligible".
@@ -22542,6 +22795,14 @@ def _wage_is_noise(t, start, end):
     # Bonus (beginning at the completion of the 2nd year): up to $30,000"
     # still reads as a bonus (Flagler Health, 2026-09-22).
     before = re.sub(r"\([^()]{0,80}\)", " ", before)
+    # 2026-10-15: "Call: $250 per point" is call pay. Words after an earlier
+    # figure are that figure's ("$4.00 / Hour On Call - $40.00 / Hour Active
+    # Pay", Sanford: the $40 is the pay).
+    call_seg = before.rsplit("$", 1)[-1] if "$" in before else before
+    if not ("$" in before and re.match(r"\s*\d", call_seg)) and _WAGE_CALL_LABEL_RX.search(call_seg):
+        return True
+    if _WAGE_ORIENTATION_AFTER_RX.match(after):
+        return True
     # 2026-10-07 (push 10, item 4): the non-base guard reads the words after
     # the last earlier figure (or the whole clause), before the split below
     # hands those words to that figure.
@@ -22551,7 +22812,9 @@ def _wage_is_noise(t, start, end):
         nb = hits[-1]
         gap = seg[nb.end():]
         if not _WAGE_NONBASE_JOIN_RX.search(gap) and not _WAGE_BONUS_DESCR_RX.match(gap) \
-                and not (_WAGE_COMPONENT_WORD.match(nb.group(1)) and _WAGE_COMPOSITION_RX.search(seg[:nb.start()])):
+                and not (_WAGE_COMPONENT_WORD.match(nb.group(1)) and _WAGE_COMPOSITION_RX.search(seg[:nb.start()])) \
+                and not (_WAGE_ADJUST_WORD_RX.match(nb.group(1)) and _WAGE_ADJUST_PAY_LABEL_RX.search(seg[:nb.start()])) \
+                and not _WAGE_GAP_PAY_LABEL_RX.match(gap):
             return True
     if "$" in before:
         before = before.rsplit("$", 1)[-1]
@@ -22581,6 +22844,15 @@ def _wage_is_noise(t, start, end):
     # figure's identity ("$55/hr + shift differential"); and a bonus word
     # that heads its own dollar figure belongs to that one.
     tail = after
+    # 2026-10-15 (review): a range's high end stops before its unit, so an
+    # aside or a joiner after "/ hour" or "per point" is passed over as the
+    # single rule passes it over after its own unit: "$41 - $50 / hour
+    # (Including shift differential)" (Acadia 34836759) and "$60.00 - $65.00
+    # per point Plus Weekend Differential" (BAYADA 38060992) were refused,
+    # while their "$50 / hour" and "$65.00 per point" were not.
+    um2 = _WAGE_AFTER_UNIT_RX.match(tail)
+    if um2 and _WAGE_ASIDE_OR_JOIN_RX.match(tail, um2.end()):
+        tail = tail[um2.end():]
     while True:
         pm = re.match(r"[\s,.]*\(([^)]{0,60})\)", tail)
         if not pm or _WAGE_NEAR_NOISE.match(pm.group(1).strip()):
@@ -22607,6 +22879,8 @@ def _wage_is_noise(t, start, end):
 _WAGE_RANGE_RX = re.compile(
     r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s*(?:-|–|—|to|through)\s*(?:USD\s*)?\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?", re.I)
 _WAGE_THIRD_RX = re.compile(r"\s*(?:-|–|—)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\b")
+# 2026-10-15: "\$" and "$$" read as "$" (extract_posted_wage's first step).
+_WAGE_DOLLAR_RUN_RX = re.compile(r"\\*\$(?:\\*\$)*")
 # County boards (NeoGov) quote a month or a pay period: "$9,404.43 -
 # $10,893.28 Biweekly", "$6,500 per month". Converted to a year.
 # 2026-10-04 (S5): the period word must be the figure's own, not the next
@@ -22673,12 +22947,16 @@ _WAGE_BARE_DECIMAL_RX = re.compile(
 # Maximum Hiring Rate: $30.00" on one line. A Minimum line and the Maximum
 # line that follows it are one range; the unit is the figures' own or the
 # band's.
+# 2026-10-15 (pay accuracy): the iCIMS template Bassett uses puts the
+# currency word before each figure, "Pay Range Minimum:\n\nUSD $19.12/Hr.\n
+# Pay Range Maximum:\n\nUSD $28.68/Hr." (336 of 340 priced Bassett rows were
+# stored at the minimum alone); "USD" may precede either "$".
 _WAGE_PAYLBL = r"(?:salary|pay|compensation|wage|hiring)\s*(?:range|rate|scale)?"
 _WAGE_MINMAX_RX = re.compile(
     r"(?:" + _WAGE_PAYLBL + r"\s*min(?:imum)?|min(?:imum)?\s*" + _WAGE_PAYLBL + r")\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?[^\n$]{0,40}?\s*"
+    r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?[^\n$]{0,40}?\s*"
     r"(?:" + _WAGE_PAYLBL + r"\s*)?max(?:imum)?(?:\s*" + _WAGE_PAYLBL + r")?\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
+    r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
 # 2026-10-07 (push 10, item 4): "$650k Starting Salary" (Presbyterian
 # 35282682's headline) names the pay after the figure, where the labelled
 # rule never looks; a $650k job printed $75k (the loan-repayment figure).
@@ -23224,11 +23502,38 @@ def role_floor_rejects(title, got, src="text") -> bool:
 # 33.15-46.69 vs 32.50-45.33, is within 5% and keeps its field).
 PAY_TEXT_OVER_FIELD_TOL = 0.05
 _PAY_TEXT_OVER_FIELD = {"n": 0}
+# 2026-10-15 (review): a field range that holds the text's range, and whose
+# two ends the body itself prints, spans levels the body prices one by one,
+# so it stays. Asante's bodies price each level of a posting ("Pharmacy Tech
+# 1: $21.15-$29.09 ... Pharmacy Tech 2: $22.53-$30.98", "RCP 1 - Salary:
+# $36.79 - $50.59 ... RCP 2 ... $54.89"); the header field spans them
+# (21.15-30.98, 36.79-54.89), and the text rule, once "\$" parsed, put the
+# first level's range in its place (7 of 11 Asante rows). A field figure the
+# body never prints (UCI's grade maximum, Asante 35489890's 77.79 against
+# "Salary Range: $53.99 - $72.47") or a field that does not hold the text's
+# range (another role's or level's band: MaineHealth's LPN range on an RN
+# posting) is still replaced by the text, as push 10 decided.
+_PAY_BODY_FIGURE_RX = re.compile(r"\$\s*(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(k\b)?", re.I)
 
 
-def pay_text_overrides(field, text) -> bool:
+def _body_prints(body, *values) -> bool:
+    """True when every value is a dollar figure printed in body (to the cent)."""
+    t = _WAGE_DOLLAR_RUN_RX.sub("$", str(body or "")[:12000])
+    seen = set()
+    for m in _PAY_BODY_FIGURE_RX.finditer(t):
+        try:
+            v = float(m.group(1).replace(",", ""))
+        except ValueError:
+            continue
+        seen.add(round(v * (1000 if m.group(2) else 1), 2))
+    return all(round(float(v), 2) in seen for v in values)
+
+
+def pay_text_overrides(field, text, body=None) -> bool:
     """True when the body's own (min, max, unit) `text` should replace the
-    structured field's `field` (see above)."""
+    structured field's `field` (see above). With `body`, a field range that
+    holds the text's range and whose two ends the body prints stays (the
+    note above)."""
     if not field or not text or field[2] != text[2]:
         return False
     flo, fhi, _ = field
@@ -23238,7 +23543,9 @@ def pay_text_overrides(field, text) -> bool:
     if tlo == thi and flo != fhi:
         return False
     off = lambda a, b: abs(a - b) > PAY_TEXT_OVER_FIELD_TOL * abs(b)
-    return off(tlo, flo) or off(thi, fhi)
+    if not (off(tlo, flo) or off(thi, fhi)):
+        return False
+    return not (body and flo < fhi and flo <= tlo and thi <= fhi and _body_prints(body, flo, fhi))
 
 
 # 2026-10-07 (push 10, item 5): HCA's own printed estimate line, behind
@@ -25992,7 +26299,11 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
     Earlier text breaks ties."""
     if not text:
         return None
-    t = text[:12000]
+    # 2026-10-15 (pay accuracy): an escaped or doubled dollar sign is one
+    # dollar sign. Stored Jobvite Engage bodies carry "\$35.29 - \$54.71"
+    # (see _talemetry_posting) and OHSU prints "Maximum: $$222,938"; either
+    # broke the range, and the lone end with a unit was stored as both ends.
+    t = _WAGE_DOLLAR_RUN_RX.sub("$", text[:12000])
     cands = []
     title_line = t.split("\n", 1)[0]                          # normalize_job passes "title\nbody"
     title_roles = _role_words(title_line, title=True)
@@ -26032,6 +26343,15 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
 
     for m in _WAGE_RANGE_RX.finditer(t):
         if _wage_is_noise(t, m.start(), m.end()):
+            # 2026-10-15 (review): a range that prices an add-on is one
+            # add-on; its high end is not the pay alone ("Weekend premium
+            # $38.50 - $52.00 per hour" stored $52 an hour, the single rule
+            # reading "$52.00 per hour" with the words before it handed to
+            # "$38.50"). Both "$" are dead, as for a band too wide (S2).
+            dead.add(m.start())
+            second = t.rfind("$", m.end(1), m.start(3))
+            if second >= 0:
+                dead.add(second)
             continue
         # 2026-10-04 (S7): a "k" suffix carries to the other end only when
         # that end has no comma group and is under 1,000 ("$70-80K"); in
