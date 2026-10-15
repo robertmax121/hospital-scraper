@@ -8,6 +8,7 @@ import os
 import logging
 from datetime import datetime, timezone
 from supabase import create_client, Client
+import retire_guard
 from retire_guard import (BACKSTOP_DAYS, plan_layer4, load_yield_history, save_yield_history,
                           zero_yield_alarms)
 
@@ -140,8 +141,17 @@ def mark_inactive_jobs(current_jobs: list[dict],
                        miss_threshold: int = MISS_THRESHOLD,
                        exclude_systems: set[str] | None = None,
                        complete_systems: set[str] | None = None,
-                       partial_systems: set[str] | None = None) -> dict:
+                       partial_systems: set[str] | None = None,
+                       first_miss_complete: bool | None = None) -> dict:
     """Layer 4 deactivation: multi-run miss confirmation.
+
+    2026-10-15: `first_miss_complete` (None reads the setting
+    retire_guard.RETIRE_FIRST_MISS_WHEN_COMPLETE, on unless the environment
+    sets it to 0): a system of `complete_systems` that reported nothing
+    partial and returned at least half of its active rows has its unseen rows
+    retired on their first miss, not after miss_threshold runs. Its feed
+    listed the whole board the employer advertises, so a row missing from it
+    is a closed posting. Everything else counts misses as before.
 
     2026-10-14 (fix 11 review): `partial_systems` (canonical labels, from
     scraper.layer4_partial_sets) left list pages unread tonight. They are
@@ -279,14 +289,24 @@ def mark_inactive_jobs(current_jobs: list[dict],
     # exclude_systems untouched; unseen rows of a yield-guarded system (0
     # rows tonight, or under 80% of 20+ active rows) keep their count unless
     # nobody has seen them for BACKSTOP_DAYS.
+    first_miss_on = (retire_guard.RETIRE_FIRST_MISS_WHEN_COMPLETE if first_miss_complete is None
+                     else bool(first_miss_complete))
     plan = plan_layer4(active, current_keys, miss_threshold, exclude_systems,
-                       complete_systems=complete_systems, partial_systems=partial_systems)
+                       complete_systems=complete_systems, partial_systems=partial_systems,
+                       first_miss_complete=first_miss_on)
     found_ids: list[int] = plan["found_ids"]
     deactivate_ids: list[int] = plan["deactivate_ids"]
     bump_by_new_count: dict[int, list[int]] = plan["bump_by_new_count"]
     excluded_n = plan["excluded_rows"]
     guarded = plan["guarded"]
     bypassed = plan["complete_bypassed"]
+    first_miss = plan.get("first_miss") or {}
+    for system in sorted(first_miss, key=lambda s: -first_miss[s]["retired"]):
+        fm = first_miss[system]
+        if fm["retired"]:
+            logger.info(f"  LAYER4 first miss {system}: complete crawl {fm['yield']}/{fm['active']} "
+                        f"(yield/active); {fm['retired']} unseen rows retired at once "
+                        f"(RETIRE_FIRST_MISS_WHEN_COMPLETE)")
     for system in sorted(bypassed, key=lambda s: -bypassed[s]["active"]):
         c = bypassed[system]
         logger.info(f"  LAYER4 complete crawl {system}: {c['reason']} {c['yield']}/{c['active']} "
@@ -356,6 +376,9 @@ def mark_inactive_jobs(current_jobs: list[dict],
         "guard_backstop_rows": plan["backstop_rows"],
         "complete_bypassed": sorted(bypassed),
         "zero_yield_alarms": [a["system"] for a in alarms],
+        "first_miss_on": first_miss_on,
+        "first_miss_retired": plan.get("first_miss_rows", 0),
+        "first_miss_systems": sorted(s for s, v in first_miss.items() if v["retired"]),
     }
     logger.info(f"Layer 4 deactivation: {summary}")
     return summary

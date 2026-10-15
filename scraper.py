@@ -6202,7 +6202,14 @@ ICIMS_ORGS = {
     # Amedisys: ~530 home-health and hospice locations across the US.
     # Apply links resolve to careersen-amedisys.icims.com (verified via careers
     # page HTML). Same iCIMS pattern as Cone Health etc.
-    "Amedisys":                         "careersen-amedisys.icims.com",
+    # 2026-10-15: retired here. The portal's search answers a 145-byte script
+    # that sends the browser to careers.amedisys.com/jobs (the Jibe front in
+    # JIBE_SITES), and all 3,338 stored Amedisys rows, active or not, are
+    # Jibe rows on careers.amedisys.com. This entry never wrote a row, and as
+    # a second configured feed of "Amedisys" with no complete claim it kept
+    # the system from ever counting as a complete crawl (complete_canonical),
+    # so a closed Amedisys posting could not take the first-miss path.
+    # "Amedisys":                         "careersen-amedisys.icims.com",
     # ── Added 2026-05-13: post-acute expansion Phase 1 (verified) ──
     # Select Medical: nation's largest post-acute care operator. ~100 LTAC
     # hospitals (Select Specialty Hospitals) + outpatient rehab. Confirmed
@@ -7912,6 +7919,10 @@ JIBE_SITES = {
     "Care New England Health System": "https://careers.carenewengland.org",     # 588; RI (Kent, Women & Infants, Butler)
 }
 
+# Pages of 100 read per Jibe board (6,000 postings). A board past it is read
+# up to the ceiling and reported PARTIAL (2026-10-15), never called complete.
+JIBE_MAX_PAGES = 60
+
 # Jibe feeds whose location_name is a facility (not a street or a region):
 # rows take it as hospital_name so the CMS coverage count and the job page
 # see the campus, not the network.
@@ -8014,7 +8025,12 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
     jobs: list[Job] = []
     raw_tags: dict = {}            # job_id -> the row's tagsN fields (push 9, pay tags)
     page, total = 1, None
-    while page <= 60:  # 60 x 100 = 6,000/site ceiling; both sites are well under
+    # 2026-10-15: every posting the feed served (req_id, else slug), the rows
+    # this adapter skips included (UHS's provider postings carry no req_id),
+    # for the complete claim against totalCount; and whether a page failed.
+    served: set[str] = set()
+    failed_at = None
+    while page <= JIBE_MAX_PAGES:  # 60 x 100 = 6,000/site ceiling; UHS (~6,000) is the largest
         try:
             async with req(session, "get", f"{base_url}/api/jobs",
                            params={"page": str(page), "limit": "100"},
@@ -8023,10 +8039,12 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                            timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
                     logger.info(f"Jibe {system}: HTTP {r.status} at page {page}")
+                    failed_at = page
                     break
                 data = await r.json(content_type=None)
         except Exception as e:
             logger.info(f"Jibe {system}: page {page} error: {e}")
+            failed_at = page
             break
         items = data.get("jobs") or []
         if total is None:
@@ -8039,6 +8057,9 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
             try:
                 j = (wrap or {}).get("data") or wrap
                 rid = str(j.get("req_id") or "").strip()
+                tag = rid or str(j.get("slug") or "").strip()
+                if tag:
+                    served.add(tag)
                 title = (j.get("title") or "").strip()
                 if not rid or not title:
                     continue
@@ -8070,6 +8091,17 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                     posted_date=posted,
                     description=strip_html(str(j.get("description") or "")),
                     ats_platform="iCIMS",
+                    # 2026-10-15 (owner: "I need amedisys' req id"): the
+                    # feed's req_id is the employer's requisition number, the
+                    # value the posting page prints as "Req ID:" (Novant's
+                    # i18n label REQ_ID "Req ID:"), and it is job_id: req_id
+                    # equalled slug on all 1,216 Amedisys and 1,587 Novant
+                    # postings on 2026-10-15 (and on page 1 of Mercy, Yale
+                    # New Haven and MedStar). Sent as req_id so it lands in
+                    # hospital_jobs.req_id; normalize_job leaves a req_id
+                    # equal to job_id out of the facts hash, so stored facts
+                    # are not re-parsed for it (sql/146b fills stored rows).
+                    req_id=rid,
                 ))
                 if _jibe_has_figure(j):
                     raw_tags.setdefault(rid, {k: v for k, v in j.items() if k.startswith("tags") and k != "tags"})
@@ -8085,6 +8117,9 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
             logger.info(f"Jibe {system}: page {page}: {row_errors} row errors (first: {first_err})")
         if len(items) < 100 or (total and page * 100 >= total):
             break
+        if page >= JIBE_MAX_PAGES:
+            failed_at = page + 1         # the ceiling, not the board's end
+            break
         page += 1
         await jitter()
     # Dedupe on job_id — Jibe repeats a req across category pages occasionally.
@@ -8094,6 +8129,18 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
             continue
         seen.add(jb.job_id)
         uniq.append(jb)
+    # 2026-10-15: what decides tonight's retirement. A page that failed (or
+    # the page ceiling) before the board's end leaves live postings unread:
+    # PARTIAL, so the sweep must not retire anything of this system tonight
+    # (it used to, when the pages read before the failure came to 80% of the
+    # active rows). A feed that served COMPLETE_RATIO of its own totalCount
+    # is complete: the sweep and Layer 4 retire what it no longer lists on
+    # the first miss (retire_guard.RETIRE_FIRST_MISS_WHEN_COMPLETE).
+    if failed_at is not None and uniq and not (total and len(served) >= total):
+        report_partial(system)
+        logger.warning(f"Jibe {system}: PARTIAL, page {failed_at} unread; {len(served)} of {total} "
+                       f"postings served; not swept tonight")
+    report_complete(system, len(served), total, feed="JIBE_SITES")
     if raw_tags and uniq:
         try:
             labels = _jibe_pay_labels(await _jibe_labels_page(session, base_url, uniq[0].url))
@@ -8772,6 +8819,9 @@ SMARTRECRUITERS_ORGS = {
 
 async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
     jobs, offset = [], 0
+    # 2026-10-15: the board's own totalFound against every posting the pages
+    # served, for a complete claim (a failed page ends the loop short of it).
+    total, listed = None, 0
     while True:
         try:
             async with req(session, "get",
@@ -8783,6 +8833,9 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
                     break
                 data = await r.json()
             listings = data.get("content", [])
+            if total is None:
+                total = data.get("totalFound")
+            listed += len(listings)
             if not listings: break
             for j in listings:
                 loc_d  = j.get("location", {})
@@ -8810,6 +8863,7 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
         except Exception as e:
             logger.info(f"SmartRecruiters {system}: {e}")
             break
+    report_complete(system, listed, total, feed="SMARTRECRUITERS_ORGS")
     return jobs
 
 # 2026-09-24: the postings list has no body; GET /v1/companies/{org}/postings/{id}
@@ -11606,6 +11660,107 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
     return jobs
 
 
+# ── SelectMinds requisition numbers from the job page (2026-10-15) ──────────
+# The 10-15 run stored the number on 0 of 982 active SelectMinds rows. The
+# /latest-jobs cards print "Requisition #" (job_external_id), but since fix 11
+# (2026-10-14) the crawl reads the /jobs/search/<id>/page<N> cards, which do
+# not, and SelectMinds has no detail pass, so _parse_selectminds_page's req_no
+# is always blank. The job page prints it for its own posting as
+#   <dd class="job_external_id"><span class="field_value">81154</span>
+#   <span class="field_label">Requisition #</span></dd>
+# (Main Line 28195 -> 81154, 28762 -> 80031; Iowa 50311 -> 26005003, checked
+# 2026-10-15), beside hidden inputs Job.id (the job_list id, our job_id) and
+# Job.taleo_job_number (the same number). Its "Similar Listings" print other
+# postings' numbers in <span class="value job_external_id">, which this does
+# not read. Read only for rows whose stored row has no req_id yet (the
+# req_id column, one read per board), at most SELECTMINDS_REQ_MAX_PER_TENANT
+# pages a board a night, one at a time with the usual pause; 0 turns it off.
+SELECTMINDS_REQ_MAX_PER_TENANT = int(os.getenv("SELECTMINDS_REQ_MAX_PER_TENANT", "200"))
+_SM_PAGE_REQ_RE = re.compile(r'<dd class="job_external_id">\s*<span class="field_value">([^<]*)</span>')
+_SM_PAGE_JOB_ID_RE = re.compile(r'name="Job\.id"\s+value="([^"]*)"')
+_SM_PAGE_TALEO_RE = re.compile(r'name="Job\.taleo_job_number"\s+value="([^"]*)"')
+
+
+def selectminds_req_id_from_page(page_html: str, job_id: str = "") -> str:
+    """The "Requisition #" a SelectMinds job page prints for its own posting,
+    exactly as printed; "" when the page is another posting's (Job.id), has
+    none, prints two that disagree, disagrees with Job.taleo_job_number, or
+    the value is job_id."""
+    html = page_html or ""
+    jid = str(job_id or "").strip()
+    m = _SM_PAGE_JOB_ID_RE.search(html)
+    if m and jid and m.group(1).strip() != jid:
+        return ""
+    got = {_hca_req_value(_html_unescape(v)) for v in _SM_PAGE_REQ_RE.findall(html)}
+    got.discard("")
+    if len(got) != 1:
+        return ""
+    rid = got.pop()
+    t = _SM_PAGE_TALEO_RE.search(html)
+    if t and t.group(1).strip() and t.group(1).strip() != rid:
+        return ""
+    return rid if rid != jid else ""
+
+
+def _stored_req_job_ids(system: str):
+    """job_ids of `system`'s active rows whose req_id is stored, read once
+    (keyset on id, the same credentials as the upsert); None when it cannot
+    be read (no credentials, an error), which the caller treats as nothing
+    known."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = (os.environ.get("SUPABASE_KEY", "")
+              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    if not sb_url or not sb_key:
+        return None
+    import urllib.request as _urlreq
+    from urllib.parse import quote as _q
+    out, last = set(), 0
+    try:
+        for _ in range(50):
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,job_id"
+                 f"&hospital_system=eq.{_q(_canon_system(system))}&is_active=is.true&req_id=not.is.null"
+                 f"&id=gt.{last}&order=id.asc&limit=1000")
+            rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            with _urlreq.urlopen(rq, timeout=30) as resp:
+                chunk = json.loads(resp.read().decode())
+            if not chunk:
+                break
+            out.update(str(r.get("job_id")) for r in chunk)
+            last = chunk[-1]["id"]
+    except Exception as e:
+        logger.info(f"SelectMinds {system}: stored req_ids not read ({type(e).__name__}: {e}); "
+                    f"up to {SELECTMINDS_REQ_MAX_PER_TENANT} pages read tonight")
+        return None
+    return out
+
+
+async def _selectminds_req_pass(session, system: str, jobs: list) -> int:
+    """Read the job page of up to SELECTMINDS_REQ_MAX_PER_TENANT of tonight's
+    rows that have no stored req_id, and set Job.req_id from it. Returns the
+    numbers read. The {"req_id"}-only facts object carries it (SelectMinds is
+    on REQ_ID_ONLY_PLATFORMS; the enrichment trigger merges it)."""
+    cap = max(0, SELECTMINDS_REQ_MAX_PER_TENANT)
+    if not cap or not jobs:
+        return 0
+    known = _stored_req_job_ids(system) or set()
+    todo = [j for j in jobs if not j.req_id and str(j.job_id) not in known and j.url]
+    got = failed = 0
+    for j in todo[:cap]:
+        await jitter()
+        status, html, _ = await _selectminds_get(session, system, j.url)
+        if status != 200:
+            failed += 1
+            continue
+        rid = selectminds_req_id_from_page(html, j.job_id)
+        if rid:
+            j.req_id = rid
+            got += 1
+    if todo:
+        logger.info(f"  SelectMinds {system}: requisition numbers read from {min(len(todo), cap)} job pages: "
+                    f"{got} found, {failed} pages failed, {max(0, len(todo) - cap)} left for later nights")
+    return got
+
+
 async def _selectminds_get(session, system: str, url: str, params=None):
     """(status, html, final url) of one SelectMinds page; (0, "", url) on an
     exception. aiohttp follows the /jobs/search/ redirect, so the final url
@@ -11684,6 +11839,13 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
         logger.warning(f"SelectMinds {system}: {len(seen)} of {total} cards read")
     logger.info(f"  SelectMinds {system}: {len(jobs)} jobs ({len(seen)} cards read of {total or '?'})")
     report_complete(system, len(seen), total, feed="SELECTMINDS_ORGS")
+    if DETAIL_FETCH:
+        # 2026-10-15: the number the cards no longer print (see
+        # _selectminds_req_pass); after the claim, so it never touches it.
+        try:
+            await _selectminds_req_pass(session, system, jobs)
+        except Exception as e:
+            logger.info(f"SelectMinds {system}: requisition pass failed ({type(e).__name__}: {e})")
     return jobs
 
 async def run_selectminds(session) -> list[Job]:
@@ -12969,6 +13131,10 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
     api = f"{base_url}/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
     offset = 0
     limit  = 25
+    # 2026-10-15: TotalJobsCount against every requisition the pages served
+    # (non-US ones included: they are read, then left out), for a complete
+    # claim; a failed page ends the loop short of it.
+    advertised, listed = None, 0
     while True:
         try:
             # Bug fix (2026-05-29): the top-level limit/offset query params
@@ -13001,10 +13167,13 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                 break
             search_result = search_results[0]
             total = int(search_result.get("TotalJobsCount", 0) or 0)
+            if advertised is None:
+                advertised = total
             req_list_wrapper = search_result.get("requisitionList") or {}
             page_items = req_list_wrapper.get("items", []) if isinstance(req_list_wrapper, dict) else []
             if not page_items:
                 break
+            listed += len(page_items)
             for j in page_items:
                 # 2026-10-13: a posting whose own country field is not the
                 # US is not listed; a missing city or state comes from the
@@ -13047,6 +13216,7 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
         except Exception as e:
             logger.info(f"Oracle {system}: {e}")
             break
+    report_complete(system, listed, advertised, feed="ORACLE_ORGS")
     if DETAIL_FETCH and jobs:
         try:
             await _detail_pass(session, system, jobs, ORACLE_DESC_BUDGET,
@@ -21928,7 +22098,14 @@ def normalize_job(j: Job) -> dict:
     # adapter read one, so stored facts written before it existed (or with
     # another number) do not match and are rebuilt with it; a row without one
     # hashes exactly as before, so no other system re-parses.
-    h = _facts_hash(d.get("title"), d.get("job_type"), pay_src, d.get("description"), req_id)
+    # 2026-10-15: a req_id equal to job_id (the Jibe feeds, whose req_id IS
+    # the key) hashes as no req_id: the number can never change for the key,
+    # so stored facts are not rebuilt just to carry it (35k Jibe rows would
+    # re-parse and re-upload in one night). A new or changed body still sends
+    # it; stored rows get it from sql/146b, and the enrichment trigger keeps
+    # a stored req_id under an object built without one.
+    h = _facts_hash(d.get("title"), d.get("job_type"), pay_src, d.get("description"),
+                    "" if req_id == str(d.get("job_id") or "").strip() else req_id)
     if h is not None and _KNOWN_FACTS_H.get(key) == h:
         d["posting_facts"] = None
         _FACTS_SKIPS["n"] += 1

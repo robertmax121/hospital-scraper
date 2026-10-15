@@ -376,11 +376,14 @@ def test_every_complete_claim_names_a_configured_feed():
     src = pathlib.Path(scraper.__file__).read_text(encoding="utf-8")
     calls = re.findall(r'(?<!def )report_complete\((?:[^()]|\([^()]*\))*\)', src)
     claimed = {m.group(1) for c in calls for m in [re.search(r'feed="([^"]+)"', c)] if m}
-    assert len(calls) == 12 and all('feed="' in c for c in calls)       # every claim names its feed
+    assert len(calls) == 15 and all('feed="' in c for c in calls)       # every claim names its feed
     known = set().union(*scraper.configured_feed_map().values())
     # 2026-10-14 (fix 11): Greenhouse, ApplicantPro, UKG, NeoGov, TalentBrew
     # and SelectMinds claim against the board's own count too.
+    # 2026-10-15: the Jibe feeds (totalCount), Oracle HCM (TotalJobsCount)
+    # and SmartRecruiters (totalFound) against their own counts.
     assert claimed == {"WORKDAY_TENANTS", "PHENOM_ORGS", "HEALTHCARESOURCE_ORGS", "TALEMETRY_SITES",
                        "run_uhg", "run_chs", "GREENHOUSE_ORGS", "APPLICANTPRO_ORGS", "UKG_ORGS",
-                       "NEOGOV_AGENCIES", "TALENTBREW_ORGS", "SELECTMINDS_ORGS"}
+                       "NEOGOV_AGENCIES", "TALENTBREW_ORGS", "SELECTMINDS_ORGS", "JIBE_SITES",
+                       "ORACLE_ORGS", "SMARTRECRUITERS_ORGS"}
     assert claimed <= known

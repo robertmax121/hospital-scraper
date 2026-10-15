@@ -467,22 +467,48 @@ def test_re_reads_stay_inside_the_tenants_budget(monkeypatch):
 
 
 # ── iCIMS rows that come from a Jibe front (Amedisys) ───────────────────────
-def test_jibe_rows_send_no_req_id(fixture_text, monkeypatch):
+def test_jibe_rows_send_their_req_id(fixture_text, monkeypatch):
     """Amedisys's iCIMS rows come from its Jibe front (careers.amedisys.com,
-    JIBE_SITES; every stored Amedisys row, active or not, is on that host on
-    2026-10-14), not from the classic careersen-amedisys.icims.com cards.
-    The Jibe req_id is already the job_id, scrape_jibe sets no req_id, and the
-    iCIMS detail pass skips a url off *.icims.com, so iCIMS being on
-    REQ_ID_ONLY_PLATFORMS sends these rows no number, on any night."""
+    JIBE_SITES), not from the classic careersen-amedisys.icims.com cards, and
+    the iCIMS detail pass skips a url off *.icims.com. 2026-10-15 (owner: "I
+    need amedisys' req id"): the feed's req_id is the number the posting
+    prints as "Req ID:" and it is the job_id (req_id == slug on all 1,216
+    Amedisys and 1,587 Novant postings that day), so scrape_jibe sends it as
+    req_id: a new row's facts carry it, and a bare row sends the req_id-only
+    object (iCIMS is on REQ_ID_ONLY_PLATFORMS)."""
     assert scraper.JIBE_SITES["Amedisys"] == "https://careers.amedisys.com"
     data = json.loads(fixture_text("push10/jibe_mymichigan_jobs.json"))
     _serve(monkeypatch, lambda m, u, kw: data if "/api/jobs" in u else "")
     monkeypatch.setattr(scraper, "_fetch_html", _page(""))
     jobs = asyncio.run(scraper.scrape_jibe(None, "Amedisys", "https://careers.amedisys.com"))
-    assert jobs and all(j.ats_platform == "iCIMS" and j.req_id == "" for j in jobs)
+    assert jobs and all(j.ats_platform == "iCIMS" and j.req_id == j.job_id != "" for j in jobs)
     for j in jobs:
         assert not scraper._ICIMS_JOB_URL_RX.match(j.url)          # no iCIMS detail read
         row = scraper.normalize_job(j)
-        assert "req_id" not in (row["posting_facts"] or {})
+        assert row["posting_facts"]["req_id"] == j.job_id and "req_id" not in row
         bare = scraper.normalize_job(dataclasses.replace(j, description=""))
-        assert "req_id" not in (bare["posting_facts"] or {})
+        assert bare["posting_facts"] == {"req_id": j.job_id}
+
+
+def test_jibe_req_id_equal_to_job_id_does_not_rebuild_stored_facts(fixture_text, monkeypatch):
+    """A stored Jibe body whose facts hash was written before 2026-10-15 (no
+    req_id) still matches: its number equals its key and is left out of the
+    hash, so the facts are not re-parsed and re-sent for 35k Jibe rows in one
+    night (sql/146b fills the stored rows). A req_id that differs from job_id
+    still joins the hash, as before."""
+    data = json.loads(fixture_text("push10/jibe_mymichigan_jobs.json"))
+    _serve(monkeypatch, lambda m, u, kw: data if "/api/jobs" in u else "")
+    monkeypatch.setattr(scraper, "_fetch_html", _page(""))
+    j = asyncio.run(scraper.scrape_jibe(None, "Amedisys", "https://careers.amedisys.com"))[0]
+    # a full body (the fixture's 630 characters are a teaser, whose facts are null)
+    j = dataclasses.replace(j, description=j.description + "\n\nRequirements\n\nCurrent RN license. BLS. "
+                            "One year of acute care experience preferred. " * 40)
+    old = dataclasses.replace(j, req_id="")
+    stored_h = scraper.normalize_job(old)["posting_facts"]["h"]          # written on 10-14
+    scraper.set_known_bodies([{"hospital_system": "Amedisys", "job_id": j.job_id, "ats_platform": "iCIMS",
+                               "desc_len": len(j.description), "fv": str(scraper.FACTS_VERSION),
+                               "fh": stored_h, "rq": None}])
+    skip = scraper.normalize_job(dataclasses.replace(j))
+    assert skip["posting_facts"] is None                                  # stored facts kept
+    other = scraper.normalize_job(dataclasses.replace(j, req_id="A-" + j.job_id))
+    assert other["posting_facts"]["req_id"] == "A-" + j.job_id           # a different number re-parses
