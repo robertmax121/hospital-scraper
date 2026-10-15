@@ -67,9 +67,25 @@ def test_every_system_and_its_stored_label():
 def test_every_proper_name_resolves_to_itself_with_its_town(system):
     spec = F.spec_for(system)
     for name, (town, st) in spec.hospitals.items():
-        assert F.resolve(system, name) == (name, town, st)
-        assert F.is_hospital_name(system, name)
+        assert F.resolve(system, name, town, st) == (name, town, st)
+        assert F.is_hospital_name(system, name) and F.canonical_name(system, name.upper()) == name
         assert len(st) == 2 and town
+        # without a state only a name that is no brand of several hospitals
+        assert F.resolve(system, name) in ((name, town, st), None)
+
+
+# The proper names that need the posting's state or town (their bare form is
+# a brand of several hospitals); every other proper name resolves anywhere.
+AMBIGUOUS_WITHOUT_STATE = {
+    "Ascension St. Francis Hospital", "Ascension St. Joseph Hospital",
+    "Ascension Mercy Hospital", "Ascension Franklin Hospital", "Ascension Providence",
+}
+
+
+def test_which_proper_names_need_a_state():
+    got = {name for s in sorted(F.FACILITY_SYSTEMS) for name in F.spec_for(s).hospitals
+           if F.resolve(s, name) is None}
+    assert got == AMBIGUOUS_WITHOUT_STATE
 
 
 def test_a_hospital_of_one_system_is_not_one_of_another():
@@ -158,6 +174,26 @@ def test_scrape_findly_google_stores_the_upmc_hospital():
         assert j.req_id                                                          # the 10-14 job number is untouched
 
 
+def test_upmc_unit_in_another_state_names_no_hospital():
+    # Review 2026-10-15, live: "Behavioral Health Navigator I - UPMC Western Maryland" in Cumberland, MD
+    # (and "- UPMC Chautauqua" in Jamestown, NY) sit in UPMC Western Psychiatric Hospital's unit.
+    wph = "UPMC Western Psychiatric Hospital"
+    assert F.upmc_facility(wph, wph) == wph
+    assert F.upmc_facility(wph, wph, "Pittsburgh", "PA") == wph
+    assert F.upmc_facility(wph, wph, "Cumberland", "MD") == ""
+    assert F.upmc_facility(wph, wph, "Jamestown", "NY") == ""
+    assert F.upmc_facility("UPMC Western Maryland", "UPMC Western Maryland", "Cumberland", "MD") == "UPMC Western Maryland"
+    body = _load("upmc_search.txt")
+    payload = json.loads(re.match(r"[^(]*\((.*)\);?\s*$", body, re.S).group(1))
+    j = dict(payload["searchResults"][0]["job"], business_unit=wph, brand=wph, primary_city="Cumberland",
+             primary_state="MD", title="Behavioral Health Navigator I - UPMC Western Maryland")
+    payload["searchResults"] = [dict(payload["searchResults"][0], job=j)]
+    payload["totalHits"] = 1
+    text = "cb(" + json.dumps(payload) + ");"
+    jobs = asyncio.run(scraper.scrape_findly_google(_Session(text), "UPMC", scraper.FINDLY_GOOGLE_ORGS["UPMC"]))
+    assert [(x.hospital_name, x.city, x.state) for x in jobs] == [("UPMC - Pittsburgh Medical Center", "Cumberland", "MD")]
+
+
 def test_other_findly_tenants_keep_company_name():
     assert set(scraper.FINDLY_GOOGLE_FACILITY) == {"UPMC"}
 
@@ -236,7 +272,8 @@ ORACLE_EXPECT = {
         "Thop Memorial Campus": "The Hospitals of Providence Memorial Campus",
         "Saint Francis Hospital-Bartlett": "Saint Francis Hospital - Bartlett",
         "Hdmc Holdings, LLC DBA Hi-Desert Medical Center": "Hi-Desert Medical Center",
-        "3990 John R. Street, Detroit, Mi 48201-2018": "Harper University Hospital",
+        # DMC's recruiting address: its physician postings are mostly at Children's (review 10-15)
+        "3990 John R. Street, Detroit, Mi 48201-2018": "",
         "Metrowest Medical Center - Framingham Union Campus": "Framingham Union Hospital",
         "Oced - Good Samaritan Medical Center": "",   # an off-campus ED
         "BHS Phys Network": "",
@@ -305,7 +342,54 @@ def test_a_brand_in_a_town_without_its_hospital_names_none():
     assert r("Ascension Health", "St. Mary's Medical Center", "Evansville", "IN")[0] == "Ascension St. Vincent Evansville"
     assert r("Ascension Health", "St. Francis Hospital", "Milwaukee", "WI")[0] == "Ascension St. Francis Hospital"
     assert r("Ascension Health", "St. Francis Hospital", "Wichita", "KS")[0] == "Ascension Via Christi St. Francis"
-    assert r("Ascension Health", "Ascension St. Francis Hospital", "", "")[0] == "Ascension St. Francis Hospital"
+    assert r("Ascension Health", "Ascension St. Francis Hospital", "Milwaukee", "WI")[0] == "Ascension St. Francis Hospital"
+    # no state: Milwaukee's name is also how a Wichita posting could spell its own
+    assert r("Ascension Health", "Ascension St. Francis Hospital", "", "") is None
+
+
+def test_a_hospital_is_never_taken_from_another_state():
+    # Review 2026-10-15: Chicago postings print "Facility: Ascension Saint Joseph Hospital"
+    # (1303184, 1316322, 1325997; 2025-425507 with no town), which fkey spells like
+    # Milwaukee's "Ascension St. Joseph Hospital".
+    r = F.resolve
+    chi = ("Ascension Saint Joseph - Chicago", "Chicago", "IL")
+    assert r("Ascension Health", "Ascension Saint Joseph Hospital", "Chicago", "IL") == chi
+    assert r("Ascension Health", "Saint Joseph Hospital", "Chicago", "IL") == chi
+    assert r("Ascension Health", "Saint Joseph Hospital", "Joliet", "IL")[0] == "Ascension Saint Joseph - Joliet"
+    assert r("Ascension Health", "Ascension Saint Joseph Hospital", "Joliet", "IL")[0] == "Ascension Saint Joseph - Joliet"
+    # Illinois with no town, or a third Illinois town: Chicago or Joliet, so none
+    assert r("Ascension Health", "Ascension Saint Joseph Hospital", "", "IL") is None
+    assert r("Ascension Health", "St. Joseph Hospital", "Elk Grove Village", "IL") is None
+    # no town and no state at all (2025-425507): Milwaukee is not guessed
+    assert r("Ascension Health", "Ascension Saint Joseph Hospital", "", "") is None
+    # Milwaukee's own postings keep it
+    assert r("Ascension Health", "Ascension St. Joseph Hospital", "Milwaukee", "WI") == \
+        ("Ascension St. Joseph Hospital", "Milwaukee", "WI")
+    assert r("Ascension Health", "St. Joseph Hospital", "Milwaukee", "WI")[0] == "Ascension St. Joseph Hospital"
+    # a proper name of one state on a posting in another names none
+    assert r("Ascension Health", "Ascension Sacred Heart Bay", "Austin", "TX") is None
+    assert r("Ascension Health", "St. Vincent", "Salem", "OR") is None          # Salem, IN is the hospital's
+    assert F.list_facility("Tenet Healthcare", "Delray Medical Center", "Dallas", "TX") == "Delray Medical Center"  # head office
+    assert F.list_facility("Tenet Healthcare", "Delray Medical Center", "El Paso", "TX") == ""
+    assert F.list_facility("Guthrie Health", "HCM - TGC Guthrie Lourdes Hospital", "Binghamton", "NY") == \
+        "Guthrie Lourdes Hospital"
+    assert F.list_facility("Guthrie Health", "HCM - TGC Guthrie Lourdes Hospital", "Sayre", "PA") == \
+        "Guthrie Lourdes Hospital"                                                # head office
+    assert F.list_facility("Guthrie Health", "HCM - TGC Guthrie Lourdes Hospital", "Towanda", "PA") == ""
+    # Vanderbilt's unit codes: Tennessee only
+    assert F.text_facility("Vanderbilt (VUMC)", "", "Registered Nurse, ED - VUH", "Bowling Green", "KY") is None
+    assert F.text_facility("Vanderbilt (VUMC)", "", "Registered Nurse, ED - VUH", "Nashville", "TN")[0] == \
+        "Vanderbilt University Medical Center"
+
+
+def test_stored_chicago_rows_through_apply_facility():
+    body = "Location: Chicago, IL\n\nFacility: Ascension Saint Joseph Hospital\n\n" + "Provides care. " * 80
+    job = _job("Ascension Health", "Ascension Health", city="Chicago", state="IL", description=body, job_id="1325997")
+    assert F.apply_facility(job) == "text"
+    assert (job.hospital_name, job.city, job.state) == ("Ascension Saint Joseph - Chicago", "Chicago", "IL")
+    job = _job("Ascension Health", "Ascension Health", description=body, job_id="2025-425507")
+    assert F.apply_facility(job) == "none"
+    assert (job.hospital_name, job.city, job.state, job.location) == ("Ascension Health", "", "", "")
 
 
 def test_a_proper_name_with_hospital_added():
@@ -405,6 +489,29 @@ def test_workday_detail_location_names_the_hospital(system, fixture, expect, lab
         assert job.hospital_name == (expect[desc] or label), desc
         assert getattr(job, F.SEEN_ATTR, False) is (not expect[desc])
     assert seen_desc == set(expect)
+
+
+@pytest.mark.parametrize("phenom_name", [
+    "Corewell Health Helen DeVos Children’s Hospital",     # a hospital the requisition puts at Butterworth
+    "Corewell Health East Medical Group",                    # a group the requisition puts at Beaumont University
+    "Corewell Health Children’s",
+])
+def test_a_list_facility_is_not_overridden_by_the_detail(phenom_name):
+    # Review 2026-10-15: about 8 Corewell rows alternated night to night between the Phenom
+    # list's facility (read every night) and the requisition location (read on detail nights).
+    # The list's own facility now holds on every night; the detail fills only label rows.
+    info = {"jobRequisitionLocation": {"descriptor": "SITE - Butterworth Hospital - 100 Michigan St NE - Grand Rapids"}}
+    detail_night = _job("Corewell Health", phenom_name, city="Grand Rapids", state="MI", job_id="R1", ats="Phenom")
+    scraper._apply_wd_posting_info(detail_night, info)
+    assert detail_night.hospital_name == phenom_name and not getattr(detail_night, F.SEEN_ATTR, False)
+    other_night = _job("Corewell Health", phenom_name, city="Grand Rapids", state="MI", job_id="R1", ats="Phenom")
+    F.apply_facility(detail_night)
+    F.apply_facility(other_night)
+    assert detail_night.hospital_name == other_night.hospital_name
+    # a label row still takes the requisition's hospital
+    label_row = _job("Corewell Health", "Corewell Health", city="Grand Rapids", state="MI", job_id="R2", ats="Phenom")
+    scraper._apply_wd_posting_info(label_row, info)
+    assert label_row.hospital_name == "Corewell Health Butterworth Hospital"
 
 
 def test_detail_location_is_read_only_for_the_configured_tenants():
@@ -535,29 +642,97 @@ def test_load_known_facilities_without_credentials_is_empty(monkeypatch):
     assert F.known_facility("Ascension Health", "1") == ""
 
 
-def test_load_known_facilities_pages_the_stored_rows(monkeypatch):
-    pages = [[{"id": 1, "hospital_system": "Ascension", "job_id": "a", "hospital_name": "Ascension Sacred Heart Bay"},
-              {"id": 2, "hospital_system": "Corewell Health", "job_id": "b", "hospital_name": "Corewell Health"}],
-             [{"id": 3, "hospital_system": "Vanderbilt", "job_id": "c", "hospital_name": "Vanderbilt Bedford Hospital"}],
-             []]
+class _Resp:
+    def __init__(self, body):
+        self.body = body
+
+    def read(self):
+        return json.dumps(self.body).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def _fake_rest(monkeypatch, by_system, fail=()):
+    """A PostgREST stand-in: rows per system, keyset-paged on id."""
+    import urllib.parse
+    import urllib.request
     urls = []
-
-    class _Resp:
-        def __init__(self, body):
-            self.body = body
-
-        def read(self):
-            return json.dumps(self.body).encode()
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *a):
-            return False
 
     def fake_urlopen(rq, timeout=None):
         urls.append(rq.full_url)
-        return _Resp(pages[len(urls) - 1])
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(rq.full_url).query)
+        label = q["hospital_system"][0].split(".", 1)[1]
+        if label in fail:
+            raise OSError("statement timeout")
+        last, lim = int(q["id"][0].split(".", 1)[1]), int(q["limit"][0])
+        rows = sorted((r for r in by_system.get(label, []) if r["id"] > last), key=lambda r: r["id"])
+        return _Resp(rows[:lim])
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(F.time, "sleep", lambda s: None)
+    monkeypatch.setattr(F, "KNOWN_FACILITY_PAGE", 2)
+    monkeypatch.setenv("SUPABASE_URL", "https://db.example")
+    monkeypatch.setenv("SUPABASE_KEY", "k")
+    return urls
+
+
+def _row(i, system, jid, name):
+    return {"id": i, "hospital_system": system, "job_id": jid, "hospital_name": name}
+
+
+def test_load_known_facilities_pages_each_system_on_its_own(monkeypatch):
+    # Review 2026-10-15: one pass per system (hospital_system=eq.), not one in.() pass walked in
+    # primary-key order (10 s cold, over PostgREST's 8 s timeout).
+    urls = _fake_rest(monkeypatch, {
+        "Ascension": [_row(1, "Ascension", "a", "Ascension Sacred Heart Bay"),
+                      _row(5, "Ascension", "a2", "Ascension Health"),
+                      _row(9, "Ascension", "a3", "Ascension St. Joseph Hospital")],
+        "Corewell Health": [_row(2, "Corewell Health", "b", "Corewell Health")],
+        "Vanderbilt": [_row(3, "Vanderbilt", "c", "Vanderbilt Bedford Hospital")],
+        "Mass General Brigham": [_row(4, "Mass General Brigham", "d", "Salem Hospital")],
+    })
+    assert F.load_known_facilities() == 4
+    assert F.known_facility("Vanderbilt (VUMC)", "c") == "Vanderbilt Bedford Hospital"
+    assert F.known_facility("Ascension Health", "a3") == "Ascension St. Joseph Hospital"   # a proper name, any state
+    assert F.known_facility("Ascension Health", "a2") == ""
+    assert all("hospital_system=eq." in u and "in.(" not in u and "order=id.asc" in u for u in urls)
+    asc = [u for u in urls if "eq.Ascension&" in u]
+    assert ["id=gt.0" in asc[0], "id=gt.5" in asc[1], len(asc)] == [True, True, 2]
+    assert any("eq.Mass%20General%20Brigham&" in u for u in urls)
+
+
+def test_load_known_facilities_keeps_the_systems_that_loaded(monkeypatch):
+    _fake_rest(monkeypatch, {"Ascension": [_row(1, "Ascension", "a", "Ascension Sacred Heart Bay")],
+                             "Vanderbilt": [_row(3, "Vanderbilt", "c", "Vanderbilt Bedford Hospital")]},
+               fail=("Vanderbilt",))
+    assert F.load_known_facilities() == 1
+    assert F.known_facility("Ascension Health", "a") == "Ascension Sacred Heart Bay"
+    assert F.known_facility("Vanderbilt (VUMC)", "c") == ""
+
+
+def test_stored_hospital_in_another_state_is_not_kept():
+    _known([("Ascension", "1", "Ascension St. Joseph Hospital"), ("Ascension", "2", "Ascension St. Joseph Hospital")])
+    job = _job("Ascension Health", "Ascension Health", city="Chicago", state="IL", job_id="1")
+    assert F.apply_facility(job) == "none" and job.hospital_name == "Ascension Health"
+    job = _job("Ascension Health", "Ascension Health", city="Milwaukee", state="WI", job_id="2")
+    assert F.apply_facility(job) == "kept" and job.hospital_name == "Ascension St. Joseph Hospital"
+
+
+def test_load_known_facilities_pages_the_stored_rows(monkeypatch):
+    pages = [[{"id": 1, "hospital_system": "Ascension", "job_id": "a", "hospital_name": "Ascension Sacred Heart Bay"},
+              {"id": 2, "hospital_system": "Ascension", "job_id": "b", "hospital_name": "Ascension Health"}],
+             [{"id": 3, "hospital_system": "Ascension", "job_id": "c", "hospital_name": "Ascension Saint Agnes Hospital"}]]
+    urls = []
+
+    def fake_urlopen(rq, timeout=None):
+        urls.append(rq.full_url)
+        if "eq.Ascension&" not in rq.full_url:
+            return _Resp([])
+        return _Resp(pages.pop(0) if pages else [])
 
     import urllib.request
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
@@ -565,9 +740,10 @@ def test_load_known_facilities_pages_the_stored_rows(monkeypatch):
     monkeypatch.setenv("SUPABASE_URL", "https://db.example")
     monkeypatch.setenv("SUPABASE_KEY", "k")
     assert F.load_known_facilities() == 2
-    assert F.known_facility("Vanderbilt (VUMC)", "c") == "Vanderbilt Bedford Hospital"
-    assert "id=gt.0" in urls[0] and "id=gt.2" in urls[1] and len(urls) == 2
-    assert "hospital_system=in.(" in urls[0] and "Mass%20General%20Brigham" in urls[0]
+    assert F.known_facility("Ascension Health", "c") == "Ascension Saint Agnes Hospital"
+    asc = [u for u in urls if "eq.Ascension&" in u]
+    assert "id=gt.0" in asc[0] and "id=gt.2" in asc[1] and len(asc) == 2
+    assert len(urls) == 2 + 3                       # the other three systems: one empty page each
 
 
 # ── Towns: blank or head office only ────────────────────────────────────────

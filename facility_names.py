@@ -38,7 +38,11 @@ corporate office, "Multiple Ascension sites"), or a hospital the table does
 not list yet, leaves the system label, as before: nothing is guessed. A brand
 that is several hospitals ("Facility: Ascension St. Vincent") is read with
 the posting's own town, and names none where that town has no such hospital.
-hospital_system is never touched.
+A hospital is never taken from another state than the posting's own (unless
+the posting sits at the head office default), and a name two hospitals share
+needs the posting's state or town (review 2026-10-15: Chicago's "Ascension
+Saint Joseph Hospital" had been read as Milwaukee's). hospital_system is never
+touched.
 
 City and state: a posting keeps its own location. The hospital's town is used
 only when the posting has none, or when its location is the system head
@@ -109,9 +113,11 @@ class Spec:
         self.fallback = fallback        # body-derived: keep the stored hospital on nights without a body
         self.rules = tuple((re.compile(rx, re.I), name) for rx, name in rules)
         self.title_overrides = tuple((frm, re.compile(rx, re.I), to) for frm, rx, to in title_overrides)
-        # A proper name as printed wins over everything (it is looked up
-        # before the prefix is stripped: "Ascension St. Francis Hospital" is
-        # Milwaukee's, while a bare "St. Francis Hospital" depends on the state).
+        # A proper name as printed is looked up first, before the prefix is
+        # stripped ("Ascension St. Francis Hospital" is Milwaukee's, while a
+        # bare "St. Francis Hospital" depends on the state), but only in its own
+        # state, and only where the posting's state is known when the stripped
+        # name is also a brand of several hospitals (resolve).
         self.exact = {fkey(name): name for name in self.hospitals}
         self.aliases: dict = {}
         for name in self.hospitals:
@@ -357,7 +363,9 @@ _TENET_ALIASES = {
     "Nacogdoches Med Ctr S Campus": "Nacogdoches Medical Center",
     "Hdmc Holdings, LLC DBA Hi-Desert Medical Center": "Hi-Desert Medical Center",
     "Hidesert Medical Center": "Hi-Desert Medical Center",
-    "3990 John R. Street, Detroit, Mi 48201-2018": "Harper University Hospital",
+    # "3990 John R. Street, Detroit, Mi 48201-2018" is not listed (review 2026-10-15): it is
+    # the Detroit Medical Center's recruiting address, on 31 physician postings that are mostly
+    # at Children's Hospital of Michigan (2603025559), so it names no one hospital.
     "Rehab Institute of Michigan": "Rehabilitation Institute of Michigan",
 }
 
@@ -730,9 +738,14 @@ _ASC_ALIASES = {
                                      "mequon": "Ascension Columbia St. Mary's Hospital Ozaukee"},
     "St. Francis Hospital": {"WI": "Ascension St. Francis Hospital", "KS": "Ascension Via Christi St. Francis"},
     "St. Francis": {"WI": "Ascension St. Francis Hospital", "KS": "Ascension Via Christi St. Francis"},
-    "St. Joseph Hospital": {"WI": "Ascension St. Joseph Hospital", "IL": "Ascension Saint Joseph - Chicago"},
+    # Illinois has two (Chicago and Joliet): the posting's town says which, a
+    # third Illinois town says none. Chicago's postings print "Facility:
+    # Ascension Saint Joseph Hospital" (1303184, 1325997, 2025-425507).
+    "St. Joseph Hospital": {"WI": "Ascension St. Joseph Hospital", "chicago": "Ascension Saint Joseph - Chicago",
+                            "joliet": "Ascension Saint Joseph - Joliet"},
     "St. Joseph's Hospital": {"WI": "Ascension St. Joseph Hospital"},
-    "St. Joseph": {"WI": "Ascension St. Joseph Hospital", "IL": "Ascension Saint Joseph - Chicago"},
+    "St. Joseph": {"WI": "Ascension St. Joseph Hospital", "chicago": "Ascension Saint Joseph - Chicago",
+                   "joliet": "Ascension Saint Joseph - Joliet"},
     "St. Joseph Hospital Chicago": "Ascension Saint Joseph - Chicago",
     "All Saints": "Ascension All Saints Hospital",
     "All Saints Spring Street Campus": "Ascension All Saints Hospital",
@@ -804,66 +817,124 @@ def spec_for(system) -> Spec | None:
 
 
 # ── Resolver ────────────────────────────────────────────────────────────────
+_STATE_RX = re.compile(r"[A-Z]{2}")
+
+
+def _at_hq(spec, city, st) -> bool:
+    """The posting sits at the system head office, the town the scraper
+    stamps when a feed gives none."""
+    hq_town, hq_st = spec.hq
+    jc = (city or "").strip()
+    return bool(jc) and fkey(jc) == fkey(hq_town) and (st or "") in ("", hq_st)
+
+
+def _posting_state(spec, city, state) -> str:
+    """The posting's two-letter state when it says where the work is: ""
+    when blank, not a state code, or the head office default."""
+    st = (state or "").strip().upper()
+    if not _STATE_RX.fullmatch(st) or _at_hq(spec, city, st):
+        return ""
+    return st
+
+
 def resolve(system, raw, city="", state="", title=""):
     """(hospital name, its town, its state) for one raw facility value, or
-    None when the value names no hospital of this system."""
+    None when the value names no hospital of this system.
+
+    2026-10-15 (review): a hospital is never taken from another state than
+    the posting's own. Chicago postings print "Facility: Ascension Saint
+    Joseph Hospital", which is spelled like Milwaukee's "Ascension St.
+    Joseph Hospital"; the posting's state (IL) rules Milwaukee out and the
+    brand table reads it with the posting's town. Where the posting gives no
+    state (or only the head office), a proper name that is also a brand of
+    several hospitals ("St. Joseph Hospital", "St. Francis Hospital") names
+    none unless its town picks one."""
     spec = spec_for(system)
     if spec is None:
         return None
     raw = clean_text(raw)
     if not raw:
         return None
+    known_st = _posting_state(spec, city, state)
+    st = (state or "").strip().upper()
     k = spec._key(raw)
-    v = spec.exact.get(fkey(raw)) or spec.aliases.get(k)
-    if v is None and k.endswith(" hospital"):
+    alias = spec.aliases.get(k)
+    if alias is None and k.endswith(" hospital"):
         # "Ascension Saint Thomas Stones River Hospital", "Ascension Sacred
         # Heart Gulf Hospital": the proper name with "Hospital" added.
-        v = spec.aliases.get(k[:-len(" hospital")])
-    if isinstance(v, dict):
-        # A brand that is several hospitals: the posting's town (or state)
-        # says which, and a town the table does not list says none.
-        st = (state or "").strip().upper()
-        v = v.get(fkey(city)) or v.get(st)
-        if not v:
-            return None
-    name = v
-    if not name:
+        alias = spec.aliases.get(k[:-len(" hospital")])
+    exact = spec.exact.get(fkey(raw))
+    cands = []
+    if exact and not (isinstance(alias, dict) and not known_st):
+        cands.append(exact)
+    if alias is not None:
+        cands.append(alias)
+    name = None
+    for v in cands:
+        if isinstance(v, dict):
+            # A brand that is several hospitals: the posting's town (or state)
+            # says which, and a town the table does not list says none.
+            v = v.get(fkey(city)) or v.get(st)
+        if v and (not known_st or spec.hospitals[v][1] == known_st):
+            name = v
+            break
+    if name is None and not cands:
         for rx, rname in spec.rules:
             if rx.search(raw):
-                name = rname
+                if not known_st or spec.hospitals[rname][1] == known_st:
+                    name = rname
                 break
     if not name:
         return None
     for frm, rx, to in spec.title_overrides:
         if name == frm and rx.search(title or ""):
             name = to
-    town, st = spec.hospitals[name]
-    return (name, town, st)
+    town, hst = spec.hospitals[name]
+    return (name, town, hst)
+
+
+def canonical_name(system, name) -> str:
+    """The proper hospital name `name` spells (curly quotes, case, "Saint"),
+    or "" when it is not one of this system's proper names."""
+    spec = spec_for(system)
+    if spec is None:
+        return ""
+    return spec.exact.get(fkey(name), "") if clean_text(name) else ""
 
 
 def is_hospital_name(system, name) -> bool:
     """True when `name` is one of this system's proper hospital names (what
-    resolve gives, not an alias of one)."""
-    hit = resolve(system, name)
-    return bool(hit) and fkey(hit[0]) == fkey(name)
+    resolve gives, not an alias of one), wherever the posting is."""
+    return bool(canonical_name(system, name))
+
+
+def on_system_label(job) -> bool:
+    """True when the row carries no facility of its own: blank or one of the
+    system's labels (what the adapters stamp when the feed names none)."""
+    spec = spec_for(job.hospital_system)
+    cur = clean_text(job.hospital_name)
+    return spec is not None and (not cur or cur in spec.labels)
 
 
 # ── Raw values from each source ─────────────────────────────────────────────
 _UPMC_GENERIC_BRANDS = {"", "hospital", "organization"}
 
 
-def upmc_facility(brand, business_unit) -> str:
+def upmc_facility(brand, business_unit, city="", state="") -> str:
     """UPMC: the brand when it names a hospital (it splits the Susquehanna
     and Passavant units), else the business unit, unless the brand is a
     practice or service line under that unit ("Children's Community
-    Pediatrics" under UPMC Children's). "" when neither is a hospital."""
+    Pediatrics" under UPMC Children's). "" when neither is a hospital, or
+    when the hospital is in another state than the posting (review
+    2026-10-15: "Behavioral Health Navigator I - UPMC Western Maryland" in
+    Cumberland, MD sits in UPMC Western Psychiatric Hospital's unit)."""
     b, bu = clean_text(brand), clean_text(business_unit)
-    hit = resolve("UPMC", b) if b else None
+    hit = resolve("UPMC", b, city, state) if b else None
     if hit:
         return hit[0]
     if b and fkey(b) not in _UPMC_GENERIC_BRANDS and fkey(b) != fkey(bu) and _UPMC_UNIT_RX.search(b):
         return ""
-    hit = resolve("UPMC", bu) if bu else None
+    hit = resolve("UPMC", bu, city, state) if bu else None
     return hit[0] if hit else ""
 
 
@@ -985,8 +1056,9 @@ def set_known_facilities(rows) -> int:
         spec = spec_for(sysname)
         if spec is None or not spec.fallback or not name or jid in (None, "") or name in spec.labels:
             continue
-        if is_hospital_name(sysname, name):
-            out[(spec.db_label, str(jid))] = name
+        proper = canonical_name(sysname, name)
+        if proper:
+            out[(spec.db_label, str(jid))] = proper
     _KNOWN = out
     return len(out)
 
@@ -999,9 +1071,18 @@ def known_facility(system, job_id) -> str:
 
 
 def load_known_facilities() -> int:
-    """One read-only PostgREST pass (the same SUPABASE_URL / key the upsert
-    uses) over the active rows of the body-derived systems, keyset-paged on
-    id. Without credentials the map stays empty and nothing is kept."""
+    """Read-only PostgREST passes (the same SUPABASE_URL / key the upsert
+    uses) over the active rows of the body-derived systems, one system at a
+    time, keyset-paged on id. Without credentials the map stays empty and
+    nothing is kept.
+
+    2026-10-15 (review): one system per pass (hospital_system=eq.<label>).
+    The one pass over all four (hospital_system=in.(...) ordered by id) was
+    planned as a walk of the whole primary key: 402,593 rows filtered out
+    and 10.0 s for the first page on a cold cache, over PostgREST's 8 s
+    statement timeout. Per system the planner uses idx_system: 11 pages in
+    all on 2026-10-15, each under 0.5 s. A system that fails keeps the rows
+    read before it; the other systems still load."""
     sb_url = os.environ.get("SUPABASE_URL", "")
     sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     if not sb_url or not sb_key:
@@ -1009,33 +1090,35 @@ def load_known_facilities() -> int:
         return 0
     import urllib.parse as _urlparse
     import urllib.request as _urlreq
-    systems = ",".join('"%s"' % s for s in FALLBACK_DB_LABELS)
-    flt = _urlparse.quote(f"in.({systems})", safe="().,")
-    rows, last = [], 0
-    try:
-        while len(rows) < KNOWN_FACILITY_MAX_ROWS:
-            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,hospital_name"
-                 f"&is_active=is.true&hospital_system={flt}&id=gt.{last}&order=id.asc&limit={KNOWN_FACILITY_PAGE}")
-            rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
-            chunk = None
-            for attempt in range(3):
-                try:
-                    with _urlreq.urlopen(rq, timeout=60) as resp:
-                        chunk = json.loads(resp.read().decode())
+    rows = []
+    for label in FALLBACK_DB_LABELS:
+        flt = _urlparse.quote(f"eq.{label}", safe=".")
+        last, got = 0, 0
+        try:
+            while len(rows) < KNOWN_FACILITY_MAX_ROWS:
+                u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,hospital_name"
+                     f"&is_active=is.true&hospital_system={flt}&id=gt.{last}&order=id.asc&limit={KNOWN_FACILITY_PAGE}")
+                rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+                chunk = None
+                for attempt in range(3):
+                    try:
+                        with _urlreq.urlopen(rq, timeout=60) as resp:
+                            chunk = json.loads(resp.read().decode())
+                        break
+                    except Exception:
+                        if attempt == 2:
+                            raise
+                        time.sleep(3 * (attempt + 1))
+                if not chunk:
                     break
-                except Exception:
-                    if attempt == 2:
-                        raise
-                    time.sleep(3 * (attempt + 1))
-            if not chunk:
-                break
-            rows.extend(chunk)
-            last = chunk[-1]["id"]
-            if len(chunk) < KNOWN_FACILITY_PAGE:
-                break
-    except Exception as e:
-        logger.warning(f"Known facilities: load stopped after {len(rows):,} rows ({e}); "
-                       f"rows past it keep a hospital only on nights their body is read")
+                rows.extend(chunk)
+                got += len(chunk)
+                last = chunk[-1]["id"]
+                if len(chunk) < KNOWN_FACILITY_PAGE:
+                    break
+        except Exception as e:
+            logger.warning(f"Known facilities: {label} load stopped after {got:,} rows ({e}); "
+                           f"its rows past that keep a hospital only on nights their body is read")
     try:
         return set_known_facilities(rows)
     except Exception as e:          # never let this read end the run (it starts run_all)
@@ -1052,8 +1135,7 @@ def _place(job, spec, town, st) -> bool:
         return False
     jc = (job.city or "").strip()
     js = (job.state or "").strip().upper()
-    hq_town, hq_st = spec.hq
-    at_hq = bool(jc) and fkey(jc) == fkey(hq_town) and js in ("", hq_st)
+    at_hq = _at_hq(spec, jc, js)
     blank = not jc and js in ("", st)
     if not (at_hq or blank) or (fkey(jc) == fkey(town) and js == st):
         return False
@@ -1082,11 +1164,14 @@ def apply_facility(job) -> str:
             how = "text"
     if hit is None and spec.fallback and not getattr(job, SEEN_ATTR, False) \
             and len((job.description or "").strip()) < NO_BODY_CHARS:
-        stored = known_facility(job.hospital_system, job.job_id)
-        if stored:
-            hit = resolve(job.hospital_system, stored, job.city, job.state, job.title)
-            if hit:
-                how = "kept"
+        # The stored name is one this code wrote: taken as it is, unless the
+        # posting now sits in another state than that hospital.
+        name = canonical_name(job.hospital_system, known_facility(job.hospital_system, job.job_id))
+        if name:
+            town, hst = spec.hospitals[name]
+            ks = _posting_state(spec, job.city, job.state)
+            if not ks or ks == hst:
+                hit, how = (name, town, hst), "kept"
     if hit is None:
         return "none"
     job.hospital_name = hit[0]

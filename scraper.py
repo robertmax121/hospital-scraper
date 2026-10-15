@@ -3943,7 +3943,15 @@ def _wd_location_facility(job, info: dict) -> None:
     """2026-10-15 (wages): a WD_LOCATION_FACILITY row takes the hospital its
     jobRequisitionLocation names. A site that is no hospital (an office
     building, a clinic) leaves the row as it is and says so, so the hospital
-    stored on an earlier night is not put back (facility_names.mark_seen)."""
+    stored on an earlier night is not put back (facility_names.mark_seen).
+    2026-10-15 (review): a row whose list already names a facility keeps
+    it. Corewell's Phenom list is read every night and the detail only on
+    some, so letting the detail override made about 8 rows alternate (Phenom
+    "Helen DeVos" vs requisition "Butterworth", "East Medical Group" vs
+    "Beaumont University"). The requisition location fills only the rows the
+    list left on the system label."""
+    if not facility_names.on_system_label(job):
+        return
     loc = info.get("jobRequisitionLocation")
     desc = str(loc.get("descriptor") or "") if isinstance(loc, dict) else ""
     if not desc.strip():
@@ -8576,7 +8584,7 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
 
             pay_key = FINDLY_GOOGLE_PAY_KEY.get(system)
             fac_of = FINDLY_GOOGLE_FACILITY.get(system)
-            hospital = fac_of(j.get("brand"), j.get("business_unit")) if fac_of else ""
+            hospital = fac_of(j.get("brand"), j.get("business_unit"), city, state) if fac_of else ""
             jobs.append(Job(
                 title=title,
                 hospital_system=system,
