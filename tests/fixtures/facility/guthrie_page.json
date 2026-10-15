@@ -1,0 +1,176 @@
+{
+ "items": [
+  {
+   "TotalJobsCount": 7,
+   "Limit": 25,
+   "Offset": 0,
+   "requisitionList": {
+    "items": [
+     {
+      "Id": "20930",
+      "Title": "PD RN Pre-Admissions - Per Diem",
+      "PostedDate": "2026-10-14",
+      "PrimaryLocation": "Sayre, PA, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000010681842,
+         "LocationName": "HCM - Robert Packer Hospital",
+         "TownOrCity": "Sayre",
+         "Region2": "PA",
+         "Country": "US"
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "24694",
+      "Title": "Patient Access Representative - Corporate Patient Access - Per Deim",
+      "PostedDate": "2026-10-07",
+      "PrimaryLocation": "Cortland, NY, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300001106424499,
+         "LocationName": "HCM - TGC Guthrie Lourdes Hospital",
+         "TownOrCity": "Binghamton",
+         "Region2": "NY",
+         "Country": "US"
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "25342",
+      "Title": "Phlebotomist II - Laboratory Collection - Per Diem",
+      "PostedDate": "2026-10-15",
+      "PrimaryLocation": "Corning, NY, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000010715113,
+         "LocationName": "HCM - Corning Hospital",
+         "TownOrCity": "Corning",
+         "Region2": "NY",
+         "Country": "US"
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "24279",
+      "Title": "Personal Care Aide - Personal Care Home - Per Diem",
+      "PostedDate": "2026-10-13",
+      "PrimaryLocation": "Towanda, PA, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000010715209,
+         "LocationName": "HCM - Robert Packer Hospital at Towanda Campus",
+         "TownOrCity": "Towanda",
+         "Region2": "PA",
+         "Country": "US"
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "25347",
+      "Title": "Patient Services Specialist - Administration - Per Diem",
+      "PostedDate": "2026-10-14",
+      "PrimaryLocation": "Cortland, NY, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000010715107,
+         "LocationName": "HCM - GMG Cortland Medical Center",
+         "TownOrCity": "Cortland",
+         "Region2": "NY",
+         "Country": "US"
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "25430",
+      "Title": "Care Transitions Nurse Navigator - Full Time - weekend - days",
+      "PostedDate": "2026-10-15",
+      "PrimaryLocation": "Sayre, PA, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300000010715185,
+         "LocationName": "HCM - The Guthrie Clinic",
+         "TownOrCity": "Sayre",
+         "Region2": "PA",
+         "Country": "US"
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     },
+     {
+      "Id": "22809",
+      "Title": "HR Business Partner - HR Service Center - Full Time",
+      "PostedDate": "2026-06-15",
+      "PrimaryLocation": "Cortland, NY, United States",
+      "PrimaryLocationCountry": "US",
+      "WorkHours": null,
+      "JobFunction": null,
+      "workLocation": {
+       "items": [
+        {
+         "LocationId": 300001106424609,
+         "LocationName": "HCM - TGC Guthrie Cortland Med Center",
+         "TownOrCity": "Cortland",
+         "Region2": "NY",
+         "Country": "US"
+        }
+       ]
+      },
+      "secondaryLocations": {
+       "items": []
+      }
+     }
+    ],
+    "count": 7,
+    "hasMore": false
+   }
+  }
+ ]
+}
