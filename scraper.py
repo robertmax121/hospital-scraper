@@ -24,9 +24,9 @@ from urllib.parse import urlsplit
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
+import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a system name
 from city_utils import clean_city, is_plausible_city
 from specialty_canon import canonical_specialty
-import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a system name
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
