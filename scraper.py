@@ -25,7 +25,8 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
 import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a system name
-from city_utils import clean_city, is_plausible_city
+from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
+                        set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 
@@ -1296,6 +1297,8 @@ _CMS_FILLS = {"n": 0}
 # names included. The Workday path fallback accepts a two-word path town
 # ("Wheat-Ridge-CO") only when a hospital sits in that town.
 _CMS_TOWNS: frozenset = frozenset()
+# 2026-10-20: (state, first words of a CMS name) -> its hospitals' towns.
+_CMS_NAME_TOWNS: dict = {}
 
 
 def _cms_norm(name) -> str:
@@ -1314,12 +1317,13 @@ def set_cms_lookup(rows) -> int:
     Names shared by rows in different places are dropped (87 of 5,295 CMS
     names, e.g. Memorial Hospital). Returns the usable count."""
     global _CMS_LOOKUP, _CMS_TOWNS
-    seen, ambiguous, towns = {}, set(), set()
+    seen, ambiguous, towns, pairs = {}, set(), set(), []
     for r in rows or []:
         st = (r.get("state") or "").strip().upper()
         town = (r.get("city") or "").strip()
         if len(st) == 2 and is_plausible_city(town):
             towns.add((_wd_city_key(town), st))
+            pairs.append((town, st))
         k = _cms_norm(r.get("hospital_name"))
         if not k or len(st) != 2:
             continue
@@ -1331,6 +1335,23 @@ def set_cms_lookup(rows) -> int:
         seen.pop(k, None)
     _CMS_LOOKUP = seen
     _CMS_TOWNS = frozenset(towns)
+    # 2026-10-20: (state, the name's first one or two words) -> the towns of
+    # the CMS hospitals whose names open with them (_town_in_site).
+    brands: dict = {}
+    for r in rows or []:
+        st = (r.get("state") or "").strip().upper()
+        words = _cms_norm(r.get("hospital_name")).split()
+        town = (r.get("city") or "").strip()
+        if len(st) != 2 or not words or not town:
+            continue
+        for n in (1, 2, 3):
+            if len(words) > n:
+                brands.setdefault((st, _wd_city_key(" ".join(words[:n]))), set()).add(_wd_city_key(town))
+    _CMS_NAME_TOWNS.clear()
+    _CMS_NAME_TOWNS.update(brands)
+    # 2026-10-20: the run's CMS towns join city_utils' town list (the
+    # messy-locations rules read it in normalize_job, worker processes too).
+    set_runtime_towns(pairs)
     _CMS_FILLS["n"] = 0
     return len(seen)
 
@@ -3072,6 +3093,10 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "Community Health Network": ("Indianapolis", "IN"),
     "WMCHealth": ("Valhalla", "NY"),
     "University of Vermont Health Network": ("Burlington", "VT"),
+    # 2026-10-20 (messy locations): one-campus hospitals whose site names
+    # ("BUILDING A", "Patient Accounts Center") stood in the city column.
+    "Pikeville Medical Center": ("Pikeville", "KY"),
+    "Pullman Regional Hospital": ("Pullman", "WA"),
 }
 
 # Normalize system keys to lowercase
@@ -3125,10 +3150,11 @@ _STREET_THEN_CITY_RE = re.compile(
 
 def _cityish(part: str) -> bool:
     """A comma-separated part that could be a city name: short, no digits,
-    none of the facility words."""
+    none of the facility words, and none of city_utils' non-places
+    (2026-10-20: "Inc." of "AU Medical Center, Inc.", "Regular")."""
     p = (part or "").strip()
     return bool(p) and len(p.split()) <= 4 and not any(ch.isdigit() for ch in p) \
-        and " - " not in p and not _NOT_CITY_WORDS.search(p)
+        and " - " not in p and not _NOT_CITY_WORDS.search(p) and not not_a_place(p)
 
 
 def parse_city_state(loc_str: str) -> tuple[str, str]:
@@ -3161,6 +3187,12 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
         return "", ""
     _codes = set(STATE_ABBR.values())
     s = str(loc_str).strip()
+    # 2026-10-20 (messy locations): "Richmond University Medical Center
+    # (Staten Island, NY)" split at its comma into the city "NY)" on 151
+    # rows; a bracketed "City, ST" after a site name is the place.
+    m = re.match(r"^[^(]*?\(\s*([^(),]+?)\s*,\s*([A-Za-z]{2})\s*\)\s*$", s)
+    if m and m.group(2).upper() in _codes:
+        s = f"{m.group(1)}, {m.group(2).upper()}"
     # 2026-09-17 (blank states): Workday tenants also write "Rochester - NY",
     # "Dallas - TX (LBJ FWY)", "MOUNT PLEASANT (SC)" and "Remote Work - New
     # York". Rewrite those to "City, ST" before the comma split.
@@ -3217,8 +3249,17 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
                  and not STATE_ABBR.get(p.lower(), "")]
         city = next((p for p in cands if _cityish(p)), cands[0] if cands else parts[0])
         if " - " in city:
-            tail = city.rsplit(" - ", 1)[1].strip()
-            if tail and len(tail.split()) <= 4 and not any(ch.isdigit() for ch in tail):
+            head, tail = (x.strip() for x in city.rsplit(" - ", 1))
+            head_last = head.rsplit(" - ", 1)[-1].strip()
+            # 2026-10-20 (messy locations): Ochsner writes "Algiers - New
+            # Orleans Region - Louisiana": the town leads and the tail is the
+            # region (1,700 rows read "New Orleans Region", "Acadiana
+            # Region", ...). A "... Region" tail gives the town before it, or
+            # the site ("Slidell Memorial Hospital - Northshore Region"),
+            # which normalize_job reads through the CMS lookup.
+            if re.search(r"(?i)\bregion$", tail) and head_last:
+                city = head_last
+            elif tail and len(tail.split()) <= 4 and not any(ch.isdigit() for ch in tail):
                 city = tail
         if any(ch.isdigit() for ch in city):
             m = _STREET_THEN_CITY_RE.search(city)
@@ -4754,6 +4795,19 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
     # N. Blue Jay Dr, Liberty; Urgent Care Shoal Creek at 8300 N. Church Rd,
     # Kansas City MO 64158. The longer keys come first in the prefix match.
     "The University of Kansas Health System": {
+        # 2026-10-20 (messy locations): Olathe Health's pavilions stood in
+        # the city column ("Olathe Medical Pavilion A" 20 rows). Addresses
+        # from kansashealthsystem.com/locations: Arbor Creek 16538 W 159th
+        # Ter, Hedge Lane 2090 W Dartmouth St, Mahaffie 18695 W 151st St,
+        # Blackfoot 15435 W 134th Pl, College Point 23450 College Blvd (all
+        # Olathe); Kansas Drive 1318 Kansas Dr, Paola.
+        "olathe medical pavilion":                   (None, "Olathe", "KS"),
+        "arbor creek medical pavilion":              (None, "Olathe", "KS"),
+        "hedge lane medical pavilion":               (None, "Olathe", "KS"),
+        "mahaffie medical pavilion":                 (None, "Olathe", "KS"),
+        "blackfoot medical pavilion":                (None, "Olathe", "KS"),
+        "college point medical pavilion":            (None, "Olathe", "KS"),
+        "kansas drive medical pavilion":             (None, "Paola", "KS"),
         "liberty hospital":                          ("Liberty Hospital", "Liberty", "MO"),
         "liberty hospital sports medicine":          (None, "Liberty", "MO"),
         "liberty hospital urgent care shoal creek":  (None, "Kansas City", "MO"),
@@ -5002,6 +5056,9 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "jones memorial": ("Jones Memorial Hospital", "Wellsville", "NY"),
         "st. james": ("St. James Hospital", "Hornell", "NY"),
         "school of medicine and dentistry": (None, "Rochester", "NY"),
+        # 2026-10-20: UR Medicine's Clinton Crossings campus (4901 Lac De
+        # Ville Blvd) is in Rochester, not in a town named Clinton.
+        "clinton crossings": (None, "Rochester", "NY"),
     },
     "Trinity Health": {
         "sjhsyr": ("St. Joseph's Health Hospital", "Syracuse", "NY"),
@@ -5009,7 +5066,45 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "loyola medicine - macneal hospital": ("MacNeal Hospital", "Berwyn", "IL"),
         "loyola medicine - gottlieb memorial hospital": ("Gottlieb Memorial Hospital", "Melrose Park", "IL"),
         "loyola medicine": ("Loyola Medicine", "Maywood", "IL"),
+        # 2026-10-20 (messy locations): the "mmcia" prefix below put every
+        # central-Iowa site in Des Moines ("MMCIA - MercyOne IHC Ottumwa
+        # Central IA" read Des Moines, as did Newton, Centerville, Elkader,
+        # Ames, Ankeny and 20 more). The sites that name their town, from
+        # the tenant's locations facet on 2026-10-20; the label stays the
+        # region's ("MercyOne Des Moines Medical Center") as before, so no
+        # row changes employer. Prairie Trail is Ankeny's district; Dallas
+        # County Hospital is in Perry; Elkader's Central Community Hospital
+        # is in Elkader.
+        "mmcia - mercyone adel clinic": ("MercyOne Des Moines Medical Center", "Adel", "IA"),
+        "mmcia - mercyone ankeny clinic": ("MercyOne Des Moines Medical Center", "Ankeny", "IA"),
+        "mmcia - mercyone prairie trail clinic": ("MercyOne Des Moines Medical Center", "Ankeny", "IA"),
+        "mmcia - mercyone carlisle clinic": ("MercyOne Des Moines Medical Center", "Carlisle", "IA"),
+        "mmcia - mercyone centerville": ("MercyOne Des Moines Medical Center", "Centerville", "IA"),
+        "mmcia - mercyone clive clinic": ("MercyOne Des Moines Medical Center", "Clive", "IA"),
+        "mmcia - mercyone dallas county hospital": ("MercyOne Des Moines Medical Center", "Perry", "IA"),
+        "mmcia - mercyone elkader": ("MercyOne Des Moines Medical Center", "Elkader", "IA"),
+        "mmcia - mercyone grimes clinic": ("MercyOne Des Moines Medical Center", "Grimes", "IA"),
+        "mmcia - mercyone mercy fam med grimes": ("MercyOne Des Moines Medical Center", "Grimes", "IA"),
+        "mmcia - mercyone ihc ames": ("MercyOne Des Moines Medical Center", "Ames", "IA"),
+        "mmcia - mercyone ihc carroll": ("MercyOne Des Moines Medical Center", "Carroll", "IA"),
+        "mmcia - mercyone ihc newton": ("MercyOne Des Moines Medical Center", "Newton", "IA"),
+        "mmcia - mercyone ihc ottumwa": ("MercyOne Des Moines Medical Center", "Ottumwa", "IA"),
+        "mmcia - mercyone ottumwa": ("MercyOne Des Moines Medical Center", "Ottumwa", "IA"),
+        "mmcia - mercyone internal med urbandale": ("MercyOne Des Moines Medical Center", "Urbandale", "IA"),
+        "mmcia - mercyone johnston clinic": ("MercyOne Des Moines Medical Center", "Johnston", "IA"),
+        "mmcia - mercyone newton medical center": ("MercyOne Des Moines Medical Center", "Newton", "IA"),
+        "mmcia - mercyone norwalk clinic": ("MercyOne Des Moines Medical Center", "Norwalk", "IA"),
+        "mmcia - mercyone perry clinic": ("MercyOne Des Moines Medical Center", "Perry", "IA"),
+        "mmcia - mercyone pleasant hill clinic": ("MercyOne Des Moines Medical Center", "Pleasant Hill", "IA"),
+        "mmcia - mercyone waukee clinic": ("MercyOne Des Moines Medical Center", "Waukee", "IA"),
+        "mmcia - mercyone west des moines medical center": ("MercyOne Des Moines Medical Center", "West Des Moines", "IA"),
+        "mmcia - urgent care - indianola": ("MercyOne Des Moines Medical Center", "Indianola", "IA"),
+        "mmcia - mercyone indianola": ("MercyOne Des Moines Medical Center", "Indianola", "IA"),
         "mmcia": ("MercyOne Des Moines Medical Center", "Des Moines", "IA"),
+        # 2026-10-20: St. Mary's Health Care System is the Athens, Georgia
+        # ministry (78 rows read the system's name as the town).
+        "st. mary's health care system": (None, "Athens", "GA"),
+        "athens home care & hospice": (None, "Athens", "GA"),
         "mneia": ("MercyOne Waterloo Medical Center", "Waterloo", "IA"),
         "moq": ("MercyOne Quad Cities", "Bettendorf", "IA"),
         "mount carmel east": ("Mount Carmel East", "Columbus", "OH"),
@@ -5071,6 +5166,56 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
     "Freeman Health System": {
         "freeman fort scott": ("Freeman Fort Scott", "Fort Scott", "KS"),
         "freeman neosho": ("Freeman Neosho Hospital", "Neosho", "MO"),
+        # 2026-10-20 (messy locations): Freeman took over Northwest Health
+        # (Arkansas) in 2026, and its tenant default (Joplin, MO) gave all of
+        # those sites Joplin or the town in the right name with state MO: 81
+        # Springdale, 50 Bentonville, 38 Willow Creek and 32 Siloam Springs
+        # hospital rows read "Joplin, MO" on 2026-10-20, and the Kansas
+        # clinics "Joplin, KS". Every location the tenant's facet listed that
+        # day that is not on the Joplin campus; towns from freemanhealth.com
+        # (all-locations), the former Northwest Health practice listings
+        # (Pinnacle = Rogers, Sugar Creek = 1102 NW Lowes Ave Bentonville,
+        # Tuscany Square = 2603 W Pleasant Grove Rd Rogers, Wedington =
+        # Fayetteville) and Willow Creek Women's Hospital, 4301 Greathouse
+        # Springs Rd, Johnson. An exact key is where the map says, whatever
+        # the parse read ("David A. Ball, MD" read state MD; "1905 W. 32nd
+        # Street Thousand Oaks" read the town Thousand Oaks).
+        "freeman bentonville hospital": (None, "Bentonville", "AR"),
+        "freeman springdale hospital": (None, "Springdale", "AR"),
+        "freeman siloam springs hospital": (None, "Siloam Springs", "AR"),
+        "freeman willow creek hospital": (None, "Johnson", "AR"),
+        "willow creek women's clinic": (None, "Johnson", "AR"),
+        "freeman cardiology - bentonville": (None, "Bentonville", "AR"),
+        "freeman cardiology - springdale": (None, "Springdale", "AR"),
+        "freeman medical plaza - bentonville": (None, "Bentonville", "AR"),
+        "freeman medical plaza - springdale": (None, "Springdale", "AR"),
+        "freeman medical plaza - wedington": (None, "Fayetteville", "AR"),
+        "freeman medical plaza at pinnacle": (None, "Rogers", "AR"),
+        "freeman medical plaza at sugar creek": (None, "Bentonville", "AR"),
+        "freeman orthopedics - bentonville": (None, "Bentonville", "AR"),
+        "freeman surgical associates - bentonville": (None, "Bentonville", "AR"),
+        "freeman primary care/obgyn har-ber": (None, "Springdale", "AR"),
+        "freeman family medicine - tuscany": (None, "Rogers", "AR"),
+        "freeman clinic of baxter springs": (None, "Baxter Springs", "KS"),
+        "freeman orthopaedics & sports medicine of pittsburg": (None, "Pittsburg", "KS"),
+        "freeman physician group of pittsburg": (None, "Pittsburg", "KS"),
+        "pittsburg surgical center": (None, "Pittsburg", "KS"),
+        "113 w hickory street freeman neosho hospital": ("Freeman Neosho Hospital", "Neosho", "MO"),
+        "neosho physical therapy": (None, "Neosho", "MO"),
+        "neosho quickmeds": (None, "Neosho", "MO"),
+        "719 w centennial avenue freeman clinic of carthage": (None, "Carthage", "MO"),
+        "freeman neighborhood care webb city": (None, "Webb City", "MO"),
+        "1905 w. 32nd street thousand oaks": (None, "Joplin", "MO"),
+        "1111 mcintosh cir david a. ball, md, medical building": (None, "Joplin", "MO"),
+        # the Joplin campus streets (McIntosh Circle, McClelland Blvd) read
+        # as towns ("McIntosh Circle", "Midwest Ortho"); QuickMeds is the
+        # campus pharmacy ("Neosho Quickmeds" is Neosho's, above)
+        "freeman heart & vascular institute - mcintosh circle": (None, "Joplin", "MO"),
+        "1002 mcintosh cir - freeman lung institute": (None, "Joplin", "MO"),
+        "3105 mcclelland blvd midwest ortho": (None, "Joplin", "MO"),
+        "3201 mcclelland blvd freeman occumed": (None, "Joplin", "MO"),
+        "3202 mcintosh cir c.h. bentlage building": (None, "Joplin", "MO"),
+        "quickmeds": (None, "Joplin", "MO"),
     },
     # 2026-09-24 configs: BILH's locationsText is the facility ("Anna Jaques
     # Hospital", "Lahey Clinic, Peabody") with no state, read from the tenant's
@@ -5104,7 +5249,152 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "bidhc seabrook": (None, "Seabrook", "NH"),
         "beth israel lahey health": (None, "Boston", "MA"),
     },
+    # -- 2026-10-20 (owner: "fix the messy locations") ----------------------
+    # Tenants whose locationsText is a site name the parse kept as the town.
+    # Labels stay the system's (None): only the town and state change.
+    #
+    # Wellstar: "Wellstar MCG Health" (160 rows), "Inc." (72, the tail of
+    # "AU Medical Center, Inc."), "Place" (50, the tail of "1800 Parkway
+    # Place") and hospital names stood in the city column. Hospital towns
+    # from the CMS hospitals table (Kennestone 677 Church St Marietta; Cobb
+    # Austell; Douglas Douglasville; MCG 1120 15th St Augusta; North Fulton
+    # Roswell; Paulding Hiram; Spalding Griffin; Sylvan Grove Jackson; West
+    # Georgia LaGrange; Warm Springs; Mountain Lakes Clayton); health parks
+    # from wellstar.org's patient guides (Cherokee 1120 Wellstar Way, Holly
+    # Springs; Vinings 4441 Atlanta Rd SE, Smyrna); Columbia County Medical
+    # Center, 5000 Gateway Blvd, Grovetown (opened 2026-08-26), its office
+    # building on the same campus. Children's Hospital of Georgia (CHOG) and
+    # AU / WMCG are the Augusta campus. Sites the parse already reads ("Hiram,
+    # GA", "Wellstar Primary Care - Acworth (3501 Baker)") need no key.
+    "Wellstar Health": {
+        "kennestone hospital": (None, "Marietta", "GA"),
+        "emergency department - kennestone hospital": (None, "Marietta", "GA"),
+        "wellstar kennestone ob/gyn": (None, "Marietta", "GA"),
+        "windy hill hospital": (None, "Marietta", "GA"),
+        "2540 windy hill rd": (None, "Marietta", "GA"),
+        "cobb hospital": (None, "Austell", "GA"),
+        "1790 mulkey road": (None, "Austell", "GA"),
+        "douglas hospital": (None, "Douglasville", "GA"),
+        "wellstar douglasville medical": (None, "Douglasville", "GA"),
+        "paulding hospital": (None, "Hiram", "GA"),
+        "north fulton hospital": (None, "Roswell", "GA"),
+        "spalding medical center": (None, "Griffin", "GA"),
+        "spalding county ambulance service": (None, "Griffin", "GA"),
+        "wellstar spalding regional surgery center": (None, "Griffin", "GA"),
+        "sylvan grove hospital": (None, "Jackson", "GA"),
+        "wellstar west georgia medical center": (None, "LaGrange", "GA"),
+        "wellstar west georgia hospice": (None, "LaGrange", "GA"),
+        "west georgia home care": (None, "LaGrange", "GA"),
+        "wellstar mcg health warm springs": (None, "Warm Springs", "GA"),
+        "wellstar mcg health": (None, "Augusta", "GA"),
+        "wmcg hospital": (None, "Augusta", "GA"),
+        "chog hospital": (None, "Augusta", "GA"),
+        "au medical center": (None, "Augusta", "GA"),
+        "au medical associates": (None, "Augusta", "GA"),
+        "1447 harper street": (None, "Augusta", "GA"),
+        "columbia county medical center": (None, "Grovetown", "GA"),
+        "columbia county medical office": (None, "Grovetown", "GA"),
+        "mountain lakes medical center": (None, "Clayton", "GA"),
+        "1800 parkway place": (None, "Marietta", "GA"),
+        "acworth health park": (None, "Acworth", "GA"),
+        "avalon health park": (None, "Alpharetta", "GA"),
+        "cherokee health park": (None, "Holly Springs", "GA"),
+        "east cobb health park": (None, "Marietta", "GA"),
+        "vinings health park": (None, "Smyrna", "GA"),
+        "wellstar kennesaw medical center": (None, "Kennesaw", "GA"),
+        "wellstar east cobb medical center": (None, "Marietta", "GA"),
+        "wellstar west cobb medical center": (None, "Marietta", "GA"),
+        "wellstar powder springs medical center": (None, "Powder Springs", "GA"),
+    },
+    # Summit BHC: every location is a facility name (the city column held it
+    # on 37 of 38 sites). Towns from summitbhc.com/locations (2026-10-20),
+    # the headquarters (501 Corporate Centre Dr, Franklin, TN) for "Summit
+    # Healthcare Mgmt", and the county's crisis center at 1850 Copper Loop,
+    # Las Cruces. A suffix also matches ("The Farley Center").
+    "Summit BHC": {
+        "anabranch recovery center": (None, "Terre Haute", "IN"),
+        "aviary recovery center": (None, "Eolia", "MO"),
+        "bel aire recovery center": (None, "Bel Aire", "KS"),
+        "canyon vista recovery center": (None, "Mesa", "AZ"),
+        "carolina dunes behavioral health": (None, "Leland", "NC"),
+        "cottonwood tucson": (None, "Tucson", "AZ"),
+        "creekside behavioral health": (None, "Kingsport", "TN"),
+        "dona ana county crisis triage center": (None, "Las Cruces", "NM"),
+        "eagle view behavioral health": (None, "Bettendorf", "IA"),
+        "english mountain recovery": (None, "Sevierville", "TN"),
+        "fair oaks recovery center": (None, "Sacramento", "CA"),
+        "farley center": (None, "Williamsburg", "VA"),
+        "great oaks recovery center": (None, "Egypt", "TX"),
+        "highland hospital": (None, "Charleston", "WV"),
+        "iron bridge recovery center": (None, "Chester", "VA"),
+        "ivory plains recovery center": (None, "Adair", "IA"),
+        "las cruces recovery center": (None, "Las Cruces", "NM"),
+        "miramont behavioral health": (None, "Middleton", "WI"),
+        "mountain laurel recovery center": (None, "Westfield", "PA"),
+        "northern path recovery center": (None, "Fort Wayne", "IN"),
+        "pacific sky recovery center": (None, "Spokane", "WA"),
+        "palms behavioral health": (None, "Harlingen", "TX"),
+        "pavilion behavioral health": (None, "Williamsburg", "VA"),
+        "the pavilion at williamsburg place": (None, "Williamsburg", "VA"),
+        "peak behavioral health": (None, "Santa Teresa", "NM"),
+        "peak view behavioral health": (None, "Colorado Springs", "CO"),
+        "raleigh oaks behavioral health": (None, "Garner", "NC"),
+        "raleigh recovery center": (None, "Raleigh", "NC"),
+        "ranch at dove tree": (None, "Lubbock", "TX"),
+        "safe harbor recovery center": (None, "Portsmouth", "VA"),
+        "st. gregory recovery center": (None, "Bayard", "IA"),
+        "st. joseph institute for addiction": (None, "Port Matilda", "PA"),
+        "stone river recovery center": (None, "San Antonio", "TX"),
+        "twin lakes recovery center": (None, "Monroe", "GA"),
+        "victory addiction recovery center": (None, "Lafayette", "LA"),
+        "waypoint recovery center": (None, "Cameron", "SC"),
+        "willingway": (None, "Statesboro", "GA"),
+        "willow creek behavioral health": (None, "Green Bay", "WI"),
+        "wooded glen recovery center": (None, "Henryville", "IN"),
+        "summit healthcare mgmt": (None, "Franklin", "TN"),
+    },
+    # NewYork-Presbyterian: "NYP/Hudson Valley" (32), "NYP/Westchester" (20),
+    # "NYP/Queens" and the ambulatory sites stood in the city column. The
+    # campuses: Hudson Valley Hospital, Cortlandt Manor; Westchester (the
+    # former Lawrence Hospital), Bronxville; Queens, Flushing; Brooklyn
+    # Methodist, Brooklyn; the Columbia (CU) and Weill Cornell (WC)
+    # ambulatory sites and The One, Manhattan.
+    "NewYork-Presbyterian": {
+        "nyp/hudson valley": (None, "Cortlandt Manor", "NY"),
+        "nyp/westchester": (None, "Bronxville", "NY"),
+        "nyp/lawrence": (None, "Bronxville", "NY"),
+        "nyp/queens": (None, "Flushing", "NY"),
+        "nyp/brooklyn": (None, "Brooklyn", "NY"),
+        "ambulatory nyp/cu": (None, "New York", "NY"),
+        "ambulatory nyp/wc": (None, "New York", "NY"),
+        "nyp/the one": (None, "New York", "NY"),
+    },
+    # Sentara: "Sentara Independence" (19 rows) is the outpatient campus at
+    # 800 Independence Blvd, Virginia Beach (sentara.com); its therapy
+    # center is on the same campus. A site whose name ends in its town
+    # ("Sentara Office Building Williamsburg", "Sentara Urgent Care South
+    # Boston") needs no key: normalize_job reads the town out of it.
+    # Sanford: sites of the Marshfield (WI) and Fargo (ND) campuses read the
+    # tenant's South Dakota state ("Marsh Med Ctr", SD: 47 rows). Marshfield
+    # Medical Center, Marshfield; the Wausau center; Sanford Medical Center
+    # Fargo, Broadway (801 Broadway N) and South University (1720 University
+    # Dr S) and the Roger Maris Cancer Center are Fargo. Good Samaritan
+    # Society sites ("GSS KS Hays Ctr") name their state and town
+    # (WD_STATE_TOWN_RX).
+    "Sanford Health": {
+        "marsh med ctr": (None, "Marshfield", "WI"),
+        "marsh wausau ctr": (None, "Wausau", "WI"),
+        "sanford med ctr fargo": (None, "Fargo", "ND"),
+        "sanford broadway med ctr": (None, "Fargo", "ND"),
+        "sanford s univ med ctr": (None, "Fargo", "ND"),
+        "roger maris cancer ctr": (None, "Fargo", "ND"),
+    },
+    "Sentara Healthcare": {
+        "sentara independence": (None, "Virginia Beach", "VA"),
+        "sentara therapy center independence": (None, "Virginia Beach", "VA"),
+    },
 }
+WD_FACILITY_MAP["Wellstar Health (Providers)"] = WD_FACILITY_MAP["Wellstar Health"]
 
 # Single-market tenants: rows still without a state after the map and the
 # facet pass take the tenant's home market. Multi-state tenants (Trinity,
@@ -5201,24 +5491,33 @@ def _wd_bullet_location(bullets: list) -> tuple[str, str]:
     """(city, state code) from a posting's bulletFields when one bullet is a
     US state name ("Arizona") and, optionally, another is a town ("Sun City
     West"); ("", "") otherwise. Req numbers, "Posted ..." bullets and a
-    second copy of the state name are never the town (2026-10-04, Banner)."""
-    state, city = "", ""
-    for b in bullets or []:
-        s = str(b or "").strip()
-        if not s:
-            continue
-        if s.lower() in _STATE_CODE_BY_NAME:
-            state = state or _STATE_CODE_BY_NAME[s.lower()]
-    if not state:
+    second copy of the state name are never the town (2026-10-04, Banner).
+
+    2026-10-20 (messy locations): the town is the first plausible bullet
+    AFTER the state (a ZIP between them is skipped); a bullet before the
+    state counts only when it is a known town of that state. OhioHealth's
+    bullets are [worker type, req, job family, state, ZIP, town]
+    ("Regular", "JR158436", "Food Production", "Ohio", "43215", "COLUMBUS"):
+    the old first-bullet pick stored "Regular" (888 active rows on
+    2026-10-20) and "Casual" (140) as the city. A known town keeps the town
+    list's spelling ("COLUMBUS" -> "Columbus")."""
+    bl = [str(b or "").strip() for b in (bullets or [])]
+    si = next((i for i, s in enumerate(bl) if s and s.lower() in _STATE_CODE_BY_NAME), -1)
+    if si < 0:
         return "", ""
-    for b in bullets or []:
-        s = str(b or "").strip()
-        if (not s or s.lower() in _STATE_CODE_BY_NAME or _WD_REQ_ID_RE.match(s)
-                or re.match(r"(?i)posted\b", s) or not _cityish(s)):
-            continue
-        city = s
-        break
-    return city, state
+    state = _STATE_CODE_BY_NAME[bl[si].lower()]
+
+    def _town(s: str) -> bool:
+        return (bool(s) and s.lower() not in _STATE_CODE_BY_NAME and not _WD_REQ_ID_RE.match(s)
+                and not re.match(r"(?i)posted\b", s) and _cityish(s) and is_plausible_city(s))
+
+    for s in bl[si + 1:]:
+        if _town(s):
+            return known_town(s, state) or s, state
+    for s in bl[:si]:
+        if _town(s) and known_town(s, state):
+            return known_town(s, state), state
+    return "", state
 
 
 # 2026-10-12 (Option Care coverage): a posting open at several sites reads
@@ -5599,9 +5898,38 @@ def _wd_path_fill(jobs: list, ext_by_job: dict, path_state: dict | None = None) 
     return out
 
 
+# 2026-10-20 (messy locations): sites whose name carries their state code
+# and town: Sanford's Good Samaritan Society homes ("GSS KS Hays Ctr", "GSS
+# NE Omaha Millard Ctr", "Gss Mn Brainerd Wdld") read the tenant's SD with
+# the site as the town (350 active rows). The town is the longest known town
+# of that state the words open with; with none ("GSS MN Inter Falls Hm
+# Care"), the state alone: a wrong state is worse than no town.
+WD_STATE_TOWN_RX: dict[str, re.Pattern] = {
+    "Sanford Health": re.compile(r"^GSS\s+([A-Za-z]{2})\s+(.+?)\.?$", re.I),
+}
+
+
+def _wd_state_town(system: str, loc: str) -> tuple[str, str] | None:
+    rx = WD_STATE_TOWN_RX.get(system)
+    m = rx.match(re.sub(r"\s+", " ", loc or "").strip()) if rx else None
+    if not m or m.group(1).upper() not in _WD_STATE_CODES:
+        return None
+    st = m.group(1).upper()
+    words = m.group(2).split(" ")
+    for n in (3, 2, 1):
+        if len(words) >= n:
+            town = known_town(" ".join(words[:n]), st)
+            if town:
+                return town, st
+    return "", st
+
+
 def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | None, str, str]:
     """(facility or None, city, state) from WD_FACILITY_MAP for one posting.
     Parsed city/state win; the map only fills what is blank."""
+    st_town = _wd_state_town(system, loc)
+    if st_town:
+        return None, st_town[0], st_town[1]
     fmap = WD_FACILITY_MAP.get(system)
     if not fmap:
         return None, city, state
@@ -5610,6 +5938,7 @@ def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | No
     if not key:
         return None, city, state
     hit = fmap.get(key)
+    exact = hit is not None
     if hit is None:
         # prefix, then suffix ("Intermountain Health Alta View Hospital"),
         # longest key first so "mount carmel east" beats "mount carmel".
@@ -5620,6 +5949,16 @@ def _wd_facility(system: str, loc: str, city: str, state: str) -> tuple[str | No
     if hit is None:
         return None, city, state
     facility, fc, fs = hit
+    # 2026-10-20 (messy locations): a location the map names exactly is where
+    # the map says. The parse of a site name is no town and its state no
+    # state ("1111 McIntosh Cir David A. Ball, MD, Medical Building" read
+    # Maryland; "1905 W. 32nd Street Thousand Oaks" read Thousand Oaks).
+    if exact and fc and fs:
+        return facility, fc, fs
+    # A parsed "town" that is no place gives way to the map's town in the
+    # same state ("Inc." of "AU Medical Center, Inc.").
+    if fc and state and state == fs and not is_plausible_city(clean_city(city or "")):
+        city = ""
     # 2026-09-24: with no comma and no state, parse_city_state hands the whole
     # facility string back as the "city" ("Anna Jaques Hospital"). When the
     # map knows the town, the town wins over that echo.
@@ -22355,6 +22694,82 @@ def _loc_text(v) -> str:
     return str(v).strip()
 
 
+# ── Messy locations (2026-10-20, owner: "fix the messy locations") ─────────
+# A street address in the facility field: a number, then a street word
+# (the site's lib/job-geo.js addressLikeName rule). "360 Behavioral Health"
+# names no street and stays.
+_ADDRESS_NAME_RE = re.compile(
+    r"^\d{2,6}\s+(?:[NSEW]\.?\s+)?[A-Za-z].*\b(?:st|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|"
+    r"pike|hwy|highway|ln|lane|way|pkwy|parkway|ct|court|pl|place|cir|circle|tpke|turnpike|"
+    r"kingshighway|king)\b", re.I)
+# A system's first word that is no name of its own ("University of ...",
+# "Saint ...", "Lake Health"): never read as the system in a city value.
+_SYSTEM_WORD_SKIP = frozenset({
+    "the", "st", "saint", "san", "santa", "new", "north", "south", "east", "west", "university",
+    "community", "regional", "general", "county", "city", "valley", "mount", "mt", "lake", "fort",
+    "port", "el", "la", "los", "las", "united", "national", "american", "health", "medical"})
+
+
+def _city_names_system(city: str, system: str | None, state: str = "") -> bool:
+    """True when a two-or-more-word city value opens with the system's own
+    first word ("Sentara Independence" for Sentara Healthcare) and the whole
+    value is no known town of the state."""
+    words = (city or "").split()
+    if len(words) < 2:
+        return False
+    toks = re.findall(r"[a-z]+", (system or "").lower())
+    first = toks[0] if toks else ""
+    if len(first) < 4 or first in _SYSTEM_WORD_SKIP:
+        return False
+    if re.sub(r"[^a-z]", "", words[0].lower()) != first:
+        return False
+    return not known_town(city, state or None)
+
+
+def _town_in_site(raw: str, state: str, system: str | None = None) -> str:
+    """The town a refused site string names in `state`: its CMS facility's
+    town, else a known town at its start or end (city_utils.embedded_town);
+    '' when it names none. A leading word that also opens the name of a CMS
+    hospital of that state in ANOTHER town is that hospital's brand, not a
+    town ("Thomas Medical Office Pavilion", WV: Thomas Memorial Hospital is
+    in South Charleston; "St. Mary's Health Care System", GA: St. Mary's
+    Hospital is in Athens, not in St. Marys). With `system` (the value
+    opened with the system's own name): "<System> <Town>" and "<System>
+    <site>-<Town>" name the town ("Akumin Orlando", "Mercyhealth Burchard
+    Hills- Freeport")."""
+    hit = cms_location_for(raw)
+    if hit and hit[1] == state and hit[0]:
+        return known_town(hit[0], state) or (hit[0].title() if hit[0].isupper() else hit[0])
+    town = embedded_town(raw, state) or town_window(raw, state)
+    if not town and system:
+        # beside the system's own name, only a town a CMS hospital sits in
+        # ("Allina Health Pharmacy New Ulm"); "Sentara Independence" is a
+        # campus, not Independence, VA
+        t2 = town_window(raw, state, system)
+        if t2 and (_wd_city_key(t2), state) in _CMS_TOWNS:
+            town = t2
+    if town:
+        words = re.sub(r"\s+", " ", raw).strip().split(" ")
+        tkey = _wd_city_key(town)
+        for n in (1, 2, 3):
+            if len(words) > n and _wd_city_key(" ".join(words[:n])) == tkey:
+                brand_towns = _CMS_NAME_TOWNS.get((state, tkey), set())
+                if brand_towns and tkey not in brand_towns:
+                    return ""
+                break
+        return town
+    if system:
+        rest = re.sub(r"\s+", " ", raw).strip().split(" ", 1)
+        rest = rest[1] if len(rest) > 1 else ""
+        if "-" in rest:
+            return known_town(re.split(r"\s*-\s*", rest)[-1].strip(), state) or ""
+        # "<System> <Town>" only for a town a CMS hospital sits in ("Akumin
+        # Orlando"); "Sentara Independence" is a campus, not Independence, VA
+        if (_wd_city_key(rest), state) in _CMS_TOWNS:
+            return known_town(rest, state) or ""
+    return ""
+
+
 def normalize_job(j: Job) -> dict:
     """Standardize location fields before writing to Supabase.
     - city/state cleaned and trimmed
@@ -22378,6 +22793,10 @@ def normalize_job(j: Job) -> dict:
     raw_city = _loc_text(d.get("city"))
     raw_loc  = _loc_text(d.get("location"))
     city  = clean_city(raw_city.strip(",").strip())
+    # 2026-10-20: a value only the new place rules refuse (the rules before
+    # them kept it as the town): its home-town fallback is gated below.
+    refused_any = bool(raw_city.strip()) and not city
+    refused_new = refused_any and bool(clean_city(raw_city.strip(",").strip(), legacy=True))
     state = _loc_text(d.get("state")).upper()
     for _k in ("title", "hospital_name", "hospital_system", "url", "description", "specialty", "job_type"):
         if isinstance(d.get(_k), (dict, list)):
@@ -22387,6 +22806,15 @@ def normalize_job(j: Job) -> dict:
     # 49092" (61 rows, 35191488); the first line is the title.
     if "\n" in (d.get("title") or ""):
         d["title"] = next((ln.strip() for ln in d["title"].split("\n") if ln.strip()), "")
+    # 2026-10-20 (owner: "fix the messy locations"): a street address is no
+    # facility name. Orlando Health's iCIMS feed (148 active rows), Penn
+    # Medicine's Jobvite (72), BJC (11), Mercy, Norton and Baylor Scott &
+    # White put the site's street in the facility field ("2727 W DR MARTIN
+    # LUTHER KING", "3535 Market Street"), and the job page printed it as
+    # the hospital. The row takes its system's name, as a system-wide
+    # posting does.
+    if _ADDRESS_NAME_RE.match((d.get("hospital_name") or "").strip()) and (d.get("hospital_system") or "").strip():
+        d["hospital_name"] = d["hospital_system"].strip()
 
     # Force override — always wins regardless of scraped data
     _sys_key = (d.get("hospital_system") or "").strip().lower()
@@ -22416,6 +22844,31 @@ def normalize_job(j: Job) -> dict:
     # refills it. New York, NY is a real city and stays.
     if city_lower and state and state != "NY" and _STATE_CODE_BY_NAME.get(city_lower) == state:
         city = ""
+    # 2026-10-20 (messy locations): a "city" that opens with the system's
+    # own name is one of its sites ("Sentara Independence", "Freeman Ear",
+    # "Wellstar Pediatrics"), unless the whole value is a known town
+    # ("Rochester Hills" for Rochester Regional Health).
+    names_system = bool(city) and _city_names_system(city, d.get("hospital_system"), state)
+    if names_system:
+        city = ""
+        refused_new = True
+    # A refused city keeps the town it names: a CMS facility in that state
+    # ("Palms Behavioral Health" -> Harlingen, TX), else a known town of the
+    # row's state at the start or end of a building or site string
+    # ("Bridgeport Medical Office Building", WV -> Bridgeport; "Sentara
+    # Office Building Williamsburg" -> Williamsburg; "Knoxville (Middlebrook
+    # Pike)" -> Knoxville). Nothing else is guessed; the fallback below
+    # follows as before.
+    # (Only a value the place rules refused: a town blanked because it is the
+    # hospital's own name or its state's name stays blank, as before.)
+    if not city and state and (refused_any or names_system):
+        city = _town_in_site(raw_city, state, d.get("hospital_system") if names_system else None)
+    # A newly refused value that still holds a word no site name is made of
+    # ("Stow Health and Wellness", "Sentara Therapy Center Quinton") may name
+    # a town the town list lacks: it takes no home-office town (a wrong town
+    # is worse than none; the stored city stays, trg_preserve_enrichment, and
+    # the site prints no building name).
+    keep_unknown = (refused_new and not city and bool(site_leftover(raw_city, d.get("hospital_system"))))
 
     # 2026-09-17: bare city with a known state for this system (ProMedica's
     # Michigan towns, Legacy's Vancouver WA) before the system default.
@@ -22424,14 +22877,22 @@ def normalize_job(j: Job) -> dict:
 
     # Location lookup fallback — fires when city or state still missing
     if not city or not state:
-        lookup = FACILITY_LOCATION_MAP.get(hosp_name) or SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
+        # 2026-10-20: a Workday tenant's own home market (WD_TENANT_DEFAULT,
+        # single-market tenants only) when the system has no entry here, so
+        # a refused site name ("Brown Health Medical Group") takes the
+        # tenant's town in its state, as a blank one did inside the adapter.
+        # Only for a value the rules refused: a city the adapter left blank on
+        # purpose ("2 Locations" sites, review 2026-10-13) stays blank.
+        lookup = (FACILITY_LOCATION_MAP.get(hosp_name) or SYSTEM_LOCATION_DEFAULTS.get(hosp_system)
+                  or (WD_TENANT_DEFAULT.get((d.get("hospital_system") or "").strip())
+                      if raw_city.strip() and not city else None))
         if lookup:
             fallback_city, fallback_state = lookup
             # 2026-10-13 (review of 74b2e3a): the head-office town only goes
             # with its own state. A row the adapter placed in another state
             # (Ochsner's "/job/Picayune---Gulf-Coast-Region---Mississippi/"
             # gives MS alone) keeps a blank city instead of "New Orleans, MS".
-            if not city and (not state or state == fallback_state):
+            if not city and not keep_unknown and (not state or state == fallback_state):
                 city = fallback_city
             if not state:
                 state = fallback_state
@@ -26690,12 +27151,21 @@ def _finalize_workers() -> int:
     return max(1, n)
 
 
-def _finalize_worker_init(cms_lookup, facts_h):
+def _finalize_worker_init(cms_lookup, facts_h, towns=None, brands=None, cms_towns=None):
     """Runs in each worker: the state normalize_job reads that a fresh
-    import does not have (fork would inherit it; spawn does not)."""
-    global _CMS_LOOKUP, _KNOWN_FACTS_H
+    import does not have (fork would inherit it; spawn does not).
+    2026-10-20: and the run's CMS towns (city_utils.set_runtime_towns) and
+    CMS name prefixes (_CMS_NAME_TOWNS), which the location rules read."""
+    global _CMS_LOOKUP, _KNOWN_FACTS_H, _CMS_TOWNS
     _CMS_LOOKUP = cms_lookup
     _KNOWN_FACTS_H = facts_h
+    if cms_towns is not None:
+        _CMS_TOWNS = frozenset(cms_towns)
+    if towns is not None:
+        set_runtime_towns(towns)
+    if brands is not None:
+        _CMS_NAME_TOWNS.clear()
+        _CMS_NAME_TOWNS.update(brands)
 
 
 def _normalize_chunk(jobs):
@@ -26714,7 +27184,8 @@ def _finalize_pool(workers: int):
     import multiprocessing as _mp
     return _cf.ProcessPoolExecutor(max_workers=workers, mp_context=_mp.get_context("spawn"),
                                    initializer=_finalize_worker_init,
-                                   initargs=(_CMS_LOOKUP, _KNOWN_FACTS_H))
+                                   initargs=(_CMS_LOOKUP, _KNOWN_FACTS_H, runtime_towns(), dict(_CMS_NAME_TOWNS),
+                                             frozenset(_CMS_TOWNS)))
 
 
 def normalize_jobs(jobs: list) -> list[dict]:

@@ -240,8 +240,12 @@ def test_the_half_of_active_floor_still_holds_a_complete_claim(monkeypatch):
 # -- 4. Layer 4 counts a complete system's unseen rows as usual ---------------
 
 def test_layer4_counts_a_complete_workday_systems_unseen_rows():
+    # 2026-10-20: scraped_at relative to now (a fixed "2026-10-11" aged past
+    # the backstop and the test started failing by the calendar alone)
+    from datetime import datetime, timedelta, timezone
+    seen = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
     active = [{"id": i, "job_id": str(i), "hospital_system": "NewYork-Presbyterian",
-               "consecutive_scrape_misses": 2, "scraped_at": "2026-10-11T00:09:00+00:00"} for i in range(488)]
+               "consecutive_scrape_misses": 2, "scraped_at": seen} for i in range(488)]
     keys = {("NewYork-Presbyterian", str(i)) for i in range(316)}
     held = retire_guard.plan_layer4(active, keys, 3)
     assert held["deactivate_ids"] == [] and "NewYork-Presbyterian" in held["guarded"]

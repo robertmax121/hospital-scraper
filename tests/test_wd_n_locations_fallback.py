@@ -172,9 +172,10 @@ def test_musc_crawl_end_to_end_keeps_multi_site_rows_off_charleston(monkeypatch)
     assert out["R00001"] == ("", "SC", "SC")
     assert out["R00006"] == ("Charleston", "SC", "Charleston, SC")
     assert out["R00002"] == ("Charleston", "SC", "Charleston, SC")
-    # a site-named single-location row: the site name blocks the default and is
-    # blanked later, exactly as on origin/main
-    assert out["R00003"] == ("", "SC", "SC")
+    # a site-named single-location row: the site name blocks the default (no
+    # Charleston); since 2026-10-20 (messy locations) normalize_job reads the
+    # town the site name carries ("MUSC Health Lancaster Medical Center")
+    assert out["R00003"] == ("Lancaster", "SC", "Lancaster, SC")
 
 
 def test_solutionhealth_crawl_end_to_end(monkeypatch):
