@@ -10243,7 +10243,9 @@ PHENOM_ORGS = {
     # 2026-09-17 (coverage lever 3): search-results pages report 1,979 and 840 hits.
     "Corewell Health":              "https://careers.corewellhealth.org",
     "LCMC Health":                  "https://careers.lcmchealth.org",
-    "Bryan Health":                 "https://careers.bryanhealth.com",
+    # "Bryan Health" moved to HEALTHCARESOURCE_ORGS 2026-10-20: the careers
+    # site links the HealthcareSource tenant "bryan" now (300 jobs on
+    # 10-20 against 25 here).
     # PeaceHealth and Penn Medicine left Phenom for Jobvite Engage sites (2026-09-25): see TALEMETRY_SITES.
     "Froedtert Health":             "https://jobs.froedtert.com",   # 2026-09-25 B1: 1,027 WI rows in the dry run, facility per row
     "Roper St. Francis Healthcare": "https://careers.rsfh.com",
@@ -13746,6 +13748,21 @@ HEALTHCARESOURCE_ORGS = {
     # rows carry the system too. Both carry "City, ST" on every hit.
     "Aultman Health Foundation":     "aultman",   # 222, Canton OH (Aultman, Alliance Community, Orrville)
     "Willis Knighton Health System": "wkhs",      # 439, Shreveport LA
+    # ── 2026-10-20 coverage stage 1 (no-write dry run that day: rows listed,
+    # towns, bodies). Bryan Health moved here from PHENOM_ORGS: careers.
+    # bryanhealth.com now links pm.healthcaresource.com/CS/bryan (300 rows,
+    # every one with a body and a Nebraska town: Lincoln 220, Kearney 43,
+    # Grand Island 23, Central City 6, Crete 4) where the Phenom feed had 25.
+    # Same label, so the sweep retires the 25 Phenom rows. Beacon's
+    # sub-organizations name the campus ("Memorial Hospital - South Bend",
+    # "Elkhart General Hospital", "Three Rivers Health", "Beacon Kalamazoo",
+    # the former Ascension Borgess sites in MI); CharterCARE's name its two
+    # Rhode Island hospitals; St. Bernards' carry the system name, the towns
+    # are on every hit (Jonesboro 262, Wynne 13).
+    "Bryan Health":                  "bryan",                 # 300, NE
+    "Beacon Health System":          "beaconhealthsystem",    # 704 of 726, IN / MI
+    "CharterCARE Health Partners":   "chartercare",           # 274 of 283, Providence / North Providence RI
+    "St. Bernards Healthcare":       "stbernardshealthcare",  # 310, Jonesboro AR
 }
 
 # 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number

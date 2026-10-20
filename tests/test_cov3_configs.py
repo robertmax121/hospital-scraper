@@ -189,7 +189,9 @@ def test_humboldt_park_relabel_and_nmhs_label_moves_to_workday():
 
 
 def test_bryan_health_default_state():
-    assert scraper.PHENOM_ORGS["Bryan Health"] == "https://careers.bryanhealth.com"
+    # 2026-10-20: Bryan Health moved from Phenom to its HealthcareSource tenant.
+    assert scraper.HEALTHCARESOURCE_ORGS["Bryan Health"] == "bryan"
+    assert "Bryan Health" not in scraper.PHENOM_ORGS
     assert scraper.SYSTEM_LOCATION_DEFAULTS["bryan health"] == ("Lincoln", "NE")
 
 
