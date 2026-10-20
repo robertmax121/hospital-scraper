@@ -26549,6 +26549,90 @@ def _drop_req_family_copies(jobs: list) -> list:
     return out
 
 
+# ── One requisition, two posting ids, one place (2026-10-20, S1) ────────────
+# The 10-20 duplicate audit found 91 groups / 132 extra rows on the board
+# that are one opening listed twice: the same requisition, the same title,
+# the same city and state, the same text, under two posting ids. They come
+# from feeds that give one requisition several posting ids (AdventHealth's
+# Findly-Google ids, 157 groups; HCA's Talemetry ids, 113; UT Southwestern,
+# MarinHealth) and from Workday's location suffix ("R1114518" and
+# "R1114518-1", Prisma Health's two career sites). The exact dedupe above
+# keys on job_id, so it never saw them. This generalizes
+# _drop_req_family_copies (which stays: it keys on job_id alone, for the
+# Wellstar sites that title one requisition differently) to every system:
+# rows of one system (or one SYSTEM_REQ_FAMILIES family) whose requisition,
+# normalized title, city and state all agree are one posting, and one row is
+# kept: the apply-verified one with the longest body (ties: the first). A
+# requisition listed in several towns (AdventHealth R316207 in 66 Florida
+# towns) is never collapsed: each town's search must still find it. A row
+# with no town of its own, or no requisition, is never collapsed.
+_WD_LOC_SUFFIX_RX = re.compile(r"^(.*\d)[-_]\d{1,2}$")
+
+
+def _req_key(job) -> str:
+    """The requisition a row stands for: the stored req_id (HCA, AdventHealth,
+    TalentBrew, iCIMS, ...), else the job_id; on Workday the location suffix
+    ("R1114518-1") is cut off. Lower-cased; "" when there is none."""
+    rq = str(getattr(job, "req_id", "") or "").strip()
+    if not rq:
+        rq = str(getattr(job, "job_id", "") or "").strip()
+        if (getattr(job, "ats_platform", "") or "") == "Workday":
+            m = _WD_LOC_SUFFIX_RX.match(rq)
+            if m:
+                rq = m.group(1)
+    # A placeholder ("0", "N/A", "TBD") is no requisition: it would merge
+    # unrelated postings that happen to share a title in one town.
+    if len(rq) < 3 or not re.search(r"\d", rq) or re.fullmatch(r"0+", rq):
+        return ""
+    return rq.lower()
+
+
+def _norm_title(t) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(t or "").lower()).strip()
+
+
+def _same_req_rank(row: dict) -> tuple:
+    return (bool(_apply_verified_for(row.get("url") or "")), len(row.get("description") or ""))
+
+
+def _drop_same_req_same_place(pairs: list) -> list:
+    """S1: of the (job, row) pairs of one system that share requisition,
+    normalized title, city and state, keep one (apply-verified first, then
+    the longest description, then the first); order is otherwise kept."""
+    best: dict[tuple, int] = {}
+    keys: list = []
+    for i, (job, row) in enumerate(pairs):
+        canon = HOSPITAL_SYSTEM_ALIASES.get(job.hospital_system, job.hospital_system)
+        fam = (SYSTEM_REQ_FAMILIES.get(job.hospital_system) or (None,))[0] or canon
+        rq = _req_key(job)
+        # The posting's own town: a town that normalize_job filled from a
+        # system default (SYSTEM_LOCATION_DEFAULTS) says nothing about where
+        # either copy is, so a row the adapter gave no town is never collapsed.
+        own = str(getattr(job, "city", "") or "").strip()
+        city = re.sub(r"\s+", " ", str(row.get("city") or "")).strip().lower() if own else ""
+        title = _norm_title(row.get("title"))
+        if not (fam and rq and city and title):
+            keys.append(None)
+            continue
+        k = (fam, rq, title, city, str(row.get("state") or "").strip().upper())
+        keys.append(k)
+        b = best.get(k)
+        if b is None or _same_req_rank(row) > _same_req_rank(pairs[b][1]):
+            best[k] = i
+    out, dropped = [], {}
+    for i, p in enumerate(pairs):
+        k = keys[i]
+        if k is not None and best[k] != i:
+            dropped[p[0].hospital_system] = dropped.get(p[0].hospital_system, 0) + 1
+            continue
+        out.append(p)
+    if dropped:
+        top = sorted(dropped.items(), key=lambda kv: -kv[1])
+        logger.info(f"Same-requisition dedupe: dropped {sum(dropped.values())} copies of one requisition in one "
+                    f"place under another posting id {dict(top[:12])}")
+    return out
+
+
 def finalize_jobs(all_jobs: list) -> list[dict]:
     """The tail every push shares (run_all and hca_local_push.py), hoisted
     2026-09-10 (S-scraper-2): exact dedupe on (ats, post-alias system,
@@ -26607,7 +26691,7 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fac.items())))
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
-    unique = []
+    pairs = []
     family_seen: dict[tuple, str] = {}
     family_dropped = 0
     for job, row in zip(kept, rows):
@@ -26621,9 +26705,10 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
                 family_dropped += 1
                 continue
             family_seen.setdefault(fkey, job.hospital_system)
-        unique.append(row)
+        pairs.append((job, row))
     if family_dropped:
         logger.info(f"Cross-tenant dedupe: dropped {family_dropped} rows listed twice by one family (SYSTEM_FAMILIES)")
+    unique = [row for _, row in _drop_same_req_same_place(pairs)]
     if _CMS_FILLS["n"]:
         logger.info(f"CMS lookup: filled state on {_CMS_FILLS['n']} rows")
     if _PAY_TEXT_OVER_FIELD["n"]:
