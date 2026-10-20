@@ -307,7 +307,7 @@ def test_northwell_nuvance_towns_are_connecticut():
 def test_bryan_health_blank_rows_default_to_lincoln_ne():
     d = scraper.normalize_job(_job("Bryan Health", hospital_name="Bryan Health"))
     assert (d["city"], d["state"]) == ("Lincoln", "NE")
-    assert "Bryan Health" in scraper.PHENOM_ORGS
+    assert "Bryan Health" in scraper.HEALTHCARESOURCE_ORGS   # 2026-10-20: moved off Phenom
 
 
 # ── configs: every new tenant once, labelled, with a default state ──────────
