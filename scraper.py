@@ -2449,6 +2449,15 @@ WORKDAY_TENANTS = {
     "Nationwide Children's Hospital": ("nationwidechildrens", "5", "NCHCareers"),                     # [561] Columbus OH
     "SolutionHealth":            ("solutionhealth",      "1",   "Careers"),                           # [535] Elliot (Manchester) + Southern NH (Nashua)
     "ChristianaCare":            ("christianacare",      "5",   "CCHS"),                              # [315] Newark / Wilmington DE + Union Hospital Elkton MD
+    # ── 2026-10-20 coverage stage 1: each tenant read off the system's own
+    # careers page; [rows in that day's no-write dry run], every row with a
+    # body. Locations through WD_FACILITY_MAP / WD_PATH_LOCATION /
+    # WD_TENANT_DEFAULT below.
+    "Boston Medical Center Health System": ("bmc",       "1",   "BMC"),                               # [812] BMC Boston, BMC Brighton (ex-St. Elizabeth's), BMC South (ex-Good Samaritan, Brockton)
+    "Southeast Alaska Regional Health Consortium": ("searhc", "5", "SEARHC"),                         # [247] Sitka, Juneau, Wrangell, Petersburg, Haines, Klawock AK
+    "Arkansas Children's":       ("archildrens",         "1",   "External_Career_Site"),              # [225] Little Rock + Springdale AR (town in the path and the first bullet)
+    "Emanate Health":            ("cvhp",                "5",   "EmanateHealth"),                     # [189] Covina / Glendora / West Covina CA
+    "Rady Children's Health":    ("rch",                 "108", "Careers"),                           # [100] CHOC: Orange + Mission Viejo CA
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -5110,6 +5119,56 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "bidhc seabrook": (None, "Seabrook", "NH"),
         "beth israel lahey health": (None, "Boston", "MA"),
     },
+    # ── 2026-10-20 coverage stage 1 (locationsText values read in the dry
+    # run that day). BMC: the town alone ("Boston", no state; the tenant
+    # default gives MA), a town and a building ("Brockton - 830 Oak MOB",
+    # "Easton - 1 Washington"), or a street address / clinic name; only
+    # places whose town is certain are listed.
+    "Boston Medical Center Health System": {
+        "brockton": (None, "Brockton", "MA"),          # also "Brockton Behavioral Health Center - BBHC"
+        "brighton": (None, "Brighton", "MA"),          # also "Brighton Marine Health Center (BMHC)"
+        "easton": (None, "Easton", "MA"),
+        "methuen": (None, "Methuen", "MA"),
+        "norwood": (None, "Norwood", "MA"),
+        "960 massachusetts ave": (None, "Boston", "MA"),
+        "801 albany st": (None, "Boston", "MA"),
+        "hyde park clinic": (None, "Boston", "MA"),
+        "south boston health center": (None, "Boston", "MA"),
+        "roslindale medical and dental center": (None, "Boston", "MA"),
+        "dothouse": (None, "Boston", "MA"),
+        "whitman primary care": (None, "Whitman", "MA"),
+        "winthrop neighborhood health": (None, "Winthrop", "MA"),
+    },
+    # SEARHC writes "AK - Juneau": the state is parsed, the town is not.
+    "Southeast Alaska Regional Health Consortium": {
+        "ak - juneau": (None, "Juneau", "AK"), "ak - sitka": (None, "Sitka", "AK"),
+        "ak - wrangell": (None, "Wrangell", "AK"), "ak - petersburg": (None, "Petersburg", "AK"),
+        "ak - haines": (None, "Haines", "AK"), "ak - klawock": (None, "Klawock", "AK"),
+        "ak - ketchikan": (None, "Ketchikan", "AK"), "ak - gustavus": (None, "Gustavus", "AK"),
+        "ak - hoonah": (None, "Hoonah", "AK"), "ak - angoon": (None, "Angoon", "AK"),
+        "ak - craig": (None, "Craig", "AK"), "ak - kake": (None, "Kake", "AK"),
+        "ak - yakutat": (None, "Yakutat", "AK"), "ak - skagway": (None, "Skagway", "AK"),
+        "wa - renton": (None, "Renton", "WA"),
+    },
+    # Emanate: "<facility> - <town>"; the hospitals take their CMS names.
+    "Emanate Health": {
+        "emanate health inter-community hospital": ("Emanate Health Inter-Community Hospital", "Covina", "CA"),
+        "emanate health foothill presbyterian hospital": ("Emanate Health Foothill Presbyterian Hospital", "Glendora", "CA"),
+        "emanate health queen of the valley hospital": ("Emanate Health Queen of the Valley Hospital", "West Covina", "CA"),
+    },
+    # CHOC (Rady Children's Health's "Careers" site): campus and building
+    # names, all in Orange County CA; the two hospitals take their CMS names.
+    "Rady Children's Health": {
+        "main campus - orange": ("Children's Hospital of Orange County", "Orange", "CA"),
+        "orange campus": ("Children's Hospital of Orange County", "Orange", "CA"),
+        "choc at mission hospital": ("Children's Hospital at Mission", "Mission Viejo", "CA"),
+        "mission viejo center": (None, "Mission Viejo", "CA"),
+        "chapman": (None, "Orange", "CA"),
+        "southwest tower": (None, "Orange", "CA"),
+        "st. joseph medical tower": (None, "Orange", "CA"),
+        "orange-providence": (None, "Orange", "CA"),
+        "orthopedics irvine office": (None, "Irvine", "CA"),
+    },
 }
 
 # Single-market tenants: rows still without a state after the map and the
@@ -5158,6 +5217,12 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "Nationwide Children's Hospital": ("Columbus", "OH"),
     "SolutionHealth":            ("Manchester", "NH"),
     "ChristianaCare":            ("Newark", "DE"),
+    # 2026-10-20 coverage stage 1: single-state boards whose locationsText
+    # carries no state.
+    "Boston Medical Center Health System": ("Boston", "MA"),
+    "Emanate Health":            ("Covina", "CA"),
+    "Rady Children's Health":    ("Orange", "CA"),
+    "Arkansas Children's":       ("Little Rock", "AR"),
 }
 
 # 2026-09-24: tenants whose locationsText leads with "City ST" and no comma
@@ -5166,6 +5231,15 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
 # of 1,896 states blank. Scoped to the listed tenants so no other board's
 # parse changes.
 WD_CITY_SPACE_STATE = {"Allegheny Health Network"}
+
+# 2026-10-20: tenants whose CXS search keeps answering full pages past the
+# advertised total, repeating postings already listed (Rady Children's
+# Health's CHOC site: 100 postings, every facet count adds to 100, yet
+# offsets 100-2,000 return full pages of the same 100 ids). The crawl paged
+# to the 2,000-result window and then facet-sliced, about 200 requests a
+# night for 100 rows, and never claimed complete. For these tenants a full
+# page past the advertised total that adds no new id ends the crawl.
+WD_REPEATING_PAGES = {"Rady Children's Health"}
 _WD_CITY_SPACE_ST_RE = re.compile(r"^([A-Za-z][A-Za-z .'-]*?[A-Za-z.])\s+([A-Z]{2})(?:\s+\d{5}(?:-\d{4})?)?$")
 _WD_MULTI_LOC_RE = re.compile(r"^\d+\s+Locations?$", re.I)
 _WD_REMOTE_CITY_RE = re.compile(r"^(?:working at home|work from|remote)\b", re.I)
@@ -5246,6 +5320,14 @@ WD_PATH_LOCATION: dict[str, dict[str, tuple[str, str]]] = {
         "intramed plus columbia": ("West Columbia", "SC"),   # posting page: West Columbia, South Carolina
         "intramed plus charleston": ("Mount Pleasant", "SC"),  # Workday requisition location: Mount Pleasant, SC
         "woodlands aic": ("Shenandoah", "TX"),           # posting page: "Shenadoah", Texas (their spelling)
+    },
+    # 2026-10-20: Arkansas Children's lists no locationsText; the town is the
+    # path's first segment ("/job/Little-Rock/RN-II_R0024069") and the first
+    # bullet. Every value of its primaryLocation facet on 10-20.
+    "Arkansas Children's": {
+        "little rock": ("Little Rock", "AR"), "west little rock": ("Little Rock", "AR"),
+        "springdale": ("Springdale", "AR"), "jonesboro": ("Jonesboro", "AR"),
+        "pine bluff": ("Pine Bluff", "AR"),
     },
 }
 _WD_STATE_CODES = frozenset(_STATE_CODE_BY_NAME.values())
@@ -5961,6 +6043,7 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         stats["total"] = page_total
                 if stats is not None:
                     stats["listed"] += len(listings)
+                seen_before = len(seen_ids)
                 for j in listings:
                     loc = j.get("locationsText", "")
                     _city, _state = parse_city_state(loc)
@@ -6051,6 +6134,13 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     if stats is not None:
                         stats["end"] = "end"
                     return False           # short page — genuine end
+                if (system in WD_REPEATING_PAGES and initial_total and offset >= initial_total
+                        and len(seen_ids) == seen_before):
+                    # 2026-10-20: past the advertised total, a full page of
+                    # ids already listed is the end on these tenants.
+                    if stats is not None:
+                        stats["end"] = "end"
+                    return False
                 if offset >= WD_RESULT_WINDOW:
                     if stats is not None:
                         stats["end"] = "window"
