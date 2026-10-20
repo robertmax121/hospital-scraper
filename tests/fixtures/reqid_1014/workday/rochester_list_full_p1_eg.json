@@ -1,0 +1,382 @@
+{
+ "_meta": {
+  "system": "Rochester Regional Health",
+  "source": "POST https://rrhs.wd5.myworkdayjobs.com/wday/cxs/rrhs/RRH/jobs {limit: 20}, every page",
+  "fetched": "2026-10-14T22:41:52Z",
+  "live_total": 1331,
+  "live_distinct_REQ_bullets": 1331,
+  "trimmed": "page 1 (offset 0, 20 postings) plus every posting on later pages without the usual 4 bullets or with a REQ_EG_ bullet (12); fields title/externalPath/locationsText/postedOn/bulletFields; total set to 32 so the test reads one page",
+  "old_picker_rows": 12
+ },
+ "total": 32,
+ "jobPostings": [
+  {
+   "title": "Associate Professor",
+   "externalPath": "/job/College-of-Health-Careers/Associate-Professor_REQ_235351",
+   "locationsText": "College of Health Careers",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "College of Health Careers",
+    "14622",
+    "REQ_235351",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Clinical Trials Project Manager",
+   "externalPath": "/job/ACM---Remote/Clinical-Trials-Project-Manager_REQ_237858-1",
+   "locationsText": "2 Locations",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "ACM - Remote",
+    "14624",
+    "REQ_237858",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Team Case Assistant- Home Care (Part time, Weekends)",
+   "externalPath": "/job/Rochester-Regional-Health-Home-Care---Monroe-Ave/Team-Case-Assistant--Home-Care--Part-time--Weekends-_REQ_238008",
+   "locationsText": "Rochester Regional Health Home Care - Monroe Ave",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Rochester Regional Health Home Care - Monroe Ave",
+    "14607",
+    "REQ_238008",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Telemed Technician-Home Care (Full time, day shift)",
+   "externalPath": "/job/Rochester-Regional-Health-Home-Care---Monroe-Ave/Telemed-Technician-Home-Care--Full-time--day-shift-_REQ_240770",
+   "locationsText": "Rochester Regional Health Home Care - Monroe Ave",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Rochester Regional Health Home Care - Monroe Ave",
+    "14607",
+    "REQ_240770",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Medical Records Clerk 1",
+   "externalPath": "/job/Rochester-Regional-Health-Home-Care---Monroe-Ave/Medical-Records-Clerk-1_REQ_243079",
+   "locationsText": "Rochester Regional Health Home Care - Monroe Ave",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Rochester Regional Health Home Care - Monroe Ave",
+    "14607",
+    "REQ_243079",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Nurse Practitioner - Perinton Internal Medicine",
+   "externalPath": "/job/Primary-Care---Perinton-LH/Nurse-Practitioner---Perinton-Internal-Medicine_REQ_194790",
+   "locationsText": "Primary Care - Perinton LH",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Primary Care - Perinton LH",
+    "14534",
+    "REQ_194790",
+    "Pittsford"
+   ]
+  },
+  {
+   "title": "Safety and Security Officer",
+   "externalPath": "/job/Newark-Wayne-Community-Hospital/Safety-and-Security-Officer_REQ_241533",
+   "locationsText": "Newark-Wayne Community Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Newark-Wayne Community Hospital",
+    "14513",
+    "REQ_241533",
+    "Newark"
+   ]
+  },
+  {
+   "title": "Graduate Medical Education (GME) Program Coordinator",
+   "externalPath": "/job/Rochester-General-Hospital-RGH/Graduate-Medical-Education--GME--Program-Coordinator_REQ_243587-1",
+   "locationsText": "Rochester General Hospital (RGH)",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Rochester General Hospital (RGH)",
+    "14621",
+    "REQ_243587",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Clinical Resource Nurse - Unity Hospital",
+   "externalPath": "/job/Unity-Hospital/Clinical-Resource-Nurse---Unity-Hospital_REQ_241286",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_241286",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Golisano Restorative Neurology and Rehab",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse---Golisano-Restorative-Neurology-and-Rehab_REQ_242753-1",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_242753",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Telemetry Med Surg",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse---Telemetry-Med-Surg_REQ_153836",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_153836",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Telemetry Med Surg",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse---Telemetry-Med-Surg_REQ_186331",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_186331",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Telemetry Med Surg",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse---Telemetry-Med-Surg_REQ_209601",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_209601",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Telemetry Med Surg",
+   "externalPath": "/job/Unity-Hospital/RN-I_REQ_209812",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_209812",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Telemetry",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse--RN----Telemetry_REQ_209840-1",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_209840",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Telemetry",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse---Telemetry_REQ_209880-1",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_209880",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Joint Replacement Center",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse---Joint-Replacement-Center_REQ_231794-1",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_231794",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Cardiac Stroke Center",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse---Cardiac-Stroke-Center_REQ_213208-1",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_213208",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Cardiac Stroke Center",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse---Cardiac-Stroke-Center_REQ_243056-1",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_243056",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Registered Nurse - Cardiac Unit",
+   "externalPath": "/job/Unity-Hospital/Registered-Nurse---Cardiac-Unit_REQ_240414-1",
+   "locationsText": "Unity Hospital",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "Unity Hospital",
+    "14626",
+    "REQ_240414",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Surgical Technologist Internship",
+   "externalPath": "/job/Surgical-Technologist-Internship_REQ_223614",
+   "postedOn": "Posted 2 Days Ago",
+   "bulletFields": [
+    "REQ_223614"
+   ]
+  },
+  {
+   "title": "Pulmonary Medicine Physician",
+   "externalPath": "/job/Pulmonary-Medicine-Physician_REQ_EG_17",
+   "postedOn": "Posted 19 Days Ago",
+   "bulletFields": [
+    "REQ_EG_17"
+   ]
+  },
+  {
+   "title": "Rheumatologist",
+   "externalPath": "/job/Rochester-General-Hospital-RGH/Rheumatologist_REQ_EG_93",
+   "locationsText": "Rochester General Hospital (RGH)",
+   "postedOn": "Posted 19 Days Ago",
+   "bulletFields": [
+    "Rochester General Hospital (RGH)",
+    "14621",
+    "REQ_EG_93",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Gastroenterologist",
+   "externalPath": "/job/Rochester-General-Hospital-RGH/Gastroenterologist_REQ_EG_25",
+   "locationsText": "Rochester General Hospital (RGH)",
+   "postedOn": "Posted 19 Days Ago",
+   "bulletFields": [
+    "Rochester General Hospital (RGH)",
+    "14621",
+    "REQ_EG_25",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Dermatologist",
+   "externalPath": "/job/Rochester-General-Hospital-RGH/Dermatologist_REQ_EG_15-1",
+   "locationsText": "Rochester General Hospital (RGH)",
+   "postedOn": "Posted 19 Days Ago",
+   "bulletFields": [
+    "Rochester General Hospital (RGH)",
+    "14621",
+    "REQ_EG_15",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Emergency Medicine Physician",
+   "externalPath": "/job/Rochester-General-Hospital-RGH/Emergency-Medicine-Physician_REQ_EG_20-1",
+   "locationsText": "5 Locations",
+   "postedOn": "Posted 19 Days Ago",
+   "bulletFields": [
+    "Rochester General Hospital (RGH)",
+    "14621",
+    "REQ_EG_20",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Nurse Practitioner- Orthopedic Urgent Care",
+   "externalPath": "/job/Nurse-Practitioner--Orthopedic-Urgent-Care_REQ_199875",
+   "postedOn": "Posted 30+ Days Ago",
+   "bulletFields": [
+    "REQ_199875"
+   ]
+  },
+  {
+   "title": "Physician Assistant- Orthopedic Urgent Care",
+   "externalPath": "/job/Physician-Assistant--Orthopedic-Urgent-Care_REQ_199863",
+   "postedOn": "Posted 30+ Days Ago",
+   "bulletFields": [
+    "REQ_199863"
+   ]
+  },
+  {
+   "title": "Non-Invasive Cardiologist",
+   "externalPath": "/job/SCHI---Brighton/Cardiologist_REQ_EG_14-1",
+   "locationsText": "4 Locations",
+   "postedOn": "Posted 30+ Days Ago",
+   "bulletFields": [
+    "SCHI - Brighton",
+    "14618",
+    "REQ_EG_14",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Pediatric Emergency Medicine",
+   "externalPath": "/job/Rochester-General-Hospital-RGH/Emergency-Medicine---Pediatric-Physician_REQ_EG_16",
+   "locationsText": "Rochester General Hospital (RGH)",
+   "postedOn": "Posted 30+ Days Ago",
+   "bulletFields": [
+    "Rochester General Hospital (RGH)",
+    "14621",
+    "REQ_EG_16",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Internal Medicine",
+   "externalPath": "/job/Rochester-General-Hospital-RGH/Internal-Medicine-Physician_REQ_EG_70",
+   "locationsText": "Rochester General Hospital (RGH)",
+   "postedOn": "Posted 30+ Days Ago",
+   "bulletFields": [
+    "Rochester General Hospital (RGH)",
+    "14621",
+    "REQ_EG_70",
+    "Rochester"
+   ]
+  },
+  {
+   "title": "Endocrinologist",
+   "externalPath": "/job/Rochester-General-Hospital-RGH/Endocrinologist_REQ_EG_18-1",
+   "locationsText": "Rochester General Hospital (RGH)",
+   "postedOn": "Posted 30+ Days Ago",
+   "bulletFields": [
+    "Rochester General Hospital (RGH)",
+    "14621",
+    "REQ_EG_18",
+    "Rochester"
+   ]
+  }
+ ]
+}
