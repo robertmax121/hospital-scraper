@@ -6,7 +6,7 @@
 #    ("...-3511816" and "...-3511816-therapy");
 #  * T2: one AMN contract from AMN's own feed and from Vivian.
 import scraper
-from scraper import Job
+from scraper import Job, TravelJob
 
 
 def _job(system, job_id, title="Registered Nurse", city="Orlando", state="FL", desc="x" * 50,
@@ -114,3 +114,54 @@ def test_one_requisition_on_two_family_career_sites_in_one_town_keeps_one():
         _job("Wellstar Health (Providers)", "JR-1", req_id="JR-1", ats="Workday", city="Marietta", state="GA"),
     ])
     assert len(rows) == 1 and rows[0]["hospital_system"] == "Wellstar Health"
+
+
+# -- T1 / T2 --------------------------------------------------------------------
+
+def _tj(agency, jid, state="MN", pay=2300.0, city="Anoka"):
+    return TravelJob(agency_name=agency, agency_job_id=jid, title="SLP", city=city, state=state,
+                     weekly_pay_numeric=pay)
+
+
+def test_vivian_category_copies_of_one_contract_keep_the_plain_id():
+    jobs = [_tj("AMN Healthcare Allied", "vivian:platform::773-3511816-therapy"),
+            _tj("AMN Healthcare Allied", "vivian:platform::773-3511816"),
+            _tj("ESS Clinical", "vivian:platform::18569-4600-therapy"),
+            _tj("ESS Clinical", "vivian:platform::18569-4600-school-services")]
+    out = scraper._vivian_one_per_contract(jobs)
+    ids = [j.agency_job_id for j in out]
+    assert ids == ["vivian:platform::773-3511816", "vivian:platform::18569-4600-therapy"]
+
+
+def test_vivian_contract_rule_is_per_agency_and_state():
+    jobs = [_tj("Agency A", "vivian:platform::1-55"), _tj("Agency B", "vivian:platform::1-55-therapy"),
+            _tj("Agency A", "vivian:platform::1-55-allied", state="WI")]
+    assert len(scraper._vivian_one_per_contract(jobs)) == 3
+
+
+def test_vivian_copy_with_pay_beats_one_without_when_both_carry_a_suffix():
+    jobs = [_tj("X", "vivian:platform::9-77-therapy", pay=None), _tj("X", "vivian:platform::9-77-allied", pay=2000.0)]
+    assert [j.agency_job_id for j in scraper._vivian_one_per_contract(jobs)] == ["vivian:platform::9-77-allied"]
+
+
+def test_direct_amn_row_outranks_the_vivian_copy_in_the_same_state():
+    jobs = [_tj("AMN Healthcare", "amn-3511816", pay=2304.0),
+            _tj("AMN Healthcare Allied", "vivian:platform::773-3511816", pay=2339.5),
+            _tj("AMN Healthcare Revenue Cycle", "vivian:platform::3780-3593573-allied", state="MA"),
+            _tj("AMN Healthcare", "amn-3593573", state="MA")]
+    out = scraper._drop_vivian_amn_copies(jobs)
+    assert [j.agency_job_id for j in out] == ["amn-3511816", "amn-3593573"]
+
+
+def test_vivian_amn_copy_stays_when_the_direct_feed_lacks_it_or_differs_in_state():
+    jobs = [_tj("AMN Healthcare", "amn-1"),
+            _tj("AMN Healthcare Allied", "vivian:platform::773-2"),            # no direct row
+            _tj("AMN Healthcare Allied", "vivian:platform::773-1", state="WI"),  # direct row is MN
+            _tj("Aya Healthcare", "vivian:platform::5-1")]                       # not an AMN label
+    out = scraper._drop_vivian_amn_copies(jobs)
+    assert len(out) == 4
+
+
+def test_vivian_amn_copies_all_stay_when_the_direct_feed_failed():
+    jobs = [_tj("AMN Healthcare Allied", "vivian:platform::773-1")]
+    assert scraper._drop_vivian_amn_copies(jobs) == jobs

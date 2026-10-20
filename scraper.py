@@ -20125,8 +20125,72 @@ async def run_vivian(session: aiohttp.ClientSession) -> list[TravelJob]:
     for j in all_jobs:
         if j.agency_job_id in seen: continue
         seen.add(j.agency_job_id); uniq.append(j)
+    uniq = _vivian_one_per_contract(uniq)
     logger.info(f"Vivian Health: {len(uniq):,} unique travel listings")
     return uniq
+
+
+# ── One Vivian row per agency contract (2026-10-20, T1) ─────────────────────
+# Vivian lists one agency contract under each category it fits, and each
+# category gets its own objectID: "vivian:platform::773-3511816" ("Speech
+# Language Pathologist (School Services)") and "vivian:platform::773-3511816-
+# therapy" ("School Speech Language Pathologist") are one AMN contract in
+# Anoka MN. The 10-20 audit counted 555 such same-agency groups. One row is
+# kept per (agency, contract id without the category suffix, state): the
+# copy with no suffix, else one that carries weekly pay, else the shortest
+# id (ties: the smallest), so the same copy survives every night.
+_VIVIAN_CATEGORY_SUFFIX_RX = re.compile(r"-(?:therapy|school-services|allied)$", re.I)
+
+
+def _vivian_contract_key(agency_job_id: str) -> str:
+    return _VIVIAN_CATEGORY_SUFFIX_RX.sub("", str(agency_job_id or ""))
+
+
+def _vivian_one_per_contract(jobs: list) -> list:
+    def rank(j):
+        jid = str(j.agency_job_id or "")
+        return (bool(_VIVIAN_CATEGORY_SUFFIX_RX.search(jid)), j.weekly_pay_numeric is None, len(jid), jid)
+    best: dict[tuple, object] = {}
+    for j in jobs:
+        k = (j.agency_name or "", _vivian_contract_key(j.agency_job_id), (j.state or "").upper())
+        b = best.get(k)
+        if b is None or rank(j) < rank(b):
+            best[k] = j
+    keep = {id(j) for j in best.values()}
+    out = [j for j in jobs if id(j) in keep]
+    if len(out) < len(jobs):
+        logger.info(f"Vivian Health: {len(jobs) - len(out):,} category copies of one agency contract dropped "
+                    f"(one row per contract)")
+    return out
+
+
+# ── AMN's own feed outranks AMN's contracts on Vivian (2026-10-20, T2) ──────
+# AMN posts through its own feed ("amn-3511816") and through Vivian under
+# "AMN Healthcare Allied" / "AMN Healthcare Revenue Cycle" ("vivian:platform::
+# 773-3511816"). The 10-20 audit found 895 such repeats, most at a slightly
+# different pay. When the direct AMN feed lists the contract in the same
+# state, the Vivian copy is not emitted (the nightly sweep retires the stored
+# one); when the direct feed did not list it (or failed), the Vivian copy
+# stays, so a contract never disappears because one source was down.
+_VIVIAN_AMN_ID_RX = re.compile(r"^vivian:platform::\d+-(\d+)$")
+
+
+def _drop_vivian_amn_copies(jobs: list) -> list:
+    direct = {(str(j.agency_job_id)[4:], (j.state or "").upper()) for j in jobs
+              if j.agency_name == "AMN Healthcare" and str(j.agency_job_id or "").startswith("amn-")}
+    if not direct:
+        return jobs
+    out, dropped = [], 0
+    for j in jobs:
+        if (j.agency_name or "").startswith("AMN Healthcare ") and str(j.agency_job_id or "").startswith("vivian:"):
+            m = _VIVIAN_AMN_ID_RX.match(_vivian_contract_key(j.agency_job_id))
+            if m and (m.group(1), (j.state or "").upper()) in direct:
+                dropped += 1
+                continue
+        out.append(j)
+    if dropped:
+        logger.info(f"Travel: {dropped:,} AMN contracts listed by Vivian and by AMN's own feed; the direct AMN row is kept")
+    return out
 
 
 # ── Aya Healthcare ────────────────────────────────────────────────────────
@@ -20643,6 +20707,7 @@ async def run_all_travel() -> list[dict]:
     for r in results:
         if isinstance(r, list):
             all_travel.extend(r)
+    all_travel = _drop_vivian_amn_copies(all_travel)   # 2026-10-20 (T2)
     # Convert to dicts. We stamp scraped_at to the current run's start time on
     # every row so that the PostgREST upsert refreshes it on conflict — that
     # gives us a reliable "last seen" signal for the post-upsert deactivation
