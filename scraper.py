@@ -10446,6 +10446,84 @@ USAJOBS_PAGE_SIZE = 500
 USAJOBS_PAGE_CAP = int(os.getenv("USAJOBS_PAGE_CAP", "40"))
 USAJOBS_PAGE_RETRIES = 1
 FEDERAL_HOURS_PER_YEAR = 2087
+
+# 2026-10-20 ("that's it for the VA jobs?"): the occupational series a
+# hospital hires under, the JobCategoryCode of every search
+# (data.usajobs.gov/api/codelist/occupationalseries). The 10-20 list held 15
+# codes. "0600" is the group's own code, not a series in the list; on the
+# 10-20 run it matched the whole group (137 Medical Support Assistant, 62
+# Nursing Assistant, 41 dental and 26 podiatry VA rows came back, none of
+# those series listed then). Every series of the group is listed as well, so
+# a search that stops matching the group code still reads each one. Outside
+# the group the hospitals hire psychologists, social workers and (VA) peer
+# support specialists, which no search read before 10-20.
+USAJOBS_SERIES = (
+    "0600",  # Medical, Hospital, Dental and Public Health (the group code)
+    "0601",  # General Health Science
+    "0602",  # Medical Officer (physicians)
+    "0603",  # Physician Assistant
+    "0605",  # Nurse Anesthetist (Title 38)
+    "0610",  # Nurse
+    "0620",  # Practical Nurse
+    "0621",  # Nursing Assistant
+    "0622",  # Medical Supply Aide and Technician (sterile processing)
+    "0625",  # Autopsy Assistant
+    "0630",  # Dietitian and Nutritionist
+    "0631",  # Occupational Therapist
+    "0633",  # Physical Therapist
+    "0635",  # Kinesiotherapy
+    "0636",  # Rehabilitation Therapy Assistant
+    "0637",  # Manual Arts Therapist
+    "0638",  # Recreation/Creative Arts Therapist
+    "0639",  # Educational Therapist
+    "0640",  # Health Aid and Technician
+    "0642",  # Nuclear Medicine Technician
+    "0644",  # Clinical Laboratory Science (medical technologist)
+    "0645",  # Medical Technician
+    "0646",  # Pathology Technician
+    "0647",  # Diagnostic Radiologic Technologist
+    "0648",  # Therapeutic Radiologic Technologist
+    "0649",  # Medical Instrument Technician
+    "0650",  # Medical Technical Assistant
+    "0651",  # Respiratory Therapist
+    "0660",  # Pharmacist
+    "0661",  # Pharmacy Technician
+    "0662",  # Optometrist
+    "0665",  # Speech Pathology and Audiology
+    "0667",  # Orthotist and Prosthetist
+    "0668",  # Podiatrist
+    "0669",  # Medical Records Administration
+    "0670",  # Health System Administration
+    "0671",  # Health System Specialist
+    "0672",  # Prosthetic Representative
+    "0673",  # Hospital Housekeeping Management
+    "0675",  # Medical Records Technician (coders)
+    "0679",  # Medical Support Assistance
+    "0680",  # Dental Officer
+    "0681",  # Dental Assistant
+    "0682",  # Dental Hygiene
+    "0683",  # Dental Laboratory Aid and Technician
+    "0685",  # Public Health Program Specialist
+    "0688",  # Sanitarian
+    "0690",  # Industrial Hygiene
+    "0696",  # Consumer Safety
+    "0698",  # Environmental Health Technician
+    "0699",  # Medical and Health Student Trainee
+    "0180",  # Psychology (staff psychologists)
+    "0181",  # Psychology Aid and Technician
+    "0185",  # Social Work
+    "0186",  # Social Services Aid and Assistant (social work assistants)
+    "0101",  # Social Science: the VA's Peer Support Specialists (VA searches only, below)
+)
+# Series searched for these org codes only: at the VA 0101 is the peer
+# support specialist; elsewhere (DoD, NIH) it is policy and research work.
+USAJOBS_SERIES_ORG_ONLY = {"0101": ("VATA",)}
+# Codes per search. The docs name no limit on the semicolon list; 15 codes
+# is the length the 10-20 run proved, so a longer list is read in several
+# searches of at most that many and merged by job id.
+USAJOBS_SERIES_PER_SEARCH = 15
+# One row per town an announcement lists (2026-10-20), at most this many.
+USAJOBS_LOCATION_CAP = int(os.getenv("USAJOBS_LOCATION_CAP", "60"))
 _FED_FACILITY_WORD_RX = re.compile(
     r"\b(?:medical\s+cent(?:er|re)s?|health\s*care\s+systems?|health\s+systems?|hospitals?|VAMC|"
     r"health\s+cent(?:er|re)|veterans'?\s+home|indian\s+health\s+cent(?:er|re)|service\s+unit)\b", re.I)
@@ -10479,7 +10557,10 @@ _FED_NAME_LEAD = {"the", "this", "our", "at", "a", "an", "join", "welcome", "abo
 def _usajobs_state(code) -> str:
     s = str(code or "").strip()
     if re.fullmatch(r"[A-Za-z]{2}", s):
-        return s.upper()
+        # 2026-10-20: a two-letter value must be a state, DC or PR/GU/VI; the
+        # military post codes (AA, AE, AP: "Armed Forces Pacific") are overseas.
+        s = s.upper()
+        return s if s in _STATE_CODE_BY_NAME.values() or s in _USAJOBS_TERRITORIES.values() else ""
     key = re.sub(r"\s+", " ", s.lower())
     return _STATE_CODE_BY_NAME.get(key) or _USAJOBS_TERRITORIES.get(key, "")
 
@@ -10548,33 +10629,153 @@ def usajobs_pay(rem: dict):
     return got if got and got[2] == "hour" else None
 
 
-def _usajobs_job(item: dict, system_name: str) -> Job | None:
+# ── One row per town (2026-10-20) ───────────────────────────────────────────
+# An announcement lists every town it fills (PositionLocation: a VA health
+# care system's medical center and its outpatient clinics, a DHA "multiple
+# locations" posting); the adapter stored the first town only, so a nurse
+# searching the second town never saw it. Now each US town is a row
+# (_usajobs_places): a state, DC, PR, GU or VI, one row per town, the API's
+# order, at most USAJOBS_LOCATION_CAP. job_id: the first town keeps the
+# PositionID the rows had before 10-20 (no churn); each further town is
+# PositionID + "-" + a slug of the town as USAJOBS writes it and the state
+# ("CBSX-13094137-27-RC-houston-tx"), the same every night, and carries
+# PositionID as its req_id, so the same-requisition rule (S1,
+# _drop_same_req_same_place) sees one requisition in several towns and
+# keeps every town. "Anywhere in the U.S. (remote job)", "Location
+# Negotiable After Selection" and a US entry naming no state are no town:
+# such an announcement is one row with no town as before, and only when it
+# lists no town at all. A foreign entry (Landstuhl, Okinawa, Manila) is no
+# row: the board lists US postings only (non_us_reason, 2026-10-13), and an
+# announcement listing no US entry is dropped. A facility named ahead of the
+# town ("Naval Hospital Jacksonville, Jacksonville, Florida") names that
+# row's hospital; otherwise usajobs_facility names it, as before. Pay,
+# title, url, dates and description are the announcement's, on every row.
+_USAJOBS_UNPLACED_RX = re.compile(
+    r"\banywhere\b|\bremote\b|\btele-?work|\bnegotiable\b|\bnationwide\b|\bmultiple\s+locations\b|"
+    r"\bvarious\s+locations\b|\bto\s+be\s+determined\b", re.I)
+_USAJOBS_US_COUNTRIES = {"", "united states", "us", "usa", "u.s.", "u.s.a.", "united states of america"}
+
+
+def _usajobs_slug(*parts) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", " ".join(str(p) for p in parts if p).lower()).strip("-")
+
+
+def _usajobs_loc_facility(loc: dict) -> str:
+    """The facility a PositionLocation names ahead of its town ("Naval
+    Hospital Jacksonville, Jacksonville, Florida"), or "" ("Houston, Texas",
+    "Point Loma Complex, San Diego, California", "VA Medical Center, ...")."""
+    name = (loc or {}).get("LocationName") or (loc or {}).get("CityName") or ""
+    segs = [re.sub(r"\s+", " ", s).strip() for s in str(name).split(",")]
+    for s in segs[:-1]:                                   # the last part is the state
+        if s and _FED_FACILITY_WORD_RX.search(s) and not _FED_GENERIC_SEG_RX.match(s):
+            if {w.lower().strip(".,") for w in s.split(" ")} - _FED_NAME_FILLER:
+                return s
+    return ""
+
+
+def _usajobs_places(m: dict) -> tuple[list[dict], int, bool]:
+    """(places, towns, foreign_only) of one announcement: places are dicts of
+    city, state, slug and facility, one per US town in the API's order, at
+    most USAJOBS_LOCATION_CAP; towns counts the US towns before the cap;
+    foreign_only is True when it lists locations and none is in the US (no
+    row). With no US town and no foreign-only list the one place is the
+    first unplaced entry ("Anywhere in the U.S."), city and state read as
+    before 10-20, slug ""."""
+    locs = [loc for loc in ((m or {}).get("PositionLocation") or []) if isinstance(loc, dict)]
+    found, keys, slugs, unplaced = [], set(), set(), None
+    for loc in locs:
+        raw = str(loc.get("CityName") or loc.get("LocationName") or "")
+        country = re.sub(r"\s+", " ", str(loc.get("CountryCode") or "")).strip().lower()
+        terr = _USAJOBS_TERRITORIES.get(country, "")
+        if country not in _USAJOBS_US_COUNTRIES and not terr:
+            continue                                      # foreign
+        segs = [s.strip() for s in raw.split(",")]
+        st = (_usajobs_state(loc.get("CountrySubDivisionCode")) or terr
+              or (_usajobs_state(segs[-1]) if len(segs) >= 2 else ""))
+        if not st or _USAJOBS_UNPLACED_RX.search(raw):
+            if unplaced is None:
+                unplaced = loc
+            continue
+        raw_city = _usajobs_city(raw)
+        city = clean_city(raw_city)
+        key, slug = (_usajobs_slug(city), st), _usajobs_slug(raw_city, st)
+        if key in keys or slug in slugs:
+            continue                                      # the same town twice
+        keys.add(key)
+        slugs.add(slug)
+        found.append({"city": city, "state": st, "slug": slug, "facility": _usajobs_loc_facility(loc)})
+    # A town USAJOBS writes as a building ("Naval Hospital Jacksonville,
+    # Florida") cleans to no town; beside a named town of that state it is no
+    # place of its own (it would list as "FL" beside "Jacksonville, FL").
+    named = {p["state"] for p in found if p["city"]}
+    found = [p for p in found if p["city"] or p["state"] not in named]
+    if found:
+        return found[:USAJOBS_LOCATION_CAP], len(found), False
+    if locs and unplaced is None:
+        return [], 0, True
+    loc = unplaced or {}
+    return [{"city": clean_city(_usajobs_city(loc.get("CityName"))),
+             "state": _usajobs_state(loc.get("CountrySubDivisionCode")),
+             "slug": "", "facility": _usajobs_loc_facility(loc)}], 0, False
+
+
+def _usajobs_jobs(item: dict, system_name: str, stats: dict | None = None) -> list[Job]:
+    """The rows of one announcement, one per US town (see the note above).
+    stats, when given, counts "capped" (more towns than the cap) and
+    "foreign" (no US location) announcements."""
     m = (item or {}).get("MatchedObjectDescriptor") or {}
     title = str(m.get("PositionTitle") or "").strip()
-    jid = str(m.get("PositionID") or "").strip()
-    if not title or not jid:
-        return None
-    loc = (m.get("PositionLocation") or [{}])[0] or {}
-    city = clean_city(_usajobs_city(loc.get("CityName")))
-    state = _usajobs_state(loc.get("CountrySubDivisionCode"))
+    pid = str(m.get("PositionID") or "").strip()
+    if not title or not pid:
+        return []
+    places, towns, foreign_only = _usajobs_places(m)
+    if stats is not None:
+        if towns > len(places):
+            stats["capped"] = stats.get("capped", 0) + 1
+        if foreign_only:
+            stats["foreign"] = stats.get("foreign", 0) + 1
+    if not places:
+        return []
     w = usajobs_pay((m.get("PositionRemuneration") or [{}])[0])
-    return Job(
-        title=title,
-        hospital_system=system_name,
-        hospital_name=usajobs_facility(m, system_name),
-        city=city, state=state,
-        location=f"{city}, {state}" if city and state else city or state,
-        specialty=(m.get("JobCategory") or [{}])[0].get("Name", ""),
-        job_type=(m.get("PositionSchedule") or [{}])[0].get("Name", ""),
-        url=m.get("PositionURI", ""),
-        job_id=jid,
-        posted_date=str(m.get("PublicationStartDate") or "")[:10],
-        description=str(m.get("QualificationSummary") or "")[:500],
-        ats_platform="USAJOBS",
-        wage_min=w[0] if w else None,
-        wage_max=w[1] if w else None,
-        wage_unit=w[2] if w else None,
-    )
+    facility = usajobs_facility(m, system_name)
+    rows = []
+    for i, p in enumerate(places):
+        city, state = p["city"], p["state"]
+        rows.append(Job(
+            title=title,
+            hospital_system=system_name,
+            hospital_name=p["facility"] or facility,
+            city=city, state=state,
+            location=f"{city}, {state}" if city and state else city or state,
+            specialty=(m.get("JobCategory") or [{}])[0].get("Name", ""),
+            job_type=(m.get("PositionSchedule") or [{}])[0].get("Name", ""),
+            url=m.get("PositionURI", ""),
+            job_id=pid if i == 0 else f"{pid}-{p['slug']}",
+            posted_date=str(m.get("PublicationStartDate") or "")[:10],
+            description=str(m.get("QualificationSummary") or "")[:500],
+            ats_platform="USAJOBS",
+            wage_min=w[0] if w else None,
+            wage_max=w[1] if w else None,
+            wage_unit=w[2] if w else None,
+            # the announcement number, on the rows whose job_id is not it
+            req_id="" if i == 0 else pid,
+        ))
+    return rows
+
+
+def _usajobs_job(item: dict, system_name: str) -> Job | None:
+    """The announcement's first row (its first US town), or None."""
+    rows = _usajobs_jobs(item, system_name)
+    return rows[0] if rows else None
+
+
+def usajobs_series_queries(org_code: str) -> list[str]:
+    """The JobCategoryCode values of one org's searches: USAJOBS_SERIES less
+    the series kept to other orgs, USAJOBS_SERIES_PER_SEARCH codes each."""
+    codes = [c for c in USAJOBS_SERIES
+             if org_code in USAJOBS_SERIES_ORG_ONLY.get(c, (org_code,))]
+    n = max(1, USAJOBS_SERIES_PER_SEARCH)
+    return [";".join(codes[i:i + n]) for i in range(0, len(codes), n)]
 
 
 async def _usajobs_page(session, params: dict, headers: dict):
@@ -10589,7 +10790,6 @@ async def _usajobs_page(session, params: dict, headers: dict):
 async def run_usajobs(session) -> list[Job]:
     logger.info("USAJOBS: scraping VA + federal hospitals...")
     jobs = []
-    MEDICAL_SERIES = "0600;0601;0602;0610;0620;0630;0640;0645;0646;0647;0648;0649;0660;0670;0675"
     ORGS = USAJOBS_ORGS
     usajobs_key = os.environ.get("USAJOBS_API_KEY", "")
     usajobs_email = os.environ.get("USAJOBS_EMAIL", "")
@@ -10607,64 +10807,84 @@ async def run_usajobs(session) -> list[Job]:
     for system_name, org_code in ORGS:
         if unauthorized:
             break
+        # 2026-10-20: one search per USAJOBS_SERIES_PER_SEARCH series
+        # (usajobs_series_queries), rows merged by job id; an announcement
+        # filed under series of two searches comes back from both.
         seen: set[str] = set()
-        org_jobs, pages_read = 0, 0
-        total, pages, page, read_all = None, 1, 1, False
-        while page <= min(pages, USAJOBS_PAGE_CAP):
-            params = {"Organization": org_code, "ResultsPerPage": USAJOBS_PAGE_SIZE,
-                      "JobCategoryCode": MEDICAL_SERIES, "Page": page}
-            status, data = None, None
-            for attempt in range(USAJOBS_PAGE_RETRIES + 1):
-                try:
-                    status, data = await _usajobs_page(session, params, usajobs_headers)
-                except Exception as e:
-                    status, data = f"{type(e).__name__}: {e}", None
-                if data is not None or status == 401:
+        posts: set[str] = set()
+        stats: dict = {}
+        org_jobs, pages_read, read_all = 0, 0, True
+        totals, page_counts = [], []
+        for series in usajobs_series_queries(org_code):
+            total, pages, page, done = None, 1, 1, False
+            while page <= min(pages, USAJOBS_PAGE_CAP):
+                params = {"Organization": org_code, "ResultsPerPage": USAJOBS_PAGE_SIZE,
+                          "JobCategoryCode": series, "Page": page}
+                status, data = None, None
+                for attempt in range(USAJOBS_PAGE_RETRIES + 1):
+                    try:
+                        status, data = await _usajobs_page(session, params, usajobs_headers)
+                    except Exception as e:
+                        status, data = f"{type(e).__name__}: {e}", None
+                    if data is not None or status == 401:
+                        break
+                    if attempt < USAJOBS_PAGE_RETRIES:
+                        await _retry_sleep(3.0)
+                if status == 401:
+                    logger.info("USAJOBS: 401 — set USAJOBS_API_KEY and USAJOBS_EMAIL env vars (free at developer.usajobs.gov/apirequest)")
+                    unauthorized = True
                     break
-                if attempt < USAJOBS_PAGE_RETRIES:
-                    await _retry_sleep(3.0)
-            if status == 401:
-                logger.info("USAJOBS: 401 — set USAJOBS_API_KEY and USAJOBS_EMAIL env vars (free at developer.usajobs.gov/apirequest)")
-                unauthorized = True
+                if data is None:
+                    logger.info(f"USAJOBS {system_name}: series {series[:14]}... page {page} failed ({status}); "
+                                f"{org_jobs} rows kept, the rest of this search unread")
+                    break
+                sr = data.get("SearchResult") or {}
+                items = sr.get("SearchResultItems") or []
+                if total is None:
+                    try:
+                        total = int(sr.get("SearchResultCountAll") or 0)
+                    except (TypeError, ValueError):
+                        total = 0
+                    try:
+                        pages = int((sr.get("UserArea") or {}).get("NumberOfPages") or 0)
+                    except (TypeError, ValueError):
+                        pages = 0
+                    if pages <= 0:
+                        pages = max(1, -(-total // USAJOBS_PAGE_SIZE)) if total else 1
+                pages_read += 1
+                for item in items:
+                    pid = str(((item or {}).get("MatchedObjectDescriptor") or {}).get("PositionID") or "").strip()
+                    if pid in posts:
+                        continue                          # read by an earlier search
+                    posts.add(pid)
+                    for job in _usajobs_jobs(item, system_name, stats):
+                        if job.job_id not in seen:
+                            seen.add(job.job_id)
+                            jobs.append(job)
+                            org_jobs += 1
+                if not items or page >= pages:
+                    done = True
+                    break
+                page += 1
+                await jitter()
+            totals.append(total)
+            page_counts.append(pages)
+            if not done:
+                read_all = False
+            if unauthorized:
                 break
-            if data is None:
-                logger.info(f"USAJOBS {system_name}: page {page} failed ({status}); "
-                            f"{org_jobs} rows kept, the rest of the search unread")
-                break
-            sr = data.get("SearchResult") or {}
-            items = sr.get("SearchResultItems") or []
-            if total is None:
-                try:
-                    total = int(sr.get("SearchResultCountAll") or 0)
-                except (TypeError, ValueError):
-                    total = 0
-                try:
-                    pages = int((sr.get("UserArea") or {}).get("NumberOfPages") or 0)
-                except (TypeError, ValueError):
-                    pages = 0
-                if pages <= 0:
-                    pages = max(1, -(-total // USAJOBS_PAGE_SIZE)) if total else 1
-            pages_read += 1
-            for item in items:
-                job = _usajobs_job(item, system_name)
-                if job and job.job_id not in seen:
-                    seen.add(job.job_id)
-                    jobs.append(job)
-                    org_jobs += 1
-            if not items or page >= pages:
-                read_all = True
-                break
-            page += 1
+            if pages > USAJOBS_PAGE_CAP:
+                logger.warning(f"USAJOBS {system_name}: {pages} pages, read the first {USAJOBS_PAGE_CAP} (USAJOBS_PAGE_CAP)")
             await jitter()
-        if pages > USAJOBS_PAGE_CAP:
-            logger.warning(f"USAJOBS {system_name}: {pages} pages, read the first {USAJOBS_PAGE_CAP} (USAJOBS_PAGE_CAP)")
         if org_jobs and not read_all:
             # pages left unread may hold live postings: not swept tonight (the
             # HealthcareSource rule, as in scrape_talemetry). No complete claim
             # is made either way; the sweep's own ratio guard judges the rest.
             report_partial(system_name)
-        logger.info(f"  USAJOBS {system_name}: {org_jobs:,} jobs (search total {total}, {pages_read} of {pages} pages)")
-        await jitter()
+        logger.info(f"  USAJOBS {system_name}: {org_jobs:,} jobs from {len(posts - {''}):,} announcements "
+                    f"(search totals {totals}, {pages_read} of {sum(page_counts)} pages; "
+                    f"{stats.get('capped', 0)} listing more than {USAJOBS_LOCATION_CAP} towns cut to "
+                    f"{USAJOBS_LOCATION_CAP}; {stats.get('foreign', 0)} outside the US skipped)")
 
     logger.info(f"  USAJOBS: {len(jobs):,} jobs")
     return jobs

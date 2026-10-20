@@ -301,7 +301,9 @@ def usajobs_api(monkeypatch):
 
 def test_usajobs_reads_every_page_names_the_facility_and_stores_hourly(usajobs_api):
     jobs = asyncio.run(scraper.run_usajobs(None))
-    assert [c for c in usajobs_api if c[0] == "VATA"] == [("VATA", 1, 500), ("VATA", 2, 500)]
+    # 2026-10-20: one search per block of series (usajobs_series_queries), each read to its last page
+    queries = scraper.usajobs_series_queries("VATA")
+    assert [c for c in usajobs_api if c[0] == "VATA"] == [("VATA", p, 500) for _ in queries for p in (1, 2)]
     va = {j.job_id: j for j in jobs if j.hospital_system == "VA Hospitals"}
     assert len(va) == 5
     assert {jid: j.hospital_name for jid, j in va.items()} == {
