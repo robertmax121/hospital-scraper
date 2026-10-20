@@ -1975,6 +1975,12 @@ HOSPITAL_SYSTEM_ALIASES = {
     # writes under the AHRQ label like the staff portal.
     "Samaritan Health Services (Clinicians)": "Samaritan Health Services",
     "Ascension Health":            "Ascension",
+    # 2026-10-20: Allegiance's per-hospital UKG boards (UKG_ORGS) write one label.
+    "Allegiance Health Management (Bienville)":      "Allegiance Health Management",
+    "Allegiance Health Management (Byrd)":           "Allegiance Health Management",
+    "Allegiance Health Management (Mercy Regional)": "Allegiance Health Management",
+    "Allegiance Health Management (Sabine)":         "Allegiance Health Management",
+    "Allegiance Health Management (DeQuincy)":       "Allegiance Health Management",
     # "Saint Luke's Health System": "St. Luke's Health System" removed
     # 2026-10-13: the saintlukes.wd1 tenant is Saint Luke's Health System of
     # KANSAS CITY (MO/KS), a different system from St. Luke's of Boise (ID).
@@ -12908,6 +12914,62 @@ UKG_ORGS = {
     # Cerritos CA, Locations[].LocalizedName naming the hospital ("Memorial
     # Hospital of Gardena"); West Suburban and Weiss (IL) were sold in 2022.
     "Pipeline Health": ("https://pipeline.rec.pro.ukg.net/PIP1500PPLN", "663afd70-7892-48da-a106-a2deaafde171", "CA"),   # 8, Gardena CA
+    # ── 2026-10-20 coverage stage 1 (no-write dry run that day; rows, all in
+    # the hospital's own town, all with a body). Former Quorum hospitals keep
+    # their own boards on the QHC1000QHCS tenant (Odessa, Big Bend and
+    # Evanston above); labels are the CMS names, the location name each
+    # posting carries is the hospital_name ("Forrest City Hospital Inc").
+    "Forrest City Medical Center":        ("https://recruiting2.ultipro.com/QHC1000QHCS", "35a707b2-c614-4d14-aa6a-b43a30c10d34", "AR"),   # 36, Forrest City AR
+    "Barstow Community Hospital":         ("https://recruiting2.ultipro.com/QHC1000QHCS", "e333c862-d0c9-4756-8a4d-23604c1ba9f8", "CA"),   # 20, Barstow CA
+    "Three Rivers Medical Center":        ("https://recruiting2.ultipro.com/QHC1000QHCS", "566ef7a5-5f48-46d8-aed1-5924f53cbfb8", "KY"),   # 16, Louisa KY
+    "Mimbres Valley Medical Center":      ("https://recruiting2.ultipro.com/QHC1000QHCS", "458d9481-67bd-4bf2-b970-9074f0ab64be", "NM"),   # 34, Deming NM (posts as Mimbres Memorial Hospital)
+    "Mesa View Regional Hospital":        ("https://recruiting2.ultipro.com/QHC1000QHCS", "a968d5a2-8b06-4cd0-bf3d-3485751170f1", "NV"),   # 27, Mesquite NV
+    "McKenzie-Willamette Medical Center": ("https://recruiting2.ultipro.com/QHC1000QHCS", "03176428-96f4-412f-8077-fe5445cc40f6", "OR"),   # 55, Springfield OR
+    "Mountain West Medical Center":       ("https://recruiting2.ultipro.com/QHC1000QHCS", "0a1dcc35-b285-4424-a25a-ff98fd39e6c2", "UT"),   # 13, Tooele UT
+    # Allegiance Health Management (Shreveport LA): one board per hospital on
+    # allegiance.rec.pro.ukg.net/ALL1049AHMI, read off each hospital's site.
+    # The boards cross-list a few postings (Mercy Regional's lists two
+    # DeQuincy jobs, DeQuincy's two Byrd jobs), so every board writes one
+    # label (HOSPITAL_SYSTEM_ALIASES) and the (ats, system, job_id) dedupe
+    # keeps one copy; the posting's location name is the hospital.
+    # Acadian (Paylocity) and DeQuincy's Paylocity board answered "Job Not
+    # Found"; Freedom Behavioral links Indeed only.
+    "Allegiance Health Management (Bienville)": ("https://allegiance.rec.pro.ukg.net/ALL1049AHMI", "e9fc4964-bf2d-42e0-82c3-f090d01c626f", "LA"),   # 15, Arcadia LA
+    "Allegiance Health Management (Byrd)":      ("https://allegiance.rec.pro.ukg.net/ALL1049AHMI", "096607a9-5a71-4722-80e2-3955941393eb", "LA"),   # 21, Leesville LA
+    "Allegiance Health Management (Mercy Regional)": ("https://allegiance.rec.pro.ukg.net/ALL1049AHMI", "7dd281cd-c4ae-4ec9-94f0-4d0778d4d973", "LA"),   # 32, Ville Platte LA
+    "Allegiance Health Management (Sabine)":    ("https://allegiance.rec.pro.ukg.net/ALL1049AHMI", "e1a9a752-6e6d-4726-83de-38d4215574ff", "LA"),   # 3, Many LA
+    "Allegiance Health Management (DeQuincy)":  ("https://allegiance.rec.pro.ukg.net/ALL1049AHMI", "9bc8c0ca-dc83-4895-aa8f-7244c7fa2d6a", "LA"),   # 7, DeQuincy LA
+    # Telecare (Alameda CA): 501 rows in CA / WA / OR / AZ / NE, every
+    # location name the company itself; the program number in the title
+    # names the hospital (UKG_TITLE_FACILITY).
+    "Telecare Corporation":               ("https://recruiting2.ultipro.com/TEL1006", "2fcbb6f4-e717-17cb-9327-3dd87a55b08d", "CA"),   # 501
+    # American Health Partners (Franklin TN): Unity Psychiatric Care's
+    # hospitals plus the company's health plan and pharmacy; 97 rows.
+    "American Health Partners":           ("https://recruiting2.ultipro.com/TEN1002THMI", "617264f5-2868-4e72-899e-78a68c5361f8", "TN"),   # 97
+}
+
+# 2026-10-20: the posting's title names the hospital on a board whose
+# location name is the company. Telecare titles end in its program number
+# ("Acute RN Supervisor (on call) - Mental Health 169"); a search of the
+# board for each hospital's name on 10-20 returned that number's postings:
+# 169 Willow Rock Center (San Leandro), 155 Telecare Heritage Psychiatric
+# Health Facility (Oakland), 194 Santa Cruz County Psychiatric Health
+# Facility (Santa Cruz, run by Telecare). Keyed by the board's tenant code;
+# a number counts only in its own town. The names are the CMS names.
+UKG_TITLE_FACILITY: dict[str, tuple[tuple[re.Pattern, str, str], ...]] = {
+    "TEL1006": (
+        (re.compile(r"(?<![\d$,.])169(?![\d,])"), "Willow Rock Center", "San Leandro"),
+        (re.compile(r"(?<![\d$,.])155(?![\d,])"), "Telecare Heritage Psychiatric Health Facility", "Oakland"),
+        (re.compile(r"(?<![\d$,.])194(?![\d,])"), "Santa Cruz County Psychiatric Health Facility", "Santa Cruz"),
+    ),
+}
+
+# 2026-10-20: a location name several hospitals share; the posting's town
+# makes it one hospital ("Unity Psychiatric Care" in Clarksville TN is
+# "Unity Psychiatric Care - Clarksville", the CMS hospital of that town).
+# Keyed by tenant code; location name lowercased -> name prefix.
+UKG_FACILITY_TOWN_SUFFIX: dict[str, dict[str, str]] = {
+    "TEN1002THMI": {"unity psychiatric care": "Unity Psychiatric Care"},
 }
 
 _UKG_PAGE = 50
@@ -13025,6 +13087,15 @@ def _ukg_job(j: dict, system: str, base_url: str, guid: str, default_state: str 
     if (not facility or "," in facility or re.search(r"\d", facility)
             or facility.lower() in _US_STATE_CODES or facility.upper() in _US_STATE_CODES.values()):
         facility = system          # "City, ST", street addresses and region names ("Alabama") are not facilities
+    code = str(base_url or "").rstrip("/").rsplit("/", 1)[-1]
+    title_txt = str(g("Title", "title"))
+    for rx, name, town in UKG_TITLE_FACILITY.get(code, ()):
+        if rx.search(title_txt) and city.strip().lower() == town.lower():
+            facility = name
+            break
+    prefix = UKG_FACILITY_TOWN_SUFFIX.get(code, {}).get(facility.strip().lower())
+    if prefix and city:
+        facility = f"{prefix} - {city}"
     opp_id = str(g("Id", "id", "opportunityId", "OpportunityId")).strip()
     full = j.get("FullTime")
     job_type = str(g("employmentType", "workHours") or
