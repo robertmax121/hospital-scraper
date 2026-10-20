@@ -10406,11 +10406,20 @@ def apply_employer_rules(job: Job):
 # ══════════════════════════════════════════════════════════════════════════
 # (system, org code) for run_usajobs. Module level since 2026-10-12 so
 # configured_feed_map() can count these as feeds of their systems.
+# 2026-10-20: the codes are USAJOBS agency subelement codes
+# (data.usajobs.gov/api/codelist/agencysubelements): VATA is the Veterans
+# Health Administration, HE37 the Indian Health Service, HE38 the National
+# Institutes of Health. IHS read HE38 until 10-20, so the 15 rows the first
+# keyed run stored as "Indian Health Service" were NIH postings (NIH-CC-*,
+# NIH-GR-*, Montgomery County / Bethesda, MD), and NIH read HE06, a code the
+# list does not hold, and stored none. DD (Department of Defense) matches its
+# components too (Army, Navy, Marine Corps and the DHA's treatment
+# facilities all came back on 10-20).
 USAJOBS_ORGS = [
     ("VA Hospitals",            "VATA"),
-    ("Indian Health Service",   "HE38"),
+    ("Indian Health Service",   "HE37"),
     ("Military Health System",  "DD"),
-    ("NIH Clinical Center",     "HE06"),
+    ("NIH Clinical Center",     "HE38"),
 ]
 
 
