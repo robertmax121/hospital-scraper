@@ -12,6 +12,7 @@ whole crawl; the Workday claim is recorded only as scrape_workday returns.
 No network, no database."""
 import asyncio
 import pathlib
+from datetime import datetime, timedelta, timezone
 import re
 import urllib.error
 import urllib.parse
@@ -240,8 +241,12 @@ def test_the_half_of_active_floor_still_holds_a_complete_claim(monkeypatch):
 # -- 4. Layer 4 counts a complete system's unseen rows as usual ---------------
 
 def test_layer4_counts_a_complete_workday_systems_unseen_rows():
+    # 2026-10-20: two days before now, not a fixed date: plan_layer4's 7-day
+    # backstop retires rows last seen more than a week ago whatever the
+    # guard says, so the fixed 2026-10-11 stamp made this fail after 10-18.
+    seen = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
     active = [{"id": i, "job_id": str(i), "hospital_system": "NewYork-Presbyterian",
-               "consecutive_scrape_misses": 2, "scraped_at": "2026-10-11T00:09:00+00:00"} for i in range(488)]
+               "consecutive_scrape_misses": 2, "scraped_at": seen} for i in range(488)]
     keys = {("NewYork-Presbyterian", str(i)) for i in range(316)}
     held = retire_guard.plan_layer4(active, keys, 3)
     assert held["deactivate_ids"] == [] and "NewYork-Presbyterian" in held["guarded"]
