@@ -80,6 +80,9 @@ def _load_shared_env() -> None:
         # sweep (site_revalidate); absent, the purge logs a line and skips.
         if shared.get("CRON_SECRET"):
             os.environ.setdefault("CRON_SECRET", shared["CRON_SECRET"])
+        # 2026-10-20: the scraper's own purge key, read first by site_revalidate.
+        if shared.get("REVALIDATE_SECRET"):
+            os.environ.setdefault("REVALIDATE_SECRET", shared["REVALIDATE_SECRET"])
         break
 
 

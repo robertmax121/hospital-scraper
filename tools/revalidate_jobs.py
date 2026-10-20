@@ -83,7 +83,7 @@ def ids_from_text(text: str) -> list[int]:
 
 
 def read_env_file(path: str) -> dict:
-    """CRON_SECRET and SITE_URL from a dotenv file (quotes stripped)."""
+    """REVALIDATE_SECRET, CRON_SECRET and SITE_URL from a dotenv file (quotes stripped)."""
     out = {}
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -94,7 +94,7 @@ def read_env_file(path: str) -> dict:
             k = k.strip()
             if k.startswith("export "):
                 k = k[len("export "):].strip()
-            if k in (site_revalidate.SECRET_ENV, site_revalidate.SITE_ENV):
+            if k in (site_revalidate.SECRET_ENV, site_revalidate.FALLBACK_SECRET_ENV, site_revalidate.SITE_ENV):
                 out[k] = v.strip().strip('"').strip("'")
     return out
 
@@ -144,7 +144,7 @@ def _parse_args(argv):
     p.add_argument("--ids", dest="ids_csv", action="append", default=[], help="comma-separated ids")
     p.add_argument("--file", help="a file of ids, any separators; - for stdin")
     p.add_argument("--sql", help="a read-only SELECT returning an id column (wp.sql)")
-    p.add_argument("--env-file", help="dotenv file to read CRON_SECRET (and SITE_URL) from")
+    p.add_argument("--env-file", help="dotenv file to read REVALIDATE_SECRET or CRON_SECRET (and SITE_URL) from")
     p.add_argument("--site", help="site origin (default SITE_URL or https://jobs.waypointrecruit.com)")
     p.add_argument("--batch", type=int, default=site_revalidate.BATCH, help=f"ids per POST (max {MAX_BATCH})")
     p.add_argument("--max-ids", type=int, default=100000, help="refuse more ids than this")
@@ -169,11 +169,12 @@ def main(argv=None) -> int:
         print(f"REFUSED: {len(ids):,} ids is over --max-ids {args.max_ids:,}")
         return 2
     batch = max(1, min(int(args.batch), MAX_BATCH))
-    secret = os.environ.get(site_revalidate.SECRET_ENV, "")
+    secret = site_revalidate._env_secret()
     site = args.site
     if args.env_file:
         env = read_env_file(args.env_file)
-        secret = secret or env.get(site_revalidate.SECRET_ENV, "")
+        secret = secret or (env.get(site_revalidate.SECRET_ENV, "").strip()
+                            or env.get(site_revalidate.FALLBACK_SECRET_ENV, "").strip())
         site = site or env.get(site_revalidate.SITE_ENV)
     base = site_revalidate._site_base(site)
     print(f"{len(ids):,} id(s) -> {(base or '(refused origin)') + site_revalidate.ENDPOINT_PATH} "

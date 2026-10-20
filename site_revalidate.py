@@ -19,10 +19,13 @@ hca_local_push.py flushes after its own sweep. Travel retirements are not
 sent: travel_jobs ids are another table's ids and the endpoint looks ids up
 in hospital_jobs.
 
-Auth: Authorization: Bearer <CRON_SECRET>, the credential the site's cron
-routes (and ops/job_alerts_send.py) already use. When CRON_SECRET is not set
-in this process's environment the flush logs one line and does nothing: the
-pages then expire on their own TTL, as before. SITE_URL (optional, as in the
+Auth: Authorization: Bearer <REVALIDATE_SECRET> (2026-10-20), the scraper's
+own key: the site's purge route accepts it, and it can do nothing else there.
+CRON_SECRET (the site's cron credential, which also starts weekly billing) is
+still read when REVALIDATE_SECRET is not set, so nothing changes for a
+machine that already has it. When neither is set in this process's
+environment the flush logs one line and does nothing: the pages then expire
+on their own TTL, as before. SITE_URL (optional, as in the
 site's ops scripts) points it at a preview deployment.
 
 Never raises and never fails a run: every error is logged and counted.
@@ -46,7 +49,8 @@ from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
-SECRET_ENV = "CRON_SECRET"
+SECRET_ENV = "REVALIDATE_SECRET"
+FALLBACK_SECRET_ENV = "CRON_SECRET"   # read only when SECRET_ENV is unset or blank
 SITE_ENV = "SITE_URL"
 DEFAULT_SITE = "https://jobs.waypointrecruit.com"
 ENDPOINT_PATH = "/api/revalidate/jobs"
@@ -71,6 +75,16 @@ _ANSWER_COUNTS = ("accepted", "tags_revalidated", "paths_revalidated", "found", 
 
 # id -> the pass that retired it (the first one wins); insertion-ordered.
 _RETIRED: dict[int, str] = {}
+
+
+def _env_secret() -> str:
+    """REVALIDATE_SECRET, else CRON_SECRET, from this process's environment;
+    blank counts as unset. Never raises."""
+    for name in (SECRET_ENV, FALLBACK_SECRET_ENV):
+        v = (os.environ.get(name) or "").strip()
+        if v:
+            return v
+    return ""
 
 
 def note_retired(ids, source: str = "") -> int:
@@ -179,14 +193,14 @@ def post_ids(ids, *, secret: str | None = None, site: str | None = None, label: 
         out["ids"] = len(uniq)
         if not uniq:
             return out
-        secret = secret if secret is not None else os.environ.get(SECRET_ENV, "")
+        secret = secret if secret is not None else _env_secret()
         secret = (secret or "").strip()
         if not secret:
             out["skipped"] = f"{SECRET_ENV} not set"
             out["unsent"] = len(uniq)
             logger.info(f"{tag}: {SECRET_ENV} is not set in this environment; {len(uniq):,} retired job "
                         f"page(s) not purged (they expire on the site's cache TTL, up to ~12 h). "
-                        f"Add {SECRET_ENV} (the site's cron credential) to this service's variables.")
+                        f"Add {SECRET_ENV} (the same value as on the site) to this service's variables.")
             return out
         base = _site_base(site)
         if not base:

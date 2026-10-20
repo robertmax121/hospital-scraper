@@ -11,7 +11,7 @@ os.chdir(REPO)
 sys.path.insert(0, REPO)
 # 2026-10-15: CRON_SECRET / SITE_URL too, so no test can reach the site's
 # revalidate endpoint (site_revalidate skips without the secret).
-for _k in ("SUPABASE_URL", "SUPABASE_KEY", "SUPABASE_SERVICE_ROLE_KEY", "CRON_SECRET", "SITE_URL"):
+for _k in ("SUPABASE_URL", "SUPABASE_KEY", "SUPABASE_SERVICE_ROLE_KEY", "CRON_SECRET", "REVALIDATE_SECRET", "SITE_URL"):
     os.environ.pop(_k, None)
 
 import pytest  # noqa: E402

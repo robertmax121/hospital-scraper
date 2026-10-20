@@ -102,8 +102,8 @@ def test_no_secret_logs_one_line_and_sends_nothing(monkeypatch, caplog):
         raise AssertionError("no request without a secret")
     with caplog.at_level(logging.INFO):
         out = R.post_ids([1, 2, 3], opener=refuse, sleep=_no_sleep)
-    assert out["skipped"] == "CRON_SECRET not set" and out["sent"] == 0 and out["unsent"] == 3
-    msgs = [r.message for r in caplog.records if "CRON_SECRET" in r.message]
+    assert out["skipped"] == "REVALIDATE_SECRET not set" and out["sent"] == 0 and out["unsent"] == 3
+    msgs = [r.message for r in caplog.records if "REVALIDATE_SECRET" in r.message]
     assert len(msgs) == 1 and "not purged" in msgs[0]
 
 
@@ -115,7 +115,7 @@ def test_the_secret_goes_only_to_an_https_origin():
     assert site.calls[0]["url"] == "http://localhost:3000/api/revalidate/jobs" and out["sent"] == 1
 
 
-@pytest.mark.parametrize("status,why", [(401, "refused CRON_SECRET"), (403, "refused CRON_SECRET"),
+@pytest.mark.parametrize("status,why", [(401, "refused REVALIDATE_SECRET"), (403, "refused REVALIDATE_SECRET"),
                                         (404, "endpoint not deployed")])
 def test_a_refused_credential_or_missing_endpoint_stops_at_once(status, why):
     site = FakeSite(lambda n, ids: status)
@@ -619,6 +619,8 @@ def test_tool_reads_ids_in_any_shape(tmp_path):
     env = tmp_path / "e.env"
     env.write_text('# c\nOTHER=1\nexport CRON_SECRET="abc"\nSITE_URL=https://x.example\n', encoding="utf-8")
     assert T.read_env_file(str(env)) == {"CRON_SECRET": "abc", "SITE_URL": "https://x.example"}
+    env.write_text("REVALIDATE_SECRET=own\nCRON_SECRET=abc\n", encoding="utf-8")
+    assert T.read_env_file(str(env)) == {"REVALIDATE_SECRET": "own", "CRON_SECRET": "abc"}
 
 
 def test_tool_dry_run_and_missing_secret_send_nothing(monkeypatch, capsys):
@@ -697,3 +699,41 @@ def test_tool_sql_failure_sends_nothing(monkeypatch, tmp_path):
     assert "nothing sent" in str(e.value) and "does not exist" in str(e.value)
     fake.sql = lambda q: [{"id": 5}, {"id": "6"}, {"id": 5}, {"x": None}]
     assert T.ids_from_sql("select id from t", now=datetime(2026, 10, 15, 18, 0, tzinfo=timezone.utc)) == [5, 6]
+
+
+# ── 2026-10-20: the scraper's own key ───────────────────────────────────────
+
+def test_own_key_first_cron_secret_as_fallback(monkeypatch):
+    monkeypatch.delenv("REVALIDATE_SECRET", raising=False)
+    monkeypatch.delenv("CRON_SECRET", raising=False)
+    assert R._env_secret() == ""
+    monkeypatch.setenv("CRON_SECRET", "cron")
+    assert R._env_secret() == "cron"
+    monkeypatch.setenv("REVALIDATE_SECRET", "  ")
+    assert R._env_secret() == "cron"
+    monkeypatch.setenv("REVALIDATE_SECRET", "own")
+    assert R._env_secret() == "own"
+
+
+def test_flush_sends_the_own_key(monkeypatch):
+    monkeypatch.setenv("REVALIDATE_SECRET", "own")
+    monkeypatch.setenv("CRON_SECRET", "cron")
+    site = FakeSite()
+    monkeypatch.setattr(urllib.request, "urlopen", site)
+    monkeypatch.setattr(R.time, "sleep", _no_sleep)
+    out = R.post_ids([1, 2, 3], label="t")
+    assert out["sent"] == 3
+    assert {c["auth"] for c in site.calls} == {"Bearer own"}
+
+
+def test_tool_env_file_own_key_first(monkeypatch, tmp_path):
+    T = _tool()
+    monkeypatch.delenv("REVALIDATE_SECRET", raising=False)
+    monkeypatch.delenv("CRON_SECRET", raising=False)
+    env = tmp_path / ".env.local"
+    env.write_text("CRON_SECRET=cron\nREVALIDATE_SECRET=own\n", encoding="utf-8")
+    site = FakeSite()
+    monkeypatch.setattr(urllib.request, "urlopen", site)
+    monkeypatch.setattr(R.time, "sleep", _no_sleep)
+    assert T.main(["5", "--env-file", str(env)]) == 0
+    assert {c["auth"] for c in site.calls} == {"Bearer own"}
