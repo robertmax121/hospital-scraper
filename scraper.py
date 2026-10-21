@@ -3241,30 +3241,56 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
     parts = [p for p in parts if p.lower() not in JUNK]
     if not parts:
         return ("Remote", "") if is_remote else ("", "")
+    # 2026-10-21 (fix 3): "Washington, D.C." is the District (One Medical's
+    # Greenhouse board writes it with the dots).
+    parts = ["DC" if re.fullmatch(r"(?i)d\.\s*c\.?", p) else p for p in parts]
 
     # Find 2-char alpha state code anywhere in parts
     state = next((p for p in parts if len(p) == 2 and p.isalpha()), "")
 
-    # If no 2-char code, check for full state name
+    # If no 2-char code, check for full state name.
+    # 2026-10-21 (fix 3, owner: Mercy Washington MO filed as WA): a town can
+    # be named like a state. The feeds that hand over a city field and a state
+    # field ("Washington", "Missouri") are read as "Washington, Missouri",
+    # and the first state name used to win: 97 active Mercy rows (Mercy
+    # Hospital Washington MO) were filed in WA, and Fairview's Wyoming MN
+    # (36), OSF's Washington IL, MedStar's California MD, Bon Secours Mercy's
+    # Oregon OH, Corewell's Wyoming MI, AccentCare's Washington DC and Nevada
+    # TX, Trilogy's Washington IN with them. When two parts name states, the
+    # state is the LAST one (City, State order) and the earlier one is the
+    # town, if the string is the plain two-part "Town, State" shape or the
+    # earlier name is a known town of that state ("Delaware" in OH). Anything
+    # else (a list of states, "Remote, Washington, Oregon") reads as before.
+    town_named = ""
     if not state:
-        for p in parts:
-            abbr = STATE_ABBR.get(p.lower(), "")
-            if abbr:
-                state = abbr
-                break
+        named = [(p, STATE_ABBR[p.lower()]) for p in parts if p.lower() in STATE_ABBR]
+        if named:
+            state = named[0][1]
+            last = named[-1][1]
+            heads = [p for p, code in named[:-1] if code != last]
+            if heads:
+                known = next((p for p in heads if known_town(p, last)), "")
+                if known or (len(parts) == 2 and not is_remote):
+                    state, town_named = last, known or heads[0]
 
     # Determine city: if first part IS the state code → reversed format
-    if parts and len(parts[0]) == 2 and parts[0].isalpha() and parts[0].upper() == state:
+    if town_named:
+        city = town_named
+    elif parts and len(parts[0]) == 2 and parts[0].isalpha() and parts[0].upper() == state:
         city = parts[1] if len(parts) > 1 else ""
     else:
         # Remove state/country parts to get city. 2026-09-17: prefer the part
         # that looks like a city ("MercyOne North Iowa Medical Center - East
         # Campus, Mason City, Iowa" -> Mason City), and take the tail of a
         # "Facility - City" part ("Saint Francis Hospital - Hartford, CT").
+        # 2026-10-21 (fix 3): a part named like another state stays a town
+        # when it is a known town of this one ("Indiana Regional Medical
+        # Center, Indiana, PA" -> Indiana).
         cands = [p for p in parts
                  if p != state
                  and p.lower() not in JUNK
-                 and not STATE_ABBR.get(p.lower(), "")]
+                 and (not STATE_ABBR.get(p.lower(), "")
+                      or (STATE_ABBR[p.lower()] != state.upper() and known_town(p, state.upper())))]
         city = next((p for p in cands if _cityish(p)), cands[0] if cands else parts[0])
         if " - " in city:
             head, tail = (x.strip() for x in city.rsplit(" - ", 1))
@@ -5461,6 +5487,14 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "orange-providence": (None, "Orange", "CA"),
         "orthopedics irvine office": (None, "Irvine", "CA"),
     },
+    # 2026-10-21 (fix 3): ProMedica writes its Bay Park Hospital site as the
+    # bare town, locationsText "Oregon" (/job/Oregon/... paths), which read as
+    # the state of Oregon: 20 active rows filed in OR. Bay Park is at 2801
+    # Bay Park Drive, Oregon OH (CMS 360259, Bay Park Community Hospital);
+    # ProMedica is OH and MI only.
+    "ProMedica": {
+        "oregon": (None, "Oregon", "OH"),
+    },
 }
 WD_FACILITY_MAP["Wellstar Health (Providers)"] = WD_FACILITY_MAP["Wellstar Health"]
 
@@ -5585,13 +5619,25 @@ def _wd_bullet_location(bullets: list) -> tuple[str, str]:
     2026-10-20) and "Casual" (140) as the city. A known town keeps the town
     list's spelling ("COLUMBUS" -> "Columbus")."""
     bl = [str(b or "").strip() for b in (bullets or [])]
-    si = next((i for i, s in enumerate(bl) if s and s.lower() in _STATE_CODE_BY_NAME), -1)
-    if si < 0:
+    named = [i for i, s in enumerate(bl) if s and s.lower() in _STATE_CODE_BY_NAME]
+    if not named:
         return "", ""
+    si = named[0]
+    # 2026-10-21 (fix 3): a town named like a state. OhioHealth's Grady
+    # Memorial rows read ["Regular", "JR156929", ..., "Ohio", "43015",
+    # "DELAWARE"]; the town was refused for being a state name and the row
+    # took the tenant default (Columbus). With two state names, the state is
+    # the one the other is a known town of.
+    if len(named) > 1:
+        si = next((i for i in named
+                   if any(k != i and known_town(bl[k], _STATE_CODE_BY_NAME[bl[i].lower()]) for k in named)),
+                  si)
     state = _STATE_CODE_BY_NAME[bl[si].lower()]
 
     def _town(s: str) -> bool:
-        return (bool(s) and s.lower() not in _STATE_CODE_BY_NAME and not _WD_REQ_ID_RE.match(s)
+        if s and s.lower() in _STATE_CODE_BY_NAME:
+            return s.lower() != bl[si].lower() and known_town(s, state) is not None
+        return (bool(s) and not _WD_REQ_ID_RE.match(s)
                 and not re.match(r"(?i)posted\b", s) and _cityish(s) and is_plausible_city(s))
 
     for s in bl[si + 1:]:
@@ -6971,7 +7017,7 @@ COMMONSPIRIT_CITY_STATE: dict[str, str] = {
     "othello": "WA", "pasco": "WA", "moses-lake": "WA",
     "wenatchee": "WA", "ellensburg": "WA",
     # Wisconsin
-    "la-crosse": "WA", "neillsville": "WI", "monroe": "WI",
+    "la-crosse": "WI", "neillsville": "WI", "monroe": "WI",   # 2026-10-21: La Crosse was "WA"
     "sparta": "WI", "onalaska": "WI",
     # Arkansas
     "harrison": "AR",
@@ -9384,9 +9430,16 @@ def _greenhouse_city_state(j: dict) -> tuple[str, str]:
     is ambiguous (Springfield, Lebanon), so the posting's own city stands."""
     loc = str(((j or {}).get("location") or {}).get("name") or "").strip()
     city, state = parse_city_state(loc)
-    if not state and "|" in loc:
-        c2, state = parse_city_state(loc.split("|", 1)[0].strip())
-        city = city or c2
+    if "|" in loc:
+        # 2026-10-21 (fix 3): the text before " | " is read first. Parsed
+        # whole, "Washington, NJ 07882 | 40.75 | -74.98" hid the NJ behind
+        # the coordinates and the town's name gave the state (WA); the same
+        # for "Nevada, MO 64772 | ..." (NV).
+        c2, s2 = parse_city_state(loc.split("|", 1)[0].strip())
+        if s2:
+            city, state = c2 or city, s2
+        elif not state:
+            city = city or c2
     if not state:
         for o in j.get("offices") or []:
             _c, s2 = parse_city_state(str((o or {}).get("location") or "").strip())
