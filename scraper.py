@@ -3175,7 +3175,7 @@ def _cityish(part: str) -> bool:
         and " - " not in p and not _NOT_CITY_WORDS.search(p) and not not_a_place(p)
 
 
-def parse_city_state(loc_str: str) -> tuple[str, str]:
+def parse_city_state(loc_str: str, town_first: bool = False) -> tuple[str, str]:
     """
     Extract (city, state) from a location string robustly.
     Handles:
@@ -3185,6 +3185,11 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
       - Full state names from SmartRecruiters ("Chicago, Illinois")
       - Single-segment strings ("Remote")
     Returns 2-char state code where possible.
+
+    town_first (2026-10-21, fix 3): the string is a feed's city field and
+    state field joined ("California, Maryland"), so with two state names the
+    first is the town even when the town list does not know it. Free text
+    ("Texas, Louisiana", a telehealth licence list) leaves it off.
     """
     STATE_ABBR = {
         "alabama":"AL","alaska":"AK","arizona":"AZ","arkansas":"AR","california":"CA",
@@ -3258,9 +3263,12 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
     # Oregon OH, Corewell's Wyoming MI, AccentCare's Washington DC and Nevada
     # TX, Trilogy's Washington IN with them. When two parts name states, the
     # state is the LAST one (City, State order) and the earlier one is the
-    # town, if the string is the plain two-part "Town, State" shape or the
-    # earlier name is a known town of that state ("Delaware" in OH). Anything
-    # else (a list of states, "Remote, Washington, Oregon") reads as before.
+    # town, if the earlier name is a known town of that state ("Delaware" in
+    # OH, "Washington" in MO), or the caller joined a city field and a state
+    # field (town_first: MedStar's California MD, AccentCare's Nevada TX,
+    # OSF's Oregon IL are on no town list). Anything else (a list of states,
+    # Charlie Health's "Texas, Louisiana", "Remote, Washington, Oregon")
+    # reads as before.
     town_named = ""
     if not state:
         named = [(p, STATE_ABBR[p.lower()]) for p in parts if p.lower() in STATE_ABBR]
@@ -3270,7 +3278,7 @@ def parse_city_state(loc_str: str) -> tuple[str, str]:
             heads = [p for p, code in named[:-1] if code != last]
             if heads:
                 known = next((p for p in heads if known_town(p, last)), "")
-                if known or (len(parts) == 2 and not is_remote):
+                if known or (town_first and len(parts) == 2 and not is_remote):
                     state, town_named = last, known or heads[0]
 
     # Determine city: if first part IS the state code → reversed format
@@ -8777,8 +8785,10 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                 # is LOCAL to that function — referencing it from here was a
                 # NameError that a bare except silently ate on every row,
                 # yielding "0 jobs (site reports 1175)" on the first test run).
+                # 2026-10-21 (fix 3): city and state are separate fields, so a
+                # town named like a state is the town (town_first).
                 city, st = parse_city_state(
-                    f"{(j.get('city') or '').strip()}, {(j.get('state') or '').strip()}")
+                    f"{(j.get('city') or '').strip()}, {(j.get('state') or '').strip()}", town_first=True)
                 url = _jibe_posting_url(system, base_url, j, rid)
                 cat = j.get("category")
                 if isinstance(cat, list):
@@ -11619,8 +11629,10 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     if len(parts) >= 2:
                         _raw_city = parts[0]
                         _raw_state = parts[-1]
+                # 2026-10-21 (fix 3): city and state fields (or cityState's
+                # two halves): a town named like a state is the town.
                 city, state = (
-                    parse_city_state(f"{_raw_city}, {_raw_state}")
+                    parse_city_state(f"{_raw_city}, {_raw_state}", town_first=True)
                     if (_raw_city or _raw_state)
                     else (_raw_city, _raw_state)
                 )

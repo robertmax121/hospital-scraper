@@ -28,12 +28,10 @@ from scraper import Job, parse_city_state
     ("Wyoming, Michigan", ("Wyoming", "MI")),
     ("Wyoming, Minnesota", ("Wyoming", "MN")),
     ("Oregon, Ohio", ("Oregon", "OH")),
-    ("Oregon, Illinois", ("Oregon", "IL")),
     ("WASHINGTON, Illinois", ("WASHINGTON", "IL")),
     ("Washington, Indiana", ("Washington", "IN")),
     ("Washington, Pennsylvania", ("Washington", "PA")),
-    ("California, Maryland", ("California", "MD")),
-    ("Nevada, Texas", ("Nevada", "TX")),
+    ("Washington, Georgia", ("Washington", "GA")),
     ("Virginia, Minnesota", ("Virginia", "MN")),
     # the District, every way the boards write it
     ("Washington, District of Columbia", ("Washington", "DC")),
@@ -51,6 +49,26 @@ from scraper import Job, parse_city_state
 ])
 def test_town_named_like_a_state(loc, want):
     assert parse_city_state(loc) == want
+
+
+@pytest.mark.parametrize("loc, want", [
+    # towns on no town list: only a caller that joined a city field and a
+    # state field (Jibe, Phenom) says the first name is the town
+    ("California, Maryland", ("California", "MD")),     # MedStar St. Mary's area
+    ("Nevada, Texas", ("Nevada", "TX")),                # AccentCare
+    ("Oregon, Illinois", ("Oregon", "IL")),             # OSF
+    ("Washington, Missouri", ("Washington", "MO")),
+    (", Missouri", ("Missouri", "MO")),                 # as before; normalize_job blanks it
+    ("Washington, ", ("Washington", "WA")),
+])
+def test_city_and_state_fields(loc, want):
+    assert parse_city_state(loc, town_first=True) == want
+
+
+def test_free_text_list_of_states_reads_as_before():
+    # Charlie Health's Greenhouse location for a two-state licence role
+    assert parse_city_state("Texas, Louisiana ") == ("Texas", "TX")
+    assert parse_city_state("California, Maryland") == ("California", "CA")
 
 
 @pytest.mark.parametrize("loc, want", [
@@ -140,6 +158,9 @@ def test_mercy_jibe_row_is_filed_in_missouri(monkeypatch):
     ("Sicklerville, NJ 08081 | 39.738815196 | -74.986871161", ("Sicklerville", "NJ")),
     ("Washington, District of Columbia ", ("Washington", "DC")),
     ("Washington, D.C.", ("Washington", "DC")),
+    ("Washington, D.C", ("Washington", "DC")),
+    ("Indiana, PA 15701 | 40.622348628 | -79.162165964", ("Indiana", "PA")),
+    ("Texas, Louisiana ", ("Texas", "TX")),
 ])
 def test_greenhouse_reads_the_text_before_the_coordinates(name, want):
     assert scraper._greenhouse_city_state({"location": {"name": name}}) == want
