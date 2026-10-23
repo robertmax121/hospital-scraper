@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from supabase import create_client, Client
 import retire_guard
 import site_revalidate
+import sb_keys
 from retire_guard import (BACKSTOP_DAYS, plan_layer4, load_yield_history, save_yield_history,
                           zero_yield_alarms)
 
@@ -60,37 +61,65 @@ PAGE = 1000
 MISS_THRESHOLD = 3
 
 
+# 2026-10-23 (Railway breach): both clients read the key through sb_keys
+# (SUPABASE_SECRET_KEY, then SUPABASE_SERVICE_ROLE_KEY, then SUPABASE_KEY).
+# A new-style sb_secret_ key needs supabase-py >= 2.16 (1.2.0 rejects it as
+# "Invalid API key"), and 2.x wants SyncClientOptions: the old
+# ClientOptions(...) raises AttributeError 'storage' there, which the
+# fallback below used to swallow, silently dropping the 300 s timeout.
+# The timeouts are passed explicitly so the upgrade changes nothing: 1.2.0
+# gave client() a 5 s PostgREST timeout by default (2.x defaults to 120 s).
+CLIENT_TIMEOUT_S = 5
+SERVICE_TIMEOUT_S = 300
+
+
+def _options(timeout_s: int):
+    try:
+        from supabase.lib.client_options import SyncClientOptions as _Opts
+    except ImportError:  # supabase-py 1.x
+        from supabase.lib.client_options import ClientOptions as _Opts
+    return _Opts(postgrest_client_timeout=timeout_s)
+
+
+def _create(url: str, key: str, timeout_s: int) -> Client:
+    try:
+        return create_client(url, key, options=_options(timeout_s))
+    except (AttributeError, TypeError, ImportError) as e:
+        # An options shape this supabase-py does not take: keep running on
+        # its default timeout, but say so (the old code fell back silently).
+        logger.warning(f"supabase client options rejected ({type(e).__name__}); "
+                       f"using the library default timeout instead of {timeout_s} s")
+        return create_client(url, key)
+
+
+def _url_and_key() -> tuple[str, str]:
+    return os.environ.get("SUPABASE_URL", ""), sb_keys.supabase_key()
+
+
 def client() -> Client:
-    url = os.environ.get("SUPABASE_URL", "")
-    key = os.environ.get("SUPABASE_KEY", "")
+    url, key = _url_and_key()
     if not url or not key:
-        raise ValueError("Set SUPABASE_URL and SUPABASE_KEY environment variables")
-    return create_client(url, key)
+        raise ValueError("Set SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY / SUPABASE_KEY)")
+    return _create(url, key, CLIENT_TIMEOUT_S)
 
 
 def service_client() -> Client:
-    """Client for privileged writes to RLS-protected tables (currently
-    site_stats). Uses the service-role key, which bypasses row-level security.
+    """Client for privileged writes to RLS-protected tables (site_stats,
+    scraper_runs, the cohort RPC). Uses the secret / service-role key, which
+    bypasses row-level security.
 
-    Falls back to SUPABASE_KEY only so local/dev runs don't crash outright —
-    but in production that fallback is the anon key, which RLS will reject for
-    these tables (error 42501). The site_stats counter only updates when
-    SUPABASE_SERVICE_ROLE_KEY is present in the environment.
+    sb_keys.supabase_key() prefers SUPABASE_SECRET_KEY, then
+    SUPABASE_SERVICE_ROLE_KEY, and falls back to SUPABASE_KEY only so
+    local/dev runs don't crash outright; if that fallback is a public key,
+    RLS rejects these tables (error 42501).
     """
-    url = os.environ.get("SUPABASE_URL", "")
-    key = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-           or os.environ.get("SUPABASE_KEY", ""))
+    url, key = _url_and_key()
     if not url or not key:
-        raise ValueError("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
+        raise ValueError("Set SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY)")
     # 2026-09-21: refresh_hospital_sitemap_cohort runs for minutes on 240k
     # rows and timed out at the client default twice; give the privileged
-    # client a long read timeout (older supabase-py without ClientOptions
-    # keeps the default).
-    try:
-        from supabase.lib.client_options import ClientOptions
-        return create_client(url, key, options=ClientOptions(postgrest_client_timeout=300))
-    except Exception:
-        return create_client(url, key)
+    # client a long read timeout.
+    return _create(url, key, SERVICE_TIMEOUT_S)
 
 
 def upsert_jobs(jobs: list[dict]) -> dict:
@@ -474,12 +503,12 @@ def _write_site_stats(total: int) -> bool:
     MUST go through the service-role key (service_client), which bypasses
     RLS. The plain client() is rejected here (42501), which is exactly how
     this counter silently went stale before."""
-    if not os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
+    if not sb_keys.has_privileged_key():
         logger.warning(
-            "SUPABASE_SERVICE_ROLE_KEY not set; the site_stats write will be "
-            "rejected by RLS and the homepage job counter will NOT update. "
-            "Add it to the cron environment (Supabase > Settings > API > "
-            "service_role key).")
+            "Neither SUPABASE_SECRET_KEY nor SUPABASE_SERVICE_ROLE_KEY is set; "
+            "the site_stats write will be rejected by RLS and the homepage job "
+            "counter will NOT update. Add SUPABASE_SECRET_KEY to the cron "
+            "environment (Supabase > Settings > API Keys > secret key).")
     try:
         (service_client().table("site_stats")
            .upsert({"id": 1,

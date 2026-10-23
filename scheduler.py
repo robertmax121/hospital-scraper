@@ -14,6 +14,7 @@ from scraper import (scrape, PARTIAL_SYSTEMS, COMPLETE_SYSTEMS,
                      complete_canonical, layer4_partial_sets)
 from database import (mark_inactive_jobs, get_stats, active_total_after_passes,
                       start_run_record, finish_run_record)
+import sb_keys
 
 logging.basicConfig(
     level=logging.INFO,
@@ -121,6 +122,10 @@ def run():
     logger.info("=" * 55)
     logger.info(f"  NIGHTLY SCRAPE — {start.strftime('%Y-%m-%d %H:%M')}")
     logger.info("=" * 55)
+    # 2026-10-23 (Railway breach): which variable supplies the DATA project
+    # key and its type (secret / legacy-jwt), never the value, so the log
+    # shows when the run moved to the new secret key.
+    logger.info(f"  {sb_keys.describe()}")
 
     # ── Step 1: Scrape everything ─────────────────────────────────
     logger.info("\n[ STEP 1 ] Scraping all hospital systems...")

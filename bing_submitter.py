@@ -26,6 +26,8 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
+import sb_keys  # 2026-10-23: SUPABASE_SECRET_KEY, then the legacy names
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("bing_submitter")
 
@@ -58,7 +60,7 @@ def make_slug(job):
 
 
 def sb(env, path, method="GET", body=None, prefer=None):
-    key = env.get("SUPABASE_SERVICE_ROLE_KEY") or env.get("SUPABASE_KEY")
+    key = sb_keys.supabase_key(env)
     url = f"{env.get('SUPABASE_URL', 'https://tlzxajgonuevbqaelhvf.supabase.co').rstrip('/')}/rest/v1/{path}"
     headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
     if prefer:

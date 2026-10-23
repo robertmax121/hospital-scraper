@@ -61,7 +61,10 @@ def _load_shared_env() -> None:
     """2026-09-24: called from main() rather than at import, so importing this
     module (the tests do) never picks up write credentials. scraper reads the
     SUPABASE_* variables when it calls out, not at import, so the order is safe."""
-    if os.environ.get("SUPABASE_KEY"):
+    # 2026-10-23 (Railway breach): the new secret key (SUPABASE_SECRET_KEY)
+    # is exported under its own name and wins in sb_keys; the legacy
+    # service_role JWT still maps to SUPABASE_KEY as before.
+    if os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SECRET_KEY"):
         return
     for shared_env in SHARED_ENV_CANDIDATES:
         if not os.path.exists(shared_env):
@@ -74,7 +77,9 @@ def _load_shared_env() -> None:
                 shared[k.strip()] = v.strip()
         os.environ.setdefault("SUPABASE_URL", shared.get("SUPABASE_URL",
                               "https://tlzxajgonuevbqaelhvf.supabase.co"))
-        if shared.get("SUPABASE_SERVICE_ROLE_KEY"):
+        if shared.get("SUPABASE_SECRET_KEY"):
+            os.environ.setdefault("SUPABASE_SECRET_KEY", shared["SUPABASE_SECRET_KEY"])
+        elif shared.get("SUPABASE_SERVICE_ROLE_KEY"):
             os.environ.setdefault("SUPABASE_KEY", shared["SUPABASE_SERVICE_ROLE_KEY"])
         # 2026-10-15: the site's cron credential, for the page purge after the
         # sweep (site_revalidate); absent, the purge logs a line and skips.

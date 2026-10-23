@@ -29,6 +29,7 @@ from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, 
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
+import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -1361,8 +1362,7 @@ def load_cms_lookup() -> int:
     SUPABASE_URL / key the upsert uses). Without credentials the lookup stays
     empty and normalize_job fills nothing, so dry runs behave as before."""
     sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = (os.environ.get("SUPABASE_KEY", "")
-              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key:
         set_cms_lookup([])
         logger.info("CMS lookup: SUPABASE_URL/SUPABASE_KEY not set — blank-state fill off")
@@ -1654,8 +1654,7 @@ def load_known_bodies() -> int:
     its teaser sent over the stored body); a page that still fails keeps the
     rows read so far."""
     sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = (os.environ.get("SUPABASE_KEY", "")
-              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key or not (DETAIL_FETCH or WD_FETCH_DESCRIPTIONS):
         set_known_bodies([])
         logger.info("Known bodies: not loaded (no credentials or detail passes off); every row without a body is a candidate")
@@ -12876,8 +12875,7 @@ def _stored_req_job_ids(system: str):
     be read (no credentials, an error), which the caller treats as nothing
     known."""
     sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = (os.environ.get("SUPABASE_KEY", "")
-              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key:
         return None
     import urllib.request as _urlreq
@@ -21825,7 +21823,7 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     growing unboundedly with listings the source has removed."""
     LAST_RUN_COUNTS.pop("travel_sweep", None)
     sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key:
         logger.info("Travel upsert: SUPABASE_URL/SUPABASE_KEY not set — JSON dump only")
         return 0
@@ -22030,9 +22028,8 @@ def update_travel_site_stats() -> int:
     """
     import urllib.request as _urlreq
     sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = (os.environ.get("SUPABASE_KEY", "")
-              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
-    stats_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "") or sb_key
+    sb_key = sb_keys.supabase_key()
+    stats_key = sb_key  # supabase_key() already prefers the secret / service_role key
     if not sb_url or not sb_key:
         logger.info("Travel site_stats: SUPABASE_URL/KEY not set — skipping")
         return 0
@@ -22152,7 +22149,7 @@ def flag_signon_jobs(full_pass: bool = False) -> int:
                     "flag_signon_jobs(full_pass=True) runs the SQL backfill")
         return 0
     sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key:
         logger.info("flag_signon: SUPABASE_URL/SUPABASE_KEY not set; skipping")
         return 0
@@ -22575,8 +22572,7 @@ def retry_failed_hospital_upsert() -> int:
     if not rows:
         return 0
     sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = (os.environ.get("SUPABASE_KEY", "")
-              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key:
         logger.info("Hospital upsert retry: SUPABASE_URL/SUPABASE_KEY not set; no-op")
         return 0
@@ -22984,8 +22980,7 @@ def _patched_ids(resp) -> list[int]:
 def _upsert_hospital_jobs_to_supabase(rows: list[dict], run_started_iso: str) -> int:
     LAST_UPSERT_FAILED.clear()
     sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = (os.environ.get("SUPABASE_KEY", "")
-              or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key:
         logger.info("Hospital upsert: SUPABASE_URL/SUPABASE_KEY not set — no-op")
         return 0

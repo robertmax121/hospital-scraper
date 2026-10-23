@@ -26,6 +26,8 @@ from urllib.parse import urlparse, urljoin
 
 import aiohttp
 
+import sb_keys
+
 logger = logging.getLogger(__name__)
 
 # 2026-10-07 (push 10): 30 in flight did ~22 rows/s (1,250 s for the 28k
@@ -118,10 +120,7 @@ def _interleave_by_host(rows: list[dict]) -> list[dict]:
 
 def _env() -> tuple[str, str]:
     sb_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    sb_key = (
-        os.environ.get("SUPABASE_KEY", "")
-        or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-    )
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key:
         raise SystemExit("SUPABASE_URL/_KEY not set")
     return sb_url, sb_key

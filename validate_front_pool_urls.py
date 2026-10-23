@@ -56,6 +56,7 @@ from urllib.parse import urlparse, urljoin
 import aiohttp
 
 import site_revalidate
+import sb_keys
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +150,7 @@ def _dead_redirect(url) -> bool:
 
 def _env() -> tuple:
     sb_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key:
         raise SystemExit("SUPABASE_URL/_KEY not set")
     return sb_url, sb_key

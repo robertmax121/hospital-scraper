@@ -52,6 +52,7 @@ from urllib.parse import urlsplit
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 sys.path.insert(0, REPO)
+import sb_keys  # noqa: E402  (2026-10-23: the DATA project key names, read order)
 
 WP_DIRS = [
     os.path.join(os.path.expanduser("~"), "OneDrive", "claud_outputinput", "tools"),
@@ -289,7 +290,7 @@ def main(argv=None) -> int:
         pass
 
     if a.dry_run:
-        for k in ("SUPABASE_URL", "SUPABASE_KEY", "SUPABASE_SERVICE_ROLE_KEY"):
+        for k in ("SUPABASE_URL",) + sb_keys.KEY_ENV_ORDER:
             os.environ.pop(k, None)
     else:
         if in_quiet_window():
@@ -297,8 +298,8 @@ def main(argv=None) -> int:
             return 2
         import hca_local_push
         hca_local_push._load_shared_env()
-        if not os.environ.get("SUPABASE_KEY"):
-            print("REFUSED: no SUPABASE_KEY for the write")
+        if not sb_keys.supabase_key():
+            print("REFUSED: no SUPABASE_SECRET_KEY / SUPABASE_KEY for the write")
             return 2
     wp = _wp()
     import scraper as S
