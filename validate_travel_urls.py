@@ -26,6 +26,10 @@ from urllib.parse import urlparse, urljoin
 
 import aiohttp
 
+# Supabase refuses a secret key (sb_secret_) sent with a browser-like User-Agent:
+# every Supabase call names the caller instead of inheriting the session's UA.
+SUPABASE_UA = "waypoint-scraper/1.0 (+https://jobs.waypointrecruit.com)"
+
 import sb_keys
 
 logger = logging.getLogger(__name__)
@@ -144,7 +148,7 @@ async def _fetch_active(session: aiohttp.ClientSession, sb_url: str, sb_key: str
     one, so a server cap below PAGE_SIZE cannot end the walk early). A page
     that fails after its retries ends the walk with a WARNING; the rows
     fetched so far are still checked (deactivation is per row)."""
-    headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}"}
+    headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}", "User-Agent": SUPABASE_UA}
 
     async def _get_json(url: str, tries: int = 4):
         for attempt in range(1, tries + 1):
@@ -223,6 +227,7 @@ async def _deactivate_ids(session: aiohttp.ClientSession, sb_url: str,
     headers = {
         "apikey": sb_key,
         "Authorization": f"Bearer {sb_key}",
+        "User-Agent": SUPABASE_UA,
         "Content-Type": "application/json",
         "Prefer": "return=minimal",
     }

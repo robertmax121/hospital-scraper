@@ -55,6 +55,8 @@ from urllib.parse import urlparse, urljoin
 
 import aiohttp
 
+SUPABASE_UA = "waypoint-scraper/1.0 (+https://jobs.waypointrecruit.com)"
+
 import site_revalidate
 import sb_keys
 
@@ -325,7 +327,9 @@ def _tally(results) -> tuple:
 async def main() -> dict:
     sb_url, sb_key = _env()
     started = time.monotonic()
-    sb_headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}"}
+    # Supabase refuses a secret key (sb_secret_) sent with a browser User-Agent, and this
+    # session's default User-Agent is a Chrome string: name the caller on every Supabase call.
+    sb_headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}", "User-Agent": SUPABASE_UA}
     summary = {"checked": 0, "live": 0, "dead": 0, "indeterminate": 0,
                "retired": 0, "stamped": 0, "unchecked": 0, "unverifiable": 0}
     connector = aiohttp.TCPConnector(limit=CONCURRENCY * 2, ttl_dns_cache=300)
