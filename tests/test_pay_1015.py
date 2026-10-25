@@ -136,7 +136,10 @@ def test_nys_increase_hiring_rate_is_an_add_on_and_the_salary_field_stays():
     html = _read("nysomh_225533_pay.html")
     body = strip_html(html)
     title = "Dentist 2 (NY HELPS), St. Lawrence Psychiatric Center, P28013"
-    assert extract_posted_wage(f"{title}\n{body}") is None
+    # 2026-10-25 (Bounce QA): the body's own comma-less "Salary Range From
+    # $210226 to $210226 Annually" line is read now, the same figure as the
+    # field; the $30,771 add-on is still never the pay.
+    assert extract_posted_wage(f"{title}\n{body}") == (210226.0, 210226.0, "year")
     fields = [("Salary Range", "From $210226 to $210226 Annually")]
     got = scraper.field_wage_from_labels(fields)
     assert got == (210226.0, 210226.0, "year")
