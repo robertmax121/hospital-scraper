@@ -1,0 +1,433 @@
+{
+ "requisitionList": [
+  {
+   "hotJob": false,
+   "addedToJobCart": false,
+   "draft": false,
+   "alreadyAppliedOn": false,
+   "toReApply": false,
+   "jobId": "741819",
+   "contestNo": "2603976",
+   "column": [
+    "Patient Access Team Lead - Admitting & Offsite Outpatient",
+    "[\"US-NY-Stony Brook\"]",
+    "Nov 6, 2026, 11:59:00 PM"
+   ],
+   "linkedColumn": 0,
+   "locationsColumns": [
+    1
+   ]
+  },
+  {
+   "hotJob": false,
+   "addedToJobCart": false,
+   "draft": false,
+   "alreadyAppliedOn": false,
+   "toReApply": false,
+   "jobId": "733687",
+   "contestNo": "2601519",
+   "column": [
+    "Senior Analyst",
+    "[\"US-NY-Stony Brook\"]",
+    "Nov 13, 2026, 11:59:00 PM"
+   ],
+   "linkedColumn": 0,
+   "locationsColumns": [
+    1
+   ]
+  },
+  {
+   "hotJob": false,
+   "addedToJobCart": false,
+   "draft": false,
+   "alreadyAppliedOn": false,
+   "toReApply": false,
+   "jobId": "741902",
+   "contestNo": "2604000",
+   "column": [
+    "Functional Therapeutic Activities Specialist Float - Temporary",
+    "[\"US-NY-Stony Brook\"]",
+    "Jan 21, 2027, 11:59:00 PM"
+   ],
+   "linkedColumn": 0,
+   "locationsColumns": [
+    1
+   ]
+  }
+ ],
+ "facetResults": [
+  {
+   "id": "POSTING_DATE",
+   "facetValueResults": [
+    {
+     "id": "1",
+     "text": "Today",
+     "quantity": ""
+    },
+    {
+     "id": "2",
+     "text": "Yesterday",
+     "quantity": ""
+    },
+    {
+     "id": "3",
+     "text": "Last 7 Days",
+     "quantity": ""
+    },
+    {
+     "id": "4",
+     "text": "Last 14 Days",
+     "quantity": ""
+    },
+    {
+     "id": "5",
+     "text": "Last 21 Days",
+     "quantity": ""
+    },
+    {
+     "id": "6",
+     "text": "Last 28 Days",
+     "quantity": ""
+    }
+   ]
+  },
+  {
+   "id": "LOCATION",
+   "facetValueResults": [
+    {
+     "id": "4740755404",
+     "text": "Stony Brook",
+     "quantity": "204",
+     "level": 3
+    },
+    {
+     "id": "4240755404",
+     "text": "East Setauket",
+     "quantity": "11",
+     "level": 3
+    },
+    {
+     "id": "58100023514",
+     "text": "Commack",
+     "quantity": "5",
+     "level": 3
+    },
+    {
+     "id": "6240755404",
+     "text": "Southampton",
+     "quantity": "2",
+     "level": 3
+    },
+    {
+     "id": "2140755404",
+     "text": "Bohemia",
+     "quantity": "1",
+     "level": 3
+    },
+    {
+     "id": "4540755404",
+     "text": "Smithtown",
+     "quantity": "1",
+     "level": 3
+    },
+    {
+     "id": "6140755404",
+     "text": "Sayville",
+     "quantity": "1",
+     "level": 3
+    },
+    {
+     "id": "64100023514",
+     "text": "Ronkonkoma",
+     "quantity": "1",
+     "level": 3
+    }
+   ],
+   "levelList": [
+    {
+     "level": 1,
+     "name": "Country"
+    },
+    {
+     "level": 2,
+     "name": "State/Province"
+    },
+    {
+     "level": 3,
+     "name": "City"
+    },
+    {
+     "level": 4,
+     "name": "Work Location"
+    }
+   ]
+  },
+  {
+   "id": "JOB_FIELD",
+   "facetValueResults": [
+    {
+     "id": "2840755404",
+     "text": "Administrative & Professional (non-Clinical)",
+     "quantity": "55",
+     "level": 1
+    },
+    {
+     "id": "6140755404",
+     "text": "Allied Health",
+     "quantity": "42",
+     "level": 1
+    },
+    {
+     "id": "2540755404",
+     "text": "Nursing",
+     "quantity": "40",
+     "level": 1
+    },
+    {
+     "id": "2640755404",
+     "text": "Nursing Support",
+     "quantity": "31",
+     "level": 1
+    },
+    {
+     "id": "2940755404",
+     "text": "Support Services",
+     "quantity": "24",
+     "level": 1
+    },
+    {
+     "id": "2740755404",
+     "text": "Professional Clinical",
+     "quantity": "19",
+     "level": 1
+    },
+    {
+     "id": "11940755404",
+     "text": "Nursing Station Clerks",
+     "quantity": "12",
+     "level": 2
+    },
+    {
+     "id": "8740755404",
+     "text": "Radiology",
+     "quantity": "12",
+     "level": 2
+    },
+    {
+     "id": "11740755404",
+     "text": "Nursing Assistant",
+     "quantity": "11",
+     "level": 2
+    },
+    {
+     "id": "4040755404",
+     "text": "Laboratory",
+     "quantity": "11",
+     "level": 2
+    },
+    {
+     "id": "14140755404",
+     "text": "Patient Transport",
+     "quantity": "8",
+     "level": 2
+    },
+    {
+     "id": "13140755404",
+     "text": "Radiology",
+     "quantity": "7",
+     "level": 2
+    },
+    {
+     "id": "14240755404",
+     "text": "Housekeeping",
+     "quantity": "7",
+     "level": 2
+    },
+    {
+     "id": "3240755404",
+     "text": "Post Doctoral",
+     "quantity": "6",
+     "level": 1
+    },
+    {
+     "id": "13340755404",
+     "text": "Other",
+     "quantity": "5",
+     "level": 2
+    },
+    {
+     "id": "3740755404",
+     "text": "Clerical/Secretarial",
+     "quantity": "4",
+     "level": 1
+    },
+    {
+     "id": "14040755404",
+     "text": "Other",
+     "quantity": "4",
+     "level": 2
+    },
+    {
+     "id": "14840755404",
+     "text": "Other",
+     "quantity": "4",
+     "level": 2
+    },
+    {
+     "id": "16140755404",
+     "text": "Civil Service Positions",
+     "quantity": "4",
+     "level": 2
+    },
+    {
+     "id": "9040755404",
+     "text": "Social Work/Behavioral Health",
+     "quantity": "4",
+     "level": 2
+    },
+    {
+     "id": "9640755404",
+     "text": "Critical Care",
+     "quantity": "4",
+     "level": 2
+    },
+    {
+     "id": "3640755404",
+     "text": "Information Technology",
+     "quantity": "3",
+     "level": 1
+    },
+    {
+     "id": "8140755404",
+     "text": "Nutrition",
+     "quantity": "3",
+     "level": 2
+    },
+    {
+     "id": "3140755404",
+     "text": "Childcare Services",
+     "quantity": "2",
+     "level": 1
+    },
+    {
+     "id": "3440755404",
+     "text": "Public Safety/Security",
+     "quantity": "2",
+     "level": 1
+    },
+    {
+     "id": "3940755404",
+     "text": "Skilled Trades",
+     "quantity": "2",
+     "level": 1
+    },
+    {
+     "id": "12240755404",
+     "text": "EEG",
+     "quantity": "2",
+     "level": 2
+    },
+    {
+     "id": "14640755404",
+     "text": "Cleaners",
+     "quantity": "2",
+     "level": 2
+    },
+    {
+     "id": "15140755404",
+     "text": "University Police",
+     "quantity": "2",
+     "level": 2
+    },
+    {
+     "id": "20700023514",
+     "text": "Plant Utilities Engineer",
+     "quantity": "2",
+     "level": 2
+    },
+    {
+     "id": "8840755404",
+     "text": "Speech Therapy",
+     "quantity": "2",
+     "level": 2
+    },
+    {
+     "id": "18100121192",
+     "text": "Emergency Medical Services",
+     "quantity": "1",
+     "level": 1
+    },
+    {
+     "id": "18400023514",
+     "text": "Nurse Clinician",
+     "quantity": "1",
+     "level": 1
+    },
+    {
+     "id": "3540755404",
+     "text": "Research Professional / Technical",
+     "quantity": "1",
+     "level": 1
+    },
+    {
+     "id": "10440755404",
+     "text": "Nurse Practitioner",
+     "quantity": "1",
+     "level": 2
+    }
+   ],
+   "levelList": [
+    {
+     "level": 1,
+     "name": "Category"
+    },
+    {
+     "level": 2,
+     "name": "Function"
+    },
+    {
+     "level": 3,
+     "name": "Specialty"
+    }
+   ]
+  },
+  {
+   "id": "JOB_SCHEDULE",
+   "facetValueResults": [
+    {
+     "id": "1",
+     "text": "Full-time",
+     "quantity": "175"
+    },
+    {
+     "id": "2",
+     "text": "Part-time",
+     "quantity": "33"
+    },
+    {
+     "id": "4",
+     "text": "Per Diem",
+     "quantity": "25"
+    }
+   ]
+  },
+  {
+   "id": "JOB_LOCALE",
+   "facetValueResults": [
+    {
+     "id": "en",
+     "text": "English (233)",
+     "quantity": "233"
+    }
+   ]
+  }
+ ],
+ "pagingData": {
+  "currentPageNo": 1,
+  "pageSize": 25,
+  "totalCount": 233
+ },
+ "queryString": "f=null&s=3|D&a=null&multiline=false",
+ "careerSectionUnAvailable": false,
+ "supportedLanguages": []
+}

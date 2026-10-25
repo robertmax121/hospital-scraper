@@ -1173,6 +1173,7 @@ FEED_CONFIGS = (
     "TAM_ORGS", "NEOGOV_AGENCIES", "SF_RMK_BOARDS", "PRELOAD_SITES", "APPLICANTPRO_ORGS",
     "CSOD_ORGS", "PAYCOM_ORGS", "PAYCOR_ORGS", "PAYLOCITY_ORGS", "WORKABLE_ORGS",
     "TALEMETRY_SITES", "TALEO_BE_ORGS", "HCTS_PORTALS", "PEOPLESOFT_SITES",
+    "APPLICANTSTACK_ORGS", "JAZZHR_ORGS", "JOBAPS_SITES",   # 2026-10-25 coverage stage 4
     "LIQUIDCOMPASS_SITES", "SUCCESSFACTORS_ORGS", "HTML_LIST_SITES", "EIGHTFOLD_ORGS",
     "PLAYWRIGHT_SITES", "USAJOBS_ORGS",
 )
@@ -1414,7 +1415,9 @@ KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor"
                         "PeopleSoft", "SuccessFactors", "Talemetry", "Eightfold",
                         "Avature", "Drupal", "FXRecruiter", "PeopleAdmin", "WordPress",
                         # 2026-10-05 (push 9): the RMK and NY State Jobs job-page passes store under these.
-                        "SuccessFactorsRMK", "NYStateJobs")
+                        "SuccessFactorsRMK", "NYStateJobs",
+                        # 2026-10-25 (coverage stage 4): the new job-page passes store under these.
+                        "Taleo", "SelectMinds", "ApplicantStack", "JazzHR", "JobAps")
 KNOWN_BODY_PAGE      = 1000
 # 2026-10-07 (push 10): the read covers every active body now (346,809 on
 # 10-07), not only the detail platforms, so the cap moves up from 400,000.
@@ -2040,6 +2043,9 @@ HOSPITAL_SYSTEM_ALIASES = {
     "HSHS Hospitals":              "HSHS",
     "MultiCare Health":            "MultiCare",
     "Erlanger Health System":      "Erlanger",
+    # 2026-10-25 (coverage stage 4): Stony Brook's community-hospital Taleo sections
+    "Stony Brook Southampton Hospital":         "Stony Brook Medicine",
+    "Stony Brook Eastern Long Island Hospital": "Stony Brook Medicine",
     "Guthrie Health":              "Guthrie",
     # "Southwest Health": "Southwest Healthcare" removed 2026-10-13: the only
     # feed that wrote "Southwest Health" was the fa-exgl Oracle site, which is
@@ -6658,97 +6664,499 @@ async def run_workday(session) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  TALEO — Fixed endpoint
+#  TALEO ENTERPRISE CAREER SECTIONS — <tenant>.taleo.net/careersection/<cs>/
+#  (rebuilt 2026-10-25, coverage stage 4; the old renderRequisitionList
+#  adapter answered 404 on every tenant from April 2026 and TALEO_ORGS sat
+#  empty). A career section's jobsearch.ftl page comes in one of two kinds:
+#    REST  the page names its portal ("portalNo: '101430233'") and the list
+#          is POST /careersection/rest/jobboard/searchjobs?lang=en&portal=<n>
+#          with a JSON search body and "pageNo"; it answers
+#          {"requisitionList": [{"jobId", "contestNo", "column": [title,
+#          '["United States-Florida-Tampa"]', "Oct 25, 2026"], "linkedColumn",
+#          "locationsColumns"}], "pagingData": {"pageSize", "totalCount"}}.
+#          Tampa General (tgh ex, 719 jobs on 10-25), TGH North (tas-tgh nth,
+#          "Florida-Brooksville-TGH Brooksville"), Stony Brook Medicine
+#          (stonybrooku 2, "US-NY-Stony Brook", 233).
+#    FTL   the older template: no portal number, the first page of results
+#          sits in the hidden input "initialHistory" as "!|!"-separated,
+#          percent-encoded tokens, and later pages answer
+#          POST <cs>/jobsearch.ajax (the pager's form, the page's csrftoken,
+#          the session cookie). Erlanger (ehs_external, 442 jobs, 10 a page,
+#          location "Erlanger Baroness Hospital Chattanooga, TN").
+#  The job page <cs>/jobdetail.ftl?job=<contestNo>&lang=en is the same in
+#  both kinds: its initialHistory holds the posting HTML (tokens that open
+#  with "!*!": description, then qualifications), the organization, the
+#  schedule and, where the employer posts it, the pay ("$55,945 - $68,197 /
+#  year" on Stony Brook pages). No login, no browser: the list pages and job
+#  pages answer a plain GET/POST with a normal user agent.
+#  McLaren Health Care's tenant (mclarenhlth.taleo.net) is NOT here: every
+#  career section answers "Career Section Unavailable"; its jobs are read
+#  from the SelectMinds front at careers.mclaren.org (SELECTMINDS_ORGS).
+#  job_id is the contest number (the "Job Number" the posting prints); the
+#  apply link is the job page.
 # ══════════════════════════════════════════════════════════════════════════
-# Removed DNS-dead orgs: hcahealthcare, tenethealth, lifepointhealth, chscare,
-#   christushealth, selectmedical, shrinershospitals, nhccare, teamhealth, encompasshealth
-# Adding orgs with confirmed *.taleo.net DNS resolution:
-TALEO_ORGS: dict[str, str] = {
-    # ─────────────────────────────────────────────────────────────────────────
-    # All Taleo healthcare tenants are dead as of April 2026.
-    #
-    # April 27 run results:
-    #   DNS-dead (Cannot connect to host):
-    #     hcahealthcare, tenethealth, lifepointhealth, chscare, selectmedical,
-    #     shrinershospitals, encompasshealth, nhccare, teamhealth
-    #   HTTP 404 (host alive, API removed):
-    #     erlanger, tgh, capecodhc, hcmc
-    #
-    # Kept the dict empty (rather than removing) so future Taleo additions can
-    # be tested. Run is short-circuited in run_all() — no gather call wasted.
-    # ─────────────────────────────────────────────────────────────────────────
+TALEO_ORGS: dict[str, tuple] = {
+    # Format: "System": (tenant host, career section, default state)
+    # Tampa General: the hospital's own section (TGH Medical Group "tgmg",
+    # TGH North "nth" on tas-tgh, and the contract-staff "ex_ihs" sections
+    # are separate boards and not configured yet).
+    "Tampa General Hospital": ("tgh.taleo.net", "ex", "FL"),
+    # Stony Brook University Hospital and the Stony Brook Medicine campuses
+    # (Southampton, Eastern Long Island); careersection 2 is the hospital
+    # board the HR site links (hr.stonybrookmedicine.edu/career).
+    "Stony Brook Medicine": ("stonybrooku.taleo.net", "2", "NY"),
+    # The two community hospitals' own sections on the same tenant (10-25:
+    # sbsh 129 jobs, "US-NY-Southampton"; elih 35, "US-NY-Greenport"); both
+    # file under Stony Brook Medicine (HOSPITAL_SYSTEM_ALIASES), and a
+    # requisition listed in two sections is one row (finalize_jobs key).
+    "Stony Brook Southampton Hospital": ("stonybrooku.taleo.net", "sbsh", "NY"),
+    "Stony Brook Eastern Long Island Hospital": ("stonybrooku.taleo.net", "elih", "NY"),
+    # Erlanger (Chattanooga TN; Murphy NC; Pikeville TN); FTL template.
+    "Erlanger Health System": ("erlanger.taleo.net", "ehs_external", "TN"),
+}
+TALEO_MAX_PAGES = int(os.getenv("TALEO_MAX_PAGES", "120"))
+TALEO_DESC_MAX_PER_RUN = int(os.getenv("TALEO_DESC_MAX_PER_RUN", "1500"))   # jobdetail.ftl pages a night, all tenants
+TALEO_DESC_BUDGET = _DescBudget(TALEO_DESC_MAX_PER_RUN)
+
+# The hospital a row is at, by tenant: (pattern on "facility | town", name;
+# None = the facility as the board writes it). The first match wins; a row
+# nothing matches keeps the system name.
+TALEO_FACILITY: dict[str, tuple] = {
+    # TGH's section also lists the TGH North hospitals (ex-Bravera, bought
+    # from CHS in 2024; CMS: TAMPA GENERAL HOSPITAL BROOKSVILLE, whose
+    # licence holds the Spring Hill campus, and TAMPA GENERAL HOSPITAL
+    # CRYSTAL RIVER); 10-25: Tampa 476 rows, Brooksville 80, Crystal River
+    # 57, Spring Hill 52, other towns (clinics, imaging) under 20 rows.
+    "Tampa General Hospital": (
+        (re.compile(r"\|\s*Tampa$", re.I), "Tampa General Hospital"),
+        (re.compile(r"\|\s*Brooksville$", re.I), "Tampa General Hospital Brooksville"),
+        (re.compile(r"\|\s*Spring Hill$", re.I), "Tampa General Hospital Spring Hill"),
+        (re.compile(r"\|\s*Crystal River$", re.I), "Tampa General Hospital Crystal River"),
+    ),
+    "Stony Brook Medicine": (
+        (re.compile(r"Southampton", re.I), "Stony Brook Southampton Hospital"),
+        (re.compile(r"Eastern Long Island|Greenport", re.I), "Stony Brook Eastern Long Island Hospital"),
+        (re.compile(r"\|\s*(?:Stony Brook|East Setauket)$", re.I), "Stony Brook University Hospital"),
+    ),
+    "Erlanger Health System": (
+        (re.compile(r"^Children'?s Hospital", re.I), "Children's Hospital at Erlanger"),
+        (re.compile(r"^(Erlanger [A-Z][\w' ]*?(?:Hospital|Medical Center))\b", re.I), None),
+        (re.compile(r"^(?:Erlanger )?Bledsoe\b", re.I), "Erlanger Bledsoe Hospital"),   # "Bledsoe Pikeville, TN"
+        (re.compile(r"^Erlanger East\b", re.I), "Erlanger East Hospital"),
+        (re.compile(r"^Erlanger North\b", re.I), "Erlanger North Hospital"),
+    ),
 }
 
-async def scrape_taleo(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
-    jobs = []
-    # Updated Taleo endpoint pattern
-    base_url = f"https://{org}.taleo.net"
-    try:
-        # First get the company code
-        async with session.get(
-            f"{base_url}/careersection/rest/jobboard/renderRequisitionList",
-            params={"lang": "en", "organization": org, "pageNo": 1, "pageSize": 25,
-                    "sortField": "POSTING_DATE", "sortDirection": "DESC"},
-            headers=HEADERS,
-            timeout=aiohttp.ClientTimeout(total=25)) as r:
-            if r.status != 200:
-                logger.info(f"Taleo {system}: HTTP {r.status}")
-                return []
-            data = await r.json(content_type=None)
-    except Exception as e:
-        logger.info(f"Taleo {system}: {e}")
-        return []
+_TALEO_PORTAL_RX = re.compile(r"portalNo\s*:\s*'(\d+)'")
+_TALEO_HISTORY_RX = re.compile(r'id="initialHistory"[^>]*\bvalue="([^"]*)"', re.S)
+_TALEO_HISTORY_RX2 = re.compile(r'name="initialHistory"[^>]*\bvalue="([^"]*)"', re.S)
+_TALEO_HIDDEN_RX = re.compile(r'<input type="hidden" name="([^"]+)" id="[^"]*" value="([^"]*)"')
+_TALEO_SUBMIT_RX = re.compile(r"^Submission for the position:\s*(.*?)\s*-\s*\(Job Number:\s*([^)]+?)\s*\)\s*$", re.S)
+_TALEO_DATE_RX = re.compile(r"^(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, \d{4}")
+_TALEO_TYPE_RX = re.compile(r"^(?:Full[- ]?time|Part[- ]?time|Per Diem|PRN|Temporary|Casual|Contract|Seasonal)\b", re.I)
+_TALEO_SHIFT_RX = re.compile(r"^(?:Day|Night|Evening|Rotating|Variable|Weekend)s?(?: (?:Shift|Job))?$", re.I)
+_TALEO_PAY_RX = re.compile(r"^\$\s?\d[\d,]*(?:\.\d+)?(?:\s*(?:-|to)\s*\$?\s?\d[\d,]*(?:\.\d+)?)?"
+                           r"\s*(?:/\s*|per\s+)?(?:hour|hr|year|yr|annual|annually|week|month)?\b", re.I)
+# Last words of an FTL location that are never the town ("... Medical Center, TX").
+_TALEO_NOT_TOWNS = {"center", "centre", "hospital", "clinic", "campus", "main", "north", "south", "east",
+                    "west", "medical", "health", "plaza", "tower", "pavilion"}
 
-    page = 1
-    while True:
-        try:
-            async with session.get(
-                f"{base_url}/careersection/rest/jobboard/renderRequisitionList",
-                params={"lang": "en", "organization": org, "pageNo": page, "pageSize": 25,
-                        "sortField": "POSTING_DATE", "sortDirection": "DESC"},
-                headers=HEADERS,
-                timeout=aiohttp.ClientTimeout(total=25)) as r:
-                if r.status != 200: break
-                data = await r.json(content_type=None)
-            reqs = data.get("requisitionList", [])
-            if not reqs: break
-            for j in reqs:
-                _tcity = j.get("city", "")
-                _tstate = j.get("state", "")
-                # Taleo state can be full name ("Texas") — normalize to 2-char
-                _, state = parse_city_state(f"{_tcity}, {_tstate}")
-                city  = _tcity
-                state = state or _tstate
-                jobs.append(Job(
-                    title=j.get("title", ""),
-                    hospital_system=system,
-                    hospital_name=j.get("organizationName", system),
-                    city=city, state=state, location=f"{city}, {state}",
-                    specialty=j.get("jobField", ""),
-                    job_type=j.get("jobType", ""),
-                    url=f"{base_url}/careersection/2/jobdetail.ftl?job={j.get('contestNo','')}",
-                    job_id=str(j.get("contestNo", "")),
-                    posted_date=j.get("postingDate", ""),
-                    description=strip_html(j.get("jobDescription", "")),
-                    ats_platform="Taleo",
-                ))
-            if len(reqs) < 25: break
-            page += 1
-            await jitter()
-        except Exception as e:
-            logger.info(f"Taleo {system} page {page}: {e}")
+
+def _taleo_state(tok: str) -> str:
+    t = (tok or "").strip()
+    if len(t) == 2 and (t.upper() in _WD_STATE_CODES or t.upper() == "PR"):
+        return t.upper()
+    return _US_STATE_CODES.get(t.lower(), "")
+
+
+def _taleo_tokens(raw: str) -> list[str]:
+    """An FTL "!|!" payload -> decoded tokens: HTML entities (the hidden
+    input), then percent-escapes ("Children%27s"), then Taleo's backslash
+    escapes ("Job Number\\: 47095")."""
+    out = []
+    for t in _html_unescape(raw or "").split("!|!"):
+        out.append(re.sub(r"\\(.)", r"\1", unquote(t)))
+    return out
+
+
+def _taleo_history(html: str) -> list[str]:
+    m = _TALEO_HISTORY_RX.search(html or "") or _TALEO_HISTORY_RX2.search(html or "")
+    return _taleo_tokens(m.group(1)) if m else []
+
+
+def taleo_location(raw: str, default_state: str = "") -> tuple[str, str, str]:
+    """(facility, city, state) from one Taleo location value.
+    REST boards: "United States-Florida-Tampa", "US-NY-Stony Brook",
+    "Florida-Brooksville-TGH Brooksville", "US-NC-Winston-Salem" (a hyphenated
+    town is kept whole when it is a known town). FTL boards (Erlanger): the
+    facility and the town in one string, "Erlanger Baroness Hospital
+    Chattanooga, TN"."""
+    s = re.sub(r"\s+", " ", (raw or "")).strip().strip('[]"').strip()
+    if not s:
+        return "", "", default_state
+    m = re.match(r"^(.*?),\s*([A-Z]{2})$", s)
+    if m and not re.match(r"^(?:US|USA|United States)-", s):
+        head, st = m.group(1).strip(), m.group(2)
+        if st not in _WD_STATE_CODES and st != "PR":
+            return "", "", default_state
+        whole = known_town(head, st)
+        if whole:
+            return "", whole, st
+        words = head.split(" ")
+        for n in (3, 2, 1):
+            if len(words) <= n or (n == 1 and words[-1].lower() in _TALEO_NOT_TOWNS):
+                continue
+            town = known_town(" ".join(words[-n:]), st)
+            if town:
+                return " ".join(words[:-n]).strip(" ,-"), town, st
+        town = embedded_town(head, st)
+        if town and head.lower().endswith(town.lower()):
+            return head[: len(head) - len(town)].strip(" ,-"), town, st
+        if town and head.lower().startswith(town.lower()):
+            return head[len(town):].strip(" ,-"), town, st
+        return head, "", st
+    parts = [p.strip() for p in s.split("-")]
+    st, k = "", -1
+    for i, p in enumerate(parts[:3]):
+        st = _taleo_state(p)
+        if st:
+            k = i
             break
+    if k < 0:
+        return "", "", default_state
+    rest = parts[k + 1:]
+    for n in range(len(rest), 0, -1):
+        town = known_town("-".join(rest[:n]), st) or (known_town(" ".join(rest[:n]), st) if n > 1 else None)
+        if town:
+            return "-".join(rest[n:]).strip(), town, st
+    if rest:
+        return "-".join(rest[1:]).strip(), rest[0], st
+    return "", "", st
+
+
+def _taleo_hospital(system: str, facility: str, city: str) -> str:
+    key = f"{facility or ''} | {city or ''}".strip()
+    rules = TALEO_FACILITY.get(system) or TALEO_FACILITY.get(HOSPITAL_SYSTEM_ALIASES.get(system, ""), ())
+    for rx, name in rules:
+        m = rx.search(key)
+        if m:
+            return name or m.group(1).strip()
+    return system
+
+
+def _taleo_iso(s: str) -> str:
+    m = _TALEO_DATE_RX.match((s or "").strip())
+    if not m:
+        return ""
+    try:
+        return datetime.strptime(m.group(0), "%b %d, %Y").strftime("%Y-%m-%d")
+    except ValueError:
+        return ""
+
+
+def _taleo_job(system: str, host: str, cs: str, default_state: str, contest: str, title: str,
+               loc: str, posted: str = "") -> Job | None:
+    contest, title = (contest or "").strip(), re.sub(r"\s+", " ", title or "").strip()
+    if not contest or not title or not re.match(r"^[\w.-]{1,40}$", contest) or _NOT_AN_OPENING_RX.search(title):
+        return None
+    fac, city, st = taleo_location(loc, default_state)
+    st = st or default_state
+    return Job(
+        title=title, hospital_system=system, hospital_name=_taleo_hospital(system, fac, city),
+        city=city, state=st, location=f"{city}, {st}".strip(", "),
+        specialty="", job_type="",
+        url=f"https://{host}/careersection/{cs}/jobdetail.ftl?job={contest}&lang=en",
+        job_id=contest, posted_date=_taleo_iso(posted), description="", ats_platform="Taleo",
+    )
+
+
+def _taleo_rest_jobs(data: dict, system: str, host: str, cs: str, default_state: str) -> list[Job]:
+    out = []
+    for r in (data or {}).get("requisitionList") or []:
+        cols = r.get("column") or []
+        if not isinstance(cols, list) or not cols:
+            continue
+        try:
+            title = cols[int(r.get("linkedColumn") or 0)]
+        except (ValueError, IndexError, TypeError):
+            title = cols[0]
+        loc = ""
+        for i in r.get("locationsColumns") or []:
+            try:
+                v = cols[int(i)]
+            except (ValueError, IndexError, TypeError):
+                continue
+            try:
+                vals = json.loads(v) if isinstance(v, str) and v.startswith("[") else [v]
+            except ValueError:
+                vals = [v]
+            if vals:
+                loc = str(vals[0] or "")
+                break
+        posted = next((c for c in cols if isinstance(c, str) and _TALEO_DATE_RX.match(c)), "")
+        job = _taleo_job(system, host, cs, default_state, str(r.get("contestNo") or ""), str(title or ""), loc, posted)
+        if job:
+            out.append(job)
+    return out
+
+
+def _taleo_ftl_jobs(tokens: list[str], system: str, host: str, cs: str, default_state: str) -> list[Job]:
+    """Records of an FTL requisition list (page 1's initialHistory or a
+    jobsearch.ajax answer). A record opens with its internal id, the title,
+    the id, the title, the id, then the board's own columns (Erlanger: job
+    number, "facility town, ST"); the "Submission for the position: <title>
+    - (Job Number: <n>)" token that follows names the job number."""
+    out, seen = [], set()
+    n = len(tokens)
+    i = 0
+    while i + 5 < n:
+        t = tokens[i]
+        if not (t.isdigit() and tokens[i + 2] == t and tokens[i + 4] == t and tokens[i + 1] == tokens[i + 3]):
+            i += 1
+            continue
+        title = tokens[i + 1]
+        j = i + 5
+        cols = []
+        while j < n and tokens[j] != t and len(cols) < 12:
+            cols.append(tokens[j])
+            j += 1
+        contest = ""
+        for k in range(j, min(n, j + 40)):
+            m = _TALEO_SUBMIT_RX.match(tokens[k])
+            if m:
+                contest = m.group(2).strip()
+                break
+        if not contest and cols and re.match(r"^[\w-]{3,20}$", cols[0]):
+            contest = cols[0]
+        loc = next((c for c in cols if c != contest and (re.search(r",\s*[A-Z]{2}$", c)
+                                                        or re.match(r"^(?:US|USA|United States)-", c))), "")
+        posted = next((c for c in cols if _TALEO_DATE_RX.match(c)), "")
+        if contest and contest not in seen:
+            job = _taleo_job(system, host, cs, default_state, contest, title, loc, posted)
+            if job:
+                seen.add(contest)
+                out.append(job)
+        i = j
+    return out
+
+
+def _taleo_ftl_total(html: str, tokens: list[str]) -> int:
+    m = re.search(r'name="listRequisition\.nbElements"[^>]*value="(\d+)"', html or "")
+    if m:
+        return int(m.group(1))
+    for t in tokens:
+        m = re.search(r"\((\d[\d,]*) jobs? found\)", t)
+        if m:
+            return int(m.group(1).replace(",", ""))
+    return 0
+
+
+async def _taleo_get(session, url: str, system: str, method: str = "get", **kw):
+    """(status, text) of one Taleo request; (0, "") on an exception."""
+    try:
+        async with req(session, method, url, ssl=False, proxy=proxies.get(),
+                       timeout=aiohttp.ClientTimeout(total=40), **kw) as r:
+            return r.status, (await r.text() if r.status == 200 else "")
+    except Exception as e:
+        logger.info(f"Taleo {system}: {url}: {type(e).__name__}: {e}")
+        return 0, ""
+
+
+_TALEO_REST_BODY = {
+    "multilineEnabled": False,
+    "sortingSelection": {"sortBySelectionParam": "3", "ascendingSortingOrder": "false"},
+    "fieldData": {"fields": {"KEYWORD": "", "LOCATION": "", "ORGANIZATION": ""}, "valid": True},
+    "filterSelectionParam": {"searchFilterSelections": [
+        {"id": "POSTING_DATE", "selectedValues": []}, {"id": "LOCATION", "selectedValues": []},
+        {"id": "JOB_FIELD", "selectedValues": []}, {"id": "ORGANIZATION", "selectedValues": []}]},
+    "advancedSearchFiltersSelectionParam": {"searchFilterSelections": []},
+}
+
+
+async def scrape_taleo(session, system: str, cfg: tuple) -> list[Job]:
+    """Every requisition of one career section (REST or FTL kind, see the
+    section note). A page that fails mid-crawl makes the crawl PARTIAL; the
+    rows read against the board's own total decide a complete claim."""
+    host, cs, default_state = cfg
+    base = f"https://{host}/careersection/{cs}"
+    search = f"{base}/jobsearch.ftl?lang=en"
+    status, html = await _taleo_get(session, search, system,
+                                    headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"})
+    if status != 200 or not html:
+        logger.info(f"Taleo {system}: HTTP {status} on {search}")
+        return []
+    if "Career Section Unavailable" in html[:3000]:
+        logger.info(f"Taleo {system}: career section {cs} unavailable")
+        return []
+    jobs: list[Job] = []
+    seen: set[str] = set()
+
+    def take(rows) -> int:
+        new = [j for j in rows if j.job_id not in seen]
+        seen.update(j.job_id for j in new)
+        jobs.extend(new)
+        return len(new)
+
+    failed: list[int] = []
+    total = 0
+    pm = _TALEO_PORTAL_RX.search(html)
+    tokens = _taleo_history(html)
+    if pm and not any(_TALEO_SUBMIT_RX.match(t) for t in tokens):
+        api = f"https://{host}/careersection/rest/jobboard/searchjobs?lang=en&portal={pm.group(1)}"
+        hdrs = {**HEADERS, "Accept": "application/json, text/javascript, */*", "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest", "Referer": search,
+                "tz": "GMT-05:00", "tzname": "America/New_York"}
+        page, pages = 1, 1
+        while page <= min(pages, TALEO_MAX_PAGES):
+            if page > 1:
+                await jitter()
+            st, text = await _taleo_get(session, api, system, method="post",
+                                        json={**_TALEO_REST_BODY, "pageNo": page}, headers=hdrs)
+            data = None
+            if st == 200:
+                try:
+                    data = json.loads(text)
+                except ValueError:
+                    data = None
+            if not isinstance(data, dict):
+                logger.info(f"Taleo {system}: HTTP {st} on page {page}")
+                failed.append(page)
+                if page == 1 or len(failed) >= 3:
+                    failed.extend(range(page + 1, min(pages, TALEO_MAX_PAGES) + 1))
+                    break
+                page += 1
+                continue
+            pg = data.get("pagingData") or {}
+            try:
+                total = int(pg.get("totalCount") or total)
+                size = int(pg.get("pageSize") or 25)
+            except (TypeError, ValueError):
+                size = 25
+            pages = max(1, -(-total // max(1, size))) if total else page
+            if not take(_taleo_rest_jobs(data, system, host, cs, default_state)) and page > 1:
+                break
+            page += 1
+    else:
+        total = _taleo_ftl_total(html, tokens)
+        take(_taleo_ftl_jobs(tokens, system, host, cs, default_state))
+        hidden = dict(_TALEO_HIDDEN_RX.findall(html))
+        per = max(1, len(jobs))
+        pages = -(-total // per) if total else 1
+        for page in range(2, min(pages, TALEO_MAX_PAGES) + 1):
+            await jitter()
+            form = {"ftlpageid": "reqListBasicPage", "ftlinterfaceid": "requisitionListInterface",
+                    "ftlcompid": "rlPager", "jsfCmdId": "rlPager", "ftlcompclass": "PagerComponent",
+                    "ftlcallback": "ftlPager_processResponse", "ftlajaxid": "ftlx1",
+                    "rlPager.currentPage": str(page), "lang": "en", "csrftoken": hidden.get("csrftoken", "")}
+            st, text = await _taleo_get(session, f"{base}/jobsearch.ajax", system, method="post", data=form,
+                                        headers={**HEADERS, "Referer": search, "X-Requested-With": "XMLHttpRequest"})
+            got = take(_taleo_ftl_jobs(_taleo_tokens(text), system, host, cs, default_state)) if st == 200 else -1
+            if got < 0:
+                logger.info(f"Taleo {system}: HTTP {st} on page {page}")
+                failed.append(page)
+                if len(failed) >= 3:
+                    failed.extend(range(page + 1, min(pages, TALEO_MAX_PAGES) + 1))
+                    break
+            elif got == 0:
+                break
+    if failed and jobs:
+        report_partial(system)
+        logger.warning(f"Taleo {system}: PARTIAL, pages {failed[:10]} unread; {len(jobs)} of {total} read; "
+                       f"not swept tonight")
+    elif total and len(jobs) < COMPLETE_RATIO * total:
+        logger.warning(f"Taleo {system}: {len(jobs)} of {total} requisitions read")
+    logger.info(f"  Taleo {system}: {len(jobs)} jobs (board total {total or '?'})")
+    report_complete(system, len(jobs), total, feed="TALEO_ORGS")
     return jobs
+
+
+def taleo_posting(html: str) -> dict:
+    """The parts of a Taleo jobdetail.ftl page a row takes: {"body", "type",
+    "shift", "pay", "org", "title", "contest"}. The posting HTML is every
+    token that opens with "!*!" (description, then qualifications; each is
+    sent twice); the short fields are read by their shape."""
+    toks = _taleo_history(html)
+    out = {"body": "", "type": "", "shift": "", "pay": "", "org": "", "title": "", "contest": ""}
+    if not toks:
+        return out
+    parts, seen = [], set()
+    for t in toks:
+        if t.startswith("!*!"):
+            text = strip_html(t[3:]).strip()
+            key = text[:200]
+            if text and key not in seen:
+                seen.add(key)
+                parts.append(text)
+            continue
+        s = t.strip()
+        m = _TALEO_SUBMIT_RX.match(s)
+        if m:
+            if not out["contest"]:
+                out["title"], out["contest"] = m.group(1).strip(), m.group(2).strip()
+        elif len(s) <= 80:
+            if not out["type"] and _TALEO_TYPE_RX.match(s):
+                out["type"] = s
+            elif not out["shift"] and _TALEO_SHIFT_RX.match(s):
+                out["shift"] = s
+            elif not out["pay"] and _TALEO_PAY_RX.match(s) and re.search(r"\d", s):
+                out["pay"] = s
+            elif (not out["org"] and re.search(r"\b(?:Hospital|Medical Center|Health)\b", s)
+                  and not re.search(r"[<>]|^Submission|^Apply|^Add |^Tell us", s)):
+                out["org"] = s
+    body = "\n\n".join(parts)
+    tail = []
+    if out["pay"]:
+        tail.append(f"Pay: {out['pay']}")
+    sched = _schedule_line(out["type"], _shift_words(out["shift"]))
+    if sched:
+        tail.append(sched)
+    if tail and body:
+        body = body[:_FACTS_WINDOW - 400].rstrip() + "\n\n" + "\n".join(tail)
+    out["body"] = body
+    return out
+
+
+async def _taleo_detail(session, job) -> bool:
+    html = await _fetch_html(session, job.url, timeout=30)
+    p = taleo_posting(html)
+    if p["contest"] and p["contest"] != str(job.job_id):
+        return False             # another posting's page (a moved or re-numbered requisition)
+    return _apply_body(job, p["body"], p["type"])
+
 
 async def run_taleo(session) -> list[Job]:
     if not TALEO_ORGS:
         return []
-    logger.info(f"Taleo: scraping {len(TALEO_ORGS)} systems...")
-    results = await asyncio.gather(
-        *[scrape_taleo(session, s, o) for s, o in TALEO_ORGS.items()],
-        return_exceptions=True
-    )
-    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"Taleo: scraping {len(TALEO_ORGS)} career sections...")
+    if DETAIL_FETCH:
+        TALEO_DESC_BUDGET.expect(TALEO_ORGS)
+    listed: dict[str, list[Job]] = {}
+
+    async def one(_session, system, cfg):
+        # Its own cookie jar: an FTL pager answers only inside the session
+        # its search page opened (JSESSIONID + csrftoken).
+        try:
+            async with aiohttp.ClientSession(headers=HEADERS, max_line_size=65536,
+                                             max_field_size=65536) as own:
+                listed[system] = await scrape_taleo(own, system, cfg)
+        except Exception as e:
+            listed[system] = []
+            logger.info(f"  Taleo {system}: ERROR {e}")
+        return listed[system]
+
+    await _gather_by_host(None, list(TALEO_ORGS.items()), one, lambda c: c[0])
+    gated = _host_gated(lambda j: _taleo_detail(session, j), total=4, per_host=2)
+
+    async def _details(system, jobs):
+        if DETAIL_FETCH and jobs:
+            try:
+                await _detail_pass(session, system, jobs, TALEO_DESC_BUDGET, gated, "Taleo")
+            except Exception as e:
+                logger.info(f"Taleo {system}: detail pass failed ({e}); listed rows kept")
+
+    await asyncio.gather(*[_tenant_reporting(TALEO_DESC_BUDGET, s, _details(s, listed.get(s) or []))
+                           for s in TALEO_ORGS], return_exceptions=True)
+    jobs = [j for s in TALEO_ORGS for j in listed.get(s) or []]
     logger.info(f"  Taleo: {len(jobs):,} jobs")
     return jobs
 
@@ -12734,8 +13142,45 @@ SELECTMINDS_ORGS = {
     # SELECTMINDS_KEEP keeps the health-care rows (UI Health Care / UIHC).
     "Main Line Health":                         "mainline",   # Wynnewood PA
     "University of Iowa Hospitals and Clinics": "uiowa",      # Iowa City IA
+    # 2026-10-25 (coverage stage 4): McLaren Health Care, its own domain (a
+    # value that opens with "https://" is the board's base URL; the others
+    # are <org>.referrals.selectminds.com). 1,290 jobs on 10-25, 129 pages of
+    # 10. The Taleo tenant behind it (mclarenhlth.taleo.net) has no open
+    # career section, and the 08-28 note's AJAX endpoint is not needed: the
+    # /jobs/search/<id>/page<N> HTML pages answer a plain GET. Each card
+    # names the hospital (<p class="jlr_company">McLaren Flint</p>, see
+    # SELECTMINDS_COMPANY_FACILITY) and the town as "Michigan, Flint".
+    "McLaren Health Care": "https://careers.mclaren.org",              # Grand Blanc MI; 13 hospitals
 }
-SELECTMINDS_MAX_PAGES = int(os.getenv("SELECTMINDS_MAX_PAGES", "80"))
+# 2026-10-25: 80 -> 160 (McLaren lists 129 pages of 10).
+SELECTMINDS_MAX_PAGES = int(os.getenv("SELECTMINDS_MAX_PAGES", "160"))
+# Tenants whose cards' company line (jlr_company) is the hospital the job is
+# at; the line is the hospital_name as the board writes it.
+SELECTMINDS_COMPANY_FACILITY = {"McLaren Health Care"}
+_SM_COMPANY_RE = re.compile(r'<p class="jlr_company">(.*?)</p>', re.S)
+# Company lines cut at Taleo's 30 characters, spelled out (10-25 McLaren
+# board: Karmanos 56 rows, the management group 75, the corporate office 60).
+SELECTMINDS_COMPANY_NAMES = {
+    "Barbara Ann Karmanos Cancer Cn": "Barbara Ann Karmanos Cancer Institute",
+    "McLaren Health Management Grp": "McLaren Health Management Group",
+    "Lake Orion Nursing & Rehab Ctr": "Lake Orion Nursing & Rehab Center",
+    "McLaren Health Care Corp": "McLaren Health Care",
+}
+# Job-page bodies (2026-10-25, coverage stage 4). The cards carry a ~150
+# character teaser; the job page carries the posting as
+#   <div class="job_description"> ... <div class="job_qualifications"> ... </div>
+#   <!-- TEC-19749 : Display Job fields --> <div id="jJobInsideInfo" ...>
+# (the same template on McLaren, Main Line and Iowa, checked 10-25), and its
+# field_company line. One run-wide budget, fair share per tenant, at most 2
+# requests in flight per host; the page read also gives the requisition
+# number (selectminds_req_id_from_page), so a tenant with the body pass skips
+# the separate requisition pass.
+SELECTMINDS_BODY_PASS = {"McLaren Health Care", "Main Line Health", "University of Iowa Hospitals and Clinics"}
+SELECTMINDS_DESC_MAX_PER_RUN = int(os.getenv("SELECTMINDS_DESC_MAX_PER_RUN", "800"))
+SELECTMINDS_DESC_BUDGET = _DescBudget(SELECTMINDS_DESC_MAX_PER_RUN)
+_SM_BODY_RE = re.compile(r'<div class="job_description">(.*?)(?:<!--\s*TEC-19749|<div id="jJobInsideInfo"|'
+                         r'<div id="info_btn_group_bottom"|<div class="job_inside_info")', re.S)
+_SM_PAGE_COMPANY_RE = re.compile(r'<dl class="field_company">.*?<span class="field_value[^"]*">(.*?)</span>', re.S)
 _SM_CARD_RE = re.compile(r'<div id="job_list_(\d+)"[^>]*class="job_list_row[^"]*"[^>]*>(.*?)(?=<div id="job_list_\d+"|\Z)', re.S)
 _SM_TITLE_RE = re.compile(r'<a href="([^"]+)"[^>]*class="job_link[^"]*"[^>]*>(.*?)</a>', re.S)
 # Two card shapes: /latest-jobs links the town (<a class="location">) and
@@ -12797,6 +13242,9 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
         loc = _html_unescape(strip_html(lm.group(1) or lm.group(2) or "")).strip() if lm else ""
         # the link opens with a magnifier glyph (&#128269;) before the town
         loc = re.sub(r",\s*United States\s*$", "", re.sub(r"^[^A-Za-z]+", "", loc)).strip()
+        # 2026-10-25: a multi-site card reads "Michigan, Lansing and 1
+        # additional location"; the first town is the row's.
+        loc = re.sub(r"\s+and\s+\d+\s+additional\s+locations?\s*$", "", loc, flags=re.I).strip()
         city, st = parse_city_state(loc)
         cm = _SM_CAT_RE.search(card)
         category = _html_unescape(strip_html(cm.group(1) or cm.group(2) or "")).strip() if cm else ""
@@ -12811,6 +13259,11 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
             if rx.search(text):
                 facility = name
                 break
+        if system in SELECTMINDS_COMPANY_FACILITY:
+            com = _SM_COMPANY_RE.search(card)
+            company = re.sub(r"\s+", " ", _html_unescape(strip_html(com.group(1)))).strip() if com else ""
+            if company:
+                facility = SELECTMINDS_COMPANY_NAMES.get(company, company)
         jobs.append(Job(
             title=title, hospital_system=system, hospital_name=facility,
             city=city, state=st, location=f"{city}, {st}".strip(", ") if st else loc,
@@ -12960,8 +13413,10 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
     wraps to page 1, which adds no new id and ends the crawl. /latest-jobs
     (the 10 newest) is kept as the fallback when the search answers no card.
     A page that fails mid-crawl makes the crawl PARTIAL (the HealthcareSource
-    rule); the cards read against total_results decide a complete claim."""
-    base = f"https://{org}.referrals.selectminds.com"
+    rule); the cards read against total_results decide a complete claim.
+    2026-10-25: an org that opens with "https://" is the board's own base
+    URL (McLaren, careers.mclaren.org)."""
+    base = org.rstrip("/") if org.startswith("https://") else f"https://{org}.referrals.selectminds.com"
     jobs: list[Job] = []
     seen: set[str] = set()
 
@@ -13009,7 +13464,7 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
         logger.warning(f"SelectMinds {system}: {len(seen)} of {total} cards read")
     logger.info(f"  SelectMinds {system}: {len(jobs)} jobs ({len(seen)} cards read of {total or '?'})")
     report_complete(system, len(seen), total, feed="SELECTMINDS_ORGS")
-    if DETAIL_FETCH:
+    if DETAIL_FETCH and system not in SELECTMINDS_BODY_PASS:
         # 2026-10-15: the number the cards no longer print (see
         # _selectminds_req_pass); after the claim, so it never touches it.
         try:
@@ -13018,13 +13473,59 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
             logger.info(f"SelectMinds {system}: requisition pass failed ({type(e).__name__}: {e})")
     return jobs
 
+def selectminds_posting(page_html: str) -> tuple[str, str]:
+    """(body, company) from a SelectMinds job page: the job_description block
+    (description + job_qualifications) and the field_company line."""
+    html = page_html or ""
+    m = _SM_BODY_RE.search(html)
+    body = strip_html(m.group(1)).strip() if m else ""
+    c = _SM_PAGE_COMPANY_RE.search(html)
+    company = re.sub(r"\s+", " ", _html_unescape(strip_html(c.group(1)))).strip() if c else ""
+    return body, company
+
+
+async def _selectminds_detail(session, job) -> bool:
+    """One SelectMinds job page -> body, requisition number and (for a
+    SELECTMINDS_COMPANY_FACILITY tenant whose card named none) hospital."""
+    status, html, _ = await _selectminds_get(session, job.hospital_system, job.url)
+    if status != 200 or not html:
+        return False
+    m = _SM_PAGE_JOB_ID_RE.search(html)
+    if m and str(job.job_id) and m.group(1).strip() != str(job.job_id):
+        return False             # another posting's page
+    if not job.req_id:
+        job.req_id = selectminds_req_id_from_page(html, job.job_id)
+    body, company = selectminds_posting(html)
+    if company and job.hospital_system in SELECTMINDS_COMPANY_FACILITY and job.hospital_name == job.hospital_system:
+        job.hospital_name = SELECTMINDS_COMPANY_NAMES.get(company, company)
+    return _apply_body(job, body)
+
+
 async def run_selectminds(session) -> list[Job]:
     logger.info(f"SelectMinds: scraping {len(SELECTMINDS_ORGS)} systems...")
+    body_tenants = [s for s in SELECTMINDS_ORGS if s in SELECTMINDS_BODY_PASS]
+    if DETAIL_FETCH and body_tenants:
+        SELECTMINDS_DESC_BUDGET.expect(body_tenants)
     results = await asyncio.gather(
         *[scrape_selectminds(session, s, o) for s, o in SELECTMINDS_ORGS.items()],
         return_exceptions=True
     )
-    jobs = [j for r in results if isinstance(r, list) for j in r]
+    listed = {s: (r if isinstance(r, list) else []) for s, r in zip(SELECTMINDS_ORGS, results)}
+    # 2026-10-25: the job-page body pass, after every board is listed (the
+    # list pages decide the sweep), one host at most 2 requests at a time.
+    gated = _host_gated(lambda j: _selectminds_detail(session, j), total=4, per_host=2)
+
+    async def _details(system, rows):
+        if DETAIL_FETCH and rows:
+            try:
+                await _detail_pass(session, system, rows, SELECTMINDS_DESC_BUDGET, gated, "SelectMinds")
+            except Exception as e:
+                logger.info(f"SelectMinds {system}: detail pass failed ({e}); listed rows kept")
+
+    if body_tenants:
+        await asyncio.gather(*[_tenant_reporting(SELECTMINDS_DESC_BUDGET, s, _details(s, listed[s]))
+                               for s in body_tenants], return_exceptions=True)
+    jobs = [j for s in SELECTMINDS_ORGS for j in listed[s]]
     logger.info(f"  SelectMinds total: {len(jobs):,} jobs")
     return jobs
 
@@ -17280,6 +17781,540 @@ async def _workable_detail(session, job) -> bool:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+#  APPLICANTSTACK, JAZZHR, JOBAPS (added 2026-10-25, coverage stage 4).
+#  Three server-rendered boards used by hospitals that post nowhere we read.
+#  Each lists every opening on one page; each job page carries the whole
+#  posting (ApplicantStack and JazzHR as a JSON-LD JobPosting, JobAps as the
+#  bulletin HTML with its salary line), read by a detail pass on the shared
+#  budget framework (fair share per tenant, known bodies skipped, at most 2
+#  requests in flight per host).
+#    ApplicantStack  https://<slug>.applicantstack.com/x/openings
+#                    <table id="data-table"> rows: title link
+#                    /x/detail/<code>, Location "Greenville, MS", Department,
+#                    Job Type. JSON-LD hiringOrganization.name is the
+#                    tenant's site (Delta Health: "Delta Health System-The
+#                    Medical Center").
+#    JazzHR          https://<slug>.applytojob.com/apply
+#                    <li class="list-group-item"> cards: title link
+#                    /apply/<code>/<slug>, a fa-map-marker line "Bullhead
+#                    City, AZ", a fa-sitemap line (department).
+#    JobAps          https://www.jobapscloud.com/<board>/ (state boards)
+#                    table rows: JobTitle link sup/bulpreview.asp?R1=&R2=&R3=
+#                    (the recruitment number R1-R2-R3), Locs, Dept (CT: the
+#                    department; MD: the agency, "MDH Springfield Hospital
+#                    Center"), Salary (MD only), filing deadline. A state
+#                    board lists every agency, so each board keeps only the
+#                    rows its JOBAPS_SITES rule names (a hospital), and a row
+#                    is kept only once its hospital is known.
+# ══════════════════════════════════════════════════════════════════════════
+APPLICANTSTACK_ORGS = {
+    # Format: "System": (subdomain, default state[, the town of every row
+    # when the board has no Location column])
+    # Delta Health System (Greenville MS: The Medical Center). 63 openings on
+    # 10-25, 62 in Greenville; the one Clarksdale row is the oncology clinic
+    # (Medical Group), not Northwest Mississippi Regional.
+    "Delta Health System": ("deltaregional", "MS"),
+    # Nevada Regional Medical Center (Nevada MO; ex-Quorum, now
+    # independent): 55 openings on 10-25, every one "Nevada, Missouri".
+    "Nevada Regional Medical Center": ("nrmchealth", "MO"),
+    # West Calcasieu Cameron Hospital (Sulphur LA): 30 openings on 10-25;
+    # the location column is a site name, not a town (APPLICANTSTACK_PLACES).
+    "West Calcasieu Cameron Hospital": ("wcch", "LA"),
+    # 10-25 tenant discovery (the uncovered hospitals' own careers pages link
+    # these boards); counts are that day's openings.
+    "Ozark Health":                  ("ozarkhealth", "AR"),        # Clinton AR, 14
+    "Howard Memorial Hospital":      ("hmh", "AR"),                # Nashville AR, 9
+    "Bear Lake Memorial Hospital":   ("blmhospital", "ID"),        # Montpelier ID, 12 (salary column)
+    "Highland Hills Medical Center": ("highlandhillsmc", "MS"),    # Senatobia MS, 10
+    "Salem Regional Medical Center": ("salemregional", "OH"),      # Salem OH, 68 (55 in Salem)
+    "River Hospital":                ("riverhospital", "NY", "Alexandria Bay"),   # 21, no Location column, salary column
+}
+# The hospital and town a row is at, by tenant and the location column
+# (letters only, lower case): a town ("greenville") or a site name
+# ("hospitalmaincampus"). (hospital, town): "" keeps the system name / the
+# parsed town.
+APPLICANTSTACK_PLACES = {
+    "Delta Health System": {
+        "greenville": ("Delta Health System - The Medical Center", ""),
+    },
+    "West Calcasieu Cameron Hospital": {
+        "hospitalmaincampus": ("West Calcasieu Cameron Hospital", "Sulphur"),
+        # the board's other sites (its department column names them)
+        "dynamicwestsulphur": ("Dynamic Dimensions West", "Sulphur"),
+        "dynamiceastmossbluff": ("Dynamic Dimensions East", "Moss Bluff"),
+        "communityclinic": ("Community Clinic", "Sulphur"),
+    },
+}
+# A row a town rule would place at the hospital stays under the system name
+# when its department or title is a clinic or the medical group (Delta:
+# "DELTA HEALTH SYSTEM - THE MEDICAL GROUP", "WELLNESS CLINIC").
+_AS_NOT_HOSPITAL_RX = re.compile(r"\bMedical Group\b|\bClinic\b|\bPractice\b|\bPhysician Services\b", re.I)
+JAZZHR_ORGS = {
+    # Format: "System": (subdomain, default state)
+    # Exceptional Healthcare: Exceptional Community Hospitals (Bullhead City,
+    # Maricopa, Yuma AZ; Ardmore OK; Lubbock TX) and freestanding emergency
+    # centres in Texas. 83 openings on 10-25.
+    "Exceptional Healthcare": ("exceptionalhealthcareinc", "TX"),
+    # Perimeter Healthcare (behavioral hospitals). The 10-20 survey had it on
+    # Betterteam (perimeterhealthcare-2.betterteam.com, now behind a bot
+    # check); perimeterhealthcare.com/applytoday links this JazzHR board
+    # (49 openings on 10-25: Forrest City AR 10, Waynesville MO 9, West
+    # Memphis AR 6, Saint Robert MO 5, Springfield MO 5, Arlington TX 5,
+    # Jackson TN 4, Garland TX 3).
+    "Perimeter Healthcare": ("perimeterhealthcare", "TX"),
+    # 10-25 tenant discovery: Franklin Medical Center (Winnsboro LA), 25.
+    "Franklin Medical Center": ("franklinmedicalcenter", "LA"),
+}
+# Exceptional's hospital towns; a row in another town keeps the system name.
+JAZZHR_TOWN_FACILITY = {
+    "Exceptional Healthcare": {
+        ("bullheadcity", "AZ"): "Exceptional Community Hospital Bullhead City",
+        ("maricopa", "AZ"): "Exceptional Community Hospital Maricopa",
+        ("yuma", "AZ"): "Exceptional Community Hospital Yuma",
+        ("ardmore", "OK"): "Exceptional Community Hospital Ardmore",
+        ("lubbock", "TX"): "Exceptional Community Hospital Lubbock",
+    },
+    # One Perimeter hospital per town (CMS names); Forrest City, Waynesville
+    # and Saint Robert rows keep the system name (no Perimeter hospital in
+    # the CMS list there).
+    "Perimeter Healthcare": {
+        ("westmemphis", "AR"): "Perimeter Behavioral Hospital of West Memphis",
+        ("springfield", "MO"): "Perimeter Behavioral Hospital of Springfield",
+        ("arlington", "TX"): "Perimeter Behavioral Hospital of Arlington",
+        ("garland", "TX"): "Perimeter Behavioral Hospital of Dallas",
+        ("jackson", "TN"): "Perimeter Behavioral Center of Jackson",
+        ("kenner", "LA"): "Perimeter Behavioral Hospital of New Orleans",
+    },
+}
+JOBAPS_SITES = {
+    # Format: "System": (board, state, ((pattern on "dept | title", hospital, town), ...),
+    #                    ((pattern on the bulletin text, hospital, town), ...))
+    # The first rules are read off the list row; a row whose department is
+    # kept but whose hospital the list does not name is read from its
+    # bulletin (the second rules) and dropped when that names none.
+    # Maryland Department of Health psychiatric hospitals: the agency column
+    # names the hospital (10-25: Springfield 4, Spring Grove 2, Finan 1).
+    "Maryland Department of Health": ("MD", "MD", (
+        (r"^MDH Springfield Hospital Center", "Springfield Hospital Center", "Sykesville"),
+        (r"^MDH Spring Grove Hospital Center", "Spring Grove Hospital Center", "Catonsville"),
+        (r"^MDH Thomas B\.? Finan", "Thomas B. Finan Center", "Cumberland"),
+        (r"^MDH Eastern Shore Hospital Center", "Eastern Shore Hospital Center", "Cambridge"),
+    ), ()),
+    # Connecticut DMHAS: the department column says DMHAS only; the bulletin
+    # names the hospital ("... to join the Connecticut Valley Hospital
+    # (CVH)"). 10-25: 21 DMHAS rows, 10 in Middletown.
+    "Connecticut DMHAS": ("CT", "CT", (), (
+        (r"Connecticut Valley Hospital|\bCVH\b", "Connecticut Valley Hospital", "Middletown"),
+        (r"Connecticut Mental Health Center|\bCMHC\b", "Connecticut Mental Health Center", "New Haven"),
+        (r"Southwest Connecticut Mental Health System|\bSWCMHS\b", "Southwest Connecticut Mental Health System", "Bridgeport"),
+        (r"Albert J\.? Solnit", "Albert J. Solnit Children's Center - South Campus", "Middletown"),
+    )),
+}
+# Rows of the board a JOBAPS_SITES tenant reads at all (the department or
+# agency column), before any hospital rule.
+JOBAPS_DEPT = {
+    "Maryland Department of Health": re.compile(r"^MDH ", re.I),
+    "Connecticut DMHAS": re.compile(r"^Department of Mental Health & Addiction Services$|^Department of Children & Families$", re.I),
+}
+APPLICANTSTACK_DESC_MAX_PER_RUN = int(os.getenv("APPLICANTSTACK_DESC_MAX_PER_RUN", "300"))
+JAZZHR_DESC_MAX_PER_RUN = int(os.getenv("JAZZHR_DESC_MAX_PER_RUN", "300"))
+JOBAPS_DESC_MAX_PER_RUN = int(os.getenv("JOBAPS_DESC_MAX_PER_RUN", "200"))
+APPLICANTSTACK_DESC_BUDGET = _DescBudget(APPLICANTSTACK_DESC_MAX_PER_RUN)
+JAZZHR_DESC_BUDGET = _DescBudget(JAZZHR_DESC_MAX_PER_RUN)
+JOBAPS_DESC_BUDGET = _DescBudget(JOBAPS_DESC_MAX_PER_RUN)
+
+_AS_ROW_RX = re.compile(r'<tr class="(?:odd|even)row">(.*?)</tr>', re.S)
+_AS_TD_RX = re.compile(r"<td[^>]*>(.*?)</td>", re.S)
+# The posting key is a code (Delta "a2evjac0dyxa") or the tenant's own slug
+# (Salem Regional "outpatient-therapist-1").
+_AS_LINK_RX = re.compile(r'<a href="(https://[^"]+/x/detail/([A-Za-z0-9][A-Za-z0-9_-]*))"[^>]*>(.*?)</a>', re.S)
+_JZ_LINK_RX = re.compile(r'<a href="(https://[^"/]+\.applytojob\.com/apply/([A-Za-z0-9]+)/[^"]*)"[^>]*>(.*?)</a>', re.S)
+_JZ_LOC_RX = re.compile(r"<i class='fa fa-map-marker'></i>(.*?)</li>", re.S)
+_JZ_DEPT_RX = re.compile(r"<i class='fa fa-sitemap'></i>(.*?)</li>", re.S)
+_JA_ROW_RX = re.compile(r'<tr(?: class="(?:odd|even)")?>\s*<th scope="row">(.*?)</tr>', re.S)
+_JA_TITLE_RX = re.compile(r'<a href="([^"]*bulpreview\.asp\?[^"]*)" class="JobTitle"[^>]*>(.*?)</a>', re.S)
+_JA_CELL_RX = {k: re.compile(rf'<td class="{k}[^"]*">(.*?)</td>', re.S) for k in ("Locs", "Dept", "Salary")}
+_JA_NUM_RX = re.compile(r"R1=([^&]+)&(?:amp;)?R2=([^&]+)&(?:amp;)?R3=([^&\"']+)")
+
+
+# Evergreen "apply anyway" entries the boards list beside real openings
+# (Franklin Medical Center: "General Application - Nursing"); not postings.
+_NOT_AN_OPENING_RX = re.compile(r"^\s*general application\b|\btalent (?:community|pool|network)\b|"
+                                r"^\s*(?:submit|express)\s+(?:your\s+)?(?:resume|interest)\b", re.I)
+
+
+def _cell_text(fragment: str) -> str:
+    return re.sub(r"\s+", " ", _html_unescape(re.sub(r"<[^>]+>", " ", fragment or ""))).strip()
+
+
+def _town_key(city: str) -> str:
+    return re.sub(r"[^a-z]", "", (city or "").lower())
+
+
+_AS_HEAD_RX = re.compile(r"<thead>(.*?)</thead>", re.S)
+_AS_TH_RX = re.compile(r"<th[^>]*>(.*?)</th>", re.S)
+_AS_MONEY_RX = re.compile(r"^\$\s?([\d,]+(?:\.\d+)?)(?:\s*(?:-|to)\s*\$?\s?([\d,]+(?:\.\d+)?))?(?:\s*(?:/|per)\s*(?:hr|hour|year|yr))?\s*$", re.I)
+
+
+def _as_columns(html: str) -> dict:
+    """Column index by meaning, from the board's own header row (tenants
+    choose their columns: Delta Title|Location|Department|Job Type; Bear
+    Lake adds Salary Range; River Hospital has no Location column)."""
+    m = _AS_HEAD_RX.search(html or "")
+    heads = [_cell_text(h).lower() for h in _AS_TH_RX.findall(m.group(1))] if m else []
+    if not heads:
+        return {"location": 1, "department": 2, "type": 3}
+    cols = {}
+    for i, h in enumerate(heads):
+        key = ("location" if h.startswith("location") else "department" if h.startswith("department") else
+               "salary" if "salary" in h or h.startswith("pay") else "shift" if h.startswith("shift") else
+               "type" if h in ("job type", "status", "ft,pt,pd", "classification", "employment type") else "")
+        if key and key not in cols:
+            cols[key] = i
+    return cols
+
+
+def _as_wage(text: str):
+    """(lo, hi, unit) from a clean salary cell ("$19 - $21", "$250,000 -
+    $325,000", "$27.00 - $29.00"); None for prose ("Commensurate with
+    experience", "N/A")."""
+    m = _AS_MONEY_RX.match((text or "").strip())
+    if not m:
+        return None
+    lo = float(m.group(1).replace(",", ""))
+    hi = float(m.group(2).replace(",", "")) if m.group(2) else lo
+    return _wage_pair(lo, hi)
+
+
+def _parse_applicantstack(html: str, system: str, default_state: str, default_town: str = "") -> list[Job]:
+    jobs, seen = [], set()
+    sites = APPLICANTSTACK_PLACES.get(system, {})
+    cols = _as_columns(html)
+
+    def cell(cells, key):
+        i = cols.get(key)
+        return cells[i] if i is not None and i < len(cells) else ""
+
+    for row in _AS_ROW_RX.findall(html or ""):
+        m = _AS_LINK_RX.search(row)
+        if not m:
+            continue
+        url, code, title = m.group(1), m.group(2), _cell_text(m.group(3))
+        if not title or code in seen or _NOT_AN_OPENING_RX.search(title):
+            continue
+        cells = [_cell_text(c) for c in _AS_TD_RX.findall(row)]
+        loc, dept, jtype = cell(cells, "location"), cell(cells, "department"), cell(cells, "type")
+        city, st = parse_city_state(loc) if loc else (default_town, default_state)
+        site = sites.get(_town_key(city if st else loc))
+        if site and st and _AS_NOT_HOSPITAL_RX.search(f"{dept} {title}"):
+            site = None                                 # a clinic in the hospital's town
+        if not st:
+            city = ""                                   # a site name, not a town
+        if site and site[1]:
+            city = site[1]
+        st = st or default_state
+        shift = cell(cells, "shift")
+        sal = cell(cells, "salary")
+        seen.add(code)
+        job = Job(
+            title=title, hospital_system=system, hospital_name=(site[0] if site and site[0] else system),
+            city=city, state=st, location=f"{city}, {st}".strip(", "),
+            specialty=dept.title() if dept.isupper() and " " in dept else dept,   # "2 SOUTH", not "RFHC"
+            job_type=" · ".join(x for x in (jtype, shift) if x),
+            url=url, job_id=code, posted_date="",
+            description=f"Pay: {sal}" if sal and re.search(r"\d", sal) else "", ats_platform="ApplicantStack",
+        )
+        pay = _as_wage(sal)
+        if pay:
+            job.wage_min, job.wage_max, job.wage_unit = pay
+        jobs.append(job)
+    return jobs
+
+
+def _parse_jazzhr(html: str, system: str, default_state: str) -> list[Job]:
+    jobs, seen = [], set()
+    towns = JAZZHR_TOWN_FACILITY.get(system, {})
+    for item in (html or "").split('<li class="list-group-item">')[1:]:
+        m = _JZ_LINK_RX.search(item)
+        if not m:
+            continue
+        url, code, title = m.group(1), m.group(2), _cell_text(m.group(3))
+        if not title or code in seen or _NOT_AN_OPENING_RX.search(title):
+            continue
+        lm, dm = _JZ_LOC_RX.search(item), _JZ_DEPT_RX.search(item)
+        loc = _cell_text(lm.group(1)) if lm else ""
+        city, st = parse_city_state(loc)
+        if city.isupper():
+            city = city.title()                       # "YUMA, AZ", "DALLAS, TX"
+        st = st or default_state
+        seen.add(code)
+        jobs.append(Job(
+            title=title, hospital_system=system,
+            hospital_name=towns.get((_town_key(city), st), system),
+            city=city, state=st, location=f"{city}, {st}".strip(", "),
+            specialty=_cell_text(dm.group(1)) if dm else "", job_type="",
+            url=url, job_id=code, posted_date="", description="", ats_platform="JazzHR",
+        ))
+    return jobs
+
+
+_JA_SECTION_RX = re.compile(r'id="EmpDiv\d+"[^>]*>(.*?)</h2>', re.S)
+# Sections of a board the public cannot apply to (CT "Open Only to Statewide
+# Employees", "Open Only to Agency Employees"; MD "Current State Employees")
+# and internships.
+_JA_CLOSED_SECTION_RX = re.compile(r"\bOnly\b|State Employees|Agency Employees|Internship", re.I)
+
+
+def _jobaps_public(html: str) -> str:
+    """The board's page without its internal-only and internship sections."""
+    page = html or ""
+    heads = list(_JA_SECTION_RX.finditer(page))
+    if not heads:
+        return page
+    keep = [page[:heads[0].start()]]
+    for n, m in enumerate(heads):
+        end = heads[n + 1].start() if n + 1 < len(heads) else len(page)
+        if not _JA_CLOSED_SECTION_RX.search(_cell_text(m.group(1))):
+            keep.append(page[m.start():end])
+    return "".join(keep)
+
+
+def _jobaps_rules(rules) -> tuple:
+    return tuple((re.compile(rx, re.I), name, town) for rx, name, town in rules)
+
+
+def _parse_jobaps(html: str, system: str, cfg: tuple) -> list[Job]:
+    """Rows of a JobAps board the tenant keeps (JOBAPS_DEPT), with the
+    hospital and town when the list row names them (JOBAPS_SITES rules);
+    rows still without a hospital are marked for the bulletin read
+    (hospital_name "")."""
+    board, state, row_rules, _body_rules = cfg
+    keep = JOBAPS_DEPT.get(system)
+    rules = _jobaps_rules(row_rules)
+    jobs, seen = [], set()
+    for row in _JA_ROW_RX.findall(_jobaps_public(html)):
+        tm = _JA_TITLE_RX.search(row)
+        if not tm:
+            continue
+        href = _html_unescape(tm.group(1))
+        nm = _JA_NUM_RX.search(href)
+        if not nm:
+            continue
+        num = "-".join(nm.groups())
+        title = _cell_text(re.sub(r"<br\s*/?>", " ", tm.group(2)))
+        dm = _JA_CELL_RX["Dept"].search(row)
+        dept = _cell_text(dm.group(1)) if dm else ""
+        if not title or num in seen or (keep and not keep.search(dept)):
+            continue
+        lm = _JA_CELL_RX["Locs"].search(row)
+        locs = [t for t in (_cell_text(x) for x in re.split(r"<br\s*/?>|</div>", lm.group(1))) if t] if lm else []
+        hospital, town = "", ""
+        for rx, name, t in rules:
+            if rx.search(f"{dept} | {title}"):
+                hospital, town = name, t
+                break
+        city = town
+        if not city and len(locs) == 1:
+            c, s = parse_city_state(locs[0])
+            city = c if s == state else ""
+        sm = _JA_CELL_RX["Salary"].search(row)
+        sal = _cell_text(sm.group(1)) if sm else ""
+        url = href if href.startswith("http") else f"https://www.jobapscloud.com/{board}/{href.lstrip('/')}"
+        seen.add(num)
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=hospital,
+            city=city, state=state, location=f"{city}, {state}".strip(", "),
+            specialty="", job_type="", url=url, job_id=num, posted_date="",
+            description=f"Salary: {sal}" if sal else "", ats_platform="JobAps",
+        ))
+    return jobs
+
+
+def jobaps_bulletin(html: str) -> tuple[str, str]:
+    """(body, header text) of a JobAps bulletin: the JobBulletinBody block
+    (to the apply panel or the footer) and the header above it (recruitment
+    number, location, salary, dates). The body gains the header's salary
+    line, the one figure the posting's own text often leaves out."""
+    page = html or ""
+    i = page.find('id="JobBulletinBody"')
+    if i < 0:
+        return "", ""
+    j = page.find('id="JobBulletin"')
+    header = _cell_text(page[j:i]) if 0 <= j < i else ""
+    end = len(page)
+    for mark in ('class="ApplyPanelDiv"', 'id="footer', "</body>"):
+        k = page.find(mark, i)
+        if 0 <= k < end:
+            end = page.rfind("<", i, k) if mark != "</body>" else k   # the tag that carries the mark
+    body = strip_html(page[page.find(">", i) + 1:end]).strip()
+    m = re.search(r"\bSalary\s+(\$[^A-Za-z]*?\d[^A-Z]*?(?:year|hour|annually|month|week|bi-?weekly)[^A-Z]*?)"
+                  r"(?=\s+(?:\(|Job Type|Employment Type|Close Date|Filing Deadline|HR Analyst|Work Location|Go Back))",
+                  header)
+    if m and body:
+        body = f"{body[:_FACTS_WINDOW - 300].rstrip()}\n\nSalary: {m.group(1).strip()}"
+    return body, header
+
+
+async def _board_get(session, url: str, label: str, system: str, timeout: int = 40) -> tuple[int, str]:
+    """(status, page) of one board page; (0, "") on an exception. The bytes
+    are read as UTF-8, else Windows-1252: the JobAps pages send no charset
+    and their non-breaking spaces came out as "Â " when guessed."""
+    try:
+        async with req(session, "get", url, headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=timeout)) as r:
+            if r.status != 200:
+                return r.status, ""
+            raw = await r.read()
+    except Exception as e:
+        logger.info(f"{label} {system}: {url}: {type(e).__name__}: {e}")
+        return 0, ""
+    try:
+        return 200, raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return 200, raw.decode("cp1252", errors="replace")
+
+
+async def scrape_applicantstack(session, system: str, cfg: tuple) -> list[Job]:
+    slug, default_state, default_town = (tuple(cfg) + ("",))[:3]
+    status, html = await _board_get(session, f"https://{slug}.applicantstack.com/x/openings", "ApplicantStack", system)
+    if status != 200:
+        logger.info(f"ApplicantStack {system}: HTTP {status}")
+        return []
+    jobs = _parse_applicantstack(html, system, default_state, default_town)
+    logger.info(f"  ApplicantStack {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def scrape_jazzhr(session, system: str, cfg: tuple) -> list[Job]:
+    slug, default_state = cfg
+    status, html = await _board_get(session, f"https://{slug}.applytojob.com/apply", "JazzHR", system)
+    if status != 200:
+        logger.info(f"JazzHR {system}: HTTP {status}")
+        return []
+    jobs = _parse_jazzhr(html, system, default_state)
+    logger.info(f"  JazzHR {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def scrape_jobaps(session, system: str, cfg: tuple) -> list[Job]:
+    """The board's one list page, filtered to the tenant's rows. Rows whose
+    hospital the list does not name are read from their bulletins here (a
+    state board keeps few such rows: CT DMHAS 21 on 10-25), and dropped when
+    the bulletin names no configured hospital."""
+    board, state, _row_rules, body_rules = cfg
+    status, html = await _board_get(session, f"https://www.jobapscloud.com/{board}/", "JobAps", system, timeout=60)
+    if status != 200:
+        logger.info(f"JobAps {system}: HTTP {status}")
+        return []
+    rows = _parse_jobaps(html, system, cfg)
+    rules = _jobaps_rules(body_rules)
+    out, unread, dropped = [], 0, 0
+    for job in rows:
+        if job.hospital_name:
+            out.append(job)
+            continue
+        if not rules:
+            dropped += 1
+            continue
+        await jitter()
+        st, page = await _board_get(session, job.url, "JobAps", system)
+        body, header = jobaps_bulletin(page) if st == 200 else ("", "")
+        if not body:
+            unread += 1
+            continue
+        # The bulletin must name exactly one configured hospital (a
+        # statewide posting lists several), in the town the list row gives.
+        named = {(name, town) for rx, name, town in rules if rx.search(body[:4000])}
+        hit = next(iter(named)) if len(named) == 1 else None
+        if hit and job.city and _town_key(job.city) != _town_key(hit[1]):
+            hit = None
+        if not hit:
+            dropped += 1
+            continue
+        job.hospital_name, job.city = hit
+        job.location = f"{job.city}, {state}"
+        _apply_body(job, body)
+        out.append(job)
+    if unread:
+        report_partial(system)
+    logger.info(f"  JobAps {system}: {len(out)} jobs ({len(rows)} rows of its departments, "
+                f"{dropped} at no configured hospital, {unread} bulletins unread)")
+    return out
+
+
+async def _applicantstack_detail(session, job) -> bool:
+    """ApplicantStack job page -> JSON-LD body, type, date. The posting's
+    hiringOrganization is the tenant's site name on every page (Delta's
+    clinic postings name the hospital too), so it does not move a row."""
+    listed = (job.description or "").strip()
+    html = await _fetch_html(session, job.url, timeout=30)
+    posting = _jobposting_from_html(html)
+    ok = _apply_posting(job, posting) if posting else False
+    if ok and listed.startswith("Pay: ") and listed not in job.description:
+        job.description = f"{job.description}\n\n{listed}"      # the board's salary column
+    return ok
+
+
+async def _jazzhr_detail(session, job) -> bool:
+    html = await _fetch_html(session, job.url, timeout=30)
+    posting = _jobposting_from_html(html)
+    return _apply_posting(job, posting) if posting else False
+
+
+async def _jobaps_detail(session, job) -> bool:
+    _, html = await _board_get(session, job.url, "JobAps", job.hospital_system)
+    body, _ = jobaps_bulletin(html)
+    return _apply_body(job, body)
+
+
+async def _run_small_board(session, label: str, orgs: dict, scrape, budget, detail) -> list[Job]:
+    """List every tenant (at most HOST_CONCURRENCY at a time per host), then
+    one detail pass per tenant on `budget`, 2 requests in flight per host."""
+    if not orgs:
+        return []
+    logger.info(f"{label}: scraping {len(orgs)} boards...")
+    if DETAIL_FETCH:
+        budget.expect(orgs)
+    host = {"ApplicantStack": lambda c: f"{c[0]}.applicantstack.com",
+            "JazzHR": lambda c: f"{c[0]}.applytojob.com",
+            "JobAps": lambda c: "www.jobapscloud.com"}[label]
+    results = await _gather_by_host(session, list(orgs.items()), scrape, host)
+    listed = {s: (r if isinstance(r, list) else []) for s, r in zip(orgs, results)}
+    for s, r in zip(orgs, results):
+        if isinstance(r, Exception):
+            logger.info(f"  {label} {s}: ERROR {r}")
+    gated = _host_gated(lambda j: detail(session, j), total=4, per_host=2)
+
+    async def _details(system, rows):
+        if DETAIL_FETCH and rows:
+            try:
+                await _detail_pass(session, system, rows, budget, gated, label)
+            except Exception as e:
+                logger.info(f"{label} {system}: detail pass failed ({e}); listed rows kept")
+
+    await asyncio.gather(*[_tenant_reporting(budget, s, _details(s, listed[s])) for s in orgs],
+                         return_exceptions=True)
+    jobs = [j for s in orgs for j in listed[s]]
+    logger.info(f"  {label} total: {len(jobs):,} jobs")
+    return jobs
+
+
+async def run_applicantstack(session) -> list[Job]:
+    return await _run_small_board(session, "ApplicantStack", APPLICANTSTACK_ORGS, scrape_applicantstack,
+                                  APPLICANTSTACK_DESC_BUDGET, _applicantstack_detail)
+
+
+async def run_jazzhr(session) -> list[Job]:
+    return await _run_small_board(session, "JazzHR", JAZZHR_ORGS, scrape_jazzhr,
+                                  JAZZHR_DESC_BUDGET, _jazzhr_detail)
+
+
+async def run_jobaps(session) -> list[Job]:
+    return await _run_small_board(session, "JobAps", JOBAPS_SITES, scrape_jobaps,
+                                  JOBAPS_DESC_BUDGET, _jobaps_detail)
+
+
+# ══════════════════════════════════════════════════════════════════════════
 #  JOBVITE ENGAGE (Talemetry) CAREER SITES (added 2026-09-25, push5/systems).
 #  careers.<system>.org answers GET /jobs/search.json?page=N&per_page=100 with
 #  {"current_page", "per_page", "total_entries", "entries": [{"id", "permalink",
@@ -17703,6 +18738,20 @@ TALEO_BE_ORGS = {
     # items that day; locationState reads "US-AZ" on most items and "AZ" on
     # the rest (_parse_taleo_be_rss strips the country prefix).
     "TMC Healthcare": ("https://phe.tbe.taleo.net/phe01", "TMCAZ", "38", "AZ"),
+    # 2026-10-25 (coverage stage 4 tenant discovery): Blanchard Valley Health
+    # System (Findlay OH; Bluffton Hospital), linked from bvhealthsystem.org/
+    # careers. 359 RSS items that day (Findlay 348, Bluffton 8); the
+    # department names the site (TALEO_BE_FACILITY).
+    "Blanchard Valley Health System": ("https://phg.tbe.taleo.net/phg02", "BVHS", "40", "OH"),
+}
+# The hospital a TaleoBE row is at, by tenant: (pattern on the department,
+# hospital). Rows nothing matches keep the system name (BVHS: Birchaven
+# nursing home, BVMP medical practices, home health).
+TALEO_BE_FACILITY = {
+    "Blanchard Valley Health System": (
+        (re.compile(r"^BLUFFTON\s+-", re.I), "Bluffton Hospital"),
+        (re.compile(r"^BVH\s+-", re.I), "Blanchard Valley Hospital"),
+    ),
 }
 _TBE_NS = {"taleo": "urn:TBERss"}
 
@@ -17751,8 +18800,10 @@ def _parse_taleo_be_rss(xml_text: str, system: str, base: str, org: str, cws: st
         except Exception:
             pass
         desc = t("html-description", ns=True) or t("description")
+        dept = t("department", ns=True)
+        hospital = next((name for rx, name in TALEO_BE_FACILITY.get(system, ()) if rx.search(dept)), system)
         jobs.append(Job(
-            title=title, hospital_system=system, hospital_name=system,
+            title=title, hospital_system=system, hospital_name=hospital,
             city=city, state=(st or default_state).upper(),
             location=f"{city}, {(st or default_state).upper()}".strip(", "),
             specialty=t("department", ns=True), job_type="",
@@ -28086,6 +29137,9 @@ async def run_all() -> list[dict]:
             run_paycor(proxy_session),
             run_paylocity(proxy_session),  # Paylocity pageData boards: White Rock Medical Center (added 2026-09-10)
             run_workable(proxy_session),   # Workable v3 accounts API: Huntsville Memorial (added 2026-09-10)
+            run_applicantstack(proxy_session),  # ApplicantStack openings table: Delta Health (added 2026-10-25)
+            run_jazzhr(proxy_session),          # JazzHR applytojob board: Exceptional Healthcare (added 2026-10-25)
+            run_jobaps(proxy_session),          # JobAps state boards: MD and CT state psychiatric hospitals (added 2026-10-25)
             run_talemetry(proxy_session),  # Jobvite Engage (Talemetry) search.json: UCHealth, PeaceHealth, Penn Medicine (added 2026-09-25)
             run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
             run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)
