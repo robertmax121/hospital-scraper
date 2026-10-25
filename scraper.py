@@ -2502,6 +2502,7 @@ WORKDAY_TENANTS = {
     "Eisenhower Health":         ("eisenhower",          "1",   "Eisenhower_Careers"),                # [215] Rancho Mirage CA
     "Reid Health":               ("reidhealth",          "12",  "External_Careers"),                  # [229] Richmond IN
     "Dayton Children's":         ("daytonchildrens",     "1",   "dayton_childrens_career_site"),      # [158] Dayton + Springboro OH
+    "Vitruvian Health":          ("vitruvian",           "108", "vitruviancareers"),                  # [413] Hamilton Medical Center (Dalton GA) + Bradley Medical Center (Cleveland TN)
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -3200,6 +3201,8 @@ HOSPITAL_NAME_FIX: dict[str, dict[str, str]] = {
     "Tahoe Forest Health System": {"* truckee": "Tahoe Forest Hospital", "*reno": "Tahoe Forest Health System",
                                    "ivch": "Incline Village Community Hospital"},
     "Grady Health System": {"main grady campus (downtown atlanta)": "Grady Memorial Hospital"},
+    # Brook Lane (Hagerstown psychiatric hospital) joined Meritus Health.
+    "Meritus Health": {"brook lane main campus": "Brook Lane Health Services"},
 }
 
 # 2026-10-25 coverage stage 2: towns a board writes as a neighbourhood of a
@@ -5597,6 +5600,38 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "thearc": (None, "Washington", "DC"),
         "cnpa chevy chase": (None, "Chevy Chase", "MD"),
     },
+    # Vitruvian Health (Hamilton Health Care System, Dalton GA; Bradley Medical
+    # Center, Cleveland TN since 2025): its campus locations carry no town.
+    "Vitruvian Health": {
+        "hamilton medical center - main campus": ("Hamilton Medical Center", "Dalton", "GA"),
+        "hamilton diagnostics center": (None, "Dalton", "GA"),
+        "hamilton central business office (kazee building)": (None, "Dalton", "GA"),
+        "anna shaw children's institute": (None, "Dalton", "GA"),
+        "hpg - calhoun campus": (None, "Calhoun", "GA"),
+        "bradley medical center - main campus": ("Bradley Medical Center", "Cleveland", "TN"),
+        "bradley medical center - westside campus": (None, "Cleveland", "TN"),
+        "novamed surgery center of cleveland (bradley ambulatory surgery center)": (None, "Cleveland", "TN"),
+        "bps orthopedics": (None, "Cleveland", "TN"),
+    },
+    # 2026-10-25 coverage stage 2 (in-crawl): Tufts Medicine's locationsText is
+    # the campus with no town, so every row took the Boston default and Lowell
+    # General Hospital (CMS 220063, Lowell MA) never counted. The campuses take
+    # their names and towns; an unlisted location keeps the system default.
+    "Tufts Medicine": {
+        "tufts medical center": ("Tufts Medical Center", "Boston", "MA"),
+        "tufts medical center - corporate location": (None, "Boston", "MA"),
+        "tufts medical center - framingham": (None, "Framingham", "MA"),
+        "tufts medical center community care - melrose": (None, "Melrose", "MA"),
+        "tufts medical center community care": (None, "Boston", "MA"),
+        "lowell general hospital": ("Lowell General Hospital", "Lowell", "MA"),
+        "lowell - rogers street": (None, "Lowell", "MA"),
+        "melrosewakefield hospital": ("MelroseWakefield Hospital", "Melrose", "MA"),
+        "lawrence memorial hospital": (None, "Medford", "MA"),
+        "malden - 178 savin street": (None, "Malden", "MA"),
+        "nena lawrence": (None, "Lawrence", "MA"),
+        "nena chelmsford": (None, "Chelmsford", "MA"),
+        "tuftsmedicine": (None, "Boston", "MA"),
+    },
     "OU Health": {
         "central park ii": (None, "Oklahoma City", "OK"),
         "yukon facility": (None, "Yukon", "OK"),
@@ -6999,6 +7034,8 @@ ICIMS_ORGS = {
     "Foundation Health Partners":       "careers-fhp.icims.com",                # [138] Fairbanks Memorial Hospital, Fairbanks AK
     "Heywood Healthcare":               "careers-heywood.icims.com",            # [155] Heywood Hospital (Gardner) + Athol Hospital MA
     "Henry Community Health":           "careers-hcmhcares.icims.com",          # [34] Henry County Memorial Hospital, New Castle IN
+    "Southcoast Health":                "careers-southcoast.icims.com",         # [363] Charlton (Fall River), St. Luke's (New Bedford), Tobey (Wareham) MA
+    "Eskenazi Health":                  "careers-eskenazihealth.icims.com",     # [13] Indianapolis IN
 }
 
 
@@ -13910,6 +13947,7 @@ UKG_ORGS = {
     "Perry County Memorial Hospital":     ("https://perrycountymem.rec.pro.ukg.net/PER1500PCMH", "ad3e78fe-7ca1-44dd-9add-84fd268d95b4", "IN"),  # [42] Tell City IN
     "Tahoe Forest Health System":         ("https://recruiting.ultipro.com/TAH1000", "19fd0f5d-3c9e-10c7-8338-910ff12f7559", "CA"),         # [63] Truckee CA + Incline Village NV
     "Memorial Regional Health":           ("https://recruiting2.ultipro.com/MEM1005MHCR", "3057c08c-d82e-49ff-aee0-6146eb32163f", "CO"),  # [30] The Memorial Hospital, Craig CO
+    "Meritus Health":                     ("https://recruiting.ultipro.com/MER1012MERH", "23a054d5-dd9d-4a01-ba62-0bc75b4673d6", "MD"),   # [259] Meritus Medical Center + Brook Lane, Hagerstown MD
 }
 
 # 2026-10-20: the posting's title names the hospital on a board whose
@@ -14431,6 +14469,8 @@ ORACLE_ORGS = {
     "Stamford Health":           ("https://fa-ewfb-saasfaprod1.fa.ocs.oraclecloud.com",       "Careers"),   # [173] Stamford Hospital, Stamford CT
     "Hoag":                      ("https://iaucqy.fa.ocs.oraclecloud.com",                    "CX_1"),   # [110] Newport Beach / Irvine CA
     "AtlantiCare":               ("https://ibywjb.fa.ocs.oraclecloud.com",                    "CX_1"),   # [529] Atlantic City / Galloway (Pomona) NJ
+    "CarolinaEast Health System": ("https://enpu.fa.us2.oraclecloud.com",                     "CX_1001"),   # [222] New Bern NC
+    "Connecticut Children's":    ("https://fa-evav-saasfaprod1.fa.ocs.oraclecloud.com",       "connecticutchildrenscareers"),   # [224] Hartford CT
 }
 
 # 2026-09-16 (NY coverage): Mount Sinai site names in requisition titles ->

@@ -106,6 +106,15 @@ NEW = {
 }
 NEW["PAYCOR_ORGS"].update({"Arkansas Valley Regional Medical Center": "8a7883d09d9307dd019db0b264160476",
                            "Bothwell Regional Health Center": "8a7883c6946708d70194a902a07514b4"})
+NEW["WORKDAY_TENANTS"]["Vitruvian Health"] = ("vitruvian", "108", "vitruviancareers")
+NEW["ICIMS_ORGS"].update({"Southcoast Health": "careers-southcoast.icims.com",
+                          "Eskenazi Health": "careers-eskenazihealth.icims.com"})
+NEW["UKG_ORGS"]["Meritus Health"] = ("https://recruiting.ultipro.com/MER1012MERH",
+                                     "23a054d5-dd9d-4a01-ba62-0bc75b4673d6", "MD")
+NEW["ORACLE_ORGS"].update({
+    "CarolinaEast Health System": ("https://enpu.fa.us2.oraclecloud.com", "CX_1001"),
+    "Connecticut Children's": ("https://fa-evav-saasfaprod1.fa.ocs.oraclecloud.com", "connecticutchildrenscareers"),
+})
 NEW["UKG_ORGS"]["Memorial Regional Health"] = ("https://recruiting2.ultipro.com/MEM1005MHCR",
                                                "3057c08c-d82e-49ff-aee0-6146eb32163f", "CO")
 
@@ -155,7 +164,7 @@ def test_rejected_candidates_stay_out():
 def test_workday_tenant_defaults():
     td = scraper.WD_TENANT_DEFAULT
     for system in NEW["WORKDAY_TENANTS"]:
-        if system == "Boys Town":      # multi-state youth-care sites: no default town
+        if system in ("Boys Town", "Vitruvian Health"):   # multi-state boards: no default town
             assert system not in td
             continue
         assert system in td, system
@@ -280,3 +289,34 @@ def test_evergreen_location_names_take_the_system_name():
 
 def test_avem_board_defaults_to_oklahoma():
     assert scraper.PAYCOM_DEFAULT_STATE["AVEM Health Partners"] == "OK"
+
+
+@pytest.mark.parametrize("loc,want", [
+    ("Lowell General Hospital", ("Lowell General Hospital", "Lowell", "MA")),
+    ("Lowell General Hospital - 14 Research Place", ("Lowell General Hospital", "Lowell", "MA")),
+    ("Tufts Medical Center", ("Tufts Medical Center", "Boston", "MA")),
+    ("Tufts Medical Center - Corporate Location", (None, "Boston", "MA")),
+    ("Tufts Medical Center - Framingham", (None, "Framingham", "MA")),
+    ("Tufts Medical Center Community Care - 830 Main Street", (None, "Boston", "MA")),
+    ("MelroseWakefield Hospital", ("MelroseWakefield Hospital", "Melrose", "MA")),
+    ("Lowell - Rogers Street", (None, "Lowell", "MA")),
+])
+def test_tufts_campuses_take_their_towns(loc, want):
+    # in-crawl: every Tufts row took the Boston default, so Lowell General never counted
+    city, state = scraper.parse_city_state(loc)
+    assert scraper._wd_facility("Tufts Medicine", loc, city, state) == want
+
+
+@pytest.mark.parametrize("loc,want", [
+    ("Hamilton Medical Center - Main Campus", ("Hamilton Medical Center", "Dalton", "GA")),
+    ("Bradley Medical Center - Main Campus", ("Bradley Medical Center", "Cleveland", "TN")),
+    ("Bradley Medical Center - Westside Campus", (None, "Cleveland", "TN")),
+])
+def test_vitruvian_campuses(loc, want):
+    city, state = scraper.parse_city_state(loc)
+    assert scraper._wd_facility("Vitruvian Health", loc, city, state) == want
+
+
+def test_brook_lane_takes_its_cms_name():
+    assert _row("Meritus Health", "Brook Lane Main Campus", "Hagerstown", "MD")["hospital_name"] ==         "Brook Lane Health Services"
+    assert _row("Meritus Health", "Meritus Medical Center", "Hagerstown", "MD")["hospital_name"] ==         "Meritus Medical Center"
