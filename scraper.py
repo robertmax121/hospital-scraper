@@ -2054,6 +2054,8 @@ HOSPITAL_SYSTEM_ALIASES = {
     # Wooster's second ADP career center (Bloomington Medical Services) is the
     # hospital's physician group; one board-facing system (2026-09-10).
     "Wooster Community Hospital (BMS)": "Wooster Community Hospital",
+    # 2026-10-25 coverage stage 2: SOMC's physician / APP board writes the system's label.
+    "Southern Ohio Medical Center (Providers)": "Southern Ohio Medical Center",
 }
 
 
@@ -2479,6 +2481,27 @@ WORKDAY_TENANTS = {
     "Arkansas Children's":       ("archildrens",         "1",   "External_Career_Site"),              # [225] Little Rock + Springdale AR (town in the path and the first bullet)
     "Emanate Health":            ("cvhp",                "5",   "EmanateHealth"),                     # [189] Covina / Glendora / West Covina CA
     "Rady Children's Health":    ("rch",                 "108", "Careers"),                           # [100] CHOC: Orange + Mission Viejo CA
+    # ── 2026-10-25 coverage stage 2: one hospital (or one market) each; tenant
+    # and site read off the system's own careers link, [rows in that day's
+    # no-write dry run], every row with a body. Towns through WD_FACILITY_MAP
+    # and WD_TENANT_DEFAULT below; CMS ids in coverage80_2026-10-25/stage2.
+    "Mount Sinai Medical Center (Florida)": ("msmc",     "12",  "msmc_careers"),                      # [258] Miami Beach (+ Aventura, Hialeah, Key West clinics)
+    "Valley Children's Healthcare": ("valleychildrens",  "12",  "VCH_External"),                      # [81] Madera CA
+    "Children's National Hospital": ("childrensnational", "108", "CN_Careers"),                       # [396] Washington DC (+ MD / northern VA sites)
+    "Overlake Medical Center":   ("overlakemedicalcenter", "5", "Overlake_External_Career_Site"),     # [192] Bellevue WA
+    "GBMC HealthCare":           ("gbmc",                "1",   "gbmc"),                              # [317] Greater Baltimore Medical Center + Gilchrist hospice
+    "University Health (Kansas City)": ("trumed",        "1",   "TMC_External_Career_Site"),          # [310] Truman Medical Center + Lakewood, Kansas City MO
+    "Holland Hospital":          ("hollandhospital",     "1",   "External"),                          # [57] Holland MI
+    "Olympic Medical Center":    ("olympicmedical",      "5",   "OMC_Careers"),                       # [161] Port Angeles / Sequim WA
+    "Boys Town":                 ("boystown",            "1",   "boystowncareers"),                   # [158] Boys Town National Research Hospital, Omaha (+ youth care sites)
+    "East Tennessee Children's Hospital": ("etch",       "5",   "ETCH"),                              # [121] Knoxville TN
+    "OU Health":                 ("oumedicine",          "5",   "OUHealthCareers"),                   # [435] Oklahoma City / Edmond OK
+    "Children's Wisconsin":      ("cwi",                 "1",   "CW_Careers"),                        # [315] Milwaukee + Fox Valley (Neenah) WI
+    "Singing River Health System": ("mysrhs",            "108", "SRHS"),                              # [375] Pascagoula / Ocean Springs / Gulfport MS
+    "Genesis HealthCare System": ("genesishcs",          "1",   "GenesisHCS"),                        # [244] Zanesville OH
+    "Eisenhower Health":         ("eisenhower",          "1",   "Eisenhower_Careers"),                # [215] Rancho Mirage CA
+    "Reid Health":               ("reidhealth",          "12",  "External_Careers"),                  # [229] Richmond IN
+    "Dayton Children's":         ("daytonchildrens",     "1",   "dayton_childrens_career_site"),      # [158] Dayton + Springboro OH
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -3153,6 +3176,40 @@ FORCE_LOCATION_OVERRIDE: dict[str, tuple[str, str]] = {
     "lawrence memorial hospital":          ("Lawrence",     "KS"),
 }
 FORCE_LOCATION_OVERRIDE = {k.lower(): v for k, v in FORCE_LOCATION_OVERRIDE.items()}
+
+# 2026-10-25 coverage stage 2: boards whose location field holds a campus
+# label rather than the hospital ("Main Campus", "Hospital", "SOMC", "* Truckee",
+# a name cut at 25 characters). Keyed by the adapter's system name (the label
+# the row carries into normalize_job, before HOSPITAL_SYSTEM_ALIASES), then by
+# the lowercased hospital_name; the value is the hospital's own name, which
+# for these single-hospital systems is its CMS name. Exact matches only, and
+# only for systems first scraped in stage 2, so no stored row is renamed.
+HOSPITAL_NAME_FIX: dict[str, dict[str, str]] = {
+    "Pomona Valley Hospital Medical Center": {"pvhmc incl. offsite facilities": "Pomona Valley Hospital Medical Center"},
+    "National Jewish Health": {"*national jewish health - main campus": "National Jewish Health"},
+    "Frederick Health": {"main campus": "Frederick Health Hospital"},
+    "Southern Ohio Medical Center": {"somc": "Southern Ohio Medical Center"},
+    "Southern Ohio Medical Center (Providers)": {"somc": "Southern Ohio Medical Center",
+                                                 "southern ohio medical center (providers)": "Southern Ohio Medical Center"},
+    "Firelands Health": {"main campus": "Firelands Regional Medical Center",
+                         "bellevue hospital": "The Bellevue Hospital"},
+    "Episcopal Health Services": {"hospital": "St. John's Episcopal Hospital"},
+    "Barton Health": {"barton hospital": "Barton Memorial Hospital"},
+    "Witham Health Services": {"main hospital": "Witham Health Services"},
+    "Island Health": {"island hospital-washingto": "Island Hospital"},
+    "Tahoe Forest Health System": {"* truckee": "Tahoe Forest Hospital", "*reno": "Tahoe Forest Health System",
+                                   "ivch": "Incline Village Community Hospital"},
+    "Grady Health System": {"main grady campus (downtown atlanta)": "Grady Memorial Hospital"},
+}
+
+# 2026-10-25 coverage stage 2: towns a board writes as a neighbourhood of a
+# city. Lurie Children's (Phenom) lists Streeterville (the hospital, 225 E.
+# Chicago Ave), River North, Lincoln Park and Old Town, all in Chicago.
+# Keyed by lowercased system name, then by lowercased city.
+SYSTEM_CITY_RENAME: dict[str, dict[str, str]] = {
+    "lurie children's": {"streeterville": "Chicago", "river north": "Chicago", "lincoln park": "Chicago",
+                         "old town": "Chicago", "gold coast": "Chicago"},
+}
 
 
 _NOT_CITY_WORDS = re.compile(
@@ -5363,6 +5420,10 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
     # the headquarters (501 Corporate Centre Dr, Franklin, TN) for "Summit
     # Healthcare Mgmt", and the county's crisis center at 1850 Copper Loop,
     # Las Cruces. A suffix also matches ("The Farley Center").
+    # 2026-10-25 coverage stage 2: the nine sites that are CMS-registered
+    # psychiatric hospitals take their own (CMS) names as hospital_name, so
+    # the coverage measure finds them by name in their own state; every
+    # other site keeps "Summit BHC". The system label is unchanged.
     "Summit BHC": {
         "anabranch recovery center": (None, "Terre Haute", "IN"),
         "aviary recovery center": (None, "Eolia", "MO"),
@@ -5370,27 +5431,27 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "canyon vista recovery center": (None, "Mesa", "AZ"),
         "carolina dunes behavioral health": (None, "Leland", "NC"),
         "cottonwood tucson": (None, "Tucson", "AZ"),
-        "creekside behavioral health": (None, "Kingsport", "TN"),
+        "creekside behavioral health": ("Creekside Behavioral Health", "Kingsport", "TN"),
         "dona ana county crisis triage center": (None, "Las Cruces", "NM"),
-        "eagle view behavioral health": (None, "Bettendorf", "IA"),
+        "eagle view behavioral health": ("Eagle View Behavioral Health", "Bettendorf", "IA"),
         "english mountain recovery": (None, "Sevierville", "TN"),
         "fair oaks recovery center": (None, "Sacramento", "CA"),
         "farley center": (None, "Williamsburg", "VA"),
         "great oaks recovery center": (None, "Egypt", "TX"),
-        "highland hospital": (None, "Charleston", "WV"),
+        "highland hospital": ("Highland Hospital", "Charleston", "WV"),
         "iron bridge recovery center": (None, "Chester", "VA"),
         "ivory plains recovery center": (None, "Adair", "IA"),
         "las cruces recovery center": (None, "Las Cruces", "NM"),
-        "miramont behavioral health": (None, "Middleton", "WI"),
+        "miramont behavioral health": ("Miramont Behavioral Health", "Middleton", "WI"),
         "mountain laurel recovery center": (None, "Westfield", "PA"),
         "northern path recovery center": (None, "Fort Wayne", "IN"),
         "pacific sky recovery center": (None, "Spokane", "WA"),
         "palms behavioral health": (None, "Harlingen", "TX"),
-        "pavilion behavioral health": (None, "Williamsburg", "VA"),
-        "the pavilion at williamsburg place": (None, "Williamsburg", "VA"),
-        "peak behavioral health": (None, "Santa Teresa", "NM"),
-        "peak view behavioral health": (None, "Colorado Springs", "CO"),
-        "raleigh oaks behavioral health": (None, "Garner", "NC"),
+        "pavilion behavioral health": ("The Pavilion at Williamsburg Place", "Williamsburg", "VA"),
+        "the pavilion at williamsburg place": ("The Pavilion at Williamsburg Place", "Williamsburg", "VA"),
+        "peak behavioral health": ("Peak Behavioral Health", "Santa Teresa", "NM"),
+        "peak view behavioral health": ("Peak View Behavioral Health", "Colorado Springs", "CO"),
+        "raleigh oaks behavioral health": ("Raleigh Oaks Behavioral Health", "Garner", "NC"),
         "raleigh recovery center": (None, "Raleigh", "NC"),
         "ranch at dove tree": (None, "Lubbock", "TX"),
         "safe harbor recovery center": (None, "Portsmouth", "VA"),
@@ -5401,7 +5462,7 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "victory addiction recovery center": (None, "Lafayette", "LA"),
         "waypoint recovery center": (None, "Cameron", "SC"),
         "willingway": (None, "Statesboro", "GA"),
-        "willow creek behavioral health": (None, "Green Bay", "WI"),
+        "willow creek behavioral health": ("Willow Creek Behavioral Health", "Green Bay", "WI"),
         "wooded glen recovery center": (None, "Henryville", "IN"),
         "summit healthcare mgmt": (None, "Franklin", "TN"),
     },
@@ -5503,6 +5564,61 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
     "ProMedica": {
         "oregon": (None, "Oregon", "OH"),
     },
+    # ── 2026-10-25 coverage stage 2: the location names the new tenants'
+    # dry runs listed (most rows carry no town or no state). A hospital takes
+    # its CMS name; any other site keeps the system name in its own town.
+    "GBMC HealthCare": {
+        "gbmc hospital": ("Greater Baltimore Medical Center", "Baltimore", "MD"),
+        "physicians pavilion west": (None, "Baltimore", "MD"),
+        "physicians pavilion east": (None, "Baltimore", "MD"),
+        "gilchrist center stadium place": (None, "Baltimore", "MD"),
+        "gilchrist center towson": (None, "Towson", "MD"),
+        "gilchrist hunt valley": (None, "Hunt Valley", "MD"),
+        "health partners at hunt valley": (None, "Hunt Valley", "MD"),
+        "gbmc padonia": (None, "Timonium", "MD"),
+        "owings mills - red run boulevard": (None, "Owings Mills", "MD"),
+        "hospice of washington county ship to": (None, "Hagerstown", "MD"),
+    },
+    "University Health (Kansas City)": {
+        "university health truman medical center": ("University Health Truman Medical Center", "Kansas City", "MO"),
+        "uh lakewood medical center": ("University Health Lakewood Medical Center", "Kansas City", "MO"),
+        "uh behavioral health": (None, "Kansas City", "MO"),
+        "university health 1": (None, "Kansas City", "MO"),
+        "university health 2": (None, "Kansas City", "MO"),
+        "university health 4": (None, "Kansas City", "MO"),
+    },
+    "Children's National Hospital": {
+        "children's national hospital": ("Children's National Hospital", "Washington", "DC"),
+        "rehabilitation and specialized care bunker hill road": (None, "Washington", "DC"),
+        "shepherd park & rare disease institute": (None, "Washington", "DC"),
+        "research and innovation building": (None, "Washington", "DC"),
+        "shaw metro": (None, "Washington", "DC"),
+        "anacostia": (None, "Washington", "DC"),
+        "thearc": (None, "Washington", "DC"),
+        "cnpa chevy chase": (None, "Chevy Chase", "MD"),
+    },
+    "OU Health": {
+        "central park ii": (None, "Oklahoma City", "OK"),
+        "yukon facility": (None, "Yukon", "OK"),
+    },
+    "Eisenhower Health": {
+        "eisenhower medical center": ("Eisenhower Medical Center", "Rancho Mirage", "CA"),
+    },
+    "Dayton Children's": {
+        "dayton children's - main campus": ("Dayton Children's Hospital", "Dayton", "OH"),
+        "mathile center for mental health and wellness": (None, "Dayton", "OH"),
+        "dayton children's - south campus": (None, "Springboro", "OH"),
+        "behavioral health center - south campus": (None, "Springboro", "OH"),
+        "dayton children's - tech town": (None, "Dayton", "OH"),
+        "child health pavilion": (None, "Dayton", "OH"),
+    },
+    "Overlake Medical Center": {
+        "lynnwood ed": (None, "Lynnwood", "WA"),
+        "building 5 medical pavilion 9th floor": (None, "Bellevue", "WA"),
+        "building 1 south tower basement": (None, "Bellevue", "WA"),
+        "factoria village": (None, "Bellevue", "WA"),
+        "timber ridge": (None, "Issaquah", "WA"),
+    },
 }
 WD_FACILITY_MAP["Wellstar Health (Providers)"] = WD_FACILITY_MAP["Wellstar Health"]
 
@@ -5558,6 +5674,25 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "Emanate Health":            ("Covina", "CA"),
     "Rady Children's Health":    ("Orange", "CA"),
     "Arkansas Children's":       ("Little Rock", "AR"),
+    # 2026-10-25 coverage stage 2: the home town of each new single-market
+    # tenant (GBMC, University Health, Olympic and Genesis list sites with no
+    # town or no state; OU Health lists "Oklahoma City" with no state).
+    "Mount Sinai Medical Center (Florida)": ("Miami Beach", "FL"),
+    "Valley Children's Healthcare": ("Madera", "CA"),
+    "Children's National Hospital": ("Washington", "DC"),
+    "Overlake Medical Center":   ("Bellevue", "WA"),
+    "GBMC HealthCare":           ("Baltimore", "MD"),
+    "University Health (Kansas City)": ("Kansas City", "MO"),
+    "Holland Hospital":          ("Holland", "MI"),
+    "Olympic Medical Center":    ("Port Angeles", "WA"),
+    "East Tennessee Children's Hospital": ("Knoxville", "TN"),
+    "OU Health":                 ("Oklahoma City", "OK"),
+    "Children's Wisconsin":      ("Milwaukee", "WI"),
+    "Singing River Health System": ("Pascagoula", "MS"),
+    "Genesis HealthCare System": ("Zanesville", "OH"),
+    "Eisenhower Health":         ("Rancho Mirage", "CA"),
+    "Reid Health":               ("Richmond", "IN"),
+    "Dayton Children's":         ("Dayton", "OH"),
 }
 
 # 2026-09-24: tenants whose locationsText leads with "City ST" and no comma
@@ -6856,6 +6991,14 @@ ICIMS_ORGS = {
     "Baptist Health (Birmingham)":      "careers-baptisthealthal.icims.com",    # 383
     "Northern Arizona Healthcare":      "careers-nahealth.icims.com",           # 226, Flagstaff / Cottonwood / Sedona AZ
     "Community Memorial Healthcare":    "careers-cmhshealth.icims.com",         # 118, Ventura / Ojai CA (locations are street addresses)
+    # ── 2026-10-25 coverage stage 2: portals read off each system's careers
+    # page; [rows in that day's no-write dry run], every row with a body.
+    "Cooper University Health Care":    "careers-cooperhealth.icims.com",       # [891] Camden + Cape Regional (Cape May Court House) NJ
+    "VHC Health":                       "careers-vhchealth.icims.com",          # [732] Virginia Hospital Center, Arlington VA
+    "San Antonio Regional Hospital":    "careers-sarh.icims.com",               # [118] Upland CA
+    "Foundation Health Partners":       "careers-fhp.icims.com",                # [138] Fairbanks Memorial Hospital, Fairbanks AK
+    "Heywood Healthcare":               "careers-heywood.icims.com",            # [155] Heywood Hospital (Gardner) + Athol Hospital MA
+    "Henry Community Health":           "careers-hcmhcares.icims.com",          # [34] Henry County Memorial Hospital, New Castle IN
 }
 
 
@@ -6918,6 +7061,8 @@ TALENTBREW_ORGS = {
     # (Whittier 93, Downey 49; SYSTEM_LOCATION_DEFAULTS gives CA) and "Los
     # Angeles, CA" for PIH Health Good Samaritan Hospital (1225 Wilshire Blvd).
     "PIH Health":               ("https://jobs.pihhealth.org/search-jobs", 100),
+    # 2026-10-25 coverage stage 2: jobs.rchsd.org (company site 68070), 154 rows that day.
+    "Rady Children's Hospital San Diego": ("https://jobs.rchsd.org/search-jobs", 15),
 }
 
 
@@ -8584,6 +8729,10 @@ JIBE_SITES = {
     "Yale New Haven Health System":   "https://jobs.ynhhs.org",                 # 1,667; CT (YNHH, Bridgeport, Greenwich, L+M) + Westerly RI
     "Care New England Health System": "https://careers.carenewengland.org",     # 588; RI (Kent, Women & Infants, Butler)
     "Conway Regional Health System":  "https://careers.conwayregional.org",     # 71 on 2026-10-20 (coverage stage 1); Conway AR
+    # 2026-10-25 coverage stage 2 (/api/jobs totals that day, every row with a body):
+    "Riverside Healthcare (Kankakee)": "https://careers.riversidehealthcare.org",  # [181] Riverside Medical Center, Kankakee IL
+    "FirstHealth of the Carolinas":   "https://talent.firsthealth.org",         # [558] Pinehurst, Rockingham, Troy, Raeford NC
+    "Covenant HealthCare":            "https://careers.covenanthealthcare.com", # [128] Saginaw MI
 }
 
 # Pages of 100 read per Jibe board (10,000 postings). A board past it is read
@@ -11103,6 +11252,15 @@ PHENOM_ORGS = {
     # HCA Healthcare — REMOVED 2026-07-28. It was never Phenom (that 2026-06-18
     # web-research note was wrong): careers.hcahealthcare.com is Talemetry, and
     # this entry just burned a nightly 403. Covered by the rebuilt run_hca().
+    # ── 2026-10-25 coverage stage 2: careers sites with a Phenom widgets
+    # endpoint; [rows in that day's no-write dry run], every row with a body.
+    "Lurie Children's":             "https://jobs.luriechildrens.org",          # [163] Chicago IL (neighbourhood towns: SYSTEM_CITY_RENAME)
+    "San Juan Regional Medical Center": "https://careers.sanjuanregional.com",  # [193] Farmington NM
+    "Cheyenne Regional Medical Center": "https://careers.cheyenneregional.org", # [101] Cheyenne WY
+    "Cincinnati Children's":        "https://jobs.cincinnatichildrens.org",     # [517] Cincinnati + Liberty Township OH
+    "Children's Hospital of Philadelphia": "https://careers.chop.edu",          # [265] Philadelphia PA
+    "Grady Health System":          "https://careers.gradyhealth.org",          # [282] Atlanta GA
+    "Seattle Children's":           "https://careers.seattlechildrens.org",     # [242] Seattle WA
 }
 
 PHENOM_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end a crawl
@@ -12064,6 +12222,10 @@ ADP_ORGS = {
     "Pomerene Hospital": ("dbfe9ed8-f973-4510-9f4b-5fb09d0441fb", "19000101_000001", "OH", "Pomerene Hospital"),   # 16, Millersburg OH
     # ── 2026-10-20 coverage stage 1: no-write dry run that day (rows, the hospital's own town, bodies).
     "Madison Health": ("c02c953b-e6db-45df-b5e3-1303e59d27a7", "19000101_000001", "OH", "Madison Health"),   # 22, London OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    "St. Luke Hospital & Living Center": ("58e14ddc-10c8-4aac-a782-4d9fab68932f", "19000101_000001", "KS", "St. Luke Hospital & Living Center"),   # [14] Marion KS
+    "Bingham Healthcare": ("1b6bb77f-2903-4807-b0c8-4bfcb7c78404", "19000101_000001", "ID", ""),   # [29] Bingham Memorial Hospital, Blackfoot ID
 }
 _ADP_API = "https://workforcenow.adp.com/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions"
 _ADP_PORTAL = "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html"
@@ -13169,6 +13331,11 @@ INFOR_ORGS = {
     "Bellin Health":             ("css-bellin-prd",           "500",  "EXTERNAL",       "WI"),  # 287; org 1 answers 0 rows
     # 2026-10-07 (owner): moved off Workday (bozemanhealth.wd1, dead since 09-11). csk pair from the careers link; 250 rows with full bodies on the probe.
     "Bozeman Health":            ("css-bdhboz-prd",           "BH",   "EXTERNAL",       "MT"),  # 250
+    # ── 2026-10-25 coverage stage 2: csk pairs from each careers page's link; [rows that day].
+    "Akron Children's":          ("css-akronchildrens-prd",   "1",    "EXTERNAL",       "OH"),  # [502]
+    "Cambridge Health Alliance": ("css-cambridgehealth-prd",  "1000", "EXTERNAL",       "MA"),  # [194] Cambridge / Everett / Somerville MA
+    # Children's of Alabama: the HealthcareSource tenant "chsys" answers 0 jobs; childrensalcareers.org links Infor.
+    "Children's of Alabama":     ("css-childrensal-prd",      "10",   "EXTERNAL",       "AL"),  # [256] Birmingham AL
 }
 
 # Tenants whose location value is a facility name with no city or state.
@@ -13727,6 +13894,22 @@ UKG_ORGS = {
     # American Health Partners (Franklin TN): Unity Psychiatric Care's
     # hospitals plus the company's health plan and pharmacy; 97 rows.
     "American Health Partners":           ("https://recruiting2.ultipro.com/TEN1002THMI", "617264f5-2868-4e72-899e-78a68c5361f8", "TN"),   # 97
+    # ── 2026-10-25 coverage stage 2: boards linked from each hospital's careers
+    # page; [rows in that day's no-write dry run], every row with a body.
+    # Location names that are campus labels ("Main Campus", "Hospital") take
+    # the hospital's own name through HOSPITAL_NAME_FIX.
+    "Frederick Health":                   ("https://recruiting.ultipro.com/FRE1010FRHS", "776a147e-2e0b-43d0-844e-bbd49deeb24d", "MD"),   # [183] Frederick MD
+    "Southern Ohio Medical Center":       ("https://mysomc.rec.pro.ukg.net/SOU1068SOMC", "1735eb8a-40b2-43d2-89aa-99eea075dc4f", "OH"),   # [89] Portsmouth OH
+    "Southern Ohio Medical Center (Providers)": ("https://mysomc.rec.pro.ukg.net/SOU1068SOMC", "b22a8c81-102d-44ef-8953-701bcd0e54d4", "OH"),   # [24] physician / APP board
+    "Firelands Health":                   ("https://recruiting.ultipro.com/FIR1028FRMC", "aa965d38-1509-43d7-9a00-c84a96ce1cb9", "OH"),   # [133] Sandusky + The Bellevue Hospital OH
+    "Episcopal Health Services":          ("https://myehs.rec.pro.ukg.net/EPI1010SJEH", "16d4fe52-3a0d-4b07-8565-5038c46b9f53", "NY"),    # [44] St. John's Episcopal, Far Rockaway NY
+    "Barton Health":                      ("https://recruiting2.ultipro.com/BAR1023BTHS", "22edf9a1-6621-4bec-9730-f5384a308c49", "CA"),  # [45] South Lake Tahoe CA
+    "Witham Health Services":             ("https://witham.rec.pro.ukg.net/WIT1500WHMH", "47727cde-3d32-4129-bef1-ef796414651d", "IN"),   # [57] Lebanon IN
+    # Island Health's second board (cdaaeaad) lists a subset of this one.
+    "Island Health":                      ("https://recruiting2.ultipro.com/ISL1001ISLAN", "e5b91c51-cf06-445e-9aed-84859d230b57", "WA"), # [61] Anacortes WA
+    "Perry County Memorial Hospital":     ("https://perrycountymem.rec.pro.ukg.net/PER1500PCMH", "ad3e78fe-7ca1-44dd-9add-84fd268d95b4", "IN"),  # [42] Tell City IN
+    "Tahoe Forest Health System":         ("https://recruiting.ultipro.com/TAH1000", "19fd0f5d-3c9e-10c7-8338-910ff12f7559", "CA"),         # [63] Truckee CA + Incline Village NV
+    "Memorial Regional Health":           ("https://recruiting2.ultipro.com/MEM1005MHCR", "3057c08c-d82e-49ff-aee0-6146eb32163f", "CO"),  # [30] The Memorial Hospital, Craig CO
 }
 
 # 2026-10-20: the posting's title names the hospital on a board whose
@@ -14239,6 +14422,15 @@ ORACLE_ORGS = {
     # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
     "Baptist Health Care (Pensacola)": ("https://fa-etrr-saasfaprod1.fa.ocs.oraclecloud.com", "CX_1"),   # 280, Pensacola FL
     "Health Care District of Palm Beach County": ("https://fa-ewje-saasfaprod1.fa.ocs.oraclecloud.com", "CX_1001"),   # 34, West Palm Beach FL
+    # ── 2026-10-25 coverage stage 2: sites read off each system's careers link;
+    # [rows in that day's no-write dry run], every row with a body.
+    "Hurley Medical Center":     ("https://fa-evlb-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),   # [80] Flint MI
+    "Waterbury Health":          ("https://icjdjb.fa.ocs.oraclecloud.com",                    "CX_1"),   # [163] Waterbury Hospital, Waterbury CT (Waterbury Health Operations Corp)
+    "Shore Medical Center":      ("https://eiqu.fa.us6.oraclecloud.com",                      "CX_1"),   # [80] Somers Point NJ
+    "Children's Nebraska":       ("https://egnx.fa.us2.oraclecloud.com",                      "CX"),     # [113] Omaha NE
+    "Stamford Health":           ("https://fa-ewfb-saasfaprod1.fa.ocs.oraclecloud.com",       "Careers"),   # [173] Stamford Hospital, Stamford CT
+    "Hoag":                      ("https://iaucqy.fa.ocs.oraclecloud.com",                    "CX_1"),   # [110] Newport Beach / Irvine CA
+    "AtlantiCare":               ("https://ibywjb.fa.ocs.oraclecloud.com",                    "CX_1"),   # [529] Atlantic City / Galloway (Pomona) NJ
 }
 
 # 2026-09-16 (NY coverage): Mount Sinai site names in requisition titles ->
@@ -14615,6 +14807,21 @@ HEALTHCARESOURCE_ORGS = {
     "Beacon Health System":          "beaconhealthsystem",    # 704 of 726, IN / MI
     "CharterCARE Health Partners":   "chartercare",           # 274 of 283, Providence / North Providence RI
     "St. Bernards Healthcare":       "stbernardshealthcare",  # 310, Jonesboro AR
+    # ── 2026-10-25 coverage stage 2: tenants linked from each system's careers
+    # page; [rows in that day's no-write dry run], every row with a body.
+    "Pomona Valley Hospital Medical Center": "pvhmc",         # [80] Pomona CA
+    "Valleywise Health":             "maricopa",              # [220] Phoenix / Mesa AZ (Maricopa County special health care district)
+    "St. Joseph's/Candler":          "sjchs",                 # [357] Savannah GA (Candler + St. Joseph's)
+    "TidalHealth":                   "peninsula",             # [349] Salisbury, Berlin, Crisfield MD; Seaford DE
+    "Sinai Chicago":                 "sinai",                 # [220] Mount Sinai + Holy Cross, Chicago IL
+    "Rutland Regional Medical Center": "rrmc",                # [117] Rutland VT
+    "Goshen Health":                 "goshen",                # [111] Goshen IN
+    "Auburn Community Hospital":     "auburnhospital",        # [211] Auburn NY
+    "South County Health":           "southcounty",           # [106] Wakefield RI
+    "CalvertHealth":                 "cmh",                   # [107] Prince Frederick MD
+    "Campbell County Health":        "cchwyo",                # [84] Gillette WY
+    "Major Health Partners":         "major",                 # [42] Shelbyville IN
+    "National Jewish Health":        "national",              # [99] Denver CO
 }
 
 # 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
@@ -15156,6 +15363,10 @@ KRONOS_ORGS = {
     "Wilbarger General Hospital": ("secure7.saashr.com", "6215251", "TX"),
     # 2026-09-24 Texas configs: Coryell Health (Gatesville), same UKG Ready API.
     "Coryell Health": ("secure6.saashr.com", "6034202", "TX"),   # 20 (Gatesville 16, Waco 4)
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    "Washington County Hospital and Clinics": ("secure7.saashr.com", "6217537", "IA"),   # [32] Washington IA
+    "Sharon Regional Medical Center": ("secure7.saashr.com", "6212795", "PA"),           # [43] Sharon PA (Tenor Health)
 }
 
 
@@ -16163,6 +16374,10 @@ APPLICANTPRO_ORGS = {
     # hospitals on UKG, see UKG_ORGS).
     "Minden Medical Center": ("mindenmedicalcenter", ""),                           # 52, Minden LA
     "Northern Louisiana Medical Center": ("northernlouisianamedicalcenter", ""),     # 40, Ruston LA
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    "Southwest Health System": ("shs", ""),                       # [23] Southwest Memorial Hospital, Cortez CO
+    "Montrose Regional Health": ("montrosehospital", ""),         # [28] Montrose CO
 }
 _APPLICANTPRO_PARAMS = {"cityUrl": "", "countryAbbreviation": "", "stateAbbreviation": "", "isInternal": 0}
 
@@ -16696,6 +16911,12 @@ PAYCOM_ORGS = {
     "SUN Behavioral Kentucky":    "3DDA687F40025B5B102A6B6072E43AE2",   # 16, Erlanger KY
     "SUN Behavioral Delaware":    "57BE0AE6B74A749D1F2C1B103B4DF34D",   # 20, Georgetown DE
     "Highland District Hospital": "DE6330BB5888C63E02E5ED4D3106FEB3",   # 24, Hillsboro OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    # AVEM Health Partners' board: Rural Wellness Fairfax, Rural Wellness Stroud and
+    # Rural Wellness Anadarko (CMS: The Physicians' Hospital in Anadarko), plus its
+    # Oklahoma City office.
+    "AVEM Health Partners": "1C1875CBF90AD0C6A2E08F2A4B01A84C",   # [46] Fairfax / Stroud / Anadarko OK
 }
 
 # 2026-09-25 (B2): Paycom boards outside Texas; a preview whose location has no
@@ -16717,6 +16938,7 @@ PAYCOM_DEFAULT_STATE = {
     "Santiam Hospital & Clinics": "OR",
     "Seneca Healthcare District": "CA",
     "Valor Health": "ID",
+    "AVEM Health Partners": "OK",   # 2026-10-25 coverage stage 2
 }
 
 _PAYCOM_LIST = "https://www.paycomonline.net/v4/ats/web.php/jobs"
@@ -16890,6 +17112,10 @@ PAYCOR_ORGS = {
     "Insight Health": "8a7883d07725ca8701773c07f64d08fa",
     # ── 2026-10-20 coverage stage 1: no-write dry run that day (rows, the hospital's own town, bodies).
     "Wilson Health": "8a7883c67db6c3c2017dbbd3ff28034f",   # 53, Sidney OH (Ohio State affiliate)
+    # 2026-10-25 coverage stage 2: daykimball.org/careers links this clientId.
+    "Day Kimball Health": "4028f88b24c330a20124eb33b4ad1653",   # [87] Putnam CT
+    "Arkansas Valley Regional Medical Center": "8a7883d09d9307dd019db0b264160476",   # [34] La Junta CO
+    "Bothwell Regional Health Center": "8a7883c6946708d70194a902a07514b4",           # [83] Sedalia MO
 }
 
 _PAYCOR_HOME = "https://recruitingbypaycor.com/career/CareerHome.action"
@@ -17086,6 +17312,10 @@ PAYLOCITY_ORGS = {
     "Odessa Memorial Healthcare Center": ("2c7a5474-14e9-41ce-ac6a-02af4ddc4513", "Lincoln-County-Public-Hospital-District-1", "WA"),   # 16, Odessa WA
     # ── 2026-10-20 coverage stage 1: no-write dry run that day (rows, the hospital's own town, bodies).
     "Hocking Valley Community Hospital": ("c5ccda74-fad8-486c-86b0-f4b1b19e6453", "Hocking-Valley-Community-Hospital", "OH"),   # 29, Logan OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    "Penobscot Valley Hospital": ("f677b95e-47db-4c39-b99b-29e5e27ab84c", "Penobscot-Valley-Hospital", "ME"),   # [27] Lincoln ME
+    "Munising Memorial Hospital": ("191146fb-2615-4deb-abf9-587139fc7a3f", "Munising-Memorial-Hospital-Association", "MI"),   # [5] Munising MI
 }
 _PAYLOCITY_PAGEDATA_RE = re.compile(r"window\.pageData\s*=\s*(\{)")
 
@@ -17309,6 +17539,10 @@ TALEMETRY_SITES = {
     # CMS names (SGMC Health, SGMC Health Lanier, SGMC Berrien Campus). 280 in
     # that day's dry run (Valdosta 247, Lakeland 22, Nashville 11).
     "SGMC Health": "https://careers.sgmc.org",
+    # 2026-10-25 coverage stage 2: careers.evergreenhealth.com (Jobvite Engage),
+    # 242 rows that day, 236 with bodies. Its location names are towns
+    # ("Kirkland, Washington"), so TALEMETRY_FACILITY gives the system name.
+    "EvergreenHealth": "https://careers.evergreenhealth.com",
 }
 
 # 2026-10-20: a site whose location names are campus or building names
@@ -17320,6 +17554,11 @@ TALEMETRY_FACILITY: dict[str, dict[str, str]] = {
         "main campus": "SGMC Health",
         "lanier campus": "SGMC Health Lanier",
         "berrien campus": "SGMC Berrien Campus",
+    },
+    # 2026-10-25: EvergreenHealth's location names are "Town, Washington";
+    # any name not listed here takes the system name as well.
+    "EvergreenHealth": {
+        "kirkland, washington": "EvergreenHealth",
     },
 }
 # 2026-10-14 (fix 11): the 10-14 run listed Penn Medicine 400 of 1,770,
@@ -23515,8 +23754,19 @@ def normalize_job(j: Job) -> dict:
     if _ADDRESS_NAME_RE.match((d.get("hospital_name") or "").strip()) and (d.get("hospital_system") or "").strip():
         d["hospital_name"] = d["hospital_system"].strip()
 
+    # 2026-10-25 coverage stage 2: a campus label as the hospital's name
+    # (HOSPITAL_NAME_FIX) and a neighbourhood as the town (SYSTEM_CITY_RENAME).
+    _fix = HOSPITAL_NAME_FIX.get((d.get("hospital_system") or "").strip())
+    if _fix:
+        _fixed = _fix.get((d.get("hospital_name") or "").strip().lower())
+        if _fixed:
+            d["hospital_name"] = _fixed
+
     # Force override — always wins regardless of scraped data
     _sys_key = (d.get("hospital_system") or "").strip().lower()
+    _ren = SYSTEM_CITY_RENAME.get(_sys_key)
+    if _ren and city.strip().lower() in _ren:
+        city = _ren[city.strip().lower()]
     if _sys_key in FORCE_LOCATION_OVERRIDE:
         city, state = FORCE_LOCATION_OVERRIDE[_sys_key]
 
