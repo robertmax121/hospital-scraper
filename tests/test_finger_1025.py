@@ -274,6 +274,7 @@ NEW = {
         "McDonough District Hospital": "mdh",
         "Samaritan Behavioral Center": "behavioralcenter",
         "Granville Health Systems": "granvillemedical",
+        "Boone County Health Center": "boonecohealth",
         "Box Butte General Hospital": "bbgh",
         "Valley County Health System": "valleycounty",
         "Carewell Health Medical Center": "eogh",
@@ -635,6 +636,11 @@ NEW = {
             "secure6.saashr.com",
             "6192194",
             "MN"
+        ],
+        "Bates County Memorial Hospital": [
+            "secure6.saashr.com",
+            "6022998",
+            "MO"
         ],
         "King's Daughters Medical Center-Brookhaven": [
             "prd01-hcm01.prd",
@@ -1830,6 +1836,10 @@ LOCATION = {
         "Blue Earth",
         "MN"
     ],
+    "Bates County Memorial Hospital": [
+        "Butler",
+        "MO"
+    ],
     "Ranken Jordan Pediatric Bridge Hospital": [
         "Maryland Heights",
         "MO"
@@ -1912,6 +1922,10 @@ LOCATION = {
     ],
     "Beatrice Community Hospital & Health Center": [
         "Beatrice",
+        "NE"
+    ],
+    "Boone County Health Center": [
+        "Albion",
         "NE"
     ],
     "Box Butte General Hospital": [

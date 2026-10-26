@@ -3281,6 +3281,7 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "Riverwood Healthcare Center": ("Aitkin", "MN"),
     "Sleepy Eye Medical Center": ("Sleepy Eye", "MN"),
     "United Hospital District": ("Blue Earth", "MN"),
+    "Bates County Memorial Hospital": ("Butler", "MO"),
     "Ranken Jordan Pediatric Bridge Hospital": ("Maryland Heights", "MO"),
     "Ray County Memorial Hospital": ("Richmond", "MO"),
     "Ste Genevieve County Memorial Hospital": ("STE. GENEVIEVE", "MO"),
@@ -3302,6 +3303,7 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "Towner County Medical Center": ("Cando", "ND"),
     "Antelope Memorial Hospital": ("NELIGH", "NE"),
     "Beatrice Community Hospital & Health Center": ("Beatrice", "NE"),
+    "Boone County Health Center": ("Albion", "NE"),
     "Box Butte General Hospital": ("Alliance", "NE"),
     "Brodstone Healthcare": ("Superior", "NE"),
     "Chadron Community Hospital and Health Services": ("Chadron", "NE"),
@@ -15033,6 +15035,7 @@ HEALTHCARESOURCE_ORGS = {
     "McDonough District Hospital": "mdh",   # 63 rows, 62 in Macomb, IL, 1 with no town (location default) (CMS 140089)
     "Samaritan Behavioral Center": "behavioralcenter",   # 17 rows, 7 in Detroit, MI (CMS 234040)
     "Granville Health Systems": "granvillemedical",   # 140 rows, 138 in Oxford, NC (CMS 340127)
+    "Boone County Health Center": "boonecohealth",   # 20 rows, 20 in Albion, NE (CMS 281334)
     "Box Butte General Hospital": "bbgh",   # 49 rows, 49 in Alliance, NE (CMS 281360)
     "Valley County Health System": "valleycounty",   # 10 rows, 10 in Ord, NE (CMS 281353)
     "Carewell Health Medical Center": "eogh",   # 125 rows, 125 in East Orange, NJ (CMS 310083)
@@ -15614,6 +15617,7 @@ KRONOS_ORGS = {
     "Eaton Rapids Medical Center": ("secure6.saashr.com", "6007842", "MI"),   # 28 rows, 28 in EATON RAPIDS, MI (CMS 231324)
     "River's Edge Hospital & Clinic": ("secure3.saashr.com", "6114104", "MN"),   # 7 rows, 0 in Saint Peter, MN (CMS 241334)
     "Sleepy Eye Medical Center": ("secure6.saashr.com", "6192194", "MN"),   # 2 rows, 2 in Sleepy Eye, MN (CMS 241327)
+    "Bates County Memorial Hospital": ("secure6.saashr.com", "6022998", "MO"),   # 17 rows, 17 in Butler, MO (CMS 260034)
     "King's Daughters Medical Center-Brookhaven": ("prd01-hcm01.prd", "6052038", "MS"),   # 24 rows, 24 in Brookhaven, MS (CMS 250057)
     "Heart of America Medical Center": ("secure4.entertimeonline.com", "6012738", "ND"),   # 17 rows, 17 in Rugby, ND (CMS 351332)
     "Sakakawea Medical Center - Cah": ("secure6.saashr.com", "6158386", "ND"),   # 13 rows, 13 in HAZEN, ND (CMS 351310)
