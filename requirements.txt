@@ -1,6 +1,6 @@
 aiohttp==3.9.3
-supabase==1.2.0
-httpx==0.24.1
+supabase==2.28.3
+httpx==0.28.1
 python-dotenv==1.0.0
 playwright-stealth>=1.0.6
 patchright>=1.40.0

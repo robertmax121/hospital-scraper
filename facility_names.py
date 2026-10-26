@@ -63,6 +63,8 @@ import re
 import time
 import unicodedata
 
+import sb_keys  # 2026-10-23: the DATA project key, one reader for the repo
+
 logger = logging.getLogger("scraper.facility")
 
 # ── Text normalisation ──────────────────────────────────────────────────────
@@ -1084,7 +1086,7 @@ def load_known_facilities() -> int:
     all on 2026-10-15, each under 0.5 s. A system that fails keeps the rows
     read before it; the other systems still load."""
     sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = os.environ.get("SUPABASE_KEY", "") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    sb_key = sb_keys.supabase_key()
     if not sb_url or not sb_key:
         set_known_facilities([])
         return 0

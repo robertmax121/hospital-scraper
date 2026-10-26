@@ -19,6 +19,8 @@ import sys
 import urllib.request
 from datetime import date
 
+import sb_keys  # 2026-10-23: SUPABASE_SECRET_KEY, then SUPABASE_SERVICE_ROLE_KEY
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("pay_index")
 
@@ -40,7 +42,9 @@ def load_env():
 
 
 def sb(env, path, method="GET", body=None, prefer=None):
-    key = env["SUPABASE_SERVICE_ROLE_KEY"]
+    key = sb_keys.privileged_key(env)
+    if not key:
+        raise KeyError("SUPABASE_SECRET_KEY / SUPABASE_SERVICE_ROLE_KEY")
     url = f"{env.get('SUPABASE_URL', 'https://tlzxajgonuevbqaelhvf.supabase.co').rstrip('/')}/rest/v1/{path}"
     headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
     if prefer:
