@@ -468,7 +468,8 @@ def find_site(h: dict, osm: list, wd: list, search_budget: list, log_lines: list
             ev["source"] = source
             in_host = any(t in host_of(ev["final"]).replace("-", "") for t in distinct_tokens(h))
             strong = ev["phone"] or ev["street"]
-            if not ev["ok"] and source == "osm-phone" and (ev["name_title"] >= 0.5 or ev["name_text"] >= 0.5):
+            if not ev["ok"] and source == "osm-phone" and (ev["name_title"] >= 0.5 or ev["name_text"] >= 0.5
+                                                            or not distinct_tokens(h)):
                 ev["ok"] = True          # OSM's own phone tag matched the CMS phone; the page names the hospital
             if not ev["ok"] and source in ("osm-name", "wikidata", "guess") and in_host \
                     and ev["name_title"] >= 0.99 and (ev["city"] or ev["zip"]):
