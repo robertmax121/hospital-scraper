@@ -7412,6 +7412,47 @@ KAISER_CITY_STATE = {
 }
 
 
+# 2026-10-25 (Search Console fix 11): every result card prints Kaiser's own
+# location line, "Spokane, WA, Onsite, Regular, Full-time, ..." (span
+# .job-location inside the job's <a>; "Fremont, Alameda, CA, ..." when it
+# names the county). The adapter read only the city slug in the URL, and
+# KAISER_CITY_STATE knows 70 slugs, so every other town went out with no
+# state and SYSTEM_LOCATION_DEFAULTS filed it under Kaiser's Oakland HQ:
+# about 500 active rows on 10-25 were "CA" in Oregon, Washington, Hawaii,
+# Georgia, Maryland, Virginia, DC and Colorado (Clackamas 145, Greensboro 59,
+# Hillsboro 33, Washington DC 26, Kailua-Kona 18, McLean, Spokane, Kapolei).
+# The card's state now wins; the slug map is only the fallback.
+KAISER_CARD_RX = re.compile(r'<a\b[^>]*\bhref="[^"]*/641/(\d+)"[^>]*>(.*?)</a>', re.S | re.I)
+KAISER_CARD_LOCATION_RX = re.compile(r'class="job-location"[^>]*>([^<]*)<', re.I)
+
+
+def kaiser_location_state(text: str) -> str:
+    """Two-letter state from a card location line ("Spokane, WA, Onsite,
+    ..." or "Fremont, Alameda, CA, ..."), or "". A two-letter code in the
+    second or third field wins over a spelled-out name, so a county named
+    like a state ("Washington") cannot outrank the code after it."""
+    parts = [p.strip() for p in _html_unescape(text or "").split(",")][1:3]
+    for p in parts:
+        if len(p) == 2 and p.upper() in _US_STATE_SET:
+            return p.upper()
+    for p in parts:
+        st = _us_state(p)
+        if st:
+            return st
+    return ""
+
+
+def kaiser_card_states(html: str) -> dict[str, str]:
+    """job id -> state, from each result card's location line."""
+    out: dict[str, str] = {}
+    for jid, inner in KAISER_CARD_RX.findall(html or ""):
+        m = KAISER_CARD_LOCATION_RX.search(inner)
+        st = kaiser_location_state(m.group(1)) if m else ""
+        if st:
+            out.setdefault(jid, st)
+    return out
+
+
 async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
     """Paginate Kaiser's /search-jobs?p=N and parse jobs out of the rendered HTML."""
     SYSTEM = "Kaiser Permanente"
@@ -7438,6 +7479,7 @@ async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
         matches = KAISER_JOB_PATTERN.findall(html)
         # Build job_id -> title lookup from the heading-after-href pattern
         title_map = {jid: t.strip() for jid, t in KAISER_TITLE_NEAR_HREF.findall(html)}
+        card_states = kaiser_card_states(html)   # 2026-10-25: the card's own state first
 
         new_this_page = 0
         for url_path, city, title_slug, job_id in matches:
@@ -7448,7 +7490,7 @@ async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
             # Prefer the actual heading title; fall back to slug-derived
             title = title_map.get(job_id) or title_slug.replace("-", " ").title()
             city_name = city.replace("-", " ").title()
-            state = KAISER_CITY_STATE.get(city.lower(), "")
+            state = card_states.get(job_id) or KAISER_CITY_STATE.get(city.lower(), "")
             jobs.append(Job(
                 title=title,
                 hospital_system=SYSTEM,
@@ -20745,6 +20787,12 @@ class TravelJob:
 # run_all_travel, filled by the adapters (run_vivian), read by
 # _upsert_travel_jobs_to_supabase, which holds those domains' sweeps.
 TRAVEL_INCOMPLETE: dict[str, str] = {}
+# 2026-10-25 (Search Console fix 3): how a source was read when it was not
+# read the usual way (Aya through curl_cffi after the direct read was
+# refused; an adapter that raised), domain -> note. Cleared with
+# TRAVEL_INCOMPLETE; recorded in scraper_runs.meta.travel_sweep.fetch, so a
+# source that goes quiet says why without the Railway log.
+TRAVEL_FETCH_NOTES: dict[str, str] = {}
 
 
 def _coerce_money(v) -> float | None:
@@ -21178,9 +21226,35 @@ def _drop_vivian_amn_copies(jobs: list) -> list:
 #   1 Permanent · 2 TravelOrContract · 3 PerDiem · 5/6 LocumTenens
 # We pull code 2 (Travel) here. Permanent/PerDiem are deliberately skipped
 # — those belong on the hospital side, not the travel page.
+#
+# 2026-10-25 (Search Console fix 3): every nightly run from 10-20 15:01 UTC
+# to 10-25 returned 0 Aya rows (scraper_runs.meta.travel_sweep: yield 0, held
+# "below DEACT_MIN"), so 10,001 contracts kept their 10-19 stamp and stayed
+# live. No Aya code changed between the last good run (10-19) and the first
+# empty one, and the same request answers 200 with 15,257 contracts from a
+# home connection, so the API was refusing the Railway connection (Cloudflare
+# in front, as with HCA). Three changes:
+#   * a page that fails direct is retried, then read through curl_cffi with a
+#     Chrome handshake (_curl_fetch: webshare pool first, then direct), and
+#     the rest of the crawl stays on that path;
+#   * the page ceiling follows the advertised count: AYA_MAX_PAGES was 50
+#     (12,500 rows) and the 10-18 and 10-19 runs stopped there at 12,500 and
+#     12,499 of ~15,000, so ~2,500 open contracts were swept each night;
+#   * a crawl that fails, stops early or hits the ceiling records why in
+#     TRAVEL_INCOMPLETE["ayahealthcare.com"] (scraper_runs.meta.travel_sweep
+#     .incomplete), so the sweep holds and the reason is on the dashboard.
 AYA_API_BASE = "https://api.ayahealthcare.com/AyaHealthcareWeb/job/search"
+AYA_DOMAIN = "ayahealthcare.com"
 AYA_PAGE_SIZE = 250
-AYA_MAX_PAGES = 50            # ceiling — current inventory needs ~32
+AYA_MAX_PAGES = 120           # ceiling (30,000 rows); 15,257 contracts on 10-25 need 62 pages
+AYA_PAGE_ATTEMPTS = 3         # per page; each attempt tries direct, then curl_cffi
+AYA_MIN_SHARE = 0.95          # unique rows under this share of the advertised count = incomplete
+AYA_HEADERS = {
+    "Origin":     "https://www.ayahealthcare.com",
+    "Referer":    "https://www.ayahealthcare.com/healthcare-jobs/",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "Accept":     "application/json, text/plain, */*",
+}
 
 _AYA_HOURLY_RX = re.compile(r"per\s+hour|/\s*h(?:ou)?r\b|hourly|an\s+hour", re.I)
 
@@ -21211,33 +21285,103 @@ def _aya_pay(j: dict) -> tuple:
     return wp_low, wp_high, pay_display, hourly
 
 
-async def scrape_aya_page(session: aiohttp.ClientSession, offset: int) -> tuple[list[TravelJob], int]:
-    """Fetch one Aya page. Returns (jobs, total_count)."""
-    params = {
+class AyaFetchError(Exception):
+    """One Aya page could not be read on any path; str() is the reason."""
+
+
+def _aya_params(offset: int) -> dict:
+    return {
         "employmentTypeCodes": "2",
         "includeRelatedSpecialties": "true",
         "useCityLatLong": "true",
         "limit":  str(AYA_PAGE_SIZE),
         "offset": str(offset),
     }
-    headers = {
-        "Origin":     "https://www.ayahealthcare.com",
-        "Referer":    "https://www.ayahealthcare.com/healthcare-jobs/",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-        "Accept":     "application/json, text/plain, */*",
-    }
+
+
+def _aya_payload(data, how: str) -> dict:
+    """The search response when it has the shape run_aya reads, else raise."""
+    if not isinstance(data, dict) or not isinstance(data.get("items"), list):
+        raise AyaFetchError(f"{how}: unexpected body ({type(data).__name__})")
+    return data
+
+
+async def _aya_fetch_direct(session: aiohttp.ClientSession, offset: int) -> dict:
+    """One page over the shared aiohttp session (the path that worked until
+    10-19). Raises AyaFetchError with the status or error."""
     try:
-        async with session.get(AYA_API_BASE, params=params, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as r:
+        async with session.get(AYA_API_BASE, params=_aya_params(offset), headers=AYA_HEADERS,
+                               timeout=aiohttp.ClientTimeout(total=30)) as r:
             if r.status != 200:
-                logger.info(f"Aya: HTTP {r.status} at offset {offset}")
-                return [], 0
-            data = await r.json()
+                raise AyaFetchError(f"direct HTTP {r.status}")
+            data = await r.json(content_type=None)
+    except AyaFetchError:
+        raise
     except Exception as e:
+        raise AyaFetchError(f"direct {type(e).__name__}: {e}"[:200])
+    return _aya_payload(data, "direct")
+
+
+def _aya_fetch_curl(offset: int) -> dict:
+    """One page through curl_cffi with a Chrome handshake (_curl_fetch: the
+    webshare pool first, then direct). Blocking; run it in a thread."""
+    if curl_requests is None:
+        raise AyaFetchError("curl_cffi not installed")
+    try:
+        r = _curl_fetch("get", AYA_API_BASE, "chrome", timeout=60,
+                        params=_aya_params(offset), headers=AYA_HEADERS)
+        data = r.json()
+    except Exception as e:
+        raise AyaFetchError(f"curl_cffi {type(e).__name__}: {e}"[:200])
+    return _aya_payload(data, "curl_cffi")
+
+
+async def _aya_fetch_page(session: aiohttp.ClientSession, offset: int, state: dict) -> dict:
+    """One Aya page with retries. Each attempt tries direct (until a page has
+    needed curl_cffi; state["curl"] then keeps the rest of the crawl on it),
+    then curl_cffi. Raises AyaFetchError with every attempt's reason."""
+    reasons: list[str] = []
+    for attempt in range(AYA_PAGE_ATTEMPTS):
+        if attempt:
+            await asyncio.sleep(2.0 * attempt)
+        if not state.get("curl"):
+            try:
+                return await _aya_fetch_direct(session, offset)
+            except AyaFetchError as e:
+                reasons.append(str(e))
+        try:
+            data = await asyncio.to_thread(_aya_fetch_curl, offset)
+        except AyaFetchError as e:
+            reasons.append(str(e))
+            continue
+        if not state.get("curl"):
+            state["curl"] = True
+            state["curl_offset"] = offset
+            state["direct_failure"] = reasons[-1] if reasons else ""
+            logger.warning(f"  Aya Healthcare: direct read refused at offset {offset} "
+                           f"({state['direct_failure']}); the rest of the crawl goes through curl_cffi")
+        return data
+    raise AyaFetchError("; ".join(dict.fromkeys(reasons)) or "no attempt made")
+
+
+async def scrape_aya_page(session: aiohttp.ClientSession, offset: int) -> tuple[list[TravelJob], int]:
+    """Fetch one Aya page. Returns (jobs, total_count); ([], 0) when the page
+    cannot be read on any path (logged)."""
+    try:
+        data = await _aya_fetch_page(session, offset, {})
+    except AyaFetchError as e:
         logger.info(f"Aya: page error at offset {offset}: {e}")
         return [], 0
+    return _aya_parse(data)
 
+
+def _aya_parse(data: dict) -> tuple[list[TravelJob], int]:
+    """(jobs, advertised count) from one search response."""
     items = data.get("items") or []
-    total = int(data.get("count") or 0)
+    try:
+        total = int(data.get("count") or 0)
+    except (TypeError, ValueError):
+        total = 0
     out: list[TravelJob] = []
     for j in items:
         try:
@@ -21306,18 +21450,30 @@ async def scrape_aya_page(session: aiohttp.ClientSession, offset: int) -> tuple[
 
 async def run_aya(session: aiohttp.ClientSession) -> list[TravelJob]:
     logger.info("Aya Healthcare: starting scrape (travel jobs)")
+    TRAVEL_INCOMPLETE.pop(AYA_DOMAIN, None)
     all_jobs: list[TravelJob] = []
     total = 0
+    state: dict = {}
+    stop, failed = "ceiling", False
     for page in range(0, AYA_MAX_PAGES):
         offset = page * AYA_PAGE_SIZE
-        jobs, total = await scrape_aya_page(session, offset)
+        try:
+            data = await _aya_fetch_page(session, offset, state)
+        except AyaFetchError as e:
+            stop, failed = f"page {page} failed ({e})", True
+            logger.warning(f"  Aya Healthcare: {stop}; stopping at {len(all_jobs):,} rows")
+            break
+        jobs, page_total = _aya_parse(data)
+        total = max(total, page_total)
         if page == 0:
             logger.info(f"  Aya Healthcare: total={total:,}, page 0: {len(jobs)} jobs")
         if not jobs:
+            stop = f"page {page} came back empty"
             logger.info(f"  Aya Healthcare: stopped at page {page+1} ({len(all_jobs):,} so far)")
             break
         all_jobs.extend(jobs)
         if (page + 1) * AYA_PAGE_SIZE >= total:
+            stop = "end"
             logger.info(f"  Aya Healthcare: reached total at page {page+1} ({len(all_jobs):,} jobs)")
             break
         await asyncio.sleep(0.25)         # well under the 2000/30s rate limit
@@ -21328,7 +21484,29 @@ async def run_aya(session: aiohttp.ClientSession) -> list[TravelJob]:
     for j in all_jobs:
         if j.agency_job_id in seen: continue
         seen.add(j.agency_job_id); uniq.append(j)
-    logger.info(f"Aya Healthcare: {len(uniq):,} unique travel listings")
+    via = "curl_cffi" if state.get("curl") else "direct"
+    logger.info(f"Aya Healthcare: {len(uniq):,} unique travel listings of {total:,} advertised (read {via})")
+    # A crawl that did not reach the end of Aya's list, or reached it well
+    # short of the advertised count, holds tonight's ayahealthcare.com sweep
+    # and says why in scraper_runs.meta (travel_sweep.incomplete).
+    # A failed page always holds (its rows are known to be unread); a list
+    # that ends early, or on time, holds only when it is short of the count.
+    why = None
+    short = not total or len(uniq) < AYA_MIN_SHARE * total
+    if stop == "ceiling":
+        why = f"hit the {AYA_MAX_PAGES}-page ceiling ({len(uniq):,} of {total:,})"
+    elif failed or (stop != "end" and short):
+        why = f"{stop}; {len(uniq):,} of {total:,} advertised"
+    elif short:
+        why = f"{len(uniq):,} unique of {total:,} advertised (under {AYA_MIN_SHARE:.0%})"
+    if state.get("curl"):
+        TRAVEL_FETCH_NOTES[AYA_DOMAIN] = (f"read through curl_cffi from offset {state.get('curl_offset', 0):,}; "
+                                          f"direct read refused ({state.get('direct_failure') or '-'})")
+    if why and state.get("direct_failure"):
+        why += f"; direct read refused ({state['direct_failure']})"
+    if why:
+        TRAVEL_INCOMPLETE[AYA_DOMAIN] = why
+        logger.warning(f"Aya Healthcare: crawl INCOMPLETE, tonight's {AYA_DOMAIN} sweep will be held: {why}")
 
     # Optional detail pass — no-op unless AYA_FETCH_DESCRIPTIONS=1.
     if AYA_FETCH_DESCRIPTIONS and uniq:
@@ -21658,9 +21836,14 @@ async def run_amn() -> list[TravelJob]:
 
 
 # ── Travel jobs runner + Supabase upsert ──────────────────────────────────
+# The url domain of each adapter in run_all_travel's gather, in its order.
+TRAVEL_ADAPTER_DOMAINS = ("vivian.com", "ayahealthcare.com", "nomadhealth.com", "amnhealthcare.com")
+
+
 async def run_all_travel() -> list[dict]:
     start = datetime.now()
     TRAVEL_INCOMPLETE.clear()
+    TRAVEL_FETCH_NOTES.clear()
     proxy_connector = aiohttp.TCPConnector(limit=20, ssl=False)
     direct_connector = aiohttp.TCPConnector(limit=20)
     async with aiohttp.ClientSession(connector=proxy_connector, headers=HEADERS,
@@ -21669,15 +21852,22 @@ async def run_all_travel() -> list[dict]:
                                       max_line_size=65536, max_field_size=65536) as direct_session:
         results = await asyncio.gather(
             run_vivian(direct_session),    # Vivian doesn't need proxy; Cloudflare on their end is mild
-            run_aya(direct_session),       # Aya — clean public JSON, no proxy needed
+            run_aya(direct_session),       # Aya: public JSON; direct first, curl_cffi when refused (2026-10-25)
             run_nomad(),                   # Nomad Health — public JSON API via _curl_fetch (webshare-first)
             run_amn(),                     # AMN Healthcare — public Azure JSON API via _curl_fetch (webshare-first)
             return_exceptions=True,
         )
     all_travel: list[TravelJob] = []
-    for r in results:
+    # 2026-10-25: an adapter that raises used to vanish here without a line
+    # (return_exceptions=True); its domain now says so and its sweep holds.
+    for dom, r in zip(TRAVEL_ADAPTER_DOMAINS, results):
         if isinstance(r, list):
             all_travel.extend(r)
+        elif isinstance(r, BaseException):
+            note = f"adapter raised {type(r).__name__}: {r}"[:300]
+            logger.warning(f"Travel: {dom} {note}")
+            TRAVEL_FETCH_NOTES[dom] = note
+            TRAVEL_INCOMPLETE.setdefault(dom, note)
     all_travel = _drop_vivian_amn_copies(all_travel)   # 2026-10-20 (T2)
     # Convert to dicts. We stamp scraped_at to the current run's start time on
     # every row so that the PostgREST upsert refreshes it on conflict — that
@@ -21813,6 +22003,136 @@ def _record_travel_sweep(**fields) -> None:
     LAST_RUN_COUNTS["travel_sweep"] = fields
 
 
+# ── Travel stale backstop (2026-10-25, Search Console fix 3) ─────────────
+# The sweep guard holds a source whose crawl failed or came back short, and
+# nothing else retired its rows: Aya returned 0 rows every night from 10-20
+# to 10-25, so its 10,001 contracts kept their 10-19 stamp and stayed live
+# (and kept telling Google Jobs they were open). Like the hospital side's
+# BACKSTOP_DAYS (retire_guard.py), the guard now never protects a row nobody
+# has seen for long: an active row of a source that is NOT swept tonight is
+# retired when its scraped_at is
+#   * more than TRAVEL_STALE_DAYS days before tonight's run, and
+#   * before the start of the last TRAVEL_STALE_MIN_RUNS - 1 earlier runs
+#     whose travel upsert landed (scraper_runs.meta.travel_sweep present and
+#     not skipped), so the row was missed by those runs and by tonight's.
+# The run count is what keeps a single failed night from retiring a source
+# wholesale: after a scraper outage of any length, the first night back
+# cannot retire a row the last run before the outage saw. The run history
+# unreadable, or too short, holds the backstop (logged and recorded). Rows
+# are read by id and retired in small id lists, each PATCH re-checking
+# is_active and the cutoff, so a row seen again meanwhile stays.
+TRAVEL_STALE_DAYS = 3
+TRAVEL_STALE_MIN_RUNS = 3
+TRAVEL_STALE_PAGE = 1000      # ids per read
+TRAVEL_STALE_PATCH = 200      # ids per PATCH (keeps the URL short)
+
+
+def _travel_iso_utc(s: str) -> datetime:
+    """A PostgREST / run timestamp ("...Z", "+00:00", 1-6 fraction digits)
+    as an aware UTC datetime."""
+    t = (s or "").strip().replace(" ", "T").replace("Z", "+00:00")
+    t = re.sub(r"\.(\d+)", lambda m: "." + (m.group(1) + "000000")[:6], t, count=1)
+    dt = datetime.fromisoformat(t)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _travel_stale_cutoff(sb_url: str, sb_key: str, run_started_iso: str) -> tuple[Optional[str], str]:
+    """(cutoff, note). cutoff is the scraped_at before which an active row of
+    a held source is retired, or None when the backstop must hold (note says
+    why). See TRAVEL_STALE_DAYS / TRAVEL_STALE_MIN_RUNS."""
+    from datetime import timedelta
+    from urllib.parse import quote as _q
+    need = max(TRAVEL_STALE_MIN_RUNS - 1, 0)
+    try:
+        run_dt = _travel_iso_utc(run_started_iso)
+        url = (f"{sb_url.rstrip('/')}/rest/v1/scraper_runs?select=started_at,travel:meta->travel_sweep"
+               f"&ats_platform=eq.nightly&started_at=lt.{_q(run_started_iso)}"
+               f"&order=started_at.desc&limit={need + 8}")
+        _, body = _travel_pgrst_get(url, sb_key)
+        runs = json.loads(body or b"[]")
+        starts = [_travel_iso_utc(r["started_at"]) for r in runs
+                  if isinstance(r, dict) and r.get("started_at")
+                  and isinstance(r.get("travel"), dict) and not r["travel"].get("skipped")]
+    except Exception as e:
+        return None, f"run history unreadable ({type(e).__name__}: {e})"[:300]
+    if len(starts) < need:
+        return None, f"{len(starts)} earlier travel run(s) on record, needs {need}"
+    cut = run_dt - timedelta(days=TRAVEL_STALE_DAYS)
+    if need:
+        cut = min(cut, sorted(starts, reverse=True)[need - 1])
+    return cut.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"), ""
+
+
+def _travel_stale_ids(sb_url: str, sb_key: str, domain: str, cutoff: str) -> list[int]:
+    """Ids of the active rows of `domain` stamped before `cutoff` (by id
+    cursor; raises on a failed read)."""
+    from urllib.parse import quote as _q
+    ids: list[int] = []
+    last = 0
+    while True:
+        url = (f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?select=id&is_active=eq.true"
+               f"&url=like.{_q('*' + domain + '*')}&scraped_at=lt.{_q(cutoff)}"
+               f"&id=gt.{last}&order=id.asc&limit={TRAVEL_STALE_PAGE}")
+        _, body = _travel_pgrst_get(url, sb_key)
+        page = [int(r["id"]) for r in json.loads(body or b"[]")]
+        ids.extend(page)
+        if len(page) < TRAVEL_STALE_PAGE:
+            return ids
+        last = page[-1]
+
+
+def _travel_stale_backstop(sb_url: str, sb_key: str, domains: list[str],
+                           run_started_iso: str) -> dict:
+    """Retire the stale active rows of the sources not swept tonight. Returns
+    the record for scraper_runs.meta.travel_sweep.stale."""
+    import urllib.request as _urlreq
+    from urllib.parse import quote as _q
+    if not domains:
+        return {}
+    cutoff, why = _travel_stale_cutoff(sb_url, sb_key, run_started_iso)
+    if cutoff is None:
+        logger.warning(f"Travel stale backstop: HOLD ({why})")
+        return {"held": why}
+    patch_headers = {
+        "apikey":        sb_key,
+        "Authorization": f"Bearer {sb_key}",
+        "Content-Type":  "application/json",
+        "Prefer":        "return=minimal,count=exact",
+    }
+    body = json.dumps({"is_active": False}).encode()
+    retired: dict[str, int] = {}
+    failed: dict[str, str] = {}
+    for domain in domains:
+        try:
+            ids = _travel_stale_ids(sb_url, sb_key, domain, cutoff)
+        except Exception as e:
+            failed[domain] = f"read failed ({type(e).__name__}: {e})"[:200]
+            logger.warning(f"Travel stale backstop {domain}: {failed[domain]}")
+            continue
+        n_done = 0
+        for i in range(0, len(ids), TRAVEL_STALE_PATCH):
+            chunk = ids[i:i + TRAVEL_STALE_PATCH]
+            purl = (f"{sb_url.rstrip('/')}/rest/v1/travel_jobs?is_active=eq.true"
+                    f"&scraped_at=lt.{_q(cutoff)}&id=in.({','.join(map(str, chunk))})")
+            try:
+                rq = _urlreq.Request(purl, data=body, headers=patch_headers, method="PATCH")
+                with _urlreq.urlopen(rq, timeout=60) as resp:
+                    n = (resp.headers.get("Content-Range", "") or "").split("/")[-1]
+                    n_done += int(n) if n.isdigit() else 0
+            except Exception as e:
+                failed[domain] = f"PATCH failed ({type(e).__name__}: {e})"[:200]
+        if n_done or ids:
+            retired[domain] = n_done
+            logger.info(f"Travel stale backstop {domain}: {n_done:,} of {len(ids):,} active rows "
+                        f"unseen since before {cutoff} retired")
+    out = {"cutoff": cutoff, "retired": retired, "total": sum(retired.values())}
+    if failed:
+        out["failed"] = failed
+    return out
+
+
 def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     """Upsert travel rows into Supabase. Returns count upserted, or 0 on failure
     or if env vars are missing. Falls back to JSON dump in either case.
@@ -21915,6 +22235,8 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
     # is at least TRAVEL_SWEEP_MIN_RATIO of its previous-run baseline.
     record = {"yield": domain_counts, "baseline": baselines, "baseline_stamp": stamps,
               "incomplete": incomplete, "swept": [], "deactivated": 0}
+    if TRAVEL_FETCH_NOTES:
+        record["fetch"] = dict(TRAVEL_FETCH_NOTES)
     if sent == 0:
         _record_travel_sweep(**record, held={d: "upsert landed no rows" for d in KNOWN_DOMAINS},
                              skipped="upsert landed no rows")
@@ -22000,6 +22322,12 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
             f"Travel deactivate: {total_deact:,} rows swept across {len(sweep)} source(s) "
             f"({failed_windows} failed windows, counts={domain_counts})"
         )
+    # 2026-10-25: the sources held tonight still lose the rows nobody has
+    # seen for TRAVEL_STALE_DAYS over TRAVEL_STALE_MIN_RUNS runs.
+    stale = _travel_stale_backstop(sb_url, sb_key, [d for d in KNOWN_DOMAINS if d not in sweep],
+                                   run_started_iso)
+    if stale:
+        record["stale"] = stale
     _record_travel_sweep(**{**record, "swept": sweep, "deactivated": total_deact},
                          held=held, failed_windows=failed_windows)
 
