@@ -465,11 +465,14 @@ def test_jibe_one_bad_row_on_a_whole_board_is_partial(monkeypatch):
 
 
 def test_jibe_ceiling_clears_uhs_and_a_uhs_size_board_is_complete(monkeypatch):
-    """UHS listed 5,969 on 2026-10-15, 31 under the old 60-page ceiling."""
+    """UHS listed 5,969 on 2026-10-15, 31 under the old 60-page ceiling.
+    2026-10-27: a board past JIBE_DEEP_WINDOW is read state by state (the
+    feed repeats one page past ~5,100 rows); a board under it still pages
+    straight through. The state-sliced UHS read: tests/test_gapfix_1027.py."""
     assert scraper.JIBE_MAX_PAGES >= 100
-    calls = _jibe_board(monkeypatch, _pages(6150, start=300000), 6150)
+    calls = _jibe_board(monkeypatch, _pages(4950, start=300000), 4950)
     jobs = asyncio.run(scraper.scrape_jibe(None, "Universal Health Services", "https://jobs.uhsinc.com"))
-    assert len(jobs) == 6150 and calls == list(range(1, 63))
+    assert len(jobs) == 4950 and calls == list(range(1, 51))
     assert "Universal Health Services" in scraper.COMPLETE_SYSTEMS
     assert "Universal Health Services" not in scraper.PARTIAL_SYSTEMS
 
