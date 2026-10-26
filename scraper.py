@@ -2675,6 +2675,18 @@ WORKDAY_TENANTS = {
     "Centene":                   ("centene",             "5",   "Centene_External"),                  # [357 board; 174 clinical]
     "Humana":                    ("humana",              "5",   "Humana_External_Career_Site"),       # [224 board; 90 clinical]
     "Cigna":                     ("cigna",               "5",   "cignacareers"),                      # [534 board, 297 US; clinical US only]
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Montage Health": ("montagehealth", "5", "Montage_Health"),   # [10-27 dry run] 100 rows / 89 in town / RN 18; CMS 050145
+    "Marshall Medical Center": ("marshallmedical", "1", "MMC"),   # [10-27 dry run] 63 rows / 53 in town / RN 4; CMS 050254
+    "Mercy Medical Center Cedar Rapids": ("mercycare", "5", "Mercy_Cedar_Rapids_Careers"),   # [10-27 dry run] 210 rows / 167 in town / RN 86; CMS 160079
+    "Boone Hospital Center": ("boone", "503", "Careers"),   # [10-27 dry run] 159 rows / 152 in town / RN 44; CMS 260068
+    "Mary Lanning Healthcare": ("marylanning", "1", "marylanningcareers"),   # [10-27 dry run] 91 rows / 91 in town / RN 30; CMS 280032
+    "Great Plains Health": ("gphealth", "5", "GPH"),   # [10-27 dry run] 100 rows / 97 in town / RN 36; CMS 280065
+    "Golden Valley Memorial Healthcare": ("gvmh", "504", "GVMH"),   # [10-27 dry run] 81 rows / 73 in town / RN 21; CMS 260175
+    "King's Daughters Medical Center": ("univofky", "108", "UKKD"),   # [10-27 dry run] 380 rows / 334 in Ashland KY / RN 33; CMS 180009 (today counted only through a state-level alias, no rows)
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -3660,6 +3672,76 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "Niobrara County Hospital District": ("Lusk", "WY"),
     "North Platte Valley Medical Center": ("Saratoga", "WY"),
     "Star Valley Medical Center": ("Afton", "WY"),
+    # 2026-10-27 RN gap, long tail: each new board's home town; fills only rows that carry
+    # no town (multi-hospital boards: the main hospital's town).
+    "Montage Health": ("Monterey", "CA"),
+    "Marshall Medical Center": ("Placerville", "CA"),
+    "Mercy Medical Center Cedar Rapids": ("Cedar Rapids", "IA"),
+    "Boone Hospital Center": ("Columbia", "MO"),
+    "Mary Lanning Healthcare": ("Hastings", "NE"),
+    "Great Plains Health": ("North Platte", "NE"),
+    "Golden Valley Memorial Healthcare": ("Clinton", "MO"),
+    "King's Daughters Medical Center": ("Ashland", "KY"),
+    "University Hospital (Newark)": ("Newark", "NJ"),
+    "Baton Rouge General Medical Center": ("Baton Rouge", "LA"),
+    "Oaklawn Hospital": ("Marshall", "MI"),
+    "Western Wisconsin Health": ("Baldwin", "WI"),
+    "Washington Regional Medical Center": ("Fayetteville", "AR"),
+    "Fairfield Medical Center": ("Lancaster", "OH"),
+    "Trinity Health (Minot)": ("Minot", "ND"),
+    "Bristol Hospital": ("Bristol", "CT"),
+    "Lake Region Healthcare": ("Fergus Falls", "MN"),
+    "Methodist Rehabilitation Center": ("Jackson", "MS"),
+    "Schoolcraft Memorial Hospital": ("Manistique", "MI"),
+    "St. John's Health (Jackson)": ("Jackson", "WY"),
+    "Blessing Health System": ("Quincy", "IL"),
+    "Berkshire Health Systems": ("Pittsfield", "MA"),
+    "Holzer Health System": ("Gallipolis", "OH"),
+    "Signature Healthcare Brockton Hospital": ("Brockton", "MA"),
+    "Conway Medical Center": ("Conway", "SC"),
+    "Baxter Health": ("Mountain Home", "AR"),
+    "Memorial Healthcare (Owosso)": ("Owosso", "MI"),
+    "Emerson Health": ("Concord", "MA"),
+    "Ozarks Healthcare": ("West Plains", "MO"),
+    "Children's Hospital of The King's Daughters": ("Norfolk", "VA"),
+    "Morris Hospital": ("Morris", "IL"),
+    "Citizens Memorial Healthcare": ("Bolivar", "MO"),
+    "Northfield Hospital + Clinics": ("Northfield", "MN"),
+    "St. Clair Health": ("Pittsburgh", "PA"),
+    "Licking Memorial Hospital": ("Newark", "OH"),
+    "Hancock Regional Hospital": ("Greenfield", "IN"),
+    "St. Mary's Healthcare (Amsterdam)": ("Amsterdam", "NY"),
+    "Indiana Regional Medical Center": ("Indiana", "PA"),
+    "Fisher-Titus Medical Center": ("Norwalk", "OH"),
+    "Olmsted Medical Center": ("Rochester", "MN"),
+    "Schneck Medical Center": ("Seymour", "IN"),
+    "Winona Health": ("Winona", "MN"),
+    "Valley View Hospital": ("Glenwood Springs", "CO"),
+    "Pella Regional Health Center": ("Pella", "IA"),
+    "Shenandoah Medical Center": ("Shenandoah", "IA"),
+    "Margaret Mary Health": ("Batesville", "IN"),
+    "Grande Ronde Hospital": ("La Grande", "OR"),
+    "Mobridge Regional Hospital": ("Mobridge", "SD"),
+    "Tri-State Memorial Hospital": ("Clarkston", "WA"),
+    "Beloit Health System": ("Beloit", "WI"),
+    "SBH Health System": ("Bronx", "NY"),
+    "The Brooklyn Hospital Center": ("Brooklyn", "NY"),
+    "Saint Joseph's Medical Center (Yonkers)": ("Yonkers", "NY"),
+    "Williamson Health": ("Franklin", "TN"),
+    "Finger Lakes Health": ("Geneva", "NY"),
+    "Cook County Health": ("Chicago", "IL"),
+    "Hennepin Healthcare": ("Minneapolis", "MN"),
+    "Cape Cod Healthcare": ("Hyannis", "MA"),
+    "Mercy Medical Center (Baltimore)": ("Baltimore", "MD"),
+    "Confluence Health": ("Wenatchee", "WA"),
+    "Beebe Healthcare": ("Lewes", "DE"),
+    "Holy Redeemer Health System": ("Meadowbrook", "PA"),
+    "NCH Healthcare System": ("Naples", "FL"),
+    "Columbus Regional Health": ("Columbus", "IN"),
+    "Mountain View Hospital (Idaho Falls)": ("Idaho Falls", "ID"),
+    "North Oaks Health System": ("Hammond", "LA"),
+    "BronxCare Health System": ("Bronx", "NY"),
+    "One Brooklyn Health": ("Brooklyn", "NY"),
 }
 
 # Normalize system keys to lowercase
@@ -6189,6 +6271,21 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "factoria village": (None, "Bellevue", "WA"),
         "timber ridge": (None, "Issaquah", "WA"),
     },
+    # 2026-10-27 RN gap, long tail: King's Daughters (Ashland KY; UK HealthCare's
+    # UKKD site on the univofky tenant). Its locationsText names buildings and
+    # practices (10-27 dry run: "Pavilion" 27 rows, "Kingsbrook" 11, "Central
+    # Avenue Plaza" 4, "Ashland Drive Thru" 3); the town is read from the
+    # site's own name where it carries one, else the Ashland campus.
+    "King's Daughters Medical Center": {
+        "pavilion":                       (None, "Ashland", "KY"),
+        "kingsbrook":                     (None, "Ashland", "KY"),
+        "central avenue plaza":           (None, "Ashland", "KY"),
+        "ashland drive thru":             (None, "Ashland", "KY"),
+        "king's daughters medical trans": (None, "Ashland", "KY"),
+        "wheelersburg family care":       (None, "Wheelersburg", "OH"),
+        "grayson medical specialties":    (None, "Grayson", "KY"),
+        "portsmouth-kinneys lane":        (None, "Portsmouth", "OH"),
+    },
 }
 WD_FACILITY_MAP["Wellstar Health (Providers)"] = WD_FACILITY_MAP["Wellstar Health"]
 
@@ -6263,6 +6360,14 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "Eisenhower Health":         ("Rancho Mirage", "CA"),
     "Reid Health":               ("Richmond", "IN"),
     "Dayton Children's":         ("Dayton", "OH"),
+    # 2026-10-27 RN gap, long tail: single-market tenants whose rows can carry no town.
+    "Montage Health": ("Monterey", "CA"),
+    "Marshall Medical Center": ("Placerville", "CA"),
+    "Mercy Medical Center Cedar Rapids": ("Cedar Rapids", "IA"),
+    "Boone Hospital Center": ("Columbia", "MO"),
+    "Great Plains Health": ("North Platte", "NE"),
+    "Golden Valley Memorial Healthcare": ("Clinton", "MO"),
+    "King's Daughters Medical Center": ("Ashland", "KY"),
 }
 
 # 2026-09-24: tenants whose locationsText leads with "City ST" and no comma
@@ -7568,6 +7673,13 @@ TALEO_ORGS: dict[str, tuple] = {
     "Stony Brook Eastern Long Island Hospital": ("stonybrooku.taleo.net", "elih", "NY"),
     # Erlanger (Chattanooga TN; Murphy NC; Pikeville TN); FTL template.
     "Erlanger Health System": ("erlanger.taleo.net", "ehs_external", "TN"),
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Cook County Health": ("cookcountyil.taleo.net", "200", "IL"),   # [10-27 dry run] 83 rows / 0 in town / RN 15; CMS 140124, 140300
+    "Hennepin Healthcare": ("hcmc.taleo.net", "1", "MN"),   # [10-27 dry run] 189 rows / 184 in town / RN 40; CMS 240004
+    "Cape Cod Healthcare": ("capecodhc.taleo.net", "ex", "MA"),   # [10-27 dry run] 329 rows / 0 in town / RN 51; CMS 220012
 }
 TALEO_MAX_PAGES = int(os.getenv("TALEO_MAX_PAGES", "120"))
 TALEO_DESC_MAX_PER_RUN = int(os.getenv("TALEO_DESC_MAX_PER_RUN", "1500"))   # jobdetail.ftl pages a night, all tenants
@@ -8146,6 +8258,14 @@ ICIMS_ORGS = {
     "Gentiva":                          "careers-gentivahs.icims.com",          # hospice, palliative, home health
     "Wellpath":                         "careers-wellpath.icims.com",           # correctional and behavioral health care
     "Dialysis Clinic, Inc.":            "careers-dialysisclinic.icims.com",     # DCI, nonprofit dialysis
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "St. Luke's Hospital (St. Louis)": "careers-stlukes-stl.icims.com",   # [10-27 dry run] 247 rows / 0 in town / RN 87; CMS 260179
+    "University Hospital (Newark)": "careers-uhnjcareers.icims.com",   # [10-27 dry run] 253 rows / 253 in town / RN 56; CMS 310119
+    "St. John's Riverside Hospital": "careers-riversidehealth.icims.com",   # [10-27 dry run] 117 rows / 0 in town / RN 9; CMS 330208
+    "BronxCare Health System": "careers-bronxcare.icims.com",   # [10-27 dry run] 138 rows / 137 in town / RN 25; CMS 330009
 }
 
 
@@ -10058,6 +10178,16 @@ JIBE_SITES = {
     # careers-pamhealth.icims.com and this Jibe host, whose /api/jobs serves the
     # same postings with full bodies; /jobs/<id> is the posting page.
     "PAM Health":                     "https://pamhealth.jibeapply.com",        # [1,558] rehab hospitals and LTACHs
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Mercy Medical Center (Baltimore)": "https://careers.mdmercy.com",   # [10-27 dry run] 274 rows / 206 in town / RN 39; CMS 210008
+    "Confluence Health": "https://careers.confluencehealth.org",   # [10-27 dry run] 202 rows / 177 in town / RN 33; CMS 500016
+    "Beebe Healthcare": "https://www.beebecareers.org",   # [10-27 dry run] 169 rows / 132 in town / RN 47; CMS 080007
+    "Holy Redeemer Health System": "https://careers.redeemerhealth.org",   # [10-27 dry run] 133 rows / 85 in town / RN 36; CMS 390097
+    "Signature HealthCARE": "https://www.signaturehealthcarejobs.com",   # [10-27 dry run] 804 rows / RN 214; top towns Louisville, KY 79, Lexington, KY 32, Norfolk, VA 28
+    "One Brooklyn Health": "https://careers.onebrooklynhealth.org",   # [10-27 dry run] 167 rows / 167 in town / RN 69; CMS 330233
 }
 
 # Pages of 100 read per Jibe board (10,000 postings). A board past it is read
@@ -12741,6 +12871,11 @@ PHENOM_ORGS = {
     "Children's Hospital of Philadelphia": "https://careers.chop.edu",          # [265] Philadelphia PA
     "Grady Health System":          "https://careers.gradyhealth.org",          # [282] Atlanta GA
     "Seattle Children's":           "https://careers.seattlechildrens.org",     # [242] Seattle WA
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Innovative Renal Care": "https://careers.innovativerenal.com",   # [10-27 dry run] 180 rows / RN 80; top towns Zanesville, OH 6, ,  5, Louisville, KY 5
 }
 
 PHENOM_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end a crawl
@@ -13744,6 +13879,11 @@ ADP_ORGS = {
     "Grant Regional Health Center": ("84e68b06-658b-4d37-a6d5-20bbc3463ad9", "19000101_000001", "WI", "Grant Regional Health Center"),   # 18 rows, 18 in Lancaster, WI (CMS 521322)
     "Niobrara County Hospital District": ("a20cd2ad-2b4a-419e-a049-412195d6d6e8", "19000101_000001", "WY", "Niobrara County Hospital District"),   # 13 rows, 13 in Lusk, WY (CMS 531314)
     "North Platte Valley Medical Center": ("b3cdeb5c-bb64-4686-a838-e84608ae0021", "19000101_000001", "WY", "North Platte Valley Medical Center"),   # 12 rows, 12 in Saratoga, WY (CMS 531317)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Choice Health at Home": ("026d2af3-da01-4dc8-a714-353f3f03daba", "19000101_000001", "", ""),   # [10-27 dry run] 219 rows / RN 56; top towns Tucson, AZ 15, Colorado Springs, CO 11, Ocala, FL 9
 }
 _ADP_API = "https://workforcenow.adp.com/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions"
 _ADP_PORTAL = "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html"
@@ -13972,6 +14112,17 @@ ADPCX_ORGS = {
     # requisitionLocations carry no site name (hospital_name = system).
     "Cabell Huntington Hospital": ("mhnetwork", "WV"),        # 770, Huntington + Point Pleasant WV
     "Ephraim Mcdowell Health":    ("ephraimmcdowell", "KY"),  # 114, Danville KY
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "SBH Health System": ("stbarnabascareers", "NY"),   # [10-27 dry run] 391 rows / 391 in town / RN 79; CMS 330399
+    "The Brooklyn Hospital Center": ("tbhcareers", "NY"),   # [10-27 dry run] 51 rows / 50 in town / RN 15; CMS 330056
+    "Saint Joseph's Medical Center (Yonkers)": ("stjosephsyonkersjobs", "NY"),   # [10-27 dry run] 68 rows / 49 in town / RN 11; CMS 330006
+    "Williamson Health": ("williamsonhealthcareers", "TN"),   # [10-27 dry run] 176 rows / 176 in town / RN 65; CMS 440029
+    "Finger Lakes Health": ("fingerlakes", "NY"),   # [10-27 dry run] 230 rows / 192 in town / RN 52; CMS 330058, 331314
+    "North Country Healthcare": ("ncha", "NH"),   # [10-27 dry run] 108 rows / 64 in town / RN 31; CMS 301310, 301303
+    "Nexion Health": ("nexion", ""),   # [10-27 dry run] 285 rows / RN 71; top towns New Iberia, LA 10, Floresville, TX 9, Clinton, MS 9
 }
 _ADPCX_SITE    = "https://myjobs.adp.com/public/staffing/v1/career-site/{domain}"
 _ADPCX_API     = "https://my.adp.com/myadp_prefix/mycareer/public/staffing/v1/job-requisitions"
@@ -14423,6 +14574,11 @@ SELECTMINDS_ORGS = {
     # names the hospital (<p class="jlr_company">McLaren Flint</p>, see
     # SELECTMINDS_COMPANY_FACILITY) and the town as "Michigan, Flint".
     "McLaren Health Care": "https://careers.mclaren.org",              # Grand Blanc MI; 13 hospitals
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "UTMB Health": "aa083",   # [10-27 dry run] 1291 rows / 919 in town / RN 267; CMS 450018
 }
 # 2026-10-25: 80 -> 160 (McLaren lists 129 pages of 10).
 SELECTMINDS_MAX_PAGES = int(os.getenv("SELECTMINDS_MAX_PAGES", "160"))
@@ -14946,6 +15102,13 @@ INFOR_ORGS = {
     "Cambridge Health Alliance": ("css-cambridgehealth-prd",  "1000", "EXTERNAL",       "MA"),  # [194] Cambridge / Everett / Somerville MA
     # Children's of Alabama: the HealthcareSource tenant "chsys" answers 0 jobs; childrensalcareers.org links Infor.
     "Children's of Alabama":     ("css-childrensal-prd",      "10",   "EXTERNAL",       "AL"),  # [256] Birmingham AL
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "NCH Healthcare System": ("css-b5wedk4337b8b9un-prd", "1", "EXTERNAL", "FL"),   # [10-27 dry run] 413 rows / 403 in town / RN 142; CMS 100018
+    "Columbus Regional Health": ("css-g8ancuhyudvlv76g-prd", "CRHH", "EXTERNAL", "IN"),   # [10-27 dry run] 99 rows / 99 in town / RN 36; CMS 150112
+    "North Oaks Health System": ("css-northoakshealth-prd", "1000", "EXTERNAL", "LA"),   # [10-27 dry run] 235 rows / 0 in town / RN 98; CMS 190015
 }
 
 # Tenants whose location value is a facility name with no city or state.
@@ -15575,6 +15738,27 @@ UKG_ORGS = {
     "Southwest Health Center": ("https://southwesthealth.rec.pro.ukg.net/SOU1502SWHC", "736c3b2b-32cd-4667-a8ad-dc0869f551f5", "WI"),   # 25 rows, 25 in Platteville, WI (CMS 521354)
     "Tamarack Health": ("https://tamarackhealth.rec.pro.ukg.net/REG1500REGI", "9ad614d0-6df3-4942-bf76-c27dcf6898f9", "WI"),   # 71 rows, 24 in Ashland, WI (CMS 521359); also Hayward (CMS 521336)
     "Vernon Memorial Hospital": ("https://vernonmemorial.rec.pro.ukg.net/VER1502VMHC", "0c24f5a0-d512-46a1-8785-50dcb9a9dcd6", "WI"),   # 38 rows, 34 in Viroqua, WI (CMS 521348)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Licking Memorial Hospital": ("https://recruiting.ultipro.com/LIC1000LMHS", "3a2849cd-0da6-4a57-813a-80b366fb0172", "OH"),   # [10-27 dry run] 98 rows / 97 in town / RN 17; CMS 360218
+    "Hancock Regional Hospital": ("https://hancockhealth.rec.pro.ukg.net/HAN1500HCRH", "0d9549f5-8d33-4f24-a8e0-96611223b112", "IN"),   # [10-27 dry run] 48 rows / 44 in town / RN 11; CMS 150037
+    "St. Mary's Healthcare (Amsterdam)": ("https://stmary.rec.pro.ukg.net/STM1500STMH", "77a8f537-cc67-4dfc-ba9e-fac7c978527f", "NY"),   # [10-27 dry run] 225 rows / 221 in town / RN 57; CMS 330047
+    "Indiana Regional Medical Center": ("https://recruiting.ultipro.com/IND1019INDI", "2dbb7a3a-54b7-4c82-9c18-a0260627136b", "PA"),   # [10-27 dry run] 98 rows / 88 in town / RN 17; CMS 390173
+    "Fisher-Titus Medical Center": ("https://recruiting.ultipro.com/FIS1006FSHR", "4f0ef98c-7a2a-435a-b8ae-34f07ba89aae", "OH"),   # [10-27 dry run] 96 rows / 84 in town / RN 30; CMS 360065
+    "Olmsted Medical Center": ("https://recruiting2.ultipro.com/OLM1000OMC", "8aa650e0-3e57-4e69-ad1e-6503d36d502a", "MN"),   # [10-27 dry run] 60 rows / 53 in town / RN 14; CMS 240006
+    "Schneck Medical Center": ("https://schneckmed.rec.pro.ukg.net/JAC1502SCKM", "0ecf6482-01c9-4568-bec5-8ea8e3f534a3", "IN"),   # [10-27 dry run] 31 rows / 31 in town / RN 5; CMS 150065
+    "Winona Health": ("https://recruiting2.ultipro.com/WIN1020WINO", "e8f5c467-8162-4978-9a1e-9dacada74410", "MN"),   # [10-27 dry run] 70 rows / 70 in town / RN 11; CMS 240044
+    "Valley View Hospital": ("https://recruiting.ultipro.com/VAL1004VVH", "7a5186be-89cf-4eb5-b2e5-869118e3e2f0", "CO"),   # [10-27 dry run] 166 rows / 157 in town / RN 48; CMS 060075
+    "Pella Regional Health Center": ("https://pellarhc.rec.pro.ukg.net/PEL1000PELLA", "3807457d-d4d9-4311-a73c-bfb456afd44c", "IA"),   # [10-27 dry run] 52 rows / 46 in town / RN 15; CMS 161367
+    "Shenandoah Medical Center": ("https://recruiting2.ultipro.com/SHE1012SHEM", "bcd5738c-c38c-4642-a992-1887c69cb7aa", "IA"),   # [10-27 dry run] 22 rows / 22 in town / RN 7; CMS 161366
+    "Margaret Mary Health": ("https://mmhealth.rec.pro.ukg.net/MAR1052MGMH", "8cc2d18e-f33a-4496-825e-4b5c69e3cf1d", "IN"),   # [10-27 dry run] 39 rows / 37 in town / RN 8; CMS 151329
+    "Grande Ronde Hospital": ("https://grandehospital.rec.pro.ukg.net/GRA1506GDRH", "54d9efc6-9e5b-442a-a6c5-64ad8c352228", "OR"),   # [10-27 dry run] 36 rows / 36 in town / RN 6; CMS 381321
+    "Mobridge Regional Hospital": ("https://recruiting2.ultipro.com/MOB1005MOHO", "d740b8a2-1c7c-47a6-9027-ec800aed2766", "SD"),   # [10-27 dry run] 13 rows / 13 in town / RN 4; CMS 431325
+    "Tri-State Memorial Hospital": ("https://recruiting.ultipro.com/TRI1015", "e2afe3d3-239e-a920-52a1-3515af825791", "WA"),   # [10-27 dry run] 47 rows / 45 in town / RN 13; CMS 501332
+    "American Senior Communities": ("https://recruiting2.ultipro.com/AME1091ASEN", "92ca1d4b-eaf6-482c-82b7-bb3bc300b9dd", "IN"),   # [10-27 dry run] 809 rows / RN 208; top towns Indianapolis, IN 143, Fort Wayne, IN 78, Elkhart, IN 36
+    "AmSurg": ("https://recruiting.ultipro.com/AMS1004AMSRG", "94a3d750-7693-4943-8b5d-0a9b17bb4e4f"),   # [10-27 dry run] 104 rows / RN 55; top towns Towson, MD 13, ,  8, Raleigh, NC 6
 }
 
 # 2026-10-20: the posting's title names the hospital on a board whose
@@ -16098,6 +16282,11 @@ ORACLE_ORGS = {
     "AtlantiCare":               ("https://ibywjb.fa.ocs.oraclecloud.com",                    "CX_1"),   # [529] Atlantic City / Galloway (Pomona) NJ
     "CarolinaEast Health System": ("https://enpu.fa.us2.oraclecloud.com",                     "CX_1001"),   # [222] New Bern NC
     "Connecticut Children's":    ("https://fa-evav-saasfaprod1.fa.ocs.oraclecloud.com",       "connecticutchildrenscareers"),   # [224] Hartford CT
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Life Care Services": ("https://eexs.fa.us2.oraclecloud.com", "AllJobs"),   # [10-27 dry run] 767 rows / RN 76; top towns Des Moines, IA 29, Chicago, IL 24, Lincolnshire, IL 22
 }
 
 # 2026-09-16 (NY coverage): Mount Sinai site names in requisition titles ->
@@ -16509,6 +16698,24 @@ HEALTHCARESOURCE_ORGS = {
     "Cody Regional Health": "westpark",   # 70 rows, 70 in Cody, WY (CMS 531312)
     "Hot Springs County Memorial Hospital": "hscmh",   # 22 rows, 21 in Thermopolis, WY (CMS 531304)
     "Memorial Hospital Sweetwater County": "sweetwatermemorial",   # 34 rows, 34 in Rock Springs, WY (CMS 531318)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Blessing Health System": "blessing",   # [10-27 dry run] 153 rows / 146 in town / RN 48; CMS 140015, 141315
+    "Berkshire Health Systems": "berkshire",   # [10-27 dry run] 420 rows / 398 in town / RN 61; CMS 220046, 221302
+    "Holzer Health System": "holzer",   # [10-27 dry run] 144 rows / 122 in town / RN 21; CMS 360054, 361320
+    "Signature Healthcare Brockton Hospital": "brocktonhospital",   # [10-27 dry run] 147 rows / 132 in town / RN 38; CMS 220052
+    "Conway Medical Center": "cmcsc",   # [10-27 dry run] 162 rows / 142 in town / RN 40; CMS 420049
+    "Baxter Health": "baxter",   # [10-27 dry run] 193 rows / 172 in town / RN 58; CMS 040027
+    "Memorial Healthcare (Owosso)": "mhcc",   # [10-27 dry run] 154 rows / 147 in town / RN 35; CMS 230121
+    "Emerson Health": "emerson",   # [10-27 dry run] 192 rows / 179 in town / RN 49; CMS 220084
+    "Ozarks Healthcare": "ozarks",   # [10-27 dry run] 87 rows / 84 in town / RN 15; CMS 260078
+    "Children's Hospital of The King's Daughters": "kingsdaughters",   # [10-27 dry run] 271 rows / 198 in town / RN 59; CMS 493301
+    "Morris Hospital": "morrishospital",   # [10-27 dry run] 65 rows / 56 in town / RN 10; CMS 140101
+    "Citizens Memorial Healthcare": "citizensmemorial",   # [10-27 dry run] 176 rows / 132 in town / RN 32; CMS 260195
+    "Northfield Hospital + Clinics": "northfieldhospital",   # [10-27 dry run] 59 rows / 55 in town / RN 6; CMS 240014
+    "St. Clair Health": "stclair",   # [10-27 dry run] 209 rows / 209 in town / RN 54; CMS 390228
 }
 
 # 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
@@ -17290,6 +17497,14 @@ KRONOS_ORGS = {
     "North Valley Hospital": ("secure7.saashr.com", "6204309", "WA"),   # 17 rows, 17 in Tonasket, WA (CMS 501321)
     "Othello Community Hospital": ("secure6.saashr.com", "6154361", "WA"),   # 7 rows, 7 in Othello, WA (CMS 501318)
     "Spooner Health System": ("secure6.entertimeonline.com", "6148886", "WI"),   # 8 rows, 8 in Spooner, WI (CMS 521332)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Baton Rouge General Medical Center": ("prd01-hcm01.prd", "6042637", "LA"),   # [10-27 dry run] 252 rows / 218 in town / RN 48; CMS 190065, 190316
+    "Oaklawn Hospital": ("secure7.saashr.com", "6155701", "MI"),   # [10-27 dry run] 83 rows / 76 in town / RN 15; CMS 230217
+    "Western Wisconsin Health": ("secure3.saashr.com", "6109363", "WI"),   # [10-27 dry run] 30 rows / 30 in town / RN 3; CMS 521347
+    "NHS Management": ("prd01-hcm01.npr", "6148296", "AL"),   # [10-27 dry run] 445 rows / RN 93; top towns Birmingham, AL 57, Mobile, AL 53, Northport, AL 35
 }
 
 
@@ -18468,6 +18683,11 @@ APPLICANTPRO_ORGS = {
     "Granite County Medical Center": ("granitecountyhospital", "185"),   # 11 rows, 11 in Philipsburg, MT (CMS 271303)
     "Harney District Hospital": ("harneydh", "11796"),   # 17 rows, 17 in Burns, OR (CMS 381307)
     "Garfield County Public Hospital District #1": ("pomeroymd", "4176"),   # 9 rows, 9 in Pomeroy, WA (CMS 501301)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Beloit Health System": ("beloithealthsystem", "19763"),   # [10-27 dry run] 73 rows / 62 in town / RN 15; CMS 520100
 }
 _APPLICANTPRO_PARAMS = {"cityUrl": "", "countryAbbreviation": "", "stateAbbreviation": "", "isInternal": 0}
 
@@ -19078,6 +19298,20 @@ PAYCOM_ORGS = {
     "Willapa Harbor Hospital": "1CE156A1130475F99587970A20A06B83",   # 17 rows, 17 in South Bend, WA (CMS 501303)
     "Boone Memorial Hospital": "5D081DBD4ECDEB7A95B75001A827B58F",   # 19 rows, 16 in Madison, WV (CMS 511313)
     "Memorial Hospital of Carbon County": "0E1938E34C046A782F7C4035270FA096",   # 17 rows, 17 in Rawlins, WY (CMS 531316)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Washington Regional Medical Center": "8DB2A037AA9570E8305F90774012AD8E",   # [10-27 dry run] 84 rows / 81 in town / RN 17; CMS 040004
+    "Fairfield Medical Center": "73A000C6C682ED2B2B05CF23D62462E8",   # [10-27 dry run] 101 rows / 100 in town / RN 27; CMS 360072
+    "Trinity Health (Minot)": "E32A77D88C6BCC7B836ED79F274E9EBF",   # [10-27 dry run] 188 rows / 181 in town / RN 46; CMS 350006, 351305
+    "Bristol Hospital": "4597F1280A2AA5933921106F1AFB8700",   # [10-27 dry run] 180 rows / 180 in town / RN 40; CMS 070029
+    "Lake Region Healthcare": "1A7B46CA8E301A3037C03B992EDBE9E6",   # [10-27 dry run] 69 rows / 60 in town / RN 19; CMS 240052, 241379
+    "Methodist Rehabilitation Center": "DA601DE5FDD2AF5958CC3B273469A638",   # [10-27 dry run] 43 rows / 39 in town / RN 14; CMS 250152
+    "Schoolcraft Memorial Hospital": "E693DE00DA22B02A79DB46B631265FE0",   # [10-27 dry run] 34 rows / 34 in town / RN 10; CMS 231303
+    "St. John's Health (Jackson)": "5164671CDCC11A3BAD413D14974B1AAA",   # [10-27 dry run] 36 rows / 35 in town / RN 7; CMS 530015
+    "Mountain View Hospital (Idaho Falls)": "2F7486FAE11A9F442FC7841B33514458",   # [10-27 dry run] 176 rows / 142 in town / RN 17; CMS 130065
+    "Cantex Continuing Care": "5D0D962A20961FDE966647E0CA5D5F18",   # [10-27 dry run] 290 rows / RN 60; top towns Carrollton, TX 35, San Antonio, TX 26, Houston, TX 14
 }
 
 # 2026-09-25 (B2): Paycom boards outside Texas; a preview whose location has no
@@ -19170,6 +19404,17 @@ PAYCOM_DEFAULT_STATE = {
     "Willapa Harbor Hospital": "WA",
     "Boone Memorial Hospital": "WV",
     "Memorial Hospital of Carbon County": "WY",
+    # 2026-10-27 RN gap, long tail: Paycom boards outside Texas.
+    "Washington Regional Medical Center": "AR",
+    "Fairfield Medical Center": "OH",
+    "Trinity Health (Minot)": "ND",
+    "Bristol Hospital": "CT",
+    "Lake Region Healthcare": "MN",
+    "Methodist Rehabilitation Center": "MS",
+    "Schoolcraft Memorial Hospital": "MI",
+    "St. John's Health (Jackson)": "WY",
+    "Mountain View Hospital (Idaho Falls)": "ID",
+    "Cantex Continuing Care": "TX",
 }
 
 _PAYCOM_LIST = "https://www.paycomonline.net/v4/ats/web.php/jobs"
