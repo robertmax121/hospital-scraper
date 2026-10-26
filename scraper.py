@@ -2479,6 +2479,17 @@ WORKDAY_TENANTS = {
     "Arkansas Children's":       ("archildrens",         "1",   "External_Career_Site"),              # [225] Little Rock + Springdale AR (town in the path and the first bullet)
     "Emanate Health":            ("cvhp",                "5",   "EmanateHealth"),                     # [189] Covina / Glendora / West Covina CA
     "Rady Children's Health":    ("rch",                 "108", "Careers"),                           # [100] CHOC: Orange + Mission Viejo CA
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Aspen Valley Hospital": ("aspenvalleyhealth", "501", "AVH"),   # 66 rows, 55 in Aspen, CO (CMS 061324)
+    "Centerstone": ("centerstone", "5", "CenterstoneCareers"),   # 189 rows, 21 in Bradenton, FL (CMS 104040)
+    "Waverly Health Center": ("waverlyhealthcenter", "12", "WHC"),   # 37 rows, 36 in Waverly, IA, 1 with no town (location default) (CMS 161339)
+    "Wood County Hospital": ("woodcountyhospital", "503", "jobs"),   # 57 rows, 0 in Bowling Green, OH, 52 with no town (location default) (CMS 360029)
+    "Wyandot Memorial Hospital": ("wyandotmemorial", "1", "WMH_Careers"),   # 18 rows, 0 in Upper Sandusky, OH, 18 with no town (location default) (CMS 361329)
+    "Brookings Health System": ("avera", "5", "BHS-careers"),   # 19 rows, 19 in Brookings, SD (CMS 430008)
+    "Summit Pacific Medical Center": ("spmc", "5", "summitpacificmedicalcenter"),   # 45 rows, 42 in Elma, WA (CMS 501304)
+    "Sauk Prairie Hospital": ("saukprairiehealthcare", "12", "Sauk_Prairie_Healthcare_Careers"),   # 48 rows, 37 in Prairie du Sac, WI, 8 with no town (location default) (CMS 520095)
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -3115,6 +3126,301 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     # ("BUILDING A", "Patient Accounts Center") stood in the city column.
     "Pikeville Medical Center": ("Pikeville", "KY"),
     "Pullman Regional Hospital": ("Pullman", "WA"),
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Bartlett Regional Hospital": ("Juneau", "AK"),
+    "Central Peninsula General Hospital": ("Soldotna", "AK"),
+    "Kanakanak Hospital": ("Dillingham", "AK"),
+    "Norton Sound Regional Hospital": ("Nome", "AK"),
+    "South Peninsula Hospital": ("Homer", "AK"),
+    "Bibb Medical Center": ("Centreville", "AL"),
+    "Jack Hughston Memorial Hospital": ("Phenix City", "AL"),
+    "Mizell Memorial Hospital": ("Opp", "AL"),
+    "Northeast Alabama Regional Medical Center": ("Anniston", "AL"),
+    "Bradley County Medical Center": ("Warren", "AR"),
+    "Johnson Regional Medical Center": ("Clarksville", "AR"),
+    "Mena Regional Health System": ("Mena", "AR"),
+    "North Arkansas Regional Medical Center": ("Harrison", "AR"),
+    "Cobre Valley Regional Medical Center": ("Globe", "AZ"),
+    "Destiny Springs Healthcare": ("Surprise", "AZ"),
+    "Fort Defiance Indian Hospital": ("Fort Defiance", "AZ"),
+    "La Paz Regional Hospital": ("Parker", "AZ"),
+    "Little Colorado Medical Center": ("Winslow", "AZ"),
+    "Mt. Graham Regional Medical Center": ("Safford", "AZ"),
+    "Sage Memorial Hospital": ("Ganado", "AZ"),
+    "San Carlos Apache Healthcare": ("Peridot", "AZ"),
+    "Alhambra Hospital Medical Center": ("Alhambra", "CA"),
+    "Colusa Medical Center": ("Colusa", "CA"),
+    "Healthbridge Children's Hospital - Orange": ("Orange", "CA"),
+    "Henry Mayo Newhall Hospital": ("Valencia", "CA"),
+    "Mammoth Hospital": ("Mammoth Lakes", "CA"),
+    "Modoc Medical Center": ("Alturas", "CA"),
+    "Palo Verde Hospital": ("Blythe", "CA"),
+    "Pioneers Memorial Healthcare District": ("Brawley", "CA"),
+    "Sierra View Medical Center": ("Porterville", "CA"),
+    "Southern Monterey County Memorial Hospital": ("King City", "CA"),
+    "Valley Presbyterian Hospital": ("Van Nuys", "CA"),
+    "Animas Surgical Hospital": ("Durango", "CO"),
+    "Aspen Valley Hospital": ("Aspen", "CO"),
+    "Delta County Memorial Hospital": ("Delta", "CO"),
+    "Pioneers Medical Center": ("Meeker", "CO"),
+    "Family Health West Hospital": ("Fruita", "CO"),
+    "Gunnison Valley Health": ("Gunnison", "CO"),
+    "Kit Carson County Memorial Hospital": ("Burlington", "CO"),
+    "Lincoln Health Hospital": ("Hugo", "CO"),
+    "Mt. San Rafael Hospital": ("Trinidad", "CO"),
+    "Pagosa Springs Medical Center": ("Pagosa Springs", "CO"),
+    "St. Vincent General Hospital District": ("Leadville", "CO"),
+    "Connecticut Hospice": ("Branford", "CT"),
+    "Eastside Psychiatric Hospital": ("Tallahassee", "FL"),
+    "Candler County Hospital": ("Metter", "GA"),
+    "Effingham Health System": ("Springfield", "GA"),
+    "Emanuel Medical Center (Swainsboro)": ("Swainsboro", "GA"),
+    "Evans Memorial Hospital": ("Claxton", "GA"),
+    "Jasper Memorial Hospital": ("Monticello", "GA"),
+    "Jeff Davis Hospital (Hazlehurst)": ("Hazlehurst", "GA"),
+    "Jenkins County Medical Center": ("Millen", "GA"),
+    "Miller County Hospital": ("Colquitt", "GA"),
+    "Morgan Medical Center": ("Madison", "GA"),
+    "Ridgeview Institute Monroe": ("Monroe", "GA"),
+    "Upson Regional Medical Center": ("Thomaston", "GA"),
+    "Cass County Memorial Hospital": ("Atlantic", "IA"),
+    "Cherokee Regional Medical Center": ("Cherokee", "IA"),
+    "Clarinda Regional Health Center": ("Clarinda", "IA"),
+    "Crawford County Memorial Hospital": ("Denison", "IA"),
+    "Mahaska Health Partnership": ("Oskaloosa", "IA"),
+    "Montgomery County Memorial Hospital": ("Red Oak", "IA"),
+    "Myrtue Medical Center": ("Harlan", "IA"),
+    "St. Anthony Regional Hospital & Nursing Home": ("Carroll", "IA"),
+    "Virginia Gay Hospital": ("Vinton", "IA"),
+    "Waverly Health Center": ("Waverly", "IA"),
+    "Bonner General Hospital": ("Sandpoint", "ID"),
+    "Boundary Community Hospital": ("Bonners Ferry", "ID"),
+    "Caribou Medical Center": ("Soda Springs", "ID"),
+    "Franklin County Medical Center": ("Preston", "ID"),
+    "Minidoka Memorial Hospital": ("Rupert", "ID"),
+    "North Canyon Medical Center": ("Gooding", "ID"),
+    "Northwest Specialty Hospital": ("Post Falls", "ID"),
+    "Shoshone Medical Center": ("Kellogg", "ID"),
+    "Syringa General Hospital": ("Grangeville", "ID"),
+    "Teton Valley Hospital": ("Driggs", "ID"),
+    "Chicago Behavioral Hospital": ("Des Plaines", "IL"),
+    "Crawford Memorial Hospital": ("Robinson", "IL"),
+    "Hillsboro Area Hospital": ("Hillsboro", "IL"),
+    "Hopedale Hospital": ("Hopedale", "IL"),
+    "Iroquois Memorial Hospital": ("Watseka", "IL"),
+    "Lake Behavioral Hospital": ("Waukegan", "IL"),
+    "Lawrence County Memorial Hospital": ("Lawrenceville", "IL"),
+    "McDonough District Hospital": ("Macomb", "IL"),
+    "Morrison Community Hospital": ("Morrison", "IL"),
+    "Paris Community Hospital": ("Paris", "IL"),
+    "Silver Oaks Behavioral Hospital": ("New Lenox", "IL"),
+    "Sparta Community Hospital": ("Sparta", "IL"),
+    "Thomas H Boyd Memorial Hospital": ("Carrollton", "IL"),
+    "Wabash General Hospital": ("Mt Carmel", "IL"),
+    "Cameron Memorial Community Hospital": ("Angola", "IN"),
+    "Incompass Healthcare": ("Lawrenceburg", "IN"),
+    "Unity Physicians Hospital": ("Mishawaka", "IN"),
+    "Ascentist Hospital": ("Leawood", "KS"),
+    "Clara Barton Hospital": ("Hoisington", "KS"),
+    "Coffey County Hospital": ("Burlington", "KS"),
+    "Community HealthCare System": ("Onaga", "KS"),
+    "Community Memorial Healthcare (Marysville)": ("Marysville", "KS"),
+    "Holton Community Hospital": ("Holton", "KS"),
+    "Rice Community Healthcare": ("Lyons", "KS"),
+    "Hospital District #6 Patterson Health Center": ("Anthony", "KS"),
+    "Kansas City Orthopaedic Institute": ("Leawood", "KS"),
+    "Kansas Medical Center": ("Andover", "KS"),
+    "Kansas Spine & Specialty Hospital": ("Wichita", "KS"),
+    "Manhattan Surgical Hospital": ("Manhattan", "KS"),
+    "Meade District Hospital": ("Meade", "KS"),
+    "Nemaha Valley Community Hospital": ("Seneca", "KS"),
+    "Norton County Hospital": ("Norton", "KS"),
+    "Osborne County Memorial Hospital": ("Osborne", "KS"),
+    "Phillips County Hospital": ("Phillipsburg", "KS"),
+    "Pratt Regional Medical Center": ("Pratt", "KS"),
+    "Scott County Hospital": ("Scott City", "KS"),
+    "Summit Surgical Hospital (Hutchinson)": ("Hutchinson", "KS"),
+    "William Newton Hospital": ("Winfield", "KS"),
+    "Caldwell Medical Center": ("Princeton", "KY"),
+    "Carroll County Memorial Hospital": ("Carrollton", "KY"),
+    "Kentucky River Medical Center": ("Jackson", "KY"),
+    "Livingston Hospital and Healthcare Services": ("Salem", "KY"),
+    "Ohio County Hospital": ("Hartford", "KY"),
+    "Trigg County Hospital": ("Cadiz", "KY"),
+    "Allen Parish Hospital": ("Kinder", "LA"),
+    "Avoyelles Hospital": ("Marksville", "LA"),
+    "Bunkie General Hospital": ("Bunkie", "LA"),
+    "Lafayette Surgical Specialty Hospital": ("Lafayette", "LA"),
+    "Opelousas General Health System": ("Opelousas", "LA"),
+    "Spine Hospital of Louisiana": ("Baton Rouge", "LA"),
+    "St. James Parish Hospital": ("Lutcher", "LA"),
+    "Surgical Specialty Center of Baton Rouge": ("Baton Rouge", "LA"),
+    "Winn Parish Medical Center": ("Winnfield", "LA"),
+    "Bournewood Hospital": ("Brookline", "MA"),
+    "Hospital for Behavioral Medicine": ("Worcester", "MA"),
+    "Cary Medical Center": ("Caribou", "ME"),
+    "Mount Desert Island Hospital": ("Bar Harbor", "ME"),
+    "Northern Maine Medical Center": ("Fort Kent", "ME"),
+    "Eaton Rapids Medical Center": ("EATON RAPIDS", "MI"),
+    "Hillsdale Hospital": ("Hillsdale", "MI"),
+    "Sheridan Community Hospital": ("Sheridan", "MI"),
+    "Straith Hospital for Special Surgery": ("Southfield", "MI"),
+    "Chippewa County Hospital": ("Montevideo", "MN"),
+    "Gillette Children's Specialty Healthcare": ("St Paul", "MN"),
+    "Glacial Ridge Hospital": ("Glenwood", "MN"),
+    "Kittson Healthcare": ("Hallock", "MN"),
+    "Lakewood Health System": ("Staples", "MN"),
+    "LifeCare Medical Center": ("Roseau", "MN"),
+    "Mahnomen Health Center": ("Mahnomen", "MN"),
+    "Mille Lacs Health System": ("Onamia", "MN"),
+    "Rainy Lake Medical Center": ("International Falls", "MN"),
+    "River's Edge Hospital & Clinic": ("Saint Peter", "MN"),
+    "RiverView Health": ("Crookston", "MN"),
+    "Riverwood Healthcare Center": ("Aitkin", "MN"),
+    "Sleepy Eye Medical Center": ("Sleepy Eye", "MN"),
+    "United Hospital District": ("Blue Earth", "MN"),
+    "Ranken Jordan Pediatric Bridge Hospital": ("Maryland Heights", "MO"),
+    "Ray County Memorial Hospital": ("Richmond", "MO"),
+    "Ste Genevieve County Memorial Hospital": ("STE. GENEVIEVE", "MO"),
+    "King's Daughters Medical Center-Brookhaven": ("Brookhaven", "MS"),
+    "South Sunflower County Hospital": ("Indianola", "MS"),
+    "Tyler Holmes Memorial Hospital": ("Winona", "MS"),
+    "Glendive Medical Center": ("Glendive", "MT"),
+    "Granite County Medical Center": ("Philipsburg", "MT"),
+    "Mineral Community Hospital": ("Superior", "MT"),
+    "Rosebud Health Care Center": ("Forsyth", "MT"),
+    "Shodair Children's Hospital": ("Helena", "MT"),
+    "Granville Health Systems": ("Oxford", "NC"),
+    "Iredell Davis Behavioral Health Hospital": ("Statesville", "NC"),
+    "Heart of America Medical Center": ("Rugby", "ND"),
+    "Jamestown Regional Medical Center": ("Jamestown", "ND"),
+    "McKenzie County Healthcare Systems": ("Watford City", "ND"),
+    "Sakakawea Medical Center - Cah": ("HAZEN", "ND"),
+    "St. Luke's Hospital (Crosby)": ("Crosby", "ND"),
+    "Towner County Medical Center": ("Cando", "ND"),
+    "Antelope Memorial Hospital": ("NELIGH", "NE"),
+    "Beatrice Community Hospital & Health Center": ("Beatrice", "NE"),
+    "Box Butte General Hospital": ("Alliance", "NE"),
+    "Brodstone Healthcare": ("Superior", "NE"),
+    "Chadron Community Hospital and Health Services": ("Chadron", "NE"),
+    "Cherry County Hospital": ("Valentine", "NE"),
+    "Community Hospital (McCook)": ("McCook", "NE"),
+    "Fillmore County Hospital": ("Geneva", "NE"),
+    "Gordon Memorial Hospital District": ("Gordon", "NE"),
+    "Jefferson Community Health & Life": ("Fairbury", "NE"),
+    "Kearney County Health Services Hospital": ("Minden", "NE"),
+    "Kimball Health Services": ("Kimball", "NE"),
+    "Lexington Regional Health Center": ("Lexington", "NE"),
+    "Lincoln Surgical Hospital": ("Lincoln", "NE"),
+    "Memorial Hospital (Aurora)": ("Aurora", "NE"),
+    "Morrill County Community Hospital": ("Bridgeport", "NE"),
+    "Phelps Memorial Health Center": ("Holdrege", "NE"),
+    "Providence Medical Center (Wayne)": ("Wayne", "NE"),
+    "Syracuse Area Health": ("Syracuse", "NE"),
+    "Valley County Health System": ("Ord", "NE"),
+    "Webster County Community Hospital": ("Red Cloud", "NE"),
+    "York General Health Care Services": ("York", "NE"),
+    "Huggins Hospital": ("Wolfeboro", "NH"),
+    "Littleton Regional Healthcare": ("Littleton", "NH"),
+    "Bergen New Bridge Medical Center": ("Paramus", "NJ"),
+    "Carewell Health Medical Center": ("East Orange", "NJ"),
+    "Artesia General Hospital": ("Artesia", "NM"),
+    "Central Desert Behavioral Health Hospital": ("Albuquerque", "NM"),
+    "Cibola General Hospital": ("Grants", "NM"),
+    "Gila Regional Medical Center": ("Silver City", "NM"),
+    "Holy Cross Medical Center (Taos)": ("Taos", "NM"),
+    "Nor-Lea Hospital District": ("Lovington", "NM"),
+    "Roosevelt General Hospital": ("Portales", "NM"),
+    "Three Crosses Regional Hospital": ("Las Cruces", "NM"),
+    "Desert Parkway Behavioral Healthcare Hospital": ("Las Vegas", "NV"),
+    "Harmon Hospital": ("Las Vegas", "NV"),
+    "Pershing General Hospital": ("Lovelock", "NV"),
+    "Brylin Hospitals": ("Buffalo", "NY"),
+    "Nathan Littauer Hospital": ("Gloversville", "NY"),
+    "Adams County Regional Medical Center": ("Seaman", "OH"),
+    "Blueridge Vista Health and Wellness": ("Cincinnati", "OH"),
+    "Mary Rutan Hospital": ("Bellefontaine", "OH"),
+    "Ohio Valley Surgical Hospital": ("Springfield", "OH"),
+    "Summa Western Reserve Hospital": ("Cuyahoga Falls", "OH"),
+    "Sunrise Vista Health and Wellness": ("Canton", "OH"),
+    "Wayne Hospital": ("Greenville", "OH"),
+    "Wood County Hospital": ("Bowling Green", "OH"),
+    "Wyandot Memorial Hospital": ("Upper Sandusky", "OH"),
+    "Atoka County Medical Center": ("Atoka", "OK"),
+    "The Children's Center Rehabilitation Hospital": ("Bethany", "OK"),
+    "Cleveland Area Hospital": ("Cleveland", "OK"),
+    "Coal County General Hospital": ("Coalgate", "OK"),
+    "Jackson County Memorial Hospital Authority": ("Altus", "OK"),
+    "McAlester Regional Health Center": ("McAlester", "OK"),
+    "McCurtain Memorial Hospital": ("Idabel", "OK"),
+    "Stilwell Memorial Hospital": ("Stilwell", "OK"),
+    "Oklahoma Heart Hospital": ("Oklahoma City", "OK"),
+    "Oklahoma Surgical Hospital": ("Tulsa", "OK"),
+    "OneCore Health": ("Oklahoma City", "OK"),
+    "Parkside Psychiatric Hospital": ("Tulsa", "OK"),
+    "Pawhuska Hospital": ("Pawhuska", "OK"),
+    "Summit Medical Center (Edmond)": ("Edmond", "OK"),
+    "Surgical Hospital of Oklahoma": ("Oklahoma City", "OK"),
+    "Wagoner Community Hospital": ("Wagoner", "OK"),
+    "Curry General Hospital": ("Gold Beach", "OR"),
+    "Harney District Hospital": ("Burns", "OR"),
+    "Southern Coos Hospital & Health Center": ("Bandon", "OR"),
+    "Eagleville Hospital": ("Eagleville", "PA"),
+    "OSS Orthopaedic Hospital": ("York", "PA"),
+    "Newberry County Memorial Hospital": ("Newberry", "SC"),
+    "Brookings Health System": ("Brookings", "SD"),
+    "Huron Regional Medical Center": ("Huron", "SD"),
+    "Lifescape": ("Sioux Falls", "SD"),
+    "Prairie Lakes Healthcare System": ("Watertown", "SD"),
+    "Macon Community Hospital": ("Lafayette", "TN"),
+    "Metro Nashville General Hospital": ("Nashville", "TN"),
+    "Collingsworth General Hospital": ("Wellington", "TX"),
+    "Hamilton General Hospital": ("Hamilton", "TX"),
+    "McCamey Hospital": ("McCamey", "TX"),
+    "StarCare Specialty Health": ("Lubbock", "TX"),
+    "Blue Mountain Hospital": ("Blanding", "UT"),
+    "Kane County Hospital": ("Kanab", "UT"),
+    "Uintah Basin Medical Center": ("Roosevelt", "UT"),
+    "Gifford Medical Center": ("Randolph", "VT"),
+    "Springfield Hospital": ("Springfield", "VT"),
+    "Columbia Basin Hospital": ("Ephrata", "WA"),
+    "Coulee Medical Center": ("Grand Coulee", "WA"),
+    "Garfield County Public Hospital District #1": ("Pomeroy", "WA"),
+    "Kittitas Valley Community Hospital": ("Ellensburg", "WA"),
+    "Klickitat Valley Hospital": ("Goldendale", "WA"),
+    "Lake Chelan Community Hospital": ("CHELAN", "WA"),
+    "Mason General Hospital & Family of Clinics": ("Shelton", "WA"),
+    "Mid Valley Hospital & Clinic": ("Omak", "WA"),
+    "Newport Community Hospital": ("Newport", "WA"),
+    "North Valley Hospital": ("Tonasket", "WA"),
+    "Othello Community Hospital": ("Othello", "WA"),
+    "Smokey Point Behavioral Hospital": ("Marysville", "WA"),
+    "Snoqualmie Valley Hospital": ("Snoqualmie", "WA"),
+    "South Sound Behavioral Hospital": ("Lacey", "WA"),
+    "Summit Pacific Medical Center": ("Elma", "WA"),
+    "WhidbeyHealth Medical Center": ("Coupeville", "WA"),
+    "Willapa Harbor Hospital": ("South Bend", "WA"),
+    "Burnett Medical Center": ("Grantsburg", "WI"),
+    "Crossing Rivers Health Medical Center": ("Prairie du Chien", "WI"),
+    "Fort Memorial Hospital": ("Fort Atkinson", "WI"),
+    "Grant Regional Health Center": ("Lancaster", "WI"),
+    "North Central Health Care": ("Wausau", "WI"),
+    "Oakleaf Surgical Hospital": ("Altoona", "WI"),
+    "Richland Hospital": ("Richland Center", "WI"),
+    "Sauk Prairie Hospital": ("Prairie du Sac", "WI"),
+    "Southwest Health Center": ("Platteville", "WI"),
+    "Spooner Health System": ("Spooner", "WI"),
+    "Vernon Memorial Hospital": ("Viroqua", "WI"),
+    "Boone Memorial Hospital": ("Madison", "WV"),
+    "Cody Regional Health": ("Cody", "WY"),
+    "Hot Springs County Memorial Hospital": ("Thermopolis", "WY"),
+    "Memorial Hospital Sweetwater County": ("Rock Springs", "WY"),
+    "Memorial Hospital of Carbon County": ("Rawlins", "WY"),
+    "Niobrara County Hospital District": ("Lusk", "WY"),
+    "North Platte Valley Medical Center": ("Saratoga", "WY"),
+    "Star Valley Medical Center": ("Afton", "WY"),
 }
 
 # Normalize system keys to lowercase
@@ -6856,6 +7162,13 @@ ICIMS_ORGS = {
     "Baptist Health (Birmingham)":      "careers-baptisthealthal.icims.com",    # 383
     "Northern Arizona Healthcare":      "careers-nahealth.icims.com",           # 226, Flagstaff / Cottonwood / Sedona AZ
     "Community Memorial Healthcare":    "careers-cmhshealth.icims.com",         # 118, Ventura / Ojai CA (locations are street addresses)
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "RiverView Health": "careers-riverviewhealth.icims.com",   # 40 rows, 34 in Crookston, MN, 4 with no town (location default) (CMS 241320)
+    "Central Desert Behavioral Health Hospital": "centraldesertbh-careers-fundltc.icims.com",   # 7 rows, 6 in Albuquerque, NM (CMS 324014)
+    "Harmon Hospital": "harmonmedicalrehab-careers-fundltc.icims.com",   # 10 rows, 10 in Las Vegas, NV (CMS 290042)
+    "Oklahoma Heart Hospital": "internal-okheart.icims.com",   # 69 rows, 67 in Oklahoma City, OK (CMS 370215)
 }
 
 
@@ -9556,6 +9869,10 @@ SMARTRECRUITERS_ORGS = {
     # not the senior-living operator. Its 966 rows are retired by
     # sql/push10_retire_and_relabel.sql; Atria Senior Living's real board is
     # still to be found.
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Kittitas Valley Community Hospital": "KittitasValleyHealthcare",   # 45 rows, 40 in Ellensburg, WA (CMS 501333)
 }
 
 async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -12064,6 +12381,44 @@ ADP_ORGS = {
     "Pomerene Hospital": ("dbfe9ed8-f973-4510-9f4b-5fb09d0441fb", "19000101_000001", "OH", "Pomerene Hospital"),   # 16, Millersburg OH
     # ── 2026-10-20 coverage stage 1: no-write dry run that day (rows, the hospital's own town, bodies).
     "Madison Health": ("c02c953b-e6db-45df-b5e3-1303e59d27a7", "19000101_000001", "OH", "Madison Health"),   # 22, London OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Kanakanak Hospital": ("c3cf205d-9677-4dfd-ab98-87a0f91551f4", "19000101_000001", "AK", "Kanakanak Hospital"),   # 55 rows, 42 in Dillingham, AK, 1 with no town (location default) (CMS 021309)
+    "Norton Sound Regional Hospital": ("95989b7d-f38e-4631-bf2a-c33e57ce2877", "19000101_000001", "AK", "Norton Sound Regional Hospital"),   # 266 rows, 263 in Nome, AK, 3 with no town (location default) (CMS 021308)
+    "Bibb Medical Center": ("12f3ca79-156d-401b-8a3c-b14c48f2fa72", "19000101_000001", "AL", "Bibb Medical Center"),   # 5 rows, 5 in Centreville, AL (CMS 010058)
+    "Jack Hughston Memorial Hospital": ("50301a42-faf9-4b9b-a81d-76937ffdd9b0", "19000101_000001", "AL", "Jack Hughston Memorial Hospital"),   # 22 rows, 22 in Phenix City, AL (CMS 010168)
+    "Pioneers Memorial Healthcare District": ("c8be8fe7-2331-4233-8d3e-11ebfffeecdb", "19000101_000001", "CA", "Pioneers Memorial Healthcare District"),   # 137 rows, 87 in Brawley, CA, 6 with no town (location default) (CMS 050342)
+    "Jasper Memorial Hospital": ("8eff549f-e471-4f6b-aede-36699d203506", "19000101_000001", "GA", "Jasper Memorial Hospital"),   # 21 rows, 21 in Monticello, GA (CMS 111303)
+    "Optim Healthcare": ("ce221109-aaa3-47b2-aead-38a00b716f6f", "19000101_000001", "GA", {"Sylvania": "Optim Medical Center - Screven", "Reidsville": "Optim Medical Center - Tattnall"}),   # 23 rows, 6 in Sylvania, GA (CMS 111312); also Reidsville (CMS 111323)
+    "Crawford Memorial Hospital": ("15dc44c7-eab3-4503-a1bc-a66382fbd1f7", "19000101_000001", "IL", "Crawford Memorial Hospital"),   # 35 rows, 28 in Robinson, IL (CMS 141343)
+    "Iroquois Memorial Hospital": ("841b61c7-a8a1-475e-af6f-db1e8f08c427", "19000101_000001", "IL", "Iroquois Memorial Hospital"),   # 39 rows, 38 in Watseka, IL, 1 with no town (location default) (CMS 141353)
+    "Paris Community Hospital": ("6d761223-04f6-4d39-a498-276f6ca9389f", "19000101_000001", "IL", "Paris Community Hospital"),   # 46 rows, 42 in Paris, IL (CMS 141320)
+    "Sparta Community Hospital": ("41ccae75-fff1-4864-b23c-aafa64e376b7", "19000101_000001", "IL", "Sparta Community Hospital"),   # 11 rows, 11 in Sparta, IL (CMS 141349)
+    "Holton Community Hospital": ("c5a636da-e25a-49c2-a8f9-21b2ee0c9cd8", "19000101_000001", "KS", "Holton Community Hospital"),   # 12 rows, 12 in Holton, KS (CMS 171319)
+    "Nemaha Valley Community Hospital": ("7a29495a-7f36-4e90-8ab9-7ee15c9413f7", "19000101_000001", "KS", "Nemaha Valley Community Hospital"),   # 13 rows, 12 in Seneca, KS, 1 with no town (location default) (CMS 171315)
+    "Phillips County Hospital": ("eb9c6c6e-053d-42fe-9759-55564942334b", "19000101_000001", "KS", "Phillips County Hospital"),   # 6 rows, 5 in Phillipsburg, KS, 1 with no town (location default) (CMS 171353)
+    "Allen Parish Hospital": ("11590425-a902-4499-9ca3-b6dbe3e4abcd", "131202839_2", "LA", "Allen Parish Hospital"),   # 8 rows, 8 in Kinder, LA (CMS 190133)
+    "Opelousas General Health System": ("6587fdce-d7b2-436f-815b-bf16ced46fbc", "19000101_000001", "LA", "Opelousas General Health System"),   # 67 rows, 67 in Opelousas, LA (CMS 190017)
+    "Straith Hospital for Special Surgery": ("5f9e1b86-3b1a-48e4-8a4b-d97d224db29d", "19000101_000001", "MI", "Straith Hospital for Special Surgery"),   # 6 rows, 6 in Southfield, MI (CMS 230071)
+    "Riverwood Healthcare Center": ("a7d85d0d-fc6b-44ce-9b96-3bcf63b801e7", "19000101_000001", "MN", "Riverwood Healthcare Center"),   # 29 rows, 28 in Aitkin, MN (CMS 241305)
+    "Mineral Community Hospital": ("eefe8bc9-2bd6-4b8a-9c5d-6fec4ea14d79", "9200854641636_2", "MT", "Mineral Community Hospital"),   # 5 rows, 5 in Superior, MT (CMS 271331)
+    "Beatrice Community Hospital & Health Center": ("5a89661d-77cb-42c6-8b91-c00a04bec13d", "93136854_2053", "NE", "Beatrice Community Hospital & Health Center"),   # 32 rows, 32 in Beatrice, NE (CMS 281364)
+    "Jefferson Community Health & Life": ("a6184af1-a861-4bc2-8fb9-cbd78567d466", "19000101_000001", "NE", "Jefferson Community Health & Life"),   # 3 rows, 3 in Fairbury, NE (CMS 281319)
+    "Littleton Regional Healthcare": ("957eb50b-516a-435d-a4a7-fb5254f17fc1", "19000101_000001", "NH", "Littleton Regional Healthcare"),   # 55 rows, 54 in Littleton, NH (CMS 301302)
+    "Roosevelt General Hospital": ("aa878936-c926-4971-b908-999813b98fd9", "19000101_000001", "NM", "Roosevelt General Hospital"),   # 47 rows, 43 in Portales, NM, 4 with no town (location default) (CMS 320084)
+    "Three Crosses Regional Hospital": ("14099341-86e9-40d6-a7a2-6c57c3d581bd", "19000101_000001", "NM", "Three Crosses Regional Hospital"),   # 56 rows, 56 in Las Cruces, NM (CMS 320091)
+    "Wayne Hospital": ("49021767-48df-4ef6-8582-d34c836c9fa0", "19000101_000001", "OH", "Wayne Hospital"),   # 59 rows, 59 in Greenville, OH (CMS 361335)
+    "McAlester Regional Health Center": ("76891674-f7ec-4886-958b-849556f3b6dd", "19000101_000001", "OK", "McAlester Regional Health Center"),   # 45 rows, 45 in McAlester, OK (CMS 370034)
+    "Oklahoma Surgical Hospital": ("8f6eb758-e42f-4c1c-b16c-25a48cd84b93", "19000101_000001", "OK", "Oklahoma Surgical Hospital"),   # 33 rows, 29 in Tulsa, OK (CMS 370210)
+    "Surgical Hospital of Oklahoma": ("8d443174-4f69-4bc8-abfc-fc444626e916", "19000101_000001", "OK", "Surgical Hospital of Oklahoma"),   # 12 rows, 12 in Oklahoma City, OK (CMS 370201)
+    "Wagoner Community Hospital": ("d852d76d-3c0a-405c-a524-0b0b0cd9ba85", "19000101_000001", "OK", "Wagoner Community Hospital"),   # 32 rows, 32 in Wagoner, OK (CMS 370166)
+    "Southern Coos Hospital & Health Center": ("b9d52d75-5c86-4df1-b92d-35c8ecc38c21", "19000101_000001", "OR", "Southern Coos Hospital & Health Center"),   # 14 rows, 14 in Bandon, OR (CMS 381304)
+    "Macon Community Hospital": ("373aac54-6868-45db-acac-7d30007e6054", "19000101_000001", "TN", "Macon Community Hospital"),   # 15 rows, 14 in Lafayette, TN, 1 with no town (location default) (CMS 441305)
+    "Blue Mountain Hospital": ("a0a9f289-91c0-438e-aa1c-506d2887b887", "19000101_000001", "UT", "Blue Mountain Hospital"),   # 5 rows, 5 in Blanding, UT (CMS 461310)
+    "Grant Regional Health Center": ("84e68b06-658b-4d37-a6d5-20bbc3463ad9", "19000101_000001", "WI", "Grant Regional Health Center"),   # 18 rows, 18 in Lancaster, WI (CMS 521322)
+    "Niobrara County Hospital District": ("a20cd2ad-2b4a-419e-a049-412195d6d6e8", "19000101_000001", "WY", "Niobrara County Hospital District"),   # 13 rows, 13 in Lusk, WY (CMS 531314)
+    "North Platte Valley Medical Center": ("b3cdeb5c-bb64-4686-a838-e84608ae0021", "19000101_000001", "WY", "North Platte Valley Medical Center"),   # 12 rows, 12 in Saratoga, WY (CMS 531317)
 }
 _ADP_API = "https://workforcenow.adp.com/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions"
 _ADP_PORTAL = "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html"
@@ -13727,6 +14082,60 @@ UKG_ORGS = {
     # American Health Partners (Franklin TN): Unity Psychiatric Care's
     # hospitals plus the company's health plan and pharmacy; 97 rows.
     "American Health Partners":           ("https://recruiting2.ultipro.com/TEN1002THMI", "617264f5-2868-4e72-899e-78a68c5361f8", "TN"),   # 97
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Bartlett Regional Hospital": ("https://bartlett.rec.pro.ukg.net/BAR1503BART", "28db10a5-eb40-4dac-8d90-5bad1ab11310", "AK"),   # 69 rows, 69 in Juneau, AK (CMS 020008)
+    "Methodist Family Health": ("https://recruiting2.ultipro.com/MET1015MFHE", "0e63f212-c96d-4306-8d29-0230529a9841", "AR"),   # 60 rows, 8 in Maumelle, AR (CMS 044017)
+    "The CORE Institute": ("https://recruiting.ultipro.com/COR1016COREI", "d1445d2b-c378-4a1e-9e18-d5d1a7565517", "AZ"),   # 186 rows, 66 in Phoenix, AZ, 9 with no town (location default) (CMS 030108)
+    "Fort Defiance Indian Hospital": ("https://recruiting2.ultipro.com/FOR1019FDIH", "7aa05ce1-542f-4ed6-9385-15dab39f6bcd", "AZ"),   # 35 rows, 0 in Fort Defiance, AZ (CMS 030071)
+    "The Healing Place": ("https://polarahealth.rec.pro.ukg.net/POL1502POHE", "aa390afa-5bde-420a-abbd-8f80071f8c64", "AZ"),   # 20 rows, 8 in Prescott, AZ (CMS 034025)
+    "Sierra View Medical Center": ("https://sierraview.rec.pro.ukg.net/SIE1005SVMC", "b614f151-a52a-44c5-9d7e-9485ef47f936", "CA"),   # 46 rows, 0 in Porterville, CA, 46 with no town (location default) (CMS 050261)
+    "Valley Presbyterian Hospital": ("https://valleypres.rec.pro.ukg.net/VAL1505VYPH", "6b03c339-10b4-46a7-a81e-6715086d1518", "CA"),   # 95 rows, 95 in Van Nuys, CA (CMS 050126)
+    "Animas Surgical Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "53b5dba2-c474-42b0-b1b9-c1724fef1e2d", "CO"),   # 24 rows, 24 in Durango, CO (CMS 060117)
+    "Delta County Memorial Hospital": ("https://deltahospital.rec.pro.ukg.net/DEL1509DTCM", "253d7268-1c54-4c49-b525-f435f3deb9a7", "CO"),   # 35 rows, 35 in Delta, CO (CMS 060071)
+    "Pioneers Medical Center": ("https://pioneers.rec.pro.ukg.net/PIO1009ERBH", "59f03e51-a699-4a1a-bc32-99612a394665", "CO"),   # 31 rows, 30 in Meeker, CO (CMS 061325)
+    "Family Health West Hospital": ("https://recruiting.ultipro.com/FAM1007FHW", "cd7d40fb-cb7e-4508-99bc-f7fd7aaa9d32", "CO"),   # 35 rows, 34 in Fruita, CO (CMS 061302)
+    "Gunnison Valley Health": ("https://recruiting2.ultipro.com/GUN1002GNSO", "7d509108-fbb4-44e1-823a-c3d39950b43a", "CO"),   # 41 rows, 40 in Gunnison, CO (CMS 061320)
+    "Cass County Memorial Hospital": ("https://casscounty.rec.pro.ukg.net/CAS1505CAMH", "58a00d6c-4dd7-4d3e-a86f-1748e2bcdeae", "IA"),   # 19 rows, 19 in Atlantic, IA (CMS 161376)
+    "Crawford County Memorial Hospital": ("https://recruiting.ultipro.com/CRA1005CCMH", "2288cfd6-b30d-ce0b-abed-b3c9da0c8f6c", "IA"),   # 14 rows, 14 in Denison, IA (CMS 161369)
+    "Mahaska Health Partnership": ("https://mahaskaukg.rec.pro.ukg.net/MAH1000MAHC", "0d34e7b0-f433-4e51-a750-b2785087496d", "IA"),   # 16 rows, 16 in Oskaloosa, IA (CMS 161379)
+    "Montgomery County Memorial Hospital": ("https://recruiting2.ultipro.com/MON1027MONC", "5ddef1ca-eb1c-4f63-885f-9537416b5a47", "IA"),   # 17 rows, 17 in Red Oak, IA (CMS 161363)
+    "St. Anthony Regional Hospital & Nursing Home": ("https://stanthonyhosp.rec.pro.ukg.net/STA1506STAG", "da0acbc0-0342-4f09-b331-abc6eb8a4a2e", "IA"),   # 29 rows, 1 in Carroll, IA, 28 with no town (location default) (CMS 161382)
+    "Bonner General Hospital": ("https://bonner.rec.pro.ukg.net/BON1503BONN", "e6a6022a-8366-4829-9d4d-f737baac9b7e", "ID"),   # 17 rows, 17 in Sandpoint, ID (CMS 131328)
+    "Northwest Specialty Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "b9809736-4266-441f-b708-7916dceaa58e", "ID"),   # 38 rows, 29 in Post Falls, ID (CMS 130066)
+    "Lawrence County Memorial Hospital": ("https://lawrencecomem.rec.pro.ukg.net/LAW1502LCMH", "35e673f7-bd10-40a1-8a4b-52e5e6308dac", "IL"),   # 13 rows, 13 in Lawrenceville, IL (CMS 141344)
+    "Wabash General Hospital": ("https://recruiting2.ultipro.com/WAB1000WBGH", "33638a3f-c9cc-41d2-8850-be3b44f12bce", "IL"),   # 30 rows, 1 in Mt Carmel, IL (CMS 141327)
+    "Ascentist Hospital": ("https://ascentist.rec.pro.ukg.net/ASC1500AHWS", "fe77992b-147f-4e3a-8323-b85161fa9e51", "KS"),   # 13 rows, 11 in Leawood, KS (CMS 170194)
+    "Kansas Spine & Specialty Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "a1f9eecd-255f-46f2-a5bb-1dd4f95dfd1d", "KS"),   # 7 rows, 7 in Wichita, KS (CMS 170196)
+    "Kentucky River Medical Center": ("https://recruiting2.ultipro.com/QHC1000QHCS", "11c5b1ac-b258-4022-99e9-34fd6421b7f9", "KY"),   # 20 rows, 20 in Jackson, KY (CMS 181334)
+    "Avoyelles Hospital": ("https://allegiance.rec.pro.ukg.net/ALL1049AHMI", "123dea0c-dfc9-4d8b-8381-1c793572e899", "LA"),   # 23 rows, 20 in Marksville, LA (CMS 190099)
+    "Lafayette Surgical Specialty Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "90d84020-217c-4b03-a630-2f5fdbf15cd6", "LA"),   # 4 rows, 4 in Lafayette, LA (CMS 190259)
+    "Winn Parish Medical Center": ("https://allegiance.rec.pro.ukg.net/ALL1049AHMI", "55de8045-0bd5-441f-986b-e1aa833c3b2e", "LA"),   # 5 rows, 5 in Winnfield, LA (CMS 190090)
+    "Hillsdale Hospital": ("https://recruiting.ultipro.com/HIL1007HCHC", "962acc5c-4fb3-4a63-a646-d84c72c1854b", "MI"),   # 20 rows, 20 in Hillsdale, MI (CMS 230037)
+    "Chippewa County Hospital": ("https://recruiting2.ultipro.com/CCM1000CCHE", "13f19108-3d95-4f30-bec7-7b339ded10dc", "MN"),   # 13 rows, 0 in Montevideo, MN, 13 with no town (location default) (CMS 241325)
+    "Gillette Children's Specialty Healthcare": ("https://recruiting2.ultipro.com/GIL1002GCSH", "0a5d892e-feaa-4c51-b816-12c2dbc1167d", "MN"),   # 34 rows, 4 in St Paul, MN (CMS 243300)
+    "LifeCare Medical Center": ("https://recruiting2.ultipro.com/LIF1018LIFEM", "31a6af76-ca9c-432e-9e95-17f29684d3fc", "MN"),   # 30 rows, 24 in Roseau, MN (CMS 241344)
+    "Rainy Lake Medical Center": ("https://rainylake.rec.pro.ukg.net/INT1106IFMH", "52665fd6-c8a6-4a02-aea1-40cd1d26a576", "MN"),   # 33 rows, 33 in International Falls, MN (CMS 241322)
+    "Ranken Jordan Pediatric Bridge Hospital": ("https://myrankenjordan.rec.pro.ukg.net/RAN1501RJHC", "62e8cb2a-5d28-4595-8f07-301316592d12", "MO"),   # 15 rows, 0 in Maryland Heights, MO, 14 with no town (location default) (CMS 263303)
+    "York General Health Care Services": ("https://recruiting2.ultipro.com/YOR1000YKGH", "ad024917-d0b7-4def-b4e3-2241f52e8e89", "NE"),   # 31 rows, 31 in York, NE (CMS 281336)
+    "Huggins Hospital": ("https://hugginshospital.rec.pro.ukg.net/HUG1500HGSP", "52664b36-fe16-4498-9f35-dae2a33f3e69", "NH"),   # 43 rows, 41 in Wolfeboro, NH (CMS 301312)
+    "Bergen New Bridge Medical Center": ("https://recruiting.ultipro.com/BER1003BRMC", "7362b0d4-9214-406f-86b5-85f44c6f1238", "NJ"),   # 89 rows, 89 in Paramus, NJ (CMS 310058)
+    "Summa Western Reserve Hospital": ("https://recruiting.ultipro.com/HRR1000HRBEN", "18e0ca46-5746-4f6f-b2dc-3371c31b05fc", "OH"),   # 57 rows, 52 in Cuyahoga Falls, OH, 4 with no town (location default) (CMS 360150)
+    "Muscogee Nation Health": ("https://mcnhealth.rec.pro.ukg.net/TUL1500TCIC", "50c0b8ba-7d79-4679-b7a0-796cce471b9e", "OK"),   # 186 rows, 15 in Okemah, OK (CMS 371333); also Okmulgee (CMS 370057), Tulsa (CMS 370244)
+    "Curry General Hospital": ("https://recruiting2.ultipro.com/CUR1005CURY", "68f149ac-aaa3-4518-a522-8943df27d2da", "OR"),   # 19 rows, 14 in Gold Beach, OR (CMS 381322)
+    "OSS Orthopaedic Hospital": ("https://recruiting.ultipro.com/OSS1000OSSH", "29d6cd00-310d-59ec-f3dc-321e71ce1992", "PA"),   # 26 rows, 20 in York, PA (CMS 390325)
+    "Lifescape": ("https://lifescape.rec.pro.ukg.net/LIF1501LISC", "57efc672-bd5a-4b6f-8356-1025d3d31cd9", "SD"),   # 27 rows, 23 in Sioux Falls, SD, 4 with no town (location default) (CMS 433300)
+    "Metro Nashville General Hospital": ("https://nashvillemgh.rec.pro.ukg.net/NAS1503NMGH", "5f773009-4590-40ec-ad18-e94460aa60bb", "TN"),   # 38 rows, 38 in Nashville, TN (CMS 440111)
+    "Uintah Basin Medical Center": ("https://recruiting2.ultipro.com/UIN1000UIME", "85250f2c-5522-4b53-af9c-8f360eafe543", "UT"),   # 27 rows, 24 in Roosevelt, UT (CMS 460019)
+    "Newport Community Hospital": ("https://nhhs714.rec.pro.ukg.net/PUB1501PHPOC", "933897cb-aafa-4dc7-976d-20362229a106", "WA"),   # 13 rows, 13 in Newport, WA (CMS 501310)
+    "Fort Memorial Hospital": ("https://forthc.rec.pro.ukg.net/FOR1037FMEM", "a9ddd9e5-a868-47e7-bdf1-2ba96314b7d8", "WI"),   # 51 rows, 51 in Fort Atkinson, WI (CMS 520071)
+    "North Central Health Care": ("https://recruiting2.ultipro.com/NOR1057NCHC", "c14353c6-e9aa-4cd1-8454-2266da3cb835", "WI"),   # 24 rows, 0 in Wausau, WI, 24 with no town (location default) (CMS 524017)
+    "Oakleaf Surgical Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "8dd2bed0-b6d1-4514-9358-c45d96a5cdca", "WI"),   # 14 rows, 14 in Altoona, WI (CMS 520196)
+    "Richland Hospital": ("https://richland.rec.pro.ukg.net/RIC1500TRHI", "d8bbcc76-b530-4c16-9261-a7e0d9fafe98", "WI"),   # 31 rows, 30 in Richland Center, WI (CMS 521341)
+    "Southwest Health Center": ("https://southwesthealth.rec.pro.ukg.net/SOU1502SWHC", "736c3b2b-32cd-4667-a8ad-dc0869f551f5", "WI"),   # 25 rows, 25 in Platteville, WI (CMS 521354)
+    "Tamarack Health": ("https://tamarackhealth.rec.pro.ukg.net/REG1500REGI", "9ad614d0-6df3-4942-bf76-c27dcf6898f9", "WI"),   # 71 rows, 24 in Ashland, WI (CMS 521359); also Hayward (CMS 521336)
+    "Vernon Memorial Hospital": ("https://vernonmemorial.rec.pro.ukg.net/VER1502VMHC", "0c24f5a0-d512-46a1-8785-50dcb9a9dcd6", "WI"),   # 38 rows, 34 in Viroqua, WI (CMS 521348)
 }
 
 # 2026-10-20: the posting's title names the hospital on a board whose
@@ -14615,6 +15024,25 @@ HEALTHCARESOURCE_ORGS = {
     "Beacon Health System":          "beaconhealthsystem",    # 704 of 726, IN / MI
     "CharterCARE Health Partners":   "chartercare",           # 274 of 283, Providence / North Providence RI
     "St. Bernards Healthcare":       "stbernardshealthcare",  # 310, Jonesboro AR
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Central Peninsula General Hospital": "cpgh",   # 119 rows, 119 in Soldotna, AK (CMS 020024)
+    "Northeast Alabama Regional Medical Center": "narmc",   # 292 rows, 292 in Anniston, AL (CMS 010078)
+    "Upson Regional Medical Center": "upson",   # 84 rows, 80 in Thomaston, GA (CMS 110002)
+    "McDonough District Hospital": "mdh",   # 63 rows, 62 in Macomb, IL, 1 with no town (location default) (CMS 140089)
+    "Samaritan Behavioral Center": "behavioralcenter",   # 17 rows, 7 in Detroit, MI (CMS 234040)
+    "Granville Health Systems": "granvillemedical",   # 140 rows, 138 in Oxford, NC (CMS 340127)
+    "Box Butte General Hospital": "bbgh",   # 49 rows, 49 in Alliance, NE (CMS 281360)
+    "Valley County Health System": "valleycounty",   # 10 rows, 10 in Ord, NE (CMS 281353)
+    "Carewell Health Medical Center": "eogh",   # 125 rows, 125 in East Orange, NJ (CMS 310083)
+    "Holy Cross Medical Center (Taos)": "holycrossmedicalcenter",   # 67 rows, 67 in Taos, NM (CMS 321310)
+    "Gifford Medical Center": "giffordhealthcare",   # 50 rows, 44 in Randolph, VT (CMS 471301)
+    "Mason General Hospital & Family of Clinics": "masongeneral",   # 39 rows, 39 in Shelton, WA (CMS 501336)
+    "Snoqualmie Valley Hospital": "snoqualmiehospital",   # 30 rows, 30 in Snoqualmie, WA (CMS 501338)
+    "Cody Regional Health": "westpark",   # 70 rows, 70 in Cody, WY (CMS 531312)
+    "Hot Springs County Memorial Hospital": "hscmh",   # 22 rows, 21 in Thermopolis, WY (CMS 531304)
+    "Memorial Hospital Sweetwater County": "sweetwatermemorial",   # 34 rows, 34 in Rock Springs, WY (CMS 531318)
 }
 
 # 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
@@ -15156,6 +15584,56 @@ KRONOS_ORGS = {
     "Wilbarger General Hospital": ("secure7.saashr.com", "6215251", "TX"),
     # 2026-09-24 Texas configs: Coryell Health (Gatesville), same UKG Ready API.
     "Coryell Health": ("secure6.saashr.com", "6034202", "TX"),   # 20 (Gatesville 16, Waco 4)
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "South Peninsula Hospital": ("secure6.saashr.com", "6033684", "AK"),   # 70 rows, 70 in Homer, AK (CMS 021313)
+    "Bradley County Medical Center": ("secure7.saashr.com", "6200563", "AR"),   # 11 rows, 11 in Warren, AR (CMS 041327)
+    "Mt. Graham Regional Medical Center": ("secure4.saashr.com", "6162673", "AZ"),   # 37 rows, 34 in Safford, AZ (CMS 031319)
+    "San Carlos Apache Healthcare": ("secure6.entertimeonline.com", "6144973", "AZ"),   # 49 rows, 47 in Peridot, AZ (CMS 031320)
+    "Alhambra Hospital Medical Center": ("prd01-hcm01.prd", "6004578", "CA"),   # 28 rows, 28 in Alhambra, CA (CMS 050281)
+    "Southern Monterey County Memorial Hospital": ("prd01-hcm01.prd", "6036332", "CA"),   # 52 rows, 48 in King City, CA (CMS 051336)
+    "Mt. San Rafael Hospital": ("secure4.saashr.com", "6033795", "CO"),   # 24 rows, 24 in Trinidad, CO (CMS 061321)
+    "St. Vincent General Hospital District": ("secure7.saashr.com", "6205489", "CO"),   # 19 rows, 19 in Leadville, CO (CMS 061319)
+    "Cherokee Regional Medical Center": ("secure6.saashr.com", "6174217", "IA"),   # 25 rows, 18 in Cherokee, IA (CMS 161362)
+    "Clarinda Regional Health Center": ("secure4.saashr.com", "6172951", "IA"),   # 42 rows, 41 in Clarinda, IA (CMS 161352)
+    "Iowa Specialty Hospital": ("prd01-hcm01.prd", "6016816", "IA"),   # 55 rows, 16 in Belmond, IA (CMS 161301); also Clarion (CMS 161302)
+    "Myrtue Medical Center": ("secure6.saashr.com", "6164612", "IA"),   # 19 rows, 19 in Harlan, IA (CMS 161374)
+    "Caribou Medical Center": ("secure7.saashr.com", "6006526", "ID"),   # 8 rows, 8 in Soda Springs, ID (CMS 131309)
+    "Syringa General Hospital": ("secure6.saashr.com", "6148416", "ID"),   # 23 rows, 23 in Grangeville, ID (CMS 131315)
+    "Teton Valley Hospital": ("secure6.saashr.com", "6195100", "ID"),   # 16 rows, 16 in Driggs, ID (CMS 131313)
+    "Morrison Community Hospital": ("secure7.saashr.com", "6213465", "IL"),   # 14 rows, 14 in Morrison, IL (CMS 141329)
+    "Unity Physicians Hospital": ("secure7.saashr.com", "6137938", "IN"),   # 9 rows, 9 in Mishawaka, IN (CMS 150177)
+    "Clara Barton Hospital": ("secure4.saashr.com", "6012351", "KS"),   # 9 rows, 9 in Hoisington, KS (CMS 171333)
+    "Community HealthCare System": ("secure6.saashr.com", "6168248", "KS"),   # 54 rows, 35 in Onaga, KS (CMS 171354)
+    "Community Memorial Healthcare (Marysville)": ("secure6.saashr.com", "6059803", "KS"),   # 10 rows, 10 in Marysville, KS (CMS 171363)
+    "Kansas Medical Center": ("secure.entertimeonline.com", "6079352", "KS"),   # 25 rows, 21 in Andover, KS (CMS 170197)
+    "Norton County Hospital": ("secure6.saashr.com", "6198189", "KS"),   # 7 rows, 7 in Norton, KS (CMS 171348)
+    "St. James Parish Hospital": ("secure4.saashr.com", "6167570", "LA"),   # 5 rows, 5 in Lutcher, LA (CMS 191305)
+    "Northern Maine Medical Center": ("secure4.saashr.com", "6033683", "ME"),   # 47 rows, 47 in Fort Kent, ME (CMS 201317)
+    "Eaton Rapids Medical Center": ("secure6.saashr.com", "6007842", "MI"),   # 28 rows, 28 in EATON RAPIDS, MI (CMS 231324)
+    "River's Edge Hospital & Clinic": ("secure3.saashr.com", "6114104", "MN"),   # 7 rows, 0 in Saint Peter, MN (CMS 241334)
+    "Sleepy Eye Medical Center": ("secure6.saashr.com", "6192194", "MN"),   # 2 rows, 2 in Sleepy Eye, MN (CMS 241327)
+    "King's Daughters Medical Center-Brookhaven": ("prd01-hcm01.prd", "6052038", "MS"),   # 24 rows, 24 in Brookhaven, MS (CMS 250057)
+    "Heart of America Medical Center": ("secure4.entertimeonline.com", "6012738", "ND"),   # 17 rows, 17 in Rugby, ND (CMS 351332)
+    "Sakakawea Medical Center - Cah": ("secure6.saashr.com", "6158386", "ND"),   # 13 rows, 13 in HAZEN, ND (CMS 351310)
+    "Towner County Medical Center": ("secure7.saashr.com", "6203739", "ND"),   # 8 rows, 8 in Cando, ND (CMS 351331)
+    "Antelope Memorial Hospital": ("secure7.saashr.com", "6168212", "NE"),   # 6 rows, 6 in NELIGH, NE (CMS 281326)
+    "Community Hospital (McCook)": ("secure10.saashr.com", "6009809", "NE"),   # 23 rows, 23 in McCook, NE (CMS 281363)
+    "Morrill County Community Hospital": ("secure6.saashr.com", "6183103", "NE"),   # 7 rows, 7 in Bridgeport, NE (CMS 281318)
+    "Phelps Memorial Health Center": ("secure4.saashr.com", "6131901", "NE"),   # 4 rows, 4 in Holdrege, NE (CMS 281362)
+    "Providence Medical Center (Wayne)": ("secure7.saashr.com", "6217024", "NE"),   # 11 rows, 11 in Wayne, NE (CMS 281345)
+    "Nor-Lea Hospital District": ("prd01-hcm01.npr", "6163093", "NM"),   # 47 rows, 38 in Lovington, NM (CMS 321305)
+    "Nathan Littauer Hospital": ("secure7.saashr.com", "6101323", "NY"),   # 93 rows, 93 in Gloversville, NY (CMS 330276)
+    "Adams County Regional Medical Center": ("secure7.saashr.com", "6146950", "OH"),   # 13 rows, 13 in Seaman, OH (CMS 361326)
+    "Crystal Clinic Orthopaedic Center": ("secure4.saashr.com", "6097121", "OH"),   # 96 rows, 33 in Akron, OH (CMS 360351)
+    "McCurtain Memorial Hospital": ("secure6.saashr.com", "6181684", "OK"),   # 8 rows, 7 in Idabel, OK (CMS 371342)
+    "StarCare Specialty Health": ("secure7.saashr.com", "6209217", "TX"),   # 21 rows, 21 in Lubbock, TX (CMS 454093)
+    "Columbia Basin Hospital": ("secure6.saashr.com", "6194802", "WA"),   # 21 rows, 21 in Ephrata, WA (CMS 501317)
+    "Lake Chelan Community Hospital": ("secure6.saashr.com", "6171358", "WA"),   # 41 rows, 41 in CHELAN, WA (CMS 501334)
+    "North Valley Hospital": ("secure7.saashr.com", "6204309", "WA"),   # 17 rows, 17 in Tonasket, WA (CMS 501321)
+    "Othello Community Hospital": ("secure6.saashr.com", "6154361", "WA"),   # 7 rows, 7 in Othello, WA (CMS 501318)
+    "Spooner Health System": ("secure6.entertimeonline.com", "6148886", "WI"),   # 8 rows, 8 in Spooner, WI (CMS 521332)
 }
 
 
@@ -16163,6 +16641,16 @@ APPLICANTPRO_ORGS = {
     # hospitals on UKG, see UKG_ORGS).
     "Minden Medical Center": ("mindenmedicalcenter", ""),                           # 52, Minden LA
     "Northern Louisiana Medical Center": ("northernlouisianamedicalcenter", ""),     # 40, Ruston LA
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Cobre Valley Regional Medical Center": ("cvrmc", "11028"),   # 29 rows, 25 in Globe, AZ (CMS 031314)
+    "Mille Lacs Health System": ("mlhealth", "5609"),   # 45 rows, 44 in Onamia, MN (CMS 241356)
+    "United Hospital District": ("uhd", "5031"),   # 9 rows, 6 in Blue Earth, MN (CMS 241369)
+    "Glendive Medical Center": ("gmc", "20224"),   # 28 rows, 28 in Glendive, MT (CMS 271332)
+    "Granite County Medical Center": ("granitecountyhospital", "185"),   # 11 rows, 11 in Philipsburg, MT (CMS 271303)
+    "Harney District Hospital": ("harneydh", "11796"),   # 17 rows, 17 in Burns, OR (CMS 381307)
+    "Garfield County Public Hospital District #1": ("pomeroymd", "4176"),   # 9 rows, 9 in Pomeroy, WA (CMS 501301)
 }
 _APPLICANTPRO_PARAMS = {"cityUrl": "", "countryAbbreviation": "", "stateAbbreviation": "", "isInternal": 0}
 
@@ -16696,6 +17184,77 @@ PAYCOM_ORGS = {
     "SUN Behavioral Kentucky":    "3DDA687F40025B5B102A6B6072E43AE2",   # 16, Erlanger KY
     "SUN Behavioral Delaware":    "57BE0AE6B74A749D1F2C1B103B4DF34D",   # 20, Georgetown DE
     "Highland District Hospital": "DE6330BB5888C63E02E5ED4D3106FEB3",   # 24, Hillsboro OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Mena Regional Health System": "87C5A8C599EA572A944E97C7C5E3797A",   # 6 rows, 6 in Mena, AR (CMS 041334)
+    "North Arkansas Regional Medical Center": "9E3A1AF7E6BF8A4A3F6C8BFEB06A43E2",   # 71 rows, 71 in Harrison, AR (CMS 040017)
+    "Destiny Springs Healthcare": "73A6320CD88BEBA536A58136A2C6A58B",   # 9 rows, 9 in Surprise, AZ (CMS 034034)
+    "La Paz Regional Hospital": "E08C56984DCF6DB08FD1FDD4659BAC14",   # 22 rows, 20 in Parker, AZ (CMS 031317)
+    "Sage Memorial Hospital": "778ACFA61C583E24FF4645873660AABF",   # 31 rows, 31 in Ganado, AZ (CMS 031309)
+    "Healthbridge Children's Hospital - Orange": "EE76B94DD3BD99C8107675BF70BEB20A",   # 8 rows, 8 in Orange, CA (CMS 053308)
+    "Mammoth Hospital": "898BD2386405070392D5E532BA263B62",   # 30 rows, 22 in Mammoth Lakes, CA (CMS 051303)
+    "Modoc Medical Center": "8FD727396F86FD98562693776B93E3CD",   # 24 rows, 22 in Alturas, CA (CMS 051330)
+    "Palo Verde Hospital": "6FC9C01C65D06229F59C2EB52E3AFEB5",   # 5 rows, 5 in Blythe, CA (CMS 051339)
+    "Kit Carson County Memorial Hospital": "C05E70254DAFB96824DEFC7E4F8E0E49",   # 16 rows, 11 in Burlington, CO, 5 with no town (location default) (CMS 061313)
+    "Lincoln Health Hospital": "3E16471F10EEF7BA8882A6FCAC97D408",   # 10 rows, 9 in Hugo, CO (CMS 061306)
+    "Pagosa Springs Medical Center": "FB1A890F98B1D3DDFF7273EC6DDED38E",   # 32 rows, 32 in Pagosa Springs, CO (CMS 061328)
+    "Connecticut Hospice": "19DBACFCFF3F5B41C4ABD5CDC6C51760",   # 1 rows, 1 in Branford, CT (CMS 070038)
+    "Eastside Psychiatric Hospital": "9B3F69D20DE0FDE45AA00BB5B856F20E",   # 65 rows, 42 in Tallahassee, FL, 2 with no town (location default) (CMS 104059)
+    "Candler County Hospital": "280C4195E9E620B28CBD7D599AD05159",   # 5 rows, 5 in Metter, GA (CMS 111334)
+    "Emanuel Medical Center (Swainsboro)": "CA238BE253E335ECA168F5E2F7CEE6A2",   # 30 rows, 30 in Swainsboro, GA (CMS 110109)
+    "Evans Memorial Hospital": "104895E0E03480D23E475BECDF071242",   # 13 rows, 13 in Claxton, GA (CMS 110142)
+    "Jeff Davis Hospital (Hazlehurst)": "281C91F05C93F85D6DED185D0FEF28CD",   # 14 rows, 14 in Hazlehurst, GA (CMS 111333)
+    "Ridgeview Institute Monroe": "4A1F988C60553FB4CF83C34E49D07627",   # 11 rows, 11 in Monroe, GA (CMS 114037)
+    "Boundary Community Hospital": "B50EAEF436088595D057E8E5CA8B4E3B",   # 15 rows, 15 in Bonners Ferry, ID (CMS 131301)
+    "Chicago Behavioral Hospital": "02959EC098A4CC351ED08B9149CF46CC",   # 13 rows, 13 in Des Plaines, IL (CMS 144040)
+    "Lake Behavioral Hospital": "F561F0AF277B12509F18272BA6C32254",   # 17 rows, 17 in Waukegan, IL (CMS 144042)
+    "Silver Oaks Behavioral Hospital": "D6C9B2B3C32B47F6E1C63393E679852D",   # 13 rows, 3 in New Lenox, IL, 10 with no town (location default) (CMS 144041)
+    "Cameron Memorial Community Hospital": "BBF0A55EF3E4C554EB31F2F2675E8E98",   # 70 rows, 70 in Angola, IN (CMS 151315)
+    "Amberwell Health": "F93347EBD424E4EF1897284D2C8D459A",   # 194 rows, 117 in Atchison, KS, 15 with no town (location default) (CMS 171382); also Hiawatha (CMS 171341)
+    "Coffey County Hospital": "B5D072EC86316F93A7DE9836BD2E8D6F",   # 23 rows, 23 in Burlington, KS (CMS 171385)
+    "Rice Community Healthcare": "0158F19B25768F89F726A2271A97F47F",   # 8 rows, 8 in Lyons, KS (CMS 171330)
+    "Kansas City Orthopaedic Institute": "9D7B03A7BB882E63BA78252C8957ABA0",   # 11 rows, 11 in Leawood, KS (CMS 170188)
+    "Manhattan Surgical Hospital": "57FA64DB6304EA7DE9931724ECBB9448",   # 11 rows, 11 in Manhattan, KS (CMS 170190)
+    "Osborne County Memorial Hospital": "3730077781E48D99F8406F124BFA3992",   # 6 rows, 6 in Osborne, KS (CMS 171364)
+    "Caldwell Medical Center": "A0E52233EB22E4770AB4B9AA4AD4F055",   # 17 rows, 17 in Princeton, KY (CMS 181322)
+    "Carroll County Memorial Hospital": "398B7BEA524C5E3482733562E35A0FA4",   # 7 rows, 6 in Carrollton, KY, 1 with no town (location default) (CMS 181310)
+    "Livingston Hospital and Healthcare Services": "9AB2E051D04E5B26ECEEEFDA9A8CDA12",   # 27 rows, 23 in Salem, KY, 2 with no town (location default) (CMS 181320)
+    "Ohio County Hospital": "0C5629EF50BFA5365B465DBDC44A0785",   # 55 rows, 42 in Hartford, KY (CMS 181323)
+    "Trigg County Hospital": "A578F62423DCFF15464BE89EEEA5336A",   # 17 rows, 17 in Cadiz, KY (CMS 181304)
+    "Surgical Specialty Center of Baton Rouge": "92A8E0D6D08D9AFDAF2261C2F8158845",   # 3 rows, 3 in Baton Rouge, LA (CMS 190251)
+    "Bournewood Hospital": "57361158D3FF01C6C3F0B65B6CADA531",   # 23 rows, 4 in Brookline, MA, 14 with no town (location default) (CMS 224022)
+    "Hospital for Behavioral Medicine": "F61F8FAA56D6F0753BA3190F54D6DF5D",   # 19 rows, 3 in Worcester, MA, 16 with no town (location default) (CMS 224045)
+    "Sheridan Community Hospital": "391B6A97D5A2B77135D1F5D3AF2FDD8C",   # 22 rows, 22 in Sheridan, MI (CMS 231312)
+    "Glacial Ridge Hospital": "51D11DB8BBDEAACB7A9ECC3C72601106",   # 14 rows, 4 in Glenwood, MN, 9 with no town (location default) (CMS 241376)
+    "Lakewood Health System": "2C527ECFE54643820FF338C3FBD8F077",   # 23 rows, 22 in Staples, MN (CMS 241329)
+    "McKenzie County Healthcare Systems": "56DFBC02B9017809529D2909D89CCB36",   # 47 rows, 42 in Watford City, ND (CMS 351302)
+    "Brodstone Healthcare": "D47A4863AFD9565358108B0522B621D6",   # 16 rows, 12 in Superior, NE, 4 with no town (location default) (CMS 281315)
+    "Fillmore County Hospital": "523F46EC6B1864E9E535B93E4995869A",   # 8 rows, 8 in Geneva, NE (CMS 281301)
+    "Gordon Memorial Hospital District": "D75E5F777567445E85BBB07AD2BA82A6",   # 12 rows, 12 in Gordon, NE (CMS 281358)
+    "Lincoln Surgical Hospital": "E13386DBE120AA3652083E099DC16A10",   # 25 rows, 25 in Lincoln, NE (CMS 280127)
+    "Syracuse Area Health": "87D86B019F36F98ACE455A331A4E7EEA",   # 12 rows, 11 in Syracuse, NE (CMS 281309)
+    "Artesia General Hospital": "704B7D084ED420D91018B0DB07C889BE",   # 57 rows, 39 in Artesia, NM, 16 with no town (location default) (CMS 320030)
+    "Brylin Hospitals": "91C4C467CACE0F7C68DD80E0F2B34156",   # 11 rows, 10 in Buffalo, NY, 1 with no town (location default) (CMS 334022)
+    "Mary Rutan Hospital": "1D9C49D4E9701353B4212E6BCA729496",   # 47 rows, 46 in Bellefontaine, OH (CMS 360197)
+    "Atoka County Medical Center": "F06E7D6A3BA6575D65BA3D8528DBDE6B",   # 7 rows, 5 in Atoka, OK, 2 with no town (location default) (CMS 371300)
+    "The Children's Center Rehabilitation Hospital": "7D4E5D43E0EA275B35368287B41F27C0",   # 38 rows, 38 in Bethany, OK (CMS 373303)
+    "Coal County General Hospital": "D9F405A20A0247BF926CDA2982BA9E8F",   # 9 rows, 9 in Coalgate, OK (CMS 371319)
+    "Stilwell Memorial Hospital": "1AA43CB82BCCBA739287732B3D4ED804",   # 6 rows, 6 in Stilwell, OK (CMS 370178)
+    "OneCore Health": "AAE93863A9A50E5859B05C34B90D9432",   # 17 rows, 17 in Oklahoma City, OK (CMS 370220)
+    "Parkside Psychiatric Hospital": "F24B5DD8B19ACF1D75EC0A35C9EE1469",   # 11 rows, 11 in Tulsa, OK (CMS 374021)
+    "Pawhuska Hospital": "01B084E1542C6D2CCAAFB97A42DB5BCB",   # 5 rows, 5 in Pawhuska, OK (CMS 371309)
+    "Summit Medical Center (Edmond)": "7C14F2018A1BF09A207B901ABD1BA047",   # 19 rows, 18 in Edmond, OK (CMS 370225)
+    "Eagleville Hospital": "3C1E98757786B36A0385B8D23A2BBEB7",   # 34 rows, 34 in Eagleville, PA (CMS 390278)
+    "Malvern Behavioral Health": "C3D534C5EB67866599DBFB1F7237D5E0",   # 19 rows, 4 in Philadelphia, PA, 1 with no town (location default) (CMS 394057)
+    "Hamilton General Hospital": "BED56E34E48579D2214701779F45CA51",   # 19 rows, 15 in Hamilton, TX, 4 with no town (location default) (CMS 451392)
+    "Coulee Medical Center": "59A052C2F2C7CDFEFBEBCED3F52A43F9",   # 18 rows, 18 in Grand Coulee, WA (CMS 501308)
+    "Klickitat Valley Hospital": "9D7E216A94F019B126F0649DF68436DB",   # 33 rows, 33 in Goldendale, WA (CMS 501316)
+    "Smokey Point Behavioral Hospital": "CA744E5FCDA461D14FBAE63E57D676F6",   # 22 rows, 22 in Marysville, WA (CMS 504012)
+    "South Sound Behavioral Hospital": "5EE0810D5ACC09AAE0C5493D654184F7",   # 6 rows, 6 in Lacey, WA (CMS 504015)
+    "Willapa Harbor Hospital": "1CE156A1130475F99587970A20A06B83",   # 17 rows, 17 in South Bend, WA (CMS 501303)
+    "Boone Memorial Hospital": "5D081DBD4ECDEB7A95B75001A827B58F",   # 19 rows, 16 in Madison, WV (CMS 511313)
+    "Memorial Hospital of Carbon County": "0E1938E34C046A782F7C4035270FA096",   # 17 rows, 17 in Rawlins, WY (CMS 531316)
 }
 
 # 2026-09-25 (B2): Paycom boards outside Texas; a preview whose location has no
@@ -16717,6 +17276,76 @@ PAYCOM_DEFAULT_STATE = {
     "Santiam Hospital & Clinics": "OR",
     "Seneca Healthcare District": "CA",
     "Valor Health": "ID",
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Mena Regional Health System": "AR",
+    "North Arkansas Regional Medical Center": "AR",
+    "Destiny Springs Healthcare": "AZ",
+    "La Paz Regional Hospital": "AZ",
+    "Sage Memorial Hospital": "AZ",
+    "Healthbridge Children's Hospital - Orange": "CA",
+    "Mammoth Hospital": "CA",
+    "Modoc Medical Center": "CA",
+    "Palo Verde Hospital": "CA",
+    "Kit Carson County Memorial Hospital": "CO",
+    "Lincoln Health Hospital": "CO",
+    "Pagosa Springs Medical Center": "CO",
+    "Connecticut Hospice": "CT",
+    "Eastside Psychiatric Hospital": "FL",
+    "Candler County Hospital": "GA",
+    "Emanuel Medical Center (Swainsboro)": "GA",
+    "Evans Memorial Hospital": "GA",
+    "Jeff Davis Hospital (Hazlehurst)": "GA",
+    "Ridgeview Institute Monroe": "GA",
+    "Boundary Community Hospital": "ID",
+    "Chicago Behavioral Hospital": "IL",
+    "Lake Behavioral Hospital": "IL",
+    "Silver Oaks Behavioral Hospital": "IL",
+    "Cameron Memorial Community Hospital": "IN",
+    "Amberwell Health": "KS",
+    "Coffey County Hospital": "KS",
+    "Rice Community Healthcare": "KS",
+    "Kansas City Orthopaedic Institute": "KS",
+    "Manhattan Surgical Hospital": "KS",
+    "Osborne County Memorial Hospital": "KS",
+    "Caldwell Medical Center": "KY",
+    "Carroll County Memorial Hospital": "KY",
+    "Livingston Hospital and Healthcare Services": "KY",
+    "Ohio County Hospital": "KY",
+    "Trigg County Hospital": "KY",
+    "Surgical Specialty Center of Baton Rouge": "LA",
+    "Bournewood Hospital": "MA",
+    "Hospital for Behavioral Medicine": "MA",
+    "Sheridan Community Hospital": "MI",
+    "Glacial Ridge Hospital": "MN",
+    "Lakewood Health System": "MN",
+    "McKenzie County Healthcare Systems": "ND",
+    "Brodstone Healthcare": "NE",
+    "Fillmore County Hospital": "NE",
+    "Gordon Memorial Hospital District": "NE",
+    "Lincoln Surgical Hospital": "NE",
+    "Syracuse Area Health": "NE",
+    "Artesia General Hospital": "NM",
+    "Brylin Hospitals": "NY",
+    "Mary Rutan Hospital": "OH",
+    "Atoka County Medical Center": "OK",
+    "The Children's Center Rehabilitation Hospital": "OK",
+    "Coal County General Hospital": "OK",
+    "Stilwell Memorial Hospital": "OK",
+    "OneCore Health": "OK",
+    "Parkside Psychiatric Hospital": "OK",
+    "Pawhuska Hospital": "OK",
+    "Summit Medical Center (Edmond)": "OK",
+    "Eagleville Hospital": "PA",
+    "Malvern Behavioral Health": "PA",
+    "Coulee Medical Center": "WA",
+    "Klickitat Valley Hospital": "WA",
+    "Smokey Point Behavioral Hospital": "WA",
+    "South Sound Behavioral Hospital": "WA",
+    "Willapa Harbor Hospital": "WA",
+    "Boone Memorial Hospital": "WV",
+    "Memorial Hospital of Carbon County": "WY",
 }
 
 _PAYCOM_LIST = "https://www.paycomonline.net/v4/ats/web.php/jobs"
@@ -16890,6 +17519,17 @@ PAYCOR_ORGS = {
     "Insight Health": "8a7883d07725ca8701773c07f64d08fa",
     # ── 2026-10-20 coverage stage 1: no-write dry run that day (rows, the hospital's own town, bodies).
     "Wilson Health": "8a7883c67db6c3c2017dbbd3ff28034f",   # 53, Sidney OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Virginia Gay Hospital": "8a7883d08ecaad99018eeac0ae610e93",   # 14 rows, 12 in Vinton, IA (CMS 161349)
+    "Hopedale Hospital": "8a7883d09397efbb0193cfba5aa61148",   # 17 rows, 17 in Hopedale, IL (CMS 141330)
+    "Incompass Healthcare": "8a7883c6876de6fb018775a16c0001d2",   # 9 rows, 8 in Lawrenceburg, IN (CMS 154011)
+    "Kittson Healthcare": "8a7883c698ed62e70199338b155c0ad7",   # 13 rows, 13 in Hallock, MN (CMS 241336)
+    "Blueridge Vista Health and Wellness": "8a7883d09e235989019e427b8067063e",   # 11 rows, 11 in Cincinnati, OH (CMS 364057)
+    "Ohio Valley Surgical Hospital": "8a7883d06dcbf31d016ddb5a316b0f92",   # 17 rows, 15 in Springfield, OH (CMS 360355)
+    "Sunrise Vista Health and Wellness": "8a7883d09e235989019e4290a36206a1",   # 22 rows, 22 in Canton, OH (CMS 364064)
+    "Prairie Lakes Healthcare System": "8a7883c6889839e90188ba9ab67308fb",   # 19 rows, 19 in Watertown, SD (CMS 430005)
 }
 
 _PAYCOR_HOME = "https://recruitingbypaycor.com/career/CareerHome.action"
@@ -17086,6 +17726,68 @@ PAYLOCITY_ORGS = {
     "Odessa Memorial Healthcare Center": ("2c7a5474-14e9-41ce-ac6a-02af4ddc4513", "Lincoln-County-Public-Hospital-District-1", "WA"),   # 16, Odessa WA
     # ── 2026-10-20 coverage stage 1: no-write dry run that day (rows, the hospital's own town, bodies).
     "Hocking Valley Community Hospital": ("c5ccda74-fad8-486c-86b0-f4b1b19e6453", "Hocking-Valley-Community-Hospital", "OH"),   # 29, Logan OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Mizell Memorial Hospital": ("e16c4b8e-a600-44e2-94fa-7d7feb7f92a7", "Mizell-Memorial-Hospital", "AL"),   # 26 rows, 26 in Opp, AL (CMS 010007)
+    "Mississippi County Hospital System": ("e487105c-f7b0-4828-8ebe-e6c818334029", "Mississippi-County-Hospital-System", "AR"),   # 48 rows, 39 in Blytheville, AR (CMS 040069); also Osceola (CMS 040782)
+    "Johnson Regional Medical Center": ("3c60e1bb-558b-4b95-88e9-be63335f5446", "Johnson-Regional-Medical-Center", "AR"),   # 61 rows, 61 in Clarksville, AR (CMS 040002)
+    "Little Colorado Medical Center": ("cf7b76bf-cd6a-4435-9fc1-eb32a8f662c9", "Winslow-Memorial-Hospital-Inc", "AZ"),   # 13 rows, 13 in Winslow, AZ (CMS 031311)
+    "Colusa Medical Center": ("019e5376-bf48-4554-810e-7f3af37c871f", "Colusa-Medical-Center", "CA"),   # 32 rows, 23 in Colusa, CA (CMS 050783)
+    "Effingham Health System": ("39a7f9b4-9481-401a-8a9c-b76710b00d3e", "Effingham-Hospital-Inc", "GA"),   # 50 rows, 39 in Springfield, GA (CMS 111306)
+    "Jenkins County Medical Center": ("0b577f6b-dac6-415e-8149-87f9e2534362", "Hospital-Authority-of-Jenkins-County", "GA"),   # 11 rows, 11 in Millen, GA (CMS 111311)
+    "Miller County Hospital": ("28e4090e-8444-4ea6-aeb0-b93afe488607", "The-Hospital-Authority-of-Miller-County", "GA"),   # 39 rows, 31 in Colquitt, GA (CMS 111305)
+    "Morgan Medical Center": ("1565b57c-7167-42de-9fde-91e19b4ff646", "Morgan-Medical", "GA"),   # 20 rows, 20 in Madison, GA (CMS 111304)
+    "Franklin County Medical Center": ("14d5b25e-11f4-47b7-943e-360c13ead2c5", "Franklin-County-Medical-Center", "ID"),   # 8 rows, 8 in Preston, ID (CMS 131322)
+    "Minidoka Memorial Hospital": ("552af7ef-b4a6-4b52-b6aa-5be315fe7ea3", "Minidoka-Memorial-Hospital", "ID"),   # 11 rows, 7 in Rupert, ID, 4 with no town (location default) (CMS 131319)
+    "North Canyon Medical Center": ("66c10b8a-db4e-403f-9834-34302025568d", "North-Canyon-Medical-Center-Inc", "ID"),   # 30 rows, 22 in Gooding, ID (CMS 131302)
+    "Shoshone Medical Center": ("694d6b2d-57c1-41a9-85f7-3e1b70889858", "Shoshone-Medical-Center", "ID"),   # 16 rows, 15 in Kellogg, ID (CMS 131314)
+    "Hillsboro Area Hospital": ("f4f1113a-c9a7-43ce-939d-c99f3c9b0cca", "Hillsboro-Area-Hospital-Inc", "IL"),   # 17 rows, 17 in Hillsboro, IL (CMS 141332)
+    "Thomas H Boyd Memorial Hospital": ("8b76868b-ecf9-49e8-a7c9-0883a343a0f5", "Boyd-Healthcare-Services", "IL"),   # 10 rows, 8 in Carrollton, IL, 2 with no town (location default) (CMS 141300)
+    "Hospital District #6 Patterson Health Center": ("a0f5c18a-eefe-40c6-ab86-103f70c476b1", "Hospital-District-No-6-of-Harper-County-Kansas", "KS"),   # 6 rows, 6 in Anthony, KS (CMS 171346)
+    "Meade District Hospital": ("aafeb3c5-f379-4786-bb37-b2936758b014", "Meade-District-Hospital", "KS"),   # 7 rows, 6 in Meade, KS (CMS 171321)
+    "Pratt Regional Medical Center": ("da6d037b-47f6-40d4-af26-cabf7d48794d", "Pratt-Regional-Medical-Center", "KS"),   # 14 rows, 13 in Pratt, KS (CMS 170027)
+    "Scott County Hospital": ("89db5ce4-0e71-4c2e-9701-09076b7b8c9c", "Scott-County-Hospital", "KS"),   # 12 rows, 12 in Scott City, KS (CMS 171372)
+    "Summit Surgical Hospital (Hutchinson)": ("cf0c3339-a090-4874-b5aa-81d6b9054690", "Summit-Surgical", "KS"),   # 13 rows, 13 in Hutchinson, KS (CMS 170198)
+    "William Newton Hospital": ("433b306b-2a75-46a2-98a5-21d650e0d9ff", "William-Newton-Memorial-Hospital", "KS"),   # 25 rows, 23 in Winfield, KS, 2 with no town (location default) (CMS 171383)
+    "Bunkie General Hospital": ("74221d3c-8e70-4691-b081-dfe109d034bd", "Bunkie-General-Hospital", "LA"),   # 2 rows, 2 in Bunkie, LA (CMS 191311)
+    "Spine Hospital of Louisiana": ("7f4fdfc8-f174-45fc-9fe6-33c2fd87b9fc", "The-Spine-Hospital-of-Louisiana", "LA"),   # 7 rows, 7 in Baton Rouge, LA (CMS 190266)
+    "Cary Medical Center": ("b59b60b1-6ef4-4041-86b3-d80d5a2032ca", "City-of-Caribou", "ME"),   # 29 rows, 28 in Caribou, ME (CMS 200031)
+    "Mount Desert Island Hospital": ("5e8f7172-61b6-4e56-b027-61e54072c2ac", "MDI-Hospital", "ME"),   # 52 rows, 46 in Bar Harbor, ME (CMS 201304)
+    "Mahnomen Health Center": ("acc41e35-57ca-4cb7-941c-36b1fc03bc2d", "Mahnomen-Health-Center", "MN"),   # 9 rows, 9 in Mahnomen, MN (CMS 240779)
+    "Ray County Memorial Hospital": ("9bc8f447-ed5b-4120-aa3a-8aafe73825be", "Ray-County-Memorial-Hospital", "MO"),   # 28 rows, 25 in Richmond, MO, 3 with no town (location default) (CMS 261327)
+    "Ste Genevieve County Memorial Hospital": ("31d032a6-a176-4d4f-b3a6-24a95cf75bf0", "Ste-Genevieve-County-Memorial-Hospital", "MO"),   # 39 rows, 1 in STE. GENEVIEVE, MO (CMS 261330)
+    "South Sunflower County Hospital": ("a946e31f-cfab-4a2e-9e01-ce6a5b8ec4df", "South-Sunflower-County-Hospital", "MS"),   # 10 rows, 10 in Indianola, MS (CMS 250095)
+    "Tyler Holmes Memorial Hospital": ("852ec141-c970-4799-ad36-64ee1090da31", "TYLER-HOLMES-MEMORIAL-HOSPITAL", "MS"),   # 8 rows, 8 in Winona, MS (CMS 251312)
+    "Rosebud Health Care Center": ("9f012c09-3bd1-464e-b950-d9149e6064b7", "Rosebud-Health-Care-Center", "MT"),   # 5 rows, 5 in Forsyth, MT (CMS 271327)
+    "Shodair Children's Hospital": ("6d709fd3-93c2-4c32-9639-5764f5025457", "Shodair", "MT"),   # 27 rows, 26 in Helena, MT, 1 with no town (location default) (CMS 274004)
+    "Iredell Davis Behavioral Health Hospital": ("e48fa797-ce91-4d50-b81e-d93ea7e1a2e0", "Iredell-Memorial-Hospital-Incorporated", "NC"),   # 173 rows, 145 in Statesville, NC, 5 with no town (location default) (CMS 344036)
+    "Jamestown Regional Medical Center": ("e03f1d2e-1508-4cf5-bcfb-c9c733f95645", "Current-Opening", "ND"),   # 30 rows, 30 in Jamestown, ND (CMS 351335)
+    "St. Luke's Hospital (Crosby)": ("affd69b0-2fdd-40cd-a42c-5e01dbd351e6", "ST-LUKES-HOSPITAL", "ND"),   # 6 rows, 5 in Crosby, ND, 1 with no town (location default) (CMS 351325)
+    "Chadron Community Hospital and Health Services": ("a2c99aaf-68a7-46bc-85ec-efee40bde7d2", "Chadron-Community-Hospital-Corp", "NE"),   # 17 rows, 17 in Chadron, NE (CMS 281341)
+    "Cherry County Hospital": ("97f5d188-4d5e-44c6-bc74-b4c22f48b052", "Cherry-County-Hospital-and-Clinic--non-main-page", "NE"),   # 22 rows, 22 in Valentine, NE (CMS 281344)
+    "Kearney County Health Services Hospital": ("71a3718b-dc39-404d-bf32-fecc684ea041", "Kearney-County-Health-Services", "NE"),   # 6 rows, 6 in Minden, NE (CMS 281306)
+    "Kimball Health Services": ("390de4a1-fa4d-4201-9787-c1c380027db7", "Kimball-Health-Services", "NE"),   # 7 rows, 7 in Kimball, NE (CMS 281305)
+    "Lexington Regional Health Center": ("06d1ca18-3222-497d-8d11-a2e0bef52803", "Lexington-Regional-Health-Center", "NE"),   # 13 rows, 13 in Lexington, NE (CMS 281361)
+    "Memorial Hospital (Aurora)": ("27f5bfbf-d165-4fef-8a10-a8d4418a437c", "Memorial-Community-Health-Inc", "NE"),   # 12 rows, 12 in Aurora, NE (CMS 281320)
+    "Webster County Community Hospital": ("de550125-e316-4a72-bd3b-65cb526a95f4", "Webster-County-Community-Hospital", "NE"),   # 9 rows, 9 in Red Cloud, NE (CMS 281316)
+    "Cibola General Hospital": ("85d620ee-7141-4a4e-b1c0-c30659a256dc", "Cibola-General-Hospital", "NM"),   # 51 rows, 46 in Grants, NM, 5 with no town (location default) (CMS 321308)
+    "Gila Regional Medical Center": ("471aa3fa-e6a2-4fad-9dd6-6c3e6badaab5", "Gila-Regional-Medical-Center", "NM"),   # 47 rows, 47 in Silver City, NM (CMS 321311)
+    "Pershing General Hospital": ("b241eaf6-5f29-4237-8bd5-0e7ff4bac7be", "Pershing-General-Hospital", "NV"),   # 13 rows, 12 in Lovelock, NV, 1 with no town (location default) (CMS 291304)
+    "Brookhaven Hospital": ("3bf03f0d-7c5f-4ed4-aa03-15e65d22ec52", "Brookhaven-Hospital-LLC", "OK"),   # 20 rows, 11 in Tulsa, OK (CMS 374012)
+    "Cleveland Area Hospital": ("89c1d3c8-d7ff-490a-971e-a53812e68764", "Cleveland-Area-Hospital-Holdings-Inc", "OK"),   # 14 rows, 14 in Cleveland, OK (CMS 371320)
+    "Jackson County Memorial Hospital Authority": ("58515f1b-667c-4baf-89c7-976246900cff", "Jackson-County-Memorial-Hospital-Authority", "OK"),   # 38 rows, 31 in Altus, OK, 5 with no town (location default) (CMS 370022)
+    "Newberry County Memorial Hospital": ("354506d3-a1d2-481c-be4c-eb8491aba2c3", "NCMH-External-Candidates", "SC"),   # 50 rows, 50 in Newberry, SC (CMS 420053)
+    "Huron Regional Medical Center": ("1d3f71c3-b5df-4036-ba45-2b31254377ef", "Huron-Regional-Medical-Center", "SD"),   # 23 rows, 23 in Huron, SD (CMS 431335)
+    "Chambers Health": ("d9034add-658d-4ed8-a5ae-abda92b03ec6", "Chambers-County-Public-Hospital", "TX"),   # 7 rows, 2 in Anahuac, TX, 1 with no town (location default) (CMS 451320)
+    "Collingsworth General Hospital": ("97a8799d-6598-4c36-a03b-02bdbc11efdf", "Collingsworth-General-Hospital", "TX"),   # 7 rows, 7 in Wellington, TX (CMS 451355)
+    "McCamey Hospital": ("32c26846-86fa-4fd0-bd45-477a0d9b401e", "McCamey-County-Hospital-District", "TX"),   # 13 rows, 13 in McCamey, TX (CMS 451309)
+    "Kane County Hospital": ("c504a6f6-63a7-42b4-9eb5-5738623c4a20", "KCH-Career-Page", "UT"),   # 8 rows, 8 in Kanab, UT (CMS 461309)
+    "Springfield Hospital": ("3443aa7a-2142-4d1a-9049-de77615adf16", "Springfield-springfield-hospital", "VT"),   # 60 rows, 55 in Springfield, VT (CMS 471306)
+    "Mid Valley Hospital & Clinic": ("506da836-11f1-44d2-8330-e6429ac89854", "Mid-Valley-Hospital-Clinic", "WA"),   # 35 rows, 34 in Omak, WA, 1 with no town (location default) (CMS 501328)
+    "Burnett Medical Center": ("0b6026c5-6c47-4389-b678-88f03ea5400e", "Burnett-Medical-Center-Inc", "WI"),   # 21 rows, 21 in Grantsburg, WI (CMS 521331)
+    "Crossing Rivers Health Medical Center": ("5cb7fb64-5afc-4b1c-b716-03059330a6f7", "Crossing-Rivers-Health", "WI"),   # 7 rows, 7 in Prairie du Chien, WI (CMS 521330)
+    "Star Valley Medical Center": ("2ec1c3c1-804e-4a6b-b3c8-e33caafc976e", "Star-Valley-Health", "WY"),   # 19 rows, 16 in Afton, WY, 2 with no town (location default) (CMS 531313)
 }
 _PAYLOCITY_PAGEDATA_RE = re.compile(r"window\.pageData\s*=\s*(\{)")
 
@@ -17178,6 +17880,10 @@ WORKABLE_ORGS = {
     # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
     "Aurora Charter Oak Hospital": ("aurora-behavioral-charter-oak", "CA"),   # 9, Covina CA
     "Aurora Vista del Mar Hospital": ("vista-del-mar-hospital", "CA"),   # 5, Ventura CA
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Desert Parkway Behavioral Healthcare Hospital": ("desert-parkway", "NV"),   # 5 rows, 5 in Las Vegas, NV (CMS 294013)
 }
 _WORKABLE_TYPES = {"full": "Full time", "part": "Part time", "contract": "Contract", "temporary": "Temporary"}
 
@@ -17703,6 +18409,10 @@ TALEO_BE_ORGS = {
     # items that day; locationState reads "US-AZ" on most items and "AZ" on
     # the rest (_parse_taleo_be_rss strips the country prefix).
     "TMC Healthcare": ("https://phe.tbe.taleo.net/phe01", "TMCAZ", "38", "AZ"),
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Henry Mayo Newhall Hospital": ("https://phg.tbe.taleo.net/phg04", "HENRYMAYO", "40", "CA"),   # 81 rows, 0 in Valencia, CA, 81 with no town (location default) (CMS 050624)
 }
 _TBE_NS = {"taleo": "urn:TBERss"}
 
@@ -17819,6 +18529,11 @@ HCTS_PORTALS = {
     # AHRQ label at upsert time (HOSPITAL_SYSTEM_ALIASES).
     "Samaritan Health Services":              ("samhealthjobs", "OR"),
     "Samaritan Health Services (Clinicians)": ("samhealthclinicianjobs", "OR"),
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "WhidbeyHealth Medical Center": ("whidbeyhealthcareers", "WA"),   # 120 rows, 99 in Coupeville, WA (CMS 501339)
+    "Froedtert South": ("froedertsouthcareers", "WI"),   # 335 rows, 58 in Kenosha, WI (CMS 520021)
 }
 HCTS_MAX_PAGES = int(os.getenv("HCTS_MAX_PAGES", "40"))
 _HCTS_ITEM_RE = re.compile(r'class="jobs-section__item[\s"]')
