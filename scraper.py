@@ -24075,8 +24075,19 @@ def _wage_is_noise(t, start, end):
 # 2026-10-04 (S3): iCIMS prints "USD $17.13 - USD $216.42 /Hr" and GoHealth
 # "$135/hour - $160/hour"; the currency word and a per-end hourly unit before
 # the dash are part of the range (both forms used to store one end only).
+# 2026-10-25 (Bounce QA, pay not listed): a figure may also be written
+# without thousands commas, up to seven digits: ECU Health's Phenom bodies
+# print "Pay Range\n$173076.80 - $252263.44" and Kaiser's TalentBrew bodies
+# "Pay Range: $206300 - $266970 / year" (572 active Kaiser rows and 34 ECU
+# rows stored no pay). _wage_pair's bands still judge every pair.
+_WAGE_FIG = r"(\d{1,3}(?:,\d{3})+(?:\.\d{1,3})?|\d{1,7}(?:\.\d{1,3})?)"
 _WAGE_RANGE_RX = re.compile(
-    r"\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s*(?:-|–|—|to|through)\s*(?:USD\s*)?\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\s*(k\b)?", re.I)
+    r"\$\s*" + _WAGE_FIG + r"\s*(k\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s*(?:-|–|—|to|through)\s*(?:USD\s*)?\$?\s*" + _WAGE_FIG + r"\s*(k\b)?", re.I)
+# 2026-10-25 (Bounce QA): "between $16.49 and $20.21" is a range too
+# (Corewell, Boston Medical Center); its groups are _WAGE_RANGE_RX's and the
+# match starts at the first "$", as a range's does.
+_WAGE_BETWEEN_RX = re.compile(
+    r"(?<=between )(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s+and\s+(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?", re.I)
 _WAGE_THIRD_RX = re.compile(r"\s*(?:-|–|—)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\b")
 # 2026-10-15: "\$" and "$$" read as "$" (extract_posted_wage's first step).
 _WAGE_DOLLAR_RUN_RX = re.compile(r"\\*\$(?:\\*\$)*")
@@ -24151,8 +24162,12 @@ _WAGE_BARE_DECIMAL_RX = re.compile(
 # Pay Range Maximum:\n\nUSD $28.68/Hr." (336 of 340 priced Bassett rows were
 # stored at the minimum alone); "USD" may precede either "$".
 _WAGE_PAYLBL = r"(?:salary|pay|compensation|wage|hiring)\s*(?:range|rate|scale)?"
+# 2026-10-25 (Bounce QA, pay not listed): Bon Secours Mercy Health's Workday
+# bodies head the pair with a bare "Range", "Range\n\nMinimum :$16.32\n\n
+# Maximum: $23.15" (614 active rows stored no pay); Rady Children's prints
+# the same layout (95 rows).
 _WAGE_MINMAX_RX = re.compile(
-    r"(?:" + _WAGE_PAYLBL + r"\s*min(?:imum)?|min(?:imum)?\s*" + _WAGE_PAYLBL + r")\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
+    r"(?:" + _WAGE_PAYLBL + r"\s*min(?:imum)?|min(?:imum)?\s*" + _WAGE_PAYLBL + r"|\brange\s*:?\s*min(?:imum)?)\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
     r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?[^\n$]{0,40}?\s*"
     r"(?:" + _WAGE_PAYLBL + r"\s*)?max(?:imum)?(?:\s*" + _WAGE_PAYLBL + r")?\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
     r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
@@ -27540,7 +27555,7 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
         before, after = _wage_clause(t, start, end)
         return bool(_WAGE_FTE_RX.search(before + after))
 
-    for m in _WAGE_RANGE_RX.finditer(t):
+    for m in [*_WAGE_RANGE_RX.finditer(t), *_WAGE_BETWEEN_RX.finditer(t)]:
         if _wage_is_noise(t, m.start(), m.end()):
             # 2026-10-15 (review): a range that prices an add-on is one
             # add-on; its high end is not the pay alone ("Weekend premium
