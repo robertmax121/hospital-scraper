@@ -1176,6 +1176,7 @@ FEED_CONFIGS = (
     "TALEMETRY_SITES", "TALEO_BE_ORGS", "HCTS_PORTALS", "PEOPLESOFT_SITES",
     "APPLICANTSTACK_ORGS", "JAZZHR_ORGS", "JOBAPS_SITES",   # 2026-10-25 coverage stage 4
     "SILKROAD_SITES",                                      # 2026-10-27 (Temple Health)
+    "SITEMAP_SITES", "APPLITRACK_BOARDS",                   # 2026-10-27 RN gap fixes
     "LIQUIDCOMPASS_SITES", "SUCCESSFACTORS_ORGS", "HTML_LIST_SITES", "EIGHTFOLD_ORGS",
     "PLAYWRIGHT_SITES", "USAJOBS_ORGS",
 )
@@ -1422,7 +1423,9 @@ KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor"
                         # 2026-10-27: the SilkRoad OpenHire job-page pass (Temple Health).
                         "SilkRoad",
                         # 2026-10-27 (RN gap): the hcshiring.com description pass.
-                        "HCSHiring")
+                        "HCSHiring",
+                        # 2026-10-27 (RN gap fixes): Aveanna's job pages, school districts' postings.
+                        "SitemapBoard", "AppliTrack")
 KNOWN_BODY_PAGE      = 1000
 # 2026-10-07 (push 10): the read covers every active body now (346,809 on
 # 10-07), not only the detail platforms, so the cap moves up from 400,000.
@@ -17538,8 +17541,84 @@ async def run_tam(session) -> list[Job]:
 #  other departments are dropped. City / state default to the hospital's CMS
 #  city / state; a card "Location:" wins when present. List-only (no
 #  description body, relative posted date), like the UHG / Kaiser adapters.
-#  Format: "System": (agency, state, CMS city, hospital_name, department regex | None)
+#  Format: "System": (agency, state, CMS city, hospital_name, department regex | None
+#                     [, options: NG_NURSES])
+#
+#  2026-10-27 (RN gap fixes): state and county agencies whose boards post
+#  nurse jobs (state psychiatric hospitals, prisons and veterans' homes, county
+#  public health, jails and nursing homes). Their boards list every kind of
+#  government job, so these entries carry NG_NURSES: the list is the board's
+#  own "nurse" keyword search (?keyword=nurse, the box on the careers page;
+#  Michigan 39 cards of 473 on 10-26), and only nurse titles are kept
+#  (is_nurse_role: RN, LPN / LVN, nurse practitioner, public health or school
+#  nurse; not nursing assistants, aides, clerks or nursery workers). A row's
+#  facility is the department's suffix ("Health and Human Services -
+#  Kalamazoo Psychiatric Hospital"), else the title's ("Registered Nurse -
+#  SCI Mercer"), else the agency; its town is the card's own location line
+#  ("Kalamazoo, MI"). The complete claim reads against the search's own
+#  count, which is every card this system's rows can come from. Departments
+#  another entry on the same board keeps (LA County's HEALTH SERVICES,
+#  San Bernardino's Arrowhead) are left to that entry, so no posting is
+#  stored twice.
 ##############################################################################
+# Nurse roles on boards that post every kind of job (NEOGOV state and county
+# boards, school districts' AppliTrack boards).
+NURSE_ROLE_RX = re.compile(
+    r"\bnurses?\b|\bRNs?\b|\bLPNs?\b|\bLVNs?\b|\bAPRNs?\b|\bCRNPs?\b"
+    r"|\b(?:director|supervisor|manager|coordinator|chief|head) of nursing\b"
+    r"|\bnursing (?:supervisor|director|manager|administrator|consultant|coordinator)\b"
+    r"|\bnursing services? (?:director|manager|supervisor|coordinator)\b", re.I)
+NOT_NURSE_ROLE_RX = re.compile(
+    r"\bnurs(?:e|ing) (?:aides?|assistants?|attendants?|techs?|technicians?|students?|externs?|interns?)\b"
+    r"|\b(?:aides?|attendants?|teachers?|tchrs?|instructors?|professors?|faculty|secretary|clerks?|receptionists?"
+    r"|nursery|CNAs?)\b", re.I)
+# Postings open to the employer's own staff only ("Registered Nurse-ACE
+# (Internal Only)"): not a job the public can apply to.
+INTERNAL_ONLY_RX = re.compile(r"\binternal(?:\s+applicants?|\s+candidates?|\s+employees?)?\s+only\b|\(internal\)", re.I)
+
+
+def is_nurse_role(title: str) -> bool:
+    """A nurse job by its title: RN, LPN / LVN, NP, a school, public health,
+    charge or staff nurse, a nursing supervisor or director. Nursing
+    assistants and aides, teachers of nursing, clerks and nursery workers
+    are not."""
+    t = title or ""
+    return bool(NURSE_ROLE_RX.search(t)) and not NOT_NURSE_ROLE_RX.search(t)
+
+
+# Options for a state or county board (see the 2026-10-27 note above).
+NG_NURSES = {"keyword": "nurse", "nurse_only": True, "card_town": True, "facility": True}
+_NG_TOWN_RX = re.compile(r"^[A-Za-z][A-Za-z .'\-]*,\s*[A-Z]{2}$")
+_NG_NO_TOWN = {"statewide", "multiple locations", "various locations", "various", "multiple", "remote"}
+# A card line that names an area, not a town ("Mercer County, PA",
+# "Throughout San Bernardino County, CA", "See Posting for Details, MI").
+_NG_NOT_TOWN_RX = re.compile(r"\bcounty\b|\bcounties\b|\bregion\b|throughout|posting|details|various|multiple"
+                             r"|statewide|countywide|remote", re.I)
+# San Diego County appends its exam number to the title ("Supervising Nurse-26454406").
+_NG_EXAM_NO_RX = re.compile(r"\s*-\s*\d{7,}\s*$")
+_NG_FACILITY_RX = re.compile(
+    r"\b(?:hospital|center|centre|correctional|corrections? (?:facility|complex)|facility|veterans'? home"
+    r"|home|institution|complex|prison|SCI|clinic|infirmary|jail|detention)\b", re.I)
+
+
+def _ng_facility(dept: str, title: str) -> str:
+    """The facility a state or county posting names: the last part of its
+    department that reads as one ("Health and Human Services - Caro Center",
+    "Corrections - Huron Valley Correctional Complex"), else the last part of
+    its title that does ("Registered Nurse - SCI Mercer"); "" when neither
+    names one (the row keeps the agency's name)."""
+    for text in (dept, title):
+        parts = re.split(r"\s+[-–—]\s+|\s*[–—]\s*", text or "")
+        if len(parts) < 2 and text is title:
+            continue
+        for part in reversed(parts):
+            part = re.sub(r"^[A-Z]{2,8}-(?=[A-Z][a-z])", "", part.strip())   # "MDHHS-Southeast Michigan ..."
+            part = re.sub(r"(?:\s*\([^()]*\)?)+\s*$", "", part).strip(" ,")   # "(2nd & 3rd Shift)", "(ECMC)"
+            if part and _NG_FACILITY_RX.search(part) and not NURSE_ROLE_RX.search(part):
+                return part
+    return ""
+
+
 NEOGOV_AGENCIES = {
     # Seeded from CMS ownership "Government - Local / Hospital District" in the
     # top coverage states; California first (transparency state, 64 government
@@ -17565,6 +17644,42 @@ NEOGOV_AGENCIES = {
         ("sanmateo", "CA", "San Mateo", "San Mateo Medical Center", r"^San Mateo Medical Center"),
     "University Medical Center of Southern Nevada":
         ("umcsn", "NV", "Las Vegas", "University Medical Center of Southern Nevada", None),
+    # ── 2026-10-27 (RN gap fixes): state and county boards, nurse jobs only
+    # (NG_NURSES). Town: the card's, else the seat named here.
+    # State boards: psychiatric hospitals, prisons, veterans' homes.
+    "State of Michigan":            ("michigan", "MI", "", "", None, NG_NURSES),
+    "Commonwealth of Pennsylvania": ("pabureau", "PA", "", "", None, NG_NURSES),
+    # Counties and cities: public health, jails, county nursing homes.
+    "Harris County":                ("harriscountytx", "TX", "Houston", "", None, NG_NURSES),
+    "Tarrant County":               ("tarrant", "TX", "Fort Worth", "", None, NG_NURSES),
+    "Hidalgo County":               ("hidalgocountytx", "TX", "Edinburg", "", None, NG_NURSES),
+    "City of San Antonio":          ("sanantoniotx", "TX", "San Antonio", "", None, NG_NURSES),
+    "City of Midland":              ("midlandtx", "TX", "Midland", "", None, NG_NURSES),
+    "County of San Diego":          ("sdcounty", "CA", "San Diego", "", None, NG_NURSES),
+    "Sacramento County":            ("sacramento", "CA", "Sacramento", "", None, NG_NURSES),
+    "Orange County, CA":            ("oc", "CA", "Santa Ana", "", None, NG_NURSES),
+    "San Bernardino County":        ("sanbernardino", "CA", "San Bernardino", "", None, NG_NURSES),
+    "Los Angeles County":           ("lacounty", "CA", "Los Angeles", "", None, NG_NURSES),
+    "Pinellas County Sheriff's Office": ("pcso", "FL", "Largo", "", None, NG_NURSES),
+    "Broward County, FL":           ("broward", "FL", "Fort Lauderdale", "", None, NG_NURSES),
+    "City of Jacksonville":         ("jacksonvillefl", "FL", "Jacksonville", "", None, NG_NURSES),
+    "Manatee County, FL":           ("manateecounty", "FL", "Bradenton", "", None, NG_NURSES),
+    "City of Columbus":             ("columbusoh", "OH", "Columbus", "", None, NG_NURSES),
+    "Montgomery County, OH":        ("montgomery", "OH", "Dayton", "", None, NG_NURSES),
+    "Fulton County, GA":            ("fulton", "GA", "Atlanta", "", None, NG_NURSES),
+    "DuPage County, IL":            ("dupageco", "IL", "Wheaton", "", None, NG_NURSES),
+    "DuPage County Health Department": ("dupagehealth", "IL", "Wheaton", "", None, NG_NURSES),
+    "Lake County, IL":              ("lakecountyil", "IL", "Waukegan", "", None, NG_NURSES),
+    # ECMC posts on its own UKG board (read as "Erie County Medical Center"),
+    # so the county board's ECMC department is left to it.
+    "Erie County, NY":              ("erieco", "NY", "Buffalo", "", None,
+                                     {**NG_NURSES, "skip_dept": r"ECMC|Erie County Medical Center"}),
+    "Nassau County, NY":            ("nassaucountyny", "NY", "Mineola", "", None, NG_NURSES),
+    "Union County, NC":             ("unioncounty", "NC", "Monroe", "", None, NG_NURSES),
+    "Onslow County, NC":            ("onslowcountync", "NC", "Jacksonville", "", None, NG_NURSES),
+    "Franklin County, NC":          ("franklincountync", "NC", "Louisburg", "", None, NG_NURSES),
+    "Kent County, MI":              ("kentcountymi", "MI", "Grand Rapids", "", None, NG_NURSES),
+    "City of Philadelphia":         ("phila", "PA", "Philadelphia", "", None, NG_NURSES),
 }
 NEOGOV_MAX_PAGES = int(os.getenv("NEOGOV_MAX_PAGES", "80"))   # 10 cards a page
 _NG_INDEX = "https://www.governmentjobs.com/careers/home/index"
@@ -17583,9 +17698,14 @@ def _ng_text(s):
     return re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", s or ""))).strip()
 
 
-def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, dept_rx=None):
+def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, dept_rx=None, opts=None,
+                       skip_dept=None):
     """(jobs, total, cards_on_page) from one list partial. dept_rx (compiled)
-    keeps only the hospital departments of a county-wide board."""
+    keeps only the hospital departments of a county-wide board; skip_dept
+    (compiled) drops the departments another entry on the same board keeps.
+    opts (NG_NURSES) for a state or county board: nurse titles only, the
+    card's own town line, the facility from the department or title."""
+    opts = opts or {}
     total_m = _NG_TOTAL_RX.search(page_html or "")
     total = int(total_m.group(1).replace(",", "")) if total_m else 0
     jobs, cards = [], 0
@@ -17598,6 +17718,10 @@ def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, de
         dm = _NG_DEPT_RX.search(chunk)
         dept = _ng_text(dm.group(1)) if dm else ""
         if dept_rx and not dept_rx.search(dept):
+            continue
+        if skip_dept and skip_dept.search(dept):
+            continue
+        if opts.get("nurse_only") and (not is_nurse_role(title) or INTERNAL_ONLY_RX.search(title)):
             continue
         mm = _NG_META_RX.search(chunk)
         meta = [_ng_text(x) for x in _NG_LI_RX.findall(mm.group(1))] if mm else []
@@ -17612,6 +17736,10 @@ def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, de
                 loc_text = m.split(":", 1)[1].strip()
             elif low.startswith(("department:", "exam type:", "closing:", "job number:")):
                 continue
+            elif opts.get("card_town") and not loc_text and _NG_TOWN_RX.match(m):
+                # 2026-10-27: state boards print the town as a bare line
+                # ("Kalamazoo, MI"), with no "Location:" label.
+                loc_text = m
             elif "$" in m:
                 head, _, tail = m.partition("$")
                 job_type = head.strip(" -").strip() or job_type
@@ -17625,16 +17753,24 @@ def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, de
             pair = _wage_pair(_wage_num(sm.group(1)), _wage_num(sm.group(2)))
             if pair and ((unit == "annually" and pair[2] == "year") or (unit == "hourly" and pair[2] == "hour")):
                 wage = pair
+        if opts and (loc_text.split(",")[0].strip().lower() in _NG_NO_TOWN
+                     or _NG_NOT_TOWN_RX.search(loc_text.split(",")[0])):
+            loc_text = ""                    # an area: the entry's seat (or no town) instead
+        if opts:
+            title = _NG_EXAM_NO_RX.sub("", title) or title
         c, s = parse_city_state(loc_text) if loc_text else ("", "")
         c = c or city
         s = (s or state).upper()
+        hosp = hospital_name or system
+        if opts.get("facility"):
+            hosp = _ng_facility(dept, title) or hosp
         em = _NG_ENTRY_RX.search(chunk)
         snippet = _ng_text(em.group(1)) if em else ""
         desc = (f"Salary: {salary}. " if salary else "") + snippet
         jobs.append(Job(
             title=title,
             hospital_system=system,
-            hospital_name=hospital_name or system,
+            hospital_name=hosp,
             city=c, state=s,
             location=f"{c}, {s}".strip(", "),
             specialty=category,
@@ -17651,17 +17787,40 @@ def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, de
     return jobs, total, cards
 
 
-async def _neogov_fetch_page(session, agency: str, page: int) -> tuple[int, str]:
+async def _neogov_fetch_page(session, agency: str, page: int, keyword: str = "") -> tuple[int, str]:
+    params = {"agency": agency, "sort": "PostingDate", "isDescendingSort": "true", "page": str(page)}
+    if keyword:
+        params["keyword"] = keyword          # the careers page's own search box (2026-10-27)
     async with req(session, "get", _NG_INDEX,
-        params={"agency": agency, "sort": "PostingDate", "isDescendingSort": "true", "page": str(page)},
+        params=params,
         headers={**HEADERS, "Accept": "text/html, */*; q=0.01", "X-Requested-With": "XMLHttpRequest",
                  "Referer": f"https://www.governmentjobs.com/careers/{agency}"},
         ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
         return r.status, (await r.text() if r.status == 200 else "")
 
 
+def _ng_sibling_depts(system: str, agency: str):
+    """A regex for the departments the other NEOGOV_AGENCIES entries on the
+    same board keep (None when no other entry reads it). An entry that keeps
+    the whole board leaves nothing to this one."""
+    pats = []
+    for other, cfg in NEOGOV_AGENCIES.items():
+        if other == system or cfg[0] != agency:
+            continue
+        if not cfg[4]:
+            return re.compile(r"")
+        pats.append(f"(?:{cfg[4]})")
+    return re.compile("|".join(pats), re.I) if pats else None
+
+
 async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple) -> list[Job]:
-    agency, state, city, hospital_name, dept_pat = cfg
+    agency, state, city, hospital_name, dept_pat = cfg[:5]
+    opts = cfg[5] if len(cfg) > 5 else {}
+    keyword = opts.get("keyword", "")
+    skip_dept = _ng_sibling_depts(system, agency) if opts else None
+    if opts.get("skip_dept"):
+        own = f"(?:{opts['skip_dept']})"
+        skip_dept = re.compile(f"{skip_dept.pattern}|{own}" if skip_dept else own, re.I)
     dept_rx = re.compile(dept_pat, re.I) if dept_pat else None
     jobs: list[Job] = []
     page, total = 1, 0
@@ -17674,12 +17833,13 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
     cut_short = False
     while True:
         try:
-            status, html_ = await _neogov_fetch_page(session, agency, page)
+            status, html_ = await _neogov_fetch_page(session, agency, page, **({"keyword": keyword} if keyword else {}))
             if status != 200:
                 logger.info(f"NeoGov {system}: HTTP {status} (agency {agency}, page {page})")
                 cut_short = page > 1
                 break
-            got, total, cards = _parse_neogov_page(html_, system, agency, state, city, hospital_name, dept_rx)
+            got, total, cards = _parse_neogov_page(html_, system, agency, state, city, hospital_name, dept_rx,
+                                                   opts=opts, skip_dept=skip_dept)
             card_ids.update(c.split('"', 1)[0] for c in (html_ or "").split('<li class="list-item" data-job-id="')[1:])
             jobs.extend(got)
             if not cards or page * 10 >= total or page >= NEOGOV_MAX_PAGES:
@@ -20169,7 +20329,8 @@ async def _run_small_board(session, label: str, orgs: dict, scrape, budget, deta
             "JazzHR": lambda c: f"{c[0]}.applytojob.com",
             "JobAps": lambda c: "www.jobapscloud.com",
             "SilkRoad": lambda c: "jobs.silkroad.com",
-            "HCS Hiring": lambda c: c}[label]
+            "HCS Hiring": lambda c: c,
+            "AppliTrack": lambda c: _at_host(c)}[label]
     results = await _gather_by_host(session, list(orgs.items()), scrape, host)
     listed = {s: (r if isinstance(r, list) else []) for s, r in zip(orgs, results)}
     for s, r in zip(orgs, results):
@@ -20375,6 +20536,461 @@ async def _silkroad_detail(session, job) -> bool:
 async def run_silkroad(session) -> list[Job]:
     return await _run_small_board(session, "SilkRoad", SILKROAD_SITES, scrape_silkroad,
                                   SILKROAD_DESC_BUDGET, _silkroad_detail)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  SITEMAP CAREER SITES (added 2026-10-27, RN gap fixes). A career site whose
+#  sitemap lists every open job and whose job pages carry a JSON-LD
+#  JobPosting. Aveanna Healthcare (pediatric home health and private duty
+#  nursing, jobs.aveanna.com): 3,368 job URLs in the sitemap on 10-26, 1,268
+#  in the Nursing category.
+#    GET /sitemap.xml       every open job, /job/<id>/<slug>/ (~0.7 MB, one
+#                           request): the board's own list of what is open.
+#                           The slug is the title the job was first posted
+#                           under and goes stale (7 of the first 20 Nursing
+#                           cards on 10-26 had been retitled since), so no
+#                           title, town or state is read from it.
+#    GET <list path>?page_jobs=N  20 cards a page: <a href="/job/<id>/...">
+#                           <h3>Title</h3></a>, Job Ref (the requisition
+#                           number), Location "Town, ST ZIP", Category, Line
+#                           of Business; "Found <strong>N</strong> jobs".
+#    GET /job/<id>/<slug>/  JSON-LD JobPosting: description, datePosted,
+#                           employmentType, jobLocation, baseSalary (the same
+#                           figures the page prints as its "Salary:" line).
+#  robots.txt allows these paths and asks for Crawl-delay: 2; every request
+#  here waits SITEMAP_CRAWL_DELAY after the last, one request in flight.
+#  Complete crawl: every sitemap job is accounted for, by a list card or (for
+#  the ~10% the title-sorted list skips while it is paged, SITEMAP_GAP_MAX)
+#  by its own job page; a job page that answers 404 or no longer holds a
+#  posting is a closed job. A list page that fails, or more unread jobs than
+#  SITEMAP_GAP_MAX, makes the night partial (not swept). A night costs the
+#  sitemap, ~169 list pages and ~300 job pages for Aveanna (~25 minutes at
+#  its crawl delay, direct, not through the proxy pool), plus the job-page
+#  pass for new postings on SITEMAP_DESC_BUDGET.
+# ══════════════════════════════════════════════════════════════════════════
+SITEMAP_SITES = {
+    # Format: "System": (host, list path)
+    "Aveanna Healthcare": ("jobs.aveanna.com", "/jobs/"),
+}
+SITEMAP_MAX_PAGES = int(os.getenv("SITEMAP_MAX_PAGES", "400"))       # Aveanna: 169 pages on 10-26
+# Job pages read for sitemap jobs no list card showed. The list is sorted by
+# title and many titles repeat ("Aveanna Healthcare PDN RN"), so cards with
+# the same title shift between pages while it is read: on 10-26 the 64 pages
+# of the Nursing list (1,270 jobs) showed 1,157 distinct jobs, 9% short. A
+# job page gives everything the card does plus the body and pay, so about
+# 300 a night (2.0 to 2.6 s apart, ~12 minutes) close the gap.
+SITEMAP_GAP_MAX = int(os.getenv("SITEMAP_GAP_MAX", "600"))
+SITEMAP_DESC_MAX_PER_RUN = int(os.getenv("SITEMAP_DESC_MAX_PER_RUN", "500"))
+SITEMAP_DESC_BUDGET = _DescBudget(SITEMAP_DESC_MAX_PER_RUN)
+SITEMAP_CRAWL_DELAY = (2.0, 2.6)                                     # robots.txt Crawl-delay: 2
+
+_SM_LOC_RX = re.compile(r"<loc>\s*(https?://[^<\s]+?/job/(\d+)/[^<\s]*)\s*</loc>")
+_SM_CARD_RX = re.compile(r'<a href="(/job/(\d+)/[^"]*)">\s*<h3>(.*?)</h3>\s*</a>\s*<dl>(.*?)</dl>', re.S)
+_SM_FIELD_RX = re.compile(r"<dt>\s*(.*?)\s*</dt>\s*<dd>(.*?)</dd>", re.S)
+_SM_FOUND_RX = re.compile(r"Found\s*<strong>\s*([\d,]+)\s*</strong>")
+_SM_TOWN_RX = re.compile(r"^(.*?),\s*([A-Z]{2})(?:\s+\d{5}(?:-\d{4})?)?$")
+_SM_SALARY_RX = re.compile(r"<dt>\s*Salary:\s*</dt>\s*<dd>(.*?)</dd>", re.S)
+
+
+def parse_sitemap_jobs(xml: str) -> dict[str, str]:
+    """{job id: job URL} for the job URLs of a career site's sitemap, in
+    sitemap order (category and search pages are left out)."""
+    out: dict[str, str] = {}
+    for m in _SM_LOC_RX.finditer(xml or ""):
+        out.setdefault(m.group(2), htmllib.unescape(m.group(1)))
+    return out
+
+
+def _sm_town(text: str) -> tuple[str, str]:
+    """("Madison", "WI") from "Madison, WI 53703"; ("", "") otherwise."""
+    m = _SM_TOWN_RX.match(_ng_text(text))
+    return (m.group(1).strip(), m.group(2)) if m else ("", "")
+
+
+def parse_sitemap_list_page(page: str, host: str, system: str) -> tuple[list, int | None]:
+    """(jobs, the list's own "Found N" total or None) from one list page."""
+    fm = _SM_FOUND_RX.search(page or "")
+    total = int(fm.group(1).replace(",", "")) if fm else None
+    jobs = []
+    for m in _SM_CARD_RX.finditer(page or ""):
+        path, job_id, title = m.group(1), m.group(2), _ng_text(m.group(3))
+        fields = {_ng_text(k).rstrip(":").strip().lower(): _ng_text(v) for k, v in _SM_FIELD_RX.findall(m.group(4))}
+        city, state = _sm_town(fields.get("location", ""))
+        ref = fields.get("job ref", "")
+        if not title:
+            continue
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=system,
+            city=city, state=state, location=f"{city}, {state}".strip(", "),
+            specialty=fields.get("category", ""), job_type="",
+            url=f"https://{host}{path}", job_id=job_id, posted_date="", description="",
+            ats_platform="SitemapBoard", req_id=ref if ref and ref != job_id else "",
+        ))
+    return jobs, total
+
+
+def _sm_apply_page(job, page: str) -> bool:
+    """A job page's JSON-LD posting onto `job` (body, type, date, pay). The
+    page's "Salary:" line is the employer's posted pay; its figures are the
+    JSON-LD baseSalary, taken here even when the body mentions another
+    figure (a sign-on bonus), and the line itself closes the body."""
+    posting = _jobposting_from_html(page)
+    if not posting:
+        return False
+    ok = _apply_posting(job, posting)
+    sm = _SM_SALARY_RX.search(page or "")
+    shown = _ng_text(sm.group(1)) if sm else ""
+    if shown and re.search(r"\d", shown):
+        bs = posting.get("baseSalary")
+        val = bs.get("value") if isinstance(bs, dict) and isinstance(bs.get("value"), dict) else None
+        if job.wage_min is None and val:
+            try:
+                lo = float(val.get("minValue")) if val.get("minValue") is not None else None
+                hi = float(val.get("maxValue")) if val.get("maxValue") is not None else lo
+            except (TypeError, ValueError):
+                lo = hi = None
+            got = _wage_pair(lo, hi) if lo and hi else None
+            if got:
+                job.wage_min, job.wage_max, job.wage_unit = got
+        if job.description and f"Salary: {shown}" not in job.description:
+            job.description = f"{job.description}\n\nSalary: {shown}"
+    return ok
+
+
+def _sm_job_from_page(page: str, url: str, job_id: str, system: str):
+    """A Job from a job page alone (a sitemap job no list card showed), or
+    None when the page holds no posting (closed)."""
+    posting = _jobposting_from_html(page)
+    if not posting or not str(posting.get("title") or "").strip():
+        return None
+    addr = ((posting.get("jobLocation") or {}) if isinstance(posting.get("jobLocation"), dict) else {}).get("address") or {}
+    city = str(addr.get("addressLocality") or "").strip() if isinstance(addr, dict) else ""
+    state = str(addr.get("addressRegion") or "").strip().upper() if isinstance(addr, dict) else ""
+    ident = _ld_identifier_value(posting)
+    job = Job(
+        title=_ng_text(str(posting.get("title"))), hospital_system=system, hospital_name=system,
+        city=city, state=state if re.fullmatch(r"[A-Z]{2}", state) else "",
+        location=f"{city}, {state}".strip(", "), specialty="", job_type="",
+        url=url, job_id=job_id, posted_date="", description="", ats_platform="SitemapBoard",
+        req_id=ident if ident and ident != job_id else "",
+    )
+    _sm_apply_page(job, page)
+    return job
+
+
+async def _sm_get(session, url: str, system: str, timeout: int = 60) -> tuple[int, str]:
+    """(status, page) for one request, direct (no proxy: robots allows it and
+    the pages are large), then the site's crawl delay. (0, "") on an error."""
+    status, page = 0, ""
+    try:
+        async with req(session, "get", url, headers={**HEADERS, "Accept": "text/html,application/xhtml+xml,application/xml"},
+                       proxy=None, timeout=aiohttp.ClientTimeout(total=timeout)) as r:
+            status = r.status
+            if status == 200:
+                page = (await r.read()).decode("utf-8", errors="replace")
+    except Exception as e:
+        logger.info(f"SitemapBoard {system}: {url}: {type(e).__name__}: {e}")
+    await asyncio.sleep(random.uniform(*SITEMAP_CRAWL_DELAY))
+    return status, page
+
+
+async def scrape_sitemap_site(session, system: str, cfg: tuple) -> list:
+    host, list_path = cfg
+    base = f"https://{host}"
+    status, xml = await _sm_get(session, f"{base}/sitemap.xml", system)
+    listed = parse_sitemap_jobs(xml) if status == 200 and "</urlset>" in xml else {}
+    if not listed:
+        logger.info(f"SitemapBoard {system}: sitemap HTTP {status}, no job URLs; nothing read tonight")
+        return []
+    cards: dict = {}
+    total, page, per_page, failed = None, 1, 0, False
+    while True:
+        url = f"{base}{list_path}" + (f"?page_jobs={page}" if page > 1 else "")
+        status, html_ = await _sm_get(session, url, system)
+        if status != 200:
+            logger.info(f"SitemapBoard {system}: list page {page} HTTP {status}")
+            failed = True
+            break
+        got, adv = parse_sitemap_list_page(html_, host, system)
+        total = adv if total is None else total
+        per_page = per_page or len(got)
+        for j in got:
+            cards.setdefault(j.job_id, j)
+        if not got or (total is not None and per_page and page * per_page >= total):
+            break
+        if page >= SITEMAP_MAX_PAGES:
+            failed = True
+            logger.info(f"SitemapBoard {system}: stopped at the {SITEMAP_MAX_PAGES}-page cap")
+            break
+        page += 1
+    gaps = [jid for jid in listed if jid not in cards]
+    read = closed = unread = 0
+    for jid in gaps:
+        if read >= SITEMAP_GAP_MAX:
+            unread += 1
+            continue
+        read += 1
+        st, pg = await _sm_get(session, listed[jid], system)
+        job = _sm_job_from_page(pg, listed[jid], jid, system) if st == 200 else None
+        if job:
+            cards[jid] = job
+        elif st in (200, 404, 410):
+            closed += 1             # the page holds no posting any more
+        else:
+            unread += 1
+    if failed or unread:
+        report_partial(system)
+    report_complete(system, len(listed) - unread, len(listed), feed="SITEMAP_SITES")
+    logger.info(f"  SitemapBoard {system}: {len(cards)} jobs; sitemap {len(listed)}, list said {total}, "
+                f"{page} list pages; {len(gaps)} sitemap jobs on no card ({read} pages read, {closed} closed, "
+                f"{unread} unread){'; PARTIAL' if failed or unread else ''}")
+    return list(cards.values())
+
+
+async def _sitemap_detail(session, job) -> bool:
+    status, page = await _sm_get(session, job.url, job.hospital_system)
+    return _sm_apply_page(job, page) if status == 200 else False
+
+
+async def run_sitemap_sites(session) -> list:
+    """One site at a time; each site's job-page pass on SITEMAP_DESC_BUDGET,
+    one request in flight per host at the site's crawl delay."""
+    if not SITEMAP_SITES:
+        return []
+    logger.info(f"SitemapBoard: scraping {len(SITEMAP_SITES)} career sites...")
+    if DETAIL_FETCH:
+        SITEMAP_DESC_BUDGET.expect(SITEMAP_SITES)
+    gated = _host_gated(lambda j: _sitemap_detail(session, j), total=1, per_host=1, pause=(0.0, 0.1))
+    out = []
+
+    async def one(system, cfg):
+        rows = []
+        try:
+            rows = await scrape_sitemap_site(session, system, cfg)
+        except Exception as e:
+            logger.info(f"  SitemapBoard {system}: ERROR {e}")
+        if DETAIL_FETCH and rows:
+            try:
+                await _detail_pass(session, system, rows, SITEMAP_DESC_BUDGET, gated, "SitemapBoard")
+            except Exception as e:
+                logger.info(f"SitemapBoard {system}: detail pass failed ({e}); listed rows kept")
+        return rows
+
+    for system, cfg in SITEMAP_SITES.items():
+        out.extend(await _tenant_reporting(SITEMAP_DESC_BUDGET, system, one(system, cfg)))
+    logger.info(f"  SitemapBoard total: {len(out):,} jobs")
+    return out
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  FRONTLINE RECRUITING AND HIRING (AppliTrack) SCHOOL DISTRICT BOARDS
+#  (added 2026-10-27, RN gap fixes): school nurses. A district's public board
+#  is one script that writes the whole list:
+#    GET https://<host>/<client>/onlineapp/jobpostings/Output.asp
+#        ?all=1&AppliTrackLayoutMode=condensed
+#  -> document.write('...') strings holding a table: <span class='title'>
+#  Title <a href='...AppliTrackJobId%3D<id>%26...'>view</a></span>, the posted
+#  date, the closing date, then "ID: <id>  Location: <campus>". The same
+#  script with ?AppliTrackJobId=<id>&AppliTrackLayoutMode=detail
+#  &AppliTrackViewPosting=1 writes one posting: Position Type, Date Posted,
+#  Location, Closing Date and the posting text (Fort Worth's: pay grade,
+#  duty days, "Salary Range: $63,000-$75,903", duties). The public job link
+#  is the same query on default.aspx. robots.txt disallows only /*/onlineapp/
+#  admin.
+#  A district posts every job it has (teachers, bus drivers, ...), so only
+#  nurse titles are kept (is_nurse_role: RN, LVN / LPN, school nurse, nurse
+#  specialist), unless the board is in APPLITRACK_ALL_ROLES (a health-care
+#  board; none yet). Seasonal: school nurse postings run mostly March to
+#  August; in late October Plano listed none of 232 jobs and Fort Worth 3 of
+#  182. The list is the whole board in one response, so a list that arrives
+#  whole (its table and footer closed) is a complete claim.
+#  Format: "System": (client, state, district town[, host]); the host is
+#  www.applitrack.com unless given.
+# ══════════════════════════════════════════════════════════════════════════
+APPLITRACK_BOARDS = {
+    # Checked 10-26 (one list request each). Left out: Wake County (wcpss),
+    # Broward (broward), Judson (judsonisd), South San Antonio (southsanisd)
+    # and IL Texas (iltexas) answer HTTP 500 on every page; Spring ISD
+    # (springisd) says it has no openings at all; Frisco (friscoisd on
+    # phl.applitrack.com), Orange County FL (ocps) and Cabarrus (cabarrus)
+    # do not answer with a posting list. Not on AppliTrack as far as the
+    # 10-26 search found: Houston, Dallas, Cy-Fair, Katy, Northside, Fort
+    # Bend, Conroe, North East, Miami-Dade, Hillsborough, Palm Beach, Duval,
+    # Polk, Charlotte-Mecklenburg, Winston-Salem/Forsyth, Cumberland.
+    # Texas
+    "Fort Worth ISD":                   ("fortworth", "TX", "Fort Worth"),
+    "Aldine ISD":                       ("aldineisd", "TX", "Houston"),
+    "Austin ISD":                       ("austin", "TX", "Austin"),
+    "San Antonio ISD":                  ("saisd", "TX", "San Antonio"),
+    "Plano ISD":                        ("pisd", "TX", "Plano"),
+    "Lewisville ISD":                   ("lewisvilleisd", "TX", "Lewisville"),
+    "Klein ISD":                        ("kleinisd", "TX", "Spring"),
+    "Spring Branch ISD":                ("springbranchisd", "TX", "Houston", "phl.applitrack.com"),
+    "Humble ISD":                       ("humbleisd", "TX", "Humble"),
+    "Galena Park ISD":                  ("galenaparkisd", "TX", "Houston"),
+    "Pasadena ISD":                     ("pasadenaisd", "TX", "Pasadena"),
+    "Pearland ISD":                     ("pearlandisd", "TX", "Pearland"),
+    "Alvin ISD":                        ("alvinisd", "TX", "Alvin"),
+    "Killeen ISD":                      ("killeenisd", "TX", "Killeen"),
+    "Ysleta ISD":                       ("yisd", "TX", "El Paso"),
+    "Leander ISD":                      ("leander", "TX", "Leander"),
+    "Pflugerville ISD":                 ("pflugerville", "TX", "Pflugerville"),
+    "Mesquite ISD":                     ("MesquiteISD", "TX", "Mesquite"),
+    "Richardson ISD":                   ("risd", "TX", "Richardson"),
+    "Corpus Christi ISD":               ("ccisd", "TX", "Corpus Christi"),
+    "Edgewood ISD":                     ("eisd", "TX", "San Antonio"),
+    "Abilene ISD":                      ("abileneisd", "TX", "Abilene"),
+    # Florida
+    "Collier County Public Schools":    ("collier", "FL", "Naples"),
+    "St. Johns County School District": ("stjohns", "FL", "St. Augustine"),
+    "School District of Indian River County": ("indianriver", "FL", "Vero Beach"),
+    "Monroe County School District":    ("keysschools", "FL", "Key West"),
+    "Nassau County School District":    ("nassau", "FL", "Fernandina Beach"),
+    "DeSoto County Schools":            ("desotoschools", "FL", "Arcadia"),
+    # North Carolina
+    "Guilford County Schools":          ("gcsnc", "NC", "Greensboro"),
+    "Durham Public Schools":            ("dpsnc", "NC", "Durham"),
+    "Buncombe County Schools":          ("buncombeschools", "NC", "Asheville"),
+    "New Hanover County Schools":       ("nhcs", "NC", "Wilmington"),
+    "Onslow County Schools":            ("onslow", "NC", "Jacksonville"),
+    "Iredell-Statesville Schools":      ("issk12", "NC", "Statesville"),
+    "Pitt County Schools":              ("pitt", "NC", "Greenville"),
+    "Harnett County Schools":           ("harnett", "NC", "Lillington"),
+    "Pender County Schools":            ("pender", "NC", "Burgaw"),
+    "Rockingham County Schools":        ("rockk12", "NC", "Eden"),
+    "Chatham County Schools":           ("chathamnc", "NC", "Pittsboro"),
+}
+APPLITRACK_ALL_ROLES: set = set()
+APPLITRACK_DESC_MAX_PER_RUN = int(os.getenv("APPLITRACK_DESC_MAX_PER_RUN", "400"))
+APPLITRACK_DESC_BUDGET = _DescBudget(APPLITRACK_DESC_MAX_PER_RUN)
+
+_AT_TITLE_RX = re.compile(
+    r"<span class='title'>(.*?)<a href='javascript:updateHrefFromCurrentWindowLocation\(\"ApplitrackHardcodedURL"
+    r"%3F1%3D1%26AppliTrackJobId%3D(\d+)%26", re.S | re.I)
+_AT_DATE_RX = re.compile(r"<td>\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*</td>")
+_AT_CAMPUS_RX = re.compile(r"<span class='label'>Location:</span>\s*(.*?)(?:&nbsp;|</td>)", re.S)
+_AT_FIELD_RX = re.compile(r"<li>\s*<span class=['\"]label['\"][^>]*>\s*([^<:]+?)\s*:\s*</span>(.*?)</li>", re.S)
+_AT_WRITE_JOIN_RX = re.compile(r"'\);\s*document\.write\('")
+
+
+def _at_unjs(script: str) -> str:
+    """The HTML an AppliTrack Output.asp script writes: its document.write
+    strings joined, the JavaScript quote escapes undone."""
+    t = _AT_WRITE_JOIN_RX.sub("", script or "")
+    return t.replace("\\'", "'").replace('\\"', '"').replace("\\/", "/")
+
+
+def _at_host(cfg: tuple) -> str:
+    return cfg[3] if len(cfg) > 3 and cfg[3] else "www.applitrack.com"
+
+
+def _at_date(m) -> str:
+    return f"{m.group(3)}-{int(m.group(1)):02d}-{int(m.group(2)):02d}" if m else ""
+
+
+def applitrack_list_url(cfg: tuple) -> str:
+    return f"https://{_at_host(cfg)}/{cfg[0]}/onlineapp/jobpostings/Output.asp?all=1&AppliTrackLayoutMode=condensed"
+
+
+def applitrack_posting_url(job_url: str) -> str:
+    """The script that writes one posting, from the posting's public link."""
+    return job_url.replace("/onlineapp/default.aspx?", "/onlineapp/jobpostings/Output.asp?", 1)
+
+
+def parse_applitrack_list(script: str, system: str, cfg: tuple) -> tuple[list, int, bool]:
+    """(kept jobs, postings on the board, whether the list arrived whole)."""
+    client, state, town = cfg[0], cfg[1], cfg[2]
+    host = _at_host(cfg)
+    t = _at_unjs(script)
+    tail = t[t.find("AppliTrackListContent"):] if "AppliTrackListContent" in t else ""
+    whole = "Powered by" in tail and ("</tbody></table>" in tail or "AppliTrackListContent'></div>" in tail)
+    hits = list(_AT_TITLE_RX.finditer(t))
+    seen: set = set()
+    jobs = []
+    for k, m in enumerate(hits):
+        seg = t[m.end(): hits[k + 1].start() if k + 1 < len(hits) else len(t)]
+        job_id, title = m.group(2), _ng_text(m.group(1))
+        if job_id in seen or not title:
+            continue
+        seen.add(job_id)
+        if INTERNAL_ONLY_RX.search(title) or (system not in APPLITRACK_ALL_ROLES and not is_nurse_role(title)):
+            continue
+        cm = _AT_CAMPUS_RX.search(seg)
+        campus = _ng_text(cm.group(1)) if cm else ""
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=system,
+            city=town, state=state, location=f"{town}, {state}".strip(", "),
+            specialty="", job_type="",
+            url=(f"https://{host}/{client}/onlineapp/default.aspx?AppliTrackJobId={job_id}"
+                 f"&AppliTrackLayoutMode=detail&AppliTrackViewPosting=1"),
+            job_id=job_id, posted_date=_at_date(_AT_DATE_RX.search(seg)),
+            description=f"Location: {campus}" if campus else "", ats_platform="AppliTrack",
+        ))
+    return jobs, len(seen), whole
+
+
+def applitrack_posting(script: str) -> tuple[str, str, str]:
+    """(body, position type, ISO posted date) from a posting's script. The
+    body is the posting text with its campus line; "" when the script holds
+    no posting."""
+    t = _at_unjs(script)
+    i = t.find("<ul class='postingsList'")
+    if i < 0:
+        return "", "", ""
+    end = len(t)
+    for mark in ("<div class='label' align='right'", "addthis_toolbox", "Email To A Friend", "</ul><div style='width: 100%"):
+        k = t.find(mark, i)
+        if 0 <= k < end:
+            end = k
+    seg = t[i:end]
+    fields, last = {}, 0
+    for m in _AT_FIELD_RX.finditer(seg):
+        fields[_ng_text(m.group(1)).lower()] = _ng_text(m.group(2))
+        last = m.end()
+    text = seg[last:] if last else ""
+    text = re.sub(r'<div class="AppliTrackJobPostingAttachments">.*?</div>', " ", text, flags=re.S)
+    text = re.sub(r"^\s*(?:<[^>]+>\s*|&nbsp;?\s*)*Description:\s*", "", text, flags=re.I)
+    body = strip_html(re.sub(r"<span class=['\"]label['\"][^>]*>\s*Description:\s*</span>", "", text))
+    body = re.sub(r"^(?:Description:\s*)", "", body).strip()
+    campus = fields.get("location", "")
+    if body and campus and f"Location: {campus}" not in body:
+        body = f"{body}\n\nLocation: {campus}"
+    ptype = fields.get("position type", "").rstrip(" /").rsplit("/", 1)[-1].strip()   # "Professionals/ School Nurse"
+    pm = re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})$", fields.get("date posted", ""))
+    return body, ptype, _at_date(pm)
+
+
+async def scrape_applitrack(session, system: str, cfg: tuple) -> list:
+    status, script = await _board_get(session, applitrack_list_url(cfg), "AppliTrack", system, timeout=60)
+    if status != 200:
+        logger.info(f"AppliTrack {system}: HTTP {status}")
+        return []
+    jobs, on_board, whole = parse_applitrack_list(script, system, cfg)
+    if whole:
+        report_complete(system, on_board, on_board, feed="APPLITRACK_BOARDS")
+    logger.info(f"  AppliTrack {system}: {len(jobs)} nurse jobs of {on_board} on the board"
+                f"{'' if whole else ' (list not whole)'}")
+    return jobs
+
+
+async def _applitrack_detail(session, job) -> bool:
+    """The posting's own page onto the row: its text (kept even when short:
+    many districts post one line and an attached job description), position
+    type and posted date. True when the page held the posting."""
+    status, script = await _board_get(session, applitrack_posting_url(job.url), "AppliTrack", job.hospital_system)
+    body, ptype, posted = applitrack_posting(script) if status == 200 else ("", "", "")
+    if ptype and not job.specialty:
+        job.specialty = ptype
+    if not body:
+        return False
+    if not _apply_body(job, body, posted=posted) and len(body) > len((job.description or "").strip()):
+        job.description = body
+    return True
+
+
+async def run_applitrack(session) -> list:
+    return await _run_small_board(session, "AppliTrack", APPLITRACK_BOARDS, scrape_applitrack,
+                                  APPLITRACK_DESC_BUDGET, _applitrack_detail)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -31662,6 +32278,8 @@ async def run_all() -> list[dict]:
             run_jazzhr(proxy_session),          # JazzHR applytojob board: Exceptional Healthcare (added 2026-10-25)
             run_jobaps(proxy_session),          # JobAps state boards: MD and CT state psychiatric hospitals (added 2026-10-25)
             run_silkroad(proxy_session),        # SilkRoad OpenHire HTML list + job pages: Temple Health (added 2026-10-27)
+            run_sitemap_sites(direct_session),  # sitemap career sites: Aveanna Healthcare, direct at its crawl delay (added 2026-10-27)
+            run_applitrack(proxy_session),      # Frontline AppliTrack school district boards: school nurses (added 2026-10-27)
             run_talemetry(proxy_session),  # Jobvite Engage (Talemetry) search.json: UCHealth, PeaceHealth, Penn Medicine (added 2026-09-25)
             run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
             run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)
