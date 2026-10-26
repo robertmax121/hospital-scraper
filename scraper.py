@@ -9632,6 +9632,12 @@ async def _scrape_icims_cards(session: aiohttp.ClientSession, system: str, domai
     stop = ""            # why the crawl ended before its last page ("" = it did not)
     waf = False
     repeats = 0
+    # Review 2026-10-27: the complete claim compares the crawl with itself (the
+    # card list prints no total), so a page before the last that parsed fewer
+    # cards than the first page (a page cut short in transit) withholds it: the
+    # night then falls back to the yield guard instead of retiring on a miss.
+    full_page = len(jobs)
+    short_pages = 0
     page = 1
     while jobs and page < 200 and not (pager and pager[0] >= pager[1]):
         await jitter()
@@ -9657,6 +9663,8 @@ async def _scrape_icims_cards(session: aiohttp.ClientSession, system: str, domai
         new = [j for j in parsed if j.job_id not in seen]
         repeats += len(parsed) - len(new)
         pager = icims_pager(text) or pager
+        if pager and pager[0] < pager[1] and len(parsed) < full_page:
+            short_pages += 1
         if not new:
             if pager and pager[0] < pager[1]:
                 stop = f"page {pager[0]} of {pager[1]} added nothing"
@@ -9672,8 +9680,11 @@ async def _scrape_icims_cards(session: aiohttp.ClientSession, system: str, domai
         logger.warning(f"iCIMS {system}: PARTIAL, {stop or 'the pager never reached its last page'} "
                        f"({len(jobs)} jobs read{f', page {pager[0]} of {pager[1]}' if pager else ''}); "
                        f"not swept tonight")
-    elif whole and not repeats:
+    elif whole and not repeats and not short_pages:
         report_complete(system, len(jobs), len(jobs), feed="ICIMS_ORGS")
+    elif whole and short_pages:
+        logger.info(f"iCIMS {system}: {short_pages} pages before the last held fewer than "
+                    f"{full_page} cards; not reported complete (the yield guard decides)")
     logger.info(f"  iCIMS {system}: {len(jobs)} jobs (card list, {page} pages"
                 + (f", page {pager[0]} of {pager[1]}" if pager else "") + ")")
     return jobs

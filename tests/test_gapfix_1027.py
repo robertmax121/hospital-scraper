@@ -649,6 +649,24 @@ def test_a_waf_answer_to_the_first_request_is_partial(monkeypatch, quiet):
     assert jobs == [] and SEL in scraper.PARTIAL_SYSTEMS
 
 
+def test_a_short_page_before_page_n_claims_nothing(monkeypatch, quiet):
+    # Review 2026-10-27: the claim compares the crawl with itself, so a page
+    # before the last that came back with fewer cards (cut short in transit)
+    # leaves the night to the yield guard: neither complete nor partial.
+    pages = _pages_of(4)
+    pages[1] = pages[1][:30]
+    _icims_fake(monkeypatch, pages)
+    jobs = asyncio.run(scraper.scrape_icims(None, SEL, "jobs-selectmedicalcorp.icims.com"))
+    assert len(jobs) == 180
+    assert SEL not in scraper.COMPLETE_SYSTEMS and SEL not in scraper.PARTIAL_SYSTEMS
+    # a short LAST page is the board's end, as before
+    pages = _pages_of(4)
+    pages[3] = pages[3][:12]
+    _icims_fake(monkeypatch, pages)
+    jobs = asyncio.run(scraper.scrape_icims(None, SEL, "jobs-selectmedicalcorp.icims.com"))
+    assert len(jobs) == 162 and SEL in scraper.COMPLETE_SYSTEMS
+
+
 def test_icims_pager_reads_the_search_header():
     assert scraper.icims_pager("<h2>Search Results\nPage 1 of 73 \n</h2>") == (1, 73)
     assert scraper.icims_pager("<html>no pager</html>") is None
