@@ -3532,6 +3532,8 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "Columbus Regional Health": ("Columbus", "IN"),
     "Mountain View Hospital (Idaho Falls)": ("Idaho Falls", "ID"),
     "North Oaks Health System": ("Hammond", "LA"),
+    "BronxCare Health System": ("Bronx", "NY"),
+    "One Brooklyn Health": ("Brooklyn", "NY"),
 }
 
 # Normalize system keys to lowercase
@@ -7875,6 +7877,7 @@ ICIMS_ORGS = {
     "St. Luke's Hospital (St. Louis)": "careers-stlukes-stl.icims.com",   # [10-27 dry run] 247 rows / 0 in town / RN 87; CMS 260179
     "University Hospital (Newark)": "careers-uhnjcareers.icims.com",   # [10-27 dry run] 253 rows / 253 in town / RN 56; CMS 310119
     "St. John's Riverside Hospital": "careers-riversidehealth.icims.com",   # [10-27 dry run] 117 rows / 0 in town / RN 9; CMS 330208
+    "BronxCare Health System": "careers-bronxcare.icims.com",   # [10-27 dry run] 138 rows / 137 in town / RN 25; CMS 330009
 }
 
 
@@ -9660,6 +9663,7 @@ JIBE_SITES = {
     "Beebe Healthcare": "https://www.beebecareers.org",   # [10-27 dry run] 169 rows / 132 in town / RN 47; CMS 080007
     "Holy Redeemer Health System": "https://careers.redeemerhealth.org",   # [10-27 dry run] 133 rows / 85 in town / RN 36; CMS 390097
     "Signature HealthCARE": "https://www.signaturehealthcarejobs.com",   # [10-27 dry run] 804 rows / RN 214; top towns Louisville, KY 79, Lexington, KY 32, Norfolk, VA 28
+    "One Brooklyn Health": "https://careers.onebrooklynhealth.org",   # [10-27 dry run] 167 rows / 167 in town / RN 69; CMS 330233
 }
 
 # Pages of 100 read per Jibe board (10,000 postings). A board past it is read

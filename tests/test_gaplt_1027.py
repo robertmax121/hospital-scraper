@@ -56,7 +56,8 @@ NEW = {
     "ICIMS_ORGS": {
         "St. Luke's Hospital (St. Louis)": "careers-stlukes-stl.icims.com",
         "University Hospital (Newark)": "careers-uhnjcareers.icims.com",
-        "St. John's Riverside Hospital": "careers-riversidehealth.icims.com"
+        "St. John's Riverside Hospital": "careers-riversidehealth.icims.com",
+        "BronxCare Health System": "careers-bronxcare.icims.com"
     },
     "KRONOS_ORGS": {
         "Baton Rouge General Medical Center": [
@@ -255,6 +256,7 @@ NEW = {
         "Confluence Health": "https://careers.confluencehealth.org",
         "Beebe Healthcare": "https://www.beebecareers.org",
         "Holy Redeemer Health System": "https://careers.redeemerhealth.org",
+        "One Brooklyn Health": "https://careers.onebrooklynhealth.org",
         "Signature HealthCARE": "https://www.signaturehealthcarejobs.com"
     },
     "INFOR_ORGS": {
@@ -556,6 +558,14 @@ LOCATION = {
     "Mountain View Hospital (Idaho Falls)": [
         "Idaho Falls",
         "ID"
+    ],
+    "BronxCare Health System": [
+        "Bronx",
+        "NY"
+    ],
+    "One Brooklyn Health": [
+        "Brooklyn",
+        "NY"
     ],
     "North Oaks Health System": [
         "Hammond",
