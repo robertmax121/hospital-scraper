@@ -4663,6 +4663,71 @@ def _workday_job_url(url: str) -> str:
     return parts._replace(path=path).geturl()
 
 
+# 2026-10-27: iCIMS's candidate sign-in step, the link UAB Health System's
+# Phenom board hands out as applyUrl for its iCIMS-backed postings (277 active
+# rows on 10-26, careers-uabmedicine.icims.com/jobs/{id}/{slug}/login). The
+# Jibe adapter's note (2026-08-04) records the same /login gate. The tenant's
+# own Phenom page for the job (careers.uabmedicine.org/us/en/job/8020, fetched
+# 10-26) shows the posting with its Apply button, as UAB's other 616 rows
+# already do. iCIMS answers every request from a plain client with its Human
+# Verification page (HTTP 405), so its own /job page could not be checked.
+_ICIMS_LOGIN_STEP_RX = re.compile(r"^https?://[^/?#]+\.icims\.com/jobs/\d+/[^/?#]*/login/?(?:[?#]|$)", re.I)
+
+
+# 2026-10-27 (owner: "UT Health Houston jobs are not linking to the direct
+# application page"): Taleo Enterprise's jobapply.ftl is the first step of an
+# application, not the posting. Opened cold it shows Taleo's Privacy
+# Agreement (uth.taleo.net) or a script that sends the visitor straight to
+# /careersection/iam/accessmanagement/login.jsf (childrensmn.taleo.net): a
+# sign-in page with no job on it. jobdetail.ftl?job=<id> under the same
+# career section is the public posting, with the employer's own Apply button.
+# Phenom hands these apply links out as applyUrl: UTHealth Houston (431
+# active rows on 10-26, no section in the path: /careersection/jobapply.ftl)
+# and Children's Minnesota (154, the "ex" and "physician" sections). Fetched
+# on 10-26: each jobdetail.ftl page carried the job's title; each jobapply.ftl
+# page was the privacy or sign-in step. A link without a section keeps none:
+# Taleo answers /careersection/jobdetail.ftl?job=<id> with a 302 to the
+# section the job is posted in, which is not the same for every job on
+# uth.taleo.net (staff jobs "ex", 26000260; faculty jobs "ex2", 260001OI and
+# 260000MI, which "ex" reports as no longer available). The site's utm tags
+# ride through that redirect. The rewrite runs in scrape_phenom and again for
+# every row on write (_sanitize_apply_url), so no adapter can store the
+# apply step.
+_TALEO_APPLY_RX = re.compile(
+    r"^(https?://[^/?#:]+\.taleo\.net(?::\d+)?)/careersection/(?:([^/?#]+)/)?jobapply\.ftl(?:\?([^#]*))?", re.I)
+_TALEO_LOGIN_RX = re.compile(
+    r"^https?://[^/?#:]+\.taleo\.net(?::\d+)?/careersection/iam/accessmanagement/login\.jsf\?([^#]*)", re.I)
+
+
+def _taleo_job_url(url: str) -> str:
+    """A Taleo Enterprise apply-step link (.../careersection/[<cs>/]jobapply.ftl?job=<id>),
+    or the Taleo sign-in page that wraps one (login.jsf?redirectionURI=...), becomes
+    the public job page .../careersection/[<cs>/]jobdetail.ftl?job=<id>[&lang=xx]
+    (the same section, or none when the link had none; only job and lang are
+    kept). Anything else, or a jobapply link without a job number, is
+    returned unchanged."""
+    from urllib.parse import parse_qsl, urlencode
+    u = url or ""
+    m = _TALEO_LOGIN_RX.match(u)
+    if m:
+        u = next((v for k, v in parse_qsl(m.group(1), keep_blank_values=True)
+                  if k in ("redirectionURI", "TARGET") and _TALEO_APPLY_RX.match(v or "")), "")
+        if not u:
+            return url or ""
+    m = _TALEO_APPLY_RX.match(u)
+    if not m:
+        return url or ""
+    origin, section, query = m.groups()
+    params = parse_qsl(query or "", keep_blank_values=True)
+    job = next((v.strip() for k, v in params if k.lower() == "job" and v.strip()), "")
+    if not job:
+        return url or ""
+    lang = next((v.strip() for k, v in params if k.lower() == "lang" and v.strip()), "")
+    path = f"/careersection/{section}/jobdetail.ftl" if section else "/careersection/jobdetail.ftl"
+    origin = re.sub(r":443$", "", origin) if origin.lower().startswith("https://") else origin
+    return f"{origin}{path}?" + urlencode([("job", job)] + ([("lang", lang)] if lang else []))
+
+
 def _workday_cxs_url(url: str) -> str:
     """The CXS detail endpoint for a Workday job page or apply URL
     (myworkdayjobs.com tenant hosts and the shared myworkdaysite.com hosts),
@@ -13457,6 +13522,17 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 # the Workday job page, which shows the posting; its detail
                 # comes from the CXS (_phenom_detail).
                 url = _workday_job_url(url)
+                # 2026-10-27: the Taleo-backed tenants (UTHealth Houston,
+                # Children's Minnesota) hand out Taleo's apply step
+                # (".../careersection/[cs/]jobapply.ftl?job=..."), a privacy and
+                # sign-in page. Store the Taleo job page (jobdetail.ftl).
+                url = _taleo_job_url(url)
+                # 2026-10-27: UAB's iCIMS-backed postings hand out iCIMS's
+                # candidate sign-in step (".../jobs/{id}/{slug}/login"). Store
+                # the tenant's own Phenom job page, where the posting and its
+                # Apply button are (_ICIMS_LOGIN_STEP_RX).
+                if job_id and _ICIMS_LOGIN_STEP_RX.match(url or ""):
+                    url = _phenom_fallback_job_url(system, base_url, job_id)
                 # multi_category is an array on recommendationJobsBrowsingHistory
                 multi_cat = doc.get("multi_category") or []
                 specialty_val = (
@@ -19082,6 +19158,27 @@ CSOD_ORGS = {
     "UI Health": ("https://uic.csod.com", "2"),
 }
 
+# 2026-10-27 (apply links that land on a sign-in page): the job link this
+# adapter stored, /ux/ats/careersite/<id>/requisition/<rid>?c=<corp>, is not a
+# career-site page. On all three live tenants (Billings Clinic 389 active rows
+# on 10-26, JPS 202, UI Health 73) it answers 302 to /common/restrictedarea.aspx
+# and on to the employee sign-in (Billings and JPS: a SAML single sign-on form;
+# UI Health: a user name and password page). The career site's own job link
+# carries /home/ before /requisition/: /ux/ats/careersite/<id>/home/requisition/
+# <rid>?c=<corp> answered 200 with the public career-site page on all three,
+# and the job API that page calls returned the posting's title (10-26).
+_CSOD_REQ_PATH_RX = re.compile(
+    r"^(https?://[^/?#]+\.csod\.com/ux/ats/careersite/\d+)/requisition/(\d+)(?=[?#]|$)", re.I)
+
+
+def _csod_job_url(url: str) -> str:
+    """A Cornerstone requisition link without the career site's /home/ step
+    (.../careersite/<id>/requisition/<rid>?c=..., a sign-in page) becomes the
+    public career-site job link .../careersite/<id>/home/requisition/<rid>?c=...
+    Anything else is returned unchanged."""
+    return _CSOD_REQ_PATH_RX.sub(r"\1/home/requisition/\2", url or "", count=1)
+
+
 def _csod_job(rq: dict, system: str, base: str, site_id: str, corp: str) -> Job | None:
     """One career-site search requisition -> Job (2026-09-10). Shape (JPS):
     requisitionId, displayJobTitle, postingEffectiveDate "9/10/2026",
@@ -19103,7 +19200,7 @@ def _csod_job(rq: dict, system: str, base: str, site_id: str, corp: str) -> Job 
         title=title, hospital_system=system, hospital_name=system,
         city=city, state=st, location=f"{city}, {st}".strip(", "),
         specialty="", job_type="",
-        url=f"{base}/ux/ats/careersite/{site_id}/requisition/{rid}?c={corp}",
+        url=f"{base}/ux/ats/careersite/{site_id}/home/requisition/{rid}?c={corp}",   # 2026-10-27: /home/ (see _csod_job_url)
         job_id=rid, posted_date=posted, description="", ats_platform="CSOD",
     )
 
@@ -26579,6 +26676,12 @@ def _sanitize_apply_url(url: str) -> str:
     adapter can't ship a link that 404s / lands on Sign-In. Idempotent."""
     if not url or not url.startswith(("http://", "https://")):
         return url
+    # 2026-10-27: a Taleo Enterprise apply step (privacy / sign-in page)
+    # becomes the public job page of the same career section (_taleo_job_url),
+    # and a Cornerstone requisition link without /home/ (employee sign-in)
+    # becomes the career site's own job link (_csod_job_url).
+    url = _taleo_job_url(url)
+    url = _csod_job_url(url)
     # Workday: externalPath already begins with /job/, so a prepended /job/
     # produces /job//job/ -> Sign-In page. Collapse to canonical single slash.
     url = url.replace("/job//job/", "/job/")
@@ -26622,6 +26725,13 @@ def _structural_url_ok(url: str, platform: str) -> tuple[bool, str]:
     deviate from the expected pattern."""
     if not url or not url.startswith(("http://", "https://")):
         return False, "empty_or_relative"
+    # 2026-10-27: the sign-in steps found on 10-26 (Taleo jobapply.ftl and its
+    # login.jsf, Cornerstone's requisition link without /home/, iCIMS /login).
+    # _sanitize_apply_url repairs the first two before this gate runs, so a
+    # hit here is a new adapter or the iCIMS step from a board other than UAB.
+    if (_TALEO_APPLY_RX.match(url) or _TALEO_LOGIN_RX.match(url) or _CSOD_REQ_PATH_RX.match(url)
+            or _ICIMS_LOGIN_STEP_RX.match(url)):
+        return False, "sign_in_step"
     low = url.lower()
     if "myworkdayjobs.com" in low or "myworkdaysite.com" in low:
         if "/job//job/" in url:

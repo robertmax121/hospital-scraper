@@ -41,7 +41,8 @@ def test_csod_requisitions_map_with_deep_link(fixture_text):
     assert all(jobs)
     for j in jobs:
         assert j.ats_platform == "CSOD" and j.city == "Fort Worth" and j.state == "TX"
-        assert j.url == f"https://jpshealthnet.csod.com/ux/ats/careersite/4/requisition/{j.job_id}?c=jpshealthnet"
+        # 2026-10-27: /home/ before /requisition/ (without it the link is the employee sign-in)
+        assert j.url == f"https://jpshealthnet.csod.com/ux/ats/careersite/4/home/requisition/{j.job_id}?c=jpshealthnet"
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", j.posted_date)
 
 
