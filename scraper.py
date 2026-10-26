@@ -7413,6 +7413,47 @@ KAISER_CITY_STATE = {
 }
 
 
+# 2026-10-25 (Search Console fix 11): every result card prints Kaiser's own
+# location line, "Spokane, WA, Onsite, Regular, Full-time, ..." (span
+# .job-location inside the job's <a>; "Fremont, Alameda, CA, ..." when it
+# names the county). The adapter read only the city slug in the URL, and
+# KAISER_CITY_STATE knows 70 slugs, so every other town went out with no
+# state and SYSTEM_LOCATION_DEFAULTS filed it under Kaiser's Oakland HQ:
+# about 500 active rows on 10-25 were "CA" in Oregon, Washington, Hawaii,
+# Georgia, Maryland, Virginia, DC and Colorado (Clackamas 145, Greensboro 59,
+# Hillsboro 33, Washington DC 26, Kailua-Kona 18, McLean, Spokane, Kapolei).
+# The card's state now wins; the slug map is only the fallback.
+KAISER_CARD_RX = re.compile(r'<a\b[^>]*\bhref="[^"]*/641/(\d+)"[^>]*>(.*?)</a>', re.S | re.I)
+KAISER_CARD_LOCATION_RX = re.compile(r'class="job-location"[^>]*>([^<]*)<', re.I)
+
+
+def kaiser_location_state(text: str) -> str:
+    """Two-letter state from a card location line ("Spokane, WA, Onsite,
+    ..." or "Fremont, Alameda, CA, ..."), or "". A two-letter code in the
+    second or third field wins over a spelled-out name, so a county named
+    like a state ("Washington") cannot outrank the code after it."""
+    parts = [p.strip() for p in _html_unescape(text or "").split(",")][1:3]
+    for p in parts:
+        if len(p) == 2 and p.upper() in _US_STATE_SET:
+            return p.upper()
+    for p in parts:
+        st = _us_state(p)
+        if st:
+            return st
+    return ""
+
+
+def kaiser_card_states(html: str) -> dict[str, str]:
+    """job id -> state, from each result card's location line."""
+    out: dict[str, str] = {}
+    for jid, inner in KAISER_CARD_RX.findall(html or ""):
+        m = KAISER_CARD_LOCATION_RX.search(inner)
+        st = kaiser_location_state(m.group(1)) if m else ""
+        if st:
+            out.setdefault(jid, st)
+    return out
+
+
 async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
     """Paginate Kaiser's /search-jobs?p=N and parse jobs out of the rendered HTML."""
     SYSTEM = "Kaiser Permanente"
@@ -7439,6 +7480,7 @@ async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
         matches = KAISER_JOB_PATTERN.findall(html)
         # Build job_id -> title lookup from the heading-after-href pattern
         title_map = {jid: t.strip() for jid, t in KAISER_TITLE_NEAR_HREF.findall(html)}
+        card_states = kaiser_card_states(html)   # 2026-10-25: the card's own state first
 
         new_this_page = 0
         for url_path, city, title_slug, job_id in matches:
@@ -7449,7 +7491,7 @@ async def scrape_kaiser_html(session: aiohttp.ClientSession) -> list[Job]:
             # Prefer the actual heading title; fall back to slug-derived
             title = title_map.get(job_id) or title_slug.replace("-", " ").title()
             city_name = city.replace("-", " ").title()
-            state = KAISER_CITY_STATE.get(city.lower(), "")
+            state = card_states.get(job_id) or KAISER_CITY_STATE.get(city.lower(), "")
             jobs.append(Job(
                 title=title,
                 hospital_system=SYSTEM,
