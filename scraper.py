@@ -4728,6 +4728,38 @@ def _taleo_job_url(url: str) -> str:
     return f"{origin}{path}?" + urlencode([("job", job)] + ([("lang", lang)] if lang else []))
 
 
+# 2026-10-27 (owner: "Need to fix hendrick too"): HealthcareSource's
+# #/preApply/<id> route is the first step of an application, not the posting.
+# Its screen is the tenant's "Employee Verification" question (Hendrick:
+# "Are you a current employee of Hendrick Health? ...", applyFlow.applyShield
+# in the page's own config) with Next and Back, and no job description.
+# #/job/<id> on the same tenant is the public posting with its Apply button;
+# both routes load the posting by the same id (the app's route table:
+# '/job/:id' and '/preApply/:id', both reading WebApi.getJob, i.e.
+# JobseekerAPI/Site/<tenant>/api/v2/JobPostingV2?id=<id>, no sign-in).
+# Phenom hands the preApply link out as applyUrl for Hendrick Health (373
+# active rows on 10-26, pm.healthcaresource.com/cs/ehendrick/#/preApply/<id>);
+# no other system stored one. Only the route word changes: the slash before
+# "#" (or none), a query before "#" and one after the id stay as they were.
+# Runs in scrape_phenom and again for every row on write
+# (_sanitize_apply_url), so no adapter can store the employee question.
+_HCS_PREAPPLY_RX = re.compile(
+    r"^(https?://[^/?#]+\.healthcaresource\.com/cs/[^/?#]+/?(?:\?[^#]*)?)#/preApply/([0-9]+)/?(?=\?|$)", re.I)
+
+
+def _hcs_job_url(url: str) -> str:
+    """A HealthcareSource career-site link to the employee question that starts
+    an application (.../cs/<tenant>[/][?query]#/preApply/<id>[?query]) becomes
+    the public job page of the same tenant and posting
+    (.../cs/<tenant>[/][?query]#/job/<id>[?query]). Anything else is returned
+    unchanged."""
+    u = url or ""
+    m = _HCS_PREAPPLY_RX.match(u)
+    if not m:
+        return u
+    return f"{m.group(1)}#/job/{m.group(2)}{u[m.end():]}"
+
+
 def _workday_cxs_url(url: str) -> str:
     """The CXS detail endpoint for a Workday job page or apply URL
     (myworkdayjobs.com tenant hosts and the shared myworkdaysite.com hosts),
@@ -13527,6 +13559,11 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 # (".../careersection/[cs/]jobapply.ftl?job=..."), a privacy and
                 # sign-in page. Store the Taleo job page (jobdetail.ftl).
                 url = _taleo_job_url(url)
+                # 2026-10-27: Hendrick Health's postings hand out
+                # HealthcareSource's employee question
+                # (".../cs/ehendrick/#/preApply/{id}"). Store the job page
+                # (".../#/job/{id}", _hcs_job_url).
+                url = _hcs_job_url(url)
                 # 2026-10-27: UAB's iCIMS-backed postings hand out iCIMS's
                 # candidate sign-in step (".../jobs/{id}/{slug}/login"). Store
                 # the tenant's own Phenom job page, where the posting and its
@@ -26682,6 +26719,9 @@ def _sanitize_apply_url(url: str) -> str:
     # becomes the career site's own job link (_csod_job_url).
     url = _taleo_job_url(url)
     url = _csod_job_url(url)
+    # 2026-10-27: a HealthcareSource #/preApply/<id> link (the employee
+    # question that starts an application) becomes #/job/<id> (_hcs_job_url).
+    url = _hcs_job_url(url)
     # Workday: externalPath already begins with /job/, so a prepended /job/
     # produces /job//job/ -> Sign-In page. Collapse to canonical single slash.
     url = url.replace("/job//job/", "/job/")
@@ -26732,6 +26772,10 @@ def _structural_url_ok(url: str, platform: str) -> tuple[bool, str]:
     if (_TALEO_APPLY_RX.match(url) or _TALEO_LOGIN_RX.match(url) or _CSOD_REQ_PATH_RX.match(url)
             or _ICIMS_LOGIN_STEP_RX.match(url)):
         return False, "sign_in_step"
+    # 2026-10-27: HealthcareSource's #/preApply/<id> (the employee question);
+    # _sanitize_apply_url repairs it first, so a hit here is a new shape.
+    if _HCS_PREAPPLY_RX.match(url):
+        return False, "apply_first_step"
     low = url.lower()
     if "myworkdayjobs.com" in low or "myworkdaysite.com" in low:
         if "/job//job/" in url:
