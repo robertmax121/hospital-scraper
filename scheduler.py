@@ -96,16 +96,32 @@ def hash_notes(counts: dict) -> str:
 def travel_sweep_notes(counts: dict) -> str:
     """The notes tail for the travel sweep (2026-10-13): the domains it held
     and why, so a held source shows on the dashboard and not only in the
-    Railway log. Sources that returned nothing are left to meta. Empty when
-    nothing worth reading was held."""
+    Railway log. Sources that returned nothing are left to meta unless their
+    adapter recorded why (2026-10-25). Empty when nothing worth reading was
+    held."""
     ts = counts.get("travel_sweep") or {}
     if ts.get("skipped"):
         return f"; travel sweep skipped ({ts['skipped']})"
     y = ts.get("yield") or {}
     held = {d: r for d, r in (ts.get("held") or {}).items() if y.get(d)}
-    if not held:
-        return ""
-    return "; travel sweep held " + "; ".join(f"{d} ({r})" for d, r in sorted(held.items()))
+    out = ""
+    if held:
+        out = "; travel sweep held " + "; ".join(f"{d} ({r})" for d, r in sorted(held.items()))
+    # 2026-10-25 (Search Console fix 3): what the stale backstop retired from
+    # the held sources, and a source that returned nothing with the reason its
+    # adapter gave (Aya returned nothing for six nights with no word here).
+    stale = ts.get("stale") or {}
+    if stale.get("total"):
+        out += (f"; travel stale backstop retired {stale['total']:,} ("
+                + ", ".join(f"{d} {n:,}" for d, n in sorted((stale.get("retired") or {}).items()) if n)
+                + ")")
+    if stale.get("failed"):
+        out += "; travel stale backstop failed " + "; ".join(
+            f"{d} ({r})" for d, r in sorted(stale["failed"].items()))
+    quiet = {d: r for d, r in (ts.get("incomplete") or {}).items() if d in y and not y.get(d)}
+    if quiet:
+        out += "; travel source returned nothing " + "; ".join(f"{d} ({r})" for d, r in sorted(quiet.items()))
+    return out
 
 
 def run():
