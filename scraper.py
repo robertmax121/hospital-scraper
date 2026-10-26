@@ -1175,6 +1175,7 @@ FEED_CONFIGS = (
     "CSOD_ORGS", "PAYCOM_ORGS", "PAYCOR_ORGS", "PAYLOCITY_ORGS", "WORKABLE_ORGS",
     "TALEMETRY_SITES", "TALEO_BE_ORGS", "HCTS_PORTALS", "PEOPLESOFT_SITES",
     "APPLICANTSTACK_ORGS", "JAZZHR_ORGS", "JOBAPS_SITES",   # 2026-10-25 coverage stage 4
+    "SILKROAD_SITES",                                      # 2026-10-27 (Temple Health)
     "LIQUIDCOMPASS_SITES", "SUCCESSFACTORS_ORGS", "HTML_LIST_SITES", "EIGHTFOLD_ORGS",
     "PLAYWRIGHT_SITES", "USAJOBS_ORGS",
 )
@@ -1417,7 +1418,9 @@ KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor"
                         # 2026-10-05 (push 9): the RMK and NY State Jobs job-page passes store under these.
                         "SuccessFactorsRMK", "NYStateJobs",
                         # 2026-10-25 (coverage stage 4): the new job-page passes store under these.
-                        "Taleo", "SelectMinds", "ApplicantStack", "JazzHR", "JobAps")
+                        "Taleo", "SelectMinds", "ApplicantStack", "JazzHR", "JobAps",
+                        # 2026-10-27: the SilkRoad OpenHire job-page pass (Temple Health).
+                        "SilkRoad")
 KNOWN_BODY_PAGE      = 1000
 # 2026-10-07 (push 10): the read covers every active body now (346,809 on
 # 10-07), not only the detail platforms, so the cap moves up from 400,000.
@@ -1727,6 +1730,10 @@ def _known_kind(system: str, job):
                facts have no req_id, while REQ_REREAD_WINDOW is open and the
                list gave none: a candidate after the force re-reads, before
                the pay re-reads, so the page's requisition number is read.
+      "facility" (2026-10-27) a stored body of an ICIMS_COMPANY_FACILITY
+               system still on the system label, on its _company_reread_slot
+               night: queued with the force re-reads, so the page's Company
+               field is read
                Integration 2026-10-14: the two re-reads never touch the same
                row (_req_reread_slot leaves REQ_REREAD_PLATFORMS to "req"),
                and a row gets one kind a night, so it is queued once.
@@ -1743,6 +1750,8 @@ def _known_kind(system: str, job):
         return "cut"
     if _force_slot(*key) or _req_reread_slot(key, job):
         return "force"
+    if _company_reread_slot(key):
+        return "facility"     # 2026-10-27: read for its iCIMS Company field
     if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
         return "pay"
     if (key in _KNOWN_NOREQ and getattr(job, "ats_platform", "") in REQ_REREAD_PLATFORMS
@@ -1917,6 +1926,118 @@ def _force_slot(canon: str, job_id: str) -> bool:
     if b < a or today < a or today > b:
         return False
     return zlib.crc32(f"force|{canon}|{job_id}".encode("utf-8")) % (b - a + 1) == today - a
+
+
+# ── iCIMS Company field as the facility (2026-10-27, Select Medical) ────────
+# Select Medical's card list names no facility, so all 4,096 active rows said
+# "Select Medical" on 10-26, while each job page's header names the employer
+# entity in a "Company" field ("Select Specialty Hospital - Knoxville",
+# "Select Physical Therapy"). For the systems here the iCIMS detail pass
+# stores that field as hospital_name (_icims_apply_page). The list sends the
+# system label every night, so a row's stored facility is carried onto its
+# list row (_keep_stored_company, from load_stored_companies at run start),
+# and the stored bodies still on the system label are read once more for it:
+# kind "facility" (_known_kind), one night in ICIMS_FACILITY_REREAD_CYCLE per
+# posting (~820 of Select's ~4,100 a night), after the rows with no body, on
+# the iCIMS budget. A row drops out as soon as its facility is stored; one
+# not reached comes back a cycle later; the re-read ends on
+# ICIMS_FACILITY_REREAD_UNTIL (new rows still get the field on their first
+# read).
+ICIMS_COMPANY_FACILITY = frozenset({"Select Medical"})
+ICIMS_FACILITY_REREAD_CYCLE = int(os.getenv("ICIMS_FACILITY_REREAD_CYCLE", "5"))
+ICIMS_FACILITY_REREAD_UNTIL = os.getenv("ICIMS_FACILITY_REREAD_UNTIL", "2026-12-31")
+_STORED_COMPANY: dict = {}     # (system, job_id) -> stored hospital_name, ICIMS_COMPANY_FACILITY rows
+STORED_COMPANY_PAGE = 1000
+
+
+def set_stored_companies(rows) -> int:
+    """Install {(hospital_system, job_id): hospital_name} from rows of
+    {hospital_system, job_id, hospital_name} (ICIMS_COMPANY_FACILITY systems
+    only). Returns the map's size."""
+    global _STORED_COMPANY
+    out = {}
+    for r in rows or []:
+        s, jid = r.get("hospital_system"), r.get("job_id")
+        if s in ICIMS_COMPANY_FACILITY and jid not in (None, ""):
+            out[(s, str(jid))] = re.sub(r"\s+", " ", str(r.get("hospital_name") or "")).strip()
+    _STORED_COMPANY = out
+    return len(out)
+
+
+def load_stored_companies() -> int:
+    """One read-only PostgREST pass per ICIMS_COMPANY_FACILITY system over its
+    active rows (job_id, hospital_name), keyset-paged on id (Select Medical:
+    5 pages). Without credentials, or with the detail passes off, the map
+    stays empty: no facility is carried and none is re-read."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = sb_keys.supabase_key()
+    if not sb_url or not sb_key or not DETAIL_FETCH:
+        set_stored_companies([])
+        return 0
+    import urllib.parse as _urlparse
+    import urllib.request as _urlreq
+    rows = []
+    for system in sorted(ICIMS_COMPANY_FACILITY):
+        flt = _urlparse.quote(f"eq.{system}", safe=".")
+        last = 0
+        try:
+            while True:
+                u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,hospital_name"
+                     f"&is_active=is.true&hospital_system={flt}&id=gt.{last}&order=id.asc&limit={STORED_COMPANY_PAGE}")
+                rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+                chunk = None
+                for attempt in range(KNOWN_BODY_RETRIES):
+                    try:
+                        with _urlreq.urlopen(rq, timeout=60) as resp:
+                            chunk = json.loads(resp.read().decode())
+                        break
+                    except Exception:
+                        if attempt + 1 >= KNOWN_BODY_RETRIES:
+                            raise
+                        time.sleep(3 * (attempt + 1))
+                if not chunk:
+                    break
+                rows.extend(chunk)
+                last = chunk[-1]["id"]
+                if len(chunk) < STORED_COMPANY_PAGE:
+                    break
+        except Exception as e:
+            logger.warning(f"Stored companies: {system} load stopped ({e}); its rows past that are "
+                           f"neither carried nor re-read tonight")
+    n = set_stored_companies(rows)
+    left = sum(1 for (s, _j), name in _STORED_COMPANY.items() if name in ("", s))
+    logger.info(f"Stored companies: {n:,} active rows of {', '.join(sorted(ICIMS_COMPANY_FACILITY))}; "
+                f"{left:,} still on the system label")
+    return n
+
+
+def _keep_stored_company(job) -> None:
+    """A list row of an ICIMS_COMPANY_FACILITY system that names no facility
+    takes the one stored on its row (the list's label would overwrite it)."""
+    s = job.hospital_system
+    if s not in ICIMS_COMPANY_FACILITY or (job.hospital_name or "").strip() not in ("", s):
+        return
+    stored = _STORED_COMPANY.get((s, str(job.job_id)), "")
+    if stored and stored != s:
+        job.hospital_name = stored
+
+
+def _company_reread_slot(key) -> bool:
+    """True when this stored row (key = (canonical system, job_id)) of an
+    ICIMS_COMPANY_FACILITY system is still on the system label and tonight
+    is its night to be read for its Company field."""
+    canon, jid = key
+    if canon not in ICIMS_COMPANY_FACILITY or _STORED_COMPANY.get(key) not in ("", canon):
+        return False
+    if key not in _STORED_COMPANY:
+        return False
+    try:
+        if _run_day() > datetime.strptime(ICIMS_FACILITY_REREAD_UNTIL, "%Y-%m-%d").toordinal():
+            return False
+    except (TypeError, ValueError):
+        return False
+    n = max(1, ICIMS_FACILITY_REREAD_CYCLE)
+    return zlib.crc32(f"company|{canon}|{jid}".encode("utf-8")) % n == _run_day() % n
 
 
 def _refresh_quota(budget) -> int:
@@ -2425,7 +2546,13 @@ WORKDAY_TENANTS = {
     "CityMD":                    ("shm", "5", "summit_citymd"),
     # Compassus: hospice + palliative care + home health across ~200 locations.
     # Endpoint validated 2026-05-26: hospicecom.wd5/Compassus returns total=1076.
-    "Compassus":                 ("hospicecom", "5", "Compassus"),
+    # 2026-10-27: the career site moved to compassuscareers.com (WordPress),
+    # whose Apply links name the same tenant under a new site,
+    # hospicecom.wd5/compassuscareers (total 939 on 10-26; the old site
+    # "Compassus" has listed nothing since 09-21). Same tenant, same
+    # "2026-59104" requisition ids, so rows still open come back on their
+    # old keys.
+    "Compassus":                 ("hospicecom", "5", "compassuscareers"),
     # ── Added 2026-05-29: Phase 3 non-acute expansion (verified Workday cxs 200) ──
     # All endpoints validated live 2026-05-29 via probe_ats.py (Origin/Referer
     # headers required; reads data["total"]).
@@ -3746,6 +3873,7 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     canon = _canon_system(system)
     cands, known, dup = [], 0, 0
     tier, stale, due = {}, [], []
+    facility_ids: set = set()      # 2026-10-27: tier-1 rows queued for their Company field
     for it in items:
         j = job_of(it)
         if len((j.description or "").strip()) >= DETAIL_MIN_CHARS:
@@ -3773,7 +3901,9 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
             continue
         # 2026-10-14: "req" (requisition-number re-reads) sits between the
         # forced re-reads and the pay re-reads.
-        tier[id(it)] = {"cut": 4, "pay": 3, "req": 2, "force": 1}.get(kind, 0)
+        tier[id(it)] = {"cut": 4, "pay": 3, "req": 2, "force": 1, "facility": 1}.get(kind, 0)
+        if kind == "facility":
+            facility_ids.add(id(it))
         if (kind is None and getattr(j, "ats_platform", "") in REQ_ID_PAGE_PLATFORMS
                 and (canon, str(j.job_id)) in _KNOWN_HAS_REQ):
             # 2026-10-14: body and job number already stored; behind the rows
@@ -3797,7 +3927,8 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
         held.extend((it, job_of(it).description, "cut") for it in cands if tier[id(it)] == 4)
         held.extend((it, job_of(it).description, "pay") for it in cands if tier[id(it)] == 3)
         held.extend((it, job_of(it).description, "req") for it in cands if tier[id(it)] == 2)
-        held.extend((it, job_of(it).description, "force") for it in cands if tier[id(it)] == 1)
+        held.extend((it, job_of(it).description, "facility" if id(it) in facility_ids else "force")
+                    for it in cands if tier[id(it)] == 1)
     return refresh + cands, known, dup
 
 
@@ -6850,6 +6981,38 @@ async def _wd_fill_states(session, working_url: str, system: str, jobs: list, de
     logger.info(f"  Workday {system}: blank states {blank:,} -> facet {by_facet:,}, default {by_default:,}, still blank {still:,}")
 
 
+# 2026-10-27: how deep a window-filling Workday slice is split again
+# (scrape_workday, _slice), and the most values a facet may have to be used
+# for a split (each value costs at least one request).
+WD_SUBSLICE_DEPTH = 3
+WD_SUBSLICE_MAX_VALUES = 60
+
+
+def _wd_split_facet(data: dict, applied: dict, count) -> tuple | None:
+    """(facetParameter, [(value id, count), ...], covers) to split a slice
+    by, from that slice's own probe (`data`, facet counts inside `applied`).
+    Facets already applied, with one value, or with more than
+    WD_SUBSLICE_MAX_VALUES are not used. `covers`: the values' counts add up
+    to the slice's `count` (every posting lands in a value; a posting at two
+    sites lands in both). Preferred: a facet that covers the slice, then one
+    whose every value fits the window, then the fewest values (Trinity's
+    Nursing Group: timeType, 2 values, before 18 states)."""
+    best = None
+    for param, _label, vals in _wd_facet_groups(data or {}):
+        if not param or param in (applied or {}):
+            continue
+        pairs = [(v.get("id"), int(v.get("count") or 0)) for v in vals
+                 if isinstance(v, dict) and v.get("id") and int(v.get("count") or 0) > 0]
+        if len(pairs) < 2 or len(pairs) > WD_SUBSLICE_MAX_VALUES:
+            continue
+        covers = count is None or sum(n for _, n in pairs) >= count
+        fits = all(n <= WD_FACET_WINDOW for _, n in pairs)
+        score = (not covers, not fits, len(pairs))
+        if best is None or score < best[0]:
+            best = (score, param, pairs, covers)
+    return (best[1], best[2], best[3]) if best else None
+
+
 async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_data: tuple) -> list[Job]:
     tenant, wd_num, primary_site = tenant_data
     jobs = []
@@ -6875,7 +7038,7 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # `offset >= total` break believing results continued past 2,000; they
     # respond, but they repeat. Pagination alone can NEVER see past the
     # window — big tenants need the facet-sliced pass below.
-    WD_RESULT_WINDOW = 2000
+    WD_RESULT_WINDOW = WD_FACET_WINDOW   # 2,000 (one constant since 2026-10-27; the tests lower it)
     # Dedupe within the tenant across the wrap-around AND across facet slices.
     # Also protects the upsert: two identical (job_id, system) rows in one
     # batch would make ON CONFLICT error out ("cannot affect row a second
@@ -7064,29 +7227,72 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # "total" of 2,000. Facet preference: jobFamilyGroup splits finest
     # (25 values, largest 1,951 at Advocate); timeType (2 values) is the
     # last-resort coarse split.
-    if hit_window:
+    # 2026-10-27 (Trinity Health): a slice can itself hold more than the
+    # window. Trinity's "Nursing Group" listed 2,299 postings on 10-26, so
+    # every night the 299 its window left out went unseen, the sweep retired
+    # them (the crawl yields well over the 80% guard), and 69 were never
+    # stored at all: 251 live nursing postings sat inactive with us that day.
+    # A slice whose facet count is past the window, or whose crawl fills it,
+    # is now split again by another facet (_wd_split_facet: Nursing Group by
+    # timeType, 1,586 + 713), up to WD_SUBSLICE_DEPTH levels; one probe
+    # (limit 1) per split reads the counts inside the slice.
+    async def _facet_probe(applied: dict) -> dict:
         try:
             async with req(session, "post", working_url,
-                json={"limit": 1, "offset": 0, "searchText": "", "appliedFacets": dict(base_facets)},
+                json={"limit": 1, "offset": 0, "searchText": "", "appliedFacets": dict(applied)},
                 headers={**HEADERS, "Content-Type": "application/json"},
                 ssl=False, proxy=proxies.get(),
                 timeout=aiohttp.ClientTimeout(total=25)) as r:
-                facet_data = await r.json() if r.status == 200 else {}
+                return await r.json() if r.status == 200 else {}
         except Exception:
-            facet_data = {}
-        facets = {f.get("facetParameter"): [v.get("id") for v in (f.get("values") or []) if v.get("id")]
+            return {}
+
+    async def _slice(applied: dict, count, depth: int) -> int:
+        """Crawl one facet slice; returns how many of its leaves still filled
+        the window. A slice known to be past the window is not crawled whole
+        when a split covers it."""
+        over = count is not None and count > WD_RESULT_WINDOW
+        if not over:
+            if not await _crawl(applied):
+                return 0
+            if depth >= WD_SUBSLICE_DEPTH:
+                return 1
+        elif depth >= WD_SUBSLICE_DEPTH:
+            return 1 if await _crawl(applied) else 0
+        await jitter()
+        split = _wd_split_facet(await _facet_probe(applied), applied, count)
+        if not split:
+            if over:
+                return 1 if await _crawl(applied) else 0
+            return 1
+        param, values, covers = split
+        if over and not covers:
+            await _crawl(applied)      # the split misses some postings: take the window too
+        left = 0
+        for vid, n in values:
+            await jitter()
+            left += await _slice({**applied, param: [vid]}, n, depth + 1)
+        return left
+
+    if hit_window:
+        facet_data = await _facet_probe(base_facets)
+        facets = {f.get("facetParameter"): [(v.get("id"), v.get("count")) for v in (f.get("values") or []) if v.get("id")]
                   for f in (facet_data.get("facets") or [])}
         slice_param = next((p for p in ("jobFamilyGroup", "jobFamily", "timeType")
                             if facets.get(p)), None)
         if slice_param:
             before = len(jobs)
             truncated_slices = 0
-            for vid in facets[slice_param]:
-                if await _crawl({**base_facets, slice_param: [vid]}):
-                    truncated_slices += 1
+            split_slices = 0
+            for vid, n in facets[slice_param]:
+                if isinstance(n, int) and n > WD_RESULT_WINDOW:
+                    split_slices += 1
+                truncated_slices += await _slice({**base_facets, slice_param: [vid]},
+                                                 n if isinstance(n, int) else None, 1)
                 await jitter()
             logger.info(f"  Workday {system}: window hit — facet-sliced by {slice_param} "
                         f"({len(facets[slice_param])} slices) recovered {len(jobs)-before} more jobs"
+                        + (f"; {split_slices} slices past the window split again" if split_slices else "")
                         + (f"; {truncated_slices} slices ALSO hit the window (still truncated)"
                            if truncated_slices else ""))
         else:
@@ -9036,32 +9242,86 @@ def _parse_icims_cards(text: str, system: str, domain: str) -> list[Job]:
     return jobs
 
 
+# 2026-10-27 (Select Medical): the card list prints "Search Results Page 1
+# of 82" over its cards. A crawl that read every page through "Page N of N",
+# each answered, with no posting listed twice (a list that moved while it was
+# read), is the whole board and reports itself complete (Layer 4 then retires
+# a closed posting the first night it is gone). A page that failed, a page
+# AWS WAF answered with its "Human Verification" CAPTCHA (HTTP 405; iCIMS
+# showed this machine one on every request on 10-26), or a crawl that ended
+# before page N is PARTIAL: the sweep waits, where it used to see 85% of
+# Select's rows, pass the 80% guard and retire the rest for a night. A portal
+# whose pages print no pager keeps the old rule (neither claim).
+_ICIMS_PAGER_RX = re.compile(r"\bPage\s+(\d+)\s+of\s+(\d+)\b", re.I)
+_WAF_PAGE_RX = re.compile(r"<title>\s*Human Verification\s*</title>|awsWafCookieDomainList|\.awswaf\.com/", re.I)
+
+
+def icims_pager(text: str) -> tuple[int, int] | None:
+    """(page, of) from an iCIMS search page's "Page 1 of 82", or None."""
+    m = _ICIMS_PAGER_RX.search(re.sub(r"<[^>]+>", " ", text or ""))
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def is_waf_challenge(status, text: str) -> bool:
+    """AWS WAF's bot check in place of the page: HTTP 405 with its
+    "Human Verification" CAPTCHA (or the same page with another status)."""
+    return status == 405 or bool(_WAF_PAGE_RX.search((text or "")[:5000]))
+
+
 async def _scrape_icims_cards(session: aiohttp.ClientSession, system: str, domain: str, first_text: str) -> list[Job]:
     """Page 0 is the classic response already in hand; pr=1.. until a page
-    adds no new ids (200-page cap = 10,000 jobs)."""
+    adds no new ids (200-page cap = 10,000 jobs), or (2026-10-27) the page
+    that prints "Page N of N"."""
     jobs = _parse_icims_cards(first_text, system, domain)
     seen = {j.job_id for j in jobs}
+    pager = icims_pager(first_text)
+    stop = ""            # why the crawl ended before its last page ("" = it did not)
+    waf = False
+    repeats = 0
     page = 1
-    while jobs and page < 200:
+    while jobs and page < 200 and not (pager and pager[0] >= pager[1]):
         await jitter()
         try:
             async with req(session, "get", f"https://{domain}/jobs/search",
                            params={"ss": "1", "pr": str(page), "in_iframe": "1", "searchRelation": "keyword_all"},
                            headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
                            proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
-                if r.status != 200:
-                    break
-                text = await r.text()
+                status = r.status
+                text = await r.text() if status in (200, 405) else ""
         except Exception as e:
             logger.info(f"iCIMS {system} cards page {page}: {e}")
+            stop = f"page {page + 1}: {type(e).__name__}"
             break
-        new = [j for j in _parse_icims_cards(text, system, domain) if j.job_id not in seen]
+        if is_waf_challenge(status, text):
+            stop = f"page {page + 1}: AWS WAF Human Verification (HTTP {status})"
+            waf = True
+            break
+        if status != 200:
+            stop = f"page {page + 1}: HTTP {status}"
+            break
+        parsed = _parse_icims_cards(text, system, domain)
+        new = [j for j in parsed if j.job_id not in seen]
+        repeats += len(parsed) - len(new)
+        pager = icims_pager(text) or pager
         if not new:
+            if pager and pager[0] < pager[1]:
+                stop = f"page {pager[0]} of {pager[1]} added nothing"
             break
         jobs.extend(new)
         seen.update(j.job_id for j in new)
         page += 1
-    logger.info(f"  iCIMS {system}: {len(jobs)} jobs (card list, {page} pages)")
+    whole = bool(jobs and pager and pager[0] >= pager[1] and not stop)
+    # A portal that prints no pager keeps the old rule on an HTTP error (its
+    # end is not known); a WAF page is never an end.
+    if jobs and (waf or (pager and not whole)):
+        report_partial(system)
+        logger.warning(f"iCIMS {system}: PARTIAL, {stop or 'the pager never reached its last page'} "
+                       f"({len(jobs)} jobs read{f', page {pager[0]} of {pager[1]}' if pager else ''}); "
+                       f"not swept tonight")
+    elif whole and not repeats:
+        report_complete(system, len(jobs), len(jobs), feed="ICIMS_ORGS")
+    logger.info(f"  iCIMS {system}: {len(jobs)} jobs (card list, {page} pages"
+                + (f", page {pager[0]} of {pager[1]}" if pager else "") + ")")
     return jobs
 
 
@@ -9178,7 +9438,16 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
                     jobs = await _scrape_icims_modern(session, system, domain)
                     return jobs
                 if r.status != 200:
-                    logger.info(f"iCIMS {system}: HTTP {r.status}")
+                    if r.status == 405:
+                        # 2026-10-27: AWS WAF's "Human Verification" CAPTCHA
+                        # in place of the list: nothing read, never the
+                        # board's end (a PARTIAL report as well as the
+                        # zero-yield guard).
+                        report_partial(system)
+                        logger.warning(f"iCIMS {system}: HTTP 405 (AWS WAF Human Verification); PARTIAL, "
+                                       f"not swept tonight")
+                    else:
+                        logger.info(f"iCIMS {system}: HTTP {r.status}")
                     break
                 ct = r.headers.get("content-type", "")
                 if "json" in ct:
@@ -9285,6 +9554,14 @@ def _icims_apply_page(job, html: str) -> bool:
     gives none."""
     if not job.req_id and html and "iCIMS_JobCardItem" not in html:
         job.req_id = icims_req_id(_icims_header(html), html, job.job_id)
+    # 2026-10-27: the header's Company field names the facility on
+    # ICIMS_COMPANY_FACILITY portals (Select Medical); taken whenever the
+    # page shows one, before the JSON-LD check (a page with a header and no
+    # posting block still names its employer entity).
+    if job.hospital_system in ICIMS_COMPANY_FACILITY:
+        company = icims_company(_icims_header(html))
+        if company:
+            job.hospital_name = company
     posting = _jobposting_from_html(html)
     if not posting:
         return False
@@ -9325,6 +9602,13 @@ _ICIMS_HDR_PAIR_RX = re.compile(r"<dt[^>]*>(.*?)</dt>\s*<dd[^>]*>(.*?)</dd>", re
 _ICIMS_SHIFT_WORDS = (("Night", r"nights?|noc|overnights?|third|3rd|3"), ("Day", r"days?|first|1st|1"),
                       ("Evening", r"evenings?|second|2nd|2|swing|pm"), ("Rotating", r"rotating|rotation|rotates?"),
                       ("Variable", r"variable|varies|various|varied"), ("Weekend", r"weekends?"))
+
+
+def icims_company(hdr: dict) -> str:
+    """The job page header's "Company" value, whitespace collapsed; "" when
+    absent or a placeholder."""
+    v = re.sub(r"\s+", " ", str((hdr or {}).get("company") or "")).strip()
+    return v if len(v) >= 3 and v.lower() not in ("n/a", "none", "company") else ""
 
 
 def _icims_header(html: str) -> dict:
@@ -9401,6 +9685,8 @@ async def _icims_tenant(session, system: str, domain: str, fetch_one) -> list[Jo
     """One portal: the list (scrape_icims, unchanged), then the detail pass on
     ICIMS_DESC_BUDGET. A failed pass leaves the listed rows as they were."""
     jobs = await scrape_icims(session, system, domain)
+    for j in jobs:
+        _keep_stored_company(j)      # 2026-10-27: no-op outside ICIMS_COMPANY_FACILITY
     if DETAIL_FETCH and jobs:
         try:
             await _detail_pass(session, system, jobs, ICIMS_DESC_BUDGET, fetch_one, "iCIMS",
@@ -9544,6 +9830,21 @@ JIBE_SITES = {
 JIBE_MAX_PAGES = 100
 JIBE_CEILING_WARN = 0.8
 
+# 2026-10-27 (UHS: our rows held 4,819 of the 6,014 postings on its board).
+# /api/jobs pages a listing only so deep: on jobs.uhsinc.com (totalCount
+# 6,023 that day) pages 1-51 held distinct postings and every page from 52 on
+# answered page 51 again (pages 51 and 61 byte-identical), so ~900 postings
+# were never listed, the sweep retired them, and the page loop never saw an
+# end. A board whose totalCount is past JIBE_DEEP_WINDOW is read one state at
+# a time instead (?state=<full name>; exact: "Virginia" 178, "West Virginia"
+# 7, each row in its own state). JIBE_STATE_NAMES is every name the slices
+# try beyond those on the board's first page; UHS writes the District as
+# "Washington, DC".
+JIBE_DEEP_WINDOW = 5000
+JIBE_STATE_NAMES = frozenset(
+    [n.title() for n in _STATE_CODE_BY_NAME if n != "district of columbia"]
+    + ["District of Columbia", "Washington, DC", "Puerto Rico"])
+
 # 2026-10-15: Jibe boards whose feed names a dead host in
 # meta_data.canonical_url. Norton's points at www.nortonhealthcarecareers.com/
 # jobs/<slug>?lang=en-us, which answered 404 for every posting on 10-15 (all
@@ -9682,7 +9983,6 @@ async def _jibe_labels_page(session, base_url: str, first_url: str = "") -> str:
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs: list[Job] = []
     raw_tags: dict = {}            # job_id -> the row's tagsN fields (push 9, pay tags)
-    page, total = 1, None
     # 2026-10-15: every posting the feed served (req_id, else slug) that this
     # adapter stored or skipped on purpose (UHS's provider postings carry no
     # req_id), for the complete claim against totalCount; whether a page
@@ -9690,107 +9990,160 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
     # live posting not stored tonight, so it is never counted as served and
     # any such row makes the crawl PARTIAL).
     served: set[str] = set()
-    failed_at = None
     bad_rows = 0
-    while page <= JIBE_MAX_PAGES:  # 100 x 100 = 10,000/site ceiling; UHS (~6,000) is the largest
-        try:
-            async with req(session, "get", f"{base_url}/api/jobs",
-                           params={"page": str(page), "limit": "100"},
-                           headers={**HEADERS, "Accept": "application/json"},
-                           ssl=False, proxy=proxies.get(),
-                           timeout=aiohttp.ClientTimeout(total=30)) as r:
-                if r.status != 200:
-                    logger.info(f"Jibe {system}: HTTP {r.status} at page {page}")
-                    failed_at = page
-                    break
-                data = await r.json(content_type=None)
-        except Exception as e:
-            logger.info(f"Jibe {system}: page {page} error: {e}")
-            failed_at = page
-            break
-        items = data.get("jobs") or []
-        if total is None:
-            total = data.get("totalCount") or 0
-            ceiling = JIBE_MAX_PAGES * 100
-            if total and total > JIBE_CEILING_WARN * ceiling:
-                logger.warning(f"Jibe {system}: totalCount {total:,} is {100 * total // ceiling}% of the "
-                               f"{JIBE_MAX_PAGES}-page ceiling ({ceiling:,}); raise JIBE_MAX_PAGES before the "
-                               f"board passes it (past it the board reports PARTIAL every night)")
-        if not items:
-            break
-        row_errors = 0
-        first_err = None
-        for wrap in items:
+    page_states: set[str] = set()  # 2026-10-27: the state names the first page shows (sliced reads)
+
+    async def _read(extra: dict, deep_check: bool = False):
+        """Page one /api/jobs listing (`extra`: a filter such as {"state":
+        "Texas"}; {} for the whole board). Returns (its totalCount, how it
+        ended): "end" read to its last page; "deep" (deep_check, the whole
+        board only) the first page says the listing is past JIBE_DEEP_WINDOW,
+        so nothing past page 1 is read; "failed" an HTTP error, an exception,
+        the page ceiling, or a page that repeated this listing's rows."""
+        nonlocal bad_rows
+        page, total = 1, None
+        listed: set[str] = set()   # postings this listing returned (repeat check)
+        label = "".join(f" [{k} {v}]" for k, v in extra.items())
+        while page <= JIBE_MAX_PAGES:  # 100 x 100 = 10,000 per listing
             try:
-                j = (wrap or {}).get("data") or wrap
-                rid = str(j.get("req_id") or "").strip()
-                tag = rid or str(j.get("slug") or "").strip()
-                title = (j.get("title") or "").strip()
-                if not rid or not title:
-                    if tag:
-                        served.add(tag)     # read, and left out on purpose
-                    continue
-                # `state` arrives as a FULL name ("Maryland"); parse_city_state
-                # owns the full-name -> 2-letter mapping (its STATE_ABBR table
-                # is LOCAL to that function — referencing it from here was a
-                # NameError that a bare except silently ate on every row,
-                # yielding "0 jobs (site reports 1175)" on the first test run).
-                # 2026-10-21 (fix 3): city and state are separate fields, so a
-                # town named like a state is the town (town_first).
-                city, st = parse_city_state(
-                    f"{(j.get('city') or '').strip()}, {(j.get('state') or '').strip()}", town_first=True)
-                url = _jibe_posting_url(system, base_url, j, rid)
-                cat = j.get("category")
-                if isinstance(cat, list):
-                    cat = cat[0] if cat else None
-                posted = str(j.get("posted_date") or "")[:10]
-                jobs.append(Job(
-                    title=title,
-                    hospital_system=system,
-                    hospital_name=_jibe_facility(system, j),
-                    city=city,
-                    state=st,
-                    location=", ".join(p for p in (city, st) if p),
-                    specialty=str(cat) if cat else "",
-                    job_type=(j.get("employment_type") or ""),
-                    url=str(url),
-                    job_id=rid,
-                    posted_date=posted,
-                    description=strip_html(str(j.get("description") or "")),
-                    ats_platform="iCIMS",
-                    # 2026-10-15 (owner: "I need amedisys' req id"): the
-                    # feed's req_id is the employer's requisition number, the
-                    # value the posting page prints as "Req ID:" (Novant's
-                    # i18n label REQ_ID "Req ID:"), and it is job_id: req_id
-                    # equalled slug on all 1,216 Amedisys and 1,587 Novant
-                    # postings on 2026-10-15 (and on page 1 of Mercy, Yale
-                    # New Haven and MedStar). Sent as req_id so it lands in
-                    # hospital_jobs.req_id; normalize_job leaves a req_id
-                    # equal to job_id out of the facts hash, so stored facts
-                    # are not re-parsed for it (sql/146b fills stored rows).
-                    req_id=rid,
-                ))
-                served.add(tag)             # stored: only now does it count as served
-                if _jibe_has_figure(j):
-                    raw_tags.setdefault(rid, {k: v for k, v in j.items() if k.startswith("tags") and k != "tags"})
+                async with req(session, "get", f"{base_url}/api/jobs",
+                               params={"page": str(page), "limit": "100", **extra},
+                               headers={**HEADERS, "Accept": "application/json"},
+                               ssl=False, proxy=proxies.get(),
+                               timeout=aiohttp.ClientTimeout(total=30)) as r:
+                    if r.status != 200:
+                        logger.info(f"Jibe {system}{label}: HTTP {r.status} at page {page}")
+                        return total, "failed"
+                    data = await r.json(content_type=None)
             except Exception as e:
-                # Count and report instead of swallowing: a structural bug
-                # (wrong field, missing name) fails EVERY row identically, and
-                # a silent continue turns that into "0 jobs" with no clue.
-                row_errors += 1
-                if first_err is None:
-                    first_err = repr(e)
-                continue
-        if row_errors:
-            bad_rows += row_errors
-            logger.info(f"Jibe {system}: page {page}: {row_errors} row errors (first: {first_err})")
-        if len(items) < 100 or (total and page * 100 >= total):
-            break
-        if page >= JIBE_MAX_PAGES:
-            failed_at = page + 1         # the ceiling, not the board's end
-            break
-        page += 1
-        await jitter()
+                logger.info(f"Jibe {system}{label}: page {page} error: {e}")
+                return total, "failed"
+            items = data.get("jobs") or []
+            if total is None:
+                total = data.get("totalCount") or 0
+                ceiling = JIBE_MAX_PAGES * 100
+                if (not extra and total and total > JIBE_CEILING_WARN * ceiling
+                        and not (deep_check and total > JIBE_DEEP_WINDOW)):
+                    logger.warning(f"Jibe {system}: totalCount {total:,} is {100 * total // ceiling}% of the "
+                                   f"{JIBE_MAX_PAGES}-page ceiling ({ceiling:,}); raise JIBE_MAX_PAGES before the "
+                                   f"board passes it (past it the board reports PARTIAL every night)")
+            if not items:
+                return total, "end"
+            row_errors = 0
+            first_err = None
+            fresh = 0
+            for wrap in items:
+                try:
+                    j = (wrap or {}).get("data") or wrap
+                    rid = str(j.get("req_id") or "").strip()
+                    tag = rid or str(j.get("slug") or "").strip()
+                    if tag and tag not in listed:
+                        listed.add(tag)
+                        fresh += 1
+                    if deep_check and page == 1:
+                        st_name = str(j.get("state") or "").strip()
+                        if st_name:
+                            page_states.add(st_name)
+                    title = (j.get("title") or "").strip()
+                    if not rid or not title:
+                        if tag:
+                            served.add(tag)     # read, and left out on purpose
+                        continue
+                    # `state` arrives as a FULL name ("Maryland"); parse_city_state
+                    # owns the full-name -> 2-letter mapping (its STATE_ABBR table
+                    # is LOCAL to that function — referencing it from here was a
+                    # NameError that a bare except silently ate on every row,
+                    # yielding "0 jobs (site reports 1175)" on the first test run).
+                    # 2026-10-21 (fix 3): city and state are separate fields, so a
+                    # town named like a state is the town (town_first).
+                    city, st = parse_city_state(
+                        f"{(j.get('city') or '').strip()}, {(j.get('state') or '').strip()}", town_first=True)
+                    url = _jibe_posting_url(system, base_url, j, rid)
+                    cat = j.get("category")
+                    if isinstance(cat, list):
+                        cat = cat[0] if cat else None
+                    posted = str(j.get("posted_date") or "")[:10]
+                    jobs.append(Job(
+                        title=title,
+                        hospital_system=system,
+                        hospital_name=_jibe_facility(system, j),
+                        city=city,
+                        state=st,
+                        location=", ".join(p for p in (city, st) if p),
+                        specialty=str(cat) if cat else "",
+                        job_type=(j.get("employment_type") or ""),
+                        url=str(url),
+                        job_id=rid,
+                        posted_date=posted,
+                        description=strip_html(str(j.get("description") or "")),
+                        ats_platform="iCIMS",
+                        # 2026-10-15 (owner: "I need amedisys' req id"): the
+                        # feed's req_id is the employer's requisition number, the
+                        # value the posting page prints as "Req ID:" (Novant's
+                        # i18n label REQ_ID "Req ID:"), and it is job_id: req_id
+                        # equalled slug on all 1,216 Amedisys and 1,587 Novant
+                        # postings on 2026-10-15 (and on page 1 of Mercy, Yale
+                        # New Haven and MedStar). Sent as req_id so it lands in
+                        # hospital_jobs.req_id; normalize_job leaves a req_id
+                        # equal to job_id out of the facts hash, so stored facts
+                        # are not re-parsed for it (sql/146b fills stored rows).
+                        req_id=rid,
+                    ))
+                    served.add(tag)             # stored: only now does it count as served
+                    if _jibe_has_figure(j):
+                        raw_tags.setdefault(rid, {k: v for k, v in j.items() if k.startswith("tags") and k != "tags"})
+                except Exception as e:
+                    # Count and report instead of swallowing: a structural bug
+                    # (wrong field, missing name) fails EVERY row identically, and
+                    # a silent continue turns that into "0 jobs" with no clue.
+                    row_errors += 1
+                    if first_err is None:
+                        first_err = repr(e)
+                    continue
+            if row_errors:
+                bad_rows += row_errors
+                logger.info(f"Jibe {system}{label}: page {page}: {row_errors} row errors (first: {first_err})")
+            if deep_check and page == 1 and total > JIBE_DEEP_WINDOW:
+                return total, "deep"
+            if len(items) < 100 or (total and page * 100 >= total):
+                return total, "end"
+            if not fresh:
+                # 2026-10-27: a full page of postings this listing already
+                # returned. /api/jobs serves the first ~5,100 rows of a
+                # listing and then repeats one page for every page number
+                # (UHS: pages 51 and 61 identical, totalCount 6,023): the
+                # rows past it are unreachable this way, never the board's end.
+                logger.warning(f"Jibe {system}{label}: page {page} repeats rows already read "
+                               f"({len(listed):,} of {total:,} reached); not the board's end")
+                return total, "failed"
+            if page >= JIBE_MAX_PAGES:
+                return total, "failed"      # the ceiling, not the board's end
+            page += 1
+            await jitter()
+        return total, "failed"
+
+    total, how = await _read({}, deep_check=True)
+    failed = how == "failed"
+    if how == "deep":
+        # 2026-10-27 (UHS): the feed lists more postings than /api/jobs will
+        # page through, so the board is read one state at a time (each state
+        # is its own listing under the window; the filter is exact: "Virginia"
+        # does not return West Virginia). The states named on the first page
+        # come first, then every other name in JIBE_STATE_NAMES (a state the
+        # board has no posting in answers totalCount 0 in one request). A row
+        # in two states is read twice and kept once (the job_id dedupe below).
+        states = sorted(page_states) + sorted(JIBE_STATE_NAMES - page_states)
+        missed = []
+        for name in states:
+            await jitter()
+            _t, end = await _read({"state": name})
+            if end != "end":
+                missed.append(name)
+        failed = bool(missed)
+        logger.info(f"  Jibe {system}: {total:,} postings past the {JIBE_DEEP_WINDOW:,}-row window; read by "
+                    f"state ({len(states)} names, {len(states) - len(missed)} read to the end"
+                    + (f"; unfinished: {', '.join(missed[:8])}" if missed else "")
+                    + f"): {len(served):,} served")
     # Dedupe on job_id — Jibe repeats a req across category pages occasionally.
     seen, uniq = set(), []
     for jb in jobs:
@@ -9806,10 +10159,14 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
     # COMPLETE_RATIO of its own totalCount with no failure is complete: the
     # sweep and Layer 4 retire what it no longer lists on the first miss
     # (retire_guard.RETIRE_FIRST_MISS_WHEN_COMPLETE).
-    cut_short = failed_at is not None and not (total and len(served) >= total)
+    # 2026-10-27: a sliced read whose states all ended but that served under
+    # COMPLETE_RATIO of the board holds postings in no listed state (a blank
+    # or unknown name): not the inventory either, so the sweep waits.
+    cut_short = bool(failed and not (total and len(served) >= total)) or bool(
+        how == "deep" and total and len(served) < COMPLETE_RATIO * total)
     if uniq and (cut_short or bad_rows):
         report_partial(system)
-        why = "; ".join(x for x in ((f"page {failed_at} unread" if cut_short else ""),
+        why = "; ".join(x for x in (("a listing was cut short" if cut_short else ""),
                                     (f"{bad_rows} rows failed to parse" if bad_rows else "")) if x)
         logger.warning(f"Jibe {system}: PARTIAL, {why}; {len(served)} of {total} postings served; "
                        f"not swept tonight")
@@ -9862,6 +10219,13 @@ async def run_jibe(session) -> list[Job]:
 FINDLY_CWS_ORGS = {
     # Confirmed from HAR capture of jobs.texashealth.org
     "Texas Health Resources": ("2277", "TexasHealth-Taleo-External"),
+    # 2026-10-27: NYU Langone Health. jobs.nyulangone.org is a Findly site
+    # (cws_opts org 1637) over SilkRoad OpenHire; its search page filters on
+    # the two SilkRoad portals (1,288 postings on 10-26) and leaves out the
+    # Interfolio faculty postings. The rows that sat under this name until
+    # 09-16 were United Health Services of Binghamton's Workday tenant
+    # (relabelled then), so NYU Langone itself had never been read.
+    "NYU Langone Health": ("1637", "Silkroad~Silkroad_Winthrop"),
     # Add more orgs here as they're discovered. Discovery process:
     #   1. Visit jobs.{hospital}.org/listjobs/ (or similar careers page)
     #   2. View source → find cws_opts JavaScript var
@@ -9869,11 +10233,36 @@ FINDLY_CWS_ORGS = {
 }
 
 
+# 2026-10-27 (NYU Langone): the feed field that names the hospital, for orgs
+# whose `brand` is a region ("Manhattan", "Brooklyn"). NYU's `department`
+# reads "NYU Langone Hospital - Brooklyn", "NYU Langone Hospital—Suffolk" or
+# a school or practice ("NYU Grossman School of Medicine"); only a value that
+# names a hospital is taken, else the row keeps the system.
+FINDLY_CWS_FACILITY = {"NYU Langone Health": "department"}
+# The feed field holding the posted pay ("$106,916.04-$138,356.04/year" on 95
+# of NYU's first 97 postings).
+FINDLY_CWS_PAY_KEY = {"NYU Langone Health": "salary"}
+_FINDLY_HOSPITAL_RX = re.compile(r"\bhospital\b", re.I)
+
+
+def _findly_cws_facility(system: str, j: dict) -> str:
+    key = FINDLY_CWS_FACILITY.get(system)
+    if key:
+        v = re.sub(r"\s+", " ", str(j.get(key) or "")).strip()
+        return v if v and _FINDLY_HOSPITAL_RX.search(v) else system
+    return j.get("brand", "") or system  # e.g., "Texas Health HEB"
+
+
 async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
-    """Scrape a Findly CWS career portal. Clean JSONP API, paginated."""
+    """Scrape a Findly CWS career portal. Clean JSONP API, paginated.
+    2026-10-27: a page that fails before the feed's end makes the crawl
+    PARTIAL (the sweep waits), and a crawl that read COMPLETE_RATIO of
+    totalHits reports itself complete, as the Jibe and Talemetry feeds do."""
     import re as _re
     org_id, portal_id = org_data
     jobs: list[Job] = []
+    total = None
+    failed = False
     offset = 1  # Findly uses 1-indexed offset
     limit = 100  # API max; website uses 10 but the endpoint accepts up to 100
     base_api = "https://jobsapi-internal.m-cloud.io/api/job"
@@ -9896,10 +10285,12 @@ async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: t
                 timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
                     logger.info(f"Findly {system}: HTTP {r.status} at offset {offset}")
+                    failed = True
                     break
                 body = await r.text()
         except Exception as e:
             logger.info(f"Findly {system}: {e}")
+            failed = True
             break
 
         # Strip JSONP wrapper: CWS.jobs.jobCallback({...});
@@ -9909,6 +10300,7 @@ async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: t
             data = json.loads(inner)
         except Exception as e:
             logger.info(f"Findly {system}: JSON parse error: {e}")
+            failed = True
             break
 
         items = data.get("queryResult", []) or []
@@ -9923,12 +10315,15 @@ async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: t
             state = j.get("primary_state", "") or ""
             ref = j.get("ref", "") or str(j.get("id", ""))
             url = j.get("url") or j.get("seo_url") or ""
+            # 2026-10-27: NYU's feed names its job pages http://; the host
+            # serves them over https (Texas Health's are https already).
+            if url.startswith("http://"):
+                url = "https://" + url[len("http://"):]
             open_date = j.get("open_date", "") or ""
-            brand = j.get("brand", "") or system  # e.g., "Texas Health HEB"
             jobs.append(Job(
                 title=title,
                 hospital_system=system,
-                hospital_name=brand if brand else system,
+                hospital_name=_findly_cws_facility(system, j),
                 city=city,
                 state=state,
                 location=f"{city}, {state}".strip(", "),
@@ -9940,12 +10335,19 @@ async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: t
                 description=strip_html(j.get("description", "") or ""),
                 ats_platform="Findly",
             ))
+            pay_key = FINDLY_CWS_PAY_KEY.get(system)
+            if pay_key:
+                set_field_wage(jobs[-1], field_wage(j.get(pay_key)))
 
         offset += limit
         if offset > total:
             break
         await jitter()
 
+    if jobs and failed and not (total and len(jobs) >= total):
+        report_partial(system)
+        logger.warning(f"Findly {system}: PARTIAL, {len(jobs)} of {total} postings read; not swept tonight")
+    report_complete(system, len(jobs), total, feed="FINDLY_CWS_ORGS")
     logger.info(f"  Findly {system}: {len(jobs)} jobs")
     return jobs
 
@@ -11920,7 +12322,6 @@ async def run_usajobs(session) -> list[Job]:
 PHENOM_ORG_CODES = {
     "Ascension Health":  "AHEAHUUS",   # confirmed from cdn.phenompeople.com/CareerConnectResources/AHEAHUUS/
     "Corewell Health":   "SPHEUS",      # confirmed from cdn.phenompeople.com/CareerConnectResources/SPHEUS/
-    "Temple Health":     "TUHTUHUS",   # confirmed from widgets intercept refNum
     "DaVita":            "DAVIUS",     # confirmed from careers.davita.com 2026-05-27
     "UTHealth Houston":  "UHHUHHUS",   # 2026-09-24, widgets refNum on careers.uth.tmc.edu
     "University of Maryland Medical System": "UOJUOMUS",   # 2026-09-24, widgets refNum on careers.umms.org
@@ -11987,7 +12388,10 @@ PHENOM_ORGS = {
     "Froedtert Health":             "https://jobs.froedtert.com",   # 2026-09-25 B1: 1,027 WI rows in the dry run, facility per row
     "Roper St. Francis Healthcare": "https://careers.rsfh.com",
     "ScionHealth":                  "https://jobs.scionhealth.com",
-    "Temple Health":                "https://careers.templehealth.org",
+    # "Temple Health" -> careers.templehealth.org removed 2026-10-27: the host
+    # redirects to www.templehealth.org/careers, whose job search is SilkRoad
+    # OpenHire (SILKROAD_SITES); this entry wrote 0 rows since 10-14 and, as a
+    # second feed of the system, would keep its complete claim from counting.
     # 2026-09-25 push 5 / gov: state university hospitals on Phenom, read off
     # their careers pages (jobs.virginia.edu -> careers.uvahealth.org, CDN
     # org UOVUOVUS; muhealth.org/careers -> careers.muhealth.org).
@@ -19297,7 +19701,8 @@ async def _run_small_board(session, label: str, orgs: dict, scrape, budget, deta
         budget.expect(orgs)
     host = {"ApplicantStack": lambda c: f"{c[0]}.applicantstack.com",
             "JazzHR": lambda c: f"{c[0]}.applytojob.com",
-            "JobAps": lambda c: "www.jobapscloud.com"}[label]
+            "JobAps": lambda c: "www.jobapscloud.com",
+            "SilkRoad": lambda c: "jobs.silkroad.com"}[label]
     results = await _gather_by_host(session, list(orgs.items()), scrape, host)
     listed = {s: (r if isinstance(r, list) else []) for s, r in zip(orgs, results)}
     for s, r in zip(orgs, results):
@@ -19332,6 +19737,177 @@ async def run_jazzhr(session) -> list[Job]:
 async def run_jobaps(session) -> list[Job]:
     return await _run_small_board(session, "JobAps", JOBAPS_SITES, scrape_jobaps,
                                   JOBAPS_DESC_BUDGET, _jobaps_detail)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  SILKROAD OPENHIRE CAREER SITES — jobs.silkroad.com/<company>/<portal>
+#  (added 2026-10-27). Temple Health left Phenom (careers.templehealth.org
+#  now redirects to www.templehealth.org/careers, whose "Search jobs" goes
+#  here; 0 active Temple rows since 10-14). The list is server-rendered HTML,
+#  25 cards a page at ?page=N, each card an
+#  <a id="Jobs_PagedJobList_Job-1066" class="sr-panel" href="/<co>/<portal>/jobs/1066">
+#  with the title and "Philadelphia, PA", and the pager prints "Page 1 of 18".
+#  The job page (<co>/<portal>/jobs/<id>) holds the posting's own fields as
+#  <div id="ConfigurablePageDetail__<Field>"><h2>Label</h2><div>value</div>:
+#  Category, Job Location (a street address), Tracking Code (the requisition
+#  number; Temple's carry on its Taleo numbers, 270026), Weekly Hours,
+#  Schedule, Shift, and the JobDescription body. No login, no script needed.
+#  job_id is the posting id in the URL (the list carries it every night); the
+#  Tracking Code is req_id, read by the detail pass.
+#  A crawl that read every page through "Page N of N" with no failure is
+#  complete; a page that failed or a pager that stops short is PARTIAL.
+# ══════════════════════════════════════════════════════════════════════════
+SILKROAD_SITES = {
+    # Format: "System": (company, portal, default state)
+    "Temple Health": ("templehealth", "Careers", "PA"),
+}
+SILKROAD_MAX_PAGES = int(os.getenv("SILKROAD_MAX_PAGES", "80"))
+_SR_STATE_CODES = frozenset(_STATE_CODE_BY_NAME.values()) | {"PR"}
+SILKROAD_DESC_MAX_PER_RUN = int(os.getenv("SILKROAD_DESC_MAX_PER_RUN", "300"))
+SILKROAD_DESC_BUDGET = _DescBudget(SILKROAD_DESC_MAX_PER_RUN)
+
+_SR_CARD_RX = re.compile(
+    r'<a\s+id="Jobs_PagedJobList_Job-(\d+)"[^>]*href="([^"]+)"[^>]*>(.*?)</a>', re.S | re.I)
+_SR_TITLE_RX = re.compile(r'class="sr-panel__title"[^>]*>(.*?)</div>', re.S | re.I)
+_SR_LOC_RX = re.compile(r'class="sr-panel__location"[^>]*>(.*?)</div>', re.S | re.I)
+_SR_PAGER_RX = re.compile(r"\bPage\s+(\d+)\s+of\s+(\d+)\b", re.I)
+_SR_FIELD_RX = re.compile(
+    r'<div id="ConfigurablePageDetail__(\w+)">\s*<h2>(.*?)</h2>\s*<div>(.*?)</div>\s*</div>', re.S | re.I)
+_SR_BODY_RX = re.compile(r'<div id="ConfigurablePageDetail__JobDescription">(.*?)</div>\s*</div>\s*</div>\s*</section>',
+                         re.S | re.I)
+_SR_H1_RX = re.compile(r'<h1[^>]*Jobs_JobDetail_TitleText[^>]*>(.*?)</h1>', re.S | re.I)
+
+
+def silkroad_pager(html: str) -> tuple[int, int] | None:
+    """(page, of) from the list's "Page 1 of 18", or None."""
+    m = _SR_PAGER_RX.search(re.sub(r"<[^>]+>", " ", html or ""))
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def _parse_silkroad(html: str, system: str, cfg: tuple) -> list[Job]:
+    company, portal, default_state = cfg
+    jobs, seen = [], set()
+    for pid, href, card in _SR_CARD_RX.findall(html or ""):
+        tm = _SR_TITLE_RX.search(card)
+        title = _cell_text(tm.group(1)) if tm else ""
+        if not title or pid in seen:
+            continue
+        lm = _SR_LOC_RX.search(card)
+        loc = _cell_text(lm.group(1)) if lm else ""
+        city, state = parse_city_state(loc) if loc else ("", "")
+        if state not in _SR_STATE_CODES:
+            city, state = "", default_state      # "NA" (a remote posting), a blank or a foreign code
+        url = href if href.startswith("http") else f"https://jobs.silkroad.com/{href.lstrip('/')}"
+        seen.add(pid)
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=system,
+            city=city, state=state, location=loc or state,
+            specialty="", job_type="", url=url, job_id=pid, posted_date="",
+            description="", ats_platform="SilkRoad",
+        ))
+    return jobs
+
+
+def silkroad_job_page(html: str) -> dict:
+    """{label lowercased: value} of an OpenHire job page's fields, plus
+    "_body" (the JobDescription text) and "_title". {} for a page that is
+    not a posting (a closed one lands on the list)."""
+    page = html or ""
+    out: dict = {}
+    for key, label, val in _SR_FIELD_RX.findall(page):
+        lab = _cell_text(label).lower()
+        v = _cell_text(val)
+        if lab and v and key != "JobDescription":
+            out.setdefault(lab, v)
+    m = _SR_BODY_RX.search(page)
+    if m:
+        out["_body"] = strip_html(m.group(1)).strip()
+    t = _SR_H1_RX.search(page)
+    if t:
+        out["_title"] = _cell_text(t.group(1))
+    return out if (out.get("_body") or out.get("tracking code")) else {}
+
+
+def _silkroad_apply_page(job, html: str) -> bool:
+    f = silkroad_job_page(html)
+    if not f:
+        return False
+    rq = re.sub(r"\s+", "", f.get("tracking code") or "")
+    if rq and rq != job.job_id and re.fullmatch(r"[A-Za-z0-9._/-]{2,40}", rq):
+        job.req_id = rq
+    if f.get("category") and not (job.specialty or "").strip():
+        job.specialty = f["category"]
+    addr = [p.strip() for p in (f.get("job location") or "").split(",") if p.strip()]
+    if addr and addr[-1].lower() in ("united states", "usa", "us"):
+        addr = addr[:-1]
+    if len(addr) >= 2:
+        code = _STATE_CODE_BY_NAME.get(addr[-1].lower()) or (addr[-1].upper() if re.fullmatch(r"[A-Za-z]{2}", addr[-1]) else "")
+        if code and not job.city:
+            job.city = addr[-2]
+            job.state = code
+            job.location = f"{job.city}, {code}"
+    shift = f.get("shift") or ""
+    hours = f.get("weekly hours") or ""
+    sched = f.get("schedule") or ""
+    m = re.match(r"^\s*(\d{1,2}(?:\.\d+)?)\s*$", hours)
+    hrs = float(m.group(1)) if m and 4 <= float(m.group(1)) <= 84 else None
+    line = _schedule_line(sched, _shift_words(shift),
+                          (f"{int(hrs) if hrs == int(hrs) else hrs} hours per week" if hrs else ""))
+    body = f.get("_body") or ""
+    if body and line:
+        body = _with_line_in_window(body, line)
+    return _apply_body(job, body, job_type=sched)
+
+
+async def scrape_silkroad(session, system: str, cfg: tuple) -> list[Job]:
+    company, portal, _state = cfg
+    base = f"https://jobs.silkroad.com/{company}/{portal}"
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    last, of = 0, None
+    failed = False
+    repeats = 0      # postings a later page listed again: the list moved while it was read
+    page = 1
+    while page <= SILKROAD_MAX_PAGES:
+        status, html = await _board_get(session, f"{base}?page={page}", "SilkRoad", system)
+        if status != 200:
+            logger.info(f"SilkRoad {system}: HTTP {status} at page {page}")
+            failed = True
+            break
+        pager = silkroad_pager(html)
+        parsed = _parse_silkroad(html, system, cfg)
+        rows = [j for j in parsed if j.job_id not in seen]
+        repeats += len(parsed) - len(rows)
+        if pager:
+            last, of = pager
+        for j in rows:
+            seen.add(j.job_id)
+            jobs.append(j)
+        if not rows or of is None or last >= of:
+            break
+        page += 1
+        await jitter()
+    whole = not failed and of is not None and last >= of
+    if jobs and not whole:
+        report_partial(system)
+        logger.warning(f"SilkRoad {system}: PARTIAL, stopped at page {last} of {of}"
+                       + (" (a page failed)" if failed else "") + "; not swept tonight")
+    elif whole and not repeats:
+        # Every page through "Page N of N" answered and no posting moved
+        # between pages: the whole board, so its count is its own total.
+        report_complete(system, len(jobs), len(jobs), feed="SILKROAD_SITES")
+    logger.info(f"  SilkRoad {system}: {len(jobs)} jobs (page {last} of {of})")
+    return jobs
+
+
+async def _silkroad_detail(session, job) -> bool:
+    _, html = await _board_get(session, job.url, "SilkRoad", job.hospital_system)
+    return _silkroad_apply_page(job, html)
+
+
+async def run_silkroad(session) -> list[Job]:
+    return await _run_small_board(session, "SilkRoad", SILKROAD_SITES, scrape_silkroad,
+                                  SILKROAD_DESC_BUDGET, _silkroad_detail)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -21813,6 +22389,8 @@ REQ_ID_ONLY_PLATFORMS = frozenset({
     *REQ_ID_LIST_PLATFORMS,
     # group 4 (scraper/reqid-g4-1014)
     "Workday", "Phenom", "CSOD", "SuccessFactorsRMK", "Paycor", "FXRecruiter",
+    # 2026-10-27: SilkRoad OpenHire's Tracking Code, read by the job-page pass
+    "SilkRoad",
 })
 
 
@@ -30423,8 +31001,9 @@ async def run_all() -> list[dict]:
     # detail passes skip rows the database already holds a body for.
     # 2026-10-15 (wages): and the hospitals stored on the body-derived
     # systems' rows, kept on nights a row's body is not read again.
-    _, _, n_fac = await asyncio.gather(asyncio.to_thread(load_cms_lookup), asyncio.to_thread(load_known_bodies),
-                                       asyncio.to_thread(facility_names.load_known_facilities))
+    _, _, n_fac, _ = await asyncio.gather(asyncio.to_thread(load_cms_lookup), asyncio.to_thread(load_known_bodies),
+                                          asyncio.to_thread(facility_names.load_known_facilities),
+                                          asyncio.to_thread(load_stored_companies))
     logger.info(f"Known facilities: {n_fac:,} stored rows of {', '.join(facility_names.FALLBACK_DB_LABELS)} "
                 f"name a hospital")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
@@ -30487,6 +31066,7 @@ async def run_all() -> list[dict]:
             run_applicantstack(proxy_session),  # ApplicantStack openings table: Delta Health (added 2026-10-25)
             run_jazzhr(proxy_session),          # JazzHR applytojob board: Exceptional Healthcare (added 2026-10-25)
             run_jobaps(proxy_session),          # JobAps state boards: MD and CT state psychiatric hospitals (added 2026-10-25)
+            run_silkroad(proxy_session),        # SilkRoad OpenHire HTML list + job pages: Temple Health (added 2026-10-27)
             run_talemetry(proxy_session),  # Jobvite Engage (Talemetry) search.json: UCHealth, PeaceHealth, Penn Medicine (added 2026-09-25)
             run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
             run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)

@@ -110,6 +110,25 @@ class ReplayError(ValueError):
     """A saved rows file that must not be pushed."""
 
 
+# 2026-10-27: the detail pass stops starting job pages this many minutes
+# after the run began, so the rows are saved and pushed inside the scheduled
+# task's limit. "Waypoint HCA push" runs with ExecutionTimeLimit PT3H and
+# HCA_DESC_MAX_PER_RUN=20000: on 10-19 the run finished at 2 h 45 min, and on
+# 10-20 the 17,581-row crawl (done at 23:19) was still in its detail pass
+# when the task was stopped at 02:00, so nothing was saved or pushed. 0
+# turns the limit off.
+HCA_DETAIL_DEADLINE_MIN = float(os.environ.get("HCA_DETAIL_DEADLINE_MIN", "120"))
+_RUN_START: list = [None]      # time.monotonic() when crawl_and_push began
+
+
+def _detail_deadline():
+    """time.monotonic() after which the detail pass starts no page, or None."""
+    start = _RUN_START[0]
+    if start is None or HCA_DETAIL_DEADLINE_MIN <= 0:
+        return None
+    return start + HCA_DETAIL_DEADLINE_MIN * 60
+
+
 def _hca_detail_pass(jobs) -> None:
     import random
     from concurrent.futures import ThreadPoolExecutor
@@ -129,9 +148,14 @@ def _hca_detail_pass(jobs) -> None:
     if not pending:
         return
     filled = 0
+    late = 0
+    deadline = _detail_deadline()
 
     def one(job):
-        nonlocal filled
+        nonlocal filled, late
+        if deadline is not None and time.monotonic() >= deadline:
+            late += 1          # past the deadline: leave it for the next run
+            return
         try:
             r = _cr.get(job.url, impersonate="chrome", timeout=25)
             if r.status_code != 200:
@@ -150,7 +174,9 @@ def _hca_detail_pass(jobs) -> None:
     print(f"HCA detail pass: {len(pending)} of {len(cands)} pages without a description (budget {budget}, {workers} workers)")
     with ThreadPoolExecutor(max_workers=workers) as ex:
         list(ex.map(one, pending))
-    print(f"HCA detail pass: {filled} descriptions landed")
+    print(f"HCA detail pass: {filled} descriptions landed"
+          + (f"; {late} pages left for the next run (deadline {HCA_DETAIL_DEADLINE_MIN:g} min "
+             f"after the start, HCA_DETAIL_DEADLINE_MIN)" if late else ""))
 
 
 # ── Saved rows (2026-09-24) ────────────────────────────────────────────────
@@ -327,6 +353,7 @@ def replay(path: str, allow_stale: bool = False, check_only: bool = False) -> in
 
 
 def crawl_and_push() -> int:
+    _RUN_START[0] = time.monotonic()
     run_date = datetime.now().strftime("%Y%m%d")
     run_started_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     jobs = asyncio.run(scraper.run_hca(None))
