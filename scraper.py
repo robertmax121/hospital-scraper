@@ -3986,8 +3986,16 @@ def _apply_posting(job, posting: dict) -> bool:
     # (CommonSpirit $20-$100, HCA "Salary Estimate" $100,000-$400,000); it is
     # taken only when the posting's own body states no figure. A body figure
     # left here as None is read by extract_posted_wage in normalize_job.
+    # 2026-10-27 (pay reader round 2): the band also stays when it holds the
+    # body's range and the body itself prints both of its ends: it spans the
+    # levels the body prices one by one, as pay_text_overrides keeps such a
+    # field. Riverside's NeoGov bulletins print "Registered Nurse II - MC/CHC
+    # - $45.7530 - $70.8141" and "Registered Nurse III - MC/CHC - $53.1735 -
+    # $80.2448" under a $45.75 - $80.24 band; once four-decimal figures read,
+    # the body's first level alone would have replaced the band.
     body = f"{job.title or ''}\n{job.description or ''}"
-    if isinstance(bs, dict) and job.wage_min is None and extract_posted_wage(body, job.job_type) is None:
+    if isinstance(bs, dict) and job.wage_min is None:
+        text = extract_posted_wage(body, job.job_type)
         val = bs.get("value") if isinstance(bs.get("value"), dict) else bs
         try:
             lo = float(val.get("minValue")) if val.get("minValue") is not None else None
@@ -3997,7 +4005,9 @@ def _apply_posting(job, posting: dict) -> bool:
         except (TypeError, ValueError, AttributeError):
             lo = hi = None
         got = _wage_pair(lo, hi) if lo and hi else None
-        if got:
+        spans = bool(got and text and got[2] == text[2] and got[0] < got[1] and got[0] <= text[0]
+                     and text[1] <= got[1] and _body_prints(body, got[0], got[1]))
+        if got and (text is None or spans):
             job.wage_min, job.wage_max, job.wage_unit = got
     return ok
 
@@ -26468,15 +26478,38 @@ def _wage_is_noise(t, start, end):
 # print "Pay Range\n$173076.80 - $252263.44" and Kaiser's TalentBrew bodies
 # "Pay Range: $206300 - $266970 / year" (572 active Kaiser rows and 34 ECU
 # rows stored no pay). _wage_pair's bands still judge every pair.
-_WAGE_FIG = r"(\d{1,3}(?:,\d{3})+(?:\.\d{1,3})?|\d{1,7}(?:\.\d{1,3})?)"
+# 2026-10-27 (pay reader round 2): four decimals too. Kern Medical prints
+# "The estimated pay for this position is $21.8619 to $26.8874", Trinity
+# Health "(Pay Range: $32.5171-$48.7757)", Wyckoff "Hourly Range $57.0004 -
+# $67.7523"; a fourth decimal used to stop the figure, so neither end read.
+# The currency word may also follow the first figure: Beth Israel Lahey
+# Health prints "$60,000.00 USD - $75,564.00 USD" (434 active rows stored no
+# pay); and the dash may be doubled, OSF HealthCare's "$250,000--$270,000".
+_WAGE_FIG = r"(\d{1,3}(?:,\d{3})+(?:\.\d{1,4})?|\d{1,7}(?:\.\d{1,4})?)"
 _WAGE_RANGE_RX = re.compile(
-    r"\$\s*" + _WAGE_FIG + r"\s*(k\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s*(?:-|–|—|to|through)\s*(?:USD\s*)?\$?\s*" + _WAGE_FIG + r"\s*(k\b)?", re.I)
+    r"\$\s*" + _WAGE_FIG + r"\s*(k\b)?\s*(?:USD\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s*(?:--?|–|—|to|through)\s*(?:USD\s*)?\$?\s*" + _WAGE_FIG + r"\s*(k\b)?", re.I)
 # 2026-10-25 (Bounce QA): "between $16.49 and $20.21" is a range too
 # (Corewell, Boston Medical Center); its groups are _WAGE_RANGE_RX's and the
 # match starts at the first "$", as a range's does.
 _WAGE_BETWEEN_RX = re.compile(
     r"(?<=between )(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s+and\s+(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?", re.I)
-_WAGE_THIRD_RX = re.compile(r"\s*(?:-|–|—)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\b")
+_WAGE_THIRD_RX = re.compile(r"\s*(?:-|–|—)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,4})?)\b")
+# 2026-10-27 (pay reader round 2): a period typed for the thousands comma at
+# one end of an annual range ("Hiring Range: $285,000 - $315.000", UMass
+# Memorial; "$180,000.00 to $250.000", Prime; "$106.000-$125,000", BAYADA)
+# read as $315 and the pair failed the width test. Exactly three digits after
+# the period, under 1,000 as read, and the other end of the pair 1,000 or
+# more: the period is a thousands mark. Sharp's three-decimal hourly ranges
+# ("$83.970 - $108.360") have no end of 1,000 and read as before.
+_WAGE_DOT_THOUSANDS_RX = re.compile(r"\d{1,3}\.\d{3}")
+
+
+def _dot_thousands(txt, v, other):
+    """v * 1000 when txt is "ddd.ddd" and the pair's other end is 1,000 or
+    more (a period typed for a thousands comma), else v."""
+    if v is not None and other is not None and v < 1000 <= other and _WAGE_DOT_THOUSANDS_RX.fullmatch(txt or ""):
+        return round(v * 1000, 2)                             # 130.151 * 1000 is 130151.00000000001 in floats
+    return v
 # 2026-10-15: "\$" and "$$" read as "$" (extract_posted_wage's first step).
 _WAGE_DOLLAR_RUN_RX = re.compile(r"\\*\$(?:\\*\$)*")
 # County boards (NeoGov) quote a month or a pay period: "$9,404.43 -
@@ -26554,11 +26587,75 @@ _WAGE_PAYLBL = r"(?:salary|pay|compensation|wage|hiring)\s*(?:range|rate|scale)?
 # bodies head the pair with a bare "Range", "Range\n\nMinimum :$16.32\n\n
 # Maximum: $23.15" (614 active rows stored no pay); Rady Children's prints
 # the same layout (95 rows).
+# 2026-10-27 (pay reader round 2): a word may follow Minimum / Maximum before
+# the figure: Presbyterian Healthcare Services prints "Compensation Pay
+# Range:\nMinimum Offer $39.69\nMaximum Offer $58.17" (424 active rows with a
+# real pair stored no pay; its "$0.00" pairs still fail the bands), Cleveland
+# Clinic "Pay Range\n\nMinimum hourly: $35.25\n\nMaximum hourly: $53.00".
+_WAGE_MINMAX_WORD = r"(?:\s+(?:offer|hourly|annual(?:ly)?|yearly|salary|pay|rate|wage))?"
 _WAGE_MINMAX_RX = re.compile(
-    r"(?:" + _WAGE_PAYLBL + r"\s*min(?:imum)?|min(?:imum)?\s*" + _WAGE_PAYLBL + r"|\brange\s*:?\s*min(?:imum)?)\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
+    r"(?:" + _WAGE_PAYLBL + r"\s*min(?:imum)?|min(?:imum)?\s*" + _WAGE_PAYLBL + r"|\brange\s*:?\s*min(?:imum)?)" + _WAGE_MINMAX_WORD + r"\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
     r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?[^\n$]{0,40}?\s*"
-    r"(?:" + _WAGE_PAYLBL + r"\s*)?max(?:imum)?(?:\s*" + _WAGE_PAYLBL + r")?\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
+    r"(?:" + _WAGE_PAYLBL + r"\s*)?max(?:imum)?(?:\s*" + _WAGE_PAYLBL + r")?" + _WAGE_MINMAX_WORD + r"\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
     r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
+# 2026-10-27 (pay reader round 2): Lakeland Regional Health prints its
+# hiring range as a minimum and a midpoint, "Pay Rate : Min $18.82 Mid
+# $23.53" (92 active rows stored no pay; Lee Health's "Minimum to Midpoint
+# Pay Rate: $X - $Y" is the same practice, read by the range rule), and Rady
+# Children's "Pay Range\nMinimum $X Midpoint $Y Maximum $Z". Minimum to
+# maximum when the maximum is printed, else minimum to midpoint: the two
+# figures the posting states, nothing derived. Ranks with the labelled
+# Minimum / Maximum pair.
+_WAGE_MINMID_RX = re.compile(
+    r"(?:" + _WAGE_PAYLBL + r"|\brange)\s*:?\s*\n?\s*min(?:imum)?\s*:?\s*(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?[ \t,;/]*\n?\s*"
+    r"mid(?:point)?\s*:?\s*(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?"
+    r"(?:[ \t,;/]*\n?\s*max(?:imum)?\s*:?\s*(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?)?", re.I)
+# 2026-10-27 (pay reader round 2, review of the adversarial tests): a
+# Minimum / Maximum (or Midpoint) block whose heading sits on the line above
+# ("Relocation Range:\nMinimum Offer $30,000\nMaximum Offer $50,000", "Sign-On
+# Bonus Range\n\nMinimum: $5,000 ...") was read as the pay: the noise rules
+# judge the figure's own clause, which a line break ends before the heading.
+# The heading's words, from the start of the line the match begins on, up to
+# the first figure, must not name an extra.
+_WAGE_LABEL_EXTRA_RX = re.compile(
+    r"sign[- ]?on|signing|bonus|relocation|retention|referral|differential|premium|stipend|reimburse|tuition|loan|incentive", re.I)
+
+
+def _wage_label_line_extra(t, start, fig):
+    """True when the heading of a Minimum / Maximum block, from the start of
+    the line it begins on (40 characters at most: a flattened body is one
+    long line, UW Medicine 28405937) to its first "$" (fig), names a bonus,
+    a relocation package, a differential or another extra."""
+    return bool(_WAGE_LABEL_EXTRA_RX.search(t[max(t.rfind("\n", 0, start) + 1, start - 40):fig]))
+# 2026-10-27 (pay reader round 2): one figure stated as the pay of "this
+# position" / "this role": "The starting salary for this position is:
+# $163,350.00 (annually)" (Virtua), "The annual base salary for this position
+# is $520,000." (MaineHealth), "The minimum base salary for this position is
+# $364,513." (Hackensack Meridian), "a reasonable compensation estimate for
+# this role is $34.24." and "the current compensation rate for this role is
+# $23.80." (Prime), "The hourly rate for this role is $150.00." (One Medical).
+# The labelled rule needs its pay word right before the figure, so none of
+# these read. Only the pay words, never a bonus / differential / stipend word
+# (the noise rules judge the figure as well); "is", "will be" or a colon
+# ("Clinical base hourly pay range for this position: $51.44", OSF) only, so "up
+# to", "at least" and "in the $450,000 range" stay out, and so does a floor
+# written "$500,000+"; a figure that opens a range ("is $32.85- $50", "is
+# $56.40. - $65.00", "$298.00 to $353.00") is the range rule's, and the figure
+# may not stop inside its own decimals to dodge that test. A
+# per-visit / per-shift / monthly figure is left to the rules that price
+# those. "at a .8 FTE" is read so the prorated test can drop the figure.
+_WAGE_FOR_ROLE_RX = re.compile(
+    r"\b(?:salary|pay|wage|compensation|rate)(?:\s+(?:range|rate|scale|estimate))?\s+for\s+this\s+(?:position|role|job)"
+    r"(?:\s+at\s+an?\s+\d?\.?\d+\s*FTE)?(?:\s+(?:is|will\s+be)\s*:?|\s*:)\s*"
+    r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,4})?|\d{1,7}(?:\.\d{1,4})?)(?![\d,]|\.\d)\s*(k\b)?(?!\s*k\b)"
+    r"(?![^\w\s$]?\s*(?:\([^()]{0,40}\)\s*)?(?:-|–|—|to|through|and)\s*(?:USD\s*)?\$?\s*\d)(?!\s*\+)", re.I)
+_WAGE_FOR_ROLE_UNIT_RX = re.compile(
+    r"[ \t]*\(?\s*(?:/\s*(?:hour|hr|year|yr|annum)\b|per\s+(?:hour|year|annum)\b|an?\s+(?:hour|year)\b|hourly\b|annually\b|annual\b|yearly\b)", re.I)
+_WAGE_FOR_ROLE_OTHER_UNIT_RX = re.compile(
+    r"\s*(?:/|per|a|an|each)\s*(?:visit|point|session|shift|month|week|day|case|procedure|call|pay\s+period)\b"
+    r"|\s*(?:monthly|bi-?weekly|weekly|daily)\b", re.I)
+_WAGE_FOR_ROLE_HOUR_WORD_RX = re.compile(r"\bhourly\b|\bper\s+hour\b", re.I)
+_WAGE_FOR_ROLE_YEAR_WORD_RX = re.compile(r"\bannual(?:ly)?\b|\byearly\b", re.I)
 # 2026-10-07 (push 10, item 4): "$650k Starting Salary" (Presbyterian
 # 35282682's headline) names the pay after the figure, where the labelled
 # rule never looks; a $650k job printed $75k (the loan-repayment figure).
@@ -29964,6 +30061,8 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
         if k2 and not k1 and "," not in m.group(1) and _wage_num(m.group(1)) < 1000:
             k1 = k2
         lo, hi = _amt(m.group(1), k1), _amt(m.group(3), k2)
+        if not (k1 or k2):                                    # 2026-10-27: "$285,000 - $315.000" (a period for the comma)
+            lo, hi = _dot_thousands(m.group(1), lo, hi), _dot_thousands(m.group(3), hi, lo)
         m3 = _WAGE_THIRD_RX.match(t, m.end())                 # "min - midpoint - max": the maximum is the third figure
         end = m.end()
         if m3 and hi is not None:
@@ -30026,10 +30125,23 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
     # $53,400.00 annual", UW Medicine) are one range and rank as one.
     for m in _WAGE_MINMAX_RX.finditer(t):
         fig = t.rfind("$", m.start(), m.start(1))
-        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()):
+        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()) or _wage_label_line_extra(t, m.start(), fig):
             continue
         got = _wage_pair(_amt(m.group(1), m.group(2)), _amt(m.group(3), m.group(4)))
         stated = _stated_unit(t, m.end()) or _stated_unit(t, m.end(1))
+        if not got or (stated and got[2] != stated) or prorated(fig, m.end(), got):
+            continue
+        consider(m, got, 6)
+    # 2026-10-27 (pay reader round 2): "Pay Rate : Min $18.82 Mid $23.53"
+    # (Lakeland) is the minimum to the midpoint; "Minimum $X Midpoint $Y
+    # Maximum $Z" (Rady Children's) the minimum to the maximum.
+    for m in _WAGE_MINMID_RX.finditer(t):
+        fig = t.rfind("$", m.start(), m.start(1))
+        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()) or _wage_label_line_extra(t, m.start(), fig):
+            continue
+        top, top_k = (m.group(5), m.group(6)) if m.group(5) else (m.group(3), m.group(4))
+        got = _wage_pair(_amt(m.group(1), m.group(2)), _amt(top, top_k))
+        stated = _stated_unit(t, m.end())
         if not got or (stated and got[2] != stated) or prorated(fig, m.end(), got):
             continue
         consider(m, got, 6)
@@ -30064,6 +30176,31 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
         got = _wage_pair(v, v)
         if got and not prorated(fig, m.end(), got):
             consider(m, got, -1)                              # below a figure that carries its own unit
+    # 2026-10-27 (pay reader round 2): "The starting salary for this position
+    # is: $163,350.00 (annually)", "a reasonable compensation estimate for
+    # this role is $34.24". One figure; the band decides the unit, and a unit
+    # the text names (after the figure, or "hourly" / "annual" in the label)
+    # must agree with it. Ranks with a single figure that carries its unit.
+    for m in _WAGE_FOR_ROLE_RX.finditer(t):
+        fig = t.rfind("$", m.start(), m.start(1))
+        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()):
+            continue
+        if _WAGE_FOR_ROLE_OTHER_UNIT_RX.match(t, m.end()):
+            continue                                          # per visit / shift / month: not this rule's
+        v = _amt(m.group(1), m.group(2))
+        got = _wage_pair(v, v)
+        if not got:
+            continue
+        um = _WAGE_FOR_ROLE_UNIT_RX.match(t, m.end())
+        stated = ("hour" if re.search(r"hour|hr", um.group(0), re.I) else "year") if um else None
+        label = re.split(r"[\n;.!?]", t[max(0, m.start() - 30):fig])[-1]     # the label's own sentence
+        if not stated and _WAGE_FOR_ROLE_HOUR_WORD_RX.search(label):
+            stated = "hour"
+        elif not stated and _WAGE_FOR_ROLE_YEAR_WORD_RX.search(label):
+            stated = "year"
+        if (stated and got[2] != stated) or prorated(fig, m.end(), got):
+            continue
+        consider(m, got, 0)
     # 2026-10-07 (push 10, item 4): the label after the figure ("$650k
     # Starting Salary", Presbyterian 35282682) ranks with the label before it.
     for m in _WAGE_FIGURE_LABEL_RX.finditer(t):
