@@ -1174,6 +1174,7 @@ FEED_CONFIGS = (
     "TAM_ORGS", "NEOGOV_AGENCIES", "SF_RMK_BOARDS", "PRELOAD_SITES", "APPLICANTPRO_ORGS",
     "CSOD_ORGS", "PAYCOM_ORGS", "PAYCOR_ORGS", "PAYLOCITY_ORGS", "WORKABLE_ORGS",
     "TALEMETRY_SITES", "TALEO_BE_ORGS", "HCTS_PORTALS", "PEOPLESOFT_SITES",
+    "APPLICANTSTACK_ORGS", "JAZZHR_ORGS", "JOBAPS_SITES",   # 2026-10-25 coverage stage 4
     "LIQUIDCOMPASS_SITES", "SUCCESSFACTORS_ORGS", "HTML_LIST_SITES", "EIGHTFOLD_ORGS",
     "PLAYWRIGHT_SITES", "USAJOBS_ORGS",
 )
@@ -1414,7 +1415,9 @@ KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor"
                         "PeopleSoft", "SuccessFactors", "Talemetry", "Eightfold",
                         "Avature", "Drupal", "FXRecruiter", "PeopleAdmin", "WordPress",
                         # 2026-10-05 (push 9): the RMK and NY State Jobs job-page passes store under these.
-                        "SuccessFactorsRMK", "NYStateJobs")
+                        "SuccessFactorsRMK", "NYStateJobs",
+                        # 2026-10-25 (coverage stage 4): the new job-page passes store under these.
+                        "Taleo", "SelectMinds", "ApplicantStack", "JazzHR", "JobAps")
 KNOWN_BODY_PAGE      = 1000
 # 2026-10-07 (push 10): the read covers every active body now (346,809 on
 # 10-07), not only the detail platforms, so the cap moves up from 400,000.
@@ -2039,6 +2042,9 @@ HOSPITAL_SYSTEM_ALIASES = {
     "HSHS Hospitals":              "HSHS",
     "MultiCare Health":            "MultiCare",
     "Erlanger Health System":      "Erlanger",
+    # 2026-10-25 (coverage stage 4): Stony Brook's community-hospital Taleo sections
+    "Stony Brook Southampton Hospital":         "Stony Brook Medicine",
+    "Stony Brook Eastern Long Island Hospital": "Stony Brook Medicine",
     "Guthrie Health":              "Guthrie",
     # "Southwest Health": "Southwest Healthcare" removed 2026-10-13: the only
     # feed that wrote "Southwest Health" was the fa-exgl Oracle site, which is
@@ -2053,6 +2059,8 @@ HOSPITAL_SYSTEM_ALIASES = {
     # Wooster's second ADP career center (Bloomington Medical Services) is the
     # hospital's physician group; one board-facing system (2026-09-10).
     "Wooster Community Hospital (BMS)": "Wooster Community Hospital",
+    # 2026-10-25 coverage stage 2: SOMC's physician / APP board writes the system's label.
+    "Southern Ohio Medical Center (Providers)": "Southern Ohio Medical Center",
 }
 
 
@@ -2478,6 +2486,39 @@ WORKDAY_TENANTS = {
     "Arkansas Children's":       ("archildrens",         "1",   "External_Career_Site"),              # [225] Little Rock + Springdale AR (town in the path and the first bullet)
     "Emanate Health":            ("cvhp",                "5",   "EmanateHealth"),                     # [189] Covina / Glendora / West Covina CA
     "Rady Children's Health":    ("rch",                 "108", "Careers"),                           # [100] CHOC: Orange + Mission Viejo CA
+    # ── 2026-10-25 coverage stage 2: one hospital (or one market) each; tenant
+    # and site read off the system's own careers link, [rows in that day's
+    # no-write dry run], every row with a body. Towns through WD_FACILITY_MAP
+    # and WD_TENANT_DEFAULT below; CMS ids in coverage80_2026-10-25/stage2.
+    "Mount Sinai Medical Center (Florida)": ("msmc",     "12",  "msmc_careers"),                      # [258] Miami Beach (+ Aventura, Hialeah, Key West clinics)
+    "Valley Children's Healthcare": ("valleychildrens",  "12",  "VCH_External"),                      # [81] Madera CA
+    "Children's National Hospital": ("childrensnational", "108", "CN_Careers"),                       # [396] Washington DC (+ MD / northern VA sites)
+    "Overlake Medical Center":   ("overlakemedicalcenter", "5", "Overlake_External_Career_Site"),     # [192] Bellevue WA
+    "GBMC HealthCare":           ("gbmc",                "1",   "gbmc"),                              # [317] Greater Baltimore Medical Center + Gilchrist hospice
+    "University Health (Kansas City)": ("trumed",        "1",   "TMC_External_Career_Site"),          # [310] Truman Medical Center + Lakewood, Kansas City MO
+    "Holland Hospital":          ("hollandhospital",     "1",   "External"),                          # [57] Holland MI
+    "Olympic Medical Center":    ("olympicmedical",      "5",   "OMC_Careers"),                       # [161] Port Angeles / Sequim WA
+    "Boys Town":                 ("boystown",            "1",   "boystowncareers"),                   # [158] Boys Town National Research Hospital, Omaha (+ youth care sites)
+    "East Tennessee Children's Hospital": ("etch",       "5",   "ETCH"),                              # [121] Knoxville TN
+    "OU Health":                 ("oumedicine",          "5",   "OUHealthCareers"),                   # [435] Oklahoma City / Edmond OK
+    "Children's Wisconsin":      ("cwi",                 "1",   "CW_Careers"),                        # [315] Milwaukee + Fox Valley (Neenah) WI
+    "Singing River Health System": ("mysrhs",            "108", "SRHS"),                              # [375] Pascagoula / Ocean Springs / Gulfport MS
+    "Genesis HealthCare System": ("genesishcs",          "1",   "GenesisHCS"),                        # [244] Zanesville OH
+    "Eisenhower Health":         ("eisenhower",          "1",   "Eisenhower_Careers"),                # [215] Rancho Mirage CA
+    "Reid Health":               ("reidhealth",          "12",  "External_Careers"),                  # [229] Richmond IN
+    "Dayton Children's":         ("daytonchildrens",     "1",   "dayton_childrens_career_site"),      # [158] Dayton + Springboro OH
+    "Vitruvian Health":          ("vitruvian",           "108", "vitruviancareers"),                  # [413] Hamilton Medical Center (Dalton GA) + Bradley Medical Center (Cleveland TN)
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Aspen Valley Hospital": ("aspenvalleyhealth", "501", "AVH"),   # 66 rows, 55 in Aspen, CO (CMS 061324)
+    "Centerstone": ("centerstone", "5", "CenterstoneCareers"),   # 189 rows, 21 in Bradenton, FL (CMS 104040)
+    "Waverly Health Center": ("waverlyhealthcenter", "12", "WHC"),   # 37 rows, 36 in Waverly, IA, 1 with no town (location default) (CMS 161339)
+    "Wood County Hospital": ("woodcountyhospital", "503", "jobs"),   # 57 rows, 0 in Bowling Green, OH, 52 with no town (location default) (CMS 360029)
+    "Wyandot Memorial Hospital": ("wyandotmemorial", "1", "WMH_Careers"),   # 18 rows, 0 in Upper Sandusky, OH, 18 with no town (location default) (CMS 361329)
+    "Brookings Health System": ("avera", "5", "BHS-careers"),   # 19 rows, 19 in Brookings, SD (CMS 430008)
+    "Summit Pacific Medical Center": ("spmc", "5", "summitpacificmedicalcenter"),   # 45 rows, 42 in Elma, WA (CMS 501304)
+    "Sauk Prairie Hospital": ("saukprairiehealthcare", "12", "Sauk_Prairie_Healthcare_Careers"),   # 48 rows, 37 in Prairie du Sac, WI, 8 with no town (location default) (CMS 520095)
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -3114,6 +3155,303 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     # ("BUILDING A", "Patient Accounts Center") stood in the city column.
     "Pikeville Medical Center": ("Pikeville", "KY"),
     "Pullman Regional Hospital": ("Pullman", "WA"),
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Bartlett Regional Hospital": ("Juneau", "AK"),
+    "Central Peninsula General Hospital": ("Soldotna", "AK"),
+    "Kanakanak Hospital": ("Dillingham", "AK"),
+    "Norton Sound Regional Hospital": ("Nome", "AK"),
+    "South Peninsula Hospital": ("Homer", "AK"),
+    "Bibb Medical Center": ("Centreville", "AL"),
+    "Jack Hughston Memorial Hospital": ("Phenix City", "AL"),
+    "Mizell Memorial Hospital": ("Opp", "AL"),
+    "Northeast Alabama Regional Medical Center": ("Anniston", "AL"),
+    "Bradley County Medical Center": ("Warren", "AR"),
+    "Johnson Regional Medical Center": ("Clarksville", "AR"),
+    "Mena Regional Health System": ("Mena", "AR"),
+    "North Arkansas Regional Medical Center": ("Harrison", "AR"),
+    "Cobre Valley Regional Medical Center": ("Globe", "AZ"),
+    "Destiny Springs Healthcare": ("Surprise", "AZ"),
+    "Fort Defiance Indian Hospital": ("Fort Defiance", "AZ"),
+    "La Paz Regional Hospital": ("Parker", "AZ"),
+    "Little Colorado Medical Center": ("Winslow", "AZ"),
+    "Mt. Graham Regional Medical Center": ("Safford", "AZ"),
+    "Sage Memorial Hospital": ("Ganado", "AZ"),
+    "San Carlos Apache Healthcare": ("Peridot", "AZ"),
+    "Alhambra Hospital Medical Center": ("Alhambra", "CA"),
+    "Colusa Medical Center": ("Colusa", "CA"),
+    "Healthbridge Children's Hospital - Orange": ("Orange", "CA"),
+    "Henry Mayo Newhall Hospital": ("Valencia", "CA"),
+    "Mammoth Hospital": ("Mammoth Lakes", "CA"),
+    "Modoc Medical Center": ("Alturas", "CA"),
+    "Palo Verde Hospital": ("Blythe", "CA"),
+    "Pioneers Memorial Healthcare District": ("Brawley", "CA"),
+    "Sierra View Medical Center": ("Porterville", "CA"),
+    "Southern Monterey County Memorial Hospital": ("King City", "CA"),
+    "Valley Presbyterian Hospital": ("Van Nuys", "CA"),
+    "Animas Surgical Hospital": ("Durango", "CO"),
+    "Aspen Valley Hospital": ("Aspen", "CO"),
+    "Delta County Memorial Hospital": ("Delta", "CO"),
+    "Pioneers Medical Center": ("Meeker", "CO"),
+    "Family Health West Hospital": ("Fruita", "CO"),
+    "Gunnison Valley Health": ("Gunnison", "CO"),
+    "Kit Carson County Memorial Hospital": ("Burlington", "CO"),
+    "Lincoln Health Hospital": ("Hugo", "CO"),
+    "Mt. San Rafael Hospital": ("Trinidad", "CO"),
+    "Pagosa Springs Medical Center": ("Pagosa Springs", "CO"),
+    "St. Vincent General Hospital District": ("Leadville", "CO"),
+    "Connecticut Hospice": ("Branford", "CT"),
+    "Eastside Psychiatric Hospital": ("Tallahassee", "FL"),
+    "Candler County Hospital": ("Metter", "GA"),
+    "Effingham Health System": ("Springfield", "GA"),
+    "Emanuel Medical Center (Swainsboro)": ("Swainsboro", "GA"),
+    "Evans Memorial Hospital": ("Claxton", "GA"),
+    "Jasper Memorial Hospital": ("Monticello", "GA"),
+    "Jeff Davis Hospital (Hazlehurst)": ("Hazlehurst", "GA"),
+    "Jenkins County Medical Center": ("Millen", "GA"),
+    "Miller County Hospital": ("Colquitt", "GA"),
+    "Morgan Medical Center": ("Madison", "GA"),
+    "Ridgeview Institute Monroe": ("Monroe", "GA"),
+    "Upson Regional Medical Center": ("Thomaston", "GA"),
+    "Cass County Memorial Hospital": ("Atlantic", "IA"),
+    "Cherokee Regional Medical Center": ("Cherokee", "IA"),
+    "Clarinda Regional Health Center": ("Clarinda", "IA"),
+    "Crawford County Memorial Hospital": ("Denison", "IA"),
+    "Mahaska Health Partnership": ("Oskaloosa", "IA"),
+    "Montgomery County Memorial Hospital": ("Red Oak", "IA"),
+    "Myrtue Medical Center": ("Harlan", "IA"),
+    "St. Anthony Regional Hospital & Nursing Home": ("Carroll", "IA"),
+    "Virginia Gay Hospital": ("Vinton", "IA"),
+    "Waverly Health Center": ("Waverly", "IA"),
+    "Bonner General Hospital": ("Sandpoint", "ID"),
+    "Boundary Community Hospital": ("Bonners Ferry", "ID"),
+    "Caribou Medical Center": ("Soda Springs", "ID"),
+    "Franklin County Medical Center": ("Preston", "ID"),
+    "Minidoka Memorial Hospital": ("Rupert", "ID"),
+    "North Canyon Medical Center": ("Gooding", "ID"),
+    "Northwest Specialty Hospital": ("Post Falls", "ID"),
+    "Shoshone Medical Center": ("Kellogg", "ID"),
+    "Syringa General Hospital": ("Grangeville", "ID"),
+    "Teton Valley Hospital": ("Driggs", "ID"),
+    "Chicago Behavioral Hospital": ("Des Plaines", "IL"),
+    "Crawford Memorial Hospital": ("Robinson", "IL"),
+    "Hillsboro Area Hospital": ("Hillsboro", "IL"),
+    "Hopedale Hospital": ("Hopedale", "IL"),
+    "Iroquois Memorial Hospital": ("Watseka", "IL"),
+    "Lake Behavioral Hospital": ("Waukegan", "IL"),
+    "Lawrence County Memorial Hospital": ("Lawrenceville", "IL"),
+    "McDonough District Hospital": ("Macomb", "IL"),
+    "Morrison Community Hospital": ("Morrison", "IL"),
+    "Paris Community Hospital": ("Paris", "IL"),
+    "Silver Oaks Behavioral Hospital": ("New Lenox", "IL"),
+    "Sparta Community Hospital": ("Sparta", "IL"),
+    "Thomas H Boyd Memorial Hospital": ("Carrollton", "IL"),
+    "Wabash General Hospital": ("Mt Carmel", "IL"),
+    "Cameron Memorial Community Hospital": ("Angola", "IN"),
+    "Incompass Healthcare": ("Lawrenceburg", "IN"),
+    "Unity Physicians Hospital": ("Mishawaka", "IN"),
+    "Ascentist Hospital": ("Leawood", "KS"),
+    "Clara Barton Hospital": ("Hoisington", "KS"),
+    "Coffey County Hospital": ("Burlington", "KS"),
+    "Community HealthCare System": ("Onaga", "KS"),
+    "Community Memorial Healthcare (Marysville)": ("Marysville", "KS"),
+    "Holton Community Hospital": ("Holton", "KS"),
+    "Rice Community Healthcare": ("Lyons", "KS"),
+    "Hospital District #6 Patterson Health Center": ("Anthony", "KS"),
+    "Kansas City Orthopaedic Institute": ("Leawood", "KS"),
+    "Kansas Medical Center": ("Andover", "KS"),
+    "Kansas Spine & Specialty Hospital": ("Wichita", "KS"),
+    "Manhattan Surgical Hospital": ("Manhattan", "KS"),
+    "Meade District Hospital": ("Meade", "KS"),
+    "Nemaha Valley Community Hospital": ("Seneca", "KS"),
+    "Norton County Hospital": ("Norton", "KS"),
+    "Osborne County Memorial Hospital": ("Osborne", "KS"),
+    "Phillips County Hospital": ("Phillipsburg", "KS"),
+    "Pratt Regional Medical Center": ("Pratt", "KS"),
+    "Scott County Hospital": ("Scott City", "KS"),
+    "Summit Surgical Hospital (Hutchinson)": ("Hutchinson", "KS"),
+    "William Newton Hospital": ("Winfield", "KS"),
+    "Caldwell Medical Center": ("Princeton", "KY"),
+    "Carroll County Memorial Hospital": ("Carrollton", "KY"),
+    "Kentucky River Medical Center": ("Jackson", "KY"),
+    "Livingston Hospital and Healthcare Services": ("Salem", "KY"),
+    "Ohio County Hospital": ("Hartford", "KY"),
+    "Trigg County Hospital": ("Cadiz", "KY"),
+    "Allen Parish Hospital": ("Kinder", "LA"),
+    "Avoyelles Hospital": ("Marksville", "LA"),
+    "Bunkie General Hospital": ("Bunkie", "LA"),
+    "Lafayette Surgical Specialty Hospital": ("Lafayette", "LA"),
+    "Opelousas General Health System": ("Opelousas", "LA"),
+    "Spine Hospital of Louisiana": ("Baton Rouge", "LA"),
+    "St. James Parish Hospital": ("Lutcher", "LA"),
+    "Surgical Specialty Center of Baton Rouge": ("Baton Rouge", "LA"),
+    "Winn Parish Medical Center": ("Winnfield", "LA"),
+    "Bournewood Hospital": ("Brookline", "MA"),
+    "Hospital for Behavioral Medicine": ("Worcester", "MA"),
+    "Cary Medical Center": ("Caribou", "ME"),
+    "Mount Desert Island Hospital": ("Bar Harbor", "ME"),
+    "Northern Maine Medical Center": ("Fort Kent", "ME"),
+    "Eaton Rapids Medical Center": ("EATON RAPIDS", "MI"),
+    "Hillsdale Hospital": ("Hillsdale", "MI"),
+    "Sheridan Community Hospital": ("Sheridan", "MI"),
+    "Straith Hospital for Special Surgery": ("Southfield", "MI"),
+    "Chippewa County Hospital": ("Montevideo", "MN"),
+    "Gillette Children's Specialty Healthcare": ("St Paul", "MN"),
+    "Glacial Ridge Hospital": ("Glenwood", "MN"),
+    "Kittson Healthcare": ("Hallock", "MN"),
+    "Lakewood Health System": ("Staples", "MN"),
+    "LifeCare Medical Center": ("Roseau", "MN"),
+    "Mahnomen Health Center": ("Mahnomen", "MN"),
+    "Mille Lacs Health System": ("Onamia", "MN"),
+    "Rainy Lake Medical Center": ("International Falls", "MN"),
+    "River's Edge Hospital & Clinic": ("Saint Peter", "MN"),
+    "RiverView Health": ("Crookston", "MN"),
+    "Riverwood Healthcare Center": ("Aitkin", "MN"),
+    "Sleepy Eye Medical Center": ("Sleepy Eye", "MN"),
+    "United Hospital District": ("Blue Earth", "MN"),
+    "Bates County Memorial Hospital": ("Butler", "MO"),
+    "Ranken Jordan Pediatric Bridge Hospital": ("Maryland Heights", "MO"),
+    "Ray County Memorial Hospital": ("Richmond", "MO"),
+    "Ste Genevieve County Memorial Hospital": ("STE. GENEVIEVE", "MO"),
+    "King's Daughters Medical Center-Brookhaven": ("Brookhaven", "MS"),
+    "South Sunflower County Hospital": ("Indianola", "MS"),
+    "Tyler Holmes Memorial Hospital": ("Winona", "MS"),
+    "Glendive Medical Center": ("Glendive", "MT"),
+    "Granite County Medical Center": ("Philipsburg", "MT"),
+    "Mineral Community Hospital": ("Superior", "MT"),
+    "Rosebud Health Care Center": ("Forsyth", "MT"),
+    "Shodair Children's Hospital": ("Helena", "MT"),
+    "Granville Health Systems": ("Oxford", "NC"),
+    "Iredell Davis Behavioral Health Hospital": ("Statesville", "NC"),
+    "Heart of America Medical Center": ("Rugby", "ND"),
+    "Jamestown Regional Medical Center": ("Jamestown", "ND"),
+    "McKenzie County Healthcare Systems": ("Watford City", "ND"),
+    "Sakakawea Medical Center - Cah": ("HAZEN", "ND"),
+    "St. Luke's Hospital (Crosby)": ("Crosby", "ND"),
+    "Towner County Medical Center": ("Cando", "ND"),
+    "Antelope Memorial Hospital": ("NELIGH", "NE"),
+    "Beatrice Community Hospital & Health Center": ("Beatrice", "NE"),
+    "Boone County Health Center": ("Albion", "NE"),
+    "Box Butte General Hospital": ("Alliance", "NE"),
+    "Brodstone Healthcare": ("Superior", "NE"),
+    "Chadron Community Hospital and Health Services": ("Chadron", "NE"),
+    "Cherry County Hospital": ("Valentine", "NE"),
+    "Community Hospital (McCook)": ("McCook", "NE"),
+    "Fillmore County Hospital": ("Geneva", "NE"),
+    "Gordon Memorial Hospital District": ("Gordon", "NE"),
+    "Jefferson Community Health & Life": ("Fairbury", "NE"),
+    "Kearney County Health Services Hospital": ("Minden", "NE"),
+    "Kimball Health Services": ("Kimball", "NE"),
+    "Lexington Regional Health Center": ("Lexington", "NE"),
+    "Lincoln Surgical Hospital": ("Lincoln", "NE"),
+    "Memorial Hospital (Aurora)": ("Aurora", "NE"),
+    "Morrill County Community Hospital": ("Bridgeport", "NE"),
+    "Phelps Memorial Health Center": ("Holdrege", "NE"),
+    "Providence Medical Center (Wayne)": ("Wayne", "NE"),
+    "Syracuse Area Health": ("Syracuse", "NE"),
+    "Valley County Health System": ("Ord", "NE"),
+    "Webster County Community Hospital": ("Red Cloud", "NE"),
+    "York General Health Care Services": ("York", "NE"),
+    "Huggins Hospital": ("Wolfeboro", "NH"),
+    "Littleton Regional Healthcare": ("Littleton", "NH"),
+    "Bergen New Bridge Medical Center": ("Paramus", "NJ"),
+    "Carewell Health Medical Center": ("East Orange", "NJ"),
+    "Artesia General Hospital": ("Artesia", "NM"),
+    "Central Desert Behavioral Health Hospital": ("Albuquerque", "NM"),
+    "Cibola General Hospital": ("Grants", "NM"),
+    "Gila Regional Medical Center": ("Silver City", "NM"),
+    "Holy Cross Medical Center (Taos)": ("Taos", "NM"),
+    "Nor-Lea Hospital District": ("Lovington", "NM"),
+    "Roosevelt General Hospital": ("Portales", "NM"),
+    "Three Crosses Regional Hospital": ("Las Cruces", "NM"),
+    "Desert Parkway Behavioral Healthcare Hospital": ("Las Vegas", "NV"),
+    "Harmon Hospital": ("Las Vegas", "NV"),
+    "Pershing General Hospital": ("Lovelock", "NV"),
+    "Brylin Hospitals": ("Buffalo", "NY"),
+    "Nathan Littauer Hospital": ("Gloversville", "NY"),
+    "Adams County Regional Medical Center": ("Seaman", "OH"),
+    "Blueridge Vista Health and Wellness": ("Cincinnati", "OH"),
+    "Mary Rutan Hospital": ("Bellefontaine", "OH"),
+    "Ohio Valley Surgical Hospital": ("Springfield", "OH"),
+    "Summa Western Reserve Hospital": ("Cuyahoga Falls", "OH"),
+    "Sunrise Vista Health and Wellness": ("Canton", "OH"),
+    "Wayne Hospital": ("Greenville", "OH"),
+    "Wood County Hospital": ("Bowling Green", "OH"),
+    "Wyandot Memorial Hospital": ("Upper Sandusky", "OH"),
+    "Atoka County Medical Center": ("Atoka", "OK"),
+    "The Children's Center Rehabilitation Hospital": ("Bethany", "OK"),
+    "Cleveland Area Hospital": ("Cleveland", "OK"),
+    "Coal County General Hospital": ("Coalgate", "OK"),
+    "Jackson County Memorial Hospital Authority": ("Altus", "OK"),
+    "McAlester Regional Health Center": ("McAlester", "OK"),
+    "McCurtain Memorial Hospital": ("Idabel", "OK"),
+    "Stilwell Memorial Hospital": ("Stilwell", "OK"),
+    "Oklahoma Heart Hospital": ("Oklahoma City", "OK"),
+    "Oklahoma Surgical Hospital": ("Tulsa", "OK"),
+    "OneCore Health": ("Oklahoma City", "OK"),
+    "Parkside Psychiatric Hospital": ("Tulsa", "OK"),
+    "Pawhuska Hospital": ("Pawhuska", "OK"),
+    "Summit Medical Center (Edmond)": ("Edmond", "OK"),
+    "Surgical Hospital of Oklahoma": ("Oklahoma City", "OK"),
+    "Wagoner Community Hospital": ("Wagoner", "OK"),
+    "Curry General Hospital": ("Gold Beach", "OR"),
+    "Harney District Hospital": ("Burns", "OR"),
+    "Southern Coos Hospital & Health Center": ("Bandon", "OR"),
+    "Eagleville Hospital": ("Eagleville", "PA"),
+    "OSS Orthopaedic Hospital": ("York", "PA"),
+    "Newberry County Memorial Hospital": ("Newberry", "SC"),
+    "Brookings Health System": ("Brookings", "SD"),
+    "Huron Regional Medical Center": ("Huron", "SD"),
+    "Lifescape": ("Sioux Falls", "SD"),
+    "Prairie Lakes Healthcare System": ("Watertown", "SD"),
+    "Macon Community Hospital": ("Lafayette", "TN"),
+    "Metro Nashville General Hospital": ("Nashville", "TN"),
+    "Collingsworth General Hospital": ("Wellington", "TX"),
+    "Hamilton General Hospital": ("Hamilton", "TX"),
+    "McCamey Hospital": ("McCamey", "TX"),
+    "StarCare Specialty Health": ("Lubbock", "TX"),
+    "Blue Mountain Hospital": ("Blanding", "UT"),
+    "Kane County Hospital": ("Kanab", "UT"),
+    "Uintah Basin Medical Center": ("Roosevelt", "UT"),
+    "Gifford Medical Center": ("Randolph", "VT"),
+    "Springfield Hospital": ("Springfield", "VT"),
+    "Columbia Basin Hospital": ("Ephrata", "WA"),
+    "Coulee Medical Center": ("Grand Coulee", "WA"),
+    "Garfield County Public Hospital District #1": ("Pomeroy", "WA"),
+    "Kittitas Valley Community Hospital": ("Ellensburg", "WA"),
+    "Klickitat Valley Hospital": ("Goldendale", "WA"),
+    "Lake Chelan Community Hospital": ("CHELAN", "WA"),
+    "Mason General Hospital & Family of Clinics": ("Shelton", "WA"),
+    "Mid Valley Hospital & Clinic": ("Omak", "WA"),
+    "Newport Community Hospital": ("Newport", "WA"),
+    "North Valley Hospital": ("Tonasket", "WA"),
+    "Othello Community Hospital": ("Othello", "WA"),
+    "Smokey Point Behavioral Hospital": ("Marysville", "WA"),
+    "Snoqualmie Valley Hospital": ("Snoqualmie", "WA"),
+    "South Sound Behavioral Hospital": ("Lacey", "WA"),
+    "Summit Pacific Medical Center": ("Elma", "WA"),
+    "WhidbeyHealth Medical Center": ("Coupeville", "WA"),
+    "Willapa Harbor Hospital": ("South Bend", "WA"),
+    "Burnett Medical Center": ("Grantsburg", "WI"),
+    "Crossing Rivers Health Medical Center": ("Prairie du Chien", "WI"),
+    "Fort Memorial Hospital": ("Fort Atkinson", "WI"),
+    "Grant Regional Health Center": ("Lancaster", "WI"),
+    "North Central Health Care": ("Wausau", "WI"),
+    "Oakleaf Surgical Hospital": ("Altoona", "WI"),
+    "Richland Hospital": ("Richland Center", "WI"),
+    "Sauk Prairie Hospital": ("Prairie du Sac", "WI"),
+    "Southwest Health Center": ("Platteville", "WI"),
+    "Spooner Health System": ("Spooner", "WI"),
+    "Vernon Memorial Hospital": ("Viroqua", "WI"),
+    "Boone Memorial Hospital": ("Madison", "WV"),
+    "Cody Regional Health": ("Cody", "WY"),
+    "Hot Springs County Memorial Hospital": ("Thermopolis", "WY"),
+    "Memorial Hospital Sweetwater County": ("Rock Springs", "WY"),
+    "Memorial Hospital of Carbon County": ("Rawlins", "WY"),
+    "Niobrara County Hospital District": ("Lusk", "WY"),
+    "North Platte Valley Medical Center": ("Saratoga", "WY"),
+    "Star Valley Medical Center": ("Afton", "WY"),
 }
 
 # Normalize system keys to lowercase
@@ -3152,6 +3490,42 @@ FORCE_LOCATION_OVERRIDE: dict[str, tuple[str, str]] = {
     "lawrence memorial hospital":          ("Lawrence",     "KS"),
 }
 FORCE_LOCATION_OVERRIDE = {k.lower(): v for k, v in FORCE_LOCATION_OVERRIDE.items()}
+
+# 2026-10-25 coverage stage 2: boards whose location field holds a campus
+# label rather than the hospital ("Main Campus", "Hospital", "SOMC", "* Truckee",
+# a name cut at 25 characters). Keyed by the adapter's system name (the label
+# the row carries into normalize_job, before HOSPITAL_SYSTEM_ALIASES), then by
+# the lowercased hospital_name; the value is the hospital's own name, which
+# for these single-hospital systems is its CMS name. Exact matches only, and
+# only for systems first scraped in stage 2, so no stored row is renamed.
+HOSPITAL_NAME_FIX: dict[str, dict[str, str]] = {
+    "Pomona Valley Hospital Medical Center": {"pvhmc incl. offsite facilities": "Pomona Valley Hospital Medical Center"},
+    "National Jewish Health": {"*national jewish health - main campus": "National Jewish Health"},
+    "Frederick Health": {"main campus": "Frederick Health Hospital"},
+    "Southern Ohio Medical Center": {"somc": "Southern Ohio Medical Center"},
+    "Southern Ohio Medical Center (Providers)": {"somc": "Southern Ohio Medical Center",
+                                                 "southern ohio medical center (providers)": "Southern Ohio Medical Center"},
+    "Firelands Health": {"main campus": "Firelands Regional Medical Center",
+                         "bellevue hospital": "The Bellevue Hospital"},
+    "Episcopal Health Services": {"hospital": "St. John's Episcopal Hospital"},
+    "Barton Health": {"barton hospital": "Barton Memorial Hospital"},
+    "Witham Health Services": {"main hospital": "Witham Health Services"},
+    "Island Health": {"island hospital-washingto": "Island Hospital"},
+    "Tahoe Forest Health System": {"* truckee": "Tahoe Forest Hospital", "*reno": "Tahoe Forest Health System",
+                                   "ivch": "Incline Village Community Hospital"},
+    "Grady Health System": {"main grady campus (downtown atlanta)": "Grady Memorial Hospital"},
+    # Brook Lane (Hagerstown psychiatric hospital) joined Meritus Health.
+    "Meritus Health": {"brook lane main campus": "Brook Lane Health Services"},
+}
+
+# 2026-10-25 coverage stage 2: towns a board writes as a neighbourhood of a
+# city. Lurie Children's (Phenom) lists Streeterville (the hospital, 225 E.
+# Chicago Ave), River North, Lincoln Park and Old Town, all in Chicago.
+# Keyed by lowercased system name, then by lowercased city.
+SYSTEM_CITY_RENAME: dict[str, dict[str, str]] = {
+    "lurie children's": {"streeterville": "Chicago", "river north": "Chicago", "lincoln park": "Chicago",
+                         "old town": "Chicago", "gold coast": "Chicago"},
+}
 
 
 _NOT_CITY_WORDS = re.compile(
@@ -5362,6 +5736,10 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
     # the headquarters (501 Corporate Centre Dr, Franklin, TN) for "Summit
     # Healthcare Mgmt", and the county's crisis center at 1850 Copper Loop,
     # Las Cruces. A suffix also matches ("The Farley Center").
+    # 2026-10-25 coverage stage 2: the nine sites that are CMS-registered
+    # psychiatric hospitals take their own (CMS) names as hospital_name, so
+    # the coverage measure finds them by name in their own state; every
+    # other site keeps "Summit BHC". The system label is unchanged.
     "Summit BHC": {
         "anabranch recovery center": (None, "Terre Haute", "IN"),
         "aviary recovery center": (None, "Eolia", "MO"),
@@ -5369,27 +5747,27 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "canyon vista recovery center": (None, "Mesa", "AZ"),
         "carolina dunes behavioral health": (None, "Leland", "NC"),
         "cottonwood tucson": (None, "Tucson", "AZ"),
-        "creekside behavioral health": (None, "Kingsport", "TN"),
+        "creekside behavioral health": ("Creekside Behavioral Health", "Kingsport", "TN"),
         "dona ana county crisis triage center": (None, "Las Cruces", "NM"),
-        "eagle view behavioral health": (None, "Bettendorf", "IA"),
+        "eagle view behavioral health": ("Eagle View Behavioral Health", "Bettendorf", "IA"),
         "english mountain recovery": (None, "Sevierville", "TN"),
         "fair oaks recovery center": (None, "Sacramento", "CA"),
         "farley center": (None, "Williamsburg", "VA"),
         "great oaks recovery center": (None, "Egypt", "TX"),
-        "highland hospital": (None, "Charleston", "WV"),
+        "highland hospital": ("Highland Hospital", "Charleston", "WV"),
         "iron bridge recovery center": (None, "Chester", "VA"),
         "ivory plains recovery center": (None, "Adair", "IA"),
         "las cruces recovery center": (None, "Las Cruces", "NM"),
-        "miramont behavioral health": (None, "Middleton", "WI"),
+        "miramont behavioral health": ("Miramont Behavioral Health", "Middleton", "WI"),
         "mountain laurel recovery center": (None, "Westfield", "PA"),
         "northern path recovery center": (None, "Fort Wayne", "IN"),
         "pacific sky recovery center": (None, "Spokane", "WA"),
         "palms behavioral health": (None, "Harlingen", "TX"),
-        "pavilion behavioral health": (None, "Williamsburg", "VA"),
-        "the pavilion at williamsburg place": (None, "Williamsburg", "VA"),
-        "peak behavioral health": (None, "Santa Teresa", "NM"),
-        "peak view behavioral health": (None, "Colorado Springs", "CO"),
-        "raleigh oaks behavioral health": (None, "Garner", "NC"),
+        "pavilion behavioral health": ("The Pavilion at Williamsburg Place", "Williamsburg", "VA"),
+        "the pavilion at williamsburg place": ("The Pavilion at Williamsburg Place", "Williamsburg", "VA"),
+        "peak behavioral health": ("Peak Behavioral Health", "Santa Teresa", "NM"),
+        "peak view behavioral health": ("Peak View Behavioral Health", "Colorado Springs", "CO"),
+        "raleigh oaks behavioral health": ("Raleigh Oaks Behavioral Health", "Garner", "NC"),
         "raleigh recovery center": (None, "Raleigh", "NC"),
         "ranch at dove tree": (None, "Lubbock", "TX"),
         "safe harbor recovery center": (None, "Portsmouth", "VA"),
@@ -5400,7 +5778,7 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "victory addiction recovery center": (None, "Lafayette", "LA"),
         "waypoint recovery center": (None, "Cameron", "SC"),
         "willingway": (None, "Statesboro", "GA"),
-        "willow creek behavioral health": (None, "Green Bay", "WI"),
+        "willow creek behavioral health": ("Willow Creek Behavioral Health", "Green Bay", "WI"),
         "wooded glen recovery center": (None, "Henryville", "IN"),
         "summit healthcare mgmt": (None, "Franklin", "TN"),
     },
@@ -5502,6 +5880,93 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
     "ProMedica": {
         "oregon": (None, "Oregon", "OH"),
     },
+    # ── 2026-10-25 coverage stage 2: the location names the new tenants'
+    # dry runs listed (most rows carry no town or no state). A hospital takes
+    # its CMS name; any other site keeps the system name in its own town.
+    "GBMC HealthCare": {
+        "gbmc hospital": ("Greater Baltimore Medical Center", "Baltimore", "MD"),
+        "physicians pavilion west": (None, "Baltimore", "MD"),
+        "physicians pavilion east": (None, "Baltimore", "MD"),
+        "gilchrist center stadium place": (None, "Baltimore", "MD"),
+        "gilchrist center towson": (None, "Towson", "MD"),
+        "gilchrist hunt valley": (None, "Hunt Valley", "MD"),
+        "health partners at hunt valley": (None, "Hunt Valley", "MD"),
+        "gbmc padonia": (None, "Timonium", "MD"),
+        "owings mills - red run boulevard": (None, "Owings Mills", "MD"),
+        "hospice of washington county ship to": (None, "Hagerstown", "MD"),
+    },
+    "University Health (Kansas City)": {
+        "university health truman medical center": ("University Health Truman Medical Center", "Kansas City", "MO"),
+        "uh lakewood medical center": ("University Health Lakewood Medical Center", "Kansas City", "MO"),
+        "uh behavioral health": (None, "Kansas City", "MO"),
+        "university health 1": (None, "Kansas City", "MO"),
+        "university health 2": (None, "Kansas City", "MO"),
+        "university health 4": (None, "Kansas City", "MO"),
+    },
+    "Children's National Hospital": {
+        "children's national hospital": ("Children's National Hospital", "Washington", "DC"),
+        "rehabilitation and specialized care bunker hill road": (None, "Washington", "DC"),
+        "shepherd park & rare disease institute": (None, "Washington", "DC"),
+        "research and innovation building": (None, "Washington", "DC"),
+        "shaw metro": (None, "Washington", "DC"),
+        "anacostia": (None, "Washington", "DC"),
+        "thearc": (None, "Washington", "DC"),
+        "cnpa chevy chase": (None, "Chevy Chase", "MD"),
+    },
+    # Vitruvian Health (Hamilton Health Care System, Dalton GA; Bradley Medical
+    # Center, Cleveland TN since 2025): its campus locations carry no town.
+    "Vitruvian Health": {
+        "hamilton medical center - main campus": ("Hamilton Medical Center", "Dalton", "GA"),
+        "hamilton diagnostics center": (None, "Dalton", "GA"),
+        "hamilton central business office (kazee building)": (None, "Dalton", "GA"),
+        "anna shaw children's institute": (None, "Dalton", "GA"),
+        "hpg - calhoun campus": (None, "Calhoun", "GA"),
+        "bradley medical center - main campus": ("Bradley Medical Center", "Cleveland", "TN"),
+        "bradley medical center - westside campus": (None, "Cleveland", "TN"),
+        "novamed surgery center of cleveland (bradley ambulatory surgery center)": (None, "Cleveland", "TN"),
+        "bps orthopedics": (None, "Cleveland", "TN"),
+    },
+    # 2026-10-25 coverage stage 2 (in-crawl): Tufts Medicine's locationsText is
+    # the campus with no town, so every row took the Boston default and Lowell
+    # General Hospital (CMS 220063, Lowell MA) never counted. The campuses take
+    # their names and towns; an unlisted location keeps the system default.
+    "Tufts Medicine": {
+        "tufts medical center": ("Tufts Medical Center", "Boston", "MA"),
+        "tufts medical center - corporate location": (None, "Boston", "MA"),
+        "tufts medical center - framingham": (None, "Framingham", "MA"),
+        "tufts medical center community care - melrose": (None, "Melrose", "MA"),
+        "tufts medical center community care": (None, "Boston", "MA"),
+        "lowell general hospital": ("Lowell General Hospital", "Lowell", "MA"),
+        "lowell - rogers street": (None, "Lowell", "MA"),
+        "melrosewakefield hospital": ("MelroseWakefield Hospital", "Melrose", "MA"),
+        "lawrence memorial hospital": (None, "Medford", "MA"),
+        "malden - 178 savin street": (None, "Malden", "MA"),
+        "nena lawrence": (None, "Lawrence", "MA"),
+        "nena chelmsford": (None, "Chelmsford", "MA"),
+        "tuftsmedicine": (None, "Boston", "MA"),
+    },
+    "OU Health": {
+        "central park ii": (None, "Oklahoma City", "OK"),
+        "yukon facility": (None, "Yukon", "OK"),
+    },
+    "Eisenhower Health": {
+        "eisenhower medical center": ("Eisenhower Medical Center", "Rancho Mirage", "CA"),
+    },
+    "Dayton Children's": {
+        "dayton children's - main campus": ("Dayton Children's Hospital", "Dayton", "OH"),
+        "mathile center for mental health and wellness": (None, "Dayton", "OH"),
+        "dayton children's - south campus": (None, "Springboro", "OH"),
+        "behavioral health center - south campus": (None, "Springboro", "OH"),
+        "dayton children's - tech town": (None, "Dayton", "OH"),
+        "child health pavilion": (None, "Dayton", "OH"),
+    },
+    "Overlake Medical Center": {
+        "lynnwood ed": (None, "Lynnwood", "WA"),
+        "building 5 medical pavilion 9th floor": (None, "Bellevue", "WA"),
+        "building 1 south tower basement": (None, "Bellevue", "WA"),
+        "factoria village": (None, "Bellevue", "WA"),
+        "timber ridge": (None, "Issaquah", "WA"),
+    },
 }
 WD_FACILITY_MAP["Wellstar Health (Providers)"] = WD_FACILITY_MAP["Wellstar Health"]
 
@@ -5557,6 +6022,25 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "Emanate Health":            ("Covina", "CA"),
     "Rady Children's Health":    ("Orange", "CA"),
     "Arkansas Children's":       ("Little Rock", "AR"),
+    # 2026-10-25 coverage stage 2: the home town of each new single-market
+    # tenant (GBMC, University Health, Olympic and Genesis list sites with no
+    # town or no state; OU Health lists "Oklahoma City" with no state).
+    "Mount Sinai Medical Center (Florida)": ("Miami Beach", "FL"),
+    "Valley Children's Healthcare": ("Madera", "CA"),
+    "Children's National Hospital": ("Washington", "DC"),
+    "Overlake Medical Center":   ("Bellevue", "WA"),
+    "GBMC HealthCare":           ("Baltimore", "MD"),
+    "University Health (Kansas City)": ("Kansas City", "MO"),
+    "Holland Hospital":          ("Holland", "MI"),
+    "Olympic Medical Center":    ("Port Angeles", "WA"),
+    "East Tennessee Children's Hospital": ("Knoxville", "TN"),
+    "OU Health":                 ("Oklahoma City", "OK"),
+    "Children's Wisconsin":      ("Milwaukee", "WI"),
+    "Singing River Health System": ("Pascagoula", "MS"),
+    "Genesis HealthCare System": ("Zanesville", "OH"),
+    "Eisenhower Health":         ("Rancho Mirage", "CA"),
+    "Reid Health":               ("Richmond", "IN"),
+    "Dayton Children's":         ("Dayton", "OH"),
 }
 
 # 2026-09-24: tenants whose locationsText leads with "City ST" and no comma
@@ -6657,97 +7141,499 @@ async def run_workday(session) -> list[Job]:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  TALEO — Fixed endpoint
+#  TALEO ENTERPRISE CAREER SECTIONS — <tenant>.taleo.net/careersection/<cs>/
+#  (rebuilt 2026-10-25, coverage stage 4; the old renderRequisitionList
+#  adapter answered 404 on every tenant from April 2026 and TALEO_ORGS sat
+#  empty). A career section's jobsearch.ftl page comes in one of two kinds:
+#    REST  the page names its portal ("portalNo: '101430233'") and the list
+#          is POST /careersection/rest/jobboard/searchjobs?lang=en&portal=<n>
+#          with a JSON search body and "pageNo"; it answers
+#          {"requisitionList": [{"jobId", "contestNo", "column": [title,
+#          '["United States-Florida-Tampa"]', "Oct 25, 2026"], "linkedColumn",
+#          "locationsColumns"}], "pagingData": {"pageSize", "totalCount"}}.
+#          Tampa General (tgh ex, 719 jobs on 10-25), TGH North (tas-tgh nth,
+#          "Florida-Brooksville-TGH Brooksville"), Stony Brook Medicine
+#          (stonybrooku 2, "US-NY-Stony Brook", 233).
+#    FTL   the older template: no portal number, the first page of results
+#          sits in the hidden input "initialHistory" as "!|!"-separated,
+#          percent-encoded tokens, and later pages answer
+#          POST <cs>/jobsearch.ajax (the pager's form, the page's csrftoken,
+#          the session cookie). Erlanger (ehs_external, 442 jobs, 10 a page,
+#          location "Erlanger Baroness Hospital Chattanooga, TN").
+#  The job page <cs>/jobdetail.ftl?job=<contestNo>&lang=en is the same in
+#  both kinds: its initialHistory holds the posting HTML (tokens that open
+#  with "!*!": description, then qualifications), the organization, the
+#  schedule and, where the employer posts it, the pay ("$55,945 - $68,197 /
+#  year" on Stony Brook pages). No login, no browser: the list pages and job
+#  pages answer a plain GET/POST with a normal user agent.
+#  McLaren Health Care's tenant (mclarenhlth.taleo.net) is NOT here: every
+#  career section answers "Career Section Unavailable"; its jobs are read
+#  from the SelectMinds front at careers.mclaren.org (SELECTMINDS_ORGS).
+#  job_id is the contest number (the "Job Number" the posting prints); the
+#  apply link is the job page.
 # ══════════════════════════════════════════════════════════════════════════
-# Removed DNS-dead orgs: hcahealthcare, tenethealth, lifepointhealth, chscare,
-#   christushealth, selectmedical, shrinershospitals, nhccare, teamhealth, encompasshealth
-# Adding orgs with confirmed *.taleo.net DNS resolution:
-TALEO_ORGS: dict[str, str] = {
-    # ─────────────────────────────────────────────────────────────────────────
-    # All Taleo healthcare tenants are dead as of April 2026.
-    #
-    # April 27 run results:
-    #   DNS-dead (Cannot connect to host):
-    #     hcahealthcare, tenethealth, lifepointhealth, chscare, selectmedical,
-    #     shrinershospitals, encompasshealth, nhccare, teamhealth
-    #   HTTP 404 (host alive, API removed):
-    #     erlanger, tgh, capecodhc, hcmc
-    #
-    # Kept the dict empty (rather than removing) so future Taleo additions can
-    # be tested. Run is short-circuited in run_all() — no gather call wasted.
-    # ─────────────────────────────────────────────────────────────────────────
+TALEO_ORGS: dict[str, tuple] = {
+    # Format: "System": (tenant host, career section, default state)
+    # Tampa General: the hospital's own section (TGH Medical Group "tgmg",
+    # TGH North "nth" on tas-tgh, and the contract-staff "ex_ihs" sections
+    # are separate boards and not configured yet).
+    "Tampa General Hospital": ("tgh.taleo.net", "ex", "FL"),
+    # Stony Brook University Hospital and the Stony Brook Medicine campuses
+    # (Southampton, Eastern Long Island); careersection 2 is the hospital
+    # board the HR site links (hr.stonybrookmedicine.edu/career).
+    "Stony Brook Medicine": ("stonybrooku.taleo.net", "2", "NY"),
+    # The two community hospitals' own sections on the same tenant (10-25:
+    # sbsh 129 jobs, "US-NY-Southampton"; elih 35, "US-NY-Greenport"); both
+    # file under Stony Brook Medicine (HOSPITAL_SYSTEM_ALIASES), and a
+    # requisition listed in two sections is one row (finalize_jobs key).
+    "Stony Brook Southampton Hospital": ("stonybrooku.taleo.net", "sbsh", "NY"),
+    "Stony Brook Eastern Long Island Hospital": ("stonybrooku.taleo.net", "elih", "NY"),
+    # Erlanger (Chattanooga TN; Murphy NC; Pikeville TN); FTL template.
+    "Erlanger Health System": ("erlanger.taleo.net", "ehs_external", "TN"),
+}
+TALEO_MAX_PAGES = int(os.getenv("TALEO_MAX_PAGES", "120"))
+TALEO_DESC_MAX_PER_RUN = int(os.getenv("TALEO_DESC_MAX_PER_RUN", "1500"))   # jobdetail.ftl pages a night, all tenants
+TALEO_DESC_BUDGET = _DescBudget(TALEO_DESC_MAX_PER_RUN)
+
+# The hospital a row is at, by tenant: (pattern on "facility | town", name;
+# None = the facility as the board writes it). The first match wins; a row
+# nothing matches keeps the system name.
+TALEO_FACILITY: dict[str, tuple] = {
+    # TGH's section also lists the TGH North hospitals (ex-Bravera, bought
+    # from CHS in 2024; CMS: TAMPA GENERAL HOSPITAL BROOKSVILLE, whose
+    # licence holds the Spring Hill campus, and TAMPA GENERAL HOSPITAL
+    # CRYSTAL RIVER); 10-25: Tampa 476 rows, Brooksville 80, Crystal River
+    # 57, Spring Hill 52, other towns (clinics, imaging) under 20 rows.
+    "Tampa General Hospital": (
+        (re.compile(r"\|\s*Tampa$", re.I), "Tampa General Hospital"),
+        (re.compile(r"\|\s*Brooksville$", re.I), "Tampa General Hospital Brooksville"),
+        (re.compile(r"\|\s*Spring Hill$", re.I), "Tampa General Hospital Spring Hill"),
+        (re.compile(r"\|\s*Crystal River$", re.I), "Tampa General Hospital Crystal River"),
+    ),
+    "Stony Brook Medicine": (
+        (re.compile(r"Southampton", re.I), "Stony Brook Southampton Hospital"),
+        (re.compile(r"Eastern Long Island|Greenport", re.I), "Stony Brook Eastern Long Island Hospital"),
+        (re.compile(r"\|\s*(?:Stony Brook|East Setauket)$", re.I), "Stony Brook University Hospital"),
+    ),
+    "Erlanger Health System": (
+        (re.compile(r"^Children'?s Hospital", re.I), "Children's Hospital at Erlanger"),
+        (re.compile(r"^(Erlanger [A-Z][\w' ]*?(?:Hospital|Medical Center))\b", re.I), None),
+        (re.compile(r"^(?:Erlanger )?Bledsoe\b", re.I), "Erlanger Bledsoe Hospital"),   # "Bledsoe Pikeville, TN"
+        (re.compile(r"^Erlanger East\b", re.I), "Erlanger East Hospital"),
+        (re.compile(r"^Erlanger North\b", re.I), "Erlanger North Hospital"),
+    ),
 }
 
-async def scrape_taleo(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
-    jobs = []
-    # Updated Taleo endpoint pattern
-    base_url = f"https://{org}.taleo.net"
-    try:
-        # First get the company code
-        async with session.get(
-            f"{base_url}/careersection/rest/jobboard/renderRequisitionList",
-            params={"lang": "en", "organization": org, "pageNo": 1, "pageSize": 25,
-                    "sortField": "POSTING_DATE", "sortDirection": "DESC"},
-            headers=HEADERS,
-            timeout=aiohttp.ClientTimeout(total=25)) as r:
-            if r.status != 200:
-                logger.info(f"Taleo {system}: HTTP {r.status}")
-                return []
-            data = await r.json(content_type=None)
-    except Exception as e:
-        logger.info(f"Taleo {system}: {e}")
-        return []
+_TALEO_PORTAL_RX = re.compile(r"portalNo\s*:\s*'(\d+)'")
+_TALEO_HISTORY_RX = re.compile(r'id="initialHistory"[^>]*\bvalue="([^"]*)"', re.S)
+_TALEO_HISTORY_RX2 = re.compile(r'name="initialHistory"[^>]*\bvalue="([^"]*)"', re.S)
+_TALEO_HIDDEN_RX = re.compile(r'<input type="hidden" name="([^"]+)" id="[^"]*" value="([^"]*)"')
+_TALEO_SUBMIT_RX = re.compile(r"^Submission for the position:\s*(.*?)\s*-\s*\(Job Number:\s*([^)]+?)\s*\)\s*$", re.S)
+_TALEO_DATE_RX = re.compile(r"^(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, \d{4}")
+_TALEO_TYPE_RX = re.compile(r"^(?:Full[- ]?time|Part[- ]?time|Per Diem|PRN|Temporary|Casual|Contract|Seasonal)\b", re.I)
+_TALEO_SHIFT_RX = re.compile(r"^(?:Day|Night|Evening|Rotating|Variable|Weekend)s?(?: (?:Shift|Job))?$", re.I)
+_TALEO_PAY_RX = re.compile(r"^\$\s?\d[\d,]*(?:\.\d+)?(?:\s*(?:-|to)\s*\$?\s?\d[\d,]*(?:\.\d+)?)?"
+                           r"\s*(?:/\s*|per\s+)?(?:hour|hr|year|yr|annual|annually|week|month)?\b", re.I)
+# Last words of an FTL location that are never the town ("... Medical Center, TX").
+_TALEO_NOT_TOWNS = {"center", "centre", "hospital", "clinic", "campus", "main", "north", "south", "east",
+                    "west", "medical", "health", "plaza", "tower", "pavilion"}
 
-    page = 1
-    while True:
-        try:
-            async with session.get(
-                f"{base_url}/careersection/rest/jobboard/renderRequisitionList",
-                params={"lang": "en", "organization": org, "pageNo": page, "pageSize": 25,
-                        "sortField": "POSTING_DATE", "sortDirection": "DESC"},
-                headers=HEADERS,
-                timeout=aiohttp.ClientTimeout(total=25)) as r:
-                if r.status != 200: break
-                data = await r.json(content_type=None)
-            reqs = data.get("requisitionList", [])
-            if not reqs: break
-            for j in reqs:
-                _tcity = j.get("city", "")
-                _tstate = j.get("state", "")
-                # Taleo state can be full name ("Texas") — normalize to 2-char
-                _, state = parse_city_state(f"{_tcity}, {_tstate}")
-                city  = _tcity
-                state = state or _tstate
-                jobs.append(Job(
-                    title=j.get("title", ""),
-                    hospital_system=system,
-                    hospital_name=j.get("organizationName", system),
-                    city=city, state=state, location=f"{city}, {state}",
-                    specialty=j.get("jobField", ""),
-                    job_type=j.get("jobType", ""),
-                    url=f"{base_url}/careersection/2/jobdetail.ftl?job={j.get('contestNo','')}",
-                    job_id=str(j.get("contestNo", "")),
-                    posted_date=j.get("postingDate", ""),
-                    description=strip_html(j.get("jobDescription", "")),
-                    ats_platform="Taleo",
-                ))
-            if len(reqs) < 25: break
-            page += 1
-            await jitter()
-        except Exception as e:
-            logger.info(f"Taleo {system} page {page}: {e}")
+
+def _taleo_state(tok: str) -> str:
+    t = (tok or "").strip()
+    if len(t) == 2 and (t.upper() in _WD_STATE_CODES or t.upper() == "PR"):
+        return t.upper()
+    return _US_STATE_CODES.get(t.lower(), "")
+
+
+def _taleo_tokens(raw: str) -> list[str]:
+    """An FTL "!|!" payload -> decoded tokens: HTML entities (the hidden
+    input), then percent-escapes ("Children%27s"), then Taleo's backslash
+    escapes ("Job Number\\: 47095")."""
+    out = []
+    for t in _html_unescape(raw or "").split("!|!"):
+        out.append(re.sub(r"\\(.)", r"\1", unquote(t)))
+    return out
+
+
+def _taleo_history(html: str) -> list[str]:
+    m = _TALEO_HISTORY_RX.search(html or "") or _TALEO_HISTORY_RX2.search(html or "")
+    return _taleo_tokens(m.group(1)) if m else []
+
+
+def taleo_location(raw: str, default_state: str = "") -> tuple[str, str, str]:
+    """(facility, city, state) from one Taleo location value.
+    REST boards: "United States-Florida-Tampa", "US-NY-Stony Brook",
+    "Florida-Brooksville-TGH Brooksville", "US-NC-Winston-Salem" (a hyphenated
+    town is kept whole when it is a known town). FTL boards (Erlanger): the
+    facility and the town in one string, "Erlanger Baroness Hospital
+    Chattanooga, TN"."""
+    s = re.sub(r"\s+", " ", (raw or "")).strip().strip('[]"').strip()
+    if not s:
+        return "", "", default_state
+    m = re.match(r"^(.*?),\s*([A-Z]{2})$", s)
+    if m and not re.match(r"^(?:US|USA|United States)-", s):
+        head, st = m.group(1).strip(), m.group(2)
+        if st not in _WD_STATE_CODES and st != "PR":
+            return "", "", default_state
+        whole = known_town(head, st)
+        if whole:
+            return "", whole, st
+        words = head.split(" ")
+        for n in (3, 2, 1):
+            if len(words) <= n or (n == 1 and words[-1].lower() in _TALEO_NOT_TOWNS):
+                continue
+            town = known_town(" ".join(words[-n:]), st)
+            if town:
+                return " ".join(words[:-n]).strip(" ,-"), town, st
+        town = embedded_town(head, st)
+        if town and head.lower().endswith(town.lower()):
+            return head[: len(head) - len(town)].strip(" ,-"), town, st
+        if town and head.lower().startswith(town.lower()):
+            return head[len(town):].strip(" ,-"), town, st
+        return head, "", st
+    parts = [p.strip() for p in s.split("-")]
+    st, k = "", -1
+    for i, p in enumerate(parts[:3]):
+        st = _taleo_state(p)
+        if st:
+            k = i
             break
+    if k < 0:
+        return "", "", default_state
+    rest = parts[k + 1:]
+    for n in range(len(rest), 0, -1):
+        town = known_town("-".join(rest[:n]), st) or (known_town(" ".join(rest[:n]), st) if n > 1 else None)
+        if town:
+            return "-".join(rest[n:]).strip(), town, st
+    if rest:
+        return "-".join(rest[1:]).strip(), rest[0], st
+    return "", "", st
+
+
+def _taleo_hospital(system: str, facility: str, city: str) -> str:
+    key = f"{facility or ''} | {city or ''}".strip()
+    rules = TALEO_FACILITY.get(system) or TALEO_FACILITY.get(HOSPITAL_SYSTEM_ALIASES.get(system, ""), ())
+    for rx, name in rules:
+        m = rx.search(key)
+        if m:
+            return name or m.group(1).strip()
+    return system
+
+
+def _taleo_iso(s: str) -> str:
+    m = _TALEO_DATE_RX.match((s or "").strip())
+    if not m:
+        return ""
+    try:
+        return datetime.strptime(m.group(0), "%b %d, %Y").strftime("%Y-%m-%d")
+    except ValueError:
+        return ""
+
+
+def _taleo_job(system: str, host: str, cs: str, default_state: str, contest: str, title: str,
+               loc: str, posted: str = "") -> Job | None:
+    contest, title = (contest or "").strip(), re.sub(r"\s+", " ", title or "").strip()
+    if not contest or not title or not re.match(r"^[\w.-]{1,40}$", contest) or _NOT_AN_OPENING_RX.search(title):
+        return None
+    fac, city, st = taleo_location(loc, default_state)
+    st = st or default_state
+    return Job(
+        title=title, hospital_system=system, hospital_name=_taleo_hospital(system, fac, city),
+        city=city, state=st, location=f"{city}, {st}".strip(", "),
+        specialty="", job_type="",
+        url=f"https://{host}/careersection/{cs}/jobdetail.ftl?job={contest}&lang=en",
+        job_id=contest, posted_date=_taleo_iso(posted), description="", ats_platform="Taleo",
+    )
+
+
+def _taleo_rest_jobs(data: dict, system: str, host: str, cs: str, default_state: str) -> list[Job]:
+    out = []
+    for r in (data or {}).get("requisitionList") or []:
+        cols = r.get("column") or []
+        if not isinstance(cols, list) or not cols:
+            continue
+        try:
+            title = cols[int(r.get("linkedColumn") or 0)]
+        except (ValueError, IndexError, TypeError):
+            title = cols[0]
+        loc = ""
+        for i in r.get("locationsColumns") or []:
+            try:
+                v = cols[int(i)]
+            except (ValueError, IndexError, TypeError):
+                continue
+            try:
+                vals = json.loads(v) if isinstance(v, str) and v.startswith("[") else [v]
+            except ValueError:
+                vals = [v]
+            if vals:
+                loc = str(vals[0] or "")
+                break
+        posted = next((c for c in cols if isinstance(c, str) and _TALEO_DATE_RX.match(c)), "")
+        job = _taleo_job(system, host, cs, default_state, str(r.get("contestNo") or ""), str(title or ""), loc, posted)
+        if job:
+            out.append(job)
+    return out
+
+
+def _taleo_ftl_jobs(tokens: list[str], system: str, host: str, cs: str, default_state: str) -> list[Job]:
+    """Records of an FTL requisition list (page 1's initialHistory or a
+    jobsearch.ajax answer). A record opens with its internal id, the title,
+    the id, the title, the id, then the board's own columns (Erlanger: job
+    number, "facility town, ST"); the "Submission for the position: <title>
+    - (Job Number: <n>)" token that follows names the job number."""
+    out, seen = [], set()
+    n = len(tokens)
+    i = 0
+    while i + 5 < n:
+        t = tokens[i]
+        if not (t.isdigit() and tokens[i + 2] == t and tokens[i + 4] == t and tokens[i + 1] == tokens[i + 3]):
+            i += 1
+            continue
+        title = tokens[i + 1]
+        j = i + 5
+        cols = []
+        while j < n and tokens[j] != t and len(cols) < 12:
+            cols.append(tokens[j])
+            j += 1
+        contest = ""
+        for k in range(j, min(n, j + 40)):
+            m = _TALEO_SUBMIT_RX.match(tokens[k])
+            if m:
+                contest = m.group(2).strip()
+                break
+        if not contest and cols and re.match(r"^[\w-]{3,20}$", cols[0]):
+            contest = cols[0]
+        loc = next((c for c in cols if c != contest and (re.search(r",\s*[A-Z]{2}$", c)
+                                                        or re.match(r"^(?:US|USA|United States)-", c))), "")
+        posted = next((c for c in cols if _TALEO_DATE_RX.match(c)), "")
+        if contest and contest not in seen:
+            job = _taleo_job(system, host, cs, default_state, contest, title, loc, posted)
+            if job:
+                seen.add(contest)
+                out.append(job)
+        i = j
+    return out
+
+
+def _taleo_ftl_total(html: str, tokens: list[str]) -> int:
+    m = re.search(r'name="listRequisition\.nbElements"[^>]*value="(\d+)"', html or "")
+    if m:
+        return int(m.group(1))
+    for t in tokens:
+        m = re.search(r"\((\d[\d,]*) jobs? found\)", t)
+        if m:
+            return int(m.group(1).replace(",", ""))
+    return 0
+
+
+async def _taleo_get(session, url: str, system: str, method: str = "get", **kw):
+    """(status, text) of one Taleo request; (0, "") on an exception."""
+    try:
+        async with req(session, method, url, ssl=False, proxy=proxies.get(),
+                       timeout=aiohttp.ClientTimeout(total=40), **kw) as r:
+            return r.status, (await r.text() if r.status == 200 else "")
+    except Exception as e:
+        logger.info(f"Taleo {system}: {url}: {type(e).__name__}: {e}")
+        return 0, ""
+
+
+_TALEO_REST_BODY = {
+    "multilineEnabled": False,
+    "sortingSelection": {"sortBySelectionParam": "3", "ascendingSortingOrder": "false"},
+    "fieldData": {"fields": {"KEYWORD": "", "LOCATION": "", "ORGANIZATION": ""}, "valid": True},
+    "filterSelectionParam": {"searchFilterSelections": [
+        {"id": "POSTING_DATE", "selectedValues": []}, {"id": "LOCATION", "selectedValues": []},
+        {"id": "JOB_FIELD", "selectedValues": []}, {"id": "ORGANIZATION", "selectedValues": []}]},
+    "advancedSearchFiltersSelectionParam": {"searchFilterSelections": []},
+}
+
+
+async def scrape_taleo(session, system: str, cfg: tuple) -> list[Job]:
+    """Every requisition of one career section (REST or FTL kind, see the
+    section note). A page that fails mid-crawl makes the crawl PARTIAL; the
+    rows read against the board's own total decide a complete claim."""
+    host, cs, default_state = cfg
+    base = f"https://{host}/careersection/{cs}"
+    search = f"{base}/jobsearch.ftl?lang=en"
+    status, html = await _taleo_get(session, search, system,
+                                    headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"})
+    if status != 200 or not html:
+        logger.info(f"Taleo {system}: HTTP {status} on {search}")
+        return []
+    if "Career Section Unavailable" in html[:3000]:
+        logger.info(f"Taleo {system}: career section {cs} unavailable")
+        return []
+    jobs: list[Job] = []
+    seen: set[str] = set()
+
+    def take(rows) -> int:
+        new = [j for j in rows if j.job_id not in seen]
+        seen.update(j.job_id for j in new)
+        jobs.extend(new)
+        return len(new)
+
+    failed: list[int] = []
+    total = 0
+    pm = _TALEO_PORTAL_RX.search(html)
+    tokens = _taleo_history(html)
+    if pm and not any(_TALEO_SUBMIT_RX.match(t) for t in tokens):
+        api = f"https://{host}/careersection/rest/jobboard/searchjobs?lang=en&portal={pm.group(1)}"
+        hdrs = {**HEADERS, "Accept": "application/json, text/javascript, */*", "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest", "Referer": search,
+                "tz": "GMT-05:00", "tzname": "America/New_York"}
+        page, pages = 1, 1
+        while page <= min(pages, TALEO_MAX_PAGES):
+            if page > 1:
+                await jitter()
+            st, text = await _taleo_get(session, api, system, method="post",
+                                        json={**_TALEO_REST_BODY, "pageNo": page}, headers=hdrs)
+            data = None
+            if st == 200:
+                try:
+                    data = json.loads(text)
+                except ValueError:
+                    data = None
+            if not isinstance(data, dict):
+                logger.info(f"Taleo {system}: HTTP {st} on page {page}")
+                failed.append(page)
+                if page == 1 or len(failed) >= 3:
+                    failed.extend(range(page + 1, min(pages, TALEO_MAX_PAGES) + 1))
+                    break
+                page += 1
+                continue
+            pg = data.get("pagingData") or {}
+            try:
+                total = int(pg.get("totalCount") or total)
+                size = int(pg.get("pageSize") or 25)
+            except (TypeError, ValueError):
+                size = 25
+            pages = max(1, -(-total // max(1, size))) if total else page
+            if not take(_taleo_rest_jobs(data, system, host, cs, default_state)) and page > 1:
+                break
+            page += 1
+    else:
+        total = _taleo_ftl_total(html, tokens)
+        take(_taleo_ftl_jobs(tokens, system, host, cs, default_state))
+        hidden = dict(_TALEO_HIDDEN_RX.findall(html))
+        per = max(1, len(jobs))
+        pages = -(-total // per) if total else 1
+        for page in range(2, min(pages, TALEO_MAX_PAGES) + 1):
+            await jitter()
+            form = {"ftlpageid": "reqListBasicPage", "ftlinterfaceid": "requisitionListInterface",
+                    "ftlcompid": "rlPager", "jsfCmdId": "rlPager", "ftlcompclass": "PagerComponent",
+                    "ftlcallback": "ftlPager_processResponse", "ftlajaxid": "ftlx1",
+                    "rlPager.currentPage": str(page), "lang": "en", "csrftoken": hidden.get("csrftoken", "")}
+            st, text = await _taleo_get(session, f"{base}/jobsearch.ajax", system, method="post", data=form,
+                                        headers={**HEADERS, "Referer": search, "X-Requested-With": "XMLHttpRequest"})
+            got = take(_taleo_ftl_jobs(_taleo_tokens(text), system, host, cs, default_state)) if st == 200 else -1
+            if got < 0:
+                logger.info(f"Taleo {system}: HTTP {st} on page {page}")
+                failed.append(page)
+                if len(failed) >= 3:
+                    failed.extend(range(page + 1, min(pages, TALEO_MAX_PAGES) + 1))
+                    break
+            elif got == 0:
+                break
+    if failed and jobs:
+        report_partial(system)
+        logger.warning(f"Taleo {system}: PARTIAL, pages {failed[:10]} unread; {len(jobs)} of {total} read; "
+                       f"not swept tonight")
+    elif total and len(jobs) < COMPLETE_RATIO * total:
+        logger.warning(f"Taleo {system}: {len(jobs)} of {total} requisitions read")
+    logger.info(f"  Taleo {system}: {len(jobs)} jobs (board total {total or '?'})")
+    report_complete(system, len(jobs), total, feed="TALEO_ORGS")
     return jobs
+
+
+def taleo_posting(html: str) -> dict:
+    """The parts of a Taleo jobdetail.ftl page a row takes: {"body", "type",
+    "shift", "pay", "org", "title", "contest"}. The posting HTML is every
+    token that opens with "!*!" (description, then qualifications; each is
+    sent twice); the short fields are read by their shape."""
+    toks = _taleo_history(html)
+    out = {"body": "", "type": "", "shift": "", "pay": "", "org": "", "title": "", "contest": ""}
+    if not toks:
+        return out
+    parts, seen = [], set()
+    for t in toks:
+        if t.startswith("!*!"):
+            text = strip_html(t[3:]).strip()
+            key = text[:200]
+            if text and key not in seen:
+                seen.add(key)
+                parts.append(text)
+            continue
+        s = t.strip()
+        m = _TALEO_SUBMIT_RX.match(s)
+        if m:
+            if not out["contest"]:
+                out["title"], out["contest"] = m.group(1).strip(), m.group(2).strip()
+        elif len(s) <= 80:
+            if not out["type"] and _TALEO_TYPE_RX.match(s):
+                out["type"] = s
+            elif not out["shift"] and _TALEO_SHIFT_RX.match(s):
+                out["shift"] = s
+            elif not out["pay"] and _TALEO_PAY_RX.match(s) and re.search(r"\d", s):
+                out["pay"] = s
+            elif (not out["org"] and re.search(r"\b(?:Hospital|Medical Center|Health)\b", s)
+                  and not re.search(r"[<>]|^Submission|^Apply|^Add |^Tell us", s)):
+                out["org"] = s
+    body = "\n\n".join(parts)
+    tail = []
+    if out["pay"]:
+        tail.append(f"Pay: {out['pay']}")
+    sched = _schedule_line(out["type"], _shift_words(out["shift"]))
+    if sched:
+        tail.append(sched)
+    if tail and body:
+        body = body[:_FACTS_WINDOW - 400].rstrip() + "\n\n" + "\n".join(tail)
+    out["body"] = body
+    return out
+
+
+async def _taleo_detail(session, job) -> bool:
+    html = await _fetch_html(session, job.url, timeout=30)
+    p = taleo_posting(html)
+    if p["contest"] and p["contest"] != str(job.job_id):
+        return False             # another posting's page (a moved or re-numbered requisition)
+    return _apply_body(job, p["body"], p["type"])
+
 
 async def run_taleo(session) -> list[Job]:
     if not TALEO_ORGS:
         return []
-    logger.info(f"Taleo: scraping {len(TALEO_ORGS)} systems...")
-    results = await asyncio.gather(
-        *[scrape_taleo(session, s, o) for s, o in TALEO_ORGS.items()],
-        return_exceptions=True
-    )
-    jobs = [j for r in results if isinstance(r, list) for j in r]
+    logger.info(f"Taleo: scraping {len(TALEO_ORGS)} career sections...")
+    if DETAIL_FETCH:
+        TALEO_DESC_BUDGET.expect(TALEO_ORGS)
+    listed: dict[str, list[Job]] = {}
+
+    async def one(_session, system, cfg):
+        # Its own cookie jar: an FTL pager answers only inside the session
+        # its search page opened (JSESSIONID + csrftoken).
+        try:
+            async with aiohttp.ClientSession(headers=HEADERS, max_line_size=65536,
+                                             max_field_size=65536) as own:
+                listed[system] = await scrape_taleo(own, system, cfg)
+        except Exception as e:
+            listed[system] = []
+            logger.info(f"  Taleo {system}: ERROR {e}")
+        return listed[system]
+
+    await _gather_by_host(None, list(TALEO_ORGS.items()), one, lambda c: c[0])
+    gated = _host_gated(lambda j: _taleo_detail(session, j), total=4, per_host=2)
+
+    async def _details(system, jobs):
+        if DETAIL_FETCH and jobs:
+            try:
+                await _detail_pass(session, system, jobs, TALEO_DESC_BUDGET, gated, "Taleo")
+            except Exception as e:
+                logger.info(f"Taleo {system}: detail pass failed ({e}); listed rows kept")
+
+    await asyncio.gather(*[_tenant_reporting(TALEO_DESC_BUDGET, s, _details(s, listed.get(s) or []))
+                           for s in TALEO_ORGS], return_exceptions=True)
+    jobs = [j for s in TALEO_ORGS for j in listed.get(s) or []]
     logger.info(f"  Taleo: {len(jobs):,} jobs")
     return jobs
 
@@ -6855,6 +7741,23 @@ ICIMS_ORGS = {
     "Baptist Health (Birmingham)":      "careers-baptisthealthal.icims.com",    # 383
     "Northern Arizona Healthcare":      "careers-nahealth.icims.com",           # 226, Flagstaff / Cottonwood / Sedona AZ
     "Community Memorial Healthcare":    "careers-cmhshealth.icims.com",         # 118, Ventura / Ojai CA (locations are street addresses)
+    # ── 2026-10-25 coverage stage 2: portals read off each system's careers
+    # page; [rows in that day's no-write dry run], every row with a body.
+    "Cooper University Health Care":    "careers-cooperhealth.icims.com",       # [891] Camden + Cape Regional (Cape May Court House) NJ
+    "VHC Health":                       "careers-vhchealth.icims.com",          # [732] Virginia Hospital Center, Arlington VA
+    "San Antonio Regional Hospital":    "careers-sarh.icims.com",               # [118] Upland CA
+    "Foundation Health Partners":       "careers-fhp.icims.com",                # [138] Fairbanks Memorial Hospital, Fairbanks AK
+    "Heywood Healthcare":               "careers-heywood.icims.com",            # [155] Heywood Hospital (Gardner) + Athol Hospital MA
+    "Henry Community Health":           "careers-hcmhcares.icims.com",          # [34] Henry County Memorial Hospital, New Castle IN
+    "Southcoast Health":                "careers-southcoast.icims.com",         # [363] Charlton (Fall River), St. Luke's (New Bedford), Tobey (Wareham) MA
+    "Eskenazi Health":                  "careers-eskenazihealth.icims.com",     # [13] Indianapolis IN
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "RiverView Health": "careers-riverviewhealth.icims.com",   # 40 rows, 34 in Crookston, MN, 4 with no town (location default) (CMS 241320)
+    "Central Desert Behavioral Health Hospital": "centraldesertbh-careers-fundltc.icims.com",   # 7 rows, 6 in Albuquerque, NM (CMS 324014)
+    "Harmon Hospital": "harmonmedicalrehab-careers-fundltc.icims.com",   # 10 rows, 10 in Las Vegas, NV (CMS 290042)
+    "Oklahoma Heart Hospital": "internal-okheart.icims.com",   # 69 rows, 67 in Oklahoma City, OK (CMS 370215)
 }
 
 
@@ -6917,6 +7820,8 @@ TALENTBREW_ORGS = {
     # (Whittier 93, Downey 49; SYSTEM_LOCATION_DEFAULTS gives CA) and "Los
     # Angeles, CA" for PIH Health Good Samaritan Hospital (1225 Wilshire Blvd).
     "PIH Health":               ("https://jobs.pihhealth.org/search-jobs", 100),
+    # 2026-10-25 coverage stage 2: jobs.rchsd.org (company site 68070), 154 rows that day.
+    "Rady Children's Hospital San Diego": ("https://jobs.rchsd.org/search-jobs", 15),
 }
 
 
@@ -8625,6 +9530,10 @@ JIBE_SITES = {
     "Yale New Haven Health System":   "https://jobs.ynhhs.org",                 # 1,667; CT (YNHH, Bridgeport, Greenwich, L+M) + Westerly RI
     "Care New England Health System": "https://careers.carenewengland.org",     # 588; RI (Kent, Women & Infants, Butler)
     "Conway Regional Health System":  "https://careers.conwayregional.org",     # 71 on 2026-10-20 (coverage stage 1); Conway AR
+    # 2026-10-25 coverage stage 2 (/api/jobs totals that day, every row with a body):
+    "Riverside Healthcare (Kankakee)": "https://careers.riversidehealthcare.org",  # [181] Riverside Medical Center, Kankakee IL
+    "FirstHealth of the Carolinas":   "https://talent.firsthealth.org",         # [558] Pinehurst, Rockingham, Troy, Raeford NC
+    "Covenant HealthCare":            "https://careers.covenanthealthcare.com", # [128] Saginaw MI
 }
 
 # Pages of 100 read per Jibe board (10,000 postings). A board past it is read
@@ -9597,6 +10506,10 @@ SMARTRECRUITERS_ORGS = {
     # not the senior-living operator. Its 966 rows are retired by
     # sql/push10_retire_and_relabel.sql; Atria Senior Living's real board is
     # still to be found.
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Kittitas Valley Community Hospital": "KittitasValleyHealthcare",   # 45 rows, 40 in Ellensburg, WA (CMS 501333)
 }
 
 async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, org: str) -> list[Job]:
@@ -11144,6 +12057,15 @@ PHENOM_ORGS = {
     # HCA Healthcare — REMOVED 2026-07-28. It was never Phenom (that 2026-06-18
     # web-research note was wrong): careers.hcahealthcare.com is Talemetry, and
     # this entry just burned a nightly 403. Covered by the rebuilt run_hca().
+    # ── 2026-10-25 coverage stage 2: careers sites with a Phenom widgets
+    # endpoint; [rows in that day's no-write dry run], every row with a body.
+    "Lurie Children's":             "https://jobs.luriechildrens.org",          # [163] Chicago IL (neighbourhood towns: SYSTEM_CITY_RENAME)
+    "San Juan Regional Medical Center": "https://careers.sanjuanregional.com",  # [193] Farmington NM
+    "Cheyenne Regional Medical Center": "https://careers.cheyenneregional.org", # [101] Cheyenne WY
+    "Cincinnati Children's":        "https://jobs.cincinnatichildrens.org",     # [517] Cincinnati + Liberty Township OH
+    "Children's Hospital of Philadelphia": "https://careers.chop.edu",          # [265] Philadelphia PA
+    "Grady Health System":          "https://careers.gradyhealth.org",          # [282] Atlanta GA
+    "Seattle Children's":           "https://careers.seattlechildrens.org",     # [242] Seattle WA
 }
 
 PHENOM_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end a crawl
@@ -12105,6 +13027,48 @@ ADP_ORGS = {
     "Pomerene Hospital": ("dbfe9ed8-f973-4510-9f4b-5fb09d0441fb", "19000101_000001", "OH", "Pomerene Hospital"),   # 16, Millersburg OH
     # ── 2026-10-20 coverage stage 1: no-write dry run that day (rows, the hospital's own town, bodies).
     "Madison Health": ("c02c953b-e6db-45df-b5e3-1303e59d27a7", "19000101_000001", "OH", "Madison Health"),   # 22, London OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    "St. Luke Hospital & Living Center": ("58e14ddc-10c8-4aac-a782-4d9fab68932f", "19000101_000001", "KS", "St. Luke Hospital & Living Center"),   # [14] Marion KS
+    "Bingham Healthcare": ("1b6bb77f-2903-4807-b0c8-4bfcb7c78404", "19000101_000001", "ID", ""),   # [29] Bingham Memorial Hospital, Blackfoot ID
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Kanakanak Hospital": ("c3cf205d-9677-4dfd-ab98-87a0f91551f4", "19000101_000001", "AK", "Kanakanak Hospital"),   # 55 rows, 42 in Dillingham, AK, 1 with no town (location default) (CMS 021309)
+    "Norton Sound Regional Hospital": ("95989b7d-f38e-4631-bf2a-c33e57ce2877", "19000101_000001", "AK", "Norton Sound Regional Hospital"),   # 266 rows, 263 in Nome, AK, 3 with no town (location default) (CMS 021308)
+    "Bibb Medical Center": ("12f3ca79-156d-401b-8a3c-b14c48f2fa72", "19000101_000001", "AL", "Bibb Medical Center"),   # 5 rows, 5 in Centreville, AL (CMS 010058)
+    "Jack Hughston Memorial Hospital": ("50301a42-faf9-4b9b-a81d-76937ffdd9b0", "19000101_000001", "AL", "Jack Hughston Memorial Hospital"),   # 22 rows, 22 in Phenix City, AL (CMS 010168)
+    "Pioneers Memorial Healthcare District": ("c8be8fe7-2331-4233-8d3e-11ebfffeecdb", "19000101_000001", "CA", "Pioneers Memorial Healthcare District"),   # 137 rows, 87 in Brawley, CA, 6 with no town (location default) (CMS 050342)
+    "Jasper Memorial Hospital": ("8eff549f-e471-4f6b-aede-36699d203506", "19000101_000001", "GA", "Jasper Memorial Hospital"),   # 21 rows, 21 in Monticello, GA (CMS 111303)
+    "Optim Healthcare": ("ce221109-aaa3-47b2-aead-38a00b716f6f", "19000101_000001", "GA", {"Sylvania": "Optim Medical Center - Screven", "Reidsville": "Optim Medical Center - Tattnall"}),   # 23 rows, 6 in Sylvania, GA (CMS 111312); also Reidsville (CMS 111323)
+    "Crawford Memorial Hospital": ("15dc44c7-eab3-4503-a1bc-a66382fbd1f7", "19000101_000001", "IL", "Crawford Memorial Hospital"),   # 35 rows, 28 in Robinson, IL (CMS 141343)
+    "Iroquois Memorial Hospital": ("841b61c7-a8a1-475e-af6f-db1e8f08c427", "19000101_000001", "IL", "Iroquois Memorial Hospital"),   # 39 rows, 38 in Watseka, IL, 1 with no town (location default) (CMS 141353)
+    "Paris Community Hospital": ("6d761223-04f6-4d39-a498-276f6ca9389f", "19000101_000001", "IL", "Paris Community Hospital"),   # 46 rows, 42 in Paris, IL (CMS 141320)
+    "Sparta Community Hospital": ("41ccae75-fff1-4864-b23c-aafa64e376b7", "19000101_000001", "IL", "Sparta Community Hospital"),   # 11 rows, 11 in Sparta, IL (CMS 141349)
+    "Holton Community Hospital": ("c5a636da-e25a-49c2-a8f9-21b2ee0c9cd8", "19000101_000001", "KS", "Holton Community Hospital"),   # 12 rows, 12 in Holton, KS (CMS 171319)
+    "Nemaha Valley Community Hospital": ("7a29495a-7f36-4e90-8ab9-7ee15c9413f7", "19000101_000001", "KS", "Nemaha Valley Community Hospital"),   # 13 rows, 12 in Seneca, KS, 1 with no town (location default) (CMS 171315)
+    "Phillips County Hospital": ("eb9c6c6e-053d-42fe-9759-55564942334b", "19000101_000001", "KS", "Phillips County Hospital"),   # 6 rows, 5 in Phillipsburg, KS, 1 with no town (location default) (CMS 171353)
+    "Allen Parish Hospital": ("11590425-a902-4499-9ca3-b6dbe3e4abcd", "131202839_2", "LA", "Allen Parish Hospital"),   # 8 rows, 8 in Kinder, LA (CMS 190133)
+    "Opelousas General Health System": ("6587fdce-d7b2-436f-815b-bf16ced46fbc", "19000101_000001", "LA", "Opelousas General Health System"),   # 67 rows, 67 in Opelousas, LA (CMS 190017)
+    "Straith Hospital for Special Surgery": ("5f9e1b86-3b1a-48e4-8a4b-d97d224db29d", "19000101_000001", "MI", "Straith Hospital for Special Surgery"),   # 6 rows, 6 in Southfield, MI (CMS 230071)
+    "Riverwood Healthcare Center": ("a7d85d0d-fc6b-44ce-9b96-3bcf63b801e7", "19000101_000001", "MN", "Riverwood Healthcare Center"),   # 29 rows, 28 in Aitkin, MN (CMS 241305)
+    "Mineral Community Hospital": ("eefe8bc9-2bd6-4b8a-9c5d-6fec4ea14d79", "9200854641636_2", "MT", "Mineral Community Hospital"),   # 5 rows, 5 in Superior, MT (CMS 271331)
+    "Beatrice Community Hospital & Health Center": ("5a89661d-77cb-42c6-8b91-c00a04bec13d", "93136854_2053", "NE", "Beatrice Community Hospital & Health Center"),   # 32 rows, 32 in Beatrice, NE (CMS 281364)
+    "Jefferson Community Health & Life": ("a6184af1-a861-4bc2-8fb9-cbd78567d466", "19000101_000001", "NE", "Jefferson Community Health & Life"),   # 3 rows, 3 in Fairbury, NE (CMS 281319)
+    "Littleton Regional Healthcare": ("957eb50b-516a-435d-a4a7-fb5254f17fc1", "19000101_000001", "NH", "Littleton Regional Healthcare"),   # 55 rows, 54 in Littleton, NH (CMS 301302)
+    "Roosevelt General Hospital": ("aa878936-c926-4971-b908-999813b98fd9", "19000101_000001", "NM", "Roosevelt General Hospital"),   # 47 rows, 43 in Portales, NM, 4 with no town (location default) (CMS 320084)
+    "Three Crosses Regional Hospital": ("14099341-86e9-40d6-a7a2-6c57c3d581bd", "19000101_000001", "NM", "Three Crosses Regional Hospital"),   # 56 rows, 56 in Las Cruces, NM (CMS 320091)
+    "Wayne Hospital": ("49021767-48df-4ef6-8582-d34c836c9fa0", "19000101_000001", "OH", "Wayne Hospital"),   # 59 rows, 59 in Greenville, OH (CMS 361335)
+    "McAlester Regional Health Center": ("76891674-f7ec-4886-958b-849556f3b6dd", "19000101_000001", "OK", "McAlester Regional Health Center"),   # 45 rows, 45 in McAlester, OK (CMS 370034)
+    "Oklahoma Surgical Hospital": ("8f6eb758-e42f-4c1c-b16c-25a48cd84b93", "19000101_000001", "OK", "Oklahoma Surgical Hospital"),   # 33 rows, 29 in Tulsa, OK (CMS 370210)
+    "Surgical Hospital of Oklahoma": ("8d443174-4f69-4bc8-abfc-fc444626e916", "19000101_000001", "OK", "Surgical Hospital of Oklahoma"),   # 12 rows, 12 in Oklahoma City, OK (CMS 370201)
+    "Wagoner Community Hospital": ("d852d76d-3c0a-405c-a524-0b0b0cd9ba85", "19000101_000001", "OK", "Wagoner Community Hospital"),   # 32 rows, 32 in Wagoner, OK (CMS 370166)
+    "Southern Coos Hospital & Health Center": ("b9d52d75-5c86-4df1-b92d-35c8ecc38c21", "19000101_000001", "OR", "Southern Coos Hospital & Health Center"),   # 14 rows, 14 in Bandon, OR (CMS 381304)
+    "Macon Community Hospital": ("373aac54-6868-45db-acac-7d30007e6054", "19000101_000001", "TN", "Macon Community Hospital"),   # 15 rows, 14 in Lafayette, TN, 1 with no town (location default) (CMS 441305)
+    "Blue Mountain Hospital": ("a0a9f289-91c0-438e-aa1c-506d2887b887", "19000101_000001", "UT", "Blue Mountain Hospital"),   # 5 rows, 5 in Blanding, UT (CMS 461310)
+    "Grant Regional Health Center": ("84e68b06-658b-4d37-a6d5-20bbc3463ad9", "19000101_000001", "WI", "Grant Regional Health Center"),   # 18 rows, 18 in Lancaster, WI (CMS 521322)
+    "Niobrara County Hospital District": ("a20cd2ad-2b4a-419e-a049-412195d6d6e8", "19000101_000001", "WY", "Niobrara County Hospital District"),   # 13 rows, 13 in Lusk, WY (CMS 531314)
+    "North Platte Valley Medical Center": ("b3cdeb5c-bb64-4686-a838-e84608ae0021", "19000101_000001", "WY", "North Platte Valley Medical Center"),   # 12 rows, 12 in Saratoga, WY (CMS 531317)
 }
 _ADP_API = "https://workforcenow.adp.com/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions"
 _ADP_PORTAL = "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html"
@@ -12775,8 +13739,45 @@ SELECTMINDS_ORGS = {
     # SELECTMINDS_KEEP keeps the health-care rows (UI Health Care / UIHC).
     "Main Line Health":                         "mainline",   # Wynnewood PA
     "University of Iowa Hospitals and Clinics": "uiowa",      # Iowa City IA
+    # 2026-10-25 (coverage stage 4): McLaren Health Care, its own domain (a
+    # value that opens with "https://" is the board's base URL; the others
+    # are <org>.referrals.selectminds.com). 1,290 jobs on 10-25, 129 pages of
+    # 10. The Taleo tenant behind it (mclarenhlth.taleo.net) has no open
+    # career section, and the 08-28 note's AJAX endpoint is not needed: the
+    # /jobs/search/<id>/page<N> HTML pages answer a plain GET. Each card
+    # names the hospital (<p class="jlr_company">McLaren Flint</p>, see
+    # SELECTMINDS_COMPANY_FACILITY) and the town as "Michigan, Flint".
+    "McLaren Health Care": "https://careers.mclaren.org",              # Grand Blanc MI; 13 hospitals
 }
-SELECTMINDS_MAX_PAGES = int(os.getenv("SELECTMINDS_MAX_PAGES", "80"))
+# 2026-10-25: 80 -> 160 (McLaren lists 129 pages of 10).
+SELECTMINDS_MAX_PAGES = int(os.getenv("SELECTMINDS_MAX_PAGES", "160"))
+# Tenants whose cards' company line (jlr_company) is the hospital the job is
+# at; the line is the hospital_name as the board writes it.
+SELECTMINDS_COMPANY_FACILITY = {"McLaren Health Care"}
+_SM_COMPANY_RE = re.compile(r'<p class="jlr_company">(.*?)</p>', re.S)
+# Company lines cut at Taleo's 30 characters, spelled out (10-25 McLaren
+# board: Karmanos 56 rows, the management group 75, the corporate office 60).
+SELECTMINDS_COMPANY_NAMES = {
+    "Barbara Ann Karmanos Cancer Cn": "Barbara Ann Karmanos Cancer Institute",
+    "McLaren Health Management Grp": "McLaren Health Management Group",
+    "Lake Orion Nursing & Rehab Ctr": "Lake Orion Nursing & Rehab Center",
+    "McLaren Health Care Corp": "McLaren Health Care",
+}
+# Job-page bodies (2026-10-25, coverage stage 4). The cards carry a ~150
+# character teaser; the job page carries the posting as
+#   <div class="job_description"> ... <div class="job_qualifications"> ... </div>
+#   <!-- TEC-19749 : Display Job fields --> <div id="jJobInsideInfo" ...>
+# (the same template on McLaren, Main Line and Iowa, checked 10-25), and its
+# field_company line. One run-wide budget, fair share per tenant, at most 2
+# requests in flight per host; the page read also gives the requisition
+# number (selectminds_req_id_from_page), so a tenant with the body pass skips
+# the separate requisition pass.
+SELECTMINDS_BODY_PASS = {"McLaren Health Care", "Main Line Health", "University of Iowa Hospitals and Clinics"}
+SELECTMINDS_DESC_MAX_PER_RUN = int(os.getenv("SELECTMINDS_DESC_MAX_PER_RUN", "800"))
+SELECTMINDS_DESC_BUDGET = _DescBudget(SELECTMINDS_DESC_MAX_PER_RUN)
+_SM_BODY_RE = re.compile(r'<div class="job_description">(.*?)(?:<!--\s*TEC-19749|<div id="jJobInsideInfo"|'
+                         r'<div id="info_btn_group_bottom"|<div class="job_inside_info")', re.S)
+_SM_PAGE_COMPANY_RE = re.compile(r'<dl class="field_company">.*?<span class="field_value[^"]*">(.*?)</span>', re.S)
 _SM_CARD_RE = re.compile(r'<div id="job_list_(\d+)"[^>]*class="job_list_row[^"]*"[^>]*>(.*?)(?=<div id="job_list_\d+"|\Z)', re.S)
 _SM_TITLE_RE = re.compile(r'<a href="([^"]+)"[^>]*class="job_link[^"]*"[^>]*>(.*?)</a>', re.S)
 # Two card shapes: /latest-jobs links the town (<a class="location">) and
@@ -12838,6 +13839,9 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
         loc = _html_unescape(strip_html(lm.group(1) or lm.group(2) or "")).strip() if lm else ""
         # the link opens with a magnifier glyph (&#128269;) before the town
         loc = re.sub(r",\s*United States\s*$", "", re.sub(r"^[^A-Za-z]+", "", loc)).strip()
+        # 2026-10-25: a multi-site card reads "Michigan, Lansing and 1
+        # additional location"; the first town is the row's.
+        loc = re.sub(r"\s+and\s+\d+\s+additional\s+locations?\s*$", "", loc, flags=re.I).strip()
         city, st = parse_city_state(loc)
         cm = _SM_CAT_RE.search(card)
         category = _html_unescape(strip_html(cm.group(1) or cm.group(2) or "")).strip() if cm else ""
@@ -12852,6 +13856,11 @@ def _parse_selectminds_page(html: str, system: str, base: str) -> list[Job]:
             if rx.search(text):
                 facility = name
                 break
+        if system in SELECTMINDS_COMPANY_FACILITY:
+            com = _SM_COMPANY_RE.search(card)
+            company = re.sub(r"\s+", " ", _html_unescape(strip_html(com.group(1)))).strip() if com else ""
+            if company:
+                facility = SELECTMINDS_COMPANY_NAMES.get(company, company)
         jobs.append(Job(
             title=title, hospital_system=system, hospital_name=facility,
             city=city, state=st, location=f"{city}, {st}".strip(", ") if st else loc,
@@ -13000,8 +14009,10 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
     wraps to page 1, which adds no new id and ends the crawl. /latest-jobs
     (the 10 newest) is kept as the fallback when the search answers no card.
     A page that fails mid-crawl makes the crawl PARTIAL (the HealthcareSource
-    rule); the cards read against total_results decide a complete claim."""
-    base = f"https://{org}.referrals.selectminds.com"
+    rule); the cards read against total_results decide a complete claim.
+    2026-10-25: an org that opens with "https://" is the board's own base
+    URL (McLaren, careers.mclaren.org)."""
+    base = org.rstrip("/") if org.startswith("https://") else f"https://{org}.referrals.selectminds.com"
     jobs: list[Job] = []
     seen: set[str] = set()
 
@@ -13049,7 +14060,7 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
         logger.warning(f"SelectMinds {system}: {len(seen)} of {total} cards read")
     logger.info(f"  SelectMinds {system}: {len(jobs)} jobs ({len(seen)} cards read of {total or '?'})")
     report_complete(system, len(seen), total, feed="SELECTMINDS_ORGS")
-    if DETAIL_FETCH:
+    if DETAIL_FETCH and system not in SELECTMINDS_BODY_PASS:
         # 2026-10-15: the number the cards no longer print (see
         # _selectminds_req_pass); after the claim, so it never touches it.
         try:
@@ -13058,13 +14069,59 @@ async def scrape_selectminds(session: aiohttp.ClientSession, system: str, org: s
             logger.info(f"SelectMinds {system}: requisition pass failed ({type(e).__name__}: {e})")
     return jobs
 
+def selectminds_posting(page_html: str) -> tuple[str, str]:
+    """(body, company) from a SelectMinds job page: the job_description block
+    (description + job_qualifications) and the field_company line."""
+    html = page_html or ""
+    m = _SM_BODY_RE.search(html)
+    body = strip_html(m.group(1)).strip() if m else ""
+    c = _SM_PAGE_COMPANY_RE.search(html)
+    company = re.sub(r"\s+", " ", _html_unescape(strip_html(c.group(1)))).strip() if c else ""
+    return body, company
+
+
+async def _selectminds_detail(session, job) -> bool:
+    """One SelectMinds job page -> body, requisition number and (for a
+    SELECTMINDS_COMPANY_FACILITY tenant whose card named none) hospital."""
+    status, html, _ = await _selectminds_get(session, job.hospital_system, job.url)
+    if status != 200 or not html:
+        return False
+    m = _SM_PAGE_JOB_ID_RE.search(html)
+    if m and str(job.job_id) and m.group(1).strip() != str(job.job_id):
+        return False             # another posting's page
+    if not job.req_id:
+        job.req_id = selectminds_req_id_from_page(html, job.job_id)
+    body, company = selectminds_posting(html)
+    if company and job.hospital_system in SELECTMINDS_COMPANY_FACILITY and job.hospital_name == job.hospital_system:
+        job.hospital_name = SELECTMINDS_COMPANY_NAMES.get(company, company)
+    return _apply_body(job, body)
+
+
 async def run_selectminds(session) -> list[Job]:
     logger.info(f"SelectMinds: scraping {len(SELECTMINDS_ORGS)} systems...")
+    body_tenants = [s for s in SELECTMINDS_ORGS if s in SELECTMINDS_BODY_PASS]
+    if DETAIL_FETCH and body_tenants:
+        SELECTMINDS_DESC_BUDGET.expect(body_tenants)
     results = await asyncio.gather(
         *[scrape_selectminds(session, s, o) for s, o in SELECTMINDS_ORGS.items()],
         return_exceptions=True
     )
-    jobs = [j for r in results if isinstance(r, list) for j in r]
+    listed = {s: (r if isinstance(r, list) else []) for s, r in zip(SELECTMINDS_ORGS, results)}
+    # 2026-10-25: the job-page body pass, after every board is listed (the
+    # list pages decide the sweep), one host at most 2 requests at a time.
+    gated = _host_gated(lambda j: _selectminds_detail(session, j), total=4, per_host=2)
+
+    async def _details(system, rows):
+        if DETAIL_FETCH and rows:
+            try:
+                await _detail_pass(session, system, rows, SELECTMINDS_DESC_BUDGET, gated, "SelectMinds")
+            except Exception as e:
+                logger.info(f"SelectMinds {system}: detail pass failed ({e}); listed rows kept")
+
+    if body_tenants:
+        await asyncio.gather(*[_tenant_reporting(SELECTMINDS_DESC_BUDGET, s, _details(s, listed[s]))
+                               for s in body_tenants], return_exceptions=True)
+    jobs = [j for s in SELECTMINDS_ORGS for j in listed[s]]
     logger.info(f"  SelectMinds total: {len(jobs):,} jobs")
     return jobs
 
@@ -13209,6 +14266,11 @@ INFOR_ORGS = {
     "Bellin Health":             ("css-bellin-prd",           "500",  "EXTERNAL",       "WI"),  # 287; org 1 answers 0 rows
     # 2026-10-07 (owner): moved off Workday (bozemanhealth.wd1, dead since 09-11). csk pair from the careers link; 250 rows with full bodies on the probe.
     "Bozeman Health":            ("css-bdhboz-prd",           "BH",   "EXTERNAL",       "MT"),  # 250
+    # ── 2026-10-25 coverage stage 2: csk pairs from each careers page's link; [rows that day].
+    "Akron Children's":          ("css-akronchildrens-prd",   "1",    "EXTERNAL",       "OH"),  # [502]
+    "Cambridge Health Alliance": ("css-cambridgehealth-prd",  "1000", "EXTERNAL",       "MA"),  # [194] Cambridge / Everett / Somerville MA
+    # Children's of Alabama: the HealthcareSource tenant "chsys" answers 0 jobs; childrensalcareers.org links Infor.
+    "Children's of Alabama":     ("css-childrensal-prd",      "10",   "EXTERNAL",       "AL"),  # [256] Birmingham AL
 }
 
 # Tenants whose location value is a facility name with no city or state.
@@ -13767,6 +14829,77 @@ UKG_ORGS = {
     # American Health Partners (Franklin TN): Unity Psychiatric Care's
     # hospitals plus the company's health plan and pharmacy; 97 rows.
     "American Health Partners":           ("https://recruiting2.ultipro.com/TEN1002THMI", "617264f5-2868-4e72-899e-78a68c5361f8", "TN"),   # 97
+    # ── 2026-10-25 coverage stage 2: boards linked from each hospital's careers
+    # page; [rows in that day's no-write dry run], every row with a body.
+    # Location names that are campus labels ("Main Campus", "Hospital") take
+    # the hospital's own name through HOSPITAL_NAME_FIX.
+    "Frederick Health":                   ("https://recruiting.ultipro.com/FRE1010FRHS", "776a147e-2e0b-43d0-844e-bbd49deeb24d", "MD"),   # [183] Frederick MD
+    "Southern Ohio Medical Center":       ("https://mysomc.rec.pro.ukg.net/SOU1068SOMC", "1735eb8a-40b2-43d2-89aa-99eea075dc4f", "OH"),   # [89] Portsmouth OH
+    "Southern Ohio Medical Center (Providers)": ("https://mysomc.rec.pro.ukg.net/SOU1068SOMC", "b22a8c81-102d-44ef-8953-701bcd0e54d4", "OH"),   # [24] physician / APP board
+    "Firelands Health":                   ("https://recruiting.ultipro.com/FIR1028FRMC", "aa965d38-1509-43d7-9a00-c84a96ce1cb9", "OH"),   # [133] Sandusky + The Bellevue Hospital OH
+    "Episcopal Health Services":          ("https://myehs.rec.pro.ukg.net/EPI1010SJEH", "16d4fe52-3a0d-4b07-8565-5038c46b9f53", "NY"),    # [44] St. John's Episcopal, Far Rockaway NY
+    "Barton Health":                      ("https://recruiting2.ultipro.com/BAR1023BTHS", "22edf9a1-6621-4bec-9730-f5384a308c49", "CA"),  # [45] South Lake Tahoe CA
+    "Witham Health Services":             ("https://witham.rec.pro.ukg.net/WIT1500WHMH", "47727cde-3d32-4129-bef1-ef796414651d", "IN"),   # [57] Lebanon IN
+    # Island Health's second board (cdaaeaad) lists a subset of this one.
+    "Island Health":                      ("https://recruiting2.ultipro.com/ISL1001ISLAN", "e5b91c51-cf06-445e-9aed-84859d230b57", "WA"), # [61] Anacortes WA
+    "Perry County Memorial Hospital":     ("https://perrycountymem.rec.pro.ukg.net/PER1500PCMH", "ad3e78fe-7ca1-44dd-9add-84fd268d95b4", "IN"),  # [42] Tell City IN
+    "Tahoe Forest Health System":         ("https://recruiting.ultipro.com/TAH1000", "19fd0f5d-3c9e-10c7-8338-910ff12f7559", "CA"),         # [63] Truckee CA + Incline Village NV
+    "Memorial Regional Health":           ("https://recruiting2.ultipro.com/MEM1005MHCR", "3057c08c-d82e-49ff-aee0-6146eb32163f", "CO"),  # [30] The Memorial Hospital, Craig CO
+    "Meritus Health":                     ("https://recruiting.ultipro.com/MER1012MERH", "23a054d5-dd9d-4a01-ba62-0bc75b4673d6", "MD"),   # [259] Meritus Medical Center + Brook Lane, Hagerstown MD
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Bartlett Regional Hospital": ("https://bartlett.rec.pro.ukg.net/BAR1503BART", "28db10a5-eb40-4dac-8d90-5bad1ab11310", "AK"),   # 69 rows, 69 in Juneau, AK (CMS 020008)
+    "Methodist Family Health": ("https://recruiting2.ultipro.com/MET1015MFHE", "0e63f212-c96d-4306-8d29-0230529a9841", "AR"),   # 60 rows, 8 in Maumelle, AR (CMS 044017)
+    "The CORE Institute": ("https://recruiting.ultipro.com/COR1016COREI", "d1445d2b-c378-4a1e-9e18-d5d1a7565517", "AZ"),   # 186 rows, 66 in Phoenix, AZ, 9 with no town (location default) (CMS 030108)
+    "Fort Defiance Indian Hospital": ("https://recruiting2.ultipro.com/FOR1019FDIH", "7aa05ce1-542f-4ed6-9385-15dab39f6bcd", "AZ"),   # 35 rows, 0 in Fort Defiance, AZ (CMS 030071)
+    "The Healing Place": ("https://polarahealth.rec.pro.ukg.net/POL1502POHE", "aa390afa-5bde-420a-abbd-8f80071f8c64", "AZ"),   # 20 rows, 8 in Prescott, AZ (CMS 034025)
+    "Sierra View Medical Center": ("https://sierraview.rec.pro.ukg.net/SIE1005SVMC", "b614f151-a52a-44c5-9d7e-9485ef47f936", "CA"),   # 46 rows, 0 in Porterville, CA, 46 with no town (location default) (CMS 050261)
+    "Valley Presbyterian Hospital": ("https://valleypres.rec.pro.ukg.net/VAL1505VYPH", "6b03c339-10b4-46a7-a81e-6715086d1518", "CA"),   # 95 rows, 95 in Van Nuys, CA (CMS 050126)
+    "Animas Surgical Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "53b5dba2-c474-42b0-b1b9-c1724fef1e2d", "CO"),   # 24 rows, 24 in Durango, CO (CMS 060117)
+    "Delta County Memorial Hospital": ("https://deltahospital.rec.pro.ukg.net/DEL1509DTCM", "253d7268-1c54-4c49-b525-f435f3deb9a7", "CO"),   # 35 rows, 35 in Delta, CO (CMS 060071)
+    "Pioneers Medical Center": ("https://pioneers.rec.pro.ukg.net/PIO1009ERBH", "59f03e51-a699-4a1a-bc32-99612a394665", "CO"),   # 31 rows, 30 in Meeker, CO (CMS 061325)
+    "Family Health West Hospital": ("https://recruiting.ultipro.com/FAM1007FHW", "cd7d40fb-cb7e-4508-99bc-f7fd7aaa9d32", "CO"),   # 35 rows, 34 in Fruita, CO (CMS 061302)
+    "Gunnison Valley Health": ("https://recruiting2.ultipro.com/GUN1002GNSO", "7d509108-fbb4-44e1-823a-c3d39950b43a", "CO"),   # 41 rows, 40 in Gunnison, CO (CMS 061320)
+    "Cass County Memorial Hospital": ("https://casscounty.rec.pro.ukg.net/CAS1505CAMH", "58a00d6c-4dd7-4d3e-a86f-1748e2bcdeae", "IA"),   # 19 rows, 19 in Atlantic, IA (CMS 161376)
+    "Crawford County Memorial Hospital": ("https://recruiting.ultipro.com/CRA1005CCMH", "2288cfd6-b30d-ce0b-abed-b3c9da0c8f6c", "IA"),   # 14 rows, 14 in Denison, IA (CMS 161369)
+    "Mahaska Health Partnership": ("https://mahaskaukg.rec.pro.ukg.net/MAH1000MAHC", "0d34e7b0-f433-4e51-a750-b2785087496d", "IA"),   # 16 rows, 16 in Oskaloosa, IA (CMS 161379)
+    "Montgomery County Memorial Hospital": ("https://recruiting2.ultipro.com/MON1027MONC", "5ddef1ca-eb1c-4f63-885f-9537416b5a47", "IA"),   # 17 rows, 17 in Red Oak, IA (CMS 161363)
+    "St. Anthony Regional Hospital & Nursing Home": ("https://stanthonyhosp.rec.pro.ukg.net/STA1506STAG", "da0acbc0-0342-4f09-b331-abc6eb8a4a2e", "IA"),   # 29 rows, 1 in Carroll, IA, 28 with no town (location default) (CMS 161382)
+    "Bonner General Hospital": ("https://bonner.rec.pro.ukg.net/BON1503BONN", "e6a6022a-8366-4829-9d4d-f737baac9b7e", "ID"),   # 17 rows, 17 in Sandpoint, ID (CMS 131328)
+    "Northwest Specialty Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "b9809736-4266-441f-b708-7916dceaa58e", "ID"),   # 38 rows, 29 in Post Falls, ID (CMS 130066)
+    "Lawrence County Memorial Hospital": ("https://lawrencecomem.rec.pro.ukg.net/LAW1502LCMH", "35e673f7-bd10-40a1-8a4b-52e5e6308dac", "IL"),   # 13 rows, 13 in Lawrenceville, IL (CMS 141344)
+    "Wabash General Hospital": ("https://recruiting2.ultipro.com/WAB1000WBGH", "33638a3f-c9cc-41d2-8850-be3b44f12bce", "IL"),   # 30 rows, 1 in Mt Carmel, IL (CMS 141327)
+    "Ascentist Hospital": ("https://ascentist.rec.pro.ukg.net/ASC1500AHWS", "fe77992b-147f-4e3a-8323-b85161fa9e51", "KS"),   # 13 rows, 11 in Leawood, KS (CMS 170194)
+    "Kansas Spine & Specialty Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "a1f9eecd-255f-46f2-a5bb-1dd4f95dfd1d", "KS"),   # 7 rows, 7 in Wichita, KS (CMS 170196)
+    "Kentucky River Medical Center": ("https://recruiting2.ultipro.com/QHC1000QHCS", "11c5b1ac-b258-4022-99e9-34fd6421b7f9", "KY"),   # 20 rows, 20 in Jackson, KY (CMS 181334)
+    "Avoyelles Hospital": ("https://allegiance.rec.pro.ukg.net/ALL1049AHMI", "123dea0c-dfc9-4d8b-8381-1c793572e899", "LA"),   # 23 rows, 20 in Marksville, LA (CMS 190099)
+    "Lafayette Surgical Specialty Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "90d84020-217c-4b03-a630-2f5fdbf15cd6", "LA"),   # 4 rows, 4 in Lafayette, LA (CMS 190259)
+    "Winn Parish Medical Center": ("https://allegiance.rec.pro.ukg.net/ALL1049AHMI", "55de8045-0bd5-441f-986b-e1aa833c3b2e", "LA"),   # 5 rows, 5 in Winnfield, LA (CMS 190090)
+    "Hillsdale Hospital": ("https://recruiting.ultipro.com/HIL1007HCHC", "962acc5c-4fb3-4a63-a646-d84c72c1854b", "MI"),   # 20 rows, 20 in Hillsdale, MI (CMS 230037)
+    "Chippewa County Hospital": ("https://recruiting2.ultipro.com/CCM1000CCHE", "13f19108-3d95-4f30-bec7-7b339ded10dc", "MN"),   # 13 rows, 0 in Montevideo, MN, 13 with no town (location default) (CMS 241325)
+    "Gillette Children's Specialty Healthcare": ("https://recruiting2.ultipro.com/GIL1002GCSH", "0a5d892e-feaa-4c51-b816-12c2dbc1167d", "MN"),   # 34 rows, 4 in St Paul, MN (CMS 243300)
+    "LifeCare Medical Center": ("https://recruiting2.ultipro.com/LIF1018LIFEM", "31a6af76-ca9c-432e-9e95-17f29684d3fc", "MN"),   # 30 rows, 24 in Roseau, MN (CMS 241344)
+    "Rainy Lake Medical Center": ("https://rainylake.rec.pro.ukg.net/INT1106IFMH", "52665fd6-c8a6-4a02-aea1-40cd1d26a576", "MN"),   # 33 rows, 33 in International Falls, MN (CMS 241322)
+    "Ranken Jordan Pediatric Bridge Hospital": ("https://myrankenjordan.rec.pro.ukg.net/RAN1501RJHC", "62e8cb2a-5d28-4595-8f07-301316592d12", "MO"),   # 15 rows, 0 in Maryland Heights, MO, 14 with no town (location default) (CMS 263303)
+    "York General Health Care Services": ("https://recruiting2.ultipro.com/YOR1000YKGH", "ad024917-d0b7-4def-b4e3-2241f52e8e89", "NE"),   # 31 rows, 31 in York, NE (CMS 281336)
+    "Huggins Hospital": ("https://hugginshospital.rec.pro.ukg.net/HUG1500HGSP", "52664b36-fe16-4498-9f35-dae2a33f3e69", "NH"),   # 43 rows, 41 in Wolfeboro, NH (CMS 301312)
+    "Bergen New Bridge Medical Center": ("https://recruiting.ultipro.com/BER1003BRMC", "7362b0d4-9214-406f-86b5-85f44c6f1238", "NJ"),   # 89 rows, 89 in Paramus, NJ (CMS 310058)
+    "Summa Western Reserve Hospital": ("https://recruiting.ultipro.com/HRR1000HRBEN", "18e0ca46-5746-4f6f-b2dc-3371c31b05fc", "OH"),   # 57 rows, 52 in Cuyahoga Falls, OH, 4 with no town (location default) (CMS 360150)
+    "Muscogee Nation Health": ("https://mcnhealth.rec.pro.ukg.net/TUL1500TCIC", "50c0b8ba-7d79-4679-b7a0-796cce471b9e", "OK"),   # 186 rows, 15 in Okemah, OK (CMS 371333); also Okmulgee (CMS 370057), Tulsa (CMS 370244)
+    "Curry General Hospital": ("https://recruiting2.ultipro.com/CUR1005CURY", "68f149ac-aaa3-4518-a522-8943df27d2da", "OR"),   # 19 rows, 14 in Gold Beach, OR (CMS 381322)
+    "OSS Orthopaedic Hospital": ("https://recruiting.ultipro.com/OSS1000OSSH", "29d6cd00-310d-59ec-f3dc-321e71ce1992", "PA"),   # 26 rows, 20 in York, PA (CMS 390325)
+    "Lifescape": ("https://lifescape.rec.pro.ukg.net/LIF1501LISC", "57efc672-bd5a-4b6f-8356-1025d3d31cd9", "SD"),   # 27 rows, 23 in Sioux Falls, SD, 4 with no town (location default) (CMS 433300)
+    "Metro Nashville General Hospital": ("https://nashvillemgh.rec.pro.ukg.net/NAS1503NMGH", "5f773009-4590-40ec-ad18-e94460aa60bb", "TN"),   # 38 rows, 38 in Nashville, TN (CMS 440111)
+    "Uintah Basin Medical Center": ("https://recruiting2.ultipro.com/UIN1000UIME", "85250f2c-5522-4b53-af9c-8f360eafe543", "UT"),   # 27 rows, 24 in Roosevelt, UT (CMS 460019)
+    "Newport Community Hospital": ("https://nhhs714.rec.pro.ukg.net/PUB1501PHPOC", "933897cb-aafa-4dc7-976d-20362229a106", "WA"),   # 13 rows, 13 in Newport, WA (CMS 501310)
+    "Fort Memorial Hospital": ("https://forthc.rec.pro.ukg.net/FOR1037FMEM", "a9ddd9e5-a868-47e7-bdf1-2ba96314b7d8", "WI"),   # 51 rows, 51 in Fort Atkinson, WI (CMS 520071)
+    "North Central Health Care": ("https://recruiting2.ultipro.com/NOR1057NCHC", "c14353c6-e9aa-4cd1-8454-2266da3cb835", "WI"),   # 24 rows, 0 in Wausau, WI, 24 with no town (location default) (CMS 524017)
+    "Oakleaf Surgical Hospital": ("https://recruiting.ultipro.com/SUR1004SRGY", "8dd2bed0-b6d1-4514-9358-c45d96a5cdca", "WI"),   # 14 rows, 14 in Altoona, WI (CMS 520196)
+    "Richland Hospital": ("https://richland.rec.pro.ukg.net/RIC1500TRHI", "d8bbcc76-b530-4c16-9261-a7e0d9fafe98", "WI"),   # 31 rows, 30 in Richland Center, WI (CMS 521341)
+    "Southwest Health Center": ("https://southwesthealth.rec.pro.ukg.net/SOU1502SWHC", "736c3b2b-32cd-4667-a8ad-dc0869f551f5", "WI"),   # 25 rows, 25 in Platteville, WI (CMS 521354)
+    "Tamarack Health": ("https://tamarackhealth.rec.pro.ukg.net/REG1500REGI", "9ad614d0-6df3-4942-bf76-c27dcf6898f9", "WI"),   # 71 rows, 24 in Ashland, WI (CMS 521359); also Hayward (CMS 521336)
+    "Vernon Memorial Hospital": ("https://vernonmemorial.rec.pro.ukg.net/VER1502VMHC", "0c24f5a0-d512-46a1-8785-50dcb9a9dcd6", "WI"),   # 38 rows, 34 in Viroqua, WI (CMS 521348)
 }
 
 # 2026-10-20: the posting's title names the hospital on a board whose
@@ -14279,6 +15412,17 @@ ORACLE_ORGS = {
     # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
     "Baptist Health Care (Pensacola)": ("https://fa-etrr-saasfaprod1.fa.ocs.oraclecloud.com", "CX_1"),   # 280, Pensacola FL
     "Health Care District of Palm Beach County": ("https://fa-ewje-saasfaprod1.fa.ocs.oraclecloud.com", "CX_1001"),   # 34, West Palm Beach FL
+    # ── 2026-10-25 coverage stage 2: sites read off each system's careers link;
+    # [rows in that day's no-write dry run], every row with a body.
+    "Hurley Medical Center":     ("https://fa-evlb-saasfaprod1.fa.ocs.oraclecloud.com",       "CX_1"),   # [80] Flint MI
+    "Waterbury Health":          ("https://icjdjb.fa.ocs.oraclecloud.com",                    "CX_1"),   # [163] Waterbury Hospital, Waterbury CT (Waterbury Health Operations Corp)
+    "Shore Medical Center":      ("https://eiqu.fa.us6.oraclecloud.com",                      "CX_1"),   # [80] Somers Point NJ
+    "Children's Nebraska":       ("https://egnx.fa.us2.oraclecloud.com",                      "CX"),     # [113] Omaha NE
+    "Stamford Health":           ("https://fa-ewfb-saasfaprod1.fa.ocs.oraclecloud.com",       "Careers"),   # [173] Stamford Hospital, Stamford CT
+    "Hoag":                      ("https://iaucqy.fa.ocs.oraclecloud.com",                    "CX_1"),   # [110] Newport Beach / Irvine CA
+    "AtlantiCare":               ("https://ibywjb.fa.ocs.oraclecloud.com",                    "CX_1"),   # [529] Atlantic City / Galloway (Pomona) NJ
+    "CarolinaEast Health System": ("https://enpu.fa.us2.oraclecloud.com",                     "CX_1001"),   # [222] New Bern NC
+    "Connecticut Children's":    ("https://fa-evav-saasfaprod1.fa.ocs.oraclecloud.com",       "connecticutchildrenscareers"),   # [224] Hartford CT
 }
 
 # 2026-09-16 (NY coverage): Mount Sinai site names in requisition titles ->
@@ -14655,6 +15799,41 @@ HEALTHCARESOURCE_ORGS = {
     "Beacon Health System":          "beaconhealthsystem",    # 704 of 726, IN / MI
     "CharterCARE Health Partners":   "chartercare",           # 274 of 283, Providence / North Providence RI
     "St. Bernards Healthcare":       "stbernardshealthcare",  # 310, Jonesboro AR
+    # ── 2026-10-25 coverage stage 2: tenants linked from each system's careers
+    # page; [rows in that day's no-write dry run], every row with a body.
+    "Pomona Valley Hospital Medical Center": "pvhmc",         # [80] Pomona CA
+    "Valleywise Health":             "maricopa",              # [220] Phoenix / Mesa AZ (Maricopa County special health care district)
+    "St. Joseph's/Candler":          "sjchs",                 # [357] Savannah GA (Candler + St. Joseph's)
+    "TidalHealth":                   "peninsula",             # [349] Salisbury, Berlin, Crisfield MD; Seaford DE
+    "Sinai Chicago":                 "sinai",                 # [220] Mount Sinai + Holy Cross, Chicago IL
+    "Rutland Regional Medical Center": "rrmc",                # [117] Rutland VT
+    "Goshen Health":                 "goshen",                # [111] Goshen IN
+    "Auburn Community Hospital":     "auburnhospital",        # [211] Auburn NY
+    "South County Health":           "southcounty",           # [106] Wakefield RI
+    "CalvertHealth":                 "cmh",                   # [107] Prince Frederick MD
+    "Campbell County Health":        "cchwyo",                # [84] Gillette WY
+    "Major Health Partners":         "major",                 # [42] Shelbyville IN
+    "National Jewish Health":        "national",              # [99] Denver CO
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Central Peninsula General Hospital": "cpgh",   # 119 rows, 119 in Soldotna, AK (CMS 020024)
+    "Northeast Alabama Regional Medical Center": "narmc",   # 292 rows, 292 in Anniston, AL (CMS 010078)
+    "Upson Regional Medical Center": "upson",   # 84 rows, 80 in Thomaston, GA (CMS 110002)
+    "McDonough District Hospital": "mdh",   # 63 rows, 62 in Macomb, IL, 1 with no town (location default) (CMS 140089)
+    "Samaritan Behavioral Center": "behavioralcenter",   # 17 rows, 7 in Detroit, MI (CMS 234040)
+    "Granville Health Systems": "granvillemedical",   # 140 rows, 138 in Oxford, NC (CMS 340127)
+    "Boone County Health Center": "boonecohealth",   # 20 rows, 20 in Albion, NE (CMS 281334)
+    "Box Butte General Hospital": "bbgh",   # 49 rows, 49 in Alliance, NE (CMS 281360)
+    "Valley County Health System": "valleycounty",   # 10 rows, 10 in Ord, NE (CMS 281353)
+    "Carewell Health Medical Center": "eogh",   # 125 rows, 125 in East Orange, NJ (CMS 310083)
+    "Holy Cross Medical Center (Taos)": "holycrossmedicalcenter",   # 67 rows, 67 in Taos, NM (CMS 321310)
+    "Gifford Medical Center": "giffordhealthcare",   # 50 rows, 44 in Randolph, VT (CMS 471301)
+    "Mason General Hospital & Family of Clinics": "masongeneral",   # 39 rows, 39 in Shelton, WA (CMS 501336)
+    "Snoqualmie Valley Hospital": "snoqualmiehospital",   # 30 rows, 30 in Snoqualmie, WA (CMS 501338)
+    "Cody Regional Health": "westpark",   # 70 rows, 70 in Cody, WY (CMS 531312)
+    "Hot Springs County Memorial Hospital": "hscmh",   # 22 rows, 21 in Thermopolis, WY (CMS 531304)
+    "Memorial Hospital Sweetwater County": "sweetwatermemorial",   # 34 rows, 34 in Rock Springs, WY (CMS 531318)
 }
 
 # 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
@@ -15196,6 +16375,61 @@ KRONOS_ORGS = {
     "Wilbarger General Hospital": ("secure7.saashr.com", "6215251", "TX"),
     # 2026-09-24 Texas configs: Coryell Health (Gatesville), same UKG Ready API.
     "Coryell Health": ("secure6.saashr.com", "6034202", "TX"),   # 20 (Gatesville 16, Waco 4)
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    "Washington County Hospital and Clinics": ("secure7.saashr.com", "6217537", "IA"),   # [32] Washington IA
+    "Sharon Regional Medical Center": ("secure7.saashr.com", "6212795", "PA"),           # [43] Sharon PA (Tenor Health)
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "South Peninsula Hospital": ("secure6.saashr.com", "6033684", "AK"),   # 70 rows, 70 in Homer, AK (CMS 021313)
+    "Bradley County Medical Center": ("secure7.saashr.com", "6200563", "AR"),   # 11 rows, 11 in Warren, AR (CMS 041327)
+    "Mt. Graham Regional Medical Center": ("secure4.saashr.com", "6162673", "AZ"),   # 37 rows, 34 in Safford, AZ (CMS 031319)
+    "San Carlos Apache Healthcare": ("secure6.entertimeonline.com", "6144973", "AZ"),   # 49 rows, 47 in Peridot, AZ (CMS 031320)
+    "Alhambra Hospital Medical Center": ("prd01-hcm01.prd", "6004578", "CA"),   # 28 rows, 28 in Alhambra, CA (CMS 050281)
+    "Southern Monterey County Memorial Hospital": ("prd01-hcm01.prd", "6036332", "CA"),   # 52 rows, 48 in King City, CA (CMS 051336)
+    "Mt. San Rafael Hospital": ("secure4.saashr.com", "6033795", "CO"),   # 24 rows, 24 in Trinidad, CO (CMS 061321)
+    "St. Vincent General Hospital District": ("secure7.saashr.com", "6205489", "CO"),   # 19 rows, 19 in Leadville, CO (CMS 061319)
+    "Cherokee Regional Medical Center": ("secure6.saashr.com", "6174217", "IA"),   # 25 rows, 18 in Cherokee, IA (CMS 161362)
+    "Clarinda Regional Health Center": ("secure4.saashr.com", "6172951", "IA"),   # 42 rows, 41 in Clarinda, IA (CMS 161352)
+    "Iowa Specialty Hospital": ("prd01-hcm01.prd", "6016816", "IA"),   # 55 rows, 16 in Belmond, IA (CMS 161301); also Clarion (CMS 161302)
+    "Myrtue Medical Center": ("secure6.saashr.com", "6164612", "IA"),   # 19 rows, 19 in Harlan, IA (CMS 161374)
+    "Caribou Medical Center": ("secure7.saashr.com", "6006526", "ID"),   # 8 rows, 8 in Soda Springs, ID (CMS 131309)
+    "Syringa General Hospital": ("secure6.saashr.com", "6148416", "ID"),   # 23 rows, 23 in Grangeville, ID (CMS 131315)
+    "Teton Valley Hospital": ("secure6.saashr.com", "6195100", "ID"),   # 16 rows, 16 in Driggs, ID (CMS 131313)
+    "Morrison Community Hospital": ("secure7.saashr.com", "6213465", "IL"),   # 14 rows, 14 in Morrison, IL (CMS 141329)
+    "Unity Physicians Hospital": ("secure7.saashr.com", "6137938", "IN"),   # 9 rows, 9 in Mishawaka, IN (CMS 150177)
+    "Clara Barton Hospital": ("secure4.saashr.com", "6012351", "KS"),   # 9 rows, 9 in Hoisington, KS (CMS 171333)
+    "Community HealthCare System": ("secure6.saashr.com", "6168248", "KS"),   # 54 rows, 35 in Onaga, KS (CMS 171354)
+    "Community Memorial Healthcare (Marysville)": ("secure6.saashr.com", "6059803", "KS"),   # 10 rows, 10 in Marysville, KS (CMS 171363)
+    "Kansas Medical Center": ("secure.entertimeonline.com", "6079352", "KS"),   # 25 rows, 21 in Andover, KS (CMS 170197)
+    "Norton County Hospital": ("secure6.saashr.com", "6198189", "KS"),   # 7 rows, 7 in Norton, KS (CMS 171348)
+    "St. James Parish Hospital": ("secure4.saashr.com", "6167570", "LA"),   # 5 rows, 5 in Lutcher, LA (CMS 191305)
+    "Northern Maine Medical Center": ("secure4.saashr.com", "6033683", "ME"),   # 47 rows, 47 in Fort Kent, ME (CMS 201317)
+    "Eaton Rapids Medical Center": ("secure6.saashr.com", "6007842", "MI"),   # 28 rows, 28 in EATON RAPIDS, MI (CMS 231324)
+    "River's Edge Hospital & Clinic": ("secure3.saashr.com", "6114104", "MN"),   # 7 rows, 0 in Saint Peter, MN (CMS 241334)
+    "Sleepy Eye Medical Center": ("secure6.saashr.com", "6192194", "MN"),   # 2 rows, 2 in Sleepy Eye, MN (CMS 241327)
+    "Bates County Memorial Hospital": ("secure6.saashr.com", "6022998", "MO"),   # 17 rows, 17 in Butler, MO (CMS 260034)
+    "King's Daughters Medical Center-Brookhaven": ("prd01-hcm01.prd", "6052038", "MS"),   # 24 rows, 24 in Brookhaven, MS (CMS 250057)
+    "Heart of America Medical Center": ("secure4.entertimeonline.com", "6012738", "ND"),   # 17 rows, 17 in Rugby, ND (CMS 351332)
+    "Sakakawea Medical Center - Cah": ("secure6.saashr.com", "6158386", "ND"),   # 13 rows, 13 in HAZEN, ND (CMS 351310)
+    "Towner County Medical Center": ("secure7.saashr.com", "6203739", "ND"),   # 8 rows, 8 in Cando, ND (CMS 351331)
+    "Antelope Memorial Hospital": ("secure7.saashr.com", "6168212", "NE"),   # 6 rows, 6 in NELIGH, NE (CMS 281326)
+    "Community Hospital (McCook)": ("secure10.saashr.com", "6009809", "NE"),   # 23 rows, 23 in McCook, NE (CMS 281363)
+    "Morrill County Community Hospital": ("secure6.saashr.com", "6183103", "NE"),   # 7 rows, 7 in Bridgeport, NE (CMS 281318)
+    "Phelps Memorial Health Center": ("secure4.saashr.com", "6131901", "NE"),   # 4 rows, 4 in Holdrege, NE (CMS 281362)
+    "Providence Medical Center (Wayne)": ("secure7.saashr.com", "6217024", "NE"),   # 11 rows, 11 in Wayne, NE (CMS 281345)
+    "Nor-Lea Hospital District": ("prd01-hcm01.npr", "6163093", "NM"),   # 47 rows, 38 in Lovington, NM (CMS 321305)
+    "Nathan Littauer Hospital": ("secure7.saashr.com", "6101323", "NY"),   # 93 rows, 93 in Gloversville, NY (CMS 330276)
+    "Adams County Regional Medical Center": ("secure7.saashr.com", "6146950", "OH"),   # 13 rows, 13 in Seaman, OH (CMS 361326)
+    "Crystal Clinic Orthopaedic Center": ("secure4.saashr.com", "6097121", "OH"),   # 96 rows, 33 in Akron, OH (CMS 360351)
+    "McCurtain Memorial Hospital": ("secure6.saashr.com", "6181684", "OK"),   # 8 rows, 7 in Idabel, OK (CMS 371342)
+    "StarCare Specialty Health": ("secure7.saashr.com", "6209217", "TX"),   # 21 rows, 21 in Lubbock, TX (CMS 454093)
+    "Columbia Basin Hospital": ("secure6.saashr.com", "6194802", "WA"),   # 21 rows, 21 in Ephrata, WA (CMS 501317)
+    "Lake Chelan Community Hospital": ("secure6.saashr.com", "6171358", "WA"),   # 41 rows, 41 in CHELAN, WA (CMS 501334)
+    "North Valley Hospital": ("secure7.saashr.com", "6204309", "WA"),   # 17 rows, 17 in Tonasket, WA (CMS 501321)
+    "Othello Community Hospital": ("secure6.saashr.com", "6154361", "WA"),   # 7 rows, 7 in Othello, WA (CMS 501318)
+    "Spooner Health System": ("secure6.entertimeonline.com", "6148886", "WI"),   # 8 rows, 8 in Spooner, WI (CMS 521332)
 }
 
 
@@ -16203,6 +17437,20 @@ APPLICANTPRO_ORGS = {
     # hospitals on UKG, see UKG_ORGS).
     "Minden Medical Center": ("mindenmedicalcenter", ""),                           # 52, Minden LA
     "Northern Louisiana Medical Center": ("northernlouisianamedicalcenter", ""),     # 40, Ruston LA
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    "Southwest Health System": ("shs", ""),                       # [23] Southwest Memorial Hospital, Cortez CO
+    "Montrose Regional Health": ("montrosehospital", ""),         # [28] Montrose CO
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Cobre Valley Regional Medical Center": ("cvrmc", "11028"),   # 29 rows, 25 in Globe, AZ (CMS 031314)
+    "Mille Lacs Health System": ("mlhealth", "5609"),   # 45 rows, 44 in Onamia, MN (CMS 241356)
+    "United Hospital District": ("uhd", "5031"),   # 9 rows, 6 in Blue Earth, MN (CMS 241369)
+    "Glendive Medical Center": ("gmc", "20224"),   # 28 rows, 28 in Glendive, MT (CMS 271332)
+    "Granite County Medical Center": ("granitecountyhospital", "185"),   # 11 rows, 11 in Philipsburg, MT (CMS 271303)
+    "Harney District Hospital": ("harneydh", "11796"),   # 17 rows, 17 in Burns, OR (CMS 381307)
+    "Garfield County Public Hospital District #1": ("pomeroymd", "4176"),   # 9 rows, 9 in Pomeroy, WA (CMS 501301)
 }
 _APPLICANTPRO_PARAMS = {"cityUrl": "", "countryAbbreviation": "", "stateAbbreviation": "", "isInternal": 0}
 
@@ -16736,6 +17984,83 @@ PAYCOM_ORGS = {
     "SUN Behavioral Kentucky":    "3DDA687F40025B5B102A6B6072E43AE2",   # 16, Erlanger KY
     "SUN Behavioral Delaware":    "57BE0AE6B74A749D1F2C1B103B4DF34D",   # 20, Georgetown DE
     "Highland District Hospital": "DE6330BB5888C63E02E5ED4D3106FEB3",   # 24, Hillsboro OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    # AVEM Health Partners' board: Rural Wellness Fairfax, Rural Wellness Stroud and
+    # Rural Wellness Anadarko (CMS: The Physicians' Hospital in Anadarko), plus its
+    # Oklahoma City office.
+    "AVEM Health Partners": "1C1875CBF90AD0C6A2E08F2A4B01A84C",   # [46] Fairfax / Stroud / Anadarko OK
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Mena Regional Health System": "87C5A8C599EA572A944E97C7C5E3797A",   # 6 rows, 6 in Mena, AR (CMS 041334)
+    "North Arkansas Regional Medical Center": "9E3A1AF7E6BF8A4A3F6C8BFEB06A43E2",   # 71 rows, 71 in Harrison, AR (CMS 040017)
+    "Destiny Springs Healthcare": "73A6320CD88BEBA536A58136A2C6A58B",   # 9 rows, 9 in Surprise, AZ (CMS 034034)
+    "La Paz Regional Hospital": "E08C56984DCF6DB08FD1FDD4659BAC14",   # 22 rows, 20 in Parker, AZ (CMS 031317)
+    "Sage Memorial Hospital": "778ACFA61C583E24FF4645873660AABF",   # 31 rows, 31 in Ganado, AZ (CMS 031309)
+    "Healthbridge Children's Hospital - Orange": "EE76B94DD3BD99C8107675BF70BEB20A",   # 8 rows, 8 in Orange, CA (CMS 053308)
+    "Mammoth Hospital": "898BD2386405070392D5E532BA263B62",   # 30 rows, 22 in Mammoth Lakes, CA (CMS 051303)
+    "Modoc Medical Center": "8FD727396F86FD98562693776B93E3CD",   # 24 rows, 22 in Alturas, CA (CMS 051330)
+    "Palo Verde Hospital": "6FC9C01C65D06229F59C2EB52E3AFEB5",   # 5 rows, 5 in Blythe, CA (CMS 051339)
+    "Kit Carson County Memorial Hospital": "C05E70254DAFB96824DEFC7E4F8E0E49",   # 16 rows, 11 in Burlington, CO, 5 with no town (location default) (CMS 061313)
+    "Lincoln Health Hospital": "3E16471F10EEF7BA8882A6FCAC97D408",   # 10 rows, 9 in Hugo, CO (CMS 061306)
+    "Pagosa Springs Medical Center": "FB1A890F98B1D3DDFF7273EC6DDED38E",   # 32 rows, 32 in Pagosa Springs, CO (CMS 061328)
+    "Connecticut Hospice": "19DBACFCFF3F5B41C4ABD5CDC6C51760",   # 1 rows, 1 in Branford, CT (CMS 070038)
+    "Eastside Psychiatric Hospital": "9B3F69D20DE0FDE45AA00BB5B856F20E",   # 65 rows, 42 in Tallahassee, FL, 2 with no town (location default) (CMS 104059)
+    "Candler County Hospital": "280C4195E9E620B28CBD7D599AD05159",   # 5 rows, 5 in Metter, GA (CMS 111334)
+    "Emanuel Medical Center (Swainsboro)": "CA238BE253E335ECA168F5E2F7CEE6A2",   # 30 rows, 30 in Swainsboro, GA (CMS 110109)
+    "Evans Memorial Hospital": "104895E0E03480D23E475BECDF071242",   # 13 rows, 13 in Claxton, GA (CMS 110142)
+    "Jeff Davis Hospital (Hazlehurst)": "281C91F05C93F85D6DED185D0FEF28CD",   # 14 rows, 14 in Hazlehurst, GA (CMS 111333)
+    "Ridgeview Institute Monroe": "4A1F988C60553FB4CF83C34E49D07627",   # 11 rows, 11 in Monroe, GA (CMS 114037)
+    "Boundary Community Hospital": "B50EAEF436088595D057E8E5CA8B4E3B",   # 15 rows, 15 in Bonners Ferry, ID (CMS 131301)
+    "Chicago Behavioral Hospital": "02959EC098A4CC351ED08B9149CF46CC",   # 13 rows, 13 in Des Plaines, IL (CMS 144040)
+    "Lake Behavioral Hospital": "F561F0AF277B12509F18272BA6C32254",   # 17 rows, 17 in Waukegan, IL (CMS 144042)
+    "Silver Oaks Behavioral Hospital": "D6C9B2B3C32B47F6E1C63393E679852D",   # 13 rows, 3 in New Lenox, IL, 10 with no town (location default) (CMS 144041)
+    "Cameron Memorial Community Hospital": "BBF0A55EF3E4C554EB31F2F2675E8E98",   # 70 rows, 70 in Angola, IN (CMS 151315)
+    "Amberwell Health": "F93347EBD424E4EF1897284D2C8D459A",   # 194 rows, 117 in Atchison, KS, 15 with no town (location default) (CMS 171382); also Hiawatha (CMS 171341)
+    "Coffey County Hospital": "B5D072EC86316F93A7DE9836BD2E8D6F",   # 23 rows, 23 in Burlington, KS (CMS 171385)
+    "Rice Community Healthcare": "0158F19B25768F89F726A2271A97F47F",   # 8 rows, 8 in Lyons, KS (CMS 171330)
+    "Kansas City Orthopaedic Institute": "9D7B03A7BB882E63BA78252C8957ABA0",   # 11 rows, 11 in Leawood, KS (CMS 170188)
+    "Manhattan Surgical Hospital": "57FA64DB6304EA7DE9931724ECBB9448",   # 11 rows, 11 in Manhattan, KS (CMS 170190)
+    "Osborne County Memorial Hospital": "3730077781E48D99F8406F124BFA3992",   # 6 rows, 6 in Osborne, KS (CMS 171364)
+    "Caldwell Medical Center": "A0E52233EB22E4770AB4B9AA4AD4F055",   # 17 rows, 17 in Princeton, KY (CMS 181322)
+    "Carroll County Memorial Hospital": "398B7BEA524C5E3482733562E35A0FA4",   # 7 rows, 6 in Carrollton, KY, 1 with no town (location default) (CMS 181310)
+    "Livingston Hospital and Healthcare Services": "9AB2E051D04E5B26ECEEEFDA9A8CDA12",   # 27 rows, 23 in Salem, KY, 2 with no town (location default) (CMS 181320)
+    "Ohio County Hospital": "0C5629EF50BFA5365B465DBDC44A0785",   # 55 rows, 42 in Hartford, KY (CMS 181323)
+    "Trigg County Hospital": "A578F62423DCFF15464BE89EEEA5336A",   # 17 rows, 17 in Cadiz, KY (CMS 181304)
+    "Surgical Specialty Center of Baton Rouge": "92A8E0D6D08D9AFDAF2261C2F8158845",   # 3 rows, 3 in Baton Rouge, LA (CMS 190251)
+    "Bournewood Hospital": "57361158D3FF01C6C3F0B65B6CADA531",   # 23 rows, 4 in Brookline, MA, 14 with no town (location default) (CMS 224022)
+    "Hospital for Behavioral Medicine": "F61F8FAA56D6F0753BA3190F54D6DF5D",   # 19 rows, 3 in Worcester, MA, 16 with no town (location default) (CMS 224045)
+    "Sheridan Community Hospital": "391B6A97D5A2B77135D1F5D3AF2FDD8C",   # 22 rows, 22 in Sheridan, MI (CMS 231312)
+    "Glacial Ridge Hospital": "51D11DB8BBDEAACB7A9ECC3C72601106",   # 14 rows, 4 in Glenwood, MN, 9 with no town (location default) (CMS 241376)
+    "Lakewood Health System": "2C527ECFE54643820FF338C3FBD8F077",   # 23 rows, 22 in Staples, MN (CMS 241329)
+    "McKenzie County Healthcare Systems": "56DFBC02B9017809529D2909D89CCB36",   # 47 rows, 42 in Watford City, ND (CMS 351302)
+    "Brodstone Healthcare": "D47A4863AFD9565358108B0522B621D6",   # 16 rows, 12 in Superior, NE, 4 with no town (location default) (CMS 281315)
+    "Fillmore County Hospital": "523F46EC6B1864E9E535B93E4995869A",   # 8 rows, 8 in Geneva, NE (CMS 281301)
+    "Gordon Memorial Hospital District": "D75E5F777567445E85BBB07AD2BA82A6",   # 12 rows, 12 in Gordon, NE (CMS 281358)
+    "Lincoln Surgical Hospital": "E13386DBE120AA3652083E099DC16A10",   # 25 rows, 25 in Lincoln, NE (CMS 280127)
+    "Syracuse Area Health": "87D86B019F36F98ACE455A331A4E7EEA",   # 12 rows, 11 in Syracuse, NE (CMS 281309)
+    "Artesia General Hospital": "704B7D084ED420D91018B0DB07C889BE",   # 57 rows, 39 in Artesia, NM, 16 with no town (location default) (CMS 320030)
+    "Brylin Hospitals": "91C4C467CACE0F7C68DD80E0F2B34156",   # 11 rows, 10 in Buffalo, NY, 1 with no town (location default) (CMS 334022)
+    "Mary Rutan Hospital": "1D9C49D4E9701353B4212E6BCA729496",   # 47 rows, 46 in Bellefontaine, OH (CMS 360197)
+    "Atoka County Medical Center": "F06E7D6A3BA6575D65BA3D8528DBDE6B",   # 7 rows, 5 in Atoka, OK, 2 with no town (location default) (CMS 371300)
+    "The Children's Center Rehabilitation Hospital": "7D4E5D43E0EA275B35368287B41F27C0",   # 38 rows, 38 in Bethany, OK (CMS 373303)
+    "Coal County General Hospital": "D9F405A20A0247BF926CDA2982BA9E8F",   # 9 rows, 9 in Coalgate, OK (CMS 371319)
+    "Stilwell Memorial Hospital": "1AA43CB82BCCBA739287732B3D4ED804",   # 6 rows, 6 in Stilwell, OK (CMS 370178)
+    "OneCore Health": "AAE93863A9A50E5859B05C34B90D9432",   # 17 rows, 17 in Oklahoma City, OK (CMS 370220)
+    "Parkside Psychiatric Hospital": "F24B5DD8B19ACF1D75EC0A35C9EE1469",   # 11 rows, 11 in Tulsa, OK (CMS 374021)
+    "Pawhuska Hospital": "01B084E1542C6D2CCAAFB97A42DB5BCB",   # 5 rows, 5 in Pawhuska, OK (CMS 371309)
+    "Summit Medical Center (Edmond)": "7C14F2018A1BF09A207B901ABD1BA047",   # 19 rows, 18 in Edmond, OK (CMS 370225)
+    "Eagleville Hospital": "3C1E98757786B36A0385B8D23A2BBEB7",   # 34 rows, 34 in Eagleville, PA (CMS 390278)
+    "Malvern Behavioral Health": "C3D534C5EB67866599DBFB1F7237D5E0",   # 19 rows, 4 in Philadelphia, PA, 1 with no town (location default) (CMS 394057)
+    "Hamilton General Hospital": "BED56E34E48579D2214701779F45CA51",   # 19 rows, 15 in Hamilton, TX, 4 with no town (location default) (CMS 451392)
+    "Coulee Medical Center": "59A052C2F2C7CDFEFBEBCED3F52A43F9",   # 18 rows, 18 in Grand Coulee, WA (CMS 501308)
+    "Klickitat Valley Hospital": "9D7E216A94F019B126F0649DF68436DB",   # 33 rows, 33 in Goldendale, WA (CMS 501316)
+    "Smokey Point Behavioral Hospital": "CA744E5FCDA461D14FBAE63E57D676F6",   # 22 rows, 22 in Marysville, WA (CMS 504012)
+    "South Sound Behavioral Hospital": "5EE0810D5ACC09AAE0C5493D654184F7",   # 6 rows, 6 in Lacey, WA (CMS 504015)
+    "Willapa Harbor Hospital": "1CE156A1130475F99587970A20A06B83",   # 17 rows, 17 in South Bend, WA (CMS 501303)
+    "Boone Memorial Hospital": "5D081DBD4ECDEB7A95B75001A827B58F",   # 19 rows, 16 in Madison, WV (CMS 511313)
+    "Memorial Hospital of Carbon County": "0E1938E34C046A782F7C4035270FA096",   # 17 rows, 17 in Rawlins, WY (CMS 531316)
 }
 
 # 2026-09-25 (B2): Paycom boards outside Texas; a preview whose location has no
@@ -16757,6 +18082,77 @@ PAYCOM_DEFAULT_STATE = {
     "Santiam Hospital & Clinics": "OR",
     "Seneca Healthcare District": "CA",
     "Valor Health": "ID",
+    "AVEM Health Partners": "OK",   # 2026-10-25 coverage stage 2
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Mena Regional Health System": "AR",
+    "North Arkansas Regional Medical Center": "AR",
+    "Destiny Springs Healthcare": "AZ",
+    "La Paz Regional Hospital": "AZ",
+    "Sage Memorial Hospital": "AZ",
+    "Healthbridge Children's Hospital - Orange": "CA",
+    "Mammoth Hospital": "CA",
+    "Modoc Medical Center": "CA",
+    "Palo Verde Hospital": "CA",
+    "Kit Carson County Memorial Hospital": "CO",
+    "Lincoln Health Hospital": "CO",
+    "Pagosa Springs Medical Center": "CO",
+    "Connecticut Hospice": "CT",
+    "Eastside Psychiatric Hospital": "FL",
+    "Candler County Hospital": "GA",
+    "Emanuel Medical Center (Swainsboro)": "GA",
+    "Evans Memorial Hospital": "GA",
+    "Jeff Davis Hospital (Hazlehurst)": "GA",
+    "Ridgeview Institute Monroe": "GA",
+    "Boundary Community Hospital": "ID",
+    "Chicago Behavioral Hospital": "IL",
+    "Lake Behavioral Hospital": "IL",
+    "Silver Oaks Behavioral Hospital": "IL",
+    "Cameron Memorial Community Hospital": "IN",
+    "Amberwell Health": "KS",
+    "Coffey County Hospital": "KS",
+    "Rice Community Healthcare": "KS",
+    "Kansas City Orthopaedic Institute": "KS",
+    "Manhattan Surgical Hospital": "KS",
+    "Osborne County Memorial Hospital": "KS",
+    "Caldwell Medical Center": "KY",
+    "Carroll County Memorial Hospital": "KY",
+    "Livingston Hospital and Healthcare Services": "KY",
+    "Ohio County Hospital": "KY",
+    "Trigg County Hospital": "KY",
+    "Surgical Specialty Center of Baton Rouge": "LA",
+    "Bournewood Hospital": "MA",
+    "Hospital for Behavioral Medicine": "MA",
+    "Sheridan Community Hospital": "MI",
+    "Glacial Ridge Hospital": "MN",
+    "Lakewood Health System": "MN",
+    "McKenzie County Healthcare Systems": "ND",
+    "Brodstone Healthcare": "NE",
+    "Fillmore County Hospital": "NE",
+    "Gordon Memorial Hospital District": "NE",
+    "Lincoln Surgical Hospital": "NE",
+    "Syracuse Area Health": "NE",
+    "Artesia General Hospital": "NM",
+    "Brylin Hospitals": "NY",
+    "Mary Rutan Hospital": "OH",
+    "Atoka County Medical Center": "OK",
+    "The Children's Center Rehabilitation Hospital": "OK",
+    "Coal County General Hospital": "OK",
+    "Stilwell Memorial Hospital": "OK",
+    "OneCore Health": "OK",
+    "Parkside Psychiatric Hospital": "OK",
+    "Pawhuska Hospital": "OK",
+    "Summit Medical Center (Edmond)": "OK",
+    "Eagleville Hospital": "PA",
+    "Malvern Behavioral Health": "PA",
+    "Coulee Medical Center": "WA",
+    "Klickitat Valley Hospital": "WA",
+    "Smokey Point Behavioral Hospital": "WA",
+    "South Sound Behavioral Hospital": "WA",
+    "Willapa Harbor Hospital": "WA",
+    "Boone Memorial Hospital": "WV",
+    "Memorial Hospital of Carbon County": "WY",
 }
 
 _PAYCOM_LIST = "https://www.paycomonline.net/v4/ats/web.php/jobs"
@@ -16930,6 +18326,21 @@ PAYCOR_ORGS = {
     "Insight Health": "8a7883d07725ca8701773c07f64d08fa",
     # ── 2026-10-20 coverage stage 1: no-write dry run that day (rows, the hospital's own town, bodies).
     "Wilson Health": "8a7883c67db6c3c2017dbbd3ff28034f",   # 53, Sidney OH (Ohio State affiliate)
+    # 2026-10-25 coverage stage 2: daykimball.org/careers links this clientId.
+    "Day Kimball Health": "4028f88b24c330a20124eb33b4ad1653",   # [87] Putnam CT
+    "Arkansas Valley Regional Medical Center": "8a7883d09d9307dd019db0b264160476",   # [34] La Junta CO
+    "Bothwell Regional Health Center": "8a7883c6946708d70194a902a07514b4",           # [83] Sedalia MO
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Virginia Gay Hospital": "8a7883d08ecaad99018eeac0ae610e93",   # 14 rows, 12 in Vinton, IA (CMS 161349)
+    "Hopedale Hospital": "8a7883d09397efbb0193cfba5aa61148",   # 17 rows, 17 in Hopedale, IL (CMS 141330)
+    "Incompass Healthcare": "8a7883c6876de6fb018775a16c0001d2",   # 9 rows, 8 in Lawrenceburg, IN (CMS 154011)
+    "Kittson Healthcare": "8a7883c698ed62e70199338b155c0ad7",   # 13 rows, 13 in Hallock, MN (CMS 241336)
+    "Blueridge Vista Health and Wellness": "8a7883d09e235989019e427b8067063e",   # 11 rows, 11 in Cincinnati, OH (CMS 364057)
+    "Ohio Valley Surgical Hospital": "8a7883d06dcbf31d016ddb5a316b0f92",   # 17 rows, 15 in Springfield, OH (CMS 360355)
+    "Sunrise Vista Health and Wellness": "8a7883d09e235989019e4290a36206a1",   # 22 rows, 22 in Canton, OH (CMS 364064)
+    "Prairie Lakes Healthcare System": "8a7883c6889839e90188ba9ab67308fb",   # 19 rows, 19 in Watertown, SD (CMS 430005)
 }
 
 _PAYCOR_HOME = "https://recruitingbypaycor.com/career/CareerHome.action"
@@ -17126,6 +18537,72 @@ PAYLOCITY_ORGS = {
     "Odessa Memorial Healthcare Center": ("2c7a5474-14e9-41ce-ac6a-02af4ddc4513", "Lincoln-County-Public-Hospital-District-1", "WA"),   # 16, Odessa WA
     # ── 2026-10-20 coverage stage 1: no-write dry run that day (rows, the hospital's own town, bodies).
     "Hocking Valley Community Hospital": ("c5ccda74-fad8-486c-86b0-f4b1b19e6453", "Hocking-Valley-Community-Hospital", "OH"),   # 29, Logan OH (Ohio State affiliate)
+    # ── 2026-10-25 coverage stage 2: single-hospital boards from the 10-20 platform
+    # pass, re-read 2026-10-25; [rows in that day's no-write dry run], every row with a body.
+    "Penobscot Valley Hospital": ("f677b95e-47db-4c39-b99b-29e5e27ab84c", "Penobscot-Valley-Hospital", "ME"),   # [27] Lincoln ME
+    "Munising Memorial Hospital": ("191146fb-2615-4deb-abf9-587139fc7a3f", "Munising-Memorial-Hospital-Association", "MI"),   # [5] Munising MI
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Mizell Memorial Hospital": ("e16c4b8e-a600-44e2-94fa-7d7feb7f92a7", "Mizell-Memorial-Hospital", "AL"),   # 26 rows, 26 in Opp, AL (CMS 010007)
+    "Mississippi County Hospital System": ("e487105c-f7b0-4828-8ebe-e6c818334029", "Mississippi-County-Hospital-System", "AR"),   # 48 rows, 39 in Blytheville, AR (CMS 040069); also Osceola (CMS 040782)
+    "Johnson Regional Medical Center": ("3c60e1bb-558b-4b95-88e9-be63335f5446", "Johnson-Regional-Medical-Center", "AR"),   # 61 rows, 61 in Clarksville, AR (CMS 040002)
+    "Little Colorado Medical Center": ("cf7b76bf-cd6a-4435-9fc1-eb32a8f662c9", "Winslow-Memorial-Hospital-Inc", "AZ"),   # 13 rows, 13 in Winslow, AZ (CMS 031311)
+    "Colusa Medical Center": ("019e5376-bf48-4554-810e-7f3af37c871f", "Colusa-Medical-Center", "CA"),   # 32 rows, 23 in Colusa, CA (CMS 050783)
+    "Effingham Health System": ("39a7f9b4-9481-401a-8a9c-b76710b00d3e", "Effingham-Hospital-Inc", "GA"),   # 50 rows, 39 in Springfield, GA (CMS 111306)
+    "Jenkins County Medical Center": ("0b577f6b-dac6-415e-8149-87f9e2534362", "Hospital-Authority-of-Jenkins-County", "GA"),   # 11 rows, 11 in Millen, GA (CMS 111311)
+    "Miller County Hospital": ("28e4090e-8444-4ea6-aeb0-b93afe488607", "The-Hospital-Authority-of-Miller-County", "GA"),   # 39 rows, 31 in Colquitt, GA (CMS 111305)
+    "Morgan Medical Center": ("1565b57c-7167-42de-9fde-91e19b4ff646", "Morgan-Medical", "GA"),   # 20 rows, 20 in Madison, GA (CMS 111304)
+    "Franklin County Medical Center": ("14d5b25e-11f4-47b7-943e-360c13ead2c5", "Franklin-County-Medical-Center", "ID"),   # 8 rows, 8 in Preston, ID (CMS 131322)
+    "Minidoka Memorial Hospital": ("552af7ef-b4a6-4b52-b6aa-5be315fe7ea3", "Minidoka-Memorial-Hospital", "ID"),   # 11 rows, 7 in Rupert, ID, 4 with no town (location default) (CMS 131319)
+    "North Canyon Medical Center": ("66c10b8a-db4e-403f-9834-34302025568d", "North-Canyon-Medical-Center-Inc", "ID"),   # 30 rows, 22 in Gooding, ID (CMS 131302)
+    "Shoshone Medical Center": ("694d6b2d-57c1-41a9-85f7-3e1b70889858", "Shoshone-Medical-Center", "ID"),   # 16 rows, 15 in Kellogg, ID (CMS 131314)
+    "Hillsboro Area Hospital": ("f4f1113a-c9a7-43ce-939d-c99f3c9b0cca", "Hillsboro-Area-Hospital-Inc", "IL"),   # 17 rows, 17 in Hillsboro, IL (CMS 141332)
+    "Thomas H Boyd Memorial Hospital": ("8b76868b-ecf9-49e8-a7c9-0883a343a0f5", "Boyd-Healthcare-Services", "IL"),   # 10 rows, 8 in Carrollton, IL, 2 with no town (location default) (CMS 141300)
+    "Hospital District #6 Patterson Health Center": ("a0f5c18a-eefe-40c6-ab86-103f70c476b1", "Hospital-District-No-6-of-Harper-County-Kansas", "KS"),   # 6 rows, 6 in Anthony, KS (CMS 171346)
+    "Meade District Hospital": ("aafeb3c5-f379-4786-bb37-b2936758b014", "Meade-District-Hospital", "KS"),   # 7 rows, 6 in Meade, KS (CMS 171321)
+    "Pratt Regional Medical Center": ("da6d037b-47f6-40d4-af26-cabf7d48794d", "Pratt-Regional-Medical-Center", "KS"),   # 14 rows, 13 in Pratt, KS (CMS 170027)
+    "Scott County Hospital": ("89db5ce4-0e71-4c2e-9701-09076b7b8c9c", "Scott-County-Hospital", "KS"),   # 12 rows, 12 in Scott City, KS (CMS 171372)
+    "Summit Surgical Hospital (Hutchinson)": ("cf0c3339-a090-4874-b5aa-81d6b9054690", "Summit-Surgical", "KS"),   # 13 rows, 13 in Hutchinson, KS (CMS 170198)
+    "William Newton Hospital": ("433b306b-2a75-46a2-98a5-21d650e0d9ff", "William-Newton-Memorial-Hospital", "KS"),   # 25 rows, 23 in Winfield, KS, 2 with no town (location default) (CMS 171383)
+    "Bunkie General Hospital": ("74221d3c-8e70-4691-b081-dfe109d034bd", "Bunkie-General-Hospital", "LA"),   # 2 rows, 2 in Bunkie, LA (CMS 191311)
+    "Spine Hospital of Louisiana": ("7f4fdfc8-f174-45fc-9fe6-33c2fd87b9fc", "The-Spine-Hospital-of-Louisiana", "LA"),   # 7 rows, 7 in Baton Rouge, LA (CMS 190266)
+    "Cary Medical Center": ("b59b60b1-6ef4-4041-86b3-d80d5a2032ca", "City-of-Caribou", "ME"),   # 29 rows, 28 in Caribou, ME (CMS 200031)
+    "Mount Desert Island Hospital": ("5e8f7172-61b6-4e56-b027-61e54072c2ac", "MDI-Hospital", "ME"),   # 52 rows, 46 in Bar Harbor, ME (CMS 201304)
+    "Mahnomen Health Center": ("acc41e35-57ca-4cb7-941c-36b1fc03bc2d", "Mahnomen-Health-Center", "MN"),   # 9 rows, 9 in Mahnomen, MN (CMS 240779)
+    "Ray County Memorial Hospital": ("9bc8f447-ed5b-4120-aa3a-8aafe73825be", "Ray-County-Memorial-Hospital", "MO"),   # 28 rows, 25 in Richmond, MO, 3 with no town (location default) (CMS 261327)
+    "Ste Genevieve County Memorial Hospital": ("31d032a6-a176-4d4f-b3a6-24a95cf75bf0", "Ste-Genevieve-County-Memorial-Hospital", "MO"),   # 39 rows, 1 in STE. GENEVIEVE, MO (CMS 261330)
+    "South Sunflower County Hospital": ("a946e31f-cfab-4a2e-9e01-ce6a5b8ec4df", "South-Sunflower-County-Hospital", "MS"),   # 10 rows, 10 in Indianola, MS (CMS 250095)
+    "Tyler Holmes Memorial Hospital": ("852ec141-c970-4799-ad36-64ee1090da31", "TYLER-HOLMES-MEMORIAL-HOSPITAL", "MS"),   # 8 rows, 8 in Winona, MS (CMS 251312)
+    "Rosebud Health Care Center": ("9f012c09-3bd1-464e-b950-d9149e6064b7", "Rosebud-Health-Care-Center", "MT"),   # 5 rows, 5 in Forsyth, MT (CMS 271327)
+    "Shodair Children's Hospital": ("6d709fd3-93c2-4c32-9639-5764f5025457", "Shodair", "MT"),   # 27 rows, 26 in Helena, MT, 1 with no town (location default) (CMS 274004)
+    "Iredell Davis Behavioral Health Hospital": ("e48fa797-ce91-4d50-b81e-d93ea7e1a2e0", "Iredell-Memorial-Hospital-Incorporated", "NC"),   # 173 rows, 145 in Statesville, NC, 5 with no town (location default) (CMS 344036)
+    "Jamestown Regional Medical Center": ("e03f1d2e-1508-4cf5-bcfb-c9c733f95645", "Current-Opening", "ND"),   # 30 rows, 30 in Jamestown, ND (CMS 351335)
+    "St. Luke's Hospital (Crosby)": ("affd69b0-2fdd-40cd-a42c-5e01dbd351e6", "ST-LUKES-HOSPITAL", "ND"),   # 6 rows, 5 in Crosby, ND, 1 with no town (location default) (CMS 351325)
+    "Chadron Community Hospital and Health Services": ("a2c99aaf-68a7-46bc-85ec-efee40bde7d2", "Chadron-Community-Hospital-Corp", "NE"),   # 17 rows, 17 in Chadron, NE (CMS 281341)
+    "Cherry County Hospital": ("97f5d188-4d5e-44c6-bc74-b4c22f48b052", "Cherry-County-Hospital-and-Clinic--non-main-page", "NE"),   # 22 rows, 22 in Valentine, NE (CMS 281344)
+    "Kearney County Health Services Hospital": ("71a3718b-dc39-404d-bf32-fecc684ea041", "Kearney-County-Health-Services", "NE"),   # 6 rows, 6 in Minden, NE (CMS 281306)
+    "Kimball Health Services": ("390de4a1-fa4d-4201-9787-c1c380027db7", "Kimball-Health-Services", "NE"),   # 7 rows, 7 in Kimball, NE (CMS 281305)
+    "Lexington Regional Health Center": ("06d1ca18-3222-497d-8d11-a2e0bef52803", "Lexington-Regional-Health-Center", "NE"),   # 13 rows, 13 in Lexington, NE (CMS 281361)
+    "Memorial Hospital (Aurora)": ("27f5bfbf-d165-4fef-8a10-a8d4418a437c", "Memorial-Community-Health-Inc", "NE"),   # 12 rows, 12 in Aurora, NE (CMS 281320)
+    "Webster County Community Hospital": ("de550125-e316-4a72-bd3b-65cb526a95f4", "Webster-County-Community-Hospital", "NE"),   # 9 rows, 9 in Red Cloud, NE (CMS 281316)
+    "Cibola General Hospital": ("85d620ee-7141-4a4e-b1c0-c30659a256dc", "Cibola-General-Hospital", "NM"),   # 51 rows, 46 in Grants, NM, 5 with no town (location default) (CMS 321308)
+    "Gila Regional Medical Center": ("471aa3fa-e6a2-4fad-9dd6-6c3e6badaab5", "Gila-Regional-Medical-Center", "NM"),   # 47 rows, 47 in Silver City, NM (CMS 321311)
+    "Pershing General Hospital": ("b241eaf6-5f29-4237-8bd5-0e7ff4bac7be", "Pershing-General-Hospital", "NV"),   # 13 rows, 12 in Lovelock, NV, 1 with no town (location default) (CMS 291304)
+    "Brookhaven Hospital": ("3bf03f0d-7c5f-4ed4-aa03-15e65d22ec52", "Brookhaven-Hospital-LLC", "OK"),   # 20 rows, 11 in Tulsa, OK (CMS 374012)
+    "Cleveland Area Hospital": ("89c1d3c8-d7ff-490a-971e-a53812e68764", "Cleveland-Area-Hospital-Holdings-Inc", "OK"),   # 14 rows, 14 in Cleveland, OK (CMS 371320)
+    "Jackson County Memorial Hospital Authority": ("58515f1b-667c-4baf-89c7-976246900cff", "Jackson-County-Memorial-Hospital-Authority", "OK"),   # 38 rows, 31 in Altus, OK, 5 with no town (location default) (CMS 370022)
+    "Newberry County Memorial Hospital": ("354506d3-a1d2-481c-be4c-eb8491aba2c3", "NCMH-External-Candidates", "SC"),   # 50 rows, 50 in Newberry, SC (CMS 420053)
+    "Huron Regional Medical Center": ("1d3f71c3-b5df-4036-ba45-2b31254377ef", "Huron-Regional-Medical-Center", "SD"),   # 23 rows, 23 in Huron, SD (CMS 431335)
+    "Chambers Health": ("d9034add-658d-4ed8-a5ae-abda92b03ec6", "Chambers-County-Public-Hospital", "TX"),   # 7 rows, 2 in Anahuac, TX, 1 with no town (location default) (CMS 451320)
+    "Collingsworth General Hospital": ("97a8799d-6598-4c36-a03b-02bdbc11efdf", "Collingsworth-General-Hospital", "TX"),   # 7 rows, 7 in Wellington, TX (CMS 451355)
+    "McCamey Hospital": ("32c26846-86fa-4fd0-bd45-477a0d9b401e", "McCamey-County-Hospital-District", "TX"),   # 13 rows, 13 in McCamey, TX (CMS 451309)
+    "Kane County Hospital": ("c504a6f6-63a7-42b4-9eb5-5738623c4a20", "KCH-Career-Page", "UT"),   # 8 rows, 8 in Kanab, UT (CMS 461309)
+    "Springfield Hospital": ("3443aa7a-2142-4d1a-9049-de77615adf16", "Springfield-springfield-hospital", "VT"),   # 60 rows, 55 in Springfield, VT (CMS 471306)
+    "Mid Valley Hospital & Clinic": ("506da836-11f1-44d2-8330-e6429ac89854", "Mid-Valley-Hospital-Clinic", "WA"),   # 35 rows, 34 in Omak, WA, 1 with no town (location default) (CMS 501328)
+    "Burnett Medical Center": ("0b6026c5-6c47-4389-b678-88f03ea5400e", "Burnett-Medical-Center-Inc", "WI"),   # 21 rows, 21 in Grantsburg, WI (CMS 521331)
+    "Crossing Rivers Health Medical Center": ("5cb7fb64-5afc-4b1c-b716-03059330a6f7", "Crossing-Rivers-Health", "WI"),   # 7 rows, 7 in Prairie du Chien, WI (CMS 521330)
+    "Star Valley Medical Center": ("2ec1c3c1-804e-4a6b-b3c8-e33caafc976e", "Star-Valley-Health", "WY"),   # 19 rows, 16 in Afton, WY, 2 with no town (location default) (CMS 531313)
 }
 _PAYLOCITY_PAGEDATA_RE = re.compile(r"window\.pageData\s*=\s*(\{)")
 
@@ -17218,6 +18695,10 @@ WORKABLE_ORGS = {
     # 2026-09-25 standalone hospitals (push5/standalone, B2): website from Wikidata or the 09-17 fingerprint pass, board read off its careers page, validated in a no-write dry run (jobs listed, all or most in the hospital's CMS state).
     "Aurora Charter Oak Hospital": ("aurora-behavioral-charter-oak", "CA"),   # 9, Covina CA
     "Aurora Vista del Mar Hospital": ("vista-del-mar-hospital", "CA"),   # 5, Ventura CA
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Desert Parkway Behavioral Healthcare Hospital": ("desert-parkway", "NV"),   # 5 rows, 5 in Las Vegas, NV (CMS 294013)
 }
 _WORKABLE_TYPES = {"full": "Full time", "part": "Part time", "contract": "Contract", "temporary": "Temporary"}
 
@@ -17320,6 +18801,540 @@ async def _workable_detail(session, job) -> bool:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+#  APPLICANTSTACK, JAZZHR, JOBAPS (added 2026-10-25, coverage stage 4).
+#  Three server-rendered boards used by hospitals that post nowhere we read.
+#  Each lists every opening on one page; each job page carries the whole
+#  posting (ApplicantStack and JazzHR as a JSON-LD JobPosting, JobAps as the
+#  bulletin HTML with its salary line), read by a detail pass on the shared
+#  budget framework (fair share per tenant, known bodies skipped, at most 2
+#  requests in flight per host).
+#    ApplicantStack  https://<slug>.applicantstack.com/x/openings
+#                    <table id="data-table"> rows: title link
+#                    /x/detail/<code>, Location "Greenville, MS", Department,
+#                    Job Type. JSON-LD hiringOrganization.name is the
+#                    tenant's site (Delta Health: "Delta Health System-The
+#                    Medical Center").
+#    JazzHR          https://<slug>.applytojob.com/apply
+#                    <li class="list-group-item"> cards: title link
+#                    /apply/<code>/<slug>, a fa-map-marker line "Bullhead
+#                    City, AZ", a fa-sitemap line (department).
+#    JobAps          https://www.jobapscloud.com/<board>/ (state boards)
+#                    table rows: JobTitle link sup/bulpreview.asp?R1=&R2=&R3=
+#                    (the recruitment number R1-R2-R3), Locs, Dept (CT: the
+#                    department; MD: the agency, "MDH Springfield Hospital
+#                    Center"), Salary (MD only), filing deadline. A state
+#                    board lists every agency, so each board keeps only the
+#                    rows its JOBAPS_SITES rule names (a hospital), and a row
+#                    is kept only once its hospital is known.
+# ══════════════════════════════════════════════════════════════════════════
+APPLICANTSTACK_ORGS = {
+    # Format: "System": (subdomain, default state[, the town of every row
+    # when the board has no Location column])
+    # Delta Health System (Greenville MS: The Medical Center). 63 openings on
+    # 10-25, 62 in Greenville; the one Clarksdale row is the oncology clinic
+    # (Medical Group), not Northwest Mississippi Regional.
+    "Delta Health System": ("deltaregional", "MS"),
+    # Nevada Regional Medical Center (Nevada MO; ex-Quorum, now
+    # independent): 55 openings on 10-25, every one "Nevada, Missouri".
+    "Nevada Regional Medical Center": ("nrmchealth", "MO"),
+    # West Calcasieu Cameron Hospital (Sulphur LA): 30 openings on 10-25;
+    # the location column is a site name, not a town (APPLICANTSTACK_PLACES).
+    "West Calcasieu Cameron Hospital": ("wcch", "LA"),
+    # 10-25 tenant discovery (the uncovered hospitals' own careers pages link
+    # these boards); counts are that day's openings.
+    "Ozark Health":                  ("ozarkhealth", "AR"),        # Clinton AR, 14
+    "Howard Memorial Hospital":      ("hmh", "AR"),                # Nashville AR, 9
+    "Bear Lake Memorial Hospital":   ("blmhospital", "ID"),        # Montpelier ID, 12 (salary column)
+    "Highland Hills Medical Center": ("highlandhillsmc", "MS"),    # Senatobia MS, 10
+    "Salem Regional Medical Center": ("salemregional", "OH"),      # Salem OH, 68 (55 in Salem)
+    "River Hospital":                ("riverhospital", "NY", "Alexandria Bay"),   # 21, no Location column, salary column
+}
+# The hospital and town a row is at, by tenant and the location column
+# (letters only, lower case): a town ("greenville") or a site name
+# ("hospitalmaincampus"). (hospital, town): "" keeps the system name / the
+# parsed town.
+APPLICANTSTACK_PLACES = {
+    "Delta Health System": {
+        "greenville": ("Delta Health System - The Medical Center", ""),
+    },
+    "West Calcasieu Cameron Hospital": {
+        "hospitalmaincampus": ("West Calcasieu Cameron Hospital", "Sulphur"),
+        # the board's other sites (its department column names them)
+        "dynamicwestsulphur": ("Dynamic Dimensions West", "Sulphur"),
+        "dynamiceastmossbluff": ("Dynamic Dimensions East", "Moss Bluff"),
+        "communityclinic": ("Community Clinic", "Sulphur"),
+    },
+}
+# A row a town rule would place at the hospital stays under the system name
+# when its department or title is a clinic or the medical group (Delta:
+# "DELTA HEALTH SYSTEM - THE MEDICAL GROUP", "WELLNESS CLINIC").
+_AS_NOT_HOSPITAL_RX = re.compile(r"\bMedical Group\b|\bClinic\b|\bPractice\b|\bPhysician Services\b", re.I)
+JAZZHR_ORGS = {
+    # Format: "System": (subdomain, default state)
+    # Exceptional Healthcare: Exceptional Community Hospitals (Bullhead City,
+    # Maricopa, Yuma AZ; Ardmore OK; Lubbock TX) and freestanding emergency
+    # centres in Texas. 83 openings on 10-25.
+    "Exceptional Healthcare": ("exceptionalhealthcareinc", "TX"),
+    # Perimeter Healthcare (behavioral hospitals). The 10-20 survey had it on
+    # Betterteam (perimeterhealthcare-2.betterteam.com, now behind a bot
+    # check); perimeterhealthcare.com/applytoday links this JazzHR board
+    # (49 openings on 10-25: Forrest City AR 10, Waynesville MO 9, West
+    # Memphis AR 6, Saint Robert MO 5, Springfield MO 5, Arlington TX 5,
+    # Jackson TN 4, Garland TX 3).
+    "Perimeter Healthcare": ("perimeterhealthcare", "TX"),
+    # 10-25 tenant discovery: Franklin Medical Center (Winnsboro LA), 25.
+    "Franklin Medical Center": ("franklinmedicalcenter", "LA"),
+}
+# Exceptional's hospital towns; a row in another town keeps the system name.
+JAZZHR_TOWN_FACILITY = {
+    "Exceptional Healthcare": {
+        ("bullheadcity", "AZ"): "Exceptional Community Hospital Bullhead City",
+        ("maricopa", "AZ"): "Exceptional Community Hospital Maricopa",
+        ("yuma", "AZ"): "Exceptional Community Hospital Yuma",
+        ("ardmore", "OK"): "Exceptional Community Hospital Ardmore",
+        ("lubbock", "TX"): "Exceptional Community Hospital Lubbock",
+    },
+    # One Perimeter hospital per town (CMS names); Forrest City, Waynesville
+    # and Saint Robert rows keep the system name (no Perimeter hospital in
+    # the CMS list there).
+    "Perimeter Healthcare": {
+        ("westmemphis", "AR"): "Perimeter Behavioral Hospital of West Memphis",
+        ("springfield", "MO"): "Perimeter Behavioral Hospital of Springfield",
+        ("arlington", "TX"): "Perimeter Behavioral Hospital of Arlington",
+        ("garland", "TX"): "Perimeter Behavioral Hospital of Dallas",
+        ("jackson", "TN"): "Perimeter Behavioral Center of Jackson",
+        ("kenner", "LA"): "Perimeter Behavioral Hospital of New Orleans",
+    },
+}
+JOBAPS_SITES = {
+    # Format: "System": (board, state, ((pattern on "dept | title", hospital, town), ...),
+    #                    ((pattern on the bulletin text, hospital, town), ...))
+    # The first rules are read off the list row; a row whose department is
+    # kept but whose hospital the list does not name is read from its
+    # bulletin (the second rules) and dropped when that names none.
+    # Maryland Department of Health psychiatric hospitals: the agency column
+    # names the hospital (10-25: Springfield 4, Spring Grove 2, Finan 1).
+    "Maryland Department of Health": ("MD", "MD", (
+        (r"^MDH Springfield Hospital Center", "Springfield Hospital Center", "Sykesville"),
+        (r"^MDH Spring Grove Hospital Center", "Spring Grove Hospital Center", "Catonsville"),
+        (r"^MDH Thomas B\.? Finan", "Thomas B. Finan Center", "Cumberland"),
+        (r"^MDH Eastern Shore Hospital Center", "Eastern Shore Hospital Center", "Cambridge"),
+    ), ()),
+    # Connecticut DMHAS: the department column says DMHAS only; the bulletin
+    # names the hospital ("... to join the Connecticut Valley Hospital
+    # (CVH)"). 10-25: 21 DMHAS rows, 10 in Middletown.
+    "Connecticut DMHAS": ("CT", "CT", (), (
+        (r"Connecticut Valley Hospital|\bCVH\b", "Connecticut Valley Hospital", "Middletown"),
+        (r"Connecticut Mental Health Center|\bCMHC\b", "Connecticut Mental Health Center", "New Haven"),
+        (r"Southwest Connecticut Mental Health System|\bSWCMHS\b", "Southwest Connecticut Mental Health System", "Bridgeport"),
+        (r"Albert J\.? Solnit", "Albert J. Solnit Children's Center - South Campus", "Middletown"),
+    )),
+}
+# Rows of the board a JOBAPS_SITES tenant reads at all (the department or
+# agency column), before any hospital rule.
+JOBAPS_DEPT = {
+    "Maryland Department of Health": re.compile(r"^MDH ", re.I),
+    "Connecticut DMHAS": re.compile(r"^Department of Mental Health & Addiction Services$|^Department of Children & Families$", re.I),
+}
+APPLICANTSTACK_DESC_MAX_PER_RUN = int(os.getenv("APPLICANTSTACK_DESC_MAX_PER_RUN", "300"))
+JAZZHR_DESC_MAX_PER_RUN = int(os.getenv("JAZZHR_DESC_MAX_PER_RUN", "300"))
+JOBAPS_DESC_MAX_PER_RUN = int(os.getenv("JOBAPS_DESC_MAX_PER_RUN", "200"))
+APPLICANTSTACK_DESC_BUDGET = _DescBudget(APPLICANTSTACK_DESC_MAX_PER_RUN)
+JAZZHR_DESC_BUDGET = _DescBudget(JAZZHR_DESC_MAX_PER_RUN)
+JOBAPS_DESC_BUDGET = _DescBudget(JOBAPS_DESC_MAX_PER_RUN)
+
+_AS_ROW_RX = re.compile(r'<tr class="(?:odd|even)row">(.*?)</tr>', re.S)
+_AS_TD_RX = re.compile(r"<td[^>]*>(.*?)</td>", re.S)
+# The posting key is a code (Delta "a2evjac0dyxa") or the tenant's own slug
+# (Salem Regional "outpatient-therapist-1").
+_AS_LINK_RX = re.compile(r'<a href="(https://[^"]+/x/detail/([A-Za-z0-9][A-Za-z0-9_-]*))"[^>]*>(.*?)</a>', re.S)
+_JZ_LINK_RX = re.compile(r'<a href="(https://[^"/]+\.applytojob\.com/apply/([A-Za-z0-9]+)/[^"]*)"[^>]*>(.*?)</a>', re.S)
+_JZ_LOC_RX = re.compile(r"<i class='fa fa-map-marker'></i>(.*?)</li>", re.S)
+_JZ_DEPT_RX = re.compile(r"<i class='fa fa-sitemap'></i>(.*?)</li>", re.S)
+_JA_ROW_RX = re.compile(r'<tr(?: class="(?:odd|even)")?>\s*<th scope="row">(.*?)</tr>', re.S)
+_JA_TITLE_RX = re.compile(r'<a href="([^"]*bulpreview\.asp\?[^"]*)" class="JobTitle"[^>]*>(.*?)</a>', re.S)
+_JA_CELL_RX = {k: re.compile(rf'<td class="{k}[^"]*">(.*?)</td>', re.S) for k in ("Locs", "Dept", "Salary")}
+_JA_NUM_RX = re.compile(r"R1=([^&]+)&(?:amp;)?R2=([^&]+)&(?:amp;)?R3=([^&\"']+)")
+
+
+# Evergreen "apply anyway" entries the boards list beside real openings
+# (Franklin Medical Center: "General Application - Nursing"); not postings.
+_NOT_AN_OPENING_RX = re.compile(r"^\s*general application\b|\btalent (?:community|pool|network)\b|"
+                                r"^\s*(?:submit|express)\s+(?:your\s+)?(?:resume|interest)\b", re.I)
+
+
+def _cell_text(fragment: str) -> str:
+    return re.sub(r"\s+", " ", _html_unescape(re.sub(r"<[^>]+>", " ", fragment or ""))).strip()
+
+
+def _town_key(city: str) -> str:
+    return re.sub(r"[^a-z]", "", (city or "").lower())
+
+
+_AS_HEAD_RX = re.compile(r"<thead>(.*?)</thead>", re.S)
+_AS_TH_RX = re.compile(r"<th[^>]*>(.*?)</th>", re.S)
+_AS_MONEY_RX = re.compile(r"^\$\s?([\d,]+(?:\.\d+)?)(?:\s*(?:-|to)\s*\$?\s?([\d,]+(?:\.\d+)?))?(?:\s*(?:/|per)\s*(?:hr|hour|year|yr))?\s*$", re.I)
+
+
+def _as_columns(html: str) -> dict:
+    """Column index by meaning, from the board's own header row (tenants
+    choose their columns: Delta Title|Location|Department|Job Type; Bear
+    Lake adds Salary Range; River Hospital has no Location column)."""
+    m = _AS_HEAD_RX.search(html or "")
+    heads = [_cell_text(h).lower() for h in _AS_TH_RX.findall(m.group(1))] if m else []
+    if not heads:
+        return {"location": 1, "department": 2, "type": 3}
+    cols = {}
+    for i, h in enumerate(heads):
+        key = ("location" if h.startswith("location") else "department" if h.startswith("department") else
+               "salary" if "salary" in h or h.startswith("pay") else "shift" if h.startswith("shift") else
+               "type" if h in ("job type", "status", "ft,pt,pd", "classification", "employment type") else "")
+        if key and key not in cols:
+            cols[key] = i
+    return cols
+
+
+def _as_wage(text: str):
+    """(lo, hi, unit) from a clean salary cell ("$19 - $21", "$250,000 -
+    $325,000", "$27.00 - $29.00"); None for prose ("Commensurate with
+    experience", "N/A")."""
+    m = _AS_MONEY_RX.match((text or "").strip())
+    if not m:
+        return None
+    lo = float(m.group(1).replace(",", ""))
+    hi = float(m.group(2).replace(",", "")) if m.group(2) else lo
+    return _wage_pair(lo, hi)
+
+
+def _parse_applicantstack(html: str, system: str, default_state: str, default_town: str = "") -> list[Job]:
+    jobs, seen = [], set()
+    sites = APPLICANTSTACK_PLACES.get(system, {})
+    cols = _as_columns(html)
+
+    def cell(cells, key):
+        i = cols.get(key)
+        return cells[i] if i is not None and i < len(cells) else ""
+
+    for row in _AS_ROW_RX.findall(html or ""):
+        m = _AS_LINK_RX.search(row)
+        if not m:
+            continue
+        url, code, title = m.group(1), m.group(2), _cell_text(m.group(3))
+        if not title or code in seen or _NOT_AN_OPENING_RX.search(title):
+            continue
+        cells = [_cell_text(c) for c in _AS_TD_RX.findall(row)]
+        loc, dept, jtype = cell(cells, "location"), cell(cells, "department"), cell(cells, "type")
+        city, st = parse_city_state(loc) if loc else (default_town, default_state)
+        site = sites.get(_town_key(city if st else loc))
+        if site and st and _AS_NOT_HOSPITAL_RX.search(f"{dept} {title}"):
+            site = None                                 # a clinic in the hospital's town
+        if not st:
+            city = ""                                   # a site name, not a town
+        if site and site[1]:
+            city = site[1]
+        st = st or default_state
+        shift = cell(cells, "shift")
+        sal = cell(cells, "salary")
+        seen.add(code)
+        job = Job(
+            title=title, hospital_system=system, hospital_name=(site[0] if site and site[0] else system),
+            city=city, state=st, location=f"{city}, {st}".strip(", "),
+            specialty=dept.title() if dept.isupper() and " " in dept else dept,   # "2 SOUTH", not "RFHC"
+            job_type=" · ".join(x for x in (jtype, shift) if x),
+            url=url, job_id=code, posted_date="",
+            description=f"Pay: {sal}" if sal and re.search(r"\d", sal) else "", ats_platform="ApplicantStack",
+        )
+        pay = _as_wage(sal)
+        if pay:
+            job.wage_min, job.wage_max, job.wage_unit = pay
+        jobs.append(job)
+    return jobs
+
+
+def _parse_jazzhr(html: str, system: str, default_state: str) -> list[Job]:
+    jobs, seen = [], set()
+    towns = JAZZHR_TOWN_FACILITY.get(system, {})
+    for item in (html or "").split('<li class="list-group-item">')[1:]:
+        m = _JZ_LINK_RX.search(item)
+        if not m:
+            continue
+        url, code, title = m.group(1), m.group(2), _cell_text(m.group(3))
+        if not title or code in seen or _NOT_AN_OPENING_RX.search(title):
+            continue
+        lm, dm = _JZ_LOC_RX.search(item), _JZ_DEPT_RX.search(item)
+        loc = _cell_text(lm.group(1)) if lm else ""
+        city, st = parse_city_state(loc)
+        if city.isupper():
+            city = city.title()                       # "YUMA, AZ", "DALLAS, TX"
+        st = st or default_state
+        seen.add(code)
+        jobs.append(Job(
+            title=title, hospital_system=system,
+            hospital_name=towns.get((_town_key(city), st), system),
+            city=city, state=st, location=f"{city}, {st}".strip(", "),
+            specialty=_cell_text(dm.group(1)) if dm else "", job_type="",
+            url=url, job_id=code, posted_date="", description="", ats_platform="JazzHR",
+        ))
+    return jobs
+
+
+_JA_SECTION_RX = re.compile(r'id="EmpDiv\d+"[^>]*>(.*?)</h2>', re.S)
+# Sections of a board the public cannot apply to (CT "Open Only to Statewide
+# Employees", "Open Only to Agency Employees"; MD "Current State Employees")
+# and internships.
+_JA_CLOSED_SECTION_RX = re.compile(r"\bOnly\b|State Employees|Agency Employees|Internship", re.I)
+
+
+def _jobaps_public(html: str) -> str:
+    """The board's page without its internal-only and internship sections."""
+    page = html or ""
+    heads = list(_JA_SECTION_RX.finditer(page))
+    if not heads:
+        return page
+    keep = [page[:heads[0].start()]]
+    for n, m in enumerate(heads):
+        end = heads[n + 1].start() if n + 1 < len(heads) else len(page)
+        if not _JA_CLOSED_SECTION_RX.search(_cell_text(m.group(1))):
+            keep.append(page[m.start():end])
+    return "".join(keep)
+
+
+def _jobaps_rules(rules) -> tuple:
+    return tuple((re.compile(rx, re.I), name, town) for rx, name, town in rules)
+
+
+def _parse_jobaps(html: str, system: str, cfg: tuple) -> list[Job]:
+    """Rows of a JobAps board the tenant keeps (JOBAPS_DEPT), with the
+    hospital and town when the list row names them (JOBAPS_SITES rules);
+    rows still without a hospital are marked for the bulletin read
+    (hospital_name "")."""
+    board, state, row_rules, _body_rules = cfg
+    keep = JOBAPS_DEPT.get(system)
+    rules = _jobaps_rules(row_rules)
+    jobs, seen = [], set()
+    for row in _JA_ROW_RX.findall(_jobaps_public(html)):
+        tm = _JA_TITLE_RX.search(row)
+        if not tm:
+            continue
+        href = _html_unescape(tm.group(1))
+        nm = _JA_NUM_RX.search(href)
+        if not nm:
+            continue
+        num = "-".join(nm.groups())
+        title = _cell_text(re.sub(r"<br\s*/?>", " ", tm.group(2)))
+        dm = _JA_CELL_RX["Dept"].search(row)
+        dept = _cell_text(dm.group(1)) if dm else ""
+        if not title or num in seen or (keep and not keep.search(dept)):
+            continue
+        lm = _JA_CELL_RX["Locs"].search(row)
+        locs = [t for t in (_cell_text(x) for x in re.split(r"<br\s*/?>|</div>", lm.group(1))) if t] if lm else []
+        hospital, town = "", ""
+        for rx, name, t in rules:
+            if rx.search(f"{dept} | {title}"):
+                hospital, town = name, t
+                break
+        city = town
+        if not city and len(locs) == 1:
+            c, s = parse_city_state(locs[0])
+            city = c if s == state else ""
+        sm = _JA_CELL_RX["Salary"].search(row)
+        sal = _cell_text(sm.group(1)) if sm else ""
+        url = href if href.startswith("http") else f"https://www.jobapscloud.com/{board}/{href.lstrip('/')}"
+        seen.add(num)
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=hospital,
+            city=city, state=state, location=f"{city}, {state}".strip(", "),
+            specialty="", job_type="", url=url, job_id=num, posted_date="",
+            description=f"Salary: {sal}" if sal else "", ats_platform="JobAps",
+        ))
+    return jobs
+
+
+def jobaps_bulletin(html: str) -> tuple[str, str]:
+    """(body, header text) of a JobAps bulletin: the JobBulletinBody block
+    (to the apply panel or the footer) and the header above it (recruitment
+    number, location, salary, dates). The body gains the header's salary
+    line, the one figure the posting's own text often leaves out."""
+    page = html or ""
+    i = page.find('id="JobBulletinBody"')
+    if i < 0:
+        return "", ""
+    j = page.find('id="JobBulletin"')
+    header = _cell_text(page[j:i]) if 0 <= j < i else ""
+    end = len(page)
+    for mark in ('class="ApplyPanelDiv"', 'id="footer', "</body>"):
+        k = page.find(mark, i)
+        if 0 <= k < end:
+            end = page.rfind("<", i, k) if mark != "</body>" else k   # the tag that carries the mark
+    body = strip_html(page[page.find(">", i) + 1:end]).strip()
+    m = re.search(r"\bSalary\s+(\$[^A-Za-z]*?\d[^A-Z]*?(?:year|hour|annually|month|week|bi-?weekly)[^A-Z]*?)"
+                  r"(?=\s+(?:\(|Job Type|Employment Type|Close Date|Filing Deadline|HR Analyst|Work Location|Go Back))",
+                  header)
+    if m and body:
+        body = f"{body[:_FACTS_WINDOW - 300].rstrip()}\n\nSalary: {m.group(1).strip()}"
+    return body, header
+
+
+async def _board_get(session, url: str, label: str, system: str, timeout: int = 40) -> tuple[int, str]:
+    """(status, page) of one board page; (0, "") on an exception. The bytes
+    are read as UTF-8, else Windows-1252: the JobAps pages send no charset
+    and their non-breaking spaces came out as "Â " when guessed."""
+    try:
+        async with req(session, "get", url, headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=timeout)) as r:
+            if r.status != 200:
+                return r.status, ""
+            raw = await r.read()
+    except Exception as e:
+        logger.info(f"{label} {system}: {url}: {type(e).__name__}: {e}")
+        return 0, ""
+    try:
+        return 200, raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return 200, raw.decode("cp1252", errors="replace")
+
+
+async def scrape_applicantstack(session, system: str, cfg: tuple) -> list[Job]:
+    slug, default_state, default_town = (tuple(cfg) + ("",))[:3]
+    status, html = await _board_get(session, f"https://{slug}.applicantstack.com/x/openings", "ApplicantStack", system)
+    if status != 200:
+        logger.info(f"ApplicantStack {system}: HTTP {status}")
+        return []
+    jobs = _parse_applicantstack(html, system, default_state, default_town)
+    logger.info(f"  ApplicantStack {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def scrape_jazzhr(session, system: str, cfg: tuple) -> list[Job]:
+    slug, default_state = cfg
+    status, html = await _board_get(session, f"https://{slug}.applytojob.com/apply", "JazzHR", system)
+    if status != 200:
+        logger.info(f"JazzHR {system}: HTTP {status}")
+        return []
+    jobs = _parse_jazzhr(html, system, default_state)
+    logger.info(f"  JazzHR {system}: {len(jobs)} jobs")
+    return jobs
+
+
+async def scrape_jobaps(session, system: str, cfg: tuple) -> list[Job]:
+    """The board's one list page, filtered to the tenant's rows. Rows whose
+    hospital the list does not name are read from their bulletins here (a
+    state board keeps few such rows: CT DMHAS 21 on 10-25), and dropped when
+    the bulletin names no configured hospital."""
+    board, state, _row_rules, body_rules = cfg
+    status, html = await _board_get(session, f"https://www.jobapscloud.com/{board}/", "JobAps", system, timeout=60)
+    if status != 200:
+        logger.info(f"JobAps {system}: HTTP {status}")
+        return []
+    rows = _parse_jobaps(html, system, cfg)
+    rules = _jobaps_rules(body_rules)
+    out, unread, dropped = [], 0, 0
+    for job in rows:
+        if job.hospital_name:
+            out.append(job)
+            continue
+        if not rules:
+            dropped += 1
+            continue
+        await jitter()
+        st, page = await _board_get(session, job.url, "JobAps", system)
+        body, header = jobaps_bulletin(page) if st == 200 else ("", "")
+        if not body:
+            unread += 1
+            continue
+        # The bulletin must name exactly one configured hospital (a
+        # statewide posting lists several), in the town the list row gives.
+        named = {(name, town) for rx, name, town in rules if rx.search(body[:4000])}
+        hit = next(iter(named)) if len(named) == 1 else None
+        if hit and job.city and _town_key(job.city) != _town_key(hit[1]):
+            hit = None
+        if not hit:
+            dropped += 1
+            continue
+        job.hospital_name, job.city = hit
+        job.location = f"{job.city}, {state}"
+        _apply_body(job, body)
+        out.append(job)
+    if unread:
+        report_partial(system)
+    logger.info(f"  JobAps {system}: {len(out)} jobs ({len(rows)} rows of its departments, "
+                f"{dropped} at no configured hospital, {unread} bulletins unread)")
+    return out
+
+
+async def _applicantstack_detail(session, job) -> bool:
+    """ApplicantStack job page -> JSON-LD body, type, date. The posting's
+    hiringOrganization is the tenant's site name on every page (Delta's
+    clinic postings name the hospital too), so it does not move a row."""
+    listed = (job.description or "").strip()
+    html = await _fetch_html(session, job.url, timeout=30)
+    posting = _jobposting_from_html(html)
+    ok = _apply_posting(job, posting) if posting else False
+    if ok and listed.startswith("Pay: ") and listed not in job.description:
+        job.description = f"{job.description}\n\n{listed}"      # the board's salary column
+    return ok
+
+
+async def _jazzhr_detail(session, job) -> bool:
+    html = await _fetch_html(session, job.url, timeout=30)
+    posting = _jobposting_from_html(html)
+    return _apply_posting(job, posting) if posting else False
+
+
+async def _jobaps_detail(session, job) -> bool:
+    _, html = await _board_get(session, job.url, "JobAps", job.hospital_system)
+    body, _ = jobaps_bulletin(html)
+    return _apply_body(job, body)
+
+
+async def _run_small_board(session, label: str, orgs: dict, scrape, budget, detail) -> list[Job]:
+    """List every tenant (at most HOST_CONCURRENCY at a time per host), then
+    one detail pass per tenant on `budget`, 2 requests in flight per host."""
+    if not orgs:
+        return []
+    logger.info(f"{label}: scraping {len(orgs)} boards...")
+    if DETAIL_FETCH:
+        budget.expect(orgs)
+    host = {"ApplicantStack": lambda c: f"{c[0]}.applicantstack.com",
+            "JazzHR": lambda c: f"{c[0]}.applytojob.com",
+            "JobAps": lambda c: "www.jobapscloud.com"}[label]
+    results = await _gather_by_host(session, list(orgs.items()), scrape, host)
+    listed = {s: (r if isinstance(r, list) else []) for s, r in zip(orgs, results)}
+    for s, r in zip(orgs, results):
+        if isinstance(r, Exception):
+            logger.info(f"  {label} {s}: ERROR {r}")
+    gated = _host_gated(lambda j: detail(session, j), total=4, per_host=2)
+
+    async def _details(system, rows):
+        if DETAIL_FETCH and rows:
+            try:
+                await _detail_pass(session, system, rows, budget, gated, label)
+            except Exception as e:
+                logger.info(f"{label} {system}: detail pass failed ({e}); listed rows kept")
+
+    await asyncio.gather(*[_tenant_reporting(budget, s, _details(s, listed[s])) for s in orgs],
+                         return_exceptions=True)
+    jobs = [j for s in orgs for j in listed[s]]
+    logger.info(f"  {label} total: {len(jobs):,} jobs")
+    return jobs
+
+
+async def run_applicantstack(session) -> list[Job]:
+    return await _run_small_board(session, "ApplicantStack", APPLICANTSTACK_ORGS, scrape_applicantstack,
+                                  APPLICANTSTACK_DESC_BUDGET, _applicantstack_detail)
+
+
+async def run_jazzhr(session) -> list[Job]:
+    return await _run_small_board(session, "JazzHR", JAZZHR_ORGS, scrape_jazzhr,
+                                  JAZZHR_DESC_BUDGET, _jazzhr_detail)
+
+
+async def run_jobaps(session) -> list[Job]:
+    return await _run_small_board(session, "JobAps", JOBAPS_SITES, scrape_jobaps,
+                                  JOBAPS_DESC_BUDGET, _jobaps_detail)
+
+
+# ══════════════════════════════════════════════════════════════════════════
 #  JOBVITE ENGAGE (Talemetry) CAREER SITES (added 2026-09-25, push5/systems).
 #  careers.<system>.org answers GET /jobs/search.json?page=N&per_page=100 with
 #  {"current_page", "per_page", "total_entries", "entries": [{"id", "permalink",
@@ -17349,6 +19364,10 @@ TALEMETRY_SITES = {
     # CMS names (SGMC Health, SGMC Health Lanier, SGMC Berrien Campus). 280 in
     # that day's dry run (Valdosta 247, Lakeland 22, Nashville 11).
     "SGMC Health": "https://careers.sgmc.org",
+    # 2026-10-25 coverage stage 2: careers.evergreenhealth.com (Jobvite Engage),
+    # 242 rows that day, 236 with bodies. Its location names are towns
+    # ("Kirkland, Washington"), so TALEMETRY_FACILITY gives the system name.
+    "EvergreenHealth": "https://careers.evergreenhealth.com",
 }
 
 # 2026-10-20: a site whose location names are campus or building names
@@ -17360,6 +19379,11 @@ TALEMETRY_FACILITY: dict[str, dict[str, str]] = {
         "main campus": "SGMC Health",
         "lanier campus": "SGMC Health Lanier",
         "berrien campus": "SGMC Berrien Campus",
+    },
+    # 2026-10-25: EvergreenHealth's location names are "Town, Washington";
+    # any name not listed here takes the system name as well.
+    "EvergreenHealth": {
+        "kirkland, washington": "EvergreenHealth",
     },
 }
 # 2026-10-14 (fix 11): the 10-14 run listed Penn Medicine 400 of 1,770,
@@ -17743,6 +19767,24 @@ TALEO_BE_ORGS = {
     # items that day; locationState reads "US-AZ" on most items and "AZ" on
     # the rest (_parse_taleo_be_rss strips the country prefix).
     "TMC Healthcare": ("https://phe.tbe.taleo.net/phe01", "TMCAZ", "38", "AZ"),
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "Henry Mayo Newhall Hospital": ("https://phg.tbe.taleo.net/phg04", "HENRYMAYO", "40", "CA"),   # 81 rows, 0 in Valencia, CA, 81 with no town (location default) (CMS 050624)
+    # 2026-10-25 (coverage stage 4 tenant discovery): Blanchard Valley Health
+    # System (Findlay OH; Bluffton Hospital), linked from bvhealthsystem.org/
+    # careers. 359 RSS items that day (Findlay 348, Bluffton 8); the
+    # department names the site (TALEO_BE_FACILITY).
+    "Blanchard Valley Health System": ("https://phg.tbe.taleo.net/phg02", "BVHS", "40", "OH"),
+}
+# The hospital a TaleoBE row is at, by tenant: (pattern on the department,
+# hospital). Rows nothing matches keep the system name (BVHS: Birchaven
+# nursing home, BVMP medical practices, home health).
+TALEO_BE_FACILITY = {
+    "Blanchard Valley Health System": (
+        (re.compile(r"^BLUFFTON\s+-", re.I), "Bluffton Hospital"),
+        (re.compile(r"^BVH\s+-", re.I), "Blanchard Valley Hospital"),
+    ),
 }
 _TBE_NS = {"taleo": "urn:TBERss"}
 
@@ -17791,8 +19833,10 @@ def _parse_taleo_be_rss(xml_text: str, system: str, base: str, org: str, cws: st
         except Exception:
             pass
         desc = t("html-description", ns=True) or t("description")
+        dept = t("department", ns=True)
+        hospital = next((name for rx, name in TALEO_BE_FACILITY.get(system, ()) if rx.search(dept)), system)
         jobs.append(Job(
-            title=title, hospital_system=system, hospital_name=system,
+            title=title, hospital_system=system, hospital_name=hospital,
             city=city, state=(st or default_state).upper(),
             location=f"{city}, {(st or default_state).upper()}".strip(", "),
             specialty=t("department", ns=True), job_type="",
@@ -17859,6 +19903,11 @@ HCTS_PORTALS = {
     # AHRQ label at upsert time (HOSPITAL_SYSTEM_ALIASES).
     "Samaritan Health Services":              ("samhealthjobs", "OR"),
     "Samaritan Health Services (Clinicians)": ("samhealthclinicianjobs", "OR"),
+    # ── 2026-10-25 coverage stage 3 (fingerprinter v2): independent CMS hospitals whose own careers page
+    # links this board; each tenant answered a live list check and a no-write dry run through this adapter
+    # (comment: rows, rows in the hospital's own town, town).
+    "WhidbeyHealth Medical Center": ("whidbeyhealthcareers", "WA"),   # 120 rows, 99 in Coupeville, WA (CMS 501339)
+    "Froedtert South": ("froedertsouthcareers", "WI"),   # 335 rows, 58 in Kenosha, WI (CMS 520021)
 }
 HCTS_MAX_PAGES = int(os.getenv("HCTS_MAX_PAGES", "40"))
 _HCTS_ITEM_RE = re.compile(r'class="jobs-section__item[\s"]')
@@ -23838,8 +25887,19 @@ def normalize_job(j: Job) -> dict:
     if _ADDRESS_NAME_RE.match((d.get("hospital_name") or "").strip()) and (d.get("hospital_system") or "").strip():
         d["hospital_name"] = d["hospital_system"].strip()
 
+    # 2026-10-25 coverage stage 2: a campus label as the hospital's name
+    # (HOSPITAL_NAME_FIX) and a neighbourhood as the town (SYSTEM_CITY_RENAME).
+    _fix = HOSPITAL_NAME_FIX.get((d.get("hospital_system") or "").strip())
+    if _fix:
+        _fixed = _fix.get((d.get("hospital_name") or "").strip().lower())
+        if _fixed:
+            d["hospital_name"] = _fixed
+
     # Force override — always wins regardless of scraped data
     _sys_key = (d.get("hospital_system") or "").strip().lower()
+    _ren = SYSTEM_CITY_RENAME.get(_sys_key)
+    if _ren and city.strip().lower() in _ren:
+        city = _ren[city.strip().lower()]
     if _sys_key in FORCE_LOCATION_OVERRIDE:
         city, state = FORCE_LOCATION_OVERRIDE[_sys_key]
 
@@ -28424,6 +30484,9 @@ async def run_all() -> list[dict]:
             run_paycor(proxy_session),
             run_paylocity(proxy_session),  # Paylocity pageData boards: White Rock Medical Center (added 2026-09-10)
             run_workable(proxy_session),   # Workable v3 accounts API: Huntsville Memorial (added 2026-09-10)
+            run_applicantstack(proxy_session),  # ApplicantStack openings table: Delta Health (added 2026-10-25)
+            run_jazzhr(proxy_session),          # JazzHR applytojob board: Exceptional Healthcare (added 2026-10-25)
+            run_jobaps(proxy_session),          # JobAps state boards: MD and CT state psychiatric hospitals (added 2026-10-25)
             run_talemetry(proxy_session),  # Jobvite Engage (Talemetry) search.json: UCHealth, PeaceHealth, Penn Medicine (added 2026-09-25)
             run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
             run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)

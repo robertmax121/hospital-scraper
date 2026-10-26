@@ -128,7 +128,8 @@ def test_bullet_location_takes_the_town_after_the_state():
     ("Wellstar Health", "AU Medical Center, Inc.", ("AU Medical Center", ""), (None, "Augusta", "GA")),
     ("Wellstar Health", "1800 Parkway Place", ("Place", ""), (None, "Marietta", "GA")),
     ("Wellstar Health (Providers)", "Cobb Hospital", ("Cobb Hospital", ""), (None, "Austell", "GA")),
-    ("Summit BHC", "Peak View Behavioral Health", ("Peak View Behavioral Health", ""), (None, "Colorado Springs", "CO")),
+    # 2026-10-25 coverage stage 2: a Summit site that is a CMS hospital takes its own name.
+    ("Summit BHC", "Peak View Behavioral Health", ("Peak View Behavioral Health", ""), ("Peak View Behavioral Health", "Colorado Springs", "CO")),
     ("Summit BHC", "The Farley Center", ("The Farley Center", ""), (None, "Williamsburg", "VA")),
     ("Summit BHC", "Fair Oaks Recovery Center", ("Fair Oaks Recovery Center", ""), (None, "Sacramento", "CA")),
     ("NewYork-Presbyterian", "NYP/Hudson Valley", ("NYP/Hudson Valley", ""), (None, "Cortlandt Manor", "NY")),

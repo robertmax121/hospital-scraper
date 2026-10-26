@@ -107,7 +107,9 @@ def test_scrape_oracle_fills_hidden_rows_from_the_fixture(monkeypatch):
 def test_erym_is_mcleod_health():
     assert scraper.ORACLE_ORGS["McLeod Health"] == ("https://erym.fa.us6.oraclecloud.com", "CX_1")
     assert "EvergreenHealth" not in scraper.ORACLE_ORGS
-    assert "EvergreenHealth" not in scraper.configured_feed_map()
+    # 2026-10-25 coverage stage 2: EvergreenHealth's own board (Jobvite Engage,
+    # careers.evergreenhealth.com) is configured; the McLeod tenant stays McLeod.
+    assert scraper.configured_feed_map().get("EvergreenHealth") == {"TALEMETRY_SITES"}
     assert "EvergreenHealth" not in scraper.HOSPITAL_SYSTEM_ALIASES
     assert "EvergreenHealth" not in scraper.HOSPITAL_SYSTEM_ALIASES.values()
     hosts = [v[0] for v in scraper.ORACLE_ORGS.values()]

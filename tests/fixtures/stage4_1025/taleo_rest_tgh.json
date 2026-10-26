@@ -1,0 +1,524 @@
+{
+ "requisitionList": [
+  {
+   "hotJob": false,
+   "addedToJobCart": false,
+   "draft": false,
+   "alreadyAppliedOn": false,
+   "toReApply": false,
+   "jobId": "686139",
+   "contestNo": "2600045W",
+   "column": [
+    "Clinical Nurse - Labor & Delivery ",
+    "[\"United States-Florida-Tampa\"]",
+    "Oct 25, 2026"
+   ],
+   "linkedColumn": 0,
+   "locationsColumns": [
+    1
+   ]
+  },
+  {
+   "hotJob": false,
+   "addedToJobCart": false,
+   "draft": false,
+   "alreadyAppliedOn": false,
+   "toReApply": false,
+   "jobId": "685210",
+   "contestNo": "260003RN",
+   "column": [
+    "Operating Room Clinician - Labor and Delivery",
+    "[\"United States-Florida-Tampa\"]",
+    "Oct 25, 2026"
+   ],
+   "linkedColumn": 0,
+   "locationsColumns": [
+    1
+   ]
+  },
+  {
+   "hotJob": false,
+   "addedToJobCart": false,
+   "draft": false,
+   "alreadyAppliedOn": false,
+   "toReApply": false,
+   "jobId": "686002",
+   "contestNo": "2600043U",
+   "column": [
+    "Nursing Leader - Rapid Response Team",
+    "[\"United States-Florida-Tampa\"]",
+    "Oct 25, 2026"
+   ],
+   "linkedColumn": 0,
+   "locationsColumns": [
+    1
+   ]
+  }
+ ],
+ "facetResults": [
+  {
+   "id": "POSTING_DATE",
+   "facetValueResults": [
+    {
+     "id": "1",
+     "text": "Today",
+     "quantity": ""
+    },
+    {
+     "id": "2",
+     "text": "Yesterday",
+     "quantity": ""
+    },
+    {
+     "id": "3",
+     "text": "Last 7 Days",
+     "quantity": ""
+    },
+    {
+     "id": "4",
+     "text": "Last 14 Days",
+     "quantity": ""
+    },
+    {
+     "id": "5",
+     "text": "Last 21 Days",
+     "quantity": ""
+    },
+    {
+     "id": "6",
+     "text": "Last 28 Days",
+     "quantity": ""
+    }
+   ]
+  },
+  {
+   "id": "ORGANIZATION",
+   "facetValueResults": [
+    {
+     "id": "4200021972",
+     "text": "Florida Health Sciences Center Tampa General Hospital",
+     "quantity": "383",
+     "level": 2
+    },
+    {
+     "id": "60100021972",
+     "text": "Tampa General Hospital-Hernando",
+     "quantity": "100",
+     "level": 2
+    },
+    {
+     "id": "12100021972",
+     "text": "InterHealth",
+     "quantity": "70",
+     "level": 2
+    },
+    {
+     "id": "14100021972",
+     "text": "Academic Medical Group Inc",
+     "quantity": "68",
+     "level": 2
+    },
+    {
+     "id": "58100021972",
+     "text": "Tampa General Hospital-Citrus",
+     "quantity": "58",
+     "level": 2
+    },
+    {
+     "id": "66100021972",
+     "text": "TGH Imaging",
+     "quantity": "24",
+     "level": 2
+    },
+    {
+     "id": "4100021972",
+     "text": "Tampa General Medical Group",
+     "quantity": "15",
+     "level": 2
+    },
+    {
+     "id": "6100021972",
+     "text": "House of Coffee",
+     "quantity": "1",
+     "level": 2
+    }
+   ],
+   "levelList": [
+    {
+     "level": 1,
+     "name": "Holding Company"
+    },
+    {
+     "level": 2,
+     "name": "Company"
+    },
+    {
+     "level": 3,
+     "name": "Business Unit"
+    }
+   ]
+  },
+  {
+   "id": "JOB_TYPE",
+   "facetValueResults": [
+    {
+     "id": "3",
+     "text": "On Site",
+     "quantity": "675"
+    },
+    {
+     "id": "8",
+     "text": "Hybrid Remote",
+     "quantity": "36"
+    },
+    {
+     "id": "4",
+     "text": "Remote",
+     "quantity": "2"
+    }
+   ]
+  },
+  {
+   "id": "LOCATION",
+   "facetValueResults": [
+    {
+     "id": "6200120417",
+     "text": "Tampa",
+     "quantity": "490",
+     "level": 3
+    },
+    {
+     "id": "12200021972",
+     "text": "Brooksville",
+     "quantity": "84",
+     "level": 3
+    },
+    {
+     "id": "76300021972",
+     "text": "Crystal River",
+     "quantity": "58",
+     "level": 3
+    },
+    {
+     "id": "76700021972",
+     "text": "Spring Hill",
+     "quantity": "55",
+     "level": 3
+    },
+    {
+     "id": "42100021972",
+     "text": "St. Petersburg",
+     "quantity": "5",
+     "level": 3
+    },
+    {
+     "id": "6400120417",
+     "text": "Brandon",
+     "quantity": "5",
+     "level": 3
+    },
+    {
+     "id": "6700120417",
+     "text": "Wesley Chapel",
+     "quantity": "5",
+     "level": 3
+    },
+    {
+     "id": "76500021972",
+     "text": "Hernando",
+     "quantity": "5",
+     "level": 3
+    },
+    {
+     "id": "224400021972",
+     "text": "Boca Grande",
+     "quantity": "4",
+     "level": 3
+    },
+    {
+     "id": "40100021972",
+     "text": "Valrico",
+     "quantity": "4",
+     "level": 3
+    },
+    {
+     "id": "188300021972",
+     "text": "Lutz",
+     "quantity": "3",
+     "level": 3
+    },
+    {
+     "id": "6500120417",
+     "text": "Sun City Center",
+     "quantity": "3",
+     "level": 3
+    },
+    {
+     "id": "176300021972",
+     "text": "Wimauma",
+     "quantity": "2",
+     "level": 3
+    },
+    {
+     "id": "190300021972",
+     "text": "Palm Beach Gardens",
+     "quantity": "2",
+     "level": 3
+    },
+    {
+     "id": "200500021972",
+     "text": "North Palm Beach",
+     "quantity": "2",
+     "level": 3
+    },
+    {
+     "id": "46200021972",
+     "text": "Seminole",
+     "quantity": "2",
+     "level": 3
+    },
+    {
+     "id": "48300021972",
+     "text": "Pinellas Park",
+     "quantity": "2",
+     "level": 3
+    },
+    {
+     "id": "200300021972",
+     "text": "Bayonet Point",
+     "quantity": "1",
+     "level": 3
+    },
+    {
+     "id": "200600021972",
+     "text": "Oldsmar",
+     "quantity": "1",
+     "level": 3
+    },
+    {
+     "id": "54300021972",
+     "text": "West Palm Beach",
+     "quantity": "1",
+     "level": 3
+    }
+   ],
+   "levelList": [
+    {
+     "level": 1,
+     "name": "Country"
+    },
+    {
+     "level": 2,
+     "name": "State/Province"
+    },
+    {
+     "level": 3,
+     "name": "City"
+    },
+    {
+     "level": 4,
+     "name": "Work Location"
+    }
+   ]
+  },
+  {
+   "id": "JOB_FIELD",
+   "facetValueResults": [
+    {
+     "id": "3900120417",
+     "text": "Nursing (LPNs, RNs)",
+     "quantity": "249",
+     "level": 1
+    },
+    {
+     "id": "5100120417",
+     "text": "Radiology/Imaging Services",
+     "quantity": "90",
+     "level": 1
+    },
+    {
+     "id": "4100120417",
+     "text": "Nursing (Technical/Clerical)",
+     "quantity": "85",
+     "level": 1
+    },
+    {
+     "id": "4800120417",
+     "text": "Pharmacy",
+     "quantity": "43",
+     "level": 1
+    },
+    {
+     "id": "4000120417",
+     "text": "Advance Practice Provider",
+     "quantity": "32",
+     "level": 1
+    },
+    {
+     "id": "5200120417",
+     "text": "Rehabilitative Services",
+     "quantity": "26",
+     "level": 1
+    },
+    {
+     "id": "4600120417",
+     "text": "Patient Financial Services",
+     "quantity": "23",
+     "level": 1
+    },
+    {
+     "id": "42100021972",
+     "text": "Surgical Services",
+     "quantity": "22",
+     "level": 1
+    },
+    {
+     "id": "3600120417",
+     "text": "Laboratory Services",
+     "quantity": "20",
+     "level": 1
+    },
+    {
+     "id": "5300120417",
+     "text": "Respiratory",
+     "quantity": "20",
+     "level": 1
+    },
+    {
+     "id": "4900120417",
+     "text": "Physicians",
+     "quantity": "19",
+     "level": 1
+    },
+    {
+     "id": "5600120417",
+     "text": "Social Work",
+     "quantity": "12",
+     "level": 1
+    },
+    {
+     "id": "5500120417",
+     "text": "Safety and Security",
+     "quantity": "9",
+     "level": 1
+    },
+    {
+     "id": "12100021972",
+     "text": "Ambulatory",
+     "quantity": "8",
+     "level": 1
+    },
+    {
+     "id": "2500120417",
+     "text": "Case Management",
+     "quantity": "7",
+     "level": 1
+    },
+    {
+     "id": "4200120417",
+     "text": "Nutrition/Food services",
+     "quantity": "6",
+     "level": 1
+    },
+    {
+     "id": "4300120417",
+     "text": "Office/Administrative/Clerical",
+     "quantity": "6",
+     "level": 1
+    },
+    {
+     "id": "2400120417",
+     "text": "Cardiovascular Services (Non-RN)",
+     "quantity": "4",
+     "level": 1
+    },
+    {
+     "id": "2700120417",
+     "text": "Education & Medical Education",
+     "quantity": "4",
+     "level": 1
+    },
+    {
+     "id": "3000120417",
+     "text": "Facilities Management",
+     "quantity": "4",
+     "level": 1
+    }
+   ],
+   "levelList": [
+    {
+     "level": 1,
+     "name": "Function"
+    }
+   ]
+  },
+  {
+   "id": "JOB_SCHEDULE",
+   "facetValueResults": [
+    {
+     "id": "1",
+     "text": "Full-time",
+     "quantity": "536"
+    },
+    {
+     "id": "4",
+     "text": "Per Diem/Pool",
+     "quantity": "44"
+    },
+    {
+     "id": "2",
+     "text": "Part-time",
+     "quantity": "34"
+    }
+   ]
+  },
+  {
+   "id": "JOB_SHIFT",
+   "facetValueResults": [
+    {
+     "id": "1",
+     "text": "Day Job",
+     "quantity": "484"
+    },
+    {
+     "id": "3",
+     "text": "Night Job",
+     "quantity": "165"
+    },
+    {
+     "id": "2",
+     "text": "Evening Job",
+     "quantity": "36"
+    },
+    {
+     "id": "5",
+     "text": "Variable",
+     "quantity": "20"
+    },
+    {
+     "id": "7",
+     "text": "Weekend",
+     "quantity": "12"
+    }
+   ]
+  },
+  {
+   "id": "JOB_LOCALE",
+   "facetValueResults": [
+    {
+     "id": "en",
+     "text": "English (719)",
+     "quantity": "719"
+    }
+   ]
+  }
+ ],
+ "pagingData": {
+  "currentPageNo": 1,
+  "pageSize": 25,
+  "totalCount": 719
+ },
+ "queryString": "f=null&s=3|D&a=null&multiline=false",
+ "careerSectionUnAvailable": false,
+ "supportedLanguages": []
+}
