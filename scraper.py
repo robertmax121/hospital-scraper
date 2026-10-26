@@ -6543,7 +6543,10 @@ def _wd_state_first(text: str) -> tuple[str, str]:
         return "", ""
     st = m.group(1)
     words = []
-    for w in re.split(r"[-\s]+", m.group(2)):
+    # Review 2026-10-27: the town ends at the first comma; Elevance's
+    # locationsText puts the street after one ("AL-HUNTSVILLE, 900 BOB
+    # WALLACE AVE SW, STE 122").
+    for w in re.split(r"[-\s]+", m.group(2).split(",", 1)[0]):
         if not w or re.search(r"\d", w):
             break
         words.append(w)
@@ -7360,8 +7363,16 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         _city = ""   # 2026-10-12: "2 Locations" is never a town, on any tenant
                     if system in WD_CITY_SPACE_STATE:
                         _city, _state = _wd_city_space_state(loc, _city, _state)
-                    if system in WD_STATE_FIRST and not _city:
+                    if system in WD_STATE_FIRST and (not _city or re.search(r"\d", _city)):
                         # 2026-10-27: "IL - Chicago" (CVS), "OH-MASON-4361-IRWIN-..." (Elevance).
+                        # Review 10-27: also when the generic parse took the
+                        # street for the town ("AL-HUNTSVILLE, 900 BOB WALLACE
+                        # AVE SW, STE 122" read as "900 BOB WALLACE AVE SW", AL:
+                        # 21 of 115 Elevance rows in the review dry run). A town
+                        # the rule cannot read leaves the city blank, never the
+                        # street.
+                        if _city:
+                            _city = ""
                         _sc, _ss = _wd_state_first(loc)
                         if not _ss:
                             _sc, _ss = _wd_state_first(_wd_path_segment(j.get("externalPath", "")))
@@ -28276,14 +28287,30 @@ def _role_words(s, title=False):
     return words
 
 
+# Review 2026-10-27: a day rate is no unit the site stores ("hour", "year",
+# "visit"). "Salary: $125 per day" (an Alvin ISD substitute school nurse on
+# AppliTrack), "Daily rate: $150" and "$150 - $175 per day" were stored as
+# $125, $150 and $150-$175 an hour. A figure priced by the day is never a
+# candidate, so the card takes the family's estimate instead. "Per diem" is
+# left alone: on a hospital posting it names the PRN job type ("$45/hr per
+# diem"), not a day rate. So is "Day rate" before a figure: a hospitalist's
+# "Day rate $150.02 / Night rate $189.50" (37962885) is the day shift's
+# hourly rate.
+_WAGE_DAY_AFTER_RX = re.compile(r"\s*(?:(?:/|per|a|an|each)\s*(?:work\s*|school\s*)?day\b|daily\b(?!\s*pay\b))", re.I)
+_WAGE_DAY_BEFORE_RX = re.compile(r"\bdaily\s+(?:rate|wage)s?\b[^$\d]{0,40}$", re.I)
+
+
 def _wage_is_noise(t, start, end):
     """True when the dollar figure at t[start:end] prices a bonus, relocation
     package, stipend or reimbursement rather than the pay. Decided inside the
     figure's own clause only: no line break or sentence end is crossed, the
     words between two figures belong to the earlier one, a component word
     joined to the pay ("base + bonus", "plus bonus", "bonus eligible") is a
-    description, and a unit or pay word right after the figure makes it pay."""
+    description, and a unit or pay word right after the figure makes it pay.
+    Review 2026-10-27: a day rate is never pay the site can store."""
     before, after = _wage_clause(t, start, end)
+    if _WAGE_DAY_AFTER_RX.match(after) or _WAGE_DAY_BEFORE_RX.search(before):
+        return True
     # An aside in parentheses before the figure is dropped, so "Retention
     # Bonus (beginning at the completion of the 2nd year): up to $30,000"
     # still reads as a bonus (Flagler Health, 2026-09-22).
