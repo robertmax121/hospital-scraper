@@ -12560,10 +12560,13 @@ def usajobs_facility(m: dict, default: str) -> str:
 # per facility (va_facilities, shared with the stored-row cleanup in
 # claud_outputinput/va_facility_2026-10-27), read in this order:
 #   1. the facility a PositionLocation names ahead of its town;
-#   2. the hiring-organization line (SubAgencyName): its station
-#      ("Kansas City VA Medical Center - Sterile Processing Services" is
-#      Kansas City VA Medical Center), or the VA unit that hires in its own
-#      name ("National Oncology Program" is VA National Oncology Program);
+#   2. the hiring-organization line (SubAgencyName): the medical center it
+#      names when that has a name of its own ("VA Finger Lakes Healthcare
+#      System- Bath VA Medical Center" is Bath VA Medical Center; rule of
+#      2026-10-27, va_facilities.HOSPITALS), else its station ("Kansas City
+#      VA Medical Center - Sterile Processing Services" is Kansas City VA
+#      Medical Center), or the VA unit that hires in its own name ("National
+#      Oncology Program" is VA National Oncology Program);
 #      a network's name on a posting of one town gives way to that town's
 #      station (VISN 12's HR files North Chicago's cardiologist under "VISN
 #      12 - VA Great Lakes Health Care System": Captain James A. Lovell
@@ -12574,7 +12577,9 @@ def usajobs_facility(m: dict, default: str) -> str:
 #      contact address), which the API does not carry;
 #   4. a station named anywhere in the summary (va_facilities.text_station:
 #      "Eastern Colorado Health Care System (ECHCS) located in Pueblo"), or
-#      in the form _fed_facility_from_text reads;
+#      in the form _fed_facility_from_text reads (a medical center named
+#      there gives its station: summaries name the station's main medical
+#      center for its clinics' postings too);
 #   5. the station that runs the VA's care in the row's town
 #      (va_facilities.TOWNS, only towns one station serves);
 #   6. the agency, as before.
@@ -12679,8 +12684,10 @@ def usajobs_va_facility(m: dict, city: str = "", state: str = "", loc_facility: 
     if usable(name):
         return name, "stored"
     for text in (details.get("JobSummary"), m.get("QualificationSummary")):
+        # a summary names the station, not a medical center of it ("the
+        # North Pinellas VA Clinic ... the CWBY Bay Pines VAMC and its CBOCs")
         name = (va_facilities.text_station(text, state)
-                or va_facilities.canonical(_fed_facility_from_text(text), state))
+                or va_facilities.station_of(va_facilities.canonical(_fed_facility_from_text(text), state)))
         if usable(name):
             return name, "text"
     if town:

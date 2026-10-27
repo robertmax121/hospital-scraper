@@ -3,8 +3,9 @@
 The owner, on a Clearwater, FL posting: "for VA jobs, using 'va hospitals' is
 not acceptable. Scrape the real facility name." 1,288 of the 3,473 active
 "VA Hospitals" rows named only the agency, and the rest spelled their
-facilities 630 ways. va_facilities gives one name per VA station;
-usajobs_va_facility names each VA row (hiring-organization line, the stored
+facilities 630 ways. va_facilities gives one name per VA station, or per
+medical center when the value names one with a name of its own (rule of
+2026-10-27); usajobs_va_facility names each VA row (hiring-organization line, the stored
 name, the summary, the town, in that order). Every raw value below is
 quoted from a stored hospital_jobs row or a usajobs.gov job page read
 2026-10-27 (claud_outputinput/va_facility_2026-10-27/page_facts.tsv).
@@ -57,12 +58,11 @@ import va_facilities as V
     ("Beckley, West Virginia VA Medical Center", "WV", "Beckley VA Medical Center"),
     ("VA Medical Center, Lexington KY", "KY", "Lexington VA Health Care System"),
     ("Martinsburg West Virginia VA Medical Center", "WV", "Martinsburg VA Medical Center"),
-    # a station named by its main medical center
-    ("C.W. Bill Young VA Medical Center", "FL", "Bay Pines VA Healthcare System"),
-    ("Baltimore VA Medical Center", "MD", "VA Maryland Health Care System"),
-    ("Malcom Randall Department of Veterans Affairs Medical Center", "FL",
-     "North Florida/South Georgia Veterans Health System"),
-    ("Tibor Rubin VA Medical Center", "CA", "Long Beach VA Health Care System"),
+    # a medical center with a name of its own keeps it (rule of 2026-10-27, HOSPITALS)
+    ("C.W. Bill Young VA Medical Center", "FL", "C.W. Bill Young VA Medical Center"),
+    ("Baltimore VA Medical Center", "MD", "Baltimore VA Medical Center"),
+    ("Malcom Randall Department of Veterans Affairs Medical Center", "FL", "Malcom Randall VA Medical Center"),
+    ("Tibor Rubin VA Medical Center", "CA", "Tibor Rubin VA Medical Center"),
     # a state that is the name
     ("VA Maine Healthcare System - Geriatrics and Extended Care", "ME", "VA Maine Healthcare System"),
     ("Washington DC VA Medical Center", "DC", "Washington DC VA Medical Center"),
@@ -88,9 +88,12 @@ def test_the_agency_and_a_bare_facility_word_name_no_facility(raw):
 
 
 def test_a_name_two_stations_share_needs_the_state():
+    # Fayetteville, NC: the station's former name (one medical center); Fayetteville, AR: the Ozarks' hospital
     assert V.canonical("Fayetteville VA Medical Center", "NC") == "Fayetteville VA Coastal Health Care System"
-    assert V.canonical("Fayetteville VA Medical Center", "AR") == "Veterans Healthcare System of the Ozarks"
+    assert V.canonical("Fayetteville VA Medical Center", "AR") == "Fayetteville VA Medical Center"
+    assert V.station_for("Fayetteville VA Medical Center", "AR") == "Veterans Healthcare System of the Ozarks"
     assert V.station_for("Fayetteville VA Medical Center") == ""
+    assert V.hospital_for("Fayetteville VA Medical Center") == ""
 
 
 def test_a_town_on_a_bare_facility_word_is_that_towns_station():
@@ -125,7 +128,7 @@ def test_hiring_units_keep_their_own_name(raw, want):
 
 @pytest.mark.parametrize("raw, state, want", [
     ("San Francisco Veterans Health Administration", "CA", "San Francisco VA Health Care System"),
-    ("C. W. Bill Young Veterans Health Administration", "FL", "Bay Pines VA Healthcare System"),
+    ("C. W. Bill Young Veterans Health Administration", "FL", "C.W. Bill Young VA Medical Center"),
     ("Maryland Veterans Health Care Administration", "MD", "VA Maryland Health Care System"),
     ("Charleston Veterans Health Administration", "SC", "Ralph H. Johnson VA Health Care System"),
     ("Veterans Health Administration, VANCHCS, Pharmacy", "CA", "VA Northern California Healthcare System"),
@@ -190,6 +193,15 @@ def test_the_tables_hold_together():
         assert town == V._town_key(town)
     for acr, name in V.ACRONYMS.items():
         assert name in V.STATION_NAMES, acr
+    hospitals = [h[0] for h in V.HOSPITALS]
+    assert len(hospitals) == len(set(hospitals)) and not set(hospitals) & V.STATION_NAMES
+    for name, station, others in V.HOSPITALS:
+        assert station in V.STATION_NAMES, name
+        for st in V.STATION_STATES[station]:
+            for o in (name,) + tuple(others):
+                assert V.canonical(o, st) == name, (o, st)
+                assert V.station_for(o, st) == station, (o, st)
+        assert V.station_of(name) == station and not V.is_town_only(name)
 
 
 # ── 5. The adapter ──────────────────────────────────────────────────────────
@@ -323,3 +335,107 @@ def test_other_federal_systems_are_as_before(monkeypatch):
                                        "Join the team at Gallup Indian Medical Center today.",
                                        org="Indian Health Service"), "Indian Health Service")
     assert [j.hospital_name for j in rows] == ["Gallup Indian Medical Center"]
+
+
+# ── 6. Medical centers with a name of their own (rule of 2026-10-27) ─────────
+# The owner wants the real facility: a row whose own name, or whose job page's
+# hiring-organization line, names a specific VA medical center keeps it, under
+# one name; clinics, towns, agency-only rows and summaries still give the
+# station. Every raw value is a stored row's name or a job page's line.
+
+@pytest.mark.parametrize("raw, state, want", [
+    ("Bath VA Medical Center", "NY", "Bath VA Medical Center"),
+    ("VA Finger Lakes Healthcare System- Bath VA Medical Center", "NY", "Bath VA Medical Center"),
+    ("Canandaigua VA Medical Center", "NY", "Canandaigua VA Medical Center"),
+    ("Canandaigua NY VA Medical Center", "NY", "Canandaigua VA Medical Center"),
+    ("Fingerlakes VA Medical Center (Canandaigua)", "NY", "Canandaigua VA Medical Center"),
+    ("Alvin C. York Veterans' Administration Medical Center", "TN", "Alvin C. York VA Medical Center"),
+    ("Louis Stokes Cleveland VA Medical Center", "OH", "Louis Stokes Cleveland VA Medical Center"),
+    ("Cleveland VA Medical Center", "OH", "Louis Stokes Cleveland VA Medical Center"),
+    ("Rocky Mountain Regional VA Medical Center", "CO", "Rocky Mountain Regional VA Medical Center"),
+    ("Carl T. Hayden VA Medical Center - Phoenix, AZ", "AZ", "Carl T. Hayden VA Medical Center"),
+    ("Carl T Hayden Veterans' Administration Medical Center", "AZ", "Carl T. Hayden VA Medical Center"),
+    # the medical center in brackets after the system's name
+    ("Miami VA Healthcare System (Bruce W. Carter VA Medical Center)", "FL", "Bruce W. Carter VA Medical Center"),
+    ("Veterans Health Administration-Bruce W Carter Department of Veterans Affairs Medical Center", "FL",
+     "Bruce W. Carter VA Medical Center"),
+    # every C.W. Bill Young spelling
+    ("CW Bill Young Department of Veterans Affairs Medical Center", "FL", "C.W. Bill Young VA Medical Center"),
+    ("CW Bill Young VA Medical Center, Veterans Health Administration", "FL", "C.W. Bill Young VA Medical Center"),
+    ("Sepulveda VA Medical Center", "CA", "Sepulveda VA Medical Center"),
+    # the hospital's current name
+    ("West Palm Beach VA Medical Center", "FL", "Thomas H. Corey West Palm Beach VA Medical Center"),
+    ("Salt Lake City VA Medical Center", "UT", "George E. Wahlen VA Medical Center"),
+    ("Atlanta VA Medical Center - Veterans Health Administration", "GA",
+     "Joseph Maxwell Cleland Atlanta VA Medical Center"),
+    ("Muskogee VA Medical Center", "OK", "Jack C. Montgomery VA Medical Center"),
+    ("Eastern Oklahoma Health Care System - James Mountain Inhofe VAMC, OK - Nursing Perioperative", "OK",
+     "James Mountain Inhofe VA Medical Center"),
+    ("Central Arkansas Veteran Healthcare System John L. McClellan Memorial Veterans Hospital", "AR",
+     "John L. McClellan Memorial Veterans Hospital"),
+    ("Central VA Medical Center Montgomery , Al", "AL", "Central Alabama VA Medical Center-Montgomery"),
+    ("Raymond G Murphy Department of the VAMC", "NM", "Raymond G. Murphy VA Medical Center"),
+    ("Wm. Jennings Bryan Dorn Department of Veterans Affairs Medical Center", "SC",
+     "Wm. Jennings Bryan Dorn VA Medical Center"),
+    ("Veterans Health Administration, Vancouver, WA VAMC Office of Community Care", "WA",
+     "Vancouver VA Medical Center"),
+    # a lone medical center that is only the station's own name: the station's one name (the VA's current one)
+    ("Cheyenne VA Medical Center", "WY", "Cheyenne VA Health Care System"),
+    ("Alexandria VA Medical Center", "LA", "Alexandria VA Health Care System"),
+    ("Birmingham VA Medical Center Department of Pharmacy", "AL", "Birmingham VA Health Care System"),
+    ("Pharmacy Service, Ralph H. Johnson VA Medical Center", "SC", "Ralph H. Johnson VA Health Care System"),
+    ("Veterans Health Administration, Salem VA Medical Center, Salem, Virginia", "VA", "VA Salem Health Care System"),
+    # a station's regional name on a medical-center word picks none of its medical centers
+    ("New York Harbor VA Medical Center", "NY", "VA NY Harbor Healthcare System"),
+    ("Puget Sound VA Medical Center", "WA", "VA Puget Sound Health Care System"),
+    ("St. Louis VA Medical Center", "MO", "VA St. Louis Health Care System"),
+    ("Central Alabama VA Medical Center", "AL", "Central Alabama Veterans Health Care System"),
+    ("Fingerlakes VA Medical Center", "NY", "VA Finger Lakes Healthcare System"),
+    ("Western New York Health Care Systems at the Buffalo and Batavia VA Medical Center", "NY",
+     "VA Western New York Healthcare System"),
+    # a town in brackets after a system's name is not a medical center
+    ("VA Southern Nevada Healthcare System (Las Vegas)", "NV", "VA Southern Nevada Healthcare System"),
+    ("Western New York VA Healthcare System (Buffalo)", "NY", "VA Western New York Healthcare System"),
+    # a clinic or an ambulatory care center is the station, also a clinic of a named medical center
+    ("Chalmers P. Wylie VA ACC", "OH", "VA Central Ohio Healthcare System"),
+    ("Central Alabama VA Medical Center-Montgomery - Robert S. Poydasheff VA Clinic", "GA",
+     "Central Alabama Veterans Health Care System"),
+])
+def test_a_named_medical_center_keeps_its_one_name(raw, state, want):
+    assert V.canonical(raw, state) == want
+    assert V.hiring_org_name(raw, state) == want
+
+
+def test_a_medical_center_gives_its_station_where_the_station_is_asked_for():
+    assert V.station_for("VA Finger Lakes Healthcare System- Bath VA Medical Center", "NY") == \
+        "VA Finger Lakes Healthcare System"
+    assert V.station_for("C.W. Bill Young VA Medical Center", "FL") == "Bay Pines VA Healthcare System"
+    assert V.station_of("Bruce W. Carter VA Medical Center") == "Miami VA Healthcare System"
+    assert V.station_of("Bay Pines VA Healthcare System") == "Bay Pines VA Healthcare System"
+    # a state the medical center is not in
+    assert V.hospital_for("Lake City VA Medical Center", "UT") == ""
+    assert V.canonical("Salt Lake City VA Medical Center", "UT") == "George E. Wahlen VA Medical Center"
+
+
+def test_the_adapter_keeps_a_named_medical_center(monkeypatch):
+    monkeypatch.setattr(scraper, "_STORED_USAJOBS", {})
+    f = scraper.usajobs_va_facility
+    # the hiring-organization line names the medical center
+    assert f(_m("VA Finger Lakes Healthcare System- Bath VA Medical Center"), "Bath", "NY") == (
+        "Bath VA Medical Center", "hiring_org")
+    assert f(_m("Miami VA Healthcare System (Bruce W. Carter VA Medical Center)"), "Miami", "FL") == (
+        "Bruce W. Carter VA Medical Center", "hiring_org")
+    # a summary gives the station, also when it names a medical center (agency-only postings)
+    assert f(_m("Veterans Health Administration", "The incumbent will be working at the Baltimore VA Medical "
+                "Center located in Baltimore, Maryland."), "Baltimore", "MD") == (
+        "VA Maryland Health Care System", "text")
+    assert f(_m("Veterans Health Administration", "Primary Care in the CWBY Bay Pines VAMC and its CBOCs."),
+             "Clearwater", "FL") == ("Bay Pines VA Healthcare System", "text")
+    # the medical center the cleanup stored stays
+    scraper.set_stored_usajobs_names([{"hospital_system": "VA Hospitals", "job_id": "CBFF-WPB-1",
+                                       "hospital_name": "Thomas H. Corey West Palm Beach VA Medical Center"}])
+    try:
+        assert f(_m(), "West Palm Beach", "FL", "", "CBFF-WPB-1") == (
+            "Thomas H. Corey West Palm Beach VA Medical Center", "stored")
+    finally:
+        scraper.set_stored_usajobs_names([])

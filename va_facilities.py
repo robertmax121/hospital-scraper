@@ -22,18 +22,27 @@ and for the one-time cleanup of stored rows
   facility_segment(raw)   the part of a raw value that names a facility,
                           without departments, towns, acronyms or the
                           network / agency in front ("" when it names none)
-  canonical(raw, state)   the facility's one name: a station of STATIONS
-                          (every spelling of the station, its main medical
-                          center's name included, gives the station's name),
-                          else the cleaned segment; "" for the agency itself
+  canonical(raw, state)   the facility's one name: a medical center with a
+                          name of its own when the value names one
+                          (HOSPITALS, hospital_for), else a station of
+                          STATIONS (every spelling of the station gives the
+                          station's name), else the cleaned segment; "" for
+                          the agency itself
+  station_for(raw, state) the station only (a medical center gives its
+                          station); station_of(name) the same for a name
+                          canonical gave
   town_facility(city, st) the station that runs the VA's care in a town, only
                           where that is certain (TOWNS); "" elsewhere
   is_generic(name)        True for a value that names no facility
 
 The level is the station: the medical center or health care system with its
-own number, as USAJOBS's hiring-organization line names it. Its clinics in
-other towns carry its name ("located at the North Pinellas VA Clinic in
-Clearwater" is Bay Pines VA Healthcare System). A national program or a
+own number, as USAJOBS's hiring-organization line names it, except where the
+value names one of its medical centers by a name of its own (rule of
+2026-10-27, the owner wants the real facility: "C.W. Bill Young VA Medical
+Center" stays C.W. Bill Young VA Medical Center, not Bay Pines VA Healthcare
+System). Its clinics in other towns carry the station's name ("located at the
+North Pinellas VA Clinic in Clearwater" is Bay Pines VA Healthcare System), as
+do agency-only postings named by their town or summary. A national program or a
 network office that hires in its own name ("National Oncology Program",
 "VISN 4 VA Heart of America Health Network") keeps that name: it is the
 employer the posting names. hospital_system ("VA Hospitals") is never
@@ -236,86 +245,69 @@ _DIRECTIONS = {"north", "south", "east", "west", "northern", "southern", "easter
 # Veterans Health System, Ralph H. Johnson VA Health Care System,
 # Fayetteville VA Coastal Health Care System). Every other name is a spelling
 # of the same station seen on USAJOBS (hiring-organization lines, the agency
-# contact address) or the name of its main medical center. states: the
-# states its sites are in (a clinic across a state line included). A name is
-# only listed here when it is the same station; a clinic town goes in TOWNS.
+# contact address), or a medical-center spelling that names no medical center
+# of its own (see HOSPITALS). states: the states its sites are in (a clinic
+# across a state line included). A name is only listed here when it is the
+# same station; a clinic town goes in TOWNS, a medical center with a name of
+# its own in HOSPITALS.
 STATIONS: tuple = (
     # Alabama
     ("Birmingham VA Health Care System", "AL", ("Birmingham VA Medical Center", "Birmingham VA Healthcare Service")),
-    ("Central Alabama Veterans Health Care System", "AL GA", (
-        "Central Alabama VA Medical Center", "Central VA Medical Center Montgomery",
-        "Central Alabama VA Medical Center-Montgomery")),
+    ("Central Alabama Veterans Health Care System", "AL GA", ("Central Alabama VA Medical Center",)),
     ("Tuscaloosa VA Medical Center", "AL", ("Tuscaloosa VA Healthcare System",)),
     # Alaska
     ("Alaska VA Healthcare System", "AK", ("Alaska VA Medical Center", "Anchorage VA Medical Center")),
     # Arizona
-    ("VA Phoenix Healthcare System", "AZ", (
-        "Phoenix VA Health Care System", "Carl T. Hayden VA Medical Center",
-        "Carl T Hayden Veterans' Administration Medical Center", "Phoenix/Gilbert AZ VA Medical Center")),
-    ("Southern Arizona VA Health Care System", "AZ", ("Tucson VA Medical Center", "VA Tucson Medical Center")),
+    ("VA Phoenix Healthcare System", "AZ", ("Phoenix VA Health Care System", "Phoenix/Gilbert AZ VA Medical Center")),
+    ("Southern Arizona VA Health Care System", "AZ", ()),
     ("Northern Arizona VA Health Care System", "AZ", ()),
     # Arkansas / Ozarks
     ("Central Arkansas Veterans Health Care System", "AR", (
-        "Central Arkansas Veterans Healthcare System", "Central Arkansas Veteran Healthcare System",
-        "John L. McClellan Memorial Veterans Hospital",
-        "Central Arkansas Veteran Healthcare System John L. McClellan Memorial Veterans Hospital")),
-    ("Veterans Healthcare System of the Ozarks", "AR MO OK", (
-        "Veterans Health Care System of the Ozarks", "Fayetteville VA Medical Center")),
+        "Central Arkansas Veterans Healthcare System", "Central Arkansas Veteran Healthcare System")),
+    ("Veterans Healthcare System of the Ozarks", "AR MO OK", ("Veterans Health Care System of the Ozarks",)),
     # California
-    ("Greater Los Angeles VA Health Care System", "CA", (
-        "Greater Los Angeles VA Medical Center", "Sepulveda VA Medical Center")),
-    ("Long Beach VA Health Care System", "CA", ("Tibor Rubin VA Medical Center", "Long Beach VA Medical Center")),
-    ("VA Loma Linda Healthcare System", "CA", (
-        "Jerry L. Pettis Memorial Veterans Hospital", "Jerry L Pettis Memorial VA Medical Center",
-        "Hemet VA Medical Center")),
-    ("San Diego VA Healthcare System", "CA", ("San Diego VA Medical Center",)),
-    ("VA Palo Alto Health Care System", "CA", ("Palo Alto VA Medical Center", "Livermore VA Medical Center")),
+    ("Greater Los Angeles VA Health Care System", "CA", ("Greater Los Angeles VA Medical Center",)),
+    ("Long Beach VA Health Care System", "CA", ()),
+    ("VA Loma Linda Healthcare System", "CA", ("Hemet VA Medical Center",)),
+    ("San Diego VA Healthcare System", "CA", ()),
+    ("VA Palo Alto Health Care System", "CA", ("Livermore VA Medical Center",)),
     ("San Francisco VA Health Care System", "CA", ("San Francisco VA Medical Center",)),
-    ("VA Northern California Healthcare System", "CA", ("Sacramento VA Medical Center",)),
-    ("VA Central California Health Care System", "CA", ("Fresno VA Medical Center",)),
+    ("VA Northern California Healthcare System", "CA", ()),
+    ("VA Central California Health Care System", "CA", ()),
     # Colorado / Wyoming
-    ("VA Eastern Colorado Health Care System", "CO", (
-        "Rocky Mountain Regional VA Medical Center", "Eastern Colorado VA Health Care System")),
-    ("VA Western Colorado Health Care System", "CO", ("Grand Junction VA Medical Center",)),
+    ("VA Eastern Colorado Health Care System", "CO", ("Eastern Colorado VA Health Care System",)),
+    ("VA Western Colorado Health Care System", "CO", ()),
     ("Cheyenne VA Health Care System", "WY CO", ("Cheyenne VA Medical Center",)),
     ("Sheridan VA Health Care System", "WY", ("Sheridan VA Medical Center",)),
     # Connecticut / New England
     ("VA Connecticut Healthcare System", "CT", ()),
     ("VA Boston Healthcare System", "MA", ()),
-    ("VA Bedford Healthcare System", "MA", ("Edith Nourse Rogers Memorial Veterans Hospital",)),
+    ("VA Bedford Healthcare System", "MA", ()),
     ("VA Central Western Massachusetts Healthcare System", "MA", ()),
-    ("VA Maine Healthcare System", "ME", ("Togus VA Medical Center",)),
+    ("VA Maine Healthcare System", "ME", ()),
     ("VA Manchester Healthcare System", "NH", ("Manchester VA Medical Center",)),
     ("VA Providence Healthcare System", "RI MA", ("Providence VA Medical Center", "Providence Healthcare System")),
     ("VA White River Junction Healthcare System", "VT NH", ("White River Junction VA Medical Center",)),
     # DC / Delaware / Maryland
     ("Washington DC VA Medical Center", "DC", ()),
     ("Wilmington VA Medical Center", "DE NJ", ("VA Wilmington Healthcare System",)),
-    ("VA Maryland Health Care System", "MD", ("Baltimore VA Medical Center", "VA Baltimore Health Care System")),
+    ("VA Maryland Health Care System", "MD", ("VA Baltimore Health Care System",)),
     # Florida
-    ("Bay Pines VA Healthcare System", "FL", (
-        "C.W. Bill Young VA Medical Center", "CW Bill Young Department of Veterans Affairs Medical Center",
-        "Bay Pines VA Medical Center")),
-    ("North Florida/South Georgia Veterans Health System", "FL GA", (
-        "North Florida/South Georgia VA Healthcare System", "Malcom Randall VA Medical Center",
-        "Malcolm Randall VA Medical Center", "Lake City VA Medical Center")),
-    ("Miami VA Healthcare System", "FL", ("Bruce W. Carter VA Medical Center",)),
-    ("West Palm Beach VA Healthcare System", "FL", (
-        "West Palm Beach VA Medical Center", "Thomas H. Corey West Palm Beach VA Medical Center",
-        "Thomas H. Corey VA Medical Center")),
+    ("Bay Pines VA Healthcare System", "FL", ()),
+    ("North Florida/South Georgia Veterans Health System", "FL GA", ("North Florida/South Georgia VA Healthcare System",)),
+    ("Miami VA Healthcare System", "FL", ()),
+    ("West Palm Beach VA Healthcare System", "FL", ()),
     ("Orlando VA Healthcare System", "FL", ("Orlando VA Medical Center", "Lake Nona VA Medical Center")),
     ("James A. Haley VA Medical Center", "FL", (
         "James A. Haley Veterans' Hospital", "Tampa VA Hospital", "Tampa VA Medical Center",
         "James A. VA Healthcare System")),
     # Georgia
-    ("Atlanta VA Health Care System", "GA", (
-        "Atlanta VA Medical Center", "Joseph Maxwell Cleland Atlanta VA Medical Center",
-        "Altanta VA Healthcare System")),
+    ("Atlanta VA Health Care System", "GA", ("Altanta VA Healthcare System",)),
     ("Charlie Norwood VA Medical Center", "GA", (
         "Augusta VA Health Care System", "Augusta VA Medical Center", "Charlie A. Norwood VA Medical Center")),
     ("Carl Vinson VA Medical Center", "GA", ("Dublin VA Medical Center", "Dublin Carl Vinson VA Medical Center")),
     # Hawaii / Pacific, Caribbean
-    ("VA Pacific Islands Health Care System", "HI", ("Spark M. Matsunaga VA Medical Center",)),
+    ("VA Pacific Islands Health Care System", "HI", ()),
     ("VA Caribbean Healthcare System", "PR VI", ()),
     # Idaho
     ("Boise VA Medical Center", "ID", ("VA Boise Healthcare System",)),
@@ -323,18 +315,17 @@ STATIONS: tuple = (
     ("Edward Hines Jr. VA Hospital", "IL", ("Hines VA Hospital", "Edward Hines Junior Hospital")),
     ("Jesse Brown VA Medical Center", "IL", ("Jesse Brown VA Hospital",)),
     ("Marion VA Health Care System", "IL IN KY", ("Marion VA Medical Center",)),
-    ("VA Illiana Health Care System", "IL", ("Danville VA Medical Center",)),
+    ("VA Illiana Health Care System", "IL", ()),
     ("Captain James A. Lovell Federal Health Care Center", "IL WI", ()),
     # Indiana
     ("Richard L. Roudebush VA Medical Center", "IN", ()),
     ("VA Northern Indiana Health Care System", "IN", ()),
     # Iowa / Nebraska / Dakotas / Minnesota
     ("Iowa City VA Health Care System", "IA IL", ("Iowa City VA Medical Center",)),
-    ("VA Central Iowa Health Care System", "IA", ("Des Moines VA Medical Center",)),
-    ("VA Nebraska-Western Iowa Health Care System", "NE IA", ("Omaha VA Medical Center",)),
+    ("VA Central Iowa Health Care System", "IA", ()),
+    ("VA Nebraska-Western Iowa Health Care System", "NE IA", ()),
     ("Fargo VA Health Care System", "ND MN", ("Fargo VA Medical Center",)),
-    ("Sioux Falls VA Health Care System", "SD", ("Royal C. Johnson VA Health Care System",
-                                                 "Royal C. Johnson Veterans Memorial Hospital")),
+    ("Sioux Falls VA Health Care System", "SD", ("Royal C. Johnson VA Health Care System",)),
     ("VA Black Hills Health Care System", "SD", ()),
     ("Minneapolis VA Health Care System", "MN WI", (
         "Minneapolis VA Medical Center", "Minneapolis VA Health Center", "Minneapolis/Maplewood VA Medical Center")),
@@ -347,14 +338,14 @@ STATIONS: tuple = (
         "Harry S. Truman VA Medical Center", "Harry Truman VA Medical Center", "Truman VA Medical Center",
         "Rolla VA Medical Center")),
     ("John J. Pershing VA Medical Center", "MO", ("Poplar Bluff VA Medical Center",)),
-    ("VA St. Louis Health Care System", "MO IL", ("St. Louis VA Medical Center", "John Cochran VA Hospital")),
+    ("VA St. Louis Health Care System", "MO IL", ("St. Louis VA Medical Center",)),
     # Kentucky
     ("Robley Rex VA Medical Center", "KY IN", ("Louisville VA Medical Center",)),
     ("Lexington VA Health Care System", "KY", ("Lexington VA Medical Center",)),
     # Louisiana
     ("Alexandria VA Health Care System", "LA", ("Alexandria VA Medical Center",)),
     ("Overton Brooks VA Medical Center", "LA TX", ()),
-    ("Southeast Louisiana Veterans Health Care System", "LA", ("New Orleans VA Medical Center",)),
+    ("Southeast Louisiana Veterans Health Care System", "LA", ()),
     # Michigan
     ("Battle Creek VA Medical Center", "MI", ()),
     ("John D. Dingell VA Medical Center", "MI", ("Detroit VA Medical Center",)),
@@ -366,37 +357,29 @@ STATIONS: tuple = (
     ("G.V. (Sonny) Montgomery VA Medical Center", "MS", (
         "G.V. Montgomery VA Medical Center", "G.V. Sonny Montgomery VA Medical Center",
         "Jackson VA Medical Center")),
-    ("Gulf Coast Veterans Health Care System", "MS AL FL", ("Biloxi VA Medical Center",)),
+    ("Gulf Coast Veterans Health Care System", "MS AL FL", ()),
     # Montana
-    ("Montana VA Health Care System", "MT", ("Fort Harrison VA Medical Center",)),
+    ("Montana VA Health Care System", "MT", ()),
     # Nevada
-    ("VA Sierra Nevada Health Care System", "NV", ("Reno VA Medical Center",)),
-    ("VA Southern Nevada Healthcare System", "NV", ("Las Vegas VA Medical Center",)),
+    ("VA Sierra Nevada Health Care System", "NV", ()),
+    ("VA Southern Nevada Healthcare System", "NV", ()),
     # New Jersey
-    ("New Jersey VA Healthcare System", "NJ", ("East Orange VA Medical Center", "Lyons VA Medical Center")),
+    ("New Jersey VA Healthcare System", "NJ", ()),
     # New Mexico
-    ("New Mexico VA Health Care System", "NM", (
-        "Raymond G. Murphy VA Medical Center", "Raymond G. Murphy Albuquerque VA Medical Center",
-        "VA Albuquerque Healthcare System", "New Mexico Veterans Hospital", "Albuquerque VA Medical Center",
-        "Raymond G. Murphy D Veterans Health Administrator Medical Center", "Raymond G Murphy Department of the VAMC")),
+    ("New Mexico VA Health Care System", "NM", ("VA Albuquerque Healthcare System", "New Mexico Veterans Hospital")),
     # New York
     ("James J. Peters VA Medical Center", "NY", ("Bronx VA Medical Center", "Bronx NY VA Medical Center")),
-    ("VA NY Harbor Healthcare System", "NY", (
-        "New York Harbor VA Healthcare System", "New York Harbor VA Medical Center", "Manhattan VA Medical Center",
-        "Brooklyn VA Medical Center")),
+    ("VA NY Harbor Healthcare System", "NY", ("New York Harbor VA Healthcare System", "New York Harbor VA Medical Center")),
     ("Northport VA Medical Center", "NY", ("Northport VA Healthcare System",)),
     ("Syracuse VA Medical Center", "NY", ("Syracuse VA Health Care System", "Syracuse New York VA Medical Center")),
     ("VA Western New York Healthcare System", "NY", (
-        "Buffalo VA Medical Center", "WNY VA Healthcare System", "Western New York Health Care System",
+        "WNY VA Healthcare System", "Western New York Health Care System",
         "Western New York Veterans Health Administration Health Care Systems")),
-    ("VA Finger Lakes Healthcare System", "NY", (
-        "Canandaigua VA Medical Center", "Bath VA Medical Center", "Fingerlakes VA Medical Center",
-        "Canandaigua NY VA Medical Center")),
+    ("VA Finger Lakes Healthcare System", "NY", ("Fingerlakes VA Medical Center",)),
     ("Samuel S. Stratton VA Medical Center", "NY", (
         "Albany Stratton VA Medical Center", "Samuel S. Stratton Albany VA Medical Center",
         "Albany VA Health Care System", "Albany VA Medical Center")),
-    ("Hudson Valley VA Healthcare System", "NY", (
-        "Hudson Valley VA Medical Center", "Franklin Delano Roosevelt Hospital", "Castle Point VA Medical Center")),
+    ("Hudson Valley VA Healthcare System", "NY", ("Hudson Valley VA Medical Center",)),
     # North Carolina
     ("Durham VA Medical Center", "NC", ("Durham VA Health Care System",)),
     ("W.G. (Bill) Hefner VA Medical Center", "NC", (
@@ -412,20 +395,18 @@ STATIONS: tuple = (
     ("Cincinnati VA Medical Center", "OH KY IN", ("Cincinnati Veterans Affair's Medical Center",)),
     ("Dayton VA Medical Center", "OH IN", ()),
     ("Chillicothe VA Medical Center", "OH", ()),
-    ("VA Northeast Ohio Healthcare System", "OH", (
-        "Louis Stokes Cleveland VA Medical Center", "Cleveland VA Medical Center")),
+    ("VA Northeast Ohio Healthcare System", "OH", ()),
     ("VA Central Ohio Healthcare System", "OH", (
         "Chalmers P. Wylie VA Ambulatory Care Center", "Columbus VA Medical Center",
         "Chalmers P. Wylie Veterans Outpatient Clinic")),
     # Oklahoma
     ("Oklahoma City VA Health Care System", "OK TX", ("Oklahoma City VA Medical Center",)),
-    ("Eastern Oklahoma VA Health Care System", "OK", (
-        "Muskogee VA Medical Center", "Jack C. Montgomery VA Medical Center")),
+    ("Eastern Oklahoma VA Health Care System", "OK", ()),
     # Oregon / Washington
-    ("VA Portland Health Care System", "OR WA", ("Portland VA Medical Center", "Vancouver VA Medical Center")),
+    ("VA Portland Health Care System", "OR WA", ()),
     ("Roseburg VA Health Care System", "OR", ("Roseburg VA Medical Center",)),
     ("VA Southern Oregon Rehabilitation Center and Clinics", "OR", ("White City VA Medical Center",)),
-    ("VA Puget Sound Health Care System", "WA", ("Seattle VA Medical Center", "Puget Sound VA Medical Center")),
+    ("VA Puget Sound Health Care System", "WA", ("Puget Sound VA Medical Center",)),
     ("Mann-Grandstaff VA Medical Center", "WA", ("Mann-Granstaff VA Medical Center",)),
     ("Jonathan M. Wainwright Memorial VA Medical Center", "WA OR", ("Walla Walla VA Medical Center",)),
     # Pennsylvania
@@ -438,32 +419,27 @@ STATIONS: tuple = (
     ("Butler VA Medical Center", "PA", ("Butler VA Health Care System",)),
     ("Wilkes-Barre VA Medical Center", "PA", ("Wilkes-Barre VA Healthcare System",)),
     # South Carolina
-    ("Columbia VA Health Care System", "SC", (
-        "Wm. Jennings Bryan Dorn VA Medical Center", "William Jennings Bryan Dorn VA Medical Center")),
+    ("Columbia VA Health Care System", "SC", ()),
     ("Ralph H. Johnson VA Health Care System", "SC GA", (
         "Ralph H. Johnson VA Medical Center", "Charleston VA Health Care System", "Charleston VA Medical Center")),
     # Tennessee
-    ("Tennessee Valley Healthcare System", "TN", (
-        "Alvin C. York VA Medical Center", "Nashville VA Medical Center")),
+    ("Tennessee Valley Healthcare System", "TN", ()),
     ("James H. Quillen VA Medical Center", "TN VA", ("James H. Quillen VA Healthcare System",)),
     ("Lt. Col. Luke Weathers, Jr. VA Medical Center", "TN", ("Memphis VA Medical Center",)),
     # Texas
     ("Michael E. DeBakey VA Medical Center", "TX", ("Houston VA Medical Center",)),
-    ("VA North Texas Health Care System", "TX", ("Dallas VA Medical Center", "Dallas VA Health Care System")),
-    ("South Texas Veterans Health Care System", "TX", ("Audie L. Murphy VA Hospital",)),
-    ("Central Texas Veterans Health Care System", "TX", (
-        "Waco VA Medical Center", "Olin E. Teague Veterans' Medical Center", "Temple VA Medical Center")),
+    ("VA North Texas Health Care System", "TX", ("Dallas VA Health Care System",)),
+    ("South Texas Veterans Health Care System", "TX", ()),
+    ("Central Texas Veterans Health Care System", "TX", ()),
     ("VA Texas Valley Coastal Bend Health Care System", "TX", ("VA TX Valley Coastal Bend HCS",)),
-    ("West Texas VA Health Care System", "TX", ("George H. O'Brien, Jr. VA Medical Center",)),
+    ("West Texas VA Health Care System", "TX", ()),
     ("El Paso VA Health Care System", "TX NM", ()),
-    ("Amarillo VA Health Care System", "TX", ("Thomas E. Creek VA Medical Center",)),
+    ("Amarillo VA Health Care System", "TX", ()),
     # Utah
-    ("VA Salt Lake City Health Care System", "UT ID", (
-        "Salt Lake City VA Medical Center", "George E. Wahlen VA Medical Center")),
+    ("VA Salt Lake City Health Care System", "UT ID", ()),
     # Virginia
     ("Hampton VA Medical Center", "VA NC", ("Hampton VA Healthcare System", "Hampton Veterans Medical Center")),
-    ("Central Virginia VA Health Care System", "VA", (
-        "Richmond VA Medical Center", "Hunter Holmes McGuire VA Medical Center")),
+    ("Central Virginia VA Health Care System", "VA", ()),
     ("VA Salem Health Care System", "VA", ("Salem VA Medical Center",)),
     # West Virginia
     ("Louis A. Johnson VA Medical Center", "WV", ("Clarksburg VA Medical Center",)),
@@ -477,6 +453,118 @@ STATIONS: tuple = (
     ("William S. Middleton Memorial Veterans Hospital", "WI", (
         "William S. Middleton Veterans Hospital", "Madison VA Medical Center")),
     ("Tomah VA Medical Center", "WI", ()),
+)
+
+# ── Medical centers with a name of their own ────────────────────────────────
+# Rule of 2026-10-27 (the owner wants the real facility): a row whose own
+# name, or whose job page's hiring-organization line, names a specific VA
+# medical center or hospital keeps that medical center, under one name, its
+# current one (Ex: "C.W. Bill Young VA Medical Center", not Bay Pines VA
+# Healthcare System; "Miami VA Healthcare System (Bruce W. Carter VA Medical
+# Center)" is Bruce W. Carter VA Medical Center). A medical center is listed
+# here when its name is its own: a person's or a place's name the station's
+# name does not carry ("Rocky Mountain Regional", "Tucson" of Southern Arizona,
+# "Bath" and "Canandaigua" of Finger Lakes), or the hospital was renamed while
+# the station kept the town ("West Palm Beach VA Medical Center" is now
+# Thomas H. Corey West Palm Beach VA Medical Center; "Salt Lake City VA
+# Medical Center" is George E. Wahlen; "San Diego VA Medical Center" is
+# Jennifer Moreno; "Long Beach VA Medical Center" is Tibor Rubin; "Atlanta VA
+# Medical Center" is Joseph Maxwell Cleland Atlanta). Not listed, so the
+# station's one name: a medical-center spelling that is only the station's
+# own name on a medical-center word, at a station with one medical center
+# (the VA renamed those stations to health care systems and their hiring
+# lines use the new name: "Cheyenne VA Medical Center" is Cheyenne VA Health
+# Care System, likewise Alexandria, Birmingham, Fargo, Iowa City, Lexington,
+# Manchester, Marion, Minneapolis, Providence, Roseburg, Salem, San Francisco,
+# Sheridan, St. Cloud, White River Junction, Oklahoma City, Ralph H. Johnson,
+# Fayetteville VA Coastal); a station's regional name on a medical-center
+# word where it has several, so the name picks none ("New York Harbor",
+# "Puget Sound", "Greater Los Angeles", "Hudson Valley", "Central Alabama",
+# "Fingerlakes", "St. Louis", "Pittsburgh"); a clinic or an ambulatory care
+# center (Chalmers P. Wylie); a town on a bare facility word. Clinics, towns,
+# agency-only rows and summaries still give the station.
+# (name, station, other spellings); a medical center's states are its
+# station's.
+HOSPITALS: tuple = (
+    ("Central Alabama VA Medical Center-Montgomery", "Central Alabama Veterans Health Care System", (
+        "Central VA Medical Center Montgomery", "Central Alabama VA Medical Center Montgomery")),
+    ("Carl T. Hayden VA Medical Center", "VA Phoenix Healthcare System", (
+        "Carl T Hayden Veterans' Administration Medical Center",)),
+    ("Tucson VA Medical Center", "Southern Arizona VA Health Care System", ("VA Tucson Medical Center",)),
+    ("John L. McClellan Memorial Veterans Hospital", "Central Arkansas Veterans Health Care System", (
+        "Central Arkansas Veteran Healthcare System John L. McClellan Memorial Veterans Hospital",)),
+    ("Fayetteville VA Medical Center", "Veterans Healthcare System of the Ozarks", ()),       # Fayetteville, AR
+    ("Sepulveda VA Medical Center", "Greater Los Angeles VA Health Care System", ()),
+    ("Tibor Rubin VA Medical Center", "Long Beach VA Health Care System", ("Long Beach VA Medical Center",)),
+    ("Jerry L. Pettis Memorial Veterans' Hospital", "VA Loma Linda Healthcare System", (
+        "Jerry L. Pettis Memorial Veterans Hospital", "Jerry L Pettis Memorial VA Medical Center")),
+    ("Jennifer Moreno VA Medical Center", "San Diego VA Healthcare System", ("San Diego VA Medical Center",)),
+    ("Palo Alto VA Medical Center", "VA Palo Alto Health Care System", ()),
+    ("Sacramento VA Medical Center", "VA Northern California Healthcare System", ()),
+    ("Fresno VA Medical Center", "VA Central California Health Care System", ()),
+    ("Rocky Mountain Regional VA Medical Center", "VA Eastern Colorado Health Care System", ()),
+    ("Grand Junction VA Medical Center", "VA Western Colorado Health Care System", ()),
+    ("Edith Nourse Rogers Memorial Veterans Hospital", "VA Bedford Healthcare System", ()),
+    ("Togus VA Medical Center", "VA Maine Healthcare System", ()),
+    ("Baltimore VA Medical Center", "VA Maryland Health Care System", ()),
+    ("C.W. Bill Young VA Medical Center", "Bay Pines VA Healthcare System", (
+        "CW Bill Young Department of Veterans Affairs Medical Center", "Bay Pines VA Medical Center")),
+    ("Malcom Randall VA Medical Center", "North Florida/South Georgia Veterans Health System", (
+        "Malcolm Randall VA Medical Center",)),
+    ("Lake City VA Medical Center", "North Florida/South Georgia Veterans Health System", ()),
+    ("Bruce W. Carter VA Medical Center", "Miami VA Healthcare System", ()),
+    ("Thomas H. Corey West Palm Beach VA Medical Center", "West Palm Beach VA Healthcare System", (
+        "West Palm Beach VA Medical Center", "Thomas H. Corey VA Medical Center")),
+    ("Joseph Maxwell Cleland Atlanta VA Medical Center", "Atlanta VA Health Care System", (
+        "Atlanta VA Medical Center",)),
+    ("Spark M. Matsunaga VA Medical Center", "VA Pacific Islands Health Care System", ()),
+    ("Danville VA Medical Center", "VA Illiana Health Care System", ()),
+    ("Des Moines VA Medical Center", "VA Central Iowa Health Care System", ()),
+    ("Omaha VA Medical Center", "VA Nebraska-Western Iowa Health Care System", ()),
+    ("Royal C. Johnson Veterans' Memorial Hospital", "Sioux Falls VA Health Care System", (
+        "Royal C. Johnson Veterans Memorial Hospital",)),
+    ("John Cochran VA Medical Center", "VA St. Louis Health Care System", ("John Cochran VA Hospital",)),
+    ("New Orleans VA Medical Center", "Southeast Louisiana Veterans Health Care System", ()),
+    ("Biloxi VA Medical Center", "Gulf Coast Veterans Health Care System", ()),
+    ("Fort Harrison VA Medical Center", "Montana VA Health Care System", ()),
+    ("Ioannis A. Lougaris VA Medical Center", "VA Sierra Nevada Health Care System", ("Reno VA Medical Center",)),
+    ("North Las Vegas VA Medical Center", "VA Southern Nevada Healthcare System", ("Las Vegas VA Medical Center",)),
+    ("East Orange VA Medical Center", "New Jersey VA Healthcare System", ()),
+    ("Lyons VA Medical Center", "New Jersey VA Healthcare System", ()),
+    ("Raymond G. Murphy VA Medical Center", "New Mexico VA Health Care System", (
+        "Raymond G. Murphy Albuquerque VA Medical Center", "Albuquerque VA Medical Center",
+        "Raymond G. Murphy D Veterans Health Administrator Medical Center", "Raymond G Murphy Department of the VAMC")),
+    ("Manhattan VA Medical Center", "VA NY Harbor Healthcare System", ()),
+    ("Brooklyn VA Medical Center", "VA NY Harbor Healthcare System", ()),
+    ("Buffalo VA Medical Center", "VA Western New York Healthcare System", ()),
+    ("Canandaigua VA Medical Center", "VA Finger Lakes Healthcare System", ("Canandaigua NY VA Medical Center",)),
+    ("Bath VA Medical Center", "VA Finger Lakes Healthcare System", ()),
+    ("Franklin Delano Roosevelt Hospital", "Hudson Valley VA Healthcare System", ()),
+    ("Castle Point VA Medical Center", "Hudson Valley VA Healthcare System", ()),
+    ("Louis Stokes Cleveland VA Medical Center", "VA Northeast Ohio Healthcare System", (
+        "Cleveland VA Medical Center",)),
+    ("Jack C. Montgomery VA Medical Center", "Eastern Oklahoma VA Health Care System", (
+        "Muskogee VA Medical Center",)),
+    ("James Mountain Inhofe VA Medical Center", "Eastern Oklahoma VA Health Care System", ()),
+    ("Portland VA Medical Center", "VA Portland Health Care System", ()),
+    ("Vancouver VA Medical Center", "VA Portland Health Care System", ()),
+    ("Seattle VA Medical Center", "VA Puget Sound Health Care System", ()),
+    ("Wm. Jennings Bryan Dorn VA Medical Center", "Columbia VA Health Care System", (
+        "William Jennings Bryan Dorn VA Medical Center",)),
+    ("Alvin C. York VA Medical Center", "Tennessee Valley Healthcare System", ()),
+    ("Nashville VA Medical Center", "Tennessee Valley Healthcare System", ()),
+    ("Dallas VA Medical Center", "VA North Texas Health Care System", ()),
+    ("Audie L. Murphy Memorial Veterans' Hospital", "South Texas Veterans Health Care System", (
+        "Audie L. Murphy VA Hospital",)),
+    ("Olin E. Teague Veterans' Medical Center", "Central Texas Veterans Health Care System", (
+        "Temple VA Medical Center",)),
+    ("Doris Miller VA Medical Center", "Central Texas Veterans Health Care System", ("Waco VA Medical Center",)),
+    ("George H. O'Brien, Jr. VA Medical Center", "West Texas VA Health Care System", ()),
+    ("Thomas E. Creek VA Medical Center", "Amarillo VA Health Care System", ()),
+    ("George E. Wahlen VA Medical Center", "VA Salt Lake City Health Care System", (
+        "Salt Lake City VA Medical Center",)),
+    ("Richmond VA Medical Center", "Central Virginia VA Health Care System", (
+        "Hunter Holmes McGuire VA Medical Center",)),
 )
 
 # Names whose spelling the VA itself varies but that are not a station's.
@@ -504,28 +592,48 @@ ACRONYMS: dict = {
 
 
 def _build():
+    """_BY_KEY (spelling key -> [(station or NAME_FIXES name, states)]; a
+    medical center's spellings give its station there, so every lookup at
+    the station level reads as before), the station states, and the medical
+    centers: their station, their states, and their spelling keys for
+    hospital_for (whole key, the key station lookups use, the name), longest
+    first."""
     by_key: dict = {}
     station_states: dict = {}
+
+    def add(k, name, sts):
+        by_key.setdefault(k, [])
+        if all(x[0] != name for x in by_key[k]):
+            by_key[k].append((name, sts))
+
     for name, states, others in STATIONS:
         sts = tuple(states.split())
         station_states[name] = sts
         for n in (name,) + tuple(others):
-            k = name_key(facility_segment(n) or n)
-            by_key.setdefault(k, [])
-            if all(x[0] != name for x in by_key[k]):
-                by_key[k].append((name, sts))
+            add(name_key(facility_segment(n) or n), name, sts)
+    hosp_station, hosp_states, hosp_keys = {}, {}, []
+    for name, station, others in HOSPITALS:
+        sts = station_states[station]
+        hosp_station[name] = station
+        hosp_states[name] = sts
+        for n in (name,) + tuple(others):
+            seg_key = name_key(facility_segment(n) or n)
+            add(seg_key, station, sts)
+            hosp_keys.append((name_key(n), seg_key, name))
     for name, others in NAME_FIXES.items():
         for n in (name,) + tuple(others):
-            k = name_key(facility_segment(n) or n)
-            by_key.setdefault(k, [])
-            if all(x[0] != name for x in by_key[k]):
-                by_key[k].append((name, ()))
-    return by_key, station_states
+            add(name_key(facility_segment(n) or n), name, ())
+    hosp_keys = tuple(sorted(set(hosp_keys), key=lambda x: (-len(x[0]), x[0], x[2])))
+    return by_key, station_states, hosp_station, hosp_states, hosp_keys
 
 
 _BY_KEY: dict = {}
 STATION_STATES: dict = {}
 STATION_NAMES: frozenset = frozenset()
+HOSPITAL_STATION: dict = {}      # medical center -> its station
+HOSPITAL_STATES: dict = {}
+HOSPITAL_NAMES: frozenset = frozenset()
+_HOSP_KEYS: tuple = ()
 
 # The words that make a cleaned name read the same way everywhere.
 _DISPLAY_FIXES = (
@@ -566,11 +674,7 @@ def _station_of_key(key, state="", stations_only=True) -> str:
     return ""
 
 
-def station_for(name, state="") -> str:
-    """The station a name is a spelling of, or "" (state picks between two
-    stations that share a spelling). A name without a facility word is
-    looked up whole ("Chalmers P. Wylie Veterans Outpatient Clinic") and by
-    its acronym ("VANCHCS")."""
+def _station_by_spelling(name, state="") -> str:
     for seg in segment_candidates(name):
         st = _station_of(seg, state, stations_only=True)
         if st:
@@ -583,14 +687,83 @@ def station_for(name, state="") -> str:
     return ""
 
 
+def station_for(name, state="") -> str:
+    """The station a name is a spelling of, or "" (state picks between two
+    stations that share a spelling). A name without a facility word is
+    looked up whole ("Chalmers P. Wylie Veterans Outpatient Clinic") and by
+    its acronym ("VANCHCS"); a medical center's name gives its station."""
+    st = _station_by_spelling(name, state)
+    if st:
+        return st
+    h = hospital_for(name, state)
+    return HOSPITAL_STATION[h] if h else ""
+
+
+def hospital_for(name, state="") -> str:
+    """The medical center with a name of its own (HOSPITALS) a raw value
+    names anywhere in it, by any of its spellings, longest first, or "":
+    "VA Finger Lakes Healthcare System- Bath VA Medical Center" is Bath VA
+    Medical Center; "Miami VA Healthcare System (Bruce W. Carter VA Medical
+    Center)" is Bruce W. Carter VA Medical Center; "Fingerlakes VA Medical
+    Center (Canandaigua)" is Canandaigua VA Medical Center. The state, when
+    given, must be one of its station's; without it, a spelling two stations
+    share ("Fayetteville VA Medical Center", AR and NC) names none."""
+    s = clean_text(name)
+    if not s or s.lower() in GENERIC_LABELS:
+        return ""
+    if _CLINIC_RX.search(s):
+        # the posting is at a clinic of the medical center ("Central Alabama
+        # VA Medical Center-Montgomery - Robert S. Poydasheff VA Clinic", in
+        # Columbus, GA): a clinic carries its station's name
+        return ""
+    st = (state or "").strip().upper()
+    tk = f" {name_key(re.sub(r'[()]', ' ', s))} "
+    towns = set()
+    # "Fingerlakes VA Medical Center (Canandaigua)": the town names the medical
+    # center; after a system's name it does not ("VA Southern Nevada
+    # Healthcare System (Las Vegas)" is the system)
+    outer = re.sub(r"\([^()]*\)", " ", s)
+    if _MC_WORD_RX.search(outer) and not _SYSTEM_WORD_RX.search(outer):
+        for p in re.findall(r"\(([^()]*)\)", s):
+            town = _town_part(p.strip())
+            if town:
+                towns.add(name_key(f"{town} VA Medical Center"))
+    for key, seg_key, hosp in _HOSP_KEYS:
+        if not key or (f" {key} " not in tk and key not in towns):
+            continue
+        if st and st not in HOSPITAL_STATES[hosp]:
+            continue
+        if not st and len({n for n, _ in _BY_KEY.get(seg_key, [])}) > 1:
+            continue
+        if key in towns and f" {key} " not in tk and _station_by_spelling(s, state) not in ("", HOSPITAL_STATION[hosp]):
+            continue
+        return hosp
+    return ""
+
+
+_CLINIC_RX = re.compile(r"\bclinics?\b|\bCBOCs?\b|\boutpatient\b", re.I)
+_MC_WORD_RX = re.compile(r"\bmedical\s+cent(?:er|re)\b|\bhospital\b|\bVAMC\b", re.I)
+_SYSTEM_WORD_RX = re.compile(r"\bhealth\s*care\s+systems?\b|\bhealth\s+systems?\b|\bHCS\b", re.I)
+
+
+def station_of(name) -> str:
+    """The station of a name canonical() gave: a medical center's station,
+    else the name itself."""
+    return HOSPITAL_STATION.get(name, name)
+
+
 def canonical(name, state="") -> str:
-    """The one name of the facility a raw value names: its station's name,
-    else the value cleaned (departments, towns, acronyms, the agency in
-    front dropped; "VAMC" written out); "" when it names no facility (the
-    agency, "VA Medical Center", "TX VA Medical Center", "Ohio Veterans
-    Affairs Medical Center"). A town's name on a bare facility word ("Lake
-    Charles LA VA Medical Center", where no VA medical center stands) is the
-    station that serves that town, when TOWNS knows it."""
+    """The one name of the facility a raw value names: the medical center
+    when it names one with a name of its own (hospital_for), else its
+    station's name, else the value cleaned (departments, towns, acronyms,
+    the agency in front dropped; "VAMC" written out); "" when it names no
+    facility (the agency, "VA Medical Center", "TX VA Medical Center", "Ohio
+    Veterans Affairs Medical Center"). A town's name on a bare facility word
+    ("Lake Charles LA VA Medical Center", where no VA medical center stands)
+    is the station that serves that town, when TOWNS knows it."""
+    h = hospital_for(name, state)
+    if h:
+        return h
     cands = segment_candidates(name)
     for seg in cands:
         st = _station_of(seg, state)
@@ -680,7 +853,7 @@ def hiring_org_name(raw, state="") -> str:
     if m:
         place = m.group(1).strip(" ,-")
         for suffix in (" VA Medical Center", " VA Health Care System"):
-            st = _station_of(place + suffix, state, stations_only=True)
+            st = hospital_for(place + suffix, state) or _station_of(place + suffix, state, stations_only=True)
             if st:
                 return st
         st = town_facility(place, state)
@@ -709,7 +882,7 @@ def is_town_only(name) -> bool:
     station's ("Tyler VA Medical Center", from "VCS Optical Shops at the
     Tyler TX VA Medical Center"): it names no facility of its own."""
     s = clean_text(name)
-    return (bool(s) and s not in STATION_NAMES and not is_network(s)
+    return (bool(s) and s not in STATION_NAMES and s not in HOSPITAL_NAMES and not is_network(s)
             and bool(_TOWN_FACILITY_RX.match(s)))
 
 
@@ -1353,8 +1526,9 @@ def town_facility(city, state) -> str:
     return TOWNS.get((_town_key(city), st), "")
 
 
-_BY_KEY, STATION_STATES = _build()
+_BY_KEY, STATION_STATES, HOSPITAL_STATION, HOSPITAL_STATES, _HOSP_KEYS = _build()
 STATION_NAMES = frozenset(STATION_STATES)
+HOSPITAL_NAMES = frozenset(HOSPITAL_STATION)
 # station names and their other names, as keys, longest first (text_station)
 _TEXT_KEYS = tuple(sorted((k for k, v in _BY_KEY.items() if k and any(h[0] in STATION_STATES for h in v)),
                           key=lambda k: (-len(k), k)))
