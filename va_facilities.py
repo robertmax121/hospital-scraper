@@ -567,6 +567,76 @@ HOSPITALS: tuple = (
         "Hunter Holmes McGuire VA Medical Center",)),
 )
 
+# The towns a medical center stands in, as a posting's duty location names
+# them (_town_key form). A posting under a medical center's hiring line lists
+# the station's other towns too (West Palm Beach VA Medical Center's in Vero
+# Beach, Seattle's in Tacoma, Malcom Randall's in Lake City): a row in a town
+# not listed here is at another site of the station and takes the station's
+# name (at_town).
+HOSPITAL_TOWNS: dict = {
+    "Central Alabama VA Medical Center-Montgomery": ("montgomery",),
+    "Carl T. Hayden VA Medical Center": ("phoenix",),
+    "Tucson VA Medical Center": ("tucson",),
+    "John L. McClellan Memorial Veterans Hospital": ("little rock",),
+    "Fayetteville VA Medical Center": ("fayetteville",),
+    "Sepulveda VA Medical Center": ("north hills", "los angeles", "sepulveda"),
+    "Tibor Rubin VA Medical Center": ("long beach",),
+    "Jerry L. Pettis Memorial Veterans' Hospital": ("loma linda",),
+    "Jennifer Moreno VA Medical Center": ("san diego", "la jolla"),
+    "Palo Alto VA Medical Center": ("palo alto",),
+    "Sacramento VA Medical Center": ("mather", "sacramento", "rancho cordova"),
+    "Fresno VA Medical Center": ("fresno",),
+    "Rocky Mountain Regional VA Medical Center": ("aurora",),
+    "Grand Junction VA Medical Center": ("grand junction",),
+    "Edith Nourse Rogers Memorial Veterans Hospital": ("bedford",),
+    "Togus VA Medical Center": ("togus", "augusta", "chelsea"),
+    "Baltimore VA Medical Center": ("baltimore",),
+    "C.W. Bill Young VA Medical Center": ("bay pines", "st petersburg", "seminole"),
+    "Malcom Randall VA Medical Center": ("gainesville",),
+    "Lake City VA Medical Center": ("lake city",),
+    "Bruce W. Carter VA Medical Center": ("miami",),
+    "Thomas H. Corey West Palm Beach VA Medical Center": ("west palm beach", "riviera beach"),
+    "Joseph Maxwell Cleland Atlanta VA Medical Center": ("decatur", "atlanta"),
+    "Spark M. Matsunaga VA Medical Center": ("honolulu",),
+    "Danville VA Medical Center": ("danville",),
+    "Des Moines VA Medical Center": ("des moines",),
+    "Omaha VA Medical Center": ("omaha",),
+    "Royal C. Johnson Veterans' Memorial Hospital": ("sioux falls",),
+    "John Cochran VA Medical Center": ("st louis",),
+    "New Orleans VA Medical Center": ("new orleans",),
+    "Biloxi VA Medical Center": ("biloxi",),
+    "Fort Harrison VA Medical Center": ("fort harrison", "helena"),
+    "Ioannis A. Lougaris VA Medical Center": ("reno",),
+    "North Las Vegas VA Medical Center": ("north las vegas", "las vegas"),
+    "East Orange VA Medical Center": ("east orange",),
+    "Lyons VA Medical Center": ("lyons",),
+    "Raymond G. Murphy VA Medical Center": ("albuquerque",),
+    "Manhattan VA Medical Center": ("new york", "manhattan"),
+    "Brooklyn VA Medical Center": ("brooklyn", "kings"),
+    "Buffalo VA Medical Center": ("buffalo",),
+    "Canandaigua VA Medical Center": ("canandaigua",),
+    "Bath VA Medical Center": ("bath",),
+    "Franklin Delano Roosevelt Hospital": ("montrose",),
+    "Castle Point VA Medical Center": ("castle point", "wappingers falls"),
+    "Louis Stokes Cleveland VA Medical Center": ("cleveland",),
+    "Jack C. Montgomery VA Medical Center": ("muskogee",),
+    "James Mountain Inhofe VA Medical Center": ("tulsa",),
+    "Portland VA Medical Center": ("portland",),
+    "Vancouver VA Medical Center": ("vancouver",),
+    "Seattle VA Medical Center": ("seattle",),
+    "Wm. Jennings Bryan Dorn VA Medical Center": ("columbia",),
+    "Alvin C. York VA Medical Center": ("murfreesboro",),
+    "Nashville VA Medical Center": ("nashville",),
+    "Dallas VA Medical Center": ("dallas",),
+    "Audie L. Murphy Memorial Veterans' Hospital": ("san antonio",),
+    "Olin E. Teague Veterans' Medical Center": ("temple",),
+    "Doris Miller VA Medical Center": ("waco",),
+    "George H. O'Brien, Jr. VA Medical Center": ("big spring",),
+    "Thomas E. Creek VA Medical Center": ("amarillo",),
+    "George E. Wahlen VA Medical Center": ("salt lake city",),
+    "Richmond VA Medical Center": ("richmond",),
+}
+
 # Names whose spelling the VA itself varies but that are not a station's.
 NAME_FIXES: dict = {
     "VA Great Lakes Health Care System": ("Great Lakes Health Care System",),   # VISN 12, the network
@@ -750,6 +820,17 @@ def station_of(name) -> str:
     """The station of a name canonical() gave: a medical center's station,
     else the name itself."""
     return HOSPITAL_STATION.get(name, name)
+
+
+def at_town(name, city="", state="") -> str:
+    """The name for a row in this town: a medical center's name only when
+    the row's town is the medical center's own (HOSPITAL_TOWNS) or the row
+    names no town; else its station's (a row in Vero Beach, FL under "West
+    Palm Beach VA Medical Center" is West Palm Beach VA Healthcare System's).
+    Any other name is returned as is."""
+    if name not in HOSPITAL_STATION or not clean_text(city):
+        return name
+    return name if _town_key(city) in HOSPITAL_TOWNS.get(name, ()) else HOSPITAL_STATION[name]
 
 
 def canonical(name, state="") -> str:

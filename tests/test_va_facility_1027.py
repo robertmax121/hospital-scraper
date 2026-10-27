@@ -439,3 +439,39 @@ def test_the_adapter_keeps_a_named_medical_center(monkeypatch):
             "Thomas H. Corey West Palm Beach VA Medical Center", "stored")
     finally:
         scraper.set_stored_usajobs_names([])
+
+
+@pytest.mark.parametrize("name, city, state, want", [
+    # a multi-town posting under a medical center's hiring line: its rows in the station's other towns
+    ("Thomas H. Corey West Palm Beach VA Medical Center", "Vero Beach", "FL", "West Palm Beach VA Healthcare System"),
+    ("Seattle VA Medical Center", "Tacoma", "WA", "VA Puget Sound Health Care System"),
+    ("Malcom Randall VA Medical Center", "Lake City", "FL", "North Florida/South Georgia Veterans Health System"),
+    ("Central Alabama VA Medical Center-Montgomery", "Tuskegee", "AL", "Central Alabama Veterans Health Care System"),
+    ("Bruce W. Carter VA Medical Center", "Monroe County", "FL", "Miami VA Healthcare System"),
+    ("C.W. Bill Young VA Medical Center", "Cape Coral", "FL", "Bay Pines VA Healthcare System"),
+    # the medical center's own town, or no town: the medical center
+    ("Thomas H. Corey West Palm Beach VA Medical Center", "West Palm Beach", "FL",
+     "Thomas H. Corey West Palm Beach VA Medical Center"),
+    ("Thomas H. Corey West Palm Beach VA Medical Center", "", "", "Thomas H. Corey West Palm Beach VA Medical Center"),
+    ("John Cochran VA Medical Center", "Saint Louis", "MO", "John Cochran VA Medical Center"),
+    ("Joseph Maxwell Cleland Atlanta VA Medical Center", "Decatur", "GA", "Joseph Maxwell Cleland Atlanta VA Medical Center"),
+    # any other name as is
+    ("Bay Pines VA Healthcare System", "Clearwater", "FL", "Bay Pines VA Healthcare System"),
+    ("VA National Oncology Program", "Boston", "MA", "VA National Oncology Program"),
+])
+def test_a_medical_center_is_named_only_in_its_own_town(name, city, state, want):
+    assert V.at_town(name, city, state) == want
+
+
+def test_every_medical_center_has_its_towns():
+    assert set(V.HOSPITAL_TOWNS) == set(V.HOSPITAL_STATION)
+    for name, towns in V.HOSPITAL_TOWNS.items():
+        assert towns and all(t == V._town_key(t) for t in towns), name
+
+
+def test_the_adapter_names_the_station_for_a_row_in_another_town(monkeypatch):
+    monkeypatch.setattr(scraper, "_STORED_USAJOBS", {})
+    f = scraper.usajobs_va_facility
+    m = _m("Miami VA Healthcare System (Bruce W. Carter VA Medical Center)")
+    assert f(m, "Miami", "FL", "", "", 2) == ("Bruce W. Carter VA Medical Center", "hiring_org")
+    assert f(m, "Homestead", "FL", "", "", 2) == ("Miami VA Healthcare System", "hiring_org")

@@ -12563,7 +12563,9 @@ def usajobs_facility(m: dict, default: str) -> str:
 #   2. the hiring-organization line (SubAgencyName): the medical center it
 #      names when that has a name of its own ("VA Finger Lakes Healthcare
 #      System- Bath VA Medical Center" is Bath VA Medical Center; rule of
-#      2026-10-27, va_facilities.HOSPITALS), else its station ("Kansas City
+#      2026-10-27, va_facilities.HOSPITALS) and the row is in its town (a
+#      row of the same posting in another town of the station is the
+#      station's: va_facilities.at_town), else its station ("Kansas City
 #      VA Medical Center - Sterile Processing Services" is Kansas City VA
 #      Medical Center), or the VA unit that hires in its own name ("National
 #      Oncology Program" is VA National Oncology Program);
@@ -12676,11 +12678,13 @@ def usajobs_va_facility(m: dict, city: str = "", state: str = "", loc_facility: 
     name = va_facilities.canonical(loc_facility, state)
     if usable(name):
         return name, "location"
-    name = va_facilities.hiring_org_name(details.get("SubAgencyName"), state)
+    # a medical center the hiring line names, for a row in another town of
+    # its station (a multi-town posting), is the station (va_facilities.at_town)
+    name = va_facilities.at_town(va_facilities.hiring_org_name(details.get("SubAgencyName"), state), city, state)
     if usable(name):
         return name, "hiring_org"
     stored = _STORED_USAJOBS.get(str(job_id or ""), "")
-    name = va_facilities.hiring_org_name(stored, state) if stored else ""
+    name = va_facilities.at_town(va_facilities.hiring_org_name(stored, state), city, state) if stored else ""
     if usable(name):
         return name, "stored"
     for text in (details.get("JobSummary"), m.get("QualificationSummary")):
