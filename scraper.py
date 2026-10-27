@@ -25,6 +25,7 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
 import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a system name
+import va_facilities    # 2026-10-27: one clean name per VA facility on USAJOBS rows
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
@@ -12549,6 +12550,144 @@ def usajobs_facility(m: dict, default: str) -> str:
             or m.get("OrganizationName") or default)
 
 
+# 2026-10-27 (the owner, on a Clearwater, FL posting: "for VA jobs, using 'va
+# hospitals' is not acceptable. Scrape the real facility name."). On
+# 2026-10-27 1,288 of the 3,473 active "VA Hospitals" rows named only the
+# agency ("Veterans Health Administration": the posting's hiring-organization
+# line is the agency itself or blank, and its summary names no medical
+# center in the form _fed_facility_from_text reads), and the other 2,185
+# spelled their facilities 630 ways. A VA row's hospital_name is now one name
+# per facility (va_facilities, shared with the stored-row cleanup in
+# claud_outputinput/va_facility_2026-10-27), read in this order:
+#   1. the facility a PositionLocation names ahead of its town;
+#   2. the hiring-organization line (SubAgencyName): its station
+#      ("Kansas City VA Medical Center - Sterile Processing Services" is
+#      Kansas City VA Medical Center), or the VA unit that hires in its own
+#      name ("National Oncology Program" is VA National Oncology Program);
+#      a network's name on a posting of one town gives way to that town's
+#      station (VISN 12's HR files North Chicago's cardiologist under "VISN
+#      12 - VA Great Lakes Health Care System": Captain James A. Lovell
+#      Federal Health Care Center);
+#   3. the name already stored on the row, when it names a facility
+#      (load_stored_usajobs_names at run start): the cleanup read the
+#      facility of the agency-only postings from their job pages (the agency
+#      contact address), which the API does not carry;
+#   4. a station named anywhere in the summary (va_facilities.text_station:
+#      "Eastern Colorado Health Care System (ECHCS) located in Pueblo"), or
+#      in the form _fed_facility_from_text reads;
+#   5. the station that runs the VA's care in the row's town
+#      (va_facilities.TOWNS, only towns one station serves);
+#   6. the agency, as before.
+# hospital_system stays "VA Hospitals" (the upsert key). The other federal
+# systems (Indian Health Service, Military Health System, NIH) are as before.
+USAJOBS_VA_SYSTEM = "VA Hospitals"
+_STORED_USAJOBS: dict = {}     # job_id -> stored hospital_name, active USAJOBS_VA_SYSTEM rows
+STORED_USAJOBS_PAGE = 1000
+
+
+def set_stored_usajobs_names(rows) -> int:
+    """Install {job_id: hospital_name} from rows of {hospital_system, job_id,
+    hospital_name} (USAJOBS_VA_SYSTEM rows whose name names a facility).
+    Returns the map's size."""
+    global _STORED_USAJOBS
+    out = {}
+    for r in rows or []:
+        jid = r.get("job_id")
+        if r.get("hospital_system") != USAJOBS_VA_SYSTEM or jid in (None, ""):
+            continue
+        name = va_facilities.clean_text(r.get("hospital_name"))
+        if name and va_facilities.hiring_org_name(name):
+            out[str(jid)] = name
+    _STORED_USAJOBS = out
+    return len(out)
+
+
+def load_stored_usajobs_names() -> int:
+    """One read-only PostgREST pass over the active USAJOBS_VA_SYSTEM rows
+    (job_id, hospital_name), keyset-paged on id (about 4 pages on
+    2026-10-27). Without credentials the map stays empty and nothing is
+    kept."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = sb_keys.supabase_key()
+    if not sb_url or not sb_key:
+        set_stored_usajobs_names([])
+        return 0
+    import urllib.parse as _urlparse
+    import urllib.request as _urlreq
+    rows, last = [], 0
+    flt = _urlparse.quote(f"eq.{USAJOBS_VA_SYSTEM}", safe=".")
+    try:
+        while True:
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,hospital_name"
+                 f"&is_active=is.true&hospital_system={flt}&id=gt.{last}&order=id.asc&limit={STORED_USAJOBS_PAGE}")
+            rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            chunk = None
+            for attempt in range(3):
+                try:
+                    with _urlreq.urlopen(rq, timeout=60) as resp:
+                        chunk = json.loads(resp.read().decode())
+                    break
+                except Exception:
+                    if attempt == 2:
+                        raise
+                    time.sleep(3 * (attempt + 1))
+            if not chunk:
+                break
+            rows.extend(chunk)
+            last = chunk[-1]["id"]
+            if len(chunk) < STORED_USAJOBS_PAGE:
+                break
+    except Exception as e:
+        logger.warning(f"Stored VA names: load stopped after {len(rows):,} rows ({e}); "
+                       f"rows past that are named from tonight's posting only")
+    try:
+        n = set_stored_usajobs_names(rows)
+    except Exception as e:          # never let this read end the run (it starts run_all)
+        logger.warning(f"Stored VA names: not installed ({e})")
+        set_stored_usajobs_names([])
+        return 0
+    logger.info(f"Stored VA names: {n:,} of {len(rows):,} active {USAJOBS_VA_SYSTEM} rows name a facility")
+    return n
+
+
+def usajobs_va_facility(m: dict, city: str = "", state: str = "", loc_facility: str = "",
+                        job_id: str = "", places: int = 1) -> tuple[str, str]:
+    """(hospital_name, how) of one USAJOBS_VA_SYSTEM row (see the note
+    above); how is "location", "hiring_org", "stored", "text", "town" or
+    "agency". places is the number of towns the announcement lists: a
+    network's name on a one-town posting gives way to the town's station
+    (va_facilities.is_network)."""
+    m = m or {}
+    details = (m.get("UserArea") or {}).get("Details") or {}
+    town = va_facilities.town_facility(city, state)
+
+    def usable(name):
+        # a town on a bare facility word ("Tyler VA Medical Center") names no
+        # facility; a network's name on a one-town posting is the town's
+        if not name or va_facilities.is_town_only(name):
+            return False
+        return not (town and places <= 1 and va_facilities.is_network(name))
+
+    name = va_facilities.canonical(loc_facility, state)
+    if usable(name):
+        return name, "location"
+    name = va_facilities.hiring_org_name(details.get("SubAgencyName"), state)
+    if usable(name):
+        return name, "hiring_org"
+    stored = _STORED_USAJOBS.get(str(job_id or ""), "")
+    name = va_facilities.hiring_org_name(stored, state) if stored else ""
+    if usable(name):
+        return name, "stored"
+    for text in (details.get("JobSummary"), m.get("QualificationSummary")):
+        name = (va_facilities.text_station(text, state)
+                or va_facilities.canonical(_fed_facility_from_text(text), state))
+        if usable(name):
+            return name, "text"
+    if town:
+        return town, "town"
+    return (m.get("OrganizationName") or USAJOBS_VA_SYSTEM), "agency"
+
+
 def usajobs_pay(rem: dict):
     """(min, max, "hour") from one PositionRemuneration entry, or None.
     PA (per annum) is divided by FEDERAL_HOURS_PER_YEAR and rounded to the
@@ -12661,7 +12800,8 @@ def _usajobs_places(m: dict) -> tuple[list[dict], int, bool]:
 def _usajobs_jobs(item: dict, system_name: str, stats: dict | None = None) -> list[Job]:
     """The rows of one announcement, one per US town (see the note above).
     stats, when given, counts "capped" (more towns than the cap) and
-    "foreign" (no US location) announcements."""
+    "foreign" (no US location) announcements, and for USAJOBS_VA_SYSTEM
+    rows how each was named ("va_hiring_org", "va_town", ...)."""
     m = (item or {}).get("MatchedObjectDescriptor") or {}
     title = str(m.get("PositionTitle") or "").strip()
     pid = str(m.get("PositionID") or "").strip()
@@ -12680,16 +12820,24 @@ def _usajobs_jobs(item: dict, system_name: str, stats: dict | None = None) -> li
     rows = []
     for i, p in enumerate(places):
         city, state = p["city"], p["state"]
+        job_id = pid if i == 0 else f"{pid}-{p['slug']}"
+        if system_name == USAJOBS_VA_SYSTEM:
+            # 2026-10-27: one clean name per VA facility (usajobs_va_facility)
+            hospital, how = usajobs_va_facility(m, city, state, p["facility"], job_id, len(places))
+            if stats is not None:
+                stats[f"va_{how}"] = stats.get(f"va_{how}", 0) + 1
+        else:
+            hospital = p["facility"] or facility
         rows.append(Job(
             title=title,
             hospital_system=system_name,
-            hospital_name=p["facility"] or facility,
+            hospital_name=hospital,
             city=city, state=state,
             location=f"{city}, {state}" if city and state else city or state,
             specialty=(m.get("JobCategory") or [{}])[0].get("Name", ""),
             job_type=(m.get("PositionSchedule") or [{}])[0].get("Name", ""),
             url=m.get("PositionURI", ""),
-            job_id=pid if i == 0 else f"{pid}-{p['slug']}",
+            job_id=job_id,
             posted_date=str(m.get("PublicationStartDate") or "")[:10],
             description=str(m.get("QualificationSummary") or "")[:500],
             ats_platform="USAJOBS",
@@ -12824,6 +12972,11 @@ async def run_usajobs(session) -> list[Job]:
                     f"(search totals {totals}, {pages_read} of {sum(page_counts)} pages; "
                     f"{stats.get('capped', 0)} listing more than {USAJOBS_LOCATION_CAP} towns cut to "
                     f"{USAJOBS_LOCATION_CAP}; {stats.get('foreign', 0)} outside the US skipped)")
+        if system_name == USAJOBS_VA_SYSTEM:
+            hows = ("location", "hiring_org", "stored", "text", "town", "agency")
+            logger.info(f"  USAJOBS {system_name}: rows read named by "
+                        + ", ".join(f"{h} {stats.get('va_' + h, 0):,}" for h in hows)
+                        + " (agency = no facility found)")
 
     logger.info(f"  USAJOBS: {len(jobs):,} jobs")
     return jobs
@@ -32648,9 +32801,13 @@ async def run_all() -> list[dict]:
     # detail passes skip rows the database already holds a body for.
     # 2026-10-15 (wages): and the hospitals stored on the body-derived
     # systems' rows, kept on nights a row's body is not read again.
-    _, _, n_fac, _ = await asyncio.gather(asyncio.to_thread(load_cms_lookup), asyncio.to_thread(load_known_bodies),
-                                          asyncio.to_thread(facility_names.load_known_facilities),
-                                          asyncio.to_thread(load_stored_companies))
+    # 2026-10-27: and the VA facilities stored on USAJOBS rows
+    # (usajobs_va_facility keeps one the posting itself does not name).
+    _, _, n_fac, _, _ = await asyncio.gather(asyncio.to_thread(load_cms_lookup),
+                                             asyncio.to_thread(load_known_bodies),
+                                             asyncio.to_thread(facility_names.load_known_facilities),
+                                             asyncio.to_thread(load_stored_companies),
+                                             asyncio.to_thread(load_stored_usajobs_names))
     logger.info(f"Known facilities: {n_fac:,} stored rows of {', '.join(facility_names.FALLBACK_DB_LABELS)} "
                 f"name a hospital")
     # Two sessions: one with ssl=False for proxy-routed scrapers,

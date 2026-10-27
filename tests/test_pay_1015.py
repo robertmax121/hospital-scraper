@@ -309,12 +309,13 @@ def test_usajobs_reads_every_page_names_the_facility_and_stores_hourly(usajobs_a
     assert [c for c in usajobs_api if c[0] == "VATA"] == [("VATA", p, 500) for _ in queries for p in (1, 2)]
     va = {j.job_id: j for j in jobs if j.hospital_system == "VA Hospitals"}
     assert len(va) == 5
+    # 2026-10-27: one name per VA station (va_facilities, usajobs_va_facility)
     assert {jid: j.hospital_name for jid, j in va.items()} == {
-        "864236800": "Cincinnati VHA Medical Center",
+        "864236800": "Cincinnati VA Medical Center",
         "871468000": "Oklahoma City VA Health Care System",
-        "866093500": "North Florida/South Georgia Healthcare System",
+        "866093500": "North Florida/South Georgia Veterans Health System",
         "879972400": "Michael E. DeBakey VA Medical Center",
-        "887880600": "Baltimore VA Medical Center",
+        "887880600": "VA Maryland Health Care System",
     }
     c = va["864236800"]
     assert (c.city, c.state, c.location) == ("Cincinnati", "OH", "Cincinnati, OH")
