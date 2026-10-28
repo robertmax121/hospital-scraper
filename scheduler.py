@@ -226,10 +226,22 @@ def run():
     # the validator above deactivates dead links — so even a successful write
     # was stale by a couple thousand rows. Re-running it here makes
     # site_stats id=2 the final, post-sweep number the homepage should show.
+    # 2026-10-28 (travel state audit): once the recount's snapshot rebuild
+    # has landed, the site's travel geo pages are marked stale so each
+    # re-renders from the finished run (site_revalidate.revalidate_travel_geo);
+    # a failed rebuild leaves them on their own 24 h clock.
+    travel_geo_summary: dict = {}
     try:
+        import scraper as _scraper
         from scraper import update_travel_site_stats
         logger.info("\n[ STEP 2c ] Recounting travel jobs for site_stats...")
+        _scraper.LAST_RUN_COUNTS.pop("travel_snapshot", None)
         update_travel_site_stats()
+        if _scraper.LAST_RUN_COUNTS.get("travel_snapshot") == "refreshed":
+            import site_revalidate
+            travel_geo_summary = site_revalidate.revalidate_travel_geo() or {}
+        else:
+            logger.info("travel geo revalidate: snapshot not refreshed in STEP 2c; pages keep their own clock")
     except Exception as e:
         logger.warning(f"travel site_stats recount failed (non-fatal): {e}")
 
@@ -324,6 +336,7 @@ def run():
                                        if k not in ("excluded_systems", "guarded_systems")},
                             "front_pool": front_summary,
                             "site_revalidate": revalidate_summary,
+                            "travel_geo_revalidate": travel_geo_summary,
                             "travel_sweep": LAST_RUN_COUNTS.get("travel_sweep"),
                             "partial_systems": sorted(PARTIAL_SYSTEMS)[:50],
                             "guarded_systems": (deact_stats.get("guarded_systems") or [])[:50]})
