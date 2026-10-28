@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from typing import Optional
 import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a system name
 import va_facilities    # 2026-10-27: one clean name per VA facility on USAJOBS rows
+import uhs_facilities   # 2026-10-28: one clean name per UHS facility on jobs.uhsinc.com rows
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
@@ -10273,9 +10274,10 @@ JIBE_SITES = {
     # ── 2026-09-10 Texas block C (Y-texas-build): careers-uhsinc.icims.com
     # answers every search with a redirect script to jobs.uhsinc.com, which
     # is a Jibe front. Validated through scrape_jibe on 2026-09-10: 4,823
-    # rows, 831 TX, full descriptions in-feed. The feed carries no facility
-    # label (every row is "Universal Health Services"), so the 19 Texas UHS
-    # hospitals are linked through hospital_cms_alias (sql/17).
+    # rows, 831 TX, full descriptions in-feed. location_name carries no
+    # facility, so the 19 Texas UHS hospitals are linked through
+    # hospital_cms_alias (sql/17); since 2026-10-28 hospital_name is the
+    # facility its tags4 names (uhs_jibe_facility).
     "Universal Health Services": "https://jobs.uhsinc.com",
     "OSF HealthCare":          "https://www.osfcareers.org",
     "WakeMed":                 "https://jobs.wakemed.org",
@@ -10448,7 +10450,12 @@ JIBE_FACILITY_TAG: dict[str, str] = {"Care New England Health System": "tags2",
                                      # 2026-10-27: location_name is a site code ("MA 50809 Emerson
                                      # Endo") or absent; the tag is the center or hospital.
                                      "SCA Health": "tags3",          # "Emerson Endo and Digestive Health Cntr"
-                                     "Vibra Healthcare": "tags7"}    # "Vibra Hospital of Sacramento"
+                                     "Vibra Healthcare": "tags7",    # "Vibra Hospital of Sacramento"
+                                     # 2026-10-28: the careers board's Facility filter
+                                     # ("Manatee Memorial Hospital", "STHS McAllen"); the
+                                     # value is cleaned by uhs_jibe_facility, which
+                                     # _jibe_facility hands every UHS row to
+                                     uhs_facilities.SYSTEM: uhs_facilities.FACILITY_TAG}
 
 # 2026-10-15 (wages, facility): feeds whose location_name is a site code plus
 # a site ("PHO - Presbyterian Medical Center", "CIG - Cancer Institute"):
@@ -10458,9 +10465,117 @@ JIBE_FACILITY_TAG: dict[str, str] = {"Care New England Health System": "tags2",
 JIBE_FACILITY_RESOLVER = {"Novant Health": facility_names.novant_facility}
 
 
+# 2026-10-28 (the owner: "yes show facility names on UHS cards"). Every
+# Universal Health Services row carried the system label in hospital_name
+# (4,827 of 4,827 active rows that day): location_name is a street or a site
+# code. The feed names the facility in tags4, the value the careers board's
+# Facility filter shows ("Manatee Memorial Hospital", "STHS McAllen"). A UHS
+# row's hospital_name is now, first match (uhs_jibe_facility):
+#   1. the tag, as one clean name (uhs_facilities.facility: one spelling per
+#      facility, abbreviations written out); a tag that names one of the
+#      system's own offices (the corporate office, a billing office, the call
+#      center) keeps the system label;
+#   2. with no tag, the name already stored on the row when it names a
+#      facility (load_stored_uhs_names at run start; the cleanup of
+#      2026-10-28 named the stored rows);
+#   3. the one facility the opening of the posting's text names
+#      (uhs_facilities.text_facility, strict: one name and no other);
+#   4. the system label, as before.
+# hospital_system stays "Universal Health Services" (the upsert key, the hub,
+# the filters and the logo).
+_STORED_UHS: dict = {}         # job_id -> stored hospital_name, active UHS rows that name a facility
+STORED_UHS_PAGE = 1000
+
+
+def set_stored_uhs_names(rows) -> int:
+    """Install {job_id: hospital_name} from rows of {hospital_system, job_id,
+    hospital_name} (UHS rows whose stored name names a facility). Returns
+    the map's size."""
+    global _STORED_UHS
+    out = {}
+    for r in rows or []:
+        jid = r.get("job_id")
+        if r.get("hospital_system") != uhs_facilities.SYSTEM or jid in (None, ""):
+            continue
+        name = uhs_facilities.facility(r.get("hospital_name"))
+        if name:
+            out[str(jid)] = name
+    _STORED_UHS = out
+    return len(out)
+
+
+def load_stored_uhs_names() -> int:
+    """One read-only PostgREST pass over the active UHS rows (job_id,
+    hospital_name), keyset-paged on id (about 5 pages on 2026-10-28).
+    Without credentials the map stays empty and nothing is kept."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = sb_keys.supabase_key()
+    if not sb_url or not sb_key:
+        set_stored_uhs_names([])
+        return 0
+    import urllib.parse as _urlparse
+    import urllib.request as _urlreq
+    rows, last = [], 0
+    flt = _urlparse.quote(f"eq.{uhs_facilities.SYSTEM}", safe=".")
+    try:
+        while True:
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,hospital_name"
+                 f"&is_active=is.true&hospital_system={flt}&id=gt.{last}&order=id.asc&limit={STORED_UHS_PAGE}")
+            rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            chunk = None
+            for attempt in range(3):
+                try:
+                    with _urlreq.urlopen(rq, timeout=60) as resp:
+                        chunk = json.loads(resp.read().decode())
+                    break
+                except Exception:
+                    if attempt == 2:
+                        raise
+                    time.sleep(3 * (attempt + 1))
+            if not chunk:
+                break
+            rows.extend(chunk)
+            last = chunk[-1]["id"]
+            if len(chunk) < STORED_UHS_PAGE:
+                break
+    except Exception as e:
+        logger.warning(f"Stored UHS names: load stopped after {len(rows):,} rows ({e}); "
+                       f"rows past that are named from tonight's posting only")
+    try:
+        n = set_stored_uhs_names(rows)
+    except Exception as e:          # never let this read end the run (it starts run_all)
+        logger.warning(f"Stored UHS names: not installed ({e})")
+        set_stored_uhs_names([])
+        return 0
+    logger.info(f"Stored UHS names: {n:,} of {len(rows):,} active {uhs_facilities.SYSTEM} rows name a facility")
+    return n
+
+
+def uhs_jibe_facility(j: dict) -> tuple[str, str]:
+    """(hospital_name, how) of one jobs.uhsinc.com /api/jobs row (see the
+    note above); how is "tag", "office", "stored", "text" or "system"."""
+    j = j or {}
+    raw = j.get(JIBE_FACILITY_TAG.get(uhs_facilities.SYSTEM, uhs_facilities.FACILITY_TAG))
+    if isinstance(raw, (list, tuple)):
+        raw = next((str(t) for t in raw if str(t or "").strip()), "")
+    if str(raw or "").strip():
+        name = uhs_facilities.facility(raw)
+        return (name, "tag") if name else (uhs_facilities.SYSTEM, "office")
+    stored = _STORED_UHS.get(str(j.get("req_id") or "").strip(), "")
+    if stored:
+        return stored, "stored"
+    name = uhs_facilities.text_facility(j.get("description"))
+    if name:
+        return name, "text"
+    return uhs_facilities.SYSTEM, "system"
+
+
 def _jibe_facility(system: str, j: dict) -> str:
     """hospital_name for one /api/jobs row: the configured tag list's first
-    entry, else location_name for JIBE_FACILITY_NAME systems, else the system."""
+    entry, else location_name for JIBE_FACILITY_NAME systems, else the system.
+    A UHS row: uhs_jibe_facility (2026-10-28)."""
+    if system == uhs_facilities.SYSTEM:
+        return uhs_jibe_facility(j)[0]
     resolver = JIBE_FACILITY_RESOLVER.get(system)
     if resolver:
         return resolver(j.get("location_name") or "") or system
@@ -10558,6 +10673,7 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
     served: set[str] = set()
     bad_rows = 0
     page_states: set[str] = set()  # 2026-10-27: the state names the first page shows (sliced reads)
+    uhs_how: dict = {}             # 2026-10-28: UHS rows by where their facility came from (uhs_jibe_facility)
 
     async def _read(extra: dict, deep_check: bool = False):
         """Page one /api/jobs listing (`extra`: a filter such as {"state":
@@ -10629,10 +10745,15 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                     if isinstance(cat, list):
                         cat = cat[0] if cat else None
                     posted = str(j.get("posted_date") or "")[:10]
+                    if system == uhs_facilities.SYSTEM:
+                        facility, how = uhs_jibe_facility(j)
+                        uhs_how[how] = uhs_how.get(how, 0) + 1
+                    else:
+                        facility = _jibe_facility(system, j)
                     jobs.append(Job(
                         title=title,
                         hospital_system=system,
-                        hospital_name=_jibe_facility(system, j),
+                        hospital_name=facility,
                         city=city,
                         state=st,
                         location=", ".join(p for p in (city, st) if p),
@@ -10710,6 +10831,8 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                     f"state ({len(states)} names, {len(states) - len(missed)} read to the end"
                     + (f"; unfinished: {', '.join(missed[:8])}" if missed else "")
                     + f"): {len(served):,} served")
+    if uhs_how:
+        logger.info(f"  Jibe {system}: facility by " + ", ".join(f"{k} {v:,}" for k, v in sorted(uhs_how.items())))
     # Dedupe on job_id — Jibe repeats a req across category pages occasionally.
     seen, uniq = set(), []
     for jb in jobs:
@@ -32969,11 +33092,14 @@ async def run_all() -> list[dict]:
     # systems' rows, kept on nights a row's body is not read again.
     # 2026-10-27: and the VA facilities stored on USAJOBS rows
     # (usajobs_va_facility keeps one the posting itself does not name).
-    _, _, n_fac, _, _ = await asyncio.gather(asyncio.to_thread(load_cms_lookup),
-                                             asyncio.to_thread(load_known_bodies),
-                                             asyncio.to_thread(facility_names.load_known_facilities),
-                                             asyncio.to_thread(load_stored_companies),
-                                             asyncio.to_thread(load_stored_usajobs_names))
+    # 2026-10-28: and the UHS facilities stored on its rows (uhs_jibe_facility
+    # keeps one when a posting's tag is blank).
+    _, _, n_fac, _, _, _ = await asyncio.gather(asyncio.to_thread(load_cms_lookup),
+                                                asyncio.to_thread(load_known_bodies),
+                                                asyncio.to_thread(facility_names.load_known_facilities),
+                                                asyncio.to_thread(load_stored_companies),
+                                                asyncio.to_thread(load_stored_usajobs_names),
+                                                asyncio.to_thread(load_stored_uhs_names))
     logger.info(f"Known facilities: {n_fac:,} stored rows of {', '.join(facility_names.FALLBACK_DB_LABELS)} "
                 f"name a hospital")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
