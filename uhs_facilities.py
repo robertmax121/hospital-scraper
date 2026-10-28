@@ -19,7 +19,9 @@ holds what the scraper keeps.
                        system's own offices: the corporate office, the
                        billing offices, the call center; SYSTEM_LEVEL), and a
                        value the table does not know yet as written (a new
-                       facility is still a facility)
+                       facility is still a facility); never with a leading
+                       "The" (drop_the: "George Washington University
+                       Hospital", the owner's rule of 2026-10-28)
   text_facility(text)  the facility a posting's own text names, for a row
                        whose tag is blank: the first known facility name in
                        the opening of the description ("Who We Are: Millwood
@@ -98,7 +100,7 @@ TEXT_ALIASES = {
 # Names text_facility never takes: a market or a division that postings of
 # its member facilities name first ("Spring Valley Hospital is a member of
 # The Valley Health System", "Northwest Texas Healthcare System is a 495-bed
-# system" on The Pavilion's postings), and a subsidiary that works inside
+# system" on the Pavilion's postings), and a subsidiary that works inside
 # other hospitals (Horizon Health). Their own postings carry the tag.
 TEXT_SKIP = frozenset({
     "Valley Health System", "Southwest Healthcare System", "South Texas Health System",
@@ -110,7 +112,9 @@ TEXT_SKIP = frozenset({
 # One spelling per facility: the board's own, as its Facility filter and the
 # majority of its postings wrote it on 2026-10-28 (a case or punctuation
 # variant, "Doctors Hospital Of Laredo", "Prairie St Johns", "Hri Hospital",
-# takes it). Also the names text_facility looks for.
+# takes it), less a leading "The" ("The George Washington University
+# Hospital" on the board is George Washington University Hospital here, the
+# owner, 2026-10-28). Also the names text_facility looks for.
 CANONICAL = (
     "A Plus Urgent Care", "Aiken Physicians Alliance", "Aiken Professional Association",
     "Aiken Regional Medical Centers", "Alabama Clinical Schools", "Alan B. Miller Medical Center",
@@ -119,10 +123,11 @@ CANONICAL = (
     "BHC Alhambra Hospital", "Behavioral Health Connections", "Behavioral Health Connections of Georgia",
     "Behavioral Hospital of Bellaire", "Belmont Pines Hospital", "Benchmark Behavioral Health System Hawaii",
     "Benchmark Behavioral Health Systems", "Black Bear Lodge", "Bloomington Meadows Hospital",
-    "Brentwood Behavioral Healthcare", "Brentwood Hospital", "Brooke Glen Behavioral Hospital",
-    "Brynn Marr Hospital", "Calvary Healing Center", "Canyon Creek Behavioral Health", "Canyon Ridge Hospital",
-    "Capital Medical Group", "Cedar Creek Hospital", "Cedar Hill Regional Medical Center", "Cedar Hills Hospital",
-    "Cedar Ridge Hospital", "Cedar Ridge at Bethany", "Cedar Springs Hospital",
+    "Brentwood Behavioral Healthcare", "Brentwood Hospital", "BridgeWay", "Brook Hospital - Dupont",
+    "Brook Hospital - KMI", "Brooke Glen Behavioral Hospital", "Brynn Marr Hospital", "Calvary Healing Center",
+    "Canyon Creek Behavioral Health", "Canyon Ridge Hospital", "Canyon at Santa Monica", "Capital Medical Group",
+    "Carolina Center for Behavioral Health", "Cedar Creek Hospital", "Cedar Hill Regional Medical Center",
+    "Cedar Hills Hospital", "Cedar Ridge Hospital", "Cedar Ridge at Bethany", "Cedar Springs Hospital",
     "Centennial Hills Hospital Medical Center", "Centennial Peaks Hospital", "Center for Change",
     "Central Florida Behavioral Hospital", "Clarion Psychiatric Center", "Clive Behavioral Health Hospital",
     "Coastal Behavioral Health", "Coastal Harbor Treatment Center", "Columbus Behavioral Center",
@@ -133,17 +138,18 @@ CANONICAL = (
     "Doctors Hospital Emergency Room South", "Doctors Hospital of Laredo", "Dover Behavioral Health System",
     "El Paso Behavioral Health System", "Emerald Coast Behavioral Hospital", "Fairfax Behavioral Health",
     "Fairmount Behavioral Health System", "First Health Care of Puerto Rico", "First Hospital Panamericano",
-    "Forest View Hospital", "Fort Duncan Regional Medical Center", "Fort Lauderdale Behavioral Health Center",
-    "Foundations Behavioral Health", "Foundations Health", "Foundations Minnesota",
-    "Foundations Recovery Network", "Foundations San Francisco", "Foundations for Living",
+    "Folsom Sierra Wellness Clinic", "Forest View Hospital", "Fort Duncan Regional Medical Center",
+    "Fort Lauderdale Behavioral Health Center", "Foundations Behavioral Health", "Foundations Health",
+    "Foundations Minnesota", "Foundations Recovery Network", "Foundations San Francisco", "Foundations for Living",
     "Fox Run Center for Children & Adolescents", "Fremont Hospital", "Friends Hospital", "Fuller Hospital",
-    "Garfield Park Behavioral Hospital", "Glen Oaks Hospital", "Granite Hills Hospital",
-    "Greystone Foster Care", "Gulf Coast Treatment Center", "Gulfport Behavioral Health System", "HOPE Center",
-    "HRI Hospital", "Hampton Academy", "Hampton Behavioral Health Center", "Hanover Hill Behavioral Health",
-    "Harbor Point Behavioral Health Center", "Hartgrove Behavioral Health System", "Havenwyck Hospital",
-    "HealthLinkNow", "Heartland Behavioral Health Services", "Henderson Hospital", "Heritage Oaks Hospital",
-    "Hermitage Hall", "Hickory Trail Hospital", "Highlands Behavioral Health System",
-    "Hill Crest Behavioral Health Services", "Holly Hill Hospital", "Horizon Health", "IPM SoCal Management",
+    "Garfield Park Behavioral Hospital", "George Washington University Hospital", "Glen Oaks Hospital",
+    "Granite Hills Hospital", "Greystone Foster Care", "Gulf Coast Treatment Center",
+    "Gulfport Behavioral Health System", "HOPE Center", "HRI Hospital", "Hampton Academy",
+    "Hampton Behavioral Health Center", "Hanover Hill Behavioral Health", "Harbor Point Behavioral Health Center",
+    "Hartgrove Behavioral Health System", "Havenwyck Hospital", "HealthLinkNow",
+    "Heartland Behavioral Health Services", "Henderson Hospital", "Heritage Oaks Hospital", "Hermitage Hall",
+    "Hickory Trail Hospital", "Highlands Behavioral Health System", "Hill Crest Behavioral Health Services",
+    "Holly Hill Hospital", "Horizon Health", "Horsham Clinic", "Hughes Center", "IPM SoCal Management",
     "Independence Physician Management", "Inland Northwest Behavioral Health", "Inland Valley Medical Center",
     "Intermountain Hospital", "Kempsville Center for Behavioral Health", "KeyStone Center",
     "Kingwood Pines Hospital", "La Amistad Behavioral Health Services", "Lakeside Behavioral Health System",
@@ -152,8 +158,8 @@ CANONICAL = (
     "Liberty Point Behavioral Healthcare", "Lifeworks Schools", "Lighthouse Behavioral Health Hospital",
     "Lighthouse Care Center of Augusta", "Lincoln Prairie Behavioral Health Center",
     "Lincoln Trail Behavioral Health System", "Manatee Cardiology Associates", "Manatee Memorial Hospital",
-    "Manatee Physician Alliance", "McDowell Center for Children", "Meridell Achievement Center",
-    "Mesilla Valley Hospital", "Metropolitan Behavioral Health", "Michael's House",
+    "Manatee Physician Alliance", "McDowell Center for Children", "Meadows Psychiatric Center",
+    "Meridell Achievement Center", "Mesilla Valley Hospital", "Metropolitan Behavioral Health", "Michael's House",
     "Michiana Behavioral Health", "Mid-Atlantic Medicine", "Midwest Center for Youth and Families",
     "Millwood Hospital", "Mountain Youth Academy", "Mymindnow", "Newport News Behavioral Health Center",
     "North Spring Behavioral Healthcare", "North Star Behavioral Health", "Northern Nevada Health System",
@@ -162,11 +168,12 @@ CANONICAL = (
     "Oak Plains Academy", "Okaloosa Youth Academy", "Old Vineyard Behavioral Health Services",
     "Palm Point Behavioral Health", "Palm Shores Behavioral Health Center", "Palmdale Regional Medical Center",
     "Palmetto Lowcountry Behavioral Health", "Palo Verde Behavioral Health", "Parkwood Behavioral Health System",
-    "Patriot Support Programs of UHS", "Peachford Hospital", "Pembroke Hospital", "Pinnacle Pointe Hospital",
-    "Pinnacle Pointe Outpatient Services", "Poplar Springs Hospital", "Prairie St. John's", "Prominence Health",
-    "Psychiatric Institute of Washington", "Quail Run Behavioral Health",
-    "Quail Surgical and Pain Management Center", "Rancho Springs Medical Center",
-    "Reasons Eating Disorder Center", "Rivendell Behavioral Health Hospital",
+    "Patriot Support Programs of UHS", "Pavilion Behavioral Health System",
+    "Pavilion at Northwest Texas Healthcare System", "Peachford Hospital", "Pembroke Hospital",
+    "Pinnacle Pointe Hospital", "Pinnacle Pointe Outpatient Services", "Poplar Springs Hospital",
+    "Prairie St. John's", "Prominence Health", "Psychiatric Institute of Washington", "Quail Run Behavioral Health",
+    "Quail Surgical and Pain Management Center", "Rancho Springs Medical Center", "Reasons Eating Disorder Center",
+    "Ridge Behavioral Health System", "Rivendell Behavioral Health Hospital",
     "Rivendell Behavioral Health Services of Arkansas", "River Oaks Hospital", "River Park Hospital",
     "River Point Behavioral Health", "River Vista Behavioral Health", "Riveredge Hospital",
     "Riverside Medical Clinic", "Rockford Center", "Rolling Hills Hospital", "Roxbury Treatment Center",
@@ -178,22 +185,17 @@ CANONICAL = (
     "South Texas Health System Edinburg", "South Texas Health System Heart", "South Texas Health System McAllen",
     "Southeast Behavioral Hospital", "Southridge Behavioral Hospital",
     "Southwest Healthcare Rancho Springs Hospital", "Southwest Healthcare System",
-    "Spring Mountain Treatment Center", "Spring Valley Hospital Medical Center",
-    "Spring Valley Physician Alliance", "Springwoods Behavioral Health", "St. Louis Behavioral Medicine Institute",
-    "St. Mary's Physician Associates", "St. Mary's Regional Medical Center", "Stonington Institute",
-    "Streamwood Behavioral Healthcare System", "Summerlin Hospital Medical Center", "Summit Oaks Hospital",
-    "SummitRidge Hospital", "Suncoast Behavioral Health Center", "TMC Bonham Hospital", "Temecula Valley Hospital",
+    "Spring Mountain Treatment Center", "Spring Valley Hospital Medical Center", "Spring Valley Physician Alliance",
+    "Springwoods Behavioral Health", "St. Louis Behavioral Medicine Institute", "St. Mary's Physician Associates",
+    "St. Mary's Regional Medical Center", "Stonington Institute", "Streamwood Behavioral Healthcare System",
+    "Summerlin Hospital Medical Center", "Summit Oaks Hospital", "SummitRidge Hospital",
+    "Suncoast Behavioral Health Center", "TMC Bonham Hospital", "Temecula Valley Hospital",
     "Texas NeuroRehab Center", "Texoma Medical Center", "TexomaCare", "Texomacare Specialty Physician",
-    "The BridgeWay", "The Brook Hospital - Dupont", "The Brook Hospital - KMI", "The Canyon at Santa Monica",
-    "The Carolina Center for Behavioral Health", "The Folsom Sierra Wellness Clinic",
-    "The George Washington University Hospital", "The Horsham Clinic", "The Hughes Center",
-    "The Meadows Psychiatric Center", "The Pavilion Behavioral Health System",
-    "The Pavilion at Northwest Texas Healthcare System", "The Ridge Behavioral Health System",
-    "The Vines Behavioral Health Hospital", "Thousand Branches Wellness", "Three Rivers Behavioral Health",
-    "Three Rivers Midlands", "Three Trails Behavioral Hospital", "Turning Point Care Center",
-    "University Behavioral Center", "University Behavioral Health of Denton", "Valle Vista Health System",
-    "Valley Health Physician Alliance", "Valley Health System", "Valley Hospital", "Valley Hospital Medical Center",
-    "Via Linda Behavioral Hospital", "Virginia Beach Psychiatric Center", "Wekiva Springs Center",
+    "Thousand Branches Wellness", "Three Rivers Behavioral Health", "Three Rivers Midlands",
+    "Three Trails Behavioral Hospital", "Turning Point Care Center", "University Behavioral Center",
+    "University Behavioral Health of Denton", "Valle Vista Health System", "Valley Health Physician Alliance",
+    "Valley Health System", "Valley Hospital", "Valley Hospital Medical Center", "Via Linda Behavioral Hospital",
+    "Vines Behavioral Health Hospital", "Virginia Beach Psychiatric Center", "Wekiva Springs Center",
     "Wellington Physician Alliances", "Wellington Regional Medical Center", "Wellstone Regional Hospital",
     "West Henderson Hospital", "West Oaks Hospital", "Willow Springs Center", "Windmoor Healthcare",
     "Windsor Laurelwood Center for Behavioral Medicine", "Wyoming Behavioral Institute",
@@ -230,9 +232,19 @@ def is_system_label(name) -> bool:
     return bool(_SYSTEM_RX.match(clean_text(name)))
 
 
+_THE_RX = re.compile(r"^the\s+(?=\S)", re.I)
+
+
+def drop_the(name) -> str:
+    """A facility's name without a leading "The" (the owner, 2026-10-28:
+    "George Washington University Hospital", "Pavilion at Northwest Texas
+    Healthcare System")."""
+    return _THE_RX.sub("", str(name or ""))
+
+
 def facility(tag) -> str:
     """One clean facility name for a tags4 value (a list or a string); ""
-    when it names no facility."""
+    when it names no facility. Never with a leading "The"."""
     if isinstance(tag, (list, tuple)):
         tag = next((t for t in tag if clean_text(t)), "")
     raw = clean_text(tag)
@@ -240,12 +252,12 @@ def facility(tag) -> str:
         return ""
     k = fkey(raw)
     if k in _RENAME_BY_KEY:
-        return _RENAME_BY_KEY[k]
+        return drop_the(_RENAME_BY_KEY[k])
     if k in _BY_KEY:
-        return _BY_KEY[k]
+        return drop_the(_BY_KEY[k])
     if raw.isupper() and len(raw) > 6:          # a new facility written in capitals
         raw = raw.title()
-    return raw
+    return drop_the(raw)
 
 
 def is_facility(name) -> bool:

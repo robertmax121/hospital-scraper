@@ -31,11 +31,18 @@ UHS = "Universal Health Services"
     (["The Northern Nevada Health System"], "Northern Nevada Health System"),
     (["Valley Health System Consolidated Services"], "Valley Health System"),
     (["Southwest Healthcare Rancho Springs Hospital"], "Rancho Springs Medical Center"),
-    (["The George Washington University Hospital"], "The George Washington University Hospital"),
-    (["The Brook Hospital - Dupont"], "The Brook Hospital - Dupont"),
+    # a leading "The" is dropped (the owner, 2026-10-28)
+    (["The George Washington University Hospital"], "George Washington University Hospital"),
+    (["George Washington University Hospital"], "George Washington University Hospital"),
+    (["The Brook Hospital - Dupont"], "Brook Hospital - Dupont"),
+    (["The Pavilion at Northwest Texas Healthcare System"], "Pavilion at Northwest Texas Healthcare System"),
+    (["The BridgeWay"], "BridgeWay"),
+    (["Saint Simons By-The-Sea"], "Saint Simons By-The-Sea"),
     # a facility the table does not know yet is still a facility, as written
     (["Brand New Behavioral Hospital"], "Brand New Behavioral Hospital"),
     (["NEW RIVER BEHAVIORAL HOSPITAL"], "New River Behavioral Hospital"),
+    (["The Brand New Hospital"], "Brand New Hospital"),
+    (["THE NEW RIVER HOSPITAL"], "New River Hospital"),
 ])
 def test_a_tag_names_one_clean_facility(tag, want):
     assert U.facility(tag) == want
@@ -70,6 +77,9 @@ def test_the_posting_opening_names_its_facility():
         "Summerlin Hospital Medical Center"
     # the longest name wins: never "Valley Hospital" inside "Spring Valley Hospital Medical Center"
     assert U.text_facility("Spring Valley Hospital Medical Center is hiring") == "Spring Valley Hospital Medical Center"
+    # a facility the text names with "The" is stored without it
+    assert U.text_facility("Who We Are: The George Washington University Hospital is a 400-bed hospital") == \
+        "George Washington University Hospital"
 
 
 def test_text_never_guesses():
@@ -93,9 +103,15 @@ def test_tag_then_stored_then_text_then_system():
         {"hospital_system": UHS, "job_id": "370001", "hospital_name": "Kingwood Pines Hospital"},
         {"hospital_system": UHS, "job_id": "370002", "hospital_name": "Universal Health Services"},
         {"hospital_system": "Acadia Healthcare", "job_id": "370003", "hospital_name": "Rolling Hills Hospital"},
+        # a stored name with a leading "The" is kept without it
+        {"hospital_system": UHS, "job_id": "370005", "hospital_name": "The George Washington University Hospital"},
     ])
     try:
-        assert scraper._STORED_UHS == {"370001": "Kingwood Pines Hospital"}
+        assert scraper._STORED_UHS == {"370001": "Kingwood Pines Hospital",
+                                       "370005": "George Washington University Hospital"}
+        assert f({"req_id": "370005", "tags4": []}) == ("George Washington University Hospital", "stored")
+        assert f({"req_id": "370005", "tags4": ["The George Washington University Hospital"]}) == (
+            "George Washington University Hospital", "tag")
         # 1. the tag wins over everything
         assert f({"req_id": "370001", "tags4": ["STHS McAllen"]}) == ("South Texas Health System McAllen", "tag")
         # an office tag keeps the system, even with a stored facility or a facility in the text
@@ -206,3 +222,9 @@ def test_the_table_has_one_spelling_per_facility():
     assert len(U._RENAME_BY_KEY) == len(U.RENAMES)
     assert all(U.fkey(v) in set(keys) for v in U.TEXT_ALIASES.values())
     assert json.dumps(U.CANONICAL).isascii()
+    # no name the table gives starts with "The" (the owner, 2026-10-28)
+    given = list(U.CANONICAL) + list(U.RENAMES.values()) + list(U.TEXT_ALIASES.values())
+    assert not [n for n in given if n.lower().startswith("the ")]
+    assert U.drop_the("The Horsham Clinic") == "Horsham Clinic"
+    assert U.drop_the("Theda Clark Medical Center") == "Theda Clark Medical Center"
+    assert U.drop_the("The") == "The"
