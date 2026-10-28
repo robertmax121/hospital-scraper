@@ -14,6 +14,7 @@ import logging
 import random
 import re
 from html import unescape as _html_unescape   # 2026-09-10: Paycor / TaleoBE / HCTS parsers
+from html.entities import html5 as _HTML5_ENTITIES   # 2026-10-27: decode_text_entities
 import time
 import os
 import unicodedata
@@ -334,6 +335,52 @@ def _join_split_figure(m):
 
 _ENTITY_LEFT_RX = re.compile(r"&(?:#\d{1,6}|#x[0-9a-f]{1,6}|[a-z]{2,8});", re.I)
 _LEAD_BULLET_RX = re.compile("\n[ \t]*[\u00b7\u2981\u2022\u25aa\u25ab\u25e6\u25cf\u25cb\u25a0\u25a1\u2023\u2043\u2219\u27a2\u27a4\u25ba\u25b8\uf0b7\uf0a7\uf076\uf0d8\u2756\u2713\u2714]+[ \t]*")
+
+
+# 2026-10-27 (title entities): 380 active titles and 2 facility names were
+# stored with their HTML entities ("RN L&amp;D Nights", "PACU RN 3-12&#x27;s",
+# "School Nurse &#x2013; Bus Runs", "UGH Women&apos;s Health"), and the cards
+# printed them as written (Maxim's "Trach &amp; Vent Nursing" on the RN / FL
+# ad landing page, 2026-10-26). The card and heading parsers of Kaiser, UHG,
+# Maxim and Enhabit (TalentBrew pages), CHS (WPJobBoard cards), AFC
+# (CareerPlug) and Concentra read the text out of raw HTML and never decoded
+# it; ApplicantPro's JSON and ADP's facility names arrive encoded. One decode
+# in normalize_job covers every adapter, before anything reads the title.
+# Only complete references are decoded: a numeric one, or a named one the
+# HTML5 table knows WITH its semicolon. html.unescape alone would also read
+# the semicolon-less legacy names inside words ("&notes" as "\u00acs"), so
+# real text such as "R&D", "AT&T", "Med&Surg" or "Q&A" is never touched. A
+# double-encoded value ("&amp;#x27;") decodes again until stable (at most 4
+# passes). A value with no reference comes back as the same object, so no
+# other row's title, content hash or facts hash moves.
+_TEXT_ENTITY_RX = re.compile(r"&(?:#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});")
+
+
+def _decode_text_entity(m):
+    ref = m.group(0)
+    if ref[1] == "#":
+        return htmllib.unescape(ref)
+    return _HTML5_ENTITIES.get(ref[1:], ref)
+
+
+def decode_text_entities(s):
+    """A short text field (title, facility name) with its complete HTML
+    character references decoded until stable. When something decoded, the
+    no-break, narrow and tab spaces a reference can carry become plain spaces
+    and runs collapse; line breaks stay for normalize_job's first-line title
+    rule. Anything else, and every value without a reference, is returned
+    unchanged."""
+    if not isinstance(s, str) or "&" not in s:
+        return s
+    out = s
+    for _ in range(4):
+        nxt = _TEXT_ENTITY_RX.sub(_decode_text_entity, out)
+        if nxt == out:
+            break
+        out = nxt
+    if out == s:
+        return s
+    return re.sub(r"[^\S\n]+", " ", out).strip()
 
 
 # ── Workday job descriptions (2026-08-03) ─────────────────────────────────
@@ -28118,6 +28165,15 @@ def normalize_job(j: Job) -> dict:
     for _k in ("title", "hospital_name", "hospital_system", "url", "description", "specialty", "job_type"):
         if isinstance(d.get(_k), (dict, list)):
             d[_k] = _loc_text(d.get(_k))
+    # 2026-10-27 (title entities): "RN L&amp;D Nights" -> "RN L&D Nights",
+    # "UGH Women&apos;s Health" -> "UGH Women's Health" (decode_text_entities),
+    # before the specialty, job type, sign-on, pay and facts rules read them.
+    # job_id is the adapter's and is not touched. A value that would decode
+    # to nothing keeps its stored text.
+    for _k in ("title", "hospital_name"):
+        _dec = decode_text_entities(d.get(_k))
+        if _dec:
+            d[_k] = _dec
     # 2026-10-07 (push 10, item 3): a title never carries a line break. The
     # MyMichigan Playwright rows stored "Registered Nurse RN - ED\n\nReq ID:
     # 49092" (61 rows, 35191488); the first line is the title.
