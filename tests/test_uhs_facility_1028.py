@@ -190,7 +190,12 @@ def test_other_jibe_systems_are_untouched():
     assert scraper._jibe_facility("Care New England Health System", {"tags2": ["Kent Hospital"]}) == "Kent Hospital"
     assert scraper._jibe_facility("Garnet Health", {"location_name": "Garnet Health Medical Center"}) == \
         "Garnet Health Medical Center"
-    assert UHS not in scraper.JIBE_FACILITY_TAG and UHS not in scraper.JIBE_FACILITY_NAME
+    # UHS's tag is registered as the others' are (tags4, the Facility filter); its
+    # value goes through uhs_jibe_facility, never the generic first-entry rule
+    assert scraper.JIBE_FACILITY_TAG[UHS] == U.FACILITY_TAG == "tags4"
+    assert UHS not in scraper.JIBE_FACILITY_NAME
+    assert scraper._jibe_facility(UHS, {"tags4": ["STHS McAllen"]}) == "South Texas Health System McAllen"
+    assert scraper._jibe_facility(UHS, {"tags4": ["Western CBO"]}) == UHS
 
 
 def test_the_table_has_one_spelling_per_facility():

@@ -10450,7 +10450,12 @@ JIBE_FACILITY_TAG: dict[str, str] = {"Care New England Health System": "tags2",
                                      # 2026-10-27: location_name is a site code ("MA 50809 Emerson
                                      # Endo") or absent; the tag is the center or hospital.
                                      "SCA Health": "tags3",          # "Emerson Endo and Digestive Health Cntr"
-                                     "Vibra Healthcare": "tags7"}    # "Vibra Hospital of Sacramento"
+                                     "Vibra Healthcare": "tags7",    # "Vibra Hospital of Sacramento"
+                                     # 2026-10-28: the careers board's Facility filter
+                                     # ("Manatee Memorial Hospital", "STHS McAllen"); the
+                                     # value is cleaned by uhs_jibe_facility, which
+                                     # _jibe_facility hands every UHS row to
+                                     uhs_facilities.SYSTEM: uhs_facilities.FACILITY_TAG}
 
 # 2026-10-15 (wages, facility): feeds whose location_name is a site code plus
 # a site ("PHO - Presbyterian Medical Center", "CIG - Cancer Institute"):
@@ -10550,7 +10555,7 @@ def uhs_jibe_facility(j: dict) -> tuple[str, str]:
     """(hospital_name, how) of one jobs.uhsinc.com /api/jobs row (see the
     note above); how is "tag", "office", "stored", "text" or "system"."""
     j = j or {}
-    raw = j.get(uhs_facilities.FACILITY_TAG)
+    raw = j.get(JIBE_FACILITY_TAG.get(uhs_facilities.SYSTEM, uhs_facilities.FACILITY_TAG))
     if isinstance(raw, (list, tuple)):
         raw = next((str(t) for t in raw if str(t or "").strip()), "")
     if str(raw or "").strip():
