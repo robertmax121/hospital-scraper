@@ -115,6 +115,8 @@ def test_single_location_keeps_the_position_id_as_before():
     j = rows[0]
     assert (j.job_id, j.req_id, j.city, j.state, j.location) == (
         "CBTF-13083981-27-AP", "", "Baltimore", "MD", "Baltimore, MD")
+    # 2026-10-27: a medical center with a name of its own keeps it
+    # (va_facilities.HOSPITALS); the VA Maryland Health Care System has three
     assert j.hospital_name == "Baltimore VA Medical Center"
     first = scraper._usajobs_job(item, "VA Hospitals")
     assert dataclasses.replace(first, scraped_at=j.scraped_at) == j

@@ -43,15 +43,30 @@ suffixes, and every redirect hop is re-checked before it is followed.
     (the job id is in the fragment, which never reaches the server, so every
     one answers 200) and are counted, not requested;
   * the indeterminate rows are logged by final status.
+
+2026-10-27 (Bounce QA re-analysis, item 4): job pages people actually open.
+UF Health 29002321 (chaplain, Jacksonville) was live with Apply while its
+employer page answered 404, and had never been checked: the pools above hold
+only rows with a posted wage (and the 400 newest per state), and nothing else
+fetches a staff job's link. Layer 4 and the sweep retire only rows the crawl
+stops listing. So the job pages opened in the last LANDED_DAYS days
+(waypoint_events page views, bots excluded by the stored flag; about 260
+distinct active jobs a week on 2026-10-26) are checked too, first, with the
+same rules: two 404/410 answers, the per-system ALARM, the 5% cap, the
+HealthcareSource skip. A failure to read them never stops the pool check.
+A retired row whose feed still lists it is set active again by the next
+upsert (every listed row is sent is_active=true); this pass then retires it
+again that night while it keeps its landings.
 """
 import asyncio
 import ipaddress
 import logging
 import os
+import re
 import time
 from collections import Counter
-from datetime import datetime, timezone
-from urllib.parse import urlparse, urljoin
+from datetime import datetime, timedelta, timezone
+from urllib.parse import quote, urlparse, urljoin
 
 import aiohttp
 
@@ -205,6 +220,63 @@ async def _fetch_pool(session, sb_url, headers) -> list:
     return list(rows.values())
 
 
+# 2026-10-27 (Bounce QA re-analysis, item 4): the job pages people opened.
+# The site logs a "pageview" event per page (waypoint_events, page_path
+# "/jobs/<slug>-<id>", sometimes with a query string such as Reddit's click
+# id); ua_is_bot is stamped at insert. Newest first, LANDED_MAX_ROWS distinct
+# active jobs at most (about 260 a week on 2026-10-26, so the cap only bites
+# on a traffic spike), read in pages by an id cursor.
+LANDED_DAYS = 14
+LANDED_MAX_ROWS = 3000
+LANDED_EVENTS_PAGE = 1000
+LANDED_EVENTS_MAX_PAGES = 40
+LANDED_ROWS_CHUNK = 150         # ids per hospital_jobs read (URL length)
+_JOB_PAGE_ID_RX = re.compile(r"^/jobs/[^/?#]+-(\d+)/?(?:[?#].*)?$")
+
+
+def _landed_job_id(page_path):
+    """hospital_jobs.id of a /jobs/<slug>-<id> page path, else None."""
+    m = _JOB_PAGE_ID_RX.match(str(page_path or ""))
+    return int(m.group(1)) if m else None
+
+
+async def _fetch_landed(session, sb_url, headers, now=None) -> list:
+    """Active hospital_jobs rows (id, url, system) whose job page was opened
+    in the last LANDED_DAYS days, most recently opened first."""
+    since = ((now or datetime.now(timezone.utc)) - timedelta(days=LANDED_DAYS)).isoformat()
+    ids: list = []
+    seen: set = set()
+    cursor = None
+    for _ in range(LANDED_EVENTS_MAX_PAGES):
+        url = (f"{sb_url}/rest/v1/waypoint_events?select=id,page_path"
+               f"&event_type=eq.pageview&created_at=gte.{quote(since)}&ua_is_bot=not.is.true"
+               f"&page_path=like./jobs/*"
+               + (f"&id=lt.{cursor}" if cursor is not None else "")
+               + f"&order=id.desc&limit={LANDED_EVENTS_PAGE}")
+        page = await _get_json(session, url, headers)
+        if not page:
+            break
+        for ev in page:
+            jid = _landed_job_id(ev.get("page_path"))
+            if jid is not None and jid not in seen:
+                seen.add(jid)
+                ids.append(jid)
+        cursor = page[-1].get("id")
+        if len(page) < LANDED_EVENTS_PAGE or cursor is None or len(ids) >= LANDED_MAX_ROWS * 2:
+            break
+    rows = {}
+    for i in range(0, len(ids), LANDED_ROWS_CHUNK):
+        chunk = ids[i:i + LANDED_ROWS_CHUNK]
+        got = await _get_json(
+            session,
+            f"{sb_url}/rest/v1/hospital_jobs?select=id,url,hospital_system"
+            f"&is_active=eq.true&id=in.({','.join(str(x) for x in chunk)})",
+            headers)
+        for r in got or []:
+            rows[r["id"]] = r
+    return [rows[j] for j in ids if j in rows][:LANDED_MAX_ROWS]
+
+
 async def _probe(session, url, method):
     async with session.request(method, url, allow_redirects=False,
                                timeout=aiohttp.ClientTimeout(total=TIMEOUT_SEC)) as r:
@@ -331,13 +403,27 @@ async def main() -> dict:
     # session's default User-Agent is a Chrome string: name the caller on every Supabase call.
     sb_headers = {"apikey": sb_key, "Authorization": f"Bearer {sb_key}", "User-Agent": SUPABASE_UA}
     summary = {"checked": 0, "live": 0, "dead": 0, "indeterminate": 0,
-               "retired": 0, "stamped": 0, "unchecked": 0, "unverifiable": 0}
+               "retired": 0, "stamped": 0, "unchecked": 0, "unverifiable": 0,
+               "landed": 0, "landed_extra": 0}
     connector = aiohttp.TCPConnector(limit=CONCURRENCY * 2, ttl_dns_cache=300)
     async with aiohttp.ClientSession(headers={"User-Agent": USER_AGENT, "Accept": "text/html,*/*;q=0.8"},
                                      timeout=aiohttp.ClientTimeout(total=30),
                                      connector=connector) as session:
-        rows = await _fetch_pool(session, sb_url, sb_headers)
-        logger.info(f"  front-pool link check: {len(rows):,} rows ({len(STATES)} state pools + national)")
+        pool = await _fetch_pool(session, sb_url, sb_headers)
+        # 2026-10-27: the job pages people opened, checked first (a deadline
+        # cuts the tail of the list). A failure to read them is logged and
+        # the pool check goes on as before.
+        landed: list = []
+        try:
+            landed = await _fetch_landed(session, sb_url, sb_headers)
+        except Exception as e:
+            logger.warning(f"  landed job pages not read (non-fatal; the pool check goes on): {e}")
+        pool_ids = {r["id"] for r in pool}
+        extra = [r for r in landed if r["id"] not in pool_ids]
+        summary["landed"], summary["landed_extra"] = len(landed), len(extra)
+        rows = extra + pool
+        logger.info(f"  front-pool link check: {len(rows):,} rows ({len(STATES)} state pools + national, "
+                    f"plus {len(extra):,} opened job pages outside them; {len(landed):,} opened in {LANDED_DAYS} days)")
         if not rows:
             return summary
         # 2026-10-07 (push 10): links no request can verify are counted and

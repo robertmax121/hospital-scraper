@@ -344,7 +344,9 @@ def dry_normalize(platform, fx, mp):
 
 def test_the_release_covers_exactly_the_18_platforms():
     assert set(BUILDERS) == RELEASE_PLATFORMS and len(RELEASE_PLATFORMS) == 18
-    assert scraper.REQ_ID_ONLY_PLATFORMS == RELEASE_PLATFORMS
+    # 2026-10-27: SilkRoad OpenHire (Temple Health) joined after this release:
+    # its Tracking Code is read only by the job-page pass.
+    assert scraper.REQ_ID_ONLY_PLATFORMS == RELEASE_PLATFORMS | {"SilkRoad"}
     assert scraper.REQ_ID_LIST_PLATFORMS <= scraper.REQ_ID_ONLY_PLATFORMS
     assert "NeoGov" not in scraper.REQ_ID_ONLY_PLATFORMS and "NEOGOV" not in scraper.REQ_ID_ONLY_PLATFORMS
 

@@ -25,6 +25,7 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from typing import Optional
 import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a system name
+import va_facilities    # 2026-10-27: one clean name per VA facility on USAJOBS rows
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
@@ -1170,11 +1171,13 @@ FEED_CONFIGS = (
     "FINDLY_CWS_ORGS", "FINDLY_GOOGLE_ORGS", "GREENHOUSE_ORGS", "SMARTRECRUITERS_ORGS",
     "LEVER_ORGS", "ASHBY_ORGS", "CAREERPLUG_ORGS", "PHENOM_ORGS", "ADP_ORGS", "ADPCX_ORGS",
     "SELECTMINDS_ORGS", "RECRUITINGCOM_ORGS", "INFOR_ORGS", "UKG_ORGS", "ORACLE_ORGS",
-    "HEALTHCARESOURCE_ORGS", "TENET_BRANDS", "TRINITY_ORGS", "UHS_BRANDS", "KRONOS_ORGS",
+    "HEALTHCARESOURCE_ORGS", "HCSHIRING_SITES", "TENET_BRANDS", "TRINITY_ORGS", "UHS_BRANDS", "KRONOS_ORGS",
     "TAM_ORGS", "NEOGOV_AGENCIES", "SF_RMK_BOARDS", "PRELOAD_SITES", "APPLICANTPRO_ORGS",
     "CSOD_ORGS", "PAYCOM_ORGS", "PAYCOR_ORGS", "PAYLOCITY_ORGS", "WORKABLE_ORGS",
     "TALEMETRY_SITES", "TALEO_BE_ORGS", "HCTS_PORTALS", "PEOPLESOFT_SITES",
     "APPLICANTSTACK_ORGS", "JAZZHR_ORGS", "JOBAPS_SITES",   # 2026-10-25 coverage stage 4
+    "SILKROAD_SITES",                                      # 2026-10-27 (Temple Health)
+    "SITEMAP_SITES", "APPLITRACK_BOARDS",                   # 2026-10-27 RN gap fixes
     "LIQUIDCOMPASS_SITES", "SUCCESSFACTORS_ORGS", "HTML_LIST_SITES", "EIGHTFOLD_ORGS",
     "PLAYWRIGHT_SITES", "USAJOBS_ORGS",
 )
@@ -1417,7 +1420,13 @@ KNOWN_BODY_PLATFORMS = ("Workday", "Oracle HCM", "Phenom", "TalentBrew", "Infor"
                         # 2026-10-05 (push 9): the RMK and NY State Jobs job-page passes store under these.
                         "SuccessFactorsRMK", "NYStateJobs",
                         # 2026-10-25 (coverage stage 4): the new job-page passes store under these.
-                        "Taleo", "SelectMinds", "ApplicantStack", "JazzHR", "JobAps")
+                        "Taleo", "SelectMinds", "ApplicantStack", "JazzHR", "JobAps",
+                        # 2026-10-27: the SilkRoad OpenHire job-page pass (Temple Health).
+                        "SilkRoad",
+                        # 2026-10-27 (RN gap): the hcshiring.com description pass.
+                        "HCSHiring",
+                        # 2026-10-27 (RN gap fixes): Aveanna's job pages, school districts' postings.
+                        "SitemapBoard", "AppliTrack")
 KNOWN_BODY_PAGE      = 1000
 # 2026-10-07 (push 10): the read covers every active body now (346,809 on
 # 10-07), not only the detail platforms, so the cap moves up from 400,000.
@@ -1727,6 +1736,10 @@ def _known_kind(system: str, job):
                facts have no req_id, while REQ_REREAD_WINDOW is open and the
                list gave none: a candidate after the force re-reads, before
                the pay re-reads, so the page's requisition number is read.
+      "facility" (2026-10-27) a stored body of an ICIMS_COMPANY_FACILITY
+               system still on the system label, on its _company_reread_slot
+               night: queued with the force re-reads, so the page's Company
+               field is read
                Integration 2026-10-14: the two re-reads never touch the same
                row (_req_reread_slot leaves REQ_REREAD_PLATFORMS to "req"),
                and a row gets one kind a night, so it is queued once.
@@ -1743,6 +1756,8 @@ def _known_kind(system: str, job):
         return "cut"
     if _force_slot(*key) or _req_reread_slot(key, job):
         return "force"
+    if _company_reread_slot(key):
+        return "facility"     # 2026-10-27: read for its iCIMS Company field
     if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
         return "pay"
     if (key in _KNOWN_NOREQ and getattr(job, "ats_platform", "") in REQ_REREAD_PLATFORMS
@@ -1919,6 +1934,118 @@ def _force_slot(canon: str, job_id: str) -> bool:
     return zlib.crc32(f"force|{canon}|{job_id}".encode("utf-8")) % (b - a + 1) == today - a
 
 
+# ── iCIMS Company field as the facility (2026-10-27, Select Medical) ────────
+# Select Medical's card list names no facility, so all 4,096 active rows said
+# "Select Medical" on 10-26, while each job page's header names the employer
+# entity in a "Company" field ("Select Specialty Hospital - Knoxville",
+# "Select Physical Therapy"). For the systems here the iCIMS detail pass
+# stores that field as hospital_name (_icims_apply_page). The list sends the
+# system label every night, so a row's stored facility is carried onto its
+# list row (_keep_stored_company, from load_stored_companies at run start),
+# and the stored bodies still on the system label are read once more for it:
+# kind "facility" (_known_kind), one night in ICIMS_FACILITY_REREAD_CYCLE per
+# posting (~820 of Select's ~4,100 a night), after the rows with no body, on
+# the iCIMS budget. A row drops out as soon as its facility is stored; one
+# not reached comes back a cycle later; the re-read ends on
+# ICIMS_FACILITY_REREAD_UNTIL (new rows still get the field on their first
+# read).
+ICIMS_COMPANY_FACILITY = frozenset({"Select Medical"})
+ICIMS_FACILITY_REREAD_CYCLE = int(os.getenv("ICIMS_FACILITY_REREAD_CYCLE", "5"))
+ICIMS_FACILITY_REREAD_UNTIL = os.getenv("ICIMS_FACILITY_REREAD_UNTIL", "2026-12-31")
+_STORED_COMPANY: dict = {}     # (system, job_id) -> stored hospital_name, ICIMS_COMPANY_FACILITY rows
+STORED_COMPANY_PAGE = 1000
+
+
+def set_stored_companies(rows) -> int:
+    """Install {(hospital_system, job_id): hospital_name} from rows of
+    {hospital_system, job_id, hospital_name} (ICIMS_COMPANY_FACILITY systems
+    only). Returns the map's size."""
+    global _STORED_COMPANY
+    out = {}
+    for r in rows or []:
+        s, jid = r.get("hospital_system"), r.get("job_id")
+        if s in ICIMS_COMPANY_FACILITY and jid not in (None, ""):
+            out[(s, str(jid))] = re.sub(r"\s+", " ", str(r.get("hospital_name") or "")).strip()
+    _STORED_COMPANY = out
+    return len(out)
+
+
+def load_stored_companies() -> int:
+    """One read-only PostgREST pass per ICIMS_COMPANY_FACILITY system over its
+    active rows (job_id, hospital_name), keyset-paged on id (Select Medical:
+    5 pages). Without credentials, or with the detail passes off, the map
+    stays empty: no facility is carried and none is re-read."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = sb_keys.supabase_key()
+    if not sb_url or not sb_key or not DETAIL_FETCH:
+        set_stored_companies([])
+        return 0
+    import urllib.parse as _urlparse
+    import urllib.request as _urlreq
+    rows = []
+    for system in sorted(ICIMS_COMPANY_FACILITY):
+        flt = _urlparse.quote(f"eq.{system}", safe=".")
+        last = 0
+        try:
+            while True:
+                u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,hospital_name"
+                     f"&is_active=is.true&hospital_system={flt}&id=gt.{last}&order=id.asc&limit={STORED_COMPANY_PAGE}")
+                rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+                chunk = None
+                for attempt in range(KNOWN_BODY_RETRIES):
+                    try:
+                        with _urlreq.urlopen(rq, timeout=60) as resp:
+                            chunk = json.loads(resp.read().decode())
+                        break
+                    except Exception:
+                        if attempt + 1 >= KNOWN_BODY_RETRIES:
+                            raise
+                        time.sleep(3 * (attempt + 1))
+                if not chunk:
+                    break
+                rows.extend(chunk)
+                last = chunk[-1]["id"]
+                if len(chunk) < STORED_COMPANY_PAGE:
+                    break
+        except Exception as e:
+            logger.warning(f"Stored companies: {system} load stopped ({e}); its rows past that are "
+                           f"neither carried nor re-read tonight")
+    n = set_stored_companies(rows)
+    left = sum(1 for (s, _j), name in _STORED_COMPANY.items() if name in ("", s))
+    logger.info(f"Stored companies: {n:,} active rows of {', '.join(sorted(ICIMS_COMPANY_FACILITY))}; "
+                f"{left:,} still on the system label")
+    return n
+
+
+def _keep_stored_company(job) -> None:
+    """A list row of an ICIMS_COMPANY_FACILITY system that names no facility
+    takes the one stored on its row (the list's label would overwrite it)."""
+    s = job.hospital_system
+    if s not in ICIMS_COMPANY_FACILITY or (job.hospital_name or "").strip() not in ("", s):
+        return
+    stored = _STORED_COMPANY.get((s, str(job.job_id)), "")
+    if stored and stored != s:
+        job.hospital_name = stored
+
+
+def _company_reread_slot(key) -> bool:
+    """True when this stored row (key = (canonical system, job_id)) of an
+    ICIMS_COMPANY_FACILITY system is still on the system label and tonight
+    is its night to be read for its Company field."""
+    canon, jid = key
+    if canon not in ICIMS_COMPANY_FACILITY or _STORED_COMPANY.get(key) not in ("", canon):
+        return False
+    if key not in _STORED_COMPANY:
+        return False
+    try:
+        if _run_day() > datetime.strptime(ICIMS_FACILITY_REREAD_UNTIL, "%Y-%m-%d").toordinal():
+            return False
+    except (TypeError, ValueError):
+        return False
+    n = max(1, ICIMS_FACILITY_REREAD_CYCLE)
+    return zlib.crc32(f"company|{canon}|{jid}".encode("utf-8")) % n == _run_day() % n
+
+
 def _refresh_quota(budget) -> int:
     """Stored bodies one tenant may re-read a night: DETAIL_REFRESH_PCT % of
     its floor (at least one), 0 when DETAIL_REFRESH_PCT is 0."""
@@ -2004,6 +2131,15 @@ HOSPITAL_SYSTEM_ALIASES = {
     "Allegiance Health Management (Mercy Regional)": "Allegiance Health Management",
     "Allegiance Health Management (Sabine)":         "Allegiance Health Management",
     "Allegiance Health Management (DeQuincy)":       "Allegiance Health Management",
+    # 2026-10-27 (RN gap): Nobis Rehabilitation Partners' per-hospital Paycor
+    # boards (PAYCOR_ORGS) write one label; hospital_name keeps the hospital.
+    "Bradenton Rehabilitation Hospital": "Nobis Rehabilitation Partners",
+    "Cincinnati Rehabilitation Hospital": "Nobis Rehabilitation Partners",
+    "Clarksville Rehabilitation Hospital": "Nobis Rehabilitation Partners",
+    "Florida Rehabilitation Hospital at Tampa": "Nobis Rehabilitation Partners",
+    "Little Rock Rehabilitation Hospital": "Nobis Rehabilitation Partners",
+    "Pinellas County Rehabilitation Hospital": "Nobis Rehabilitation Partners",
+    "Tucson Rehabilitation Hospital": "Nobis Rehabilitation Partners",
     # "Saint Luke's Health System": "St. Luke's Health System" removed
     # 2026-10-13: the saintlukes.wd1 tenant is Saint Luke's Health System of
     # KANSAS CITY (MO/KS), a different system from St. Luke's of Boise (ID).
@@ -2425,7 +2561,13 @@ WORKDAY_TENANTS = {
     "CityMD":                    ("shm", "5", "summit_citymd"),
     # Compassus: hospice + palliative care + home health across ~200 locations.
     # Endpoint validated 2026-05-26: hospicecom.wd5/Compassus returns total=1076.
-    "Compassus":                 ("hospicecom", "5", "Compassus"),
+    # 2026-10-27: the career site moved to compassuscareers.com (WordPress),
+    # whose Apply links name the same tenant under a new site,
+    # hospicecom.wd5/compassuscareers (total 939 on 10-26; the old site
+    # "Compassus" has listed nothing since 09-21). Same tenant, same
+    # "2026-59104" requisition ids, so rows still open come back on their
+    # old keys.
+    "Compassus":                 ("hospicecom", "5", "compassuscareers"),
     # ── Added 2026-05-29: Phase 3 non-acute expansion (verified Workday cxs 200) ──
     # All endpoints validated live 2026-05-29 via probe_ats.py (Origin/Referer
     # headers required; reads data["total"]).
@@ -2519,6 +2661,33 @@ WORKDAY_TENANTS = {
     "Brookings Health System": ("avera", "5", "BHS-careers"),   # 19 rows, 19 in Brookings, SD (CMS 430008)
     "Summit Pacific Medical Center": ("spmc", "5", "summitpacificmedicalcenter"),   # 45 rows, 42 in Elma, WA (CMS 501304)
     "Sauk Prairie Hospital": ("saukprairiehealthcare", "12", "Sauk_Prairie_Healthcare_Careers"),   # 48 rows, 37 in Prairie du Sac, WI, 8 with no town (location default) (CMS 520095)
+    # ── 2026-10-27 RN gap (configs on adapters we run): non-acute employers
+    # with no rows. Each site read off the employer's own careers page and
+    # answered the CXS list call that day [board total].
+    # CenterWell: Humana's provider arm (CenterWell Home Health, the former
+    # Kindred at Home, plus CenterWell Senior Primary Care); a care provider,
+    # so the whole board is kept, like a hospital's. Replaces the dead
+    # SmartRecruiters "KindredatHome" entry (0 postings on 10-26, no stored row).
+    "CenterWell":                ("humana",              "5",   "CenterWell_External_Career_Site"),   # [1,809]
+    # Payers: only the clinical job families are read (WD_TENANT_FACETS);
+    # the rest of these boards is retail, sales, IT, actuarial and claims.
+    "CVS Health":                ("cvshealth",           "1",   "CVS_Health_Careers"),                # [19,463 board; 1,958 in the two clinical families]
+    "Elevance Health":           ("elevancehealth",      "1",   "ANT"),                               # [254 board; 108 Medical]
+    "Centene":                   ("centene",             "5",   "Centene_External"),                  # [357 board; 174 clinical]
+    "Humana":                    ("humana",              "5",   "Humana_External_Career_Site"),       # [224 board; 90 clinical]
+    "Cigna":                     ("cigna",               "5",   "cignacareers"),                      # [534 board, 297 US; clinical US only]
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Montage Health": ("montagehealth", "5", "Montage_Health"),   # [10-27 dry run] 100 rows / 89 in town / RN 18; CMS 050145
+    "Marshall Medical Center": ("marshallmedical", "1", "MMC"),   # [10-27 dry run] 63 rows / 53 in town / RN 4; CMS 050254
+    "Mercy Medical Center Cedar Rapids": ("mercycare", "5", "Mercy_Cedar_Rapids_Careers"),   # [10-27 dry run] 210 rows / 167 in town / RN 86; CMS 160079
+    "Boone Hospital Center": ("boone", "503", "Careers"),   # [10-27 dry run] 159 rows / 152 in town / RN 44; CMS 260068
+    "Mary Lanning Healthcare": ("marylanning", "1", "marylanningcareers"),   # [10-27 dry run] 91 rows / 91 in town / RN 30; CMS 280032
+    "Great Plains Health": ("gphealth", "5", "GPH"),   # [10-27 dry run] 100 rows / 97 in town / RN 36; CMS 280065
+    "Golden Valley Memorial Healthcare": ("gvmh", "504", "GVMH"),   # [10-27 dry run] 81 rows / 73 in town / RN 21; CMS 260175
+    "King's Daughters Medical Center": ("univofky", "108", "UKKD"),   # [10-27 dry run] 380 rows / 334 in Ashland KY / RN 33; CMS 180009 (today counted only through a state-level alias, no rows)
 }
 
 # 2026-09-24 (review): fixed appliedFacets for tenants shared with employers
@@ -2579,6 +2748,58 @@ WD_TENANT_FACETS: dict[str, dict[str, list[str]]] = {
         "1f1a79f42c9301b6c8d9ec73a701bf3b", "1f1a79f42c930126d6ad0f70a701a93b",
         "1f1a79f42c9301f56b0f9e77a701e83b",
     ]},
+    # 2026-10-27 (RN gap): Fresenius Medical Care's tenant is global (2,794
+    # US postings of about 3,600 that day, the rest in 42 other countries),
+    # and its US clinical family alone (2,674) overflows the 2,000-row
+    # window, so the jobFamilyGroup slices came back truncated. The crawl is
+    # cut to the US here and sliced by state (WD_SLICE_PARAM): 51 values (48
+    # states, DC, Puerto Rico, Guam), the largest Texas at 245, every slice
+    # far under the window. A dry run of three whole states inside this
+    # filter (TN, CO, NM) listed 173 postings, 66 of them RN.
+    "Fresenius Medical Care": {"locationCountry": ["bc33aa3152ec42d4995f4791a106ed09"]},   # United States of America
+    # Payers (2026-10-27, RN gap): the nurse, case-management, utilization
+    # and clinician families only; the rest of these boards is retail store,
+    # sales, IT, actuarial and claims work. Ids and counts read off each
+    # tenant's jobFamilyGroup facet that day.
+    "CVS Health": {"jobFamilyGroup": [
+        "e65dbadf6a50100168ed7d5902dc0001",   # Clinical Services [1,903] (nurses, case managers, MinuteClinic, Oak Street, Signify)
+        "e65dbadf6a50100168ed7df44fa00000",   # Clinical Pharmacists [55]
+    ]},
+    "Elevance Health": {"jobFamilyGroup": [
+        "f42bff05a414010057202352de780000",   # MED - Medical [108]
+    ]},
+    "Centene": {"jobFamilyGroup": [
+        "e9b7c763cfa310019c762a4504a90000",   # Care Management [146]
+        "e8e87c5e1ec6108fd6495e6ab9b51120",   # Clinical & Nursing [12]
+        "e8e87c5e1ec6108fd64965f1123d1128",   # Physicians [10]
+        "c099e0cb799701bac21c3fe8881c95a9",   # Med Management [6]
+    ]},
+    "Humana": {"jobFamilyGroup": [
+        "fbb60995c99901824e53604715c50cc6",   # Integrated Care & Care Operations - Care Management [54]
+        "fbb60995c999018c18a3114915c560c6",   # Member Quality & Financials - Utilization Management [13]
+        "fbb60995c99901cf7326824815c544c6",   # Integrated Care & Care Operations - Pharmacy [8]
+        "fbb60995c99901b8664ca14815c54ac6",   # Integrated Care & Care Operations - Clinical [6]
+        "fbb60995c99901fcbf27214a15c594c6",   # Integrated Care & Care Operations - Therapy [5]
+        "a0509a3e91730101b6c5e991a3950000",   # Integrated Care & Care Operations - Behavioral Health [2]
+        "fbb60995c999018598bab34715c51cc6",   # Integrated Care & Care Operations - Providers (Direct Patient Care) [2]
+    ]},
+    "Cigna": {
+        "Location_Country": ["bc33aa3152ec42d4995f4791a106ed09"],   # United States of America [297 of 534]
+        "jobFamilyGroup": [
+            "b7947bbbfff201ef25630616390c8716",   # Clinical [103]
+            "b7947bbbfff2013bd2441e16390c9516",   # Medical Management [36]
+            "b7947bbbfff201aa2a7e2916390c9916",   # Provider [13]
+        ]},
+}
+
+# 2026-10-27 (RN gap): the facet a tenant's window-hit crawl is sliced by
+# when the default order (jobFamilyGroup, jobFamily, timeType) cannot get
+# under the 2,000-row window. A nested location group counts (Fresenius's
+# locationRegionStateProvince sits inside locationMainGroup). Whatever the
+# order, a parameter fixed by WD_TENANT_FACETS is never sliced on: a slice
+# would replace the fixed filter and read the postings it keeps out.
+WD_SLICE_PARAM: dict[str, str] = {
+    "Fresenius Medical Care": "locationRegionStateProvince",
 }
 
 # Generic fallback site names to try when the specific one fails
@@ -3452,6 +3673,76 @@ SYSTEM_LOCATION_DEFAULTS: dict[str, tuple[str, str]] = {
     "Niobrara County Hospital District": ("Lusk", "WY"),
     "North Platte Valley Medical Center": ("Saratoga", "WY"),
     "Star Valley Medical Center": ("Afton", "WY"),
+    # 2026-10-27 RN gap, long tail: each new board's home town; fills only rows that carry
+    # no town (multi-hospital boards: the main hospital's town).
+    "Montage Health": ("Monterey", "CA"),
+    "Marshall Medical Center": ("Placerville", "CA"),
+    "Mercy Medical Center Cedar Rapids": ("Cedar Rapids", "IA"),
+    "Boone Hospital Center": ("Columbia", "MO"),
+    "Mary Lanning Healthcare": ("Hastings", "NE"),
+    "Great Plains Health": ("North Platte", "NE"),
+    "Golden Valley Memorial Healthcare": ("Clinton", "MO"),
+    "King's Daughters Medical Center": ("Ashland", "KY"),
+    "University Hospital (Newark)": ("Newark", "NJ"),
+    "Baton Rouge General Medical Center": ("Baton Rouge", "LA"),
+    "Oaklawn Hospital": ("Marshall", "MI"),
+    "Western Wisconsin Health": ("Baldwin", "WI"),
+    "Washington Regional Medical Center": ("Fayetteville", "AR"),
+    "Fairfield Medical Center": ("Lancaster", "OH"),
+    "Trinity Health (Minot)": ("Minot", "ND"),
+    "Bristol Hospital": ("Bristol", "CT"),
+    "Lake Region Healthcare": ("Fergus Falls", "MN"),
+    "Methodist Rehabilitation Center": ("Jackson", "MS"),
+    "Schoolcraft Memorial Hospital": ("Manistique", "MI"),
+    "St. John's Health (Jackson)": ("Jackson", "WY"),
+    "Blessing Health System": ("Quincy", "IL"),
+    "Berkshire Health Systems": ("Pittsfield", "MA"),
+    "Holzer Health System": ("Gallipolis", "OH"),
+    "Signature Healthcare Brockton Hospital": ("Brockton", "MA"),
+    "Conway Medical Center": ("Conway", "SC"),
+    "Baxter Health": ("Mountain Home", "AR"),
+    "Memorial Healthcare (Owosso)": ("Owosso", "MI"),
+    "Emerson Health": ("Concord", "MA"),
+    "Ozarks Healthcare": ("West Plains", "MO"),
+    "Children's Hospital of The King's Daughters": ("Norfolk", "VA"),
+    "Morris Hospital": ("Morris", "IL"),
+    "Citizens Memorial Healthcare": ("Bolivar", "MO"),
+    "Northfield Hospital + Clinics": ("Northfield", "MN"),
+    "St. Clair Health": ("Pittsburgh", "PA"),
+    "Licking Memorial Hospital": ("Newark", "OH"),
+    "Hancock Regional Hospital": ("Greenfield", "IN"),
+    "St. Mary's Healthcare (Amsterdam)": ("Amsterdam", "NY"),
+    "Indiana Regional Medical Center": ("Indiana", "PA"),
+    "Fisher-Titus Medical Center": ("Norwalk", "OH"),
+    "Olmsted Medical Center": ("Rochester", "MN"),
+    "Schneck Medical Center": ("Seymour", "IN"),
+    "Winona Health": ("Winona", "MN"),
+    "Valley View Hospital": ("Glenwood Springs", "CO"),
+    "Pella Regional Health Center": ("Pella", "IA"),
+    "Shenandoah Medical Center": ("Shenandoah", "IA"),
+    "Margaret Mary Health": ("Batesville", "IN"),
+    "Grande Ronde Hospital": ("La Grande", "OR"),
+    "Mobridge Regional Hospital": ("Mobridge", "SD"),
+    "Tri-State Memorial Hospital": ("Clarkston", "WA"),
+    "Beloit Health System": ("Beloit", "WI"),
+    "SBH Health System": ("Bronx", "NY"),
+    "The Brooklyn Hospital Center": ("Brooklyn", "NY"),
+    "Saint Joseph's Medical Center (Yonkers)": ("Yonkers", "NY"),
+    "Williamson Health": ("Franklin", "TN"),
+    "Finger Lakes Health": ("Geneva", "NY"),
+    "Cook County Health": ("Chicago", "IL"),
+    "Hennepin Healthcare": ("Minneapolis", "MN"),
+    "Cape Cod Healthcare": ("Hyannis", "MA"),
+    "Mercy Medical Center (Baltimore)": ("Baltimore", "MD"),
+    "Confluence Health": ("Wenatchee", "WA"),
+    "Beebe Healthcare": ("Lewes", "DE"),
+    "Holy Redeemer Health System": ("Meadowbrook", "PA"),
+    "NCH Healthcare System": ("Naples", "FL"),
+    "Columbus Regional Health": ("Columbus", "IN"),
+    "Mountain View Hospital (Idaho Falls)": ("Idaho Falls", "ID"),
+    "North Oaks Health System": ("Hammond", "LA"),
+    "BronxCare Health System": ("Bronx", "NY"),
+    "One Brooklyn Health": ("Brooklyn", "NY"),
 }
 
 # Normalize system keys to lowercase
@@ -3746,6 +4037,7 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
     canon = _canon_system(system)
     cands, known, dup = [], 0, 0
     tier, stale, due = {}, [], []
+    facility_ids: set = set()      # 2026-10-27: tier-1 rows queued for their Company field
     for it in items:
         j = job_of(it)
         if len((j.description or "").strip()) >= DETAIL_MIN_CHARS:
@@ -3773,7 +4065,9 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
             continue
         # 2026-10-14: "req" (requisition-number re-reads) sits between the
         # forced re-reads and the pay re-reads.
-        tier[id(it)] = {"cut": 4, "pay": 3, "req": 2, "force": 1}.get(kind, 0)
+        tier[id(it)] = {"cut": 4, "pay": 3, "req": 2, "force": 1, "facility": 1}.get(kind, 0)
+        if kind == "facility":
+            facility_ids.add(id(it))
         if (kind is None and getattr(j, "ats_platform", "") in REQ_ID_PAGE_PLATFORMS
                 and (canon, str(j.job_id)) in _KNOWN_HAS_REQ):
             # 2026-10-14: body and job number already stored; behind the rows
@@ -3797,7 +4091,8 @@ def _detail_candidates(system: str, items: list, budget, job_of=lambda it: it, e
         held.extend((it, job_of(it).description, "cut") for it in cands if tier[id(it)] == 4)
         held.extend((it, job_of(it).description, "pay") for it in cands if tier[id(it)] == 3)
         held.extend((it, job_of(it).description, "req") for it in cands if tier[id(it)] == 2)
-        held.extend((it, job_of(it).description, "force") for it in cands if tier[id(it)] == 1)
+        held.extend((it, job_of(it).description, "facility" if id(it) in facility_ids else "force")
+                    for it in cands if tier[id(it)] == 1)
     return refresh + cands, known, dup
 
 
@@ -3986,8 +4281,16 @@ def _apply_posting(job, posting: dict) -> bool:
     # (CommonSpirit $20-$100, HCA "Salary Estimate" $100,000-$400,000); it is
     # taken only when the posting's own body states no figure. A body figure
     # left here as None is read by extract_posted_wage in normalize_job.
+    # 2026-10-27 (pay reader round 2): the band also stays when it holds the
+    # body's range and the body itself prints both of its ends: it spans the
+    # levels the body prices one by one, as pay_text_overrides keeps such a
+    # field. Riverside's NeoGov bulletins print "Registered Nurse II - MC/CHC
+    # - $45.7530 - $70.8141" and "Registered Nurse III - MC/CHC - $53.1735 -
+    # $80.2448" under a $45.75 - $80.24 band; once four-decimal figures read,
+    # the body's first level alone would have replaced the band.
     body = f"{job.title or ''}\n{job.description or ''}"
-    if isinstance(bs, dict) and job.wage_min is None and extract_posted_wage(body, job.job_type) is None:
+    if isinstance(bs, dict) and job.wage_min is None:
+        text = extract_posted_wage(body, job.job_type)
         val = bs.get("value") if isinstance(bs.get("value"), dict) else bs
         try:
             lo = float(val.get("minValue")) if val.get("minValue") is not None else None
@@ -3997,7 +4300,9 @@ def _apply_posting(job, posting: dict) -> bool:
         except (TypeError, ValueError, AttributeError):
             lo = hi = None
         got = _wage_pair(lo, hi) if lo and hi else None
-        if got:
+        spans = bool(got and text and got[2] == text[2] and got[0] < got[1] and got[0] <= text[0]
+                     and text[1] <= got[1] and _body_prints(body, got[0], got[1]))
+        if got and (text is None or spans):
             job.wage_min, job.wage_max, job.wage_unit = got
     return ok
 
@@ -4357,6 +4662,103 @@ def _workday_job_url(url: str) -> str:
     if path == parts.path:
         return u
     return parts._replace(path=path).geturl()
+
+
+# 2026-10-27: iCIMS's candidate sign-in step, the link UAB Health System's
+# Phenom board hands out as applyUrl for its iCIMS-backed postings (277 active
+# rows on 10-26, careers-uabmedicine.icims.com/jobs/{id}/{slug}/login). The
+# Jibe adapter's note (2026-08-04) records the same /login gate. The tenant's
+# own Phenom page for the job (careers.uabmedicine.org/us/en/job/8020, fetched
+# 10-26) shows the posting with its Apply button, as UAB's other 616 rows
+# already do. iCIMS answers every request from a plain client with its Human
+# Verification page (HTTP 405), so its own /job page could not be checked.
+_ICIMS_LOGIN_STEP_RX = re.compile(r"^https?://[^/?#]+\.icims\.com/jobs/\d+/[^/?#]*/login/?(?:[?#]|$)", re.I)
+
+
+# 2026-10-27 (owner: "UT Health Houston jobs are not linking to the direct
+# application page"): Taleo Enterprise's jobapply.ftl is the first step of an
+# application, not the posting. Opened cold it shows Taleo's Privacy
+# Agreement (uth.taleo.net) or a script that sends the visitor straight to
+# /careersection/iam/accessmanagement/login.jsf (childrensmn.taleo.net): a
+# sign-in page with no job on it. jobdetail.ftl?job=<id> under the same
+# career section is the public posting, with the employer's own Apply button.
+# Phenom hands these apply links out as applyUrl: UTHealth Houston (431
+# active rows on 10-26, no section in the path: /careersection/jobapply.ftl)
+# and Children's Minnesota (154, the "ex" and "physician" sections). Fetched
+# on 10-26: each jobdetail.ftl page carried the job's title; each jobapply.ftl
+# page was the privacy or sign-in step. A link without a section keeps none:
+# Taleo answers /careersection/jobdetail.ftl?job=<id> with a 302 to the
+# section the job is posted in, which is not the same for every job on
+# uth.taleo.net (staff jobs "ex", 26000260; faculty jobs "ex2", 260001OI and
+# 260000MI, which "ex" reports as no longer available). The site's utm tags
+# ride through that redirect. The rewrite runs in scrape_phenom and again for
+# every row on write (_sanitize_apply_url), so no adapter can store the
+# apply step.
+_TALEO_APPLY_RX = re.compile(
+    r"^(https?://[^/?#:]+\.taleo\.net(?::\d+)?)/careersection/(?:([^/?#]+)/)?jobapply\.ftl(?:\?([^#]*))?", re.I)
+_TALEO_LOGIN_RX = re.compile(
+    r"^https?://[^/?#:]+\.taleo\.net(?::\d+)?/careersection/iam/accessmanagement/login\.jsf\?([^#]*)", re.I)
+
+
+def _taleo_job_url(url: str) -> str:
+    """A Taleo Enterprise apply-step link (.../careersection/[<cs>/]jobapply.ftl?job=<id>),
+    or the Taleo sign-in page that wraps one (login.jsf?redirectionURI=...), becomes
+    the public job page .../careersection/[<cs>/]jobdetail.ftl?job=<id>[&lang=xx]
+    (the same section, or none when the link had none; only job and lang are
+    kept). Anything else, or a jobapply link without a job number, is
+    returned unchanged."""
+    from urllib.parse import parse_qsl, urlencode
+    u = url or ""
+    m = _TALEO_LOGIN_RX.match(u)
+    if m:
+        u = next((v for k, v in parse_qsl(m.group(1), keep_blank_values=True)
+                  if k in ("redirectionURI", "TARGET") and _TALEO_APPLY_RX.match(v or "")), "")
+        if not u:
+            return url or ""
+    m = _TALEO_APPLY_RX.match(u)
+    if not m:
+        return url or ""
+    origin, section, query = m.groups()
+    params = parse_qsl(query or "", keep_blank_values=True)
+    job = next((v.strip() for k, v in params if k.lower() == "job" and v.strip()), "")
+    if not job:
+        return url or ""
+    lang = next((v.strip() for k, v in params if k.lower() == "lang" and v.strip()), "")
+    path = f"/careersection/{section}/jobdetail.ftl" if section else "/careersection/jobdetail.ftl"
+    origin = re.sub(r":443$", "", origin) if origin.lower().startswith("https://") else origin
+    return f"{origin}{path}?" + urlencode([("job", job)] + ([("lang", lang)] if lang else []))
+
+
+# 2026-10-27 (owner: "Need to fix hendrick too"): HealthcareSource's
+# #/preApply/<id> route is the first step of an application, not the posting.
+# Its screen is the tenant's "Employee Verification" question (Hendrick:
+# "Are you a current employee of Hendrick Health? ...", applyFlow.applyShield
+# in the page's own config) with Next and Back, and no job description.
+# #/job/<id> on the same tenant is the public posting with its Apply button;
+# both routes load the posting by the same id (the app's route table:
+# '/job/:id' and '/preApply/:id', both reading WebApi.getJob, i.e.
+# JobseekerAPI/Site/<tenant>/api/v2/JobPostingV2?id=<id>, no sign-in).
+# Phenom hands the preApply link out as applyUrl for Hendrick Health (373
+# active rows on 10-26, pm.healthcaresource.com/cs/ehendrick/#/preApply/<id>);
+# no other system stored one. Only the route word changes: the slash before
+# "#" (or none), a query before "#" and one after the id stay as they were.
+# Runs in scrape_phenom and again for every row on write
+# (_sanitize_apply_url), so no adapter can store the employee question.
+_HCS_PREAPPLY_RX = re.compile(
+    r"^(https?://[^/?#]+\.healthcaresource\.com/cs/[^/?#]+/?(?:\?[^#]*)?)#/preApply/([0-9]+)/?(?=\?|$)", re.I)
+
+
+def _hcs_job_url(url: str) -> str:
+    """A HealthcareSource career-site link to the employee question that starts
+    an application (.../cs/<tenant>[/][?query]#/preApply/<id>[?query]) becomes
+    the public job page of the same tenant and posting
+    (.../cs/<tenant>[/][?query]#/job/<id>[?query]). Anything else is returned
+    unchanged."""
+    u = url or ""
+    m = _HCS_PREAPPLY_RX.match(u)
+    if not m:
+        return u
+    return f"{m.group(1)}#/job/{m.group(2)}{u[m.end():]}"
 
 
 def _workday_cxs_url(url: str) -> str:
@@ -5967,6 +6369,21 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "factoria village": (None, "Bellevue", "WA"),
         "timber ridge": (None, "Issaquah", "WA"),
     },
+    # 2026-10-27 RN gap, long tail: King's Daughters (Ashland KY; UK HealthCare's
+    # UKKD site on the univofky tenant). Its locationsText names buildings and
+    # practices (10-27 dry run: "Pavilion" 27 rows, "Kingsbrook" 11, "Central
+    # Avenue Plaza" 4, "Ashland Drive Thru" 3); the town is read from the
+    # site's own name where it carries one, else the Ashland campus.
+    "King's Daughters Medical Center": {
+        "pavilion":                       (None, "Ashland", "KY"),
+        "kingsbrook":                     (None, "Ashland", "KY"),
+        "central avenue plaza":           (None, "Ashland", "KY"),
+        "ashland drive thru":             (None, "Ashland", "KY"),
+        "king's daughters medical trans": (None, "Ashland", "KY"),
+        "wheelersburg family care":       (None, "Wheelersburg", "OH"),
+        "grayson medical specialties":    (None, "Grayson", "KY"),
+        "portsmouth-kinneys lane":        (None, "Portsmouth", "OH"),
+    },
 }
 WD_FACILITY_MAP["Wellstar Health (Providers)"] = WD_FACILITY_MAP["Wellstar Health"]
 
@@ -6041,6 +6458,14 @@ WD_TENANT_DEFAULT: dict[str, tuple[str, str]] = {
     "Eisenhower Health":         ("Rancho Mirage", "CA"),
     "Reid Health":               ("Richmond", "IN"),
     "Dayton Children's":         ("Dayton", "OH"),
+    # 2026-10-27 RN gap, long tail: single-market tenants whose rows can carry no town.
+    "Montage Health": ("Monterey", "CA"),
+    "Marshall Medical Center": ("Placerville", "CA"),
+    "Mercy Medical Center Cedar Rapids": ("Cedar Rapids", "IA"),
+    "Boone Hospital Center": ("Columbia", "MO"),
+    "Great Plains Health": ("North Platte", "NE"),
+    "Golden Valley Memorial Healthcare": ("Clinton", "MO"),
+    "King's Daughters Medical Center": ("Ashland", "KY"),
 }
 
 # 2026-09-24: tenants whose locationsText leads with "City ST" and no comma
@@ -6194,6 +6619,45 @@ def _wd_path_location(system: str, external_path: str) -> tuple[str, str]:
             if code:
                 return " ".join(words[:-k]), code
     return "", ""
+
+
+# 2026-10-27 (RN gap): tenants whose site names lead with the state code.
+# CVS Health's locationsText is "IL - Chicago" / "TX - Work from home"
+# (parse_city_state read the state and no town: 1,872 of 1,958 rows had no
+# town in the 10-26 dry run); Elevance Health's sites are "OH-MASON-4361-
+# IRWIN-SIMPSON-RD" (state, town, then the street from its number on).
+WD_STATE_FIRST = frozenset({"CVS Health", "Elevance Health"})
+_WD_STATE_FIRST_RX = re.compile(r"^\s*([A-Z]{2})\s*-+\s*(\S.*?)\s*$")
+_WD_STATE_FIRST_NOT_TOWN = re.compile(r"\b(?:work|from|hom|office|hybrid|nationwide|national|corporate)\b", re.I)
+
+
+def _wd_state_first(text: str) -> tuple[str, str]:
+    """(town, state) from a state-first site name: "IL - Chicago" ->
+    ("Chicago", "IL"); "OH-MASON-4361-IRWIN-SIMPSON-RD" -> ("Mason", "OH");
+    "TX - Work from home" -> ("", "TX"); ("", "") when it does not lead with
+    a state code."""
+    m = _WD_STATE_FIRST_RX.match(text or "")
+    if not m or m.group(1) not in _WD_STATE_CODES:
+        return "", ""
+    st = m.group(1)
+    words = []
+    # Review 2026-10-27: the town ends at the first comma; Elevance's
+    # locationsText puts the street after one ("AL-HUNTSVILLE, 900 BOB
+    # WALLACE AVE SW, STE 122").
+    for w in re.split(r"[-\s]+", m.group(2).split(",", 1)[0]):
+        if not w or re.search(r"\d", w):
+            break
+        words.append(w)
+    town = _wd_title(" ".join(words)) if words else ""
+    if not town or _WD_NONPLACE_RE.search(town) or _WD_STATE_FIRST_NOT_TOWN.search(town):
+        return "", st
+    known = _wd_known_town(town, st)
+    spelled = known or WD_PUNCT_CITIES.get((_wd_city_key(town), st))
+    if spelled:
+        return spelled, st
+    if town.lower() in _STATE_CODE_BY_NAME and known is None:
+        return "", st          # "TX - Texas": a state, not a town ("New York", NY is a known town)
+    return (town, st) if _wd_town_ok(town) else ("", st)
 
 
 # 2026-10-12 (hidden locations, every tenant): the board needs both a city
@@ -6850,6 +7314,73 @@ async def _wd_fill_states(session, working_url: str, system: str, jobs: list, de
     logger.info(f"  Workday {system}: blank states {blank:,} -> facet {by_facet:,}, default {by_default:,}, still blank {still:,}")
 
 
+# 2026-10-27: how deep a window-filling Workday slice is split again
+# (scrape_workday, _slice), and the most values a facet may have to be used
+# for a split (each value costs at least one request).
+WD_SUBSLICE_DEPTH = 3
+WD_SUBSLICE_MAX_VALUES = 60
+
+
+def _wd_split_facet(data: dict, applied: dict, count) -> tuple | None:
+    """(facetParameter, [(value id, count), ...], covers) to split a slice
+    by, from that slice's own probe (`data`, facet counts inside `applied`).
+    Facets already applied, with one value, or with more than
+    WD_SUBSLICE_MAX_VALUES are not used. `covers`: the values' counts add up
+    to the slice's `count` (every posting lands in a value; a posting at two
+    sites lands in both). Preferred: a facet that covers the slice, then one
+    whose every value fits the window, then the fewest values (Trinity's
+    Nursing Group: timeType, 2 values, before 18 states)."""
+    best = None
+    for param, _label, vals in _wd_facet_groups(data or {}):
+        if not param or param in (applied or {}):
+            continue
+        pairs = [(v.get("id"), int(v.get("count") or 0)) for v in vals
+                 if isinstance(v, dict) and v.get("id") and int(v.get("count") or 0) > 0]
+        if len(pairs) < 2 or len(pairs) > WD_SUBSLICE_MAX_VALUES:
+            continue
+        covers = count is None or sum(n for _, n in pairs) >= count
+        fits = all(n <= WD_FACET_WINDOW for _, n in pairs)
+        score = (not covers, not fits, len(pairs))
+        if best is None or score < best[0]:
+            best = (score, param, pairs, covers)
+    return (best[1], best[2], best[3]) if best else None
+
+
+def _wd_slice_values(facet_data: dict, system: str, base_facets: dict | None = None) -> tuple[str | None, list[str]]:
+    """(parameter, value ids) a window-hit crawl is sliced by, or (None, []).
+    WD_SLICE_PARAM names the parameter for a tenant, else the first of
+    jobFamilyGroup, jobFamily and timeType the tenant offers. Nested location
+    groups count (_wd_facet_groups). 2026-10-27: a parameter the tenant's
+    fixed facet (WD_TENANT_FACETS) already sets is skipped, since each slice
+    would replace that filter, and a value whose count is 0 is not crawled."""
+    groups: dict[str, list] = {}
+    for p, _label, vals in _wd_facet_groups(facet_data or {}):
+        groups.setdefault(p, vals)
+    fixed = set(base_facets or {})
+    order = (WD_SLICE_PARAM[system],) if system in WD_SLICE_PARAM else ("jobFamilyGroup", "jobFamily", "timeType")
+    for p in order:
+        if p in fixed:
+            continue
+        ids = [v.get("id") for v in groups.get(p) or []
+               if isinstance(v, dict) and v.get("id") and v.get("count", 1) != 0]
+        if ids:
+            return p, ids
+    return None, []
+
+
+def _wd_slice_counts(facet_data: dict, param: str | None) -> dict:
+    """value id -> count in the facet group _wd_slice_values took `param`
+    from (the first group with that parameter); {} when there is none.
+    2026-10-27 (merge): the window-hit slices pass each count to _slice,
+    which splits a slice past the window again (Trinity's Nursing Group)."""
+    if not param:
+        return {}
+    for p, _label, vals in _wd_facet_groups(facet_data or {}):
+        if p == param:
+            return {v.get("id"): v.get("count") for v in vals if isinstance(v, dict) and v.get("id")}
+    return {}
+
+
 async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_data: tuple) -> list[Job]:
     tenant, wd_num, primary_site = tenant_data
     jobs = []
@@ -6875,7 +7406,7 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # `offset >= total` break believing results continued past 2,000; they
     # respond, but they repeat. Pagination alone can NEVER see past the
     # window — big tenants need the facet-sliced pass below.
-    WD_RESULT_WINDOW = 2000
+    WD_RESULT_WINDOW = WD_FACET_WINDOW   # 2,000 (one constant since 2026-10-27; the tests lower it)
     # Dedupe within the tenant across the wrap-around AND across facet slices.
     # Also protects the upsert: two identical (job_id, system) rows in one
     # batch would make ON CONFLICT error out ("cannot affect row a second
@@ -6930,6 +7461,21 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         _city = ""   # 2026-10-12: "2 Locations" is never a town, on any tenant
                     if system in WD_CITY_SPACE_STATE:
                         _city, _state = _wd_city_space_state(loc, _city, _state)
+                    if system in WD_STATE_FIRST and (not _city or re.search(r"\d", _city)):
+                        # 2026-10-27: "IL - Chicago" (CVS), "OH-MASON-4361-IRWIN-..." (Elevance).
+                        # Review 10-27: also when the generic parse took the
+                        # street for the town ("AL-HUNTSVILLE, 900 BOB WALLACE
+                        # AVE SW, STE 122" read as "900 BOB WALLACE AVE SW", AL:
+                        # 21 of 115 Elevance rows in the review dry run). A town
+                        # the rule cannot read leaves the city blank, never the
+                        # street.
+                        if _city:
+                            _city = ""
+                        _sc, _ss = _wd_state_first(loc)
+                        if not _ss:
+                            _sc, _ss = _wd_state_first(_wd_path_segment(j.get("externalPath", "")))
+                        if _ss and (not _state or _state == _ss):
+                            _city, _state = _sc, _ss
                     _facility = system
                     if tenant == "montefiore":
                         _facility, _city, _state = _montefiore_loc(loc, _city, _state)
@@ -7064,29 +7610,75 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # "total" of 2,000. Facet preference: jobFamilyGroup splits finest
     # (25 values, largest 1,951 at Advocate); timeType (2 values) is the
     # last-resort coarse split.
-    if hit_window:
+    # 2026-10-27 (Trinity Health): a slice can itself hold more than the
+    # window. Trinity's "Nursing Group" listed 2,299 postings on 10-26, so
+    # every night the 299 its window left out went unseen, the sweep retired
+    # them (the crawl yields well over the 80% guard), and 69 were never
+    # stored at all: 251 live nursing postings sat inactive with us that day.
+    # A slice whose facet count is past the window, or whose crawl fills it,
+    # is now split again by another facet (_wd_split_facet: Nursing Group by
+    # timeType, 1,586 + 713), up to WD_SUBSLICE_DEPTH levels; one probe
+    # (limit 1) per split reads the counts inside the slice.
+    async def _facet_probe(applied: dict) -> dict:
         try:
             async with req(session, "post", working_url,
-                json={"limit": 1, "offset": 0, "searchText": "", "appliedFacets": dict(base_facets)},
+                json={"limit": 1, "offset": 0, "searchText": "", "appliedFacets": dict(applied)},
                 headers={**HEADERS, "Content-Type": "application/json"},
                 ssl=False, proxy=proxies.get(),
                 timeout=aiohttp.ClientTimeout(total=25)) as r:
-                facet_data = await r.json() if r.status == 200 else {}
+                return await r.json() if r.status == 200 else {}
         except Exception:
-            facet_data = {}
-        facets = {f.get("facetParameter"): [v.get("id") for v in (f.get("values") or []) if v.get("id")]
-                  for f in (facet_data.get("facets") or [])}
-        slice_param = next((p for p in ("jobFamilyGroup", "jobFamily", "timeType")
-                            if facets.get(p)), None)
+            return {}
+
+    async def _slice(applied: dict, count, depth: int) -> int:
+        """Crawl one facet slice; returns how many of its leaves still filled
+        the window. A slice known to be past the window is not crawled whole
+        when a split covers it."""
+        over = count is not None and count > WD_RESULT_WINDOW
+        if not over:
+            if not await _crawl(applied):
+                return 0
+            if depth >= WD_SUBSLICE_DEPTH:
+                return 1
+        elif depth >= WD_SUBSLICE_DEPTH:
+            return 1 if await _crawl(applied) else 0
+        await jitter()
+        split = _wd_split_facet(await _facet_probe(applied), applied, count)
+        if not split:
+            if over:
+                return 1 if await _crawl(applied) else 0
+            return 1
+        param, values, covers = split
+        if over and not covers:
+            await _crawl(applied)      # the split misses some postings: take the window too
+        left = 0
+        for vid, n in values:
+            await jitter()
+            left += await _slice({**applied, param: [vid]}, n, depth + 1)
+        return left
+
+    if hit_window:
+        facet_data = await _facet_probe(base_facets)
+        # 2026-10-27 (merge of the gap fixes and the gap configs): the slice
+        # parameter and values come from _wd_slice_values (WD_SLICE_PARAM; a
+        # parameter fixed by WD_TENANT_FACETS is never sliced; empty values
+        # dropped), and each value's count tells _slice whether to split it.
+        slice_param, slice_ids = _wd_slice_values(facet_data, system, base_facets)
+        slice_counts = _wd_slice_counts(facet_data, slice_param)
         if slice_param:
             before = len(jobs)
             truncated_slices = 0
-            for vid in facets[slice_param]:
-                if await _crawl({**base_facets, slice_param: [vid]}):
-                    truncated_slices += 1
+            split_slices = 0
+            for vid in slice_ids:
+                n = slice_counts.get(vid)
+                n = n if isinstance(n, int) else None
+                if n is not None and n > WD_RESULT_WINDOW:
+                    split_slices += 1
+                truncated_slices += await _slice({**base_facets, slice_param: [vid]}, n, 1)
                 await jitter()
             logger.info(f"  Workday {system}: window hit — facet-sliced by {slice_param} "
-                        f"({len(facets[slice_param])} slices) recovered {len(jobs)-before} more jobs"
+                        f"({len(slice_ids)} slices) recovered {len(jobs)-before} more jobs"
+                        + (f"; {split_slices} slices past the window split again" if split_slices else "")
                         + (f"; {truncated_slices} slices ALSO hit the window (still truncated)"
                            if truncated_slices else ""))
         else:
@@ -7190,6 +7782,13 @@ TALEO_ORGS: dict[str, tuple] = {
     "Stony Brook Eastern Long Island Hospital": ("stonybrooku.taleo.net", "elih", "NY"),
     # Erlanger (Chattanooga TN; Murphy NC; Pikeville TN); FTL template.
     "Erlanger Health System": ("erlanger.taleo.net", "ehs_external", "TN"),
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Cook County Health": ("cookcountyil.taleo.net", "200", "IL"),   # [10-27 dry run] 83 rows / 0 in town / RN 15; CMS 140124, 140300
+    "Hennepin Healthcare": ("hcmc.taleo.net", "1", "MN"),   # [10-27 dry run] 189 rows / 184 in town / RN 40; CMS 240004
+    "Cape Cod Healthcare": ("capecodhc.taleo.net", "ex", "MA"),   # [10-27 dry run] 329 rows / 0 in town / RN 51; CMS 220012
 }
 TALEO_MAX_PAGES = int(os.getenv("TALEO_MAX_PAGES", "120"))
 TALEO_DESC_MAX_PER_RUN = int(os.getenv("TALEO_DESC_MAX_PER_RUN", "1500"))   # jobdetail.ftl pages a night, all tenants
@@ -7716,7 +8315,11 @@ ICIMS_ORGS = {
     "Select Medical":                   "jobs-selectmedicalcorp.icims.com",
     # Genesis HealthCare: 250+ skilled nursing facilities. Confirmed via
     # genesiscareers.jobs → "Returning Candidate Login" points to careers-genesishcc.icims.com.
-    "Genesis HealthCare":               "careers-genesishcc.icims.com",
+    # 2026-10-27 (RN gap): retired here. Configured since 05-13, this entry
+    # never wrote a row: the portal's search answers a 160-byte script that
+    # sends the browser to www.genesiscareers.jobs, a Jibe careers-home front
+    # (JIBE_SITES "Genesis HealthCare", 3,798 postings on 10-26).
+    # "Genesis HealthCare":               "careers-genesishcc.icims.com",
     # ── 2026-09-25 (push5/systems, B1)
     "Dartmouth Health":       "careers-dartmouth-hitchcock.icims.com",   # Lebanon NH + VT
     "Huntsville Hospital Health System": "careers-hhsys.icims.com",   # AL; careers.hhsys.org is its Phenom front
@@ -7758,6 +8361,20 @@ ICIMS_ORGS = {
     "Central Desert Behavioral Health Hospital": "centraldesertbh-careers-fundltc.icims.com",   # 7 rows, 6 in Albuquerque, NM (CMS 324014)
     "Harmon Hospital": "harmonmedicalrehab-careers-fundltc.icims.com",   # 10 rows, 10 in Las Vegas, NV (CMS 290042)
     "Oklahoma Heart Hospital": "internal-okheart.icims.com",   # 69 rows, 67 in Oklahoma City, OK (CMS 370215)
+    # ── 2026-10-27 RN gap: non-acute employers with no rows; each portal read
+    # off the employer's careers page and answered a paced no-write dry run.
+    "BrightSpring Health Services":     "careers-brightspring.icims.com",       # home health, hospice (Adoration), pharmacy, IDD
+    "Gentiva":                          "careers-gentivahs.icims.com",          # hospice, palliative, home health
+    "Wellpath":                         "careers-wellpath.icims.com",           # correctional and behavioral health care
+    "Dialysis Clinic, Inc.":            "careers-dialysisclinic.icims.com",     # DCI, nonprofit dialysis
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "St. Luke's Hospital (St. Louis)": "careers-stlukes-stl.icims.com",   # [10-27 dry run] 247 rows / 0 in town / RN 87; CMS 260179
+    "University Hospital (Newark)": "careers-uhnjcareers.icims.com",   # [10-27 dry run] 253 rows / 253 in town / RN 56; CMS 310119
+    "St. John's Riverside Hospital": "careers-riversidehealth.icims.com",   # [10-27 dry run] 117 rows / 0 in town / RN 9; CMS 330208
+    "BronxCare Health System": "careers-bronxcare.icims.com",   # [10-27 dry run] 138 rows / 137 in town / RN 25; CMS 330009
 }
 
 
@@ -7822,6 +8439,16 @@ TALENTBREW_ORGS = {
     "PIH Health":               ("https://jobs.pihhealth.org/search-jobs", 100),
     # 2026-10-25 coverage stage 2: jobs.rchsd.org (company site 68070), 154 rows that day.
     "Rady Children's Hospital San Diego": ("https://jobs.rchsd.org/search-jobs", 15),
+    # ── 2026-10-27 RN gap: non-acute employers with no rows.
+    # USPI (Tenet's ambulatory arm, company 35934): surgery centers and
+    # surgical hospitals; the Tenet feed carries none of them.
+    "United Surgical Partners International": ("https://careers.uspi.com/search-jobs", 100),
+    # Molina Healthcare (payer, company site 64188): the whole board is read.
+    # TalentBrew's results call has no family filter this adapter can send,
+    # and the board is small and mostly clinical (390 on 10-26: Clinical 240,
+    # Quality & Risk Adjustment 22, Medical 7, Pharmacy 2; Operations 43,
+    # Sales 16, Contact Center 17, Network 15, the rest under 10 each).
+    "Molina Healthcare":        ("https://careers.molinahealthcare.com/search-jobs", 100),
 }
 
 
@@ -7939,6 +8566,32 @@ _cs_extra = {}
 for k, v in COMMONSPIRIT_CITY_STATE.items():
     _cs_extra[k.replace("-", " ").title().lower()] = v
 COMMONSPIRIT_CITY_STATE.update(_cs_extra)
+
+
+# 2026-10-27 (RN gap, Molina Healthcare): a card whose job-location holds
+# one <strong> per place ("<strong>Lincoln, NE, United States;</strong>
+# <strong>Lincoln, Nebraska</strong>"). The first place is the posting's;
+# a country-only place ("United States;", the remote roles) has no town.
+_TB_STRONG_LOC_RX = re.compile(r'job-location">\s*<strong>\s*([^<]*?)\s*</strong>', re.S)
+_TB_COUNTRY_TAIL_RX = re.compile(r"(?:^|,)\s*(?:United States(?: of America)?|USA|US)\s*$", re.I)
+
+
+def _tb_strong_location(tail: str) -> tuple[str, str] | None:
+    """(city, state) from a <strong>-wrapped card location, ("", "") for a
+    country-only place, None when the card has no such location."""
+    m = _TB_STRONG_LOC_RX.search(tail or "")
+    if not m:
+        return None
+    loc = htmllib.unescape(m.group(1)).strip().rstrip(";").strip()
+    loc = _TB_COUNTRY_TAIL_RX.sub("", loc).strip().rstrip(",").strip()
+    parts = [p.strip() for p in loc.split(",") if p.strip()]
+    if not parts:
+        return "", ""
+    last = parts[-1]
+    state = last.upper() if len(last) == 2 and last.isalpha() else ""
+    if len(parts) == 1:
+        return ("", state) if state else (parts[0], "")
+    return parts[0], state
 
 
 async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_url: str, rpp: int = 100) -> list[Job]:
@@ -8124,6 +8777,9 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                     fac_m = (re.search(r'job-facility">\s*([^<]*?)\s*</(?:li|span)>', tail)
                              or re.search(r'job-companyName">\s*([^<]*?)\s*</span>', tail))
                     loc_m = re.search(r'job-location">\s*([^<]*?)\s*</(?:li|span)>', tail)
+                    # 2026-10-27: Molina's cards wrap each place in <strong>
+                    # ("Lincoln, NE, United States;"); None when not that shape.
+                    strong_loc = None if loc_m else _tb_strong_location(tail)
                     sal_m = re.search(r'job-salary">\s*\$?\s*([\d,]+(?:\.\d+)?)\s*(?:-|–|—|to)\s*\$?\s*([\d,]+(?:\.\d+)?)', tail)
                     card_wage = _wage_pair(_wage_num(sal_m.group(1)), _wage_num(sal_m.group(2))) if sal_m else None
                     facility = htmllib.unescape(fac_m.group(1)).strip() if fac_m else ""
@@ -8144,7 +8800,9 @@ async def scrape_talentbrew(session: aiohttp.ClientSession, system: str, base_ur
                             last = parts[-1]
                             if len(last) == 2 and last.isalpha():
                                 city_state = last.upper()
-                    if not city_name:
+                    elif strong_loc is not None:
+                        city_name, city_state = strong_loc
+                    if not city_name and strong_loc is None:
                         # Fall back to the URL slug for city
                         slug_m = re.match(r"/job/([^/]+)/", url_path)
                         if slug_m:
@@ -9036,32 +9694,97 @@ def _parse_icims_cards(text: str, system: str, domain: str) -> list[Job]:
     return jobs
 
 
+# 2026-10-27 (Select Medical): the card list prints "Search Results Page 1
+# of 82" over its cards. A crawl that read every page through "Page N of N",
+# each answered, with no posting listed twice (a list that moved while it was
+# read), is the whole board and reports itself complete (Layer 4 then retires
+# a closed posting the first night it is gone). A page that failed, a page
+# AWS WAF answered with its "Human Verification" CAPTCHA (HTTP 405; iCIMS
+# showed this machine one on every request on 10-26), or a crawl that ended
+# before page N is PARTIAL: the sweep waits, where it used to see 85% of
+# Select's rows, pass the 80% guard and retire the rest for a night. A portal
+# whose pages print no pager keeps the old rule (neither claim).
+_ICIMS_PAGER_RX = re.compile(r"\bPage\s+(\d+)\s+of\s+(\d+)\b", re.I)
+_WAF_PAGE_RX = re.compile(r"<title>\s*Human Verification\s*</title>|awsWafCookieDomainList|\.awswaf\.com/", re.I)
+
+
+def icims_pager(text: str) -> tuple[int, int] | None:
+    """(page, of) from an iCIMS search page's "Page 1 of 82", or None."""
+    m = _ICIMS_PAGER_RX.search(re.sub(r"<[^>]+>", " ", text or ""))
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def is_waf_challenge(status, text: str) -> bool:
+    """AWS WAF's bot check in place of the page: HTTP 405 with its
+    "Human Verification" CAPTCHA (or the same page with another status)."""
+    return status == 405 or bool(_WAF_PAGE_RX.search((text or "")[:5000]))
+
+
 async def _scrape_icims_cards(session: aiohttp.ClientSession, system: str, domain: str, first_text: str) -> list[Job]:
     """Page 0 is the classic response already in hand; pr=1.. until a page
-    adds no new ids (200-page cap = 10,000 jobs)."""
+    adds no new ids (200-page cap = 10,000 jobs), or (2026-10-27) the page
+    that prints "Page N of N"."""
     jobs = _parse_icims_cards(first_text, system, domain)
     seen = {j.job_id for j in jobs}
+    pager = icims_pager(first_text)
+    stop = ""            # why the crawl ended before its last page ("" = it did not)
+    waf = False
+    repeats = 0
+    # Review 2026-10-27: the complete claim compares the crawl with itself (the
+    # card list prints no total), so a page before the last that parsed fewer
+    # cards than the first page (a page cut short in transit) withholds it: the
+    # night then falls back to the yield guard instead of retiring on a miss.
+    full_page = len(jobs)
+    short_pages = 0
     page = 1
-    while jobs and page < 200:
+    while jobs and page < 200 and not (pager and pager[0] >= pager[1]):
         await jitter()
         try:
             async with req(session, "get", f"https://{domain}/jobs/search",
                            params={"ss": "1", "pr": str(page), "in_iframe": "1", "searchRelation": "keyword_all"},
                            headers={**HEADERS, "Accept": "text/html,application/xhtml+xml"},
                            proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
-                if r.status != 200:
-                    break
-                text = await r.text()
+                status = r.status
+                text = await r.text() if status in (200, 405) else ""
         except Exception as e:
             logger.info(f"iCIMS {system} cards page {page}: {e}")
+            stop = f"page {page + 1}: {type(e).__name__}"
             break
-        new = [j for j in _parse_icims_cards(text, system, domain) if j.job_id not in seen]
+        if is_waf_challenge(status, text):
+            stop = f"page {page + 1}: AWS WAF Human Verification (HTTP {status})"
+            waf = True
+            break
+        if status != 200:
+            stop = f"page {page + 1}: HTTP {status}"
+            break
+        parsed = _parse_icims_cards(text, system, domain)
+        new = [j for j in parsed if j.job_id not in seen]
+        repeats += len(parsed) - len(new)
+        pager = icims_pager(text) or pager
+        if pager and pager[0] < pager[1] and len(parsed) < full_page:
+            short_pages += 1
         if not new:
+            if pager and pager[0] < pager[1]:
+                stop = f"page {pager[0]} of {pager[1]} added nothing"
             break
         jobs.extend(new)
         seen.update(j.job_id for j in new)
         page += 1
-    logger.info(f"  iCIMS {system}: {len(jobs)} jobs (card list, {page} pages)")
+    whole = bool(jobs and pager and pager[0] >= pager[1] and not stop)
+    # A portal that prints no pager keeps the old rule on an HTTP error (its
+    # end is not known); a WAF page is never an end.
+    if jobs and (waf or (pager and not whole)):
+        report_partial(system)
+        logger.warning(f"iCIMS {system}: PARTIAL, {stop or 'the pager never reached its last page'} "
+                       f"({len(jobs)} jobs read{f', page {pager[0]} of {pager[1]}' if pager else ''}); "
+                       f"not swept tonight")
+    elif whole and not repeats and not short_pages:
+        report_complete(system, len(jobs), len(jobs), feed="ICIMS_ORGS")
+    elif whole and short_pages:
+        logger.info(f"iCIMS {system}: {short_pages} pages before the last held fewer than "
+                    f"{full_page} cards; not reported complete (the yield guard decides)")
+    logger.info(f"  iCIMS {system}: {len(jobs)} jobs (card list, {page} pages"
+                + (f", page {pager[0]} of {pager[1]}" if pager else "") + ")")
     return jobs
 
 
@@ -9178,7 +9901,16 @@ async def scrape_icims(session: aiohttp.ClientSession, system: str, domain: str)
                     jobs = await _scrape_icims_modern(session, system, domain)
                     return jobs
                 if r.status != 200:
-                    logger.info(f"iCIMS {system}: HTTP {r.status}")
+                    if r.status == 405:
+                        # 2026-10-27: AWS WAF's "Human Verification" CAPTCHA
+                        # in place of the list: nothing read, never the
+                        # board's end (a PARTIAL report as well as the
+                        # zero-yield guard).
+                        report_partial(system)
+                        logger.warning(f"iCIMS {system}: HTTP 405 (AWS WAF Human Verification); PARTIAL, "
+                                       f"not swept tonight")
+                    else:
+                        logger.info(f"iCIMS {system}: HTTP {r.status}")
                     break
                 ct = r.headers.get("content-type", "")
                 if "json" in ct:
@@ -9285,6 +10017,14 @@ def _icims_apply_page(job, html: str) -> bool:
     gives none."""
     if not job.req_id and html and "iCIMS_JobCardItem" not in html:
         job.req_id = icims_req_id(_icims_header(html), html, job.job_id)
+    # 2026-10-27: the header's Company field names the facility on
+    # ICIMS_COMPANY_FACILITY portals (Select Medical); taken whenever the
+    # page shows one, before the JSON-LD check (a page with a header and no
+    # posting block still names its employer entity).
+    if job.hospital_system in ICIMS_COMPANY_FACILITY:
+        company = icims_company(_icims_header(html))
+        if company:
+            job.hospital_name = company
     posting = _jobposting_from_html(html)
     if not posting:
         return False
@@ -9325,6 +10065,13 @@ _ICIMS_HDR_PAIR_RX = re.compile(r"<dt[^>]*>(.*?)</dt>\s*<dd[^>]*>(.*?)</dd>", re
 _ICIMS_SHIFT_WORDS = (("Night", r"nights?|noc|overnights?|third|3rd|3"), ("Day", r"days?|first|1st|1"),
                       ("Evening", r"evenings?|second|2nd|2|swing|pm"), ("Rotating", r"rotating|rotation|rotates?"),
                       ("Variable", r"variable|varies|various|varied"), ("Weekend", r"weekends?"))
+
+
+def icims_company(hdr: dict) -> str:
+    """The job page header's "Company" value, whitespace collapsed; "" when
+    absent or a placeholder."""
+    v = re.sub(r"\s+", " ", str((hdr or {}).get("company") or "")).strip()
+    return v if len(v) >= 3 and v.lower() not in ("n/a", "none", "company") else ""
 
 
 def _icims_header(html: str) -> dict:
@@ -9401,6 +10148,8 @@ async def _icims_tenant(session, system: str, domain: str, fetch_one) -> list[Jo
     """One portal: the list (scrape_icims, unchanged), then the detail pass on
     ICIMS_DESC_BUDGET. A failed pass leaves the listed rows as they were."""
     jobs = await scrape_icims(session, system, domain)
+    for j in jobs:
+        _keep_stored_company(j)      # 2026-10-27: no-op outside ICIMS_COMPANY_FACILITY
     if DETAIL_FETCH and jobs:
         try:
             await _detail_pass(session, system, jobs, ICIMS_DESC_BUDGET, fetch_one, "iCIMS",
@@ -9534,6 +10283,31 @@ JIBE_SITES = {
     "Riverside Healthcare (Kankakee)": "https://careers.riversidehealthcare.org",  # [181] Riverside Medical Center, Kankakee IL
     "FirstHealth of the Carolinas":   "https://talent.firsthealth.org",         # [558] Pinehurst, Rockingham, Troy, Raeford NC
     "Covenant HealthCare":            "https://careers.covenanthealthcare.com", # [128] Saginaw MI
+    # ── 2026-10-27 RN gap: non-acute employers with no rows. Each front read
+    # off the employer's careers page; /api/jobs totalCount on 10-26 [n].
+    # Genesis HealthCare (skilled nursing) replaces its dead iCIMS entry: the
+    # icims.com portal redirects to this front.
+    "Genesis HealthCare":             "https://www.genesiscareers.jobs",        # [3,798] 200+ nursing and rehab centers
+    "SCA Health":                     "https://careers.sca.health",             # [705] ambulatory surgery centers (Optum)
+    # Rehab hospitals and LTACHs (vibrahealthcare.com/careers and
+    # ernesthealth.com/careers link these fronts; both apply on iCIMS).
+    "Vibra Healthcare":               "https://careers.vibrahealthcare.com",    # [832; 308 after its staffing placements, JIBE_LEAVE_OUT] LTACHs and rehab hospitals
+    "Ernest Health":                  "https://www.ernesthealthcareers.com",    # [559] rehab hospitals and LTACHs
+    # PAM Health: pamhealthcareers.com answers this machine with a SiteGround
+    # CAPTCHA (not attempted); its 10-06 Wayback copy links the iCIMS portal
+    # careers-pamhealth.icims.com and this Jibe host, whose /api/jobs serves the
+    # same postings with full bodies; /jobs/<id> is the posting page.
+    "PAM Health":                     "https://pamhealth.jibeapply.com",        # [1,558] rehab hospitals and LTACHs
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Mercy Medical Center (Baltimore)": "https://careers.mdmercy.com",   # [10-27 dry run] 274 rows / 206 in town / RN 39; CMS 210008
+    "Confluence Health": "https://careers.confluencehealth.org",   # [10-27 dry run] 202 rows / 177 in town / RN 33; CMS 500016
+    "Beebe Healthcare": "https://www.beebecareers.org",   # [10-27 dry run] 169 rows / 132 in town / RN 47; CMS 080007
+    "Holy Redeemer Health System": "https://careers.redeemerhealth.org",   # [10-27 dry run] 133 rows / 85 in town / RN 36; CMS 390097
+    "Signature HealthCARE": "https://www.signaturehealthcarejobs.com",   # [10-27 dry run] 804 rows / RN 214; top towns Louisville, KY 79, Lexington, KY 32, Norfolk, VA 28
+    "One Brooklyn Health": "https://careers.onebrooklynhealth.org",   # [10-27 dry run] 167 rows / 167 in town / RN 69; CMS 330233
 }
 
 # Pages of 100 read per Jibe board (10,000 postings). A board past it is read
@@ -9543,6 +10317,21 @@ JIBE_SITES = {
 # never be swept. A board past JIBE_CEILING_WARN of the ceiling logs a warning.
 JIBE_MAX_PAGES = 100
 JIBE_CEILING_WARN = 0.8
+
+# 2026-10-27 (UHS: our rows held 4,819 of the 6,014 postings on its board).
+# /api/jobs pages a listing only so deep: on jobs.uhsinc.com (totalCount
+# 6,023 that day) pages 1-51 held distinct postings and every page from 52 on
+# answered page 51 again (pages 51 and 61 byte-identical), so ~900 postings
+# were never listed, the sweep retired them, and the page loop never saw an
+# end. A board whose totalCount is past JIBE_DEEP_WINDOW is read one state at
+# a time instead (?state=<full name>; exact: "Virginia" 178, "West Virginia"
+# 7, each row in its own state). JIBE_STATE_NAMES is every name the slices
+# try beyond those on the board's first page; UHS writes the District as
+# "Washington, DC".
+JIBE_DEEP_WINDOW = 5000
+JIBE_STATE_NAMES = frozenset(
+    [n.title() for n in _STATE_CODE_BY_NAME if n != "district of columbia"]
+    + ["District of Columbia", "Washington, DC", "Puerto Rico"])
 
 # 2026-10-15: Jibe boards whose feed names a dead host in
 # meta_data.canonical_url. Norton's points at www.nortonhealthcarecareers.com/
@@ -9555,7 +10344,30 @@ JIBE_CEILING_WARN = 0.8
 # other 32 Jibe boards' canonical URLs answered 200 the same day.
 JIBE_POSTING_URL: dict[str, str] = {
     "Norton Healthcare": "{base}/careers-home/jobs/{slug}?lang=en-us",
+    # 2026-10-27: Genesis's feed carries no canonical_url; {base}/jobs/<id>
+    # 302s to /genesishcc/jobs/<id> (job 56102 on 10-26, the posting's page).
+    "Genesis HealthCare": "{base}/genesishcc/jobs/{slug}",
+    # 2026-10-27: Ernest's canonical_url is careers.ernesthealth.com/jobs/<id>,
+    # which redirects to this page on the Jibe host (job 35659 on 10-26).
+    "Ernest Health": "{base}/careers-home/jobs/{slug}?lang=en-us",
 }
+
+# 2026-10-27 (RN gap): rows a Jibe board lists that are not the employer's
+# own jobs. Vibra Healthcare's board also carries its staffing division's
+# placements ("Vibra Travels - Permanent Staffing - Kerrville, Tx", "Vibra
+# Permanent Staffing - Paducah, KY": 523 of 831 postings on 10-26, the same
+# role often posted in five neighbouring towns); they are jobs at client
+# facilities, not at a Vibra hospital, so they are read and left out (they
+# still count as served for the complete claim). Matched on the tag that
+# names the site (JIBE_FACILITY_TAG).
+JIBE_LEAVE_OUT: dict[str, re.Pattern] = {
+    "Vibra Healthcare": re.compile(r"^\s*Vibra\s+(?:Travels?\b|Permanent\s+Staffing\b)", re.I),
+}
+
+
+def _jibe_left_out(system: str, j: dict) -> bool:
+    rx = JIBE_LEAVE_OUT.get(system)
+    return bool(rx and rx.search(_jibe_facility(system, j) or ""))
 
 
 def _jibe_posting_url(system: str, base_url: str, j: dict, rid: str) -> str:
@@ -9576,12 +10388,19 @@ def _jibe_posting_url(system: str, base_url: str, j: dict, rid: str) -> str:
 # see the campus, not the network.
 JIBE_FACILITY_NAME = {"Garnet Health", "Maimonides Health", "Bassett Healthcare Network",
                       "Mercy", "Orlando Health", "UF Health", "BJC HealthCare", "Norton Healthcare",
-                      "Sarasota Memorial Health Care System", "Tower Health", "Ardent Health"}
+                      "Sarasota Memorial Health Care System", "Tower Health", "Ardent Health",
+                      # 2026-10-27: the center ("Siler City Center") and the rehab hospital
+                      # ("Rehabilitation Hospital of Northern Indiana").
+                      "Genesis HealthCare", "Ernest Health", "PAM Health"}
 
 # 2026-10-04: feeds that carry the facility in one of the tagsN lists
 # ("tags2": ["Kent Hospital"]) while location_name is an address. The first
 # entry of that list is the hospital_name; a blank list leaves the system.
-JIBE_FACILITY_TAG: dict[str, str] = {"Care New England Health System": "tags2"}
+JIBE_FACILITY_TAG: dict[str, str] = {"Care New England Health System": "tags2",
+                                     # 2026-10-27: location_name is a site code ("MA 50809 Emerson
+                                     # Endo") or absent; the tag is the center or hospital.
+                                     "SCA Health": "tags3",          # "Emerson Endo and Digestive Health Cntr"
+                                     "Vibra Healthcare": "tags7"}    # "Vibra Hospital of Sacramento"
 
 # 2026-10-15 (wages, facility): feeds whose location_name is a site code plus
 # a site ("PHO - Presbyterian Medical Center", "CIG - Cancer Institute"):
@@ -9682,7 +10501,6 @@ async def _jibe_labels_page(session, base_url: str, first_url: str = "") -> str:
 async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str) -> list[Job]:
     jobs: list[Job] = []
     raw_tags: dict = {}            # job_id -> the row's tagsN fields (push 9, pay tags)
-    page, total = 1, None
     # 2026-10-15: every posting the feed served (req_id, else slug) that this
     # adapter stored or skipped on purpose (UHS's provider postings carry no
     # req_id), for the complete claim against totalCount; whether a page
@@ -9690,107 +10508,160 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
     # live posting not stored tonight, so it is never counted as served and
     # any such row makes the crawl PARTIAL).
     served: set[str] = set()
-    failed_at = None
     bad_rows = 0
-    while page <= JIBE_MAX_PAGES:  # 100 x 100 = 10,000/site ceiling; UHS (~6,000) is the largest
-        try:
-            async with req(session, "get", f"{base_url}/api/jobs",
-                           params={"page": str(page), "limit": "100"},
-                           headers={**HEADERS, "Accept": "application/json"},
-                           ssl=False, proxy=proxies.get(),
-                           timeout=aiohttp.ClientTimeout(total=30)) as r:
-                if r.status != 200:
-                    logger.info(f"Jibe {system}: HTTP {r.status} at page {page}")
-                    failed_at = page
-                    break
-                data = await r.json(content_type=None)
-        except Exception as e:
-            logger.info(f"Jibe {system}: page {page} error: {e}")
-            failed_at = page
-            break
-        items = data.get("jobs") or []
-        if total is None:
-            total = data.get("totalCount") or 0
-            ceiling = JIBE_MAX_PAGES * 100
-            if total and total > JIBE_CEILING_WARN * ceiling:
-                logger.warning(f"Jibe {system}: totalCount {total:,} is {100 * total // ceiling}% of the "
-                               f"{JIBE_MAX_PAGES}-page ceiling ({ceiling:,}); raise JIBE_MAX_PAGES before the "
-                               f"board passes it (past it the board reports PARTIAL every night)")
-        if not items:
-            break
-        row_errors = 0
-        first_err = None
-        for wrap in items:
+    page_states: set[str] = set()  # 2026-10-27: the state names the first page shows (sliced reads)
+
+    async def _read(extra: dict, deep_check: bool = False):
+        """Page one /api/jobs listing (`extra`: a filter such as {"state":
+        "Texas"}; {} for the whole board). Returns (its totalCount, how it
+        ended): "end" read to its last page; "deep" (deep_check, the whole
+        board only) the first page says the listing is past JIBE_DEEP_WINDOW,
+        so nothing past page 1 is read; "failed" an HTTP error, an exception,
+        the page ceiling, or a page that repeated this listing's rows."""
+        nonlocal bad_rows
+        page, total = 1, None
+        listed: set[str] = set()   # postings this listing returned (repeat check)
+        label = "".join(f" [{k} {v}]" for k, v in extra.items())
+        while page <= JIBE_MAX_PAGES:  # 100 x 100 = 10,000 per listing
             try:
-                j = (wrap or {}).get("data") or wrap
-                rid = str(j.get("req_id") or "").strip()
-                tag = rid or str(j.get("slug") or "").strip()
-                title = (j.get("title") or "").strip()
-                if not rid or not title:
-                    if tag:
-                        served.add(tag)     # read, and left out on purpose
-                    continue
-                # `state` arrives as a FULL name ("Maryland"); parse_city_state
-                # owns the full-name -> 2-letter mapping (its STATE_ABBR table
-                # is LOCAL to that function — referencing it from here was a
-                # NameError that a bare except silently ate on every row,
-                # yielding "0 jobs (site reports 1175)" on the first test run).
-                # 2026-10-21 (fix 3): city and state are separate fields, so a
-                # town named like a state is the town (town_first).
-                city, st = parse_city_state(
-                    f"{(j.get('city') or '').strip()}, {(j.get('state') or '').strip()}", town_first=True)
-                url = _jibe_posting_url(system, base_url, j, rid)
-                cat = j.get("category")
-                if isinstance(cat, list):
-                    cat = cat[0] if cat else None
-                posted = str(j.get("posted_date") or "")[:10]
-                jobs.append(Job(
-                    title=title,
-                    hospital_system=system,
-                    hospital_name=_jibe_facility(system, j),
-                    city=city,
-                    state=st,
-                    location=", ".join(p for p in (city, st) if p),
-                    specialty=str(cat) if cat else "",
-                    job_type=(j.get("employment_type") or ""),
-                    url=str(url),
-                    job_id=rid,
-                    posted_date=posted,
-                    description=strip_html(str(j.get("description") or "")),
-                    ats_platform="iCIMS",
-                    # 2026-10-15 (owner: "I need amedisys' req id"): the
-                    # feed's req_id is the employer's requisition number, the
-                    # value the posting page prints as "Req ID:" (Novant's
-                    # i18n label REQ_ID "Req ID:"), and it is job_id: req_id
-                    # equalled slug on all 1,216 Amedisys and 1,587 Novant
-                    # postings on 2026-10-15 (and on page 1 of Mercy, Yale
-                    # New Haven and MedStar). Sent as req_id so it lands in
-                    # hospital_jobs.req_id; normalize_job leaves a req_id
-                    # equal to job_id out of the facts hash, so stored facts
-                    # are not re-parsed for it (sql/146b fills stored rows).
-                    req_id=rid,
-                ))
-                served.add(tag)             # stored: only now does it count as served
-                if _jibe_has_figure(j):
-                    raw_tags.setdefault(rid, {k: v for k, v in j.items() if k.startswith("tags") and k != "tags"})
+                async with req(session, "get", f"{base_url}/api/jobs",
+                               params={"page": str(page), "limit": "100", **extra},
+                               headers={**HEADERS, "Accept": "application/json"},
+                               ssl=False, proxy=proxies.get(),
+                               timeout=aiohttp.ClientTimeout(total=30)) as r:
+                    if r.status != 200:
+                        logger.info(f"Jibe {system}{label}: HTTP {r.status} at page {page}")
+                        return total, "failed"
+                    data = await r.json(content_type=None)
             except Exception as e:
-                # Count and report instead of swallowing: a structural bug
-                # (wrong field, missing name) fails EVERY row identically, and
-                # a silent continue turns that into "0 jobs" with no clue.
-                row_errors += 1
-                if first_err is None:
-                    first_err = repr(e)
-                continue
-        if row_errors:
-            bad_rows += row_errors
-            logger.info(f"Jibe {system}: page {page}: {row_errors} row errors (first: {first_err})")
-        if len(items) < 100 or (total and page * 100 >= total):
-            break
-        if page >= JIBE_MAX_PAGES:
-            failed_at = page + 1         # the ceiling, not the board's end
-            break
-        page += 1
-        await jitter()
+                logger.info(f"Jibe {system}{label}: page {page} error: {e}")
+                return total, "failed"
+            items = data.get("jobs") or []
+            if total is None:
+                total = data.get("totalCount") or 0
+                ceiling = JIBE_MAX_PAGES * 100
+                if (not extra and total and total > JIBE_CEILING_WARN * ceiling
+                        and not (deep_check and total > JIBE_DEEP_WINDOW)):
+                    logger.warning(f"Jibe {system}: totalCount {total:,} is {100 * total // ceiling}% of the "
+                                   f"{JIBE_MAX_PAGES}-page ceiling ({ceiling:,}); raise JIBE_MAX_PAGES before the "
+                                   f"board passes it (past it the board reports PARTIAL every night)")
+            if not items:
+                return total, "end"
+            row_errors = 0
+            first_err = None
+            fresh = 0
+            for wrap in items:
+                try:
+                    j = (wrap or {}).get("data") or wrap
+                    rid = str(j.get("req_id") or "").strip()
+                    tag = rid or str(j.get("slug") or "").strip()
+                    if tag and tag not in listed:
+                        listed.add(tag)
+                        fresh += 1
+                    if deep_check and page == 1:
+                        st_name = str(j.get("state") or "").strip()
+                        if st_name:
+                            page_states.add(st_name)
+                    title = (j.get("title") or "").strip()
+                    if not rid or not title or _jibe_left_out(system, j):
+                        if tag:
+                            served.add(tag)     # read, and left out on purpose
+                        continue
+                    # `state` arrives as a FULL name ("Maryland"); parse_city_state
+                    # owns the full-name -> 2-letter mapping (its STATE_ABBR table
+                    # is LOCAL to that function — referencing it from here was a
+                    # NameError that a bare except silently ate on every row,
+                    # yielding "0 jobs (site reports 1175)" on the first test run).
+                    # 2026-10-21 (fix 3): city and state are separate fields, so a
+                    # town named like a state is the town (town_first).
+                    city, st = parse_city_state(
+                        f"{(j.get('city') or '').strip()}, {(j.get('state') or '').strip()}", town_first=True)
+                    url = _jibe_posting_url(system, base_url, j, rid)
+                    cat = j.get("category")
+                    if isinstance(cat, list):
+                        cat = cat[0] if cat else None
+                    posted = str(j.get("posted_date") or "")[:10]
+                    jobs.append(Job(
+                        title=title,
+                        hospital_system=system,
+                        hospital_name=_jibe_facility(system, j),
+                        city=city,
+                        state=st,
+                        location=", ".join(p for p in (city, st) if p),
+                        specialty=str(cat) if cat else "",
+                        job_type=(j.get("employment_type") or ""),
+                        url=str(url),
+                        job_id=rid,
+                        posted_date=posted,
+                        description=strip_html(str(j.get("description") or "")),
+                        ats_platform="iCIMS",
+                        # 2026-10-15 (owner: "I need amedisys' req id"): the
+                        # feed's req_id is the employer's requisition number, the
+                        # value the posting page prints as "Req ID:" (Novant's
+                        # i18n label REQ_ID "Req ID:"), and it is job_id: req_id
+                        # equalled slug on all 1,216 Amedisys and 1,587 Novant
+                        # postings on 2026-10-15 (and on page 1 of Mercy, Yale
+                        # New Haven and MedStar). Sent as req_id so it lands in
+                        # hospital_jobs.req_id; normalize_job leaves a req_id
+                        # equal to job_id out of the facts hash, so stored facts
+                        # are not re-parsed for it (sql/146b fills stored rows).
+                        req_id=rid,
+                    ))
+                    served.add(tag)             # stored: only now does it count as served
+                    if _jibe_has_figure(j):
+                        raw_tags.setdefault(rid, {k: v for k, v in j.items() if k.startswith("tags") and k != "tags"})
+                except Exception as e:
+                    # Count and report instead of swallowing: a structural bug
+                    # (wrong field, missing name) fails EVERY row identically, and
+                    # a silent continue turns that into "0 jobs" with no clue.
+                    row_errors += 1
+                    if first_err is None:
+                        first_err = repr(e)
+                    continue
+            if row_errors:
+                bad_rows += row_errors
+                logger.info(f"Jibe {system}{label}: page {page}: {row_errors} row errors (first: {first_err})")
+            if deep_check and page == 1 and total > JIBE_DEEP_WINDOW:
+                return total, "deep"
+            if len(items) < 100 or (total and page * 100 >= total):
+                return total, "end"
+            if not fresh:
+                # 2026-10-27: a full page of postings this listing already
+                # returned. /api/jobs serves the first ~5,100 rows of a
+                # listing and then repeats one page for every page number
+                # (UHS: pages 51 and 61 identical, totalCount 6,023): the
+                # rows past it are unreachable this way, never the board's end.
+                logger.warning(f"Jibe {system}{label}: page {page} repeats rows already read "
+                               f"({len(listed):,} of {total:,} reached); not the board's end")
+                return total, "failed"
+            if page >= JIBE_MAX_PAGES:
+                return total, "failed"      # the ceiling, not the board's end
+            page += 1
+            await jitter()
+        return total, "failed"
+
+    total, how = await _read({}, deep_check=True)
+    failed = how == "failed"
+    if how == "deep":
+        # 2026-10-27 (UHS): the feed lists more postings than /api/jobs will
+        # page through, so the board is read one state at a time (each state
+        # is its own listing under the window; the filter is exact: "Virginia"
+        # does not return West Virginia). The states named on the first page
+        # come first, then every other name in JIBE_STATE_NAMES (a state the
+        # board has no posting in answers totalCount 0 in one request). A row
+        # in two states is read twice and kept once (the job_id dedupe below).
+        states = sorted(page_states) + sorted(JIBE_STATE_NAMES - page_states)
+        missed = []
+        for name in states:
+            await jitter()
+            _t, end = await _read({"state": name})
+            if end != "end":
+                missed.append(name)
+        failed = bool(missed)
+        logger.info(f"  Jibe {system}: {total:,} postings past the {JIBE_DEEP_WINDOW:,}-row window; read by "
+                    f"state ({len(states)} names, {len(states) - len(missed)} read to the end"
+                    + (f"; unfinished: {', '.join(missed[:8])}" if missed else "")
+                    + f"): {len(served):,} served")
     # Dedupe on job_id — Jibe repeats a req across category pages occasionally.
     seen, uniq = set(), []
     for jb in jobs:
@@ -9806,10 +10677,14 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
     # COMPLETE_RATIO of its own totalCount with no failure is complete: the
     # sweep and Layer 4 retire what it no longer lists on the first miss
     # (retire_guard.RETIRE_FIRST_MISS_WHEN_COMPLETE).
-    cut_short = failed_at is not None and not (total and len(served) >= total)
+    # 2026-10-27: a sliced read whose states all ended but that served under
+    # COMPLETE_RATIO of the board holds postings in no listed state (a blank
+    # or unknown name): not the inventory either, so the sweep waits.
+    cut_short = bool(failed and not (total and len(served) >= total)) or bool(
+        how == "deep" and total and len(served) < COMPLETE_RATIO * total)
     if uniq and (cut_short or bad_rows):
         report_partial(system)
-        why = "; ".join(x for x in ((f"page {failed_at} unread" if cut_short else ""),
+        why = "; ".join(x for x in (("a listing was cut short" if cut_short else ""),
                                     (f"{bad_rows} rows failed to parse" if bad_rows else "")) if x)
         logger.warning(f"Jibe {system}: PARTIAL, {why}; {len(served)} of {total} postings served; "
                        f"not swept tonight")
@@ -9862,6 +10737,13 @@ async def run_jibe(session) -> list[Job]:
 FINDLY_CWS_ORGS = {
     # Confirmed from HAR capture of jobs.texashealth.org
     "Texas Health Resources": ("2277", "TexasHealth-Taleo-External"),
+    # 2026-10-27: NYU Langone Health. jobs.nyulangone.org is a Findly site
+    # (cws_opts org 1637) over SilkRoad OpenHire; its search page filters on
+    # the two SilkRoad portals (1,288 postings on 10-26) and leaves out the
+    # Interfolio faculty postings. The rows that sat under this name until
+    # 09-16 were United Health Services of Binghamton's Workday tenant
+    # (relabelled then), so NYU Langone itself had never been read.
+    "NYU Langone Health": ("1637", "Silkroad~Silkroad_Winthrop"),
     # Add more orgs here as they're discovered. Discovery process:
     #   1. Visit jobs.{hospital}.org/listjobs/ (or similar careers page)
     #   2. View source → find cws_opts JavaScript var
@@ -9869,11 +10751,36 @@ FINDLY_CWS_ORGS = {
 }
 
 
+# 2026-10-27 (NYU Langone): the feed field that names the hospital, for orgs
+# whose `brand` is a region ("Manhattan", "Brooklyn"). NYU's `department`
+# reads "NYU Langone Hospital - Brooklyn", "NYU Langone Hospital—Suffolk" or
+# a school or practice ("NYU Grossman School of Medicine"); only a value that
+# names a hospital is taken, else the row keeps the system.
+FINDLY_CWS_FACILITY = {"NYU Langone Health": "department"}
+# The feed field holding the posted pay ("$106,916.04-$138,356.04/year" on 95
+# of NYU's first 97 postings).
+FINDLY_CWS_PAY_KEY = {"NYU Langone Health": "salary"}
+_FINDLY_HOSPITAL_RX = re.compile(r"\bhospital\b", re.I)
+
+
+def _findly_cws_facility(system: str, j: dict) -> str:
+    key = FINDLY_CWS_FACILITY.get(system)
+    if key:
+        v = re.sub(r"\s+", " ", str(j.get(key) or "")).strip()
+        return v if v and _FINDLY_HOSPITAL_RX.search(v) else system
+    return j.get("brand", "") or system  # e.g., "Texas Health HEB"
+
+
 async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: tuple) -> list[Job]:
-    """Scrape a Findly CWS career portal. Clean JSONP API, paginated."""
+    """Scrape a Findly CWS career portal. Clean JSONP API, paginated.
+    2026-10-27: a page that fails before the feed's end makes the crawl
+    PARTIAL (the sweep waits), and a crawl that read COMPLETE_RATIO of
+    totalHits reports itself complete, as the Jibe and Talemetry feeds do."""
     import re as _re
     org_id, portal_id = org_data
     jobs: list[Job] = []
+    total = None
+    failed = False
     offset = 1  # Findly uses 1-indexed offset
     limit = 100  # API max; website uses 10 but the endpoint accepts up to 100
     base_api = "https://jobsapi-internal.m-cloud.io/api/job"
@@ -9896,10 +10803,12 @@ async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: t
                 timeout=aiohttp.ClientTimeout(total=30)) as r:
                 if r.status != 200:
                     logger.info(f"Findly {system}: HTTP {r.status} at offset {offset}")
+                    failed = True
                     break
                 body = await r.text()
         except Exception as e:
             logger.info(f"Findly {system}: {e}")
+            failed = True
             break
 
         # Strip JSONP wrapper: CWS.jobs.jobCallback({...});
@@ -9909,6 +10818,7 @@ async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: t
             data = json.loads(inner)
         except Exception as e:
             logger.info(f"Findly {system}: JSON parse error: {e}")
+            failed = True
             break
 
         items = data.get("queryResult", []) or []
@@ -9923,12 +10833,15 @@ async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: t
             state = j.get("primary_state", "") or ""
             ref = j.get("ref", "") or str(j.get("id", ""))
             url = j.get("url") or j.get("seo_url") or ""
+            # 2026-10-27: NYU's feed names its job pages http://; the host
+            # serves them over https (Texas Health's are https already).
+            if url.startswith("http://"):
+                url = "https://" + url[len("http://"):]
             open_date = j.get("open_date", "") or ""
-            brand = j.get("brand", "") or system  # e.g., "Texas Health HEB"
             jobs.append(Job(
                 title=title,
                 hospital_system=system,
-                hospital_name=brand if brand else system,
+                hospital_name=_findly_cws_facility(system, j),
                 city=city,
                 state=state,
                 location=f"{city}, {state}".strip(", "),
@@ -9940,12 +10853,19 @@ async def scrape_findly(session: aiohttp.ClientSession, system: str, org_data: t
                 description=strip_html(j.get("description", "") or ""),
                 ats_platform="Findly",
             ))
+            pay_key = FINDLY_CWS_PAY_KEY.get(system)
+            if pay_key:
+                set_field_wage(jobs[-1], field_wage(j.get(pay_key)))
 
         offset += limit
         if offset > total:
             break
         await jitter()
 
+    if jobs and failed and not (total and len(jobs) >= total):
+        report_partial(system)
+        logger.warning(f"Findly {system}: PARTIAL, {len(jobs)} of {total} postings read; not swept tonight")
+    report_complete(system, len(jobs), total, feed="FINDLY_CWS_ORGS")
     logger.info(f"  Findly {system}: {len(jobs)} jobs")
     return jobs
 
@@ -10485,7 +11405,10 @@ SMARTRECRUITERS_ORGS = {
     "ChenMed":              "ChenMed",
     "Alignment Healthcare": "AlignmentHealthcare",
     # Added verified SR orgs:
-    "Kindred Healthcare":   "KindredatHome",
+    # 2026-10-27 (RN gap): "Kindred Healthcare" ("KindredatHome") retired.
+    # The company page lists 0 postings (10-26) and no row of it is stored;
+    # Kindred at Home is CenterWell Home Health now, read from Humana's
+    # CenterWell Workday site (WORKDAY_TENANTS "CenterWell").
     "Acadia Healthcare":    "AcadiaHealthcare",
     "Surgery Partners":     "SurgeryPartners",
     # Henry Ford moved off its dead Workday tenant to SmartRecruiters
@@ -11627,6 +12550,155 @@ def usajobs_facility(m: dict, default: str) -> str:
             or m.get("OrganizationName") or default)
 
 
+# 2026-10-27 (the owner, on a Clearwater, FL posting: "for VA jobs, using 'va
+# hospitals' is not acceptable. Scrape the real facility name."). On
+# 2026-10-27 1,288 of the 3,473 active "VA Hospitals" rows named only the
+# agency ("Veterans Health Administration": the posting's hiring-organization
+# line is the agency itself or blank, and its summary names no medical
+# center in the form _fed_facility_from_text reads), and the other 2,185
+# spelled their facilities 630 ways. A VA row's hospital_name is now one name
+# per facility (va_facilities, shared with the stored-row cleanup in
+# claud_outputinput/va_facility_2026-10-27), read in this order:
+#   1. the facility a PositionLocation names ahead of its town;
+#   2. the hiring-organization line (SubAgencyName): the medical center it
+#      names when that has a name of its own ("VA Finger Lakes Healthcare
+#      System- Bath VA Medical Center" is Bath VA Medical Center; rule of
+#      2026-10-27, va_facilities.HOSPITALS) and the row is in its town (a
+#      row of the same posting in another town of the station is the
+#      station's: va_facilities.at_town), else its station ("Kansas City
+#      VA Medical Center - Sterile Processing Services" is Kansas City VA
+#      Medical Center), or the VA unit that hires in its own name ("National
+#      Oncology Program" is VA National Oncology Program);
+#      a network's name on a posting of one town gives way to that town's
+#      station (VISN 12's HR files North Chicago's cardiologist under "VISN
+#      12 - VA Great Lakes Health Care System": Captain James A. Lovell
+#      Federal Health Care Center);
+#   3. the name already stored on the row, when it names a facility
+#      (load_stored_usajobs_names at run start): the cleanup read the
+#      facility of the agency-only postings from their job pages (the agency
+#      contact address), which the API does not carry;
+#   4. a station named anywhere in the summary (va_facilities.text_station:
+#      "Eastern Colorado Health Care System (ECHCS) located in Pueblo"), or
+#      in the form _fed_facility_from_text reads (a medical center named
+#      there gives its station: summaries name the station's main medical
+#      center for its clinics' postings too);
+#   5. the station that runs the VA's care in the row's town
+#      (va_facilities.TOWNS, only towns one station serves);
+#   6. the agency, as before.
+# hospital_system stays "VA Hospitals" (the upsert key). The other federal
+# systems (Indian Health Service, Military Health System, NIH) are as before.
+USAJOBS_VA_SYSTEM = "VA Hospitals"
+_STORED_USAJOBS: dict = {}     # job_id -> stored hospital_name, active USAJOBS_VA_SYSTEM rows
+STORED_USAJOBS_PAGE = 1000
+
+
+def set_stored_usajobs_names(rows) -> int:
+    """Install {job_id: hospital_name} from rows of {hospital_system, job_id,
+    hospital_name} (USAJOBS_VA_SYSTEM rows whose name names a facility).
+    Returns the map's size."""
+    global _STORED_USAJOBS
+    out = {}
+    for r in rows or []:
+        jid = r.get("job_id")
+        if r.get("hospital_system") != USAJOBS_VA_SYSTEM or jid in (None, ""):
+            continue
+        name = va_facilities.clean_text(r.get("hospital_name"))
+        if name and va_facilities.hiring_org_name(name):
+            out[str(jid)] = name
+    _STORED_USAJOBS = out
+    return len(out)
+
+
+def load_stored_usajobs_names() -> int:
+    """One read-only PostgREST pass over the active USAJOBS_VA_SYSTEM rows
+    (job_id, hospital_name), keyset-paged on id (about 4 pages on
+    2026-10-27). Without credentials the map stays empty and nothing is
+    kept."""
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = sb_keys.supabase_key()
+    if not sb_url or not sb_key:
+        set_stored_usajobs_names([])
+        return 0
+    import urllib.parse as _urlparse
+    import urllib.request as _urlreq
+    rows, last = [], 0
+    flt = _urlparse.quote(f"eq.{USAJOBS_VA_SYSTEM}", safe=".")
+    try:
+        while True:
+            u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,hospital_name"
+                 f"&is_active=is.true&hospital_system={flt}&id=gt.{last}&order=id.asc&limit={STORED_USAJOBS_PAGE}")
+            rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
+            chunk = None
+            for attempt in range(3):
+                try:
+                    with _urlreq.urlopen(rq, timeout=60) as resp:
+                        chunk = json.loads(resp.read().decode())
+                    break
+                except Exception:
+                    if attempt == 2:
+                        raise
+                    time.sleep(3 * (attempt + 1))
+            if not chunk:
+                break
+            rows.extend(chunk)
+            last = chunk[-1]["id"]
+            if len(chunk) < STORED_USAJOBS_PAGE:
+                break
+    except Exception as e:
+        logger.warning(f"Stored VA names: load stopped after {len(rows):,} rows ({e}); "
+                       f"rows past that are named from tonight's posting only")
+    try:
+        n = set_stored_usajobs_names(rows)
+    except Exception as e:          # never let this read end the run (it starts run_all)
+        logger.warning(f"Stored VA names: not installed ({e})")
+        set_stored_usajobs_names([])
+        return 0
+    logger.info(f"Stored VA names: {n:,} of {len(rows):,} active {USAJOBS_VA_SYSTEM} rows name a facility")
+    return n
+
+
+def usajobs_va_facility(m: dict, city: str = "", state: str = "", loc_facility: str = "",
+                        job_id: str = "", places: int = 1) -> tuple[str, str]:
+    """(hospital_name, how) of one USAJOBS_VA_SYSTEM row (see the note
+    above); how is "location", "hiring_org", "stored", "text", "town" or
+    "agency". places is the number of towns the announcement lists: a
+    network's name on a one-town posting gives way to the town's station
+    (va_facilities.is_network)."""
+    m = m or {}
+    details = (m.get("UserArea") or {}).get("Details") or {}
+    town = va_facilities.town_facility(city, state)
+
+    def usable(name):
+        # a town on a bare facility word ("Tyler VA Medical Center") names no
+        # facility; a network's name on a one-town posting is the town's
+        if not name or va_facilities.is_town_only(name):
+            return False
+        return not (town and places <= 1 and va_facilities.is_network(name))
+
+    name = va_facilities.canonical(loc_facility, state)
+    if usable(name):
+        return name, "location"
+    # a medical center the hiring line names, for a row in another town of
+    # its station (a multi-town posting), is the station (va_facilities.at_town)
+    name = va_facilities.at_town(va_facilities.hiring_org_name(details.get("SubAgencyName"), state), city, state)
+    if usable(name):
+        return name, "hiring_org"
+    stored = _STORED_USAJOBS.get(str(job_id or ""), "")
+    name = va_facilities.at_town(va_facilities.hiring_org_name(stored, state), city, state) if stored else ""
+    if usable(name):
+        return name, "stored"
+    for text in (details.get("JobSummary"), m.get("QualificationSummary")):
+        # a summary names the station, not a medical center of it ("the
+        # North Pinellas VA Clinic ... the CWBY Bay Pines VAMC and its CBOCs")
+        name = (va_facilities.text_station(text, state)
+                or va_facilities.station_of(va_facilities.canonical(_fed_facility_from_text(text), state)))
+        if usable(name):
+            return name, "text"
+    if town:
+        return town, "town"
+    return (m.get("OrganizationName") or USAJOBS_VA_SYSTEM), "agency"
+
+
 def usajobs_pay(rem: dict):
     """(min, max, "hour") from one PositionRemuneration entry, or None.
     PA (per annum) is divided by FEDERAL_HOURS_PER_YEAR and rounded to the
@@ -11739,7 +12811,8 @@ def _usajobs_places(m: dict) -> tuple[list[dict], int, bool]:
 def _usajobs_jobs(item: dict, system_name: str, stats: dict | None = None) -> list[Job]:
     """The rows of one announcement, one per US town (see the note above).
     stats, when given, counts "capped" (more towns than the cap) and
-    "foreign" (no US location) announcements."""
+    "foreign" (no US location) announcements, and for USAJOBS_VA_SYSTEM
+    rows how each was named ("va_hiring_org", "va_town", ...)."""
     m = (item or {}).get("MatchedObjectDescriptor") or {}
     title = str(m.get("PositionTitle") or "").strip()
     pid = str(m.get("PositionID") or "").strip()
@@ -11758,16 +12831,24 @@ def _usajobs_jobs(item: dict, system_name: str, stats: dict | None = None) -> li
     rows = []
     for i, p in enumerate(places):
         city, state = p["city"], p["state"]
+        job_id = pid if i == 0 else f"{pid}-{p['slug']}"
+        if system_name == USAJOBS_VA_SYSTEM:
+            # 2026-10-27: one clean name per VA facility (usajobs_va_facility)
+            hospital, how = usajobs_va_facility(m, city, state, p["facility"], job_id, len(places))
+            if stats is not None:
+                stats[f"va_{how}"] = stats.get(f"va_{how}", 0) + 1
+        else:
+            hospital = p["facility"] or facility
         rows.append(Job(
             title=title,
             hospital_system=system_name,
-            hospital_name=p["facility"] or facility,
+            hospital_name=hospital,
             city=city, state=state,
             location=f"{city}, {state}" if city and state else city or state,
             specialty=(m.get("JobCategory") or [{}])[0].get("Name", ""),
             job_type=(m.get("PositionSchedule") or [{}])[0].get("Name", ""),
             url=m.get("PositionURI", ""),
-            job_id=pid if i == 0 else f"{pid}-{p['slug']}",
+            job_id=job_id,
             posted_date=str(m.get("PublicationStartDate") or "")[:10],
             description=str(m.get("QualificationSummary") or "")[:500],
             ats_platform="USAJOBS",
@@ -11902,6 +12983,11 @@ async def run_usajobs(session) -> list[Job]:
                     f"(search totals {totals}, {pages_read} of {sum(page_counts)} pages; "
                     f"{stats.get('capped', 0)} listing more than {USAJOBS_LOCATION_CAP} towns cut to "
                     f"{USAJOBS_LOCATION_CAP}; {stats.get('foreign', 0)} outside the US skipped)")
+        if system_name == USAJOBS_VA_SYSTEM:
+            hows = ("location", "hiring_org", "stored", "text", "town", "agency")
+            logger.info(f"  USAJOBS {system_name}: rows read named by "
+                        + ", ".join(f"{h} {stats.get('va_' + h, 0):,}" for h in hows)
+                        + " (agency = no facility found)")
 
     logger.info(f"  USAJOBS: {len(jobs):,} jobs")
     return jobs
@@ -11920,7 +13006,6 @@ async def run_usajobs(session) -> list[Job]:
 PHENOM_ORG_CODES = {
     "Ascension Health":  "AHEAHUUS",   # confirmed from cdn.phenompeople.com/CareerConnectResources/AHEAHUUS/
     "Corewell Health":   "SPHEUS",      # confirmed from cdn.phenompeople.com/CareerConnectResources/SPHEUS/
-    "Temple Health":     "TUHTUHUS",   # confirmed from widgets intercept refNum
     "DaVita":            "DAVIUS",     # confirmed from careers.davita.com 2026-05-27
     "UTHealth Houston":  "UHHUHHUS",   # 2026-09-24, widgets refNum on careers.uth.tmc.edu
     "University of Maryland Medical System": "UOJUOMUS",   # 2026-09-24, widgets refNum on careers.umms.org
@@ -11987,7 +13072,10 @@ PHENOM_ORGS = {
     "Froedtert Health":             "https://jobs.froedtert.com",   # 2026-09-25 B1: 1,027 WI rows in the dry run, facility per row
     "Roper St. Francis Healthcare": "https://careers.rsfh.com",
     "ScionHealth":                  "https://jobs.scionhealth.com",
-    "Temple Health":                "https://careers.templehealth.org",
+    # "Temple Health" -> careers.templehealth.org removed 2026-10-27: the host
+    # redirects to www.templehealth.org/careers, whose job search is SilkRoad
+    # OpenHire (SILKROAD_SITES); this entry wrote 0 rows since 10-14 and, as a
+    # second feed of the system, would keep its complete claim from counting.
     # 2026-09-25 push 5 / gov: state university hospitals on Phenom, read off
     # their careers pages (jobs.virginia.edu -> careers.uvahealth.org, CDN
     # org UOVUOVUS; muhealth.org/careers -> careers.muhealth.org).
@@ -12066,6 +13154,11 @@ PHENOM_ORGS = {
     "Children's Hospital of Philadelphia": "https://careers.chop.edu",          # [265] Philadelphia PA
     "Grady Health System":          "https://careers.gradyhealth.org",          # [282] Atlanta GA
     "Seattle Children's":           "https://careers.seattlechildrens.org",     # [242] Seattle WA
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Innovative Renal Care": "https://careers.innovativerenal.com",   # [10-27 dry run] 180 rows / RN 80; top towns Zanesville, OH 6, ,  5, Louisville, KY 5
 }
 
 PHENOM_MAX_CONSECUTIVE_FAILURES = 3   # 2026-10-07 (push 10): failed list pages in a row that end a crawl
@@ -12625,6 +13718,22 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                 # the Workday job page, which shows the posting; its detail
                 # comes from the CXS (_phenom_detail).
                 url = _workday_job_url(url)
+                # 2026-10-27: the Taleo-backed tenants (UTHealth Houston,
+                # Children's Minnesota) hand out Taleo's apply step
+                # (".../careersection/[cs/]jobapply.ftl?job=..."), a privacy and
+                # sign-in page. Store the Taleo job page (jobdetail.ftl).
+                url = _taleo_job_url(url)
+                # 2026-10-27: Hendrick Health's postings hand out
+                # HealthcareSource's employee question
+                # (".../cs/ehendrick/#/preApply/{id}"). Store the job page
+                # (".../#/job/{id}", _hcs_job_url).
+                url = _hcs_job_url(url)
+                # 2026-10-27: UAB's iCIMS-backed postings hand out iCIMS's
+                # candidate sign-in step (".../jobs/{id}/{slug}/login"). Store
+                # the tenant's own Phenom job page, where the posting and its
+                # Apply button are (_ICIMS_LOGIN_STEP_RX).
+                if job_id and _ICIMS_LOGIN_STEP_RX.match(url or ""):
+                    url = _phenom_fallback_job_url(system, base_url, job_id)
                 # multi_category is an array on recommendationJobsBrowsingHistory
                 multi_cat = doc.get("multi_category") or []
                 specialty_val = (
@@ -13069,6 +14178,11 @@ ADP_ORGS = {
     "Grant Regional Health Center": ("84e68b06-658b-4d37-a6d5-20bbc3463ad9", "19000101_000001", "WI", "Grant Regional Health Center"),   # 18 rows, 18 in Lancaster, WI (CMS 521322)
     "Niobrara County Hospital District": ("a20cd2ad-2b4a-419e-a049-412195d6d6e8", "19000101_000001", "WY", "Niobrara County Hospital District"),   # 13 rows, 13 in Lusk, WY (CMS 531314)
     "North Platte Valley Medical Center": ("b3cdeb5c-bb64-4686-a838-e84608ae0021", "19000101_000001", "WY", "North Platte Valley Medical Center"),   # 12 rows, 12 in Saratoga, WY (CMS 531317)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Choice Health at Home": ("026d2af3-da01-4dc8-a714-353f3f03daba", "19000101_000001", "", ""),   # [10-27 dry run] 219 rows / RN 56; top towns Tucson, AZ 15, Colorado Springs, CO 11, Ocala, FL 9
 }
 _ADP_API = "https://workforcenow.adp.com/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions"
 _ADP_PORTAL = "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html"
@@ -13297,6 +14411,17 @@ ADPCX_ORGS = {
     # requisitionLocations carry no site name (hospital_name = system).
     "Cabell Huntington Hospital": ("mhnetwork", "WV"),        # 770, Huntington + Point Pleasant WV
     "Ephraim Mcdowell Health":    ("ephraimmcdowell", "KY"),  # 114, Danville KY
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "SBH Health System": ("stbarnabascareers", "NY"),   # [10-27 dry run] 391 rows / 391 in town / RN 79; CMS 330399
+    "The Brooklyn Hospital Center": ("tbhcareers", "NY"),   # [10-27 dry run] 51 rows / 50 in town / RN 15; CMS 330056
+    "Saint Joseph's Medical Center (Yonkers)": ("stjosephsyonkersjobs", "NY"),   # [10-27 dry run] 68 rows / 49 in town / RN 11; CMS 330006
+    "Williamson Health": ("williamsonhealthcareers", "TN"),   # [10-27 dry run] 176 rows / 176 in town / RN 65; CMS 440029
+    "Finger Lakes Health": ("fingerlakes", "NY"),   # [10-27 dry run] 230 rows / 192 in town / RN 52; CMS 330058, 331314
+    "North Country Healthcare": ("ncha", "NH"),   # [10-27 dry run] 108 rows / 64 in town / RN 31; CMS 301310, 301303
+    "Nexion Health": ("nexion", ""),   # [10-27 dry run] 285 rows / RN 71; top towns New Iberia, LA 10, Floresville, TX 9, Clinton, MS 9
 }
 _ADPCX_SITE    = "https://myjobs.adp.com/public/staffing/v1/career-site/{domain}"
 _ADPCX_API     = "https://my.adp.com/myadp_prefix/mycareer/public/staffing/v1/job-requisitions"
@@ -13748,6 +14873,11 @@ SELECTMINDS_ORGS = {
     # names the hospital (<p class="jlr_company">McLaren Flint</p>, see
     # SELECTMINDS_COMPANY_FACILITY) and the town as "Michigan, Flint".
     "McLaren Health Care": "https://careers.mclaren.org",              # Grand Blanc MI; 13 hospitals
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "UTMB Health": "aa083",   # [10-27 dry run] 1291 rows / 919 in town / RN 267; CMS 450018
 }
 # 2026-10-25: 80 -> 160 (McLaren lists 129 pages of 10).
 SELECTMINDS_MAX_PAGES = int(os.getenv("SELECTMINDS_MAX_PAGES", "160"))
@@ -14271,6 +15401,13 @@ INFOR_ORGS = {
     "Cambridge Health Alliance": ("css-cambridgehealth-prd",  "1000", "EXTERNAL",       "MA"),  # [194] Cambridge / Everett / Somerville MA
     # Children's of Alabama: the HealthcareSource tenant "chsys" answers 0 jobs; childrensalcareers.org links Infor.
     "Children's of Alabama":     ("css-childrensal-prd",      "10",   "EXTERNAL",       "AL"),  # [256] Birmingham AL
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "NCH Healthcare System": ("css-b5wedk4337b8b9un-prd", "1", "EXTERNAL", "FL"),   # [10-27 dry run] 413 rows / 403 in town / RN 142; CMS 100018
+    "Columbus Regional Health": ("css-g8ancuhyudvlv76g-prd", "CRHH", "EXTERNAL", "IN"),   # [10-27 dry run] 99 rows / 99 in town / RN 36; CMS 150112
+    "North Oaks Health System": ("css-northoakshealth-prd", "1000", "EXTERNAL", "LA"),   # [10-27 dry run] 235 rows / 0 in town / RN 98; CMS 190015
 }
 
 # Tenants whose location value is a facility name with no city or state.
@@ -14900,6 +16037,27 @@ UKG_ORGS = {
     "Southwest Health Center": ("https://southwesthealth.rec.pro.ukg.net/SOU1502SWHC", "736c3b2b-32cd-4667-a8ad-dc0869f551f5", "WI"),   # 25 rows, 25 in Platteville, WI (CMS 521354)
     "Tamarack Health": ("https://tamarackhealth.rec.pro.ukg.net/REG1500REGI", "9ad614d0-6df3-4942-bf76-c27dcf6898f9", "WI"),   # 71 rows, 24 in Ashland, WI (CMS 521359); also Hayward (CMS 521336)
     "Vernon Memorial Hospital": ("https://vernonmemorial.rec.pro.ukg.net/VER1502VMHC", "0c24f5a0-d512-46a1-8785-50dcb9a9dcd6", "WI"),   # 38 rows, 34 in Viroqua, WI (CMS 521348)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Licking Memorial Hospital": ("https://recruiting.ultipro.com/LIC1000LMHS", "3a2849cd-0da6-4a57-813a-80b366fb0172", "OH"),   # [10-27 dry run] 98 rows / 97 in town / RN 17; CMS 360218
+    "Hancock Regional Hospital": ("https://hancockhealth.rec.pro.ukg.net/HAN1500HCRH", "0d9549f5-8d33-4f24-a8e0-96611223b112", "IN"),   # [10-27 dry run] 48 rows / 44 in town / RN 11; CMS 150037
+    "St. Mary's Healthcare (Amsterdam)": ("https://stmary.rec.pro.ukg.net/STM1500STMH", "77a8f537-cc67-4dfc-ba9e-fac7c978527f", "NY"),   # [10-27 dry run] 225 rows / 221 in town / RN 57; CMS 330047
+    "Indiana Regional Medical Center": ("https://recruiting.ultipro.com/IND1019INDI", "2dbb7a3a-54b7-4c82-9c18-a0260627136b", "PA"),   # [10-27 dry run] 98 rows / 88 in town / RN 17; CMS 390173
+    "Fisher-Titus Medical Center": ("https://recruiting.ultipro.com/FIS1006FSHR", "4f0ef98c-7a2a-435a-b8ae-34f07ba89aae", "OH"),   # [10-27 dry run] 96 rows / 84 in town / RN 30; CMS 360065
+    "Olmsted Medical Center": ("https://recruiting2.ultipro.com/OLM1000OMC", "8aa650e0-3e57-4e69-ad1e-6503d36d502a", "MN"),   # [10-27 dry run] 60 rows / 53 in town / RN 14; CMS 240006
+    "Schneck Medical Center": ("https://schneckmed.rec.pro.ukg.net/JAC1502SCKM", "0ecf6482-01c9-4568-bec5-8ea8e3f534a3", "IN"),   # [10-27 dry run] 31 rows / 31 in town / RN 5; CMS 150065
+    "Winona Health": ("https://recruiting2.ultipro.com/WIN1020WINO", "e8f5c467-8162-4978-9a1e-9dacada74410", "MN"),   # [10-27 dry run] 70 rows / 70 in town / RN 11; CMS 240044
+    "Valley View Hospital": ("https://recruiting.ultipro.com/VAL1004VVH", "7a5186be-89cf-4eb5-b2e5-869118e3e2f0", "CO"),   # [10-27 dry run] 166 rows / 157 in town / RN 48; CMS 060075
+    "Pella Regional Health Center": ("https://pellarhc.rec.pro.ukg.net/PEL1000PELLA", "3807457d-d4d9-4311-a73c-bfb456afd44c", "IA"),   # [10-27 dry run] 52 rows / 46 in town / RN 15; CMS 161367
+    "Shenandoah Medical Center": ("https://recruiting2.ultipro.com/SHE1012SHEM", "bcd5738c-c38c-4642-a992-1887c69cb7aa", "IA"),   # [10-27 dry run] 22 rows / 22 in town / RN 7; CMS 161366
+    "Margaret Mary Health": ("https://mmhealth.rec.pro.ukg.net/MAR1052MGMH", "8cc2d18e-f33a-4496-825e-4b5c69e3cf1d", "IN"),   # [10-27 dry run] 39 rows / 37 in town / RN 8; CMS 151329
+    "Grande Ronde Hospital": ("https://grandehospital.rec.pro.ukg.net/GRA1506GDRH", "54d9efc6-9e5b-442a-a6c5-64ad8c352228", "OR"),   # [10-27 dry run] 36 rows / 36 in town / RN 6; CMS 381321
+    "Mobridge Regional Hospital": ("https://recruiting2.ultipro.com/MOB1005MOHO", "d740b8a2-1c7c-47a6-9027-ec800aed2766", "SD"),   # [10-27 dry run] 13 rows / 13 in town / RN 4; CMS 431325
+    "Tri-State Memorial Hospital": ("https://recruiting.ultipro.com/TRI1015", "e2afe3d3-239e-a920-52a1-3515af825791", "WA"),   # [10-27 dry run] 47 rows / 45 in town / RN 13; CMS 501332
+    "American Senior Communities": ("https://recruiting2.ultipro.com/AME1091ASEN", "92ca1d4b-eaf6-482c-82b7-bb3bc300b9dd", "IN"),   # [10-27 dry run] 809 rows / RN 208; top towns Indianapolis, IN 143, Fort Wayne, IN 78, Elkhart, IN 36
+    "AmSurg": ("https://recruiting.ultipro.com/AMS1004AMSRG", "94a3d750-7693-4943-8b5d-0a9b17bb4e4f"),   # [10-27 dry run] 104 rows / RN 55; top towns Towson, MD 13, ,  8, Raleigh, NC 6
 }
 
 # 2026-10-20: the posting's title names the hospital on a board whose
@@ -15423,6 +16581,11 @@ ORACLE_ORGS = {
     "AtlantiCare":               ("https://ibywjb.fa.ocs.oraclecloud.com",                    "CX_1"),   # [529] Atlantic City / Galloway (Pomona) NJ
     "CarolinaEast Health System": ("https://enpu.fa.us2.oraclecloud.com",                     "CX_1001"),   # [222] New Bern NC
     "Connecticut Children's":    ("https://fa-evav-saasfaprod1.fa.ocs.oraclecloud.com",       "connecticutchildrenscareers"),   # [224] Hartford CT
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Life Care Services": ("https://eexs.fa.us2.oraclecloud.com", "AllJobs"),   # [10-27 dry run] 767 rows / RN 76; top towns Des Moines, IA 29, Chicago, IL 24, Lincolnshire, IL 22
 }
 
 # 2026-09-16 (NY coverage): Mount Sinai site names in requisition titles ->
@@ -15834,6 +16997,24 @@ HEALTHCARESOURCE_ORGS = {
     "Cody Regional Health": "westpark",   # 70 rows, 70 in Cody, WY (CMS 531312)
     "Hot Springs County Memorial Hospital": "hscmh",   # 22 rows, 21 in Thermopolis, WY (CMS 531304)
     "Memorial Hospital Sweetwater County": "sweetwatermemorial",   # 34 rows, 34 in Rock Springs, WY (CMS 531318)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Blessing Health System": "blessing",   # [10-27 dry run] 153 rows / 146 in town / RN 48; CMS 140015, 141315
+    "Berkshire Health Systems": "berkshire",   # [10-27 dry run] 420 rows / 398 in town / RN 61; CMS 220046, 221302
+    "Holzer Health System": "holzer",   # [10-27 dry run] 144 rows / 122 in town / RN 21; CMS 360054, 361320
+    "Signature Healthcare Brockton Hospital": "brocktonhospital",   # [10-27 dry run] 147 rows / 132 in town / RN 38; CMS 220052
+    "Conway Medical Center": "cmcsc",   # [10-27 dry run] 162 rows / 142 in town / RN 40; CMS 420049
+    "Baxter Health": "baxter",   # [10-27 dry run] 193 rows / 172 in town / RN 58; CMS 040027
+    "Memorial Healthcare (Owosso)": "mhcc",   # [10-27 dry run] 154 rows / 147 in town / RN 35; CMS 230121
+    "Emerson Health": "emerson",   # [10-27 dry run] 192 rows / 179 in town / RN 49; CMS 220084
+    "Ozarks Healthcare": "ozarks",   # [10-27 dry run] 87 rows / 84 in town / RN 15; CMS 260078
+    "Children's Hospital of The King's Daughters": "kingsdaughters",   # [10-27 dry run] 271 rows / 198 in town / RN 59; CMS 493301
+    "Morris Hospital": "morrishospital",   # [10-27 dry run] 65 rows / 56 in town / RN 10; CMS 140101
+    "Citizens Memorial Healthcare": "citizensmemorial",   # [10-27 dry run] 176 rows / 132 in town / RN 32; CMS 260195
+    "Northfield Hospital + Clinics": "northfieldhospital",   # [10-27 dry run] 59 rows / 55 in town / RN 6; CMS 240014
+    "St. Clair Health": "stclair",   # [10-27 dry run] 209 rows / 209 in town / RN 54; CMS 390228
 }
 
 # 2026-10-14 (owner: "Yeah we need to fix those now"): the requisition number
@@ -16105,6 +17286,191 @@ async def run_healthcaresource(session) -> list[Job]:
     jobs = [j for r in results if isinstance(r, list) for j in r]
     logger.info(f"  HealthcareSource total: {len(jobs):,} jobs")
     return jobs
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  HEALTHCARESOURCE HIRING SITES: <client>.hcshiring.com (added 2026-10-27,
+#  RN gap). HealthcareSource's newer candidate site, a single-page app, not
+#  the pm.healthcaresource.com/cs/<tenant> boards scrape_healthcaresource
+#  reads. The /jobs page names the release the app's API is served under
+#  ("var V = { version: 'cb5572bd', ..."), and the app reads
+#    GET /<version>/api/jobs?page=N
+#        {"jobs": [10 a page], "meta": {"page", "perPage", "totalJobs", "totalPages"}}
+#    GET /<version>/api/jobDescriptions?id=<id>
+#        {"jobDescriptions": {"description": <html>, "fields": [{"id":
+#         "Employment Status", "name": "Full-Time"}, {"id": "Shift", ...}],
+#         "job": {... as in the list, plus validThrough}}}
+#  A list row carries id, title, organization (the facility: "Life Care
+#  Center of Wichita"), street, city, state, zip, lastOpening (ISO), pay
+#  when the employer posts it (compensationMin / compensationMax /
+#  googleSalaryUnit), googleEmploymentType, publicFieldValues (Shift,
+#  Employment Status) and a summary cut at 200 characters (not stored: the
+#  description call gives the whole posting). The page size is fixed at 10
+#  (perPage is ignored). The posting page is https://<host>/jobs/<id>.
+#  No login: both calls answer a plain GET with a normal user agent (10-26:
+#  Life Care Centers of America, 2,254 jobs in 226 pages).
+# ══════════════════════════════════════════════════════════════════════════
+HCSHIRING_SITES = {
+    # lifecarecareers.com "Search Jobs" links this site; 200+ skilled nursing
+    # and rehab centers.
+    "Life Care Centers of America": "lifecarecareers.hcshiring.com",   # [2,254]
+}
+HCSHIRING_MAX_PAGES = int(os.getenv("HCSHIRING_MAX_PAGES", "500"))          # 10 a page: 5,000 postings
+HCSHIRING_DESC_MAX_PER_RUN = int(os.getenv("HCSHIRING_DESC_MAX_PER_RUN", "800"))
+HCSHIRING_DESC_BUDGET = _DescBudget(HCSHIRING_DESC_MAX_PER_RUN)
+_HCSHIRING_VERSION_RX = re.compile(r"\bversion\s*:\s*'([0-9A-Za-z_-]{4,40})'")
+_HCSHIRING_TYPES = {"FULL_TIME": "Full time", "PART_TIME": "Part time", "PER_DIEM": "Per diem",
+                    "TEMPORARY": "Temporary", "CONTRACTOR": "Contract", "INTERN": "Internship"}
+_HCSHIRING_STATUS = {"full-time": "Full time", "full time": "Full time", "part-time": "Part time",
+                     "part time": "Part time", "prn": "Per diem", "per diem": "Per diem"}
+_HCSHIRING_API: dict[str, str] = {}   # system -> https://<host>/<version>/api, set by the list crawl
+
+
+def _hcshiring_fields(pairs, key_name: str, value_name: str) -> dict:
+    """{lowercased field name: value} from a list of {name, value} dicts."""
+    out = {}
+    for f in pairs or []:
+        if isinstance(f, dict):
+            k = str(f.get(key_name) or "").strip().lower()
+            v = str(f.get(value_name) or "").strip()
+            if k and v:
+                out.setdefault(k, v)
+    return out
+
+
+def _hcshiring_job_type(google_type, status: str) -> str:
+    return (_HCSHIRING_TYPES.get(str(google_type or "").strip().upper())
+            or _HCSHIRING_STATUS.get(str(status or "").strip().lower(), ""))
+
+
+def _hcshiring_pay(j: dict):
+    """(min, max, unit) from a row's compensationMin / compensationMax /
+    googleSalaryUnit, or None (Life Care posts none on most rows)."""
+    if not isinstance(j, dict):
+        return None
+    figs = [f"${v}" for v in (j.get("compensationMin"), j.get("compensationMax")) if v not in (None, "", 0)]
+    if not figs:
+        return None
+    return field_wage(" - ".join(figs), j.get("googleSalaryUnit") or None)
+
+
+def _hcshiring_job(j: dict, system: str, base: str) -> Job | None:
+    """One /api/jobs row -> Job, or None without an id or a title."""
+    if not isinstance(j, dict):
+        return None
+    jid = str(j.get("id") or "").strip()
+    title = re.sub(r"\s+", " ", str(j.get("title") or "")).strip()
+    if not jid or not title:
+        return None
+    city = str(j.get("city") or "").strip()
+    st = str(j.get("state") or "").strip()
+    if len(st) > 2:
+        st = parse_city_state(f"{city}, {st}")[1] or st
+    st = st.upper()
+    fields = _hcshiring_fields(j.get("publicFieldValues"), "name", "value")
+    org = re.sub(r"\s+", " ", str(j.get("organization") or "")).strip()
+    job = Job(
+        title=title, hospital_system=system, hospital_name=org or system,
+        city=city, state=st, location=", ".join(p for p in (city, st) if p),
+        specialty="", job_type=_hcshiring_job_type(j.get("googleEmploymentType"), fields.get("employment status", "")),
+        url=f"{base}/jobs/{jid}", job_id=jid,
+        posted_date=str(j.get("lastOpening") or "")[:10], description="",
+        ats_platform="HCSHiring",
+    )
+    set_field_wage(job, _hcshiring_pay(j))
+    return job
+
+
+async def scrape_hcshiring(session: aiohttp.ClientSession, system: str, host: str) -> list[Job]:
+    base = f"https://{host}"
+    html = await _fetch_html(session, f"{base}/jobs", timeout=30)
+    m = _HCSHIRING_VERSION_RX.search(html or "")
+    if not m:
+        logger.warning(f"HCS Hiring {system}: no release version on {base}/jobs; nothing listed "
+                       f"(the yield guard holds its rows)")
+        return []
+    api = f"{base}/{m.group(1)}/api"
+    _HCSHIRING_API[system] = api
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    total, pages, failed = None, None, None
+    page = 1
+    while True:
+        if page > HCSHIRING_MAX_PAGES:
+            failed = f"the {HCSHIRING_MAX_PAGES}-page ceiling"
+            break
+        try:
+            async with req(session, "get", f"{api}/jobs", params={"page": str(page)},
+                           headers={**HEADERS, "Accept": "application/json"},
+                           ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+                if r.status != 200:
+                    failed = f"HTTP {r.status} on page {page}"
+                    break
+                data = await r.json(content_type=None)
+        except Exception as e:
+            failed = f"page {page}: {type(e).__name__}"
+            break
+        meta = (data or {}).get("meta") or {}
+        if total is None:
+            try:
+                total = int(meta.get("totalJobs") or 0)
+                pages = int(meta.get("totalPages") or 0)
+            except (TypeError, ValueError):
+                total, pages = 0, 0
+        rows = (data or {}).get("jobs") or []
+        if not rows:
+            break
+        for row in rows:
+            job = _hcshiring_job(row, system, base)
+            if job and job.job_id not in seen:
+                seen.add(job.job_id)
+                jobs.append(job)
+        if pages and page >= pages:
+            break
+        page += 1
+        await jitter()
+    cut_short = failed is not None and not (total and len(seen) >= total)
+    if jobs and cut_short:
+        report_partial(system)
+        logger.warning(f"HCS Hiring {system}: PARTIAL, stopped at {failed}; {len(seen)} of {total} listed; "
+                       f"not swept tonight")
+    report_complete(system, len(jobs), total, feed="HCSHIRING_SITES")
+    logger.info(f"  HCS Hiring {system}: {len(jobs):,} jobs (site reports {total})")
+    return jobs
+
+
+async def _hcshiring_detail(session, job) -> bool:
+    """The whole posting, its employment status and shift from the
+    jobDescriptions call; the pay too when the list row had none."""
+    api = _HCSHIRING_API.get(job.hospital_system)
+    if not api:
+        return False
+    try:
+        async with req(session, "get", f"{api}/jobDescriptions", params={"id": job.job_id},
+                       headers={**HEADERS, "Accept": "application/json"},
+                       ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
+            if r.status != 200:
+                return False
+            data = await r.json(content_type=None)
+    except Exception:
+        return False
+    d = (data or {}).get("jobDescriptions") or {}
+    if not isinstance(d, dict):
+        return False
+    fields = _hcshiring_fields(d.get("fields"), "id", "name")
+    inner = d.get("job") if isinstance(d.get("job"), dict) else {}
+    body = strip_html(str(d.get("description") or "")).strip()
+    sched = _schedule_line(_shift_words(fields.get("shift", "")))
+    if body and sched and "Schedule:" not in body:
+        body = f"{body}\n\n{sched}"
+    set_field_wage(job, _hcshiring_pay(inner))
+    return _apply_body(job, body, _hcshiring_job_type(inner.get("googleEmploymentType"),
+                                                      fields.get("employment status", "")))
+
+
+async def run_hcshiring(session) -> list[Job]:
+    return await _run_small_board(session, "HCS Hiring", HCSHIRING_SITES, scrape_hcshiring,
+                                  HCSHIRING_DESC_BUDGET, _hcshiring_detail)
 
 
 ##############################################################################
@@ -16430,6 +17796,14 @@ KRONOS_ORGS = {
     "North Valley Hospital": ("secure7.saashr.com", "6204309", "WA"),   # 17 rows, 17 in Tonasket, WA (CMS 501321)
     "Othello Community Hospital": ("secure6.saashr.com", "6154361", "WA"),   # 7 rows, 7 in Othello, WA (CMS 501318)
     "Spooner Health System": ("secure6.entertimeonline.com", "6148886", "WI"),   # 8 rows, 8 in Spooner, WI (CMS 521332)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Baton Rouge General Medical Center": ("prd01-hcm01.prd", "6042637", "LA"),   # [10-27 dry run] 252 rows / 218 in town / RN 48; CMS 190065, 190316
+    "Oaklawn Hospital": ("secure7.saashr.com", "6155701", "MI"),   # [10-27 dry run] 83 rows / 76 in town / RN 15; CMS 230217
+    "Western Wisconsin Health": ("secure3.saashr.com", "6109363", "WI"),   # [10-27 dry run] 30 rows / 30 in town / RN 3; CMS 521347
+    "NHS Management": ("prd01-hcm01.npr", "6148296", "AL"),   # [10-27 dry run] 445 rows / RN 93; top towns Birmingham, AL 57, Mobile, AL 53, Northport, AL 35
 }
 
 
@@ -16681,8 +18055,84 @@ async def run_tam(session) -> list[Job]:
 #  other departments are dropped. City / state default to the hospital's CMS
 #  city / state; a card "Location:" wins when present. List-only (no
 #  description body, relative posted date), like the UHG / Kaiser adapters.
-#  Format: "System": (agency, state, CMS city, hospital_name, department regex | None)
+#  Format: "System": (agency, state, CMS city, hospital_name, department regex | None
+#                     [, options: NG_NURSES])
+#
+#  2026-10-27 (RN gap fixes): state and county agencies whose boards post
+#  nurse jobs (state psychiatric hospitals, prisons and veterans' homes, county
+#  public health, jails and nursing homes). Their boards list every kind of
+#  government job, so these entries carry NG_NURSES: the list is the board's
+#  own "nurse" keyword search (?keyword=nurse, the box on the careers page;
+#  Michigan 39 cards of 473 on 10-26), and only nurse titles are kept
+#  (is_nurse_role: RN, LPN / LVN, nurse practitioner, public health or school
+#  nurse; not nursing assistants, aides, clerks or nursery workers). A row's
+#  facility is the department's suffix ("Health and Human Services -
+#  Kalamazoo Psychiatric Hospital"), else the title's ("Registered Nurse -
+#  SCI Mercer"), else the agency; its town is the card's own location line
+#  ("Kalamazoo, MI"). The complete claim reads against the search's own
+#  count, which is every card this system's rows can come from. Departments
+#  another entry on the same board keeps (LA County's HEALTH SERVICES,
+#  San Bernardino's Arrowhead) are left to that entry, so no posting is
+#  stored twice.
 ##############################################################################
+# Nurse roles on boards that post every kind of job (NEOGOV state and county
+# boards, school districts' AppliTrack boards).
+NURSE_ROLE_RX = re.compile(
+    r"\bnurses?\b|\bRNs?\b|\bLPNs?\b|\bLVNs?\b|\bAPRNs?\b|\bCRNPs?\b"
+    r"|\b(?:director|supervisor|manager|coordinator|chief|head) of nursing\b"
+    r"|\bnursing (?:supervisor|director|manager|administrator|consultant|coordinator)\b"
+    r"|\bnursing services? (?:director|manager|supervisor|coordinator)\b", re.I)
+NOT_NURSE_ROLE_RX = re.compile(
+    r"\bnurs(?:e|ing) (?:aides?|assistants?|attendants?|techs?|technicians?|students?|externs?|interns?)\b"
+    r"|\b(?:aides?|attendants?|teachers?|tchrs?|instructors?|professors?|faculty|secretary|clerks?|receptionists?"
+    r"|nursery|CNAs?)\b", re.I)
+# Postings open to the employer's own staff only ("Registered Nurse-ACE
+# (Internal Only)"): not a job the public can apply to.
+INTERNAL_ONLY_RX = re.compile(r"\binternal(?:\s+applicants?|\s+candidates?|\s+employees?)?\s+only\b|\(internal\)", re.I)
+
+
+def is_nurse_role(title: str) -> bool:
+    """A nurse job by its title: RN, LPN / LVN, NP, a school, public health,
+    charge or staff nurse, a nursing supervisor or director. Nursing
+    assistants and aides, teachers of nursing, clerks and nursery workers
+    are not."""
+    t = title or ""
+    return bool(NURSE_ROLE_RX.search(t)) and not NOT_NURSE_ROLE_RX.search(t)
+
+
+# Options for a state or county board (see the 2026-10-27 note above).
+NG_NURSES = {"keyword": "nurse", "nurse_only": True, "card_town": True, "facility": True}
+_NG_TOWN_RX = re.compile(r"^[A-Za-z][A-Za-z .'\-]*,\s*[A-Z]{2}$")
+_NG_NO_TOWN = {"statewide", "multiple locations", "various locations", "various", "multiple", "remote"}
+# A card line that names an area, not a town ("Mercer County, PA",
+# "Throughout San Bernardino County, CA", "See Posting for Details, MI").
+_NG_NOT_TOWN_RX = re.compile(r"\bcounty\b|\bcounties\b|\bregion\b|throughout|posting|details|various|multiple"
+                             r"|statewide|countywide|remote", re.I)
+# San Diego County appends its exam number to the title ("Supervising Nurse-26454406").
+_NG_EXAM_NO_RX = re.compile(r"\s*-\s*\d{7,}\s*$")
+_NG_FACILITY_RX = re.compile(
+    r"\b(?:hospital|center|centre|correctional|corrections? (?:facility|complex)|facility|veterans'? home"
+    r"|home|institution|complex|prison|SCI|clinic|infirmary|jail|detention)\b", re.I)
+
+
+def _ng_facility(dept: str, title: str) -> str:
+    """The facility a state or county posting names: the last part of its
+    department that reads as one ("Health and Human Services - Caro Center",
+    "Corrections - Huron Valley Correctional Complex"), else the last part of
+    its title that does ("Registered Nurse - SCI Mercer"); "" when neither
+    names one (the row keeps the agency's name)."""
+    for text in (dept, title):
+        parts = re.split(r"\s+[-–—]\s+|\s*[–—]\s*", text or "")
+        if len(parts) < 2 and text is title:
+            continue
+        for part in reversed(parts):
+            part = re.sub(r"^[A-Z]{2,8}-(?=[A-Z][a-z])", "", part.strip())   # "MDHHS-Southeast Michigan ..."
+            part = re.sub(r"(?:\s*\([^()]*\)?)+\s*$", "", part).strip(" ,")   # "(2nd & 3rd Shift)", "(ECMC)"
+            if part and _NG_FACILITY_RX.search(part) and not NURSE_ROLE_RX.search(part):
+                return part
+    return ""
+
+
 NEOGOV_AGENCIES = {
     # Seeded from CMS ownership "Government - Local / Hospital District" in the
     # top coverage states; California first (transparency state, 64 government
@@ -16708,6 +18158,42 @@ NEOGOV_AGENCIES = {
         ("sanmateo", "CA", "San Mateo", "San Mateo Medical Center", r"^San Mateo Medical Center"),
     "University Medical Center of Southern Nevada":
         ("umcsn", "NV", "Las Vegas", "University Medical Center of Southern Nevada", None),
+    # ── 2026-10-27 (RN gap fixes): state and county boards, nurse jobs only
+    # (NG_NURSES). Town: the card's, else the seat named here.
+    # State boards: psychiatric hospitals, prisons, veterans' homes.
+    "State of Michigan":            ("michigan", "MI", "", "", None, NG_NURSES),
+    "Commonwealth of Pennsylvania": ("pabureau", "PA", "", "", None, NG_NURSES),
+    # Counties and cities: public health, jails, county nursing homes.
+    "Harris County":                ("harriscountytx", "TX", "Houston", "", None, NG_NURSES),
+    "Tarrant County":               ("tarrant", "TX", "Fort Worth", "", None, NG_NURSES),
+    "Hidalgo County":               ("hidalgocountytx", "TX", "Edinburg", "", None, NG_NURSES),
+    "City of San Antonio":          ("sanantoniotx", "TX", "San Antonio", "", None, NG_NURSES),
+    "City of Midland":              ("midlandtx", "TX", "Midland", "", None, NG_NURSES),
+    "County of San Diego":          ("sdcounty", "CA", "San Diego", "", None, NG_NURSES),
+    "Sacramento County":            ("sacramento", "CA", "Sacramento", "", None, NG_NURSES),
+    "Orange County, CA":            ("oc", "CA", "Santa Ana", "", None, NG_NURSES),
+    "San Bernardino County":        ("sanbernardino", "CA", "San Bernardino", "", None, NG_NURSES),
+    "Los Angeles County":           ("lacounty", "CA", "Los Angeles", "", None, NG_NURSES),
+    "Pinellas County Sheriff's Office": ("pcso", "FL", "Largo", "", None, NG_NURSES),
+    "Broward County, FL":           ("broward", "FL", "Fort Lauderdale", "", None, NG_NURSES),
+    "City of Jacksonville":         ("jacksonvillefl", "FL", "Jacksonville", "", None, NG_NURSES),
+    "Manatee County, FL":           ("manateecounty", "FL", "Bradenton", "", None, NG_NURSES),
+    "City of Columbus":             ("columbusoh", "OH", "Columbus", "", None, NG_NURSES),
+    "Montgomery County, OH":        ("montgomery", "OH", "Dayton", "", None, NG_NURSES),
+    "Fulton County, GA":            ("fulton", "GA", "Atlanta", "", None, NG_NURSES),
+    "DuPage County, IL":            ("dupageco", "IL", "Wheaton", "", None, NG_NURSES),
+    "DuPage County Health Department": ("dupagehealth", "IL", "Wheaton", "", None, NG_NURSES),
+    "Lake County, IL":              ("lakecountyil", "IL", "Waukegan", "", None, NG_NURSES),
+    # ECMC posts on its own UKG board (read as "Erie County Medical Center"),
+    # so the county board's ECMC department is left to it.
+    "Erie County, NY":              ("erieco", "NY", "Buffalo", "", None,
+                                     {**NG_NURSES, "skip_dept": r"ECMC|Erie County Medical Center"}),
+    "Nassau County, NY":            ("nassaucountyny", "NY", "Mineola", "", None, NG_NURSES),
+    "Union County, NC":             ("unioncounty", "NC", "Monroe", "", None, NG_NURSES),
+    "Onslow County, NC":            ("onslowcountync", "NC", "Jacksonville", "", None, NG_NURSES),
+    "Franklin County, NC":          ("franklincountync", "NC", "Louisburg", "", None, NG_NURSES),
+    "Kent County, MI":              ("kentcountymi", "MI", "Grand Rapids", "", None, NG_NURSES),
+    "City of Philadelphia":         ("phila", "PA", "Philadelphia", "", None, NG_NURSES),
 }
 NEOGOV_MAX_PAGES = int(os.getenv("NEOGOV_MAX_PAGES", "80"))   # 10 cards a page
 _NG_INDEX = "https://www.governmentjobs.com/careers/home/index"
@@ -16726,9 +18212,14 @@ def _ng_text(s):
     return re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", s or ""))).strip()
 
 
-def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, dept_rx=None):
+def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, dept_rx=None, opts=None,
+                       skip_dept=None):
     """(jobs, total, cards_on_page) from one list partial. dept_rx (compiled)
-    keeps only the hospital departments of a county-wide board."""
+    keeps only the hospital departments of a county-wide board; skip_dept
+    (compiled) drops the departments another entry on the same board keeps.
+    opts (NG_NURSES) for a state or county board: nurse titles only, the
+    card's own town line, the facility from the department or title."""
+    opts = opts or {}
     total_m = _NG_TOTAL_RX.search(page_html or "")
     total = int(total_m.group(1).replace(",", "")) if total_m else 0
     jobs, cards = [], 0
@@ -16741,6 +18232,10 @@ def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, de
         dm = _NG_DEPT_RX.search(chunk)
         dept = _ng_text(dm.group(1)) if dm else ""
         if dept_rx and not dept_rx.search(dept):
+            continue
+        if skip_dept and skip_dept.search(dept):
+            continue
+        if opts.get("nurse_only") and (not is_nurse_role(title) or INTERNAL_ONLY_RX.search(title)):
             continue
         mm = _NG_META_RX.search(chunk)
         meta = [_ng_text(x) for x in _NG_LI_RX.findall(mm.group(1))] if mm else []
@@ -16755,6 +18250,10 @@ def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, de
                 loc_text = m.split(":", 1)[1].strip()
             elif low.startswith(("department:", "exam type:", "closing:", "job number:")):
                 continue
+            elif opts.get("card_town") and not loc_text and _NG_TOWN_RX.match(m):
+                # 2026-10-27: state boards print the town as a bare line
+                # ("Kalamazoo, MI"), with no "Location:" label.
+                loc_text = m
             elif "$" in m:
                 head, _, tail = m.partition("$")
                 job_type = head.strip(" -").strip() or job_type
@@ -16768,16 +18267,24 @@ def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, de
             pair = _wage_pair(_wage_num(sm.group(1)), _wage_num(sm.group(2)))
             if pair and ((unit == "annually" and pair[2] == "year") or (unit == "hourly" and pair[2] == "hour")):
                 wage = pair
+        if opts and (loc_text.split(",")[0].strip().lower() in _NG_NO_TOWN
+                     or _NG_NOT_TOWN_RX.search(loc_text.split(",")[0])):
+            loc_text = ""                    # an area: the entry's seat (or no town) instead
+        if opts:
+            title = _NG_EXAM_NO_RX.sub("", title) or title
         c, s = parse_city_state(loc_text) if loc_text else ("", "")
         c = c or city
         s = (s or state).upper()
+        hosp = hospital_name or system
+        if opts.get("facility"):
+            hosp = _ng_facility(dept, title) or hosp
         em = _NG_ENTRY_RX.search(chunk)
         snippet = _ng_text(em.group(1)) if em else ""
         desc = (f"Salary: {salary}. " if salary else "") + snippet
         jobs.append(Job(
             title=title,
             hospital_system=system,
-            hospital_name=hospital_name or system,
+            hospital_name=hosp,
             city=c, state=s,
             location=f"{c}, {s}".strip(", "),
             specialty=category,
@@ -16794,17 +18301,40 @@ def _parse_neogov_page(page_html, system, agency, state, city, hospital_name, de
     return jobs, total, cards
 
 
-async def _neogov_fetch_page(session, agency: str, page: int) -> tuple[int, str]:
+async def _neogov_fetch_page(session, agency: str, page: int, keyword: str = "") -> tuple[int, str]:
+    params = {"agency": agency, "sort": "PostingDate", "isDescendingSort": "true", "page": str(page)}
+    if keyword:
+        params["keyword"] = keyword          # the careers page's own search box (2026-10-27)
     async with req(session, "get", _NG_INDEX,
-        params={"agency": agency, "sort": "PostingDate", "isDescendingSort": "true", "page": str(page)},
+        params=params,
         headers={**HEADERS, "Accept": "text/html, */*; q=0.01", "X-Requested-With": "XMLHttpRequest",
                  "Referer": f"https://www.governmentjobs.com/careers/{agency}"},
         ssl=False, proxy=proxies.get(), timeout=aiohttp.ClientTimeout(total=30)) as r:
         return r.status, (await r.text() if r.status == 200 else "")
 
 
+def _ng_sibling_depts(system: str, agency: str):
+    """A regex for the departments the other NEOGOV_AGENCIES entries on the
+    same board keep (None when no other entry reads it). An entry that keeps
+    the whole board leaves nothing to this one."""
+    pats = []
+    for other, cfg in NEOGOV_AGENCIES.items():
+        if other == system or cfg[0] != agency:
+            continue
+        if not cfg[4]:
+            return re.compile(r"")
+        pats.append(f"(?:{cfg[4]})")
+    return re.compile("|".join(pats), re.I) if pats else None
+
+
 async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple) -> list[Job]:
-    agency, state, city, hospital_name, dept_pat = cfg
+    agency, state, city, hospital_name, dept_pat = cfg[:5]
+    opts = cfg[5] if len(cfg) > 5 else {}
+    keyword = opts.get("keyword", "")
+    skip_dept = _ng_sibling_depts(system, agency) if opts else None
+    if opts.get("skip_dept"):
+        own = f"(?:{opts['skip_dept']})"
+        skip_dept = re.compile(f"{skip_dept.pattern}|{own}" if skip_dept else own, re.I)
     dept_rx = re.compile(dept_pat, re.I) if dept_pat else None
     jobs: list[Job] = []
     page, total = 1, 0
@@ -16817,12 +18347,13 @@ async def scrape_neogov(session: aiohttp.ClientSession, system: str, cfg: tuple)
     cut_short = False
     while True:
         try:
-            status, html_ = await _neogov_fetch_page(session, agency, page)
+            status, html_ = await _neogov_fetch_page(session, agency, page, **({"keyword": keyword} if keyword else {}))
             if status != 200:
                 logger.info(f"NeoGov {system}: HTTP {status} (agency {agency}, page {page})")
                 cut_short = page > 1
                 break
-            got, total, cards = _parse_neogov_page(html_, system, agency, state, city, hospital_name, dept_rx)
+            got, total, cards = _parse_neogov_page(html_, system, agency, state, city, hospital_name, dept_rx,
+                                                   opts=opts, skip_dept=skip_dept)
             card_ids.update(c.split('"', 1)[0] for c in (html_ or "").split('<li class="list-item" data-job-id="')[1:])
             jobs.extend(got)
             if not cards or page * 10 >= total or page >= NEOGOV_MAX_PAGES:
@@ -17451,6 +18982,11 @@ APPLICANTPRO_ORGS = {
     "Granite County Medical Center": ("granitecountyhospital", "185"),   # 11 rows, 11 in Philipsburg, MT (CMS 271303)
     "Harney District Hospital": ("harneydh", "11796"),   # 17 rows, 17 in Burns, OR (CMS 381307)
     "Garfield County Public Hospital District #1": ("pomeroymd", "4176"),   # 9 rows, 9 in Pomeroy, WA (CMS 501301)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Beloit Health System": ("beloithealthsystem", "19763"),   # [10-27 dry run] 73 rows / 62 in town / RN 15; CMS 520100
 }
 _APPLICANTPRO_PARAMS = {"cityUrl": "", "countryAbbreviation": "", "stateAbbreviation": "", "isInternal": 0}
 
@@ -17823,6 +19359,27 @@ CSOD_ORGS = {
     "UI Health": ("https://uic.csod.com", "2"),
 }
 
+# 2026-10-27 (apply links that land on a sign-in page): the job link this
+# adapter stored, /ux/ats/careersite/<id>/requisition/<rid>?c=<corp>, is not a
+# career-site page. On all three live tenants (Billings Clinic 389 active rows
+# on 10-26, JPS 202, UI Health 73) it answers 302 to /common/restrictedarea.aspx
+# and on to the employee sign-in (Billings and JPS: a SAML single sign-on form;
+# UI Health: a user name and password page). The career site's own job link
+# carries /home/ before /requisition/: /ux/ats/careersite/<id>/home/requisition/
+# <rid>?c=<corp> answered 200 with the public career-site page on all three,
+# and the job API that page calls returned the posting's title (10-26).
+_CSOD_REQ_PATH_RX = re.compile(
+    r"^(https?://[^/?#]+\.csod\.com/ux/ats/careersite/\d+)/requisition/(\d+)(?=[?#]|$)", re.I)
+
+
+def _csod_job_url(url: str) -> str:
+    """A Cornerstone requisition link without the career site's /home/ step
+    (.../careersite/<id>/requisition/<rid>?c=..., a sign-in page) becomes the
+    public career-site job link .../careersite/<id>/home/requisition/<rid>?c=...
+    Anything else is returned unchanged."""
+    return _CSOD_REQ_PATH_RX.sub(r"\1/home/requisition/\2", url or "", count=1)
+
+
 def _csod_job(rq: dict, system: str, base: str, site_id: str, corp: str) -> Job | None:
     """One career-site search requisition -> Job (2026-09-10). Shape (JPS):
     requisitionId, displayJobTitle, postingEffectiveDate "9/10/2026",
@@ -17844,7 +19401,7 @@ def _csod_job(rq: dict, system: str, base: str, site_id: str, corp: str) -> Job 
         title=title, hospital_system=system, hospital_name=system,
         city=city, state=st, location=f"{city}, {st}".strip(", "),
         specialty="", job_type="",
-        url=f"{base}/ux/ats/careersite/{site_id}/requisition/{rid}?c={corp}",
+        url=f"{base}/ux/ats/careersite/{site_id}/home/requisition/{rid}?c={corp}",   # 2026-10-27: /home/ (see _csod_job_url)
         job_id=rid, posted_date=posted, description="", ats_platform="CSOD",
     )
 
@@ -18061,6 +19618,20 @@ PAYCOM_ORGS = {
     "Willapa Harbor Hospital": "1CE156A1130475F99587970A20A06B83",   # 17 rows, 17 in South Bend, WA (CMS 501303)
     "Boone Memorial Hospital": "5D081DBD4ECDEB7A95B75001A827B58F",   # 19 rows, 16 in Madison, WV (CMS 511313)
     "Memorial Hospital of Carbon County": "0E1938E34C046A782F7C4035270FA096",   # 17 rows, 17 in Rawlins, WY (CMS 531316)
+    # ── 2026-10-27 RN gap, long tail: boards read off each employer's own careers
+    # page with fingerprinter v2 (178 unread hospital systems; top nursing-home
+    # and post-acute chains), each run through this adapter in a no-write dry
+    # run that day. Comments: rows / rows in the hospital's town / RN rows.
+    "Washington Regional Medical Center": "8DB2A037AA9570E8305F90774012AD8E",   # [10-27 dry run] 84 rows / 81 in town / RN 17; CMS 040004
+    "Fairfield Medical Center": "73A000C6C682ED2B2B05CF23D62462E8",   # [10-27 dry run] 101 rows / 100 in town / RN 27; CMS 360072
+    "Trinity Health (Minot)": "E32A77D88C6BCC7B836ED79F274E9EBF",   # [10-27 dry run] 188 rows / 181 in town / RN 46; CMS 350006, 351305
+    "Bristol Hospital": "4597F1280A2AA5933921106F1AFB8700",   # [10-27 dry run] 180 rows / 180 in town / RN 40; CMS 070029
+    "Lake Region Healthcare": "1A7B46CA8E301A3037C03B992EDBE9E6",   # [10-27 dry run] 69 rows / 60 in town / RN 19; CMS 240052, 241379
+    "Methodist Rehabilitation Center": "DA601DE5FDD2AF5958CC3B273469A638",   # [10-27 dry run] 43 rows / 39 in town / RN 14; CMS 250152
+    "Schoolcraft Memorial Hospital": "E693DE00DA22B02A79DB46B631265FE0",   # [10-27 dry run] 34 rows / 34 in town / RN 10; CMS 231303
+    "St. John's Health (Jackson)": "5164671CDCC11A3BAD413D14974B1AAA",   # [10-27 dry run] 36 rows / 35 in town / RN 7; CMS 530015
+    "Mountain View Hospital (Idaho Falls)": "2F7486FAE11A9F442FC7841B33514458",   # [10-27 dry run] 176 rows / 142 in town / RN 17; CMS 130065
+    "Cantex Continuing Care": "5D0D962A20961FDE966647E0CA5D5F18",   # [10-27 dry run] 290 rows / RN 60; top towns Carrollton, TX 35, San Antonio, TX 26, Houston, TX 14
 }
 
 # 2026-09-25 (B2): Paycom boards outside Texas; a preview whose location has no
@@ -18153,6 +19724,17 @@ PAYCOM_DEFAULT_STATE = {
     "Willapa Harbor Hospital": "WA",
     "Boone Memorial Hospital": "WV",
     "Memorial Hospital of Carbon County": "WY",
+    # 2026-10-27 RN gap, long tail: Paycom boards outside Texas.
+    "Washington Regional Medical Center": "AR",
+    "Fairfield Medical Center": "OH",
+    "Trinity Health (Minot)": "ND",
+    "Bristol Hospital": "CT",
+    "Lake Region Healthcare": "MN",
+    "Methodist Rehabilitation Center": "MS",
+    "Schoolcraft Memorial Hospital": "MI",
+    "St. John's Health (Jackson)": "WY",
+    "Mountain View Hospital (Idaho Falls)": "ID",
+    "Cantex Continuing Care": "TX",
 }
 
 _PAYCOM_LIST = "https://www.paycomonline.net/v4/ats/web.php/jobs"
@@ -18341,6 +19923,19 @@ PAYCOR_ORGS = {
     "Ohio Valley Surgical Hospital": "8a7883d06dcbf31d016ddb5a316b0f92",   # 17 rows, 15 in Springfield, OH (CMS 360355)
     "Sunrise Vista Health and Wellness": "8a7883d09e235989019e4290a36206a1",   # 22 rows, 22 in Canton, OH (CMS 364064)
     "Prairie Lakes Healthcare System": "8a7883c6889839e90188ba9ab67308fb",   # 19 rows, 19 in Watertown, SD (CMS 430005)
+    # ── 2026-10-27 RN gap: Nobis Rehabilitation Partners' inpatient rehab
+    # hospitals, one Paycor board each, linked from nobisrehabpartners.com/
+    # careers (board title = label = hospital_name; HOSPITAL_SYSTEM_ALIASES
+    # files them under "Nobis Rehabilitation Partners"). Left out: the
+    # corporate board (Allen TX office and remote roles) and "Nobis Hospital
+    # Partners, LLC" (no postings). [postings on 10-26]
+    "Bradenton Rehabilitation Hospital":       "8a7883c69a5b2f45019a7373f680050b",   # [17] Bradenton, FL
+    "Cincinnati Rehabilitation Hospital":      "8a7883c68cf53477018d1997ca2d18bc",   # [24] Blue Ash, OH
+    "Clarksville Rehabilitation Hospital":     "8a7883c69b1375e0019bb7bc32777bc0",   # [10] Clarksville, IN
+    "Florida Rehabilitation Hospital at Tampa": "8a7883d08fa7a14c018facbde2e800a2",  # [15] Tampa, FL
+    "Little Rock Rehabilitation Hospital":     "8a7883d0a13c112b01a13c753b510005",   # [8] Little Rock, AR
+    "Pinellas County Rehabilitation Hospital": "8a7883c69a5b2f45019a738d1581055b",   # [15] Pinellas Park, FL
+    "Tucson Rehabilitation Hospital":          "8a7883c69520a6c8019585b875912475",   # [17] Tucson, AZ
 }
 
 _PAYCOR_HOME = "https://recruitingbypaycor.com/career/CareerHome.action"
@@ -19297,7 +20892,10 @@ async def _run_small_board(session, label: str, orgs: dict, scrape, budget, deta
         budget.expect(orgs)
     host = {"ApplicantStack": lambda c: f"{c[0]}.applicantstack.com",
             "JazzHR": lambda c: f"{c[0]}.applytojob.com",
-            "JobAps": lambda c: "www.jobapscloud.com"}[label]
+            "JobAps": lambda c: "www.jobapscloud.com",
+            "SilkRoad": lambda c: "jobs.silkroad.com",
+            "HCS Hiring": lambda c: c,
+            "AppliTrack": lambda c: _at_host(c)}[label]
     results = await _gather_by_host(session, list(orgs.items()), scrape, host)
     listed = {s: (r if isinstance(r, list) else []) for s, r in zip(orgs, results)}
     for s, r in zip(orgs, results):
@@ -19332,6 +20930,632 @@ async def run_jazzhr(session) -> list[Job]:
 async def run_jobaps(session) -> list[Job]:
     return await _run_small_board(session, "JobAps", JOBAPS_SITES, scrape_jobaps,
                                   JOBAPS_DESC_BUDGET, _jobaps_detail)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  SILKROAD OPENHIRE CAREER SITES — jobs.silkroad.com/<company>/<portal>
+#  (added 2026-10-27). Temple Health left Phenom (careers.templehealth.org
+#  now redirects to www.templehealth.org/careers, whose "Search jobs" goes
+#  here; 0 active Temple rows since 10-14). The list is server-rendered HTML,
+#  25 cards a page at ?page=N, each card an
+#  <a id="Jobs_PagedJobList_Job-1066" class="sr-panel" href="/<co>/<portal>/jobs/1066">
+#  with the title and "Philadelphia, PA", and the pager prints "Page 1 of 18".
+#  The job page (<co>/<portal>/jobs/<id>) holds the posting's own fields as
+#  <div id="ConfigurablePageDetail__<Field>"><h2>Label</h2><div>value</div>:
+#  Category, Job Location (a street address), Tracking Code (the requisition
+#  number; Temple's carry on its Taleo numbers, 270026), Weekly Hours,
+#  Schedule, Shift, and the JobDescription body. No login, no script needed.
+#  job_id is the posting id in the URL (the list carries it every night); the
+#  Tracking Code is req_id, read by the detail pass.
+#  A crawl that read every page through "Page N of N" with no failure is
+#  complete; a page that failed or a pager that stops short is PARTIAL.
+# ══════════════════════════════════════════════════════════════════════════
+SILKROAD_SITES = {
+    # Format: "System": (company, portal, default state)
+    "Temple Health": ("templehealth", "Careers", "PA"),
+}
+SILKROAD_MAX_PAGES = int(os.getenv("SILKROAD_MAX_PAGES", "80"))
+_SR_STATE_CODES = frozenset(_STATE_CODE_BY_NAME.values()) | {"PR"}
+SILKROAD_DESC_MAX_PER_RUN = int(os.getenv("SILKROAD_DESC_MAX_PER_RUN", "300"))
+SILKROAD_DESC_BUDGET = _DescBudget(SILKROAD_DESC_MAX_PER_RUN)
+
+_SR_CARD_RX = re.compile(
+    r'<a\s+id="Jobs_PagedJobList_Job-(\d+)"[^>]*href="([^"]+)"[^>]*>(.*?)</a>', re.S | re.I)
+_SR_TITLE_RX = re.compile(r'class="sr-panel__title"[^>]*>(.*?)</div>', re.S | re.I)
+_SR_LOC_RX = re.compile(r'class="sr-panel__location"[^>]*>(.*?)</div>', re.S | re.I)
+_SR_PAGER_RX = re.compile(r"\bPage\s+(\d+)\s+of\s+(\d+)\b", re.I)
+_SR_FIELD_RX = re.compile(
+    r'<div id="ConfigurablePageDetail__(\w+)">\s*<h2>(.*?)</h2>\s*<div>(.*?)</div>\s*</div>', re.S | re.I)
+_SR_BODY_RX = re.compile(r'<div id="ConfigurablePageDetail__JobDescription">(.*?)</div>\s*</div>\s*</div>\s*</section>',
+                         re.S | re.I)
+_SR_H1_RX = re.compile(r'<h1[^>]*Jobs_JobDetail_TitleText[^>]*>(.*?)</h1>', re.S | re.I)
+
+
+def silkroad_pager(html: str) -> tuple[int, int] | None:
+    """(page, of) from the list's "Page 1 of 18", or None."""
+    m = _SR_PAGER_RX.search(re.sub(r"<[^>]+>", " ", html or ""))
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def _parse_silkroad(html: str, system: str, cfg: tuple) -> list[Job]:
+    company, portal, default_state = cfg
+    jobs, seen = [], set()
+    for pid, href, card in _SR_CARD_RX.findall(html or ""):
+        tm = _SR_TITLE_RX.search(card)
+        title = _cell_text(tm.group(1)) if tm else ""
+        if not title or pid in seen:
+            continue
+        lm = _SR_LOC_RX.search(card)
+        loc = _cell_text(lm.group(1)) if lm else ""
+        city, state = parse_city_state(loc) if loc else ("", "")
+        if state not in _SR_STATE_CODES:
+            city, state = "", default_state      # "NA" (a remote posting), a blank or a foreign code
+        url = href if href.startswith("http") else f"https://jobs.silkroad.com/{href.lstrip('/')}"
+        seen.add(pid)
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=system,
+            city=city, state=state, location=loc or state,
+            specialty="", job_type="", url=url, job_id=pid, posted_date="",
+            description="", ats_platform="SilkRoad",
+        ))
+    return jobs
+
+
+def silkroad_job_page(html: str) -> dict:
+    """{label lowercased: value} of an OpenHire job page's fields, plus
+    "_body" (the JobDescription text) and "_title". {} for a page that is
+    not a posting (a closed one lands on the list)."""
+    page = html or ""
+    out: dict = {}
+    for key, label, val in _SR_FIELD_RX.findall(page):
+        lab = _cell_text(label).lower()
+        v = _cell_text(val)
+        if lab and v and key != "JobDescription":
+            out.setdefault(lab, v)
+    m = _SR_BODY_RX.search(page)
+    if m:
+        out["_body"] = strip_html(m.group(1)).strip()
+    t = _SR_H1_RX.search(page)
+    if t:
+        out["_title"] = _cell_text(t.group(1))
+    return out if (out.get("_body") or out.get("tracking code")) else {}
+
+
+def _silkroad_apply_page(job, html: str) -> bool:
+    f = silkroad_job_page(html)
+    if not f:
+        return False
+    rq = re.sub(r"\s+", "", f.get("tracking code") or "")
+    if rq and rq != job.job_id and re.fullmatch(r"[A-Za-z0-9._/-]{2,40}", rq):
+        job.req_id = rq
+    if f.get("category") and not (job.specialty or "").strip():
+        job.specialty = f["category"]
+    addr = [p.strip() for p in (f.get("job location") or "").split(",") if p.strip()]
+    if addr and addr[-1].lower() in ("united states", "usa", "us"):
+        addr = addr[:-1]
+    if len(addr) >= 2:
+        code = _STATE_CODE_BY_NAME.get(addr[-1].lower()) or (addr[-1].upper() if re.fullmatch(r"[A-Za-z]{2}", addr[-1]) else "")
+        if code and not job.city:
+            job.city = addr[-2]
+            job.state = code
+            job.location = f"{job.city}, {code}"
+    shift = f.get("shift") or ""
+    hours = f.get("weekly hours") or ""
+    sched = f.get("schedule") or ""
+    m = re.match(r"^\s*(\d{1,2}(?:\.\d+)?)\s*$", hours)
+    hrs = float(m.group(1)) if m and 4 <= float(m.group(1)) <= 84 else None
+    line = _schedule_line(sched, _shift_words(shift),
+                          (f"{int(hrs) if hrs == int(hrs) else hrs} hours per week" if hrs else ""))
+    body = f.get("_body") or ""
+    if body and line:
+        body = _with_line_in_window(body, line)
+    return _apply_body(job, body, job_type=sched)
+
+
+async def scrape_silkroad(session, system: str, cfg: tuple) -> list[Job]:
+    company, portal, _state = cfg
+    base = f"https://jobs.silkroad.com/{company}/{portal}"
+    jobs: list[Job] = []
+    seen: set[str] = set()
+    last, of = 0, None
+    failed = False
+    repeats = 0      # postings a later page listed again: the list moved while it was read
+    page = 1
+    while page <= SILKROAD_MAX_PAGES:
+        status, html = await _board_get(session, f"{base}?page={page}", "SilkRoad", system)
+        if status != 200:
+            logger.info(f"SilkRoad {system}: HTTP {status} at page {page}")
+            failed = True
+            break
+        pager = silkroad_pager(html)
+        parsed = _parse_silkroad(html, system, cfg)
+        rows = [j for j in parsed if j.job_id not in seen]
+        repeats += len(parsed) - len(rows)
+        if pager:
+            last, of = pager
+        for j in rows:
+            seen.add(j.job_id)
+            jobs.append(j)
+        if not rows or of is None or last >= of:
+            break
+        page += 1
+        await jitter()
+    whole = not failed and of is not None and last >= of
+    if jobs and not whole:
+        report_partial(system)
+        logger.warning(f"SilkRoad {system}: PARTIAL, stopped at page {last} of {of}"
+                       + (" (a page failed)" if failed else "") + "; not swept tonight")
+    elif whole and not repeats:
+        # Every page through "Page N of N" answered and no posting moved
+        # between pages: the whole board, so its count is its own total.
+        report_complete(system, len(jobs), len(jobs), feed="SILKROAD_SITES")
+    logger.info(f"  SilkRoad {system}: {len(jobs)} jobs (page {last} of {of})")
+    return jobs
+
+
+async def _silkroad_detail(session, job) -> bool:
+    _, html = await _board_get(session, job.url, "SilkRoad", job.hospital_system)
+    return _silkroad_apply_page(job, html)
+
+
+async def run_silkroad(session) -> list[Job]:
+    return await _run_small_board(session, "SilkRoad", SILKROAD_SITES, scrape_silkroad,
+                                  SILKROAD_DESC_BUDGET, _silkroad_detail)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  SITEMAP CAREER SITES (added 2026-10-27, RN gap fixes). A career site whose
+#  sitemap lists every open job and whose job pages carry a JSON-LD
+#  JobPosting. Aveanna Healthcare (pediatric home health and private duty
+#  nursing, jobs.aveanna.com): 3,368 job URLs in the sitemap on 10-26, 1,268
+#  in the Nursing category.
+#    GET /sitemap.xml       every open job, /job/<id>/<slug>/ (~0.7 MB, one
+#                           request): the board's own list of what is open.
+#                           The slug is the title the job was first posted
+#                           under and goes stale (7 of the first 20 Nursing
+#                           cards on 10-26 had been retitled since), so no
+#                           title, town or state is read from it.
+#    GET <list path>?page_jobs=N  20 cards a page: <a href="/job/<id>/...">
+#                           <h3>Title</h3></a>, Job Ref (the requisition
+#                           number), Location "Town, ST ZIP", Category, Line
+#                           of Business; "Found <strong>N</strong> jobs".
+#    GET /job/<id>/<slug>/  JSON-LD JobPosting: description, datePosted,
+#                           employmentType, jobLocation, baseSalary (the same
+#                           figures the page prints as its "Salary:" line).
+#  robots.txt allows these paths and asks for Crawl-delay: 2; every request
+#  here waits SITEMAP_CRAWL_DELAY after the last, one request in flight.
+#  Complete crawl: every sitemap job is accounted for, by a list card or (for
+#  the ~10% the title-sorted list skips while it is paged, SITEMAP_GAP_MAX)
+#  by its own job page; a job page that answers 404 or no longer holds a
+#  posting is a closed job. A list page that fails, or more unread jobs than
+#  SITEMAP_GAP_MAX, makes the night partial (not swept). A night costs the
+#  sitemap, ~169 list pages and ~300 job pages for Aveanna (~25 minutes at
+#  its crawl delay, direct, not through the proxy pool), plus the job-page
+#  pass for new postings on SITEMAP_DESC_BUDGET.
+# ══════════════════════════════════════════════════════════════════════════
+SITEMAP_SITES = {
+    # Format: "System": (host, list path)
+    "Aveanna Healthcare": ("jobs.aveanna.com", "/jobs/"),
+}
+SITEMAP_MAX_PAGES = int(os.getenv("SITEMAP_MAX_PAGES", "400"))       # Aveanna: 169 pages on 10-26
+# Job pages read for sitemap jobs no list card showed. The list is sorted by
+# title and many titles repeat ("Aveanna Healthcare PDN RN"), so cards with
+# the same title shift between pages while it is read: on 10-26 the 64 pages
+# of the Nursing list (1,270 jobs) showed 1,157 distinct jobs, 9% short. A
+# job page gives everything the card does plus the body and pay, so about
+# 300 a night (2.0 to 2.6 s apart, ~12 minutes) close the gap.
+SITEMAP_GAP_MAX = int(os.getenv("SITEMAP_GAP_MAX", "600"))
+SITEMAP_DESC_MAX_PER_RUN = int(os.getenv("SITEMAP_DESC_MAX_PER_RUN", "500"))
+SITEMAP_DESC_BUDGET = _DescBudget(SITEMAP_DESC_MAX_PER_RUN)
+SITEMAP_CRAWL_DELAY = (2.0, 2.6)                                     # robots.txt Crawl-delay: 2
+
+_SM_LOC_RX = re.compile(r"<loc>\s*(https?://[^<\s]+?/job/(\d+)/[^<\s]*)\s*</loc>")
+_SM_CARD_RX = re.compile(r'<a href="(/job/(\d+)/[^"]*)">\s*<h3>(.*?)</h3>\s*</a>\s*<dl>(.*?)</dl>', re.S)
+_SM_FIELD_RX = re.compile(r"<dt>\s*(.*?)\s*</dt>\s*<dd>(.*?)</dd>", re.S)
+_SM_FOUND_RX = re.compile(r"Found\s*<strong>\s*([\d,]+)\s*</strong>")
+_SM_TOWN_RX = re.compile(r"^(.*?),\s*([A-Z]{2})(?:\s+\d{5}(?:-\d{4})?)?$")
+_SM_SALARY_RX = re.compile(r"<dt>\s*Salary:\s*</dt>\s*<dd>(.*?)</dd>", re.S)
+
+
+def parse_sitemap_jobs(xml: str) -> dict[str, str]:
+    """{job id: job URL} for the job URLs of a career site's sitemap, in
+    sitemap order (category and search pages are left out)."""
+    out: dict[str, str] = {}
+    for m in _SM_LOC_RX.finditer(xml or ""):
+        out.setdefault(m.group(2), htmllib.unescape(m.group(1)))
+    return out
+
+
+def _sm_town(text: str) -> tuple[str, str]:
+    """("Madison", "WI") from "Madison, WI 53703"; ("", "") otherwise."""
+    m = _SM_TOWN_RX.match(_ng_text(text))
+    return (m.group(1).strip(), m.group(2)) if m else ("", "")
+
+
+def parse_sitemap_list_page(page: str, host: str, system: str) -> tuple[list, int | None]:
+    """(jobs, the list's own "Found N" total or None) from one list page."""
+    fm = _SM_FOUND_RX.search(page or "")
+    total = int(fm.group(1).replace(",", "")) if fm else None
+    jobs = []
+    for m in _SM_CARD_RX.finditer(page or ""):
+        path, job_id, title = m.group(1), m.group(2), _ng_text(m.group(3))
+        fields = {_ng_text(k).rstrip(":").strip().lower(): _ng_text(v) for k, v in _SM_FIELD_RX.findall(m.group(4))}
+        city, state = _sm_town(fields.get("location", ""))
+        ref = fields.get("job ref", "")
+        if not title:
+            continue
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=system,
+            city=city, state=state, location=f"{city}, {state}".strip(", "),
+            specialty=fields.get("category", ""), job_type="",
+            url=f"https://{host}{path}", job_id=job_id, posted_date="", description="",
+            ats_platform="SitemapBoard", req_id=ref if ref and ref != job_id else "",
+        ))
+    return jobs, total
+
+
+def _sm_apply_page(job, page: str) -> bool:
+    """A job page's JSON-LD posting onto `job` (body, type, date, pay). The
+    page's "Salary:" line is the employer's posted pay; its figures are the
+    JSON-LD baseSalary, taken here even when the body mentions another
+    figure (a sign-on bonus), and the line itself closes the body."""
+    posting = _jobposting_from_html(page)
+    if not posting:
+        return False
+    ok = _apply_posting(job, posting)
+    sm = _SM_SALARY_RX.search(page or "")
+    shown = _ng_text(sm.group(1)) if sm else ""
+    if shown and re.search(r"\d", shown):
+        bs = posting.get("baseSalary")
+        val = bs.get("value") if isinstance(bs, dict) and isinstance(bs.get("value"), dict) else None
+        if job.wage_min is None and val:
+            try:
+                lo = float(val.get("minValue")) if val.get("minValue") is not None else None
+                hi = float(val.get("maxValue")) if val.get("maxValue") is not None else lo
+            except (TypeError, ValueError):
+                lo = hi = None
+            got = _wage_pair(lo, hi) if lo and hi else None
+            if got:
+                job.wage_min, job.wage_max, job.wage_unit = got
+        if job.description and f"Salary: {shown}" not in job.description:
+            job.description = f"{job.description}\n\nSalary: {shown}"
+    return ok
+
+
+def _sm_job_from_page(page: str, url: str, job_id: str, system: str):
+    """A Job from a job page alone (a sitemap job no list card showed), or
+    None when the page holds no posting (closed)."""
+    posting = _jobposting_from_html(page)
+    if not posting or not str(posting.get("title") or "").strip():
+        return None
+    addr = ((posting.get("jobLocation") or {}) if isinstance(posting.get("jobLocation"), dict) else {}).get("address") or {}
+    city = str(addr.get("addressLocality") or "").strip() if isinstance(addr, dict) else ""
+    state = str(addr.get("addressRegion") or "").strip().upper() if isinstance(addr, dict) else ""
+    ident = _ld_identifier_value(posting)
+    job = Job(
+        title=_ng_text(str(posting.get("title"))), hospital_system=system, hospital_name=system,
+        city=city, state=state if re.fullmatch(r"[A-Z]{2}", state) else "",
+        location=f"{city}, {state}".strip(", "), specialty="", job_type="",
+        url=url, job_id=job_id, posted_date="", description="", ats_platform="SitemapBoard",
+        req_id=ident if ident and ident != job_id else "",
+    )
+    _sm_apply_page(job, page)
+    return job
+
+
+async def _sm_get(session, url: str, system: str, timeout: int = 60) -> tuple[int, str]:
+    """(status, page) for one request, direct (no proxy: robots allows it and
+    the pages are large), then the site's crawl delay. (0, "") on an error."""
+    status, page = 0, ""
+    try:
+        async with req(session, "get", url, headers={**HEADERS, "Accept": "text/html,application/xhtml+xml,application/xml"},
+                       proxy=None, timeout=aiohttp.ClientTimeout(total=timeout)) as r:
+            status = r.status
+            if status == 200:
+                page = (await r.read()).decode("utf-8", errors="replace")
+    except Exception as e:
+        logger.info(f"SitemapBoard {system}: {url}: {type(e).__name__}: {e}")
+    await asyncio.sleep(random.uniform(*SITEMAP_CRAWL_DELAY))
+    return status, page
+
+
+async def scrape_sitemap_site(session, system: str, cfg: tuple) -> list:
+    host, list_path = cfg
+    base = f"https://{host}"
+    status, xml = await _sm_get(session, f"{base}/sitemap.xml", system)
+    listed = parse_sitemap_jobs(xml) if status == 200 and "</urlset>" in xml else {}
+    if not listed:
+        logger.info(f"SitemapBoard {system}: sitemap HTTP {status}, no job URLs; nothing read tonight")
+        return []
+    cards: dict = {}
+    total, page, per_page, failed = None, 1, 0, False
+    while True:
+        url = f"{base}{list_path}" + (f"?page_jobs={page}" if page > 1 else "")
+        status, html_ = await _sm_get(session, url, system)
+        if status != 200:
+            logger.info(f"SitemapBoard {system}: list page {page} HTTP {status}")
+            failed = True
+            break
+        got, adv = parse_sitemap_list_page(html_, host, system)
+        total = adv if total is None else total
+        per_page = per_page or len(got)
+        for j in got:
+            cards.setdefault(j.job_id, j)
+        if not got or (total is not None and per_page and page * per_page >= total):
+            break
+        if page >= SITEMAP_MAX_PAGES:
+            failed = True
+            logger.info(f"SitemapBoard {system}: stopped at the {SITEMAP_MAX_PAGES}-page cap")
+            break
+        page += 1
+    gaps = [jid for jid in listed if jid not in cards]
+    read = closed = unread = 0
+    for jid in gaps:
+        if read >= SITEMAP_GAP_MAX:
+            unread += 1
+            continue
+        read += 1
+        st, pg = await _sm_get(session, listed[jid], system)
+        job = _sm_job_from_page(pg, listed[jid], jid, system) if st == 200 else None
+        if job:
+            cards[jid] = job
+        elif st in (200, 404, 410):
+            closed += 1             # the page holds no posting any more
+        else:
+            unread += 1
+    if failed or unread:
+        report_partial(system)
+    report_complete(system, len(listed) - unread, len(listed), feed="SITEMAP_SITES")
+    logger.info(f"  SitemapBoard {system}: {len(cards)} jobs; sitemap {len(listed)}, list said {total}, "
+                f"{page} list pages; {len(gaps)} sitemap jobs on no card ({read} pages read, {closed} closed, "
+                f"{unread} unread){'; PARTIAL' if failed or unread else ''}")
+    return list(cards.values())
+
+
+async def _sitemap_detail(session, job) -> bool:
+    status, page = await _sm_get(session, job.url, job.hospital_system)
+    return _sm_apply_page(job, page) if status == 200 else False
+
+
+async def run_sitemap_sites(session) -> list:
+    """One site at a time; each site's job-page pass on SITEMAP_DESC_BUDGET,
+    one request in flight per host at the site's crawl delay."""
+    if not SITEMAP_SITES:
+        return []
+    logger.info(f"SitemapBoard: scraping {len(SITEMAP_SITES)} career sites...")
+    if DETAIL_FETCH:
+        SITEMAP_DESC_BUDGET.expect(SITEMAP_SITES)
+    gated = _host_gated(lambda j: _sitemap_detail(session, j), total=1, per_host=1, pause=(0.0, 0.1))
+    out = []
+
+    async def one(system, cfg):
+        rows = []
+        try:
+            rows = await scrape_sitemap_site(session, system, cfg)
+        except Exception as e:
+            logger.info(f"  SitemapBoard {system}: ERROR {e}")
+        if DETAIL_FETCH and rows:
+            try:
+                await _detail_pass(session, system, rows, SITEMAP_DESC_BUDGET, gated, "SitemapBoard")
+            except Exception as e:
+                logger.info(f"SitemapBoard {system}: detail pass failed ({e}); listed rows kept")
+        return rows
+
+    for system, cfg in SITEMAP_SITES.items():
+        out.extend(await _tenant_reporting(SITEMAP_DESC_BUDGET, system, one(system, cfg)))
+    logger.info(f"  SitemapBoard total: {len(out):,} jobs")
+    return out
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  FRONTLINE RECRUITING AND HIRING (AppliTrack) SCHOOL DISTRICT BOARDS
+#  (added 2026-10-27, RN gap fixes): school nurses. A district's public board
+#  is one script that writes the whole list:
+#    GET https://<host>/<client>/onlineapp/jobpostings/Output.asp
+#        ?all=1&AppliTrackLayoutMode=condensed
+#  -> document.write('...') strings holding a table: <span class='title'>
+#  Title <a href='...AppliTrackJobId%3D<id>%26...'>view</a></span>, the posted
+#  date, the closing date, then "ID: <id>  Location: <campus>". The same
+#  script with ?AppliTrackJobId=<id>&AppliTrackLayoutMode=detail
+#  &AppliTrackViewPosting=1 writes one posting: Position Type, Date Posted,
+#  Location, Closing Date and the posting text (Fort Worth's: pay grade,
+#  duty days, "Salary Range: $63,000-$75,903", duties). The public job link
+#  is the same query on default.aspx. robots.txt disallows only /*/onlineapp/
+#  admin.
+#  A district posts every job it has (teachers, bus drivers, ...), so only
+#  nurse titles are kept (is_nurse_role: RN, LVN / LPN, school nurse, nurse
+#  specialist), unless the board is in APPLITRACK_ALL_ROLES (a health-care
+#  board; none yet). Seasonal: school nurse postings run mostly March to
+#  August; in late October Plano listed none of 232 jobs and Fort Worth 3 of
+#  182. The list is the whole board in one response, so a list that arrives
+#  whole (its table and footer closed) is a complete claim.
+#  Format: "System": (client, state, district town[, host]); the host is
+#  www.applitrack.com unless given.
+# ══════════════════════════════════════════════════════════════════════════
+APPLITRACK_BOARDS = {
+    # Checked 10-26 (one list request each). Left out: Wake County (wcpss),
+    # Broward (broward), Judson (judsonisd), South San Antonio (southsanisd)
+    # and IL Texas (iltexas) answer HTTP 500 on every page; Spring ISD
+    # (springisd) says it has no openings at all; Frisco (friscoisd on
+    # phl.applitrack.com), Orange County FL (ocps) and Cabarrus (cabarrus)
+    # do not answer with a posting list. Not on AppliTrack as far as the
+    # 10-26 search found: Houston, Dallas, Cy-Fair, Katy, Northside, Fort
+    # Bend, Conroe, North East, Miami-Dade, Hillsborough, Palm Beach, Duval,
+    # Polk, Charlotte-Mecklenburg, Winston-Salem/Forsyth, Cumberland.
+    # Texas
+    "Fort Worth ISD":                   ("fortworth", "TX", "Fort Worth"),
+    "Aldine ISD":                       ("aldineisd", "TX", "Houston"),
+    "Austin ISD":                       ("austin", "TX", "Austin"),
+    "San Antonio ISD":                  ("saisd", "TX", "San Antonio"),
+    "Plano ISD":                        ("pisd", "TX", "Plano"),
+    "Lewisville ISD":                   ("lewisvilleisd", "TX", "Lewisville"),
+    "Klein ISD":                        ("kleinisd", "TX", "Spring"),
+    "Spring Branch ISD":                ("springbranchisd", "TX", "Houston", "phl.applitrack.com"),
+    "Humble ISD":                       ("humbleisd", "TX", "Humble"),
+    "Galena Park ISD":                  ("galenaparkisd", "TX", "Houston"),
+    "Pasadena ISD":                     ("pasadenaisd", "TX", "Pasadena"),
+    "Pearland ISD":                     ("pearlandisd", "TX", "Pearland"),
+    "Alvin ISD":                        ("alvinisd", "TX", "Alvin"),
+    "Killeen ISD":                      ("killeenisd", "TX", "Killeen"),
+    "Ysleta ISD":                       ("yisd", "TX", "El Paso"),
+    "Leander ISD":                      ("leander", "TX", "Leander"),
+    "Pflugerville ISD":                 ("pflugerville", "TX", "Pflugerville"),
+    "Mesquite ISD":                     ("MesquiteISD", "TX", "Mesquite"),
+    "Richardson ISD":                   ("risd", "TX", "Richardson"),
+    "Corpus Christi ISD":               ("ccisd", "TX", "Corpus Christi"),
+    "Edgewood ISD":                     ("eisd", "TX", "San Antonio"),
+    "Abilene ISD":                      ("abileneisd", "TX", "Abilene"),
+    # Florida
+    "Collier County Public Schools":    ("collier", "FL", "Naples"),
+    "St. Johns County School District": ("stjohns", "FL", "St. Augustine"),
+    "School District of Indian River County": ("indianriver", "FL", "Vero Beach"),
+    "Monroe County School District":    ("keysschools", "FL", "Key West"),
+    "Nassau County School District":    ("nassau", "FL", "Fernandina Beach"),
+    "DeSoto County Schools":            ("desotoschools", "FL", "Arcadia"),
+    # North Carolina
+    "Guilford County Schools":          ("gcsnc", "NC", "Greensboro"),
+    "Durham Public Schools":            ("dpsnc", "NC", "Durham"),
+    "Buncombe County Schools":          ("buncombeschools", "NC", "Asheville"),
+    "New Hanover County Schools":       ("nhcs", "NC", "Wilmington"),
+    "Onslow County Schools":            ("onslow", "NC", "Jacksonville"),
+    "Iredell-Statesville Schools":      ("issk12", "NC", "Statesville"),
+    "Pitt County Schools":              ("pitt", "NC", "Greenville"),
+    "Harnett County Schools":           ("harnett", "NC", "Lillington"),
+    "Pender County Schools":            ("pender", "NC", "Burgaw"),
+    "Rockingham County Schools":        ("rockk12", "NC", "Eden"),
+    "Chatham County Schools":           ("chathamnc", "NC", "Pittsboro"),
+}
+APPLITRACK_ALL_ROLES: set = set()
+APPLITRACK_DESC_MAX_PER_RUN = int(os.getenv("APPLITRACK_DESC_MAX_PER_RUN", "400"))
+APPLITRACK_DESC_BUDGET = _DescBudget(APPLITRACK_DESC_MAX_PER_RUN)
+
+_AT_TITLE_RX = re.compile(
+    r"<span class='title'>(.*?)<a href='javascript:updateHrefFromCurrentWindowLocation\(\"ApplitrackHardcodedURL"
+    r"%3F1%3D1%26AppliTrackJobId%3D(\d+)%26", re.S | re.I)
+_AT_DATE_RX = re.compile(r"<td>\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*</td>")
+_AT_CAMPUS_RX = re.compile(r"<span class='label'>Location:</span>\s*(.*?)(?:&nbsp;|</td>)", re.S)
+_AT_FIELD_RX = re.compile(r"<li>\s*<span class=['\"]label['\"][^>]*>\s*([^<:]+?)\s*:\s*</span>(.*?)</li>", re.S)
+_AT_WRITE_JOIN_RX = re.compile(r"'\);\s*document\.write\('")
+
+
+def _at_unjs(script: str) -> str:
+    """The HTML an AppliTrack Output.asp script writes: its document.write
+    strings joined, the JavaScript quote escapes undone."""
+    t = _AT_WRITE_JOIN_RX.sub("", script or "")
+    return t.replace("\\'", "'").replace('\\"', '"').replace("\\/", "/")
+
+
+def _at_host(cfg: tuple) -> str:
+    return cfg[3] if len(cfg) > 3 and cfg[3] else "www.applitrack.com"
+
+
+def _at_date(m) -> str:
+    return f"{m.group(3)}-{int(m.group(1)):02d}-{int(m.group(2)):02d}" if m else ""
+
+
+def applitrack_list_url(cfg: tuple) -> str:
+    return f"https://{_at_host(cfg)}/{cfg[0]}/onlineapp/jobpostings/Output.asp?all=1&AppliTrackLayoutMode=condensed"
+
+
+def applitrack_posting_url(job_url: str) -> str:
+    """The script that writes one posting, from the posting's public link."""
+    return job_url.replace("/onlineapp/default.aspx?", "/onlineapp/jobpostings/Output.asp?", 1)
+
+
+def parse_applitrack_list(script: str, system: str, cfg: tuple) -> tuple[list, int, bool]:
+    """(kept jobs, postings on the board, whether the list arrived whole)."""
+    client, state, town = cfg[0], cfg[1], cfg[2]
+    host = _at_host(cfg)
+    t = _at_unjs(script)
+    tail = t[t.find("AppliTrackListContent"):] if "AppliTrackListContent" in t else ""
+    whole = "Powered by" in tail and ("</tbody></table>" in tail or "AppliTrackListContent'></div>" in tail)
+    hits = list(_AT_TITLE_RX.finditer(t))
+    seen: set = set()
+    jobs = []
+    for k, m in enumerate(hits):
+        seg = t[m.end(): hits[k + 1].start() if k + 1 < len(hits) else len(t)]
+        job_id, title = m.group(2), _ng_text(m.group(1))
+        if job_id in seen or not title:
+            continue
+        seen.add(job_id)
+        if INTERNAL_ONLY_RX.search(title) or (system not in APPLITRACK_ALL_ROLES and not is_nurse_role(title)):
+            continue
+        cm = _AT_CAMPUS_RX.search(seg)
+        campus = _ng_text(cm.group(1)) if cm else ""
+        jobs.append(Job(
+            title=title, hospital_system=system, hospital_name=system,
+            city=town, state=state, location=f"{town}, {state}".strip(", "),
+            specialty="", job_type="",
+            url=(f"https://{host}/{client}/onlineapp/default.aspx?AppliTrackJobId={job_id}"
+                 f"&AppliTrackLayoutMode=detail&AppliTrackViewPosting=1"),
+            job_id=job_id, posted_date=_at_date(_AT_DATE_RX.search(seg)),
+            description=f"Location: {campus}" if campus else "", ats_platform="AppliTrack",
+        ))
+    return jobs, len(seen), whole
+
+
+def applitrack_posting(script: str) -> tuple[str, str, str]:
+    """(body, position type, ISO posted date) from a posting's script. The
+    body is the posting text with its campus line; "" when the script holds
+    no posting."""
+    t = _at_unjs(script)
+    i = t.find("<ul class='postingsList'")
+    if i < 0:
+        return "", "", ""
+    end = len(t)
+    for mark in ("<div class='label' align='right'", "addthis_toolbox", "Email To A Friend", "</ul><div style='width: 100%"):
+        k = t.find(mark, i)
+        if 0 <= k < end:
+            end = k
+    seg = t[i:end]
+    fields, last = {}, 0
+    for m in _AT_FIELD_RX.finditer(seg):
+        fields[_ng_text(m.group(1)).lower()] = _ng_text(m.group(2))
+        last = m.end()
+    text = seg[last:] if last else ""
+    text = re.sub(r'<div class="AppliTrackJobPostingAttachments">.*?</div>', " ", text, flags=re.S)
+    text = re.sub(r"^\s*(?:<[^>]+>\s*|&nbsp;?\s*)*Description:\s*", "", text, flags=re.I)
+    body = strip_html(re.sub(r"<span class=['\"]label['\"][^>]*>\s*Description:\s*</span>", "", text))
+    body = re.sub(r"^(?:Description:\s*)", "", body).strip()
+    campus = fields.get("location", "")
+    if body and campus and f"Location: {campus}" not in body:
+        body = f"{body}\n\nLocation: {campus}"
+    ptype = fields.get("position type", "").rstrip(" /").rsplit("/", 1)[-1].strip()   # "Professionals/ School Nurse"
+    pm = re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})$", fields.get("date posted", ""))
+    return body, ptype, _at_date(pm)
+
+
+async def scrape_applitrack(session, system: str, cfg: tuple) -> list:
+    status, script = await _board_get(session, applitrack_list_url(cfg), "AppliTrack", system, timeout=60)
+    if status != 200:
+        logger.info(f"AppliTrack {system}: HTTP {status}")
+        return []
+    jobs, on_board, whole = parse_applitrack_list(script, system, cfg)
+    if whole:
+        report_complete(system, on_board, on_board, feed="APPLITRACK_BOARDS")
+    logger.info(f"  AppliTrack {system}: {len(jobs)} nurse jobs of {on_board} on the board"
+                f"{'' if whole else ' (list not whole)'}")
+    return jobs
+
+
+async def _applitrack_detail(session, job) -> bool:
+    """The posting's own page onto the row: its text (kept even when short:
+    many districts post one line and an attached job description), position
+    type and posted date. True when the page held the posting."""
+    status, script = await _board_get(session, applitrack_posting_url(job.url), "AppliTrack", job.hospital_system)
+    body, ptype, posted = applitrack_posting(script) if status == 200 else ("", "", "")
+    if ptype and not job.specialty:
+        job.specialty = ptype
+    if not body:
+        return False
+    if not _apply_body(job, body, posted=posted) and len(body) > len((job.description or "").strip()):
+        job.description = body
+    return True
+
+
+async def run_applitrack(session) -> list:
+    return await _run_small_board(session, "AppliTrack", APPLITRACK_BOARDS, scrape_applitrack,
+                                  APPLITRACK_DESC_BUDGET, _applitrack_detail)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -21813,6 +24037,8 @@ REQ_ID_ONLY_PLATFORMS = frozenset({
     *REQ_ID_LIST_PLATFORMS,
     # group 4 (scraper/reqid-g4-1014)
     "Workday", "Phenom", "CSOD", "SuccessFactorsRMK", "Paycor", "FXRecruiter",
+    # 2026-10-27: SilkRoad OpenHire's Tracking Code, read by the job-page pass
+    "SilkRoad",
 })
 
 
@@ -24651,6 +26877,15 @@ def _sanitize_apply_url(url: str) -> str:
     adapter can't ship a link that 404s / lands on Sign-In. Idempotent."""
     if not url or not url.startswith(("http://", "https://")):
         return url
+    # 2026-10-27: a Taleo Enterprise apply step (privacy / sign-in page)
+    # becomes the public job page of the same career section (_taleo_job_url),
+    # and a Cornerstone requisition link without /home/ (employee sign-in)
+    # becomes the career site's own job link (_csod_job_url).
+    url = _taleo_job_url(url)
+    url = _csod_job_url(url)
+    # 2026-10-27: a HealthcareSource #/preApply/<id> link (the employee
+    # question that starts an application) becomes #/job/<id> (_hcs_job_url).
+    url = _hcs_job_url(url)
     # Workday: externalPath already begins with /job/, so a prepended /job/
     # produces /job//job/ -> Sign-In page. Collapse to canonical single slash.
     url = url.replace("/job//job/", "/job/")
@@ -24694,6 +26929,17 @@ def _structural_url_ok(url: str, platform: str) -> tuple[bool, str]:
     deviate from the expected pattern."""
     if not url or not url.startswith(("http://", "https://")):
         return False, "empty_or_relative"
+    # 2026-10-27: the sign-in steps found on 10-26 (Taleo jobapply.ftl and its
+    # login.jsf, Cornerstone's requisition link without /home/, iCIMS /login).
+    # _sanitize_apply_url repairs the first two before this gate runs, so a
+    # hit here is a new adapter or the iCIMS step from a board other than UAB.
+    if (_TALEO_APPLY_RX.match(url) or _TALEO_LOGIN_RX.match(url) or _CSOD_REQ_PATH_RX.match(url)
+            or _ICIMS_LOGIN_STEP_RX.match(url)):
+        return False, "sign_in_step"
+    # 2026-10-27: HealthcareSource's #/preApply/<id> (the employee question);
+    # _sanitize_apply_url repairs it first, so a hit here is a new shape.
+    if _HCS_PREAPPLY_RX.match(url):
+        return False, "apply_first_step"
     low = url.lower()
     if "myworkdayjobs.com" in low or "myworkdaysite.com" in low:
         if "/job//job/" in url:
@@ -26370,14 +28616,30 @@ def _role_words(s, title=False):
     return words
 
 
+# Review 2026-10-27: a day rate is no unit the site stores ("hour", "year",
+# "visit"). "Salary: $125 per day" (an Alvin ISD substitute school nurse on
+# AppliTrack), "Daily rate: $150" and "$150 - $175 per day" were stored as
+# $125, $150 and $150-$175 an hour. A figure priced by the day is never a
+# candidate, so the card takes the family's estimate instead. "Per diem" is
+# left alone: on a hospital posting it names the PRN job type ("$45/hr per
+# diem"), not a day rate. So is "Day rate" before a figure: a hospitalist's
+# "Day rate $150.02 / Night rate $189.50" (37962885) is the day shift's
+# hourly rate.
+_WAGE_DAY_AFTER_RX = re.compile(r"\s*(?:(?:/|per|a|an|each)\s*(?:work\s*|school\s*)?day\b|daily\b(?!\s*pay\b))", re.I)
+_WAGE_DAY_BEFORE_RX = re.compile(r"\bdaily\s+(?:rate|wage)s?\b[^$\d]{0,40}$", re.I)
+
+
 def _wage_is_noise(t, start, end):
     """True when the dollar figure at t[start:end] prices a bonus, relocation
     package, stipend or reimbursement rather than the pay. Decided inside the
     figure's own clause only: no line break or sentence end is crossed, the
     words between two figures belong to the earlier one, a component word
     joined to the pay ("base + bonus", "plus bonus", "bonus eligible") is a
-    description, and a unit or pay word right after the figure makes it pay."""
+    description, and a unit or pay word right after the figure makes it pay.
+    Review 2026-10-27: a day rate is never pay the site can store."""
     before, after = _wage_clause(t, start, end)
+    if _WAGE_DAY_AFTER_RX.match(after) or _WAGE_DAY_BEFORE_RX.search(before):
+        return True
     # An aside in parentheses before the figure is dropped, so "Retention
     # Bonus (beginning at the completion of the 2nd year): up to $30,000"
     # still reads as a bonus (Flagler Health, 2026-09-22).
@@ -26468,15 +28730,38 @@ def _wage_is_noise(t, start, end):
 # print "Pay Range\n$173076.80 - $252263.44" and Kaiser's TalentBrew bodies
 # "Pay Range: $206300 - $266970 / year" (572 active Kaiser rows and 34 ECU
 # rows stored no pay). _wage_pair's bands still judge every pair.
-_WAGE_FIG = r"(\d{1,3}(?:,\d{3})+(?:\.\d{1,3})?|\d{1,7}(?:\.\d{1,3})?)"
+# 2026-10-27 (pay reader round 2): four decimals too. Kern Medical prints
+# "The estimated pay for this position is $21.8619 to $26.8874", Trinity
+# Health "(Pay Range: $32.5171-$48.7757)", Wyckoff "Hourly Range $57.0004 -
+# $67.7523"; a fourth decimal used to stop the figure, so neither end read.
+# The currency word may also follow the first figure: Beth Israel Lahey
+# Health prints "$60,000.00 USD - $75,564.00 USD" (434 active rows stored no
+# pay); and the dash may be doubled, OSF HealthCare's "$250,000--$270,000".
+_WAGE_FIG = r"(\d{1,3}(?:,\d{3})+(?:\.\d{1,4})?|\d{1,7}(?:\.\d{1,4})?)"
 _WAGE_RANGE_RX = re.compile(
-    r"\$\s*" + _WAGE_FIG + r"\s*(k\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s*(?:-|–|—|to|through)\s*(?:USD\s*)?\$?\s*" + _WAGE_FIG + r"\s*(k\b)?", re.I)
+    r"\$\s*" + _WAGE_FIG + r"\s*(k\b)?\s*(?:USD\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s*(?:--?|–|—|to|through)\s*(?:USD\s*)?\$?\s*" + _WAGE_FIG + r"\s*(k\b)?", re.I)
 # 2026-10-25 (Bounce QA): "between $16.49 and $20.21" is a range too
 # (Corewell, Boston Medical Center); its groups are _WAGE_RANGE_RX's and the
 # match starts at the first "$", as a range's does.
 _WAGE_BETWEEN_RX = re.compile(
     r"(?<=between )(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?\s*(?:/\s*(?:hour|hr)|per\s+hour|hourly)?\s+and\s+(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?", re.I)
-_WAGE_THIRD_RX = re.compile(r"\s*(?:-|–|—)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,3})?)\b")
+_WAGE_THIRD_RX = re.compile(r"\s*(?:-|–|—)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,4})?)\b")
+# 2026-10-27 (pay reader round 2): a period typed for the thousands comma at
+# one end of an annual range ("Hiring Range: $285,000 - $315.000", UMass
+# Memorial; "$180,000.00 to $250.000", Prime; "$106.000-$125,000", BAYADA)
+# read as $315 and the pair failed the width test. Exactly three digits after
+# the period, under 1,000 as read, and the other end of the pair 1,000 or
+# more: the period is a thousands mark. Sharp's three-decimal hourly ranges
+# ("$83.970 - $108.360") have no end of 1,000 and read as before.
+_WAGE_DOT_THOUSANDS_RX = re.compile(r"\d{1,3}\.\d{3}")
+
+
+def _dot_thousands(txt, v, other):
+    """v * 1000 when txt is "ddd.ddd" and the pair's other end is 1,000 or
+    more (a period typed for a thousands comma), else v."""
+    if v is not None and other is not None and v < 1000 <= other and _WAGE_DOT_THOUSANDS_RX.fullmatch(txt or ""):
+        return round(v * 1000, 2)                             # 130.151 * 1000 is 130151.00000000001 in floats
+    return v
 # 2026-10-15: "\$" and "$$" read as "$" (extract_posted_wage's first step).
 _WAGE_DOLLAR_RUN_RX = re.compile(r"\\*\$(?:\\*\$)*")
 # County boards (NeoGov) quote a month or a pay period: "$9,404.43 -
@@ -26554,11 +28839,75 @@ _WAGE_PAYLBL = r"(?:salary|pay|compensation|wage|hiring)\s*(?:range|rate|scale)?
 # bodies head the pair with a bare "Range", "Range\n\nMinimum :$16.32\n\n
 # Maximum: $23.15" (614 active rows stored no pay); Rady Children's prints
 # the same layout (95 rows).
+# 2026-10-27 (pay reader round 2): a word may follow Minimum / Maximum before
+# the figure: Presbyterian Healthcare Services prints "Compensation Pay
+# Range:\nMinimum Offer $39.69\nMaximum Offer $58.17" (424 active rows with a
+# real pair stored no pay; its "$0.00" pairs still fail the bands), Cleveland
+# Clinic "Pay Range\n\nMinimum hourly: $35.25\n\nMaximum hourly: $53.00".
+_WAGE_MINMAX_WORD = r"(?:\s+(?:offer|hourly|annual(?:ly)?|yearly|salary|pay|rate|wage))?"
 _WAGE_MINMAX_RX = re.compile(
-    r"(?:" + _WAGE_PAYLBL + r"\s*min(?:imum)?|min(?:imum)?\s*" + _WAGE_PAYLBL + r"|\brange\s*:?\s*min(?:imum)?)\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
+    r"(?:" + _WAGE_PAYLBL + r"\s*min(?:imum)?|min(?:imum)?\s*" + _WAGE_PAYLBL + r"|\brange\s*:?\s*min(?:imum)?)" + _WAGE_MINMAX_WORD + r"\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
     r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?[^\n$]{0,40}?\s*"
-    r"(?:" + _WAGE_PAYLBL + r"\s*)?max(?:imum)?(?:\s*" + _WAGE_PAYLBL + r")?\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
+    r"(?:" + _WAGE_PAYLBL + r"\s*)?max(?:imum)?(?:\s*" + _WAGE_PAYLBL + r")?" + _WAGE_MINMAX_WORD + r"\s*(?:\([^()]{0,30}\))?\s*:?\s*\n?\s*"
     r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(k\b)?", re.I)
+# 2026-10-27 (pay reader round 2): Lakeland Regional Health prints its
+# hiring range as a minimum and a midpoint, "Pay Rate : Min $18.82 Mid
+# $23.53" (92 active rows stored no pay; Lee Health's "Minimum to Midpoint
+# Pay Rate: $X - $Y" is the same practice, read by the range rule), and Rady
+# Children's "Pay Range\nMinimum $X Midpoint $Y Maximum $Z". Minimum to
+# maximum when the maximum is printed, else minimum to midpoint: the two
+# figures the posting states, nothing derived. Ranks with the labelled
+# Minimum / Maximum pair.
+_WAGE_MINMID_RX = re.compile(
+    r"(?:" + _WAGE_PAYLBL + r"|\brange)\s*:?\s*\n?\s*min(?:imum)?\s*:?\s*(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?[ \t,;/]*\n?\s*"
+    r"mid(?:point)?\s*:?\s*(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?"
+    r"(?:[ \t,;/]*\n?\s*max(?:imum)?\s*:?\s*(?:USD\s*)?\$\s*" + _WAGE_FIG + r"\s*(k\b)?)?", re.I)
+# 2026-10-27 (pay reader round 2, review of the adversarial tests): a
+# Minimum / Maximum (or Midpoint) block whose heading sits on the line above
+# ("Relocation Range:\nMinimum Offer $30,000\nMaximum Offer $50,000", "Sign-On
+# Bonus Range\n\nMinimum: $5,000 ...") was read as the pay: the noise rules
+# judge the figure's own clause, which a line break ends before the heading.
+# The heading's words, from the start of the line the match begins on, up to
+# the first figure, must not name an extra.
+_WAGE_LABEL_EXTRA_RX = re.compile(
+    r"sign[- ]?on|signing|bonus|relocation|retention|referral|differential|premium|stipend|reimburse|tuition|loan|incentive", re.I)
+
+
+def _wage_label_line_extra(t, start, fig):
+    """True when the heading of a Minimum / Maximum block, from the start of
+    the line it begins on (40 characters at most: a flattened body is one
+    long line, UW Medicine 28405937) to its first "$" (fig), names a bonus,
+    a relocation package, a differential or another extra."""
+    return bool(_WAGE_LABEL_EXTRA_RX.search(t[max(t.rfind("\n", 0, start) + 1, start - 40):fig]))
+# 2026-10-27 (pay reader round 2): one figure stated as the pay of "this
+# position" / "this role": "The starting salary for this position is:
+# $163,350.00 (annually)" (Virtua), "The annual base salary for this position
+# is $520,000." (MaineHealth), "The minimum base salary for this position is
+# $364,513." (Hackensack Meridian), "a reasonable compensation estimate for
+# this role is $34.24." and "the current compensation rate for this role is
+# $23.80." (Prime), "The hourly rate for this role is $150.00." (One Medical).
+# The labelled rule needs its pay word right before the figure, so none of
+# these read. Only the pay words, never a bonus / differential / stipend word
+# (the noise rules judge the figure as well); "is", "will be" or a colon
+# ("Clinical base hourly pay range for this position: $51.44", OSF) only, so "up
+# to", "at least" and "in the $450,000 range" stay out, and so does a floor
+# written "$500,000+"; a figure that opens a range ("is $32.85- $50", "is
+# $56.40. - $65.00", "$298.00 to $353.00") is the range rule's, and the figure
+# may not stop inside its own decimals to dodge that test. A
+# per-visit / per-shift / monthly figure is left to the rules that price
+# those. "at a .8 FTE" is read so the prorated test can drop the figure.
+_WAGE_FOR_ROLE_RX = re.compile(
+    r"\b(?:salary|pay|wage|compensation|rate)(?:\s+(?:range|rate|scale|estimate))?\s+for\s+this\s+(?:position|role|job)"
+    r"(?:\s+at\s+an?\s+\d?\.?\d+\s*FTE)?(?:\s+(?:is|will\s+be)\s*:?|\s*:)\s*"
+    r"(?:USD\s*)?\$\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,4})?|\d{1,7}(?:\.\d{1,4})?)(?![\d,]|\.\d)\s*(k\b)?(?!\s*k\b)"
+    r"(?![^\w\s$]?\s*(?:\([^()]{0,40}\)\s*)?(?:-|–|—|to|through|and)\s*(?:USD\s*)?\$?\s*\d)(?!\s*\+)", re.I)
+_WAGE_FOR_ROLE_UNIT_RX = re.compile(
+    r"[ \t]*\(?\s*(?:/\s*(?:hour|hr|year|yr|annum)\b|per\s+(?:hour|year|annum)\b|an?\s+(?:hour|year)\b|hourly\b|annually\b|annual\b|yearly\b)", re.I)
+_WAGE_FOR_ROLE_OTHER_UNIT_RX = re.compile(
+    r"\s*(?:/|per|a|an|each)\s*(?:visit|point|session|shift|month|week|day|case|procedure|call|pay\s+period)\b"
+    r"|\s*(?:monthly|bi-?weekly|weekly|daily)\b", re.I)
+_WAGE_FOR_ROLE_HOUR_WORD_RX = re.compile(r"\bhourly\b|\bper\s+hour\b", re.I)
+_WAGE_FOR_ROLE_YEAR_WORD_RX = re.compile(r"\bannual(?:ly)?\b|\byearly\b", re.I)
 # 2026-10-07 (push 10, item 4): "$650k Starting Salary" (Presbyterian
 # 35282682's headline) names the pay after the figure, where the labelled
 # rule never looks; a $650k job printed $75k (the loan-repayment figure).
@@ -29964,6 +32313,8 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
         if k2 and not k1 and "," not in m.group(1) and _wage_num(m.group(1)) < 1000:
             k1 = k2
         lo, hi = _amt(m.group(1), k1), _amt(m.group(3), k2)
+        if not (k1 or k2):                                    # 2026-10-27: "$285,000 - $315.000" (a period for the comma)
+            lo, hi = _dot_thousands(m.group(1), lo, hi), _dot_thousands(m.group(3), hi, lo)
         m3 = _WAGE_THIRD_RX.match(t, m.end())                 # "min - midpoint - max": the maximum is the third figure
         end = m.end()
         if m3 and hi is not None:
@@ -30026,10 +32377,23 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
     # $53,400.00 annual", UW Medicine) are one range and rank as one.
     for m in _WAGE_MINMAX_RX.finditer(t):
         fig = t.rfind("$", m.start(), m.start(1))
-        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()):
+        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()) or _wage_label_line_extra(t, m.start(), fig):
             continue
         got = _wage_pair(_amt(m.group(1), m.group(2)), _amt(m.group(3), m.group(4)))
         stated = _stated_unit(t, m.end()) or _stated_unit(t, m.end(1))
+        if not got or (stated and got[2] != stated) or prorated(fig, m.end(), got):
+            continue
+        consider(m, got, 6)
+    # 2026-10-27 (pay reader round 2): "Pay Rate : Min $18.82 Mid $23.53"
+    # (Lakeland) is the minimum to the midpoint; "Minimum $X Midpoint $Y
+    # Maximum $Z" (Rady Children's) the minimum to the maximum.
+    for m in _WAGE_MINMID_RX.finditer(t):
+        fig = t.rfind("$", m.start(), m.start(1))
+        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()) or _wage_label_line_extra(t, m.start(), fig):
+            continue
+        top, top_k = (m.group(5), m.group(6)) if m.group(5) else (m.group(3), m.group(4))
+        got = _wage_pair(_amt(m.group(1), m.group(2)), _amt(top, top_k))
+        stated = _stated_unit(t, m.end())
         if not got or (stated and got[2] != stated) or prorated(fig, m.end(), got):
             continue
         consider(m, got, 6)
@@ -30064,6 +32428,31 @@ def extract_posted_wage(text, job_type=None, log_rejects=True):
         got = _wage_pair(v, v)
         if got and not prorated(fig, m.end(), got):
             consider(m, got, -1)                              # below a figure that carries its own unit
+    # 2026-10-27 (pay reader round 2): "The starting salary for this position
+    # is: $163,350.00 (annually)", "a reasonable compensation estimate for
+    # this role is $34.24". One figure; the band decides the unit, and a unit
+    # the text names (after the figure, or "hourly" / "annual" in the label)
+    # must agree with it. Ranks with a single figure that carries its unit.
+    for m in _WAGE_FOR_ROLE_RX.finditer(t):
+        fig = t.rfind("$", m.start(), m.start(1))
+        if fig < 0 or fig in dead or _wage_is_noise(t, fig, m.end()):
+            continue
+        if _WAGE_FOR_ROLE_OTHER_UNIT_RX.match(t, m.end()):
+            continue                                          # per visit / shift / month: not this rule's
+        v = _amt(m.group(1), m.group(2))
+        got = _wage_pair(v, v)
+        if not got:
+            continue
+        um = _WAGE_FOR_ROLE_UNIT_RX.match(t, m.end())
+        stated = ("hour" if re.search(r"hour|hr", um.group(0), re.I) else "year") if um else None
+        label = re.split(r"[\n;.!?]", t[max(0, m.start() - 30):fig])[-1]     # the label's own sentence
+        if not stated and _WAGE_FOR_ROLE_HOUR_WORD_RX.search(label):
+            stated = "hour"
+        elif not stated and _WAGE_FOR_ROLE_YEAR_WORD_RX.search(label):
+            stated = "year"
+        if (stated and got[2] != stated) or prorated(fig, m.end(), got):
+            continue
+        consider(m, got, 0)
     # 2026-10-07 (push 10, item 4): the label after the figure ("$650k
     # Starting Salary", Presbyterian 35282682) ranks with the label before it.
     for m in _WAGE_FIGURE_LABEL_RX.finditer(t):
@@ -30423,8 +32812,13 @@ async def run_all() -> list[dict]:
     # detail passes skip rows the database already holds a body for.
     # 2026-10-15 (wages): and the hospitals stored on the body-derived
     # systems' rows, kept on nights a row's body is not read again.
-    _, _, n_fac = await asyncio.gather(asyncio.to_thread(load_cms_lookup), asyncio.to_thread(load_known_bodies),
-                                       asyncio.to_thread(facility_names.load_known_facilities))
+    # 2026-10-27: and the VA facilities stored on USAJOBS rows
+    # (usajobs_va_facility keeps one the posting itself does not name).
+    _, _, n_fac, _, _ = await asyncio.gather(asyncio.to_thread(load_cms_lookup),
+                                             asyncio.to_thread(load_known_bodies),
+                                             asyncio.to_thread(facility_names.load_known_facilities),
+                                             asyncio.to_thread(load_stored_companies),
+                                             asyncio.to_thread(load_stored_usajobs_names))
     logger.info(f"Known facilities: {n_fac:,} stored rows of {', '.join(facility_names.FALLBACK_DB_LABELS)} "
                 f"name a hospital")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
@@ -30470,6 +32864,7 @@ async def run_all() -> list[dict]:
             run_ukg(proxy_session),
             run_oracle(proxy_session),
             run_healthcaresource(proxy_session),
+            run_hcshiring(proxy_session),       # HealthcareSource hcshiring.com JSON: Life Care Centers of America (added 2026-10-27)
             run_tenet(proxy_session),
             run_trinity(proxy_session),
             run_uhs(proxy_session),
@@ -30487,6 +32882,9 @@ async def run_all() -> list[dict]:
             run_applicantstack(proxy_session),  # ApplicantStack openings table: Delta Health (added 2026-10-25)
             run_jazzhr(proxy_session),          # JazzHR applytojob board: Exceptional Healthcare (added 2026-10-25)
             run_jobaps(proxy_session),          # JobAps state boards: MD and CT state psychiatric hospitals (added 2026-10-25)
+            run_silkroad(proxy_session),        # SilkRoad OpenHire HTML list + job pages: Temple Health (added 2026-10-27)
+            run_sitemap_sites(direct_session),  # sitemap career sites: Aveanna Healthcare, direct at its crawl delay (added 2026-10-27)
+            run_applitrack(proxy_session),      # Frontline AppliTrack school district boards: school nurses (added 2026-10-27)
             run_talemetry(proxy_session),  # Jobvite Engage (Talemetry) search.json: UCHealth, PeaceHealth, Penn Medicine (added 2026-09-25)
             run_taleo_be(proxy_session),   # Taleo Business Edition RSS: Baptist SE Texas (added 2026-09-10)
             run_hcts(proxy_session),       # hctsportals.com HTML list: UMC El Paso (added 2026-09-10)
