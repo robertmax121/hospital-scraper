@@ -30,6 +30,7 @@ import va_facilities    # 2026-10-27: one clean name per VA facility on USAJOBS 
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
+from specialty_canon import ATS_ALIASES as _SPEC_ALIASES, _norm_ats as _spec_norm   # 2026-10-28: the Nomad / AMN specialty
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
 
@@ -25142,6 +25143,34 @@ def _classify_travel_specialty(title: str | None, raw_specialty: str | None) -> 
     return canonical_specialty(title, raw_specialty)
 
 
+# 2026-10-28 (travel state audit): the Nomad and AMN adapters (added
+# 2026-07-29) stored the agency's raw label ("Emergency Room", "ER",
+# "Telemetry", "MS", "OR", "ICU"...), so only 1,735 of 22,576 Nomad rows and
+# 1,049 of 13,619 AMN rows carried a canonical specialty and 33k contracts
+# never reached a specialty chip or a /travel/state/<st>/<specialty> page
+# (Texas Emergency / Trauma showed 136 of 499). They now go through the same
+# classifier as Vivian and Aya, with two guards for these feeds, measured
+# over the 36,195 stored rows (canonical 2,784 -> 35,957):
+#   * a generic title bucket (Float Pool / General RN, Travel Nursing) yields
+#     to the agency's label when that label names a specific specialty:
+#     AMN's "Registered Nurse - OR" [OR] is Operating Room / Surgery, not
+#     Float Pool (157 rows move off Float Pool, 66 of them to OR);
+#   * "Travel Nursing" never replaces the agency's label (it is the board
+#     itself, not a specialty; the site redirects its geo pages): 177 rows
+#     keep their label ("General").
+_GENERIC_TRAVEL_SPECIALTIES = {"Float Pool / General RN", "Travel Nursing"}
+
+
+def _travel_feed_specialty(title: str | None, raw_specialty: str | None) -> str | None:
+    canon = _classify_travel_specialty(title, raw_specialty)
+    alias = _SPEC_ALIASES.get(_spec_norm(raw_specialty)) if raw_specialty else None
+    if canon in _GENERIC_TRAVEL_SPECIALTIES and alias and alias not in _GENERIC_TRAVEL_SPECIALTIES:
+        return alias
+    if canon == "Travel Nursing" and raw_specialty:
+        return raw_specialty
+    return canon
+
+
 # ── Vivian Health ─────────────────────────────────────────────────────────
 # Vivian's frontend hits Algolia DIRECTLY (the /api/self/* path is gated by
 # session auth — the public Algolia search-only key is what unauthenticated
@@ -25151,7 +25180,18 @@ VIVIAN_ALGOLIA_APP_ID  = "Q86HQHHJLB"
 VIVIAN_ALGOLIA_API_KEY = "d303713dffdc1b685b8993b09665717d"  # rotated key, refreshed 2026-06-18 (old 1e4ad0… returned 403; app id unchanged)
 VIVIAN_ALGOLIA_HOST    = f"https://{VIVIAN_ALGOLIA_APP_ID.lower()}-dsn.algolia.net"
 VIVIAN_INDEX           = "searchable-jobs-prod"
-VIVIAN_EMPLOYMENT_TYPES = ["Travel", "Permanent", "Local Contract", "Per Diem / PRN"]
+# 2026-10-28 (travel state audit): Travel only. travel_jobs is the travel
+# board, and the other three types put permanent staff jobs, local contracts
+# and per diem shifts on it as travel contracts, with the Travel tag and
+# salary or hourly pills: 17,647 of 101,574 active travel rows on 10-28
+# (6,812 staff, 9,829 local contract, 1,006 per diem; 140 of Minnesota's
+# 1,000), counted in every state total and chip. Aya's adapter skips its
+# permanent and per diem jobs for the same reason. The rows already stored
+# are retired by the site repo's staged SQL (travel_state_2026-10-28/sql 02),
+# applied once this is live; without this line the upsert would reactivate
+# them the same night. OWNER'S CALL: Local Contract includes strike work; to
+# keep it, add "Local Contract" back here and skip SQL 02a-lc / 02b-lc.
+VIVIAN_EMPLOYMENT_TYPES = ["Travel"]
 
 # Paging rewritten 2026-10-13. The 10-13 00:04 UTC run stopped Travel, Local
 # Contract and Per Diem at page 5 (Travel 397 rows of a reported 387,649) and
@@ -25948,7 +25988,9 @@ def _nomad_map(rec: dict, url_map: dict) -> Optional[TravelJob]:
     city = fac.get("city")
     state = fac.get("state")
     specs = rec.get("specializations") or []
-    specialty = ", ".join(s.get("name", "") for s in specs if s.get("name")) or None
+    raw_specialty = ", ".join(s.get("name", "") for s in specs if s.get("name")) or None
+    # 2026-10-28: canonical, as Vivian and Aya store it (_travel_feed_specialty)
+    specialty = _travel_feed_specialty(title, raw_specialty)
     wpay = rec.get("weekly_gross_compensation")
     m = re.search(r"\$[\d,]+/wk", title)
     wp_display = m.group(0) if m else (f"${wpay:,.0f}/wk" if wpay else None)
@@ -26091,7 +26133,8 @@ def _amn_map(j: dict) -> Optional[TravelJob]:
         agency_name="AMN Healthcare",
         agency_job_id=f"amn-{jid}",
         title=title,
-        specialty=ds.get("specialtyName") or ds.get("disciplineName"),
+        # 2026-10-28: canonical, as Vivian and Aya store it (_travel_feed_specialty)
+        specialty=_travel_feed_specialty(title, ds.get("specialtyName") or ds.get("disciplineName")),
         city=city, state=st,
         location=f"{city}, {st}" if city and st else (city or st),
         weekly_pay_numeric=weekly,
@@ -26317,6 +26360,52 @@ def _travel_sweep_plan(domain_counts: dict[str, int], baselines: dict[str, Optio
             continue
         sweep.append(d)
     return sweep, held
+
+
+# ── Superseded rows of a held source (2026-10-28, travel state audit) ─────
+# The yield guard holds a whole domain's sweep when its crawl comes back
+# short (10-28: vivian.com 30,464 = 68% of 44,609). Rows Vivian closed stay
+# live until a later night sweeps them, and so does every row whose URL
+# Vivian has reassigned: the upsert key (agency_name, agency_job_id) changes
+# with the slug, so the new listing lands as a second row and the old one
+# keeps the URL. 2,715 Vivian URLs were each held by two live rows that
+# night, 1,688 of the pairs naming a different agency. A row whose URL
+# tonight's crawl emitted under another key is closed by definition, so a
+# held domain still retires those: one call per held domain to the database
+# function retire_superseded_travel(p_domain, p_run_started) (site repo,
+# travel_state_2026-10-28/sql 04), which retires the domain's active rows
+# stamped before this run whose url an active row stamped in this run also
+# holds. Until that function exists the call answers 404, is logged once,
+# and nothing else changes. Never raises.
+def _travel_retire_superseded(sb_url: str, sb_key: str, domains: list[str],
+                              run_started_iso: Optional[str]) -> dict:
+    import urllib.request as _urlreq, urllib.error as _urlerr
+    out: dict = {}
+    if not domains or not run_started_iso or not sb_url or not sb_key:
+        return out
+    for d in domains:
+        body = json.dumps({"p_domain": d, "p_run_started": run_started_iso}).encode()
+        rq = _urlreq.Request(
+            f"{sb_url.rstrip('/')}/rest/v1/rpc/retire_superseded_travel", data=body, method="POST",
+            headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}",
+                     "Content-Type": "application/json"})
+        try:
+            with _urlreq.urlopen(rq, timeout=90) as resp:
+                raw = resp.read().decode().strip()
+            n = int(raw) if raw.lstrip("-").isdigit() else 0
+            out[d] = n
+            logger.info(f"Travel superseded {d}: {n:,} row(s) retired (URL emitted again tonight under another key)")
+        except _urlerr.HTTPError as e:
+            if e.code == 404:
+                logger.info("Travel superseded: retire_superseded_travel() is not in the database yet; skipped")
+                out["skipped"] = "function not applied"
+                break
+            out[d] = f"HTTP {e.code}"
+            logger.warning(f"Travel superseded {d}: HTTP {e.code} (non-fatal)")
+        except Exception as e:
+            out[d] = f"error: {type(e).__name__}"
+            logger.warning(f"Travel superseded {d}: {e} (non-fatal)")
+    return out
 
 
 def _record_travel_sweep(**fields) -> None:
@@ -26644,6 +26733,12 @@ def _upsert_travel_jobs_to_supabase(rows: list[dict]) -> int:
             f"Travel deactivate: {total_deact:,} rows swept across {len(sweep)} source(s) "
             f"({failed_windows} failed windows, counts={domain_counts})"
         )
+    # 2026-10-28: a source held tonight still loses the rows whose Apply URL
+    # tonight's crawl returned under another key (_travel_retire_superseded).
+    superseded = _travel_retire_superseded(sb_url, sb_key, [d for d in held if domain_counts.get(d, 0) > 0],
+                                           run_started_iso)
+    if superseded:
+        record["superseded"] = superseded
     # 2026-10-25: the sources held tonight still lose the rows nobody has
     # seen for TRAVEL_STALE_DAYS over TRAVEL_STALE_MIN_RUNS runs.
     stale = _travel_stale_backstop(sb_url, sb_key, [d for d in KNOWN_DOMAINS if d not in sweep],
@@ -26878,9 +26973,13 @@ def _refresh_travel_sitemap_cohort(sb_url: str, sb_key: str) -> None:
             with _urlreq.urlopen(rq, timeout=150) as resp:
                 n = resp.read().decode().strip()
             logger.info(f"travel_sitemap_cohort refreshed: {n} rows")
+            # 2026-10-28: STEP 2c re-renders the site's travel geo pages only
+            # after a refresh that landed (scheduler, site_revalidate)
+            LAST_RUN_COUNTS["travel_snapshot"] = "refreshed"
             return
         except Exception as e:
             if attempt == 3:
+                LAST_RUN_COUNTS["travel_snapshot"] = "failed"
                 logger.warning(f"travel_sitemap_cohort refresh failed after 4 tries (non-fatal): {e}")
             else:
                 time.sleep(5 * (attempt + 1))

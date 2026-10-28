@@ -309,3 +309,62 @@ def flush(label: str = "", **kw) -> dict:
     except Exception as e:
         logger.warning(f"site revalidate: flush failed (non-fatal): {e}")
         return {"ids": 0, "sent": 0, "stopped": f"error: {type(e).__name__}"}
+
+# ── Travel geo pages (2026-10-28, travel state audit) ─────────────────────
+# /travel/state/<st> and /travel/state/<st>/<specialty> are force-static
+# with a day's ISR, and each regenerated at its first visit after expiry,
+# often in the middle of the nightly: on 10-28 most of the audited pages had
+# rendered while the upsert and the sweep were running, printing counts and
+# cards from a half-finished run beside the previous night's snapshot for a
+# day. Once the run's snapshot rebuild has landed (STEP 2c), one POST to the
+# site's /api/revalidate/travel-geo marks every one of those pages stale, so
+# each re-renders at its next visit from the finished run. Same credential,
+# origin rule and opener as post_ids. Never raises; a 404 means the site
+# route is not deployed yet.
+TRAVEL_GEO_PATH = "/api/revalidate/travel-geo"
+
+
+def revalidate_travel_geo(*, secret: str | None = None, site: str | None = None, opener=None) -> dict:
+    """POST once to the site's travel geo revalidation. Returns {"status",
+    "ok", "skipped"}; status 0 for a network fault."""
+    out: dict = {"status": None, "ok": False, "skipped": None}
+    try:
+        secret = (secret if secret is not None else _env_secret() or "").strip()
+        if not secret:
+            out["skipped"] = f"{SECRET_ENV} not set"
+            logger.info(f"travel geo revalidate: {SECRET_ENV} is not set in this environment; the geo pages keep their own 24 h clock")
+            return out
+        base = _site_base(site)
+        if not base:
+            out["skipped"] = "site origin refused (https only)"
+            logger.warning("travel geo revalidate: site origin refused (https only, or http on localhost)")
+            return out
+        rq = urllib.request.Request(base + TRAVEL_GEO_PATH, data=b"{}", method="POST", headers={
+            "Authorization": f"Bearer {secret}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": USER_AGENT,
+        })
+        opener = opener or urllib.request.urlopen
+        try:
+            with opener(rq, timeout=TIMEOUT_SEC) as resp:
+                status = int(getattr(resp, "status", None) or resp.getcode() or 0)
+                resp.read()
+        except urllib.error.HTTPError as e:
+            status = e.code
+        except Exception as e:
+            status = 0
+            logger.warning(f"travel geo revalidate: {type(e).__name__}: {e} (non-fatal)")
+        out["status"] = status
+        out["ok"] = status == 200
+        if status == 200:
+            logger.info("travel geo revalidate: the travel state and specialty pages will re-render at their next visit")
+        elif status == 404:
+            logger.info("travel geo revalidate: the site has no /api/revalidate/travel-geo yet (404); skipped")
+        elif status:
+            logger.warning(f"travel geo revalidate: HTTP {status} (non-fatal)")
+        return out
+    except Exception as e:
+        logger.warning(f"travel geo revalidate failed (non-fatal): {e}")
+        out["skipped"] = f"error: {type(e).__name__}"
+        return out

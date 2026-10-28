@@ -64,7 +64,8 @@ def _load_shared_env() -> None:
     # 2026-10-23 (Railway breach): the new secret key (SUPABASE_SECRET_KEY)
     # is exported under its own name and wins in sb_keys; the legacy
     # service_role JWT still maps to SUPABASE_KEY as before.
-    if os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SECRET_KEY"):
+    if (os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SECRET_KEY")) and \
+            (os.environ.get("WEBSHARE_API_KEY") or os.environ.get("PROXY_LIST")):
         return
     for shared_env in SHARED_ENV_CANDIDATES:
         if not os.path.exists(shared_env):
@@ -88,6 +89,12 @@ def _load_shared_env() -> None:
         # 2026-10-20: the scraper's own purge key, read first by site_revalidate.
         if shared.get("REVALIDATE_SECRET"):
             os.environ.setdefault("REVALIDATE_SECRET", shared["REVALIDATE_SECRET"])
+        # 2026-10-27 (owner: "We have webshare proxy credits for hca push"): the
+        # proxy pool's settings ride along, so main() can route the crawl
+        # through Webshare (scraper.ProxyRotator reads them).
+        for k in ("WEBSHARE_API_KEY", "PROXY_LIST"):
+            if shared.get(k):
+                os.environ.setdefault(k, shared[k])
         break
 
 
@@ -414,10 +421,16 @@ def main(argv=None) -> int:
             print(f"REPLAY REFUSED: {e}")
             return 2
     _load_shared_env()
-    # This machine's own IP is residential — that's the whole point of running
-    # here. Disable the (currently 402-exhausted) webshare pool so the crawl
-    # doesn't route through dead proxies.
-    scraper.proxies.proxies = []
+    # 2026-10-27 (owner: "We have webshare proxy credits for hca push"): HCA's
+    # Cloudflare now answers this machine's home IP with 403 most nights, so
+    # the crawl goes through the Webshare pool again. The pool was built at
+    # import, before the shared settings loaded, so it is built again here.
+    # An empty pool (no key, or Webshare refusing) falls back to the home IP,
+    # as before. HCA_DIRECT=1 forces the home IP.
+    if os.environ.get("HCA_DIRECT") == "1":
+        scraper.proxies.proxies = []
+    else:
+        scraper.proxies = scraper.ProxyRotator()
     return crawl_and_push()
 
 
