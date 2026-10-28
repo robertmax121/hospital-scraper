@@ -11042,6 +11042,19 @@ FINDLY_GOOGLE_PAY_KEY = {"UPMC": "salary", "University Hospitals": "relocation"}
 # keep company_name. facility_names.upmc_facility.
 FINDLY_GOOGLE_FACILITY = {"UPMC": facility_names.upmc_facility}
 
+# 2026-10-28 (owner: "yes, change it to that"): the name every row of a tenant
+# carries when its payload's company_name is no name to print. UT
+# Southwestern's company_name is its legal name cut at 50 characters with the
+# article moved to the end, "University Of Texas Southwestern Medical Cent
+# (The", on every row of the search payload; it was the employer on 896
+# active cards and job pages that day. Its own job pages say "UT Southwestern
+# Medical Center" (the <title> and the JSON-LD), the system label. The payload
+# names no hospital below the system (brand is a department code, "20595";
+# business_unit is empty), so every UTSW row takes the system's name. Read
+# before the fallback to company_name; a tenant in neither this map nor
+# FINDLY_GOOGLE_FACILITY keeps company_name.
+FINDLY_GOOGLE_NAME = {"UT Southwestern Medical Center": "UT Southwestern Medical Center"}
+
 # 2026-10-12: the employer's requisition number. AdventHealth's job_id is the
 # Findly posting id in its jobs.adventhealth.com URL (23744623); the job page
 # prints "Req #: R-0379591", the Workday requisition its recruiters use. The
@@ -11204,7 +11217,8 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
 
             pay_key = FINDLY_GOOGLE_PAY_KEY.get(system)
             fac_of = FINDLY_GOOGLE_FACILITY.get(system)
-            hospital = fac_of(j.get("brand"), j.get("business_unit"), city, state) if fac_of else ""
+            hospital = ((fac_of(j.get("brand"), j.get("business_unit"), city, state) if fac_of else "")
+                        or FINDLY_GOOGLE_NAME.get(system, ""))
             jobs.append(Job(
                 title=title,
                 hospital_system=system,
