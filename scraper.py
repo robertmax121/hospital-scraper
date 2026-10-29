@@ -41,6 +41,7 @@ from specialty_canon import ATS_ALIASES as _SPEC_ALIASES, _norm_ats as _spec_nor
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
 import facilities_town   # 2026-10-29: the hospital on a system-label row from its town (TOWN family)
+import facilities_dialysis   # 2026-10-29: the clinic on DaVita / Fresenius / US Renal Care rows (dialysis chains)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -10549,7 +10550,10 @@ JIBE_FACILITY_TAG: dict[str, str] = {"Care New England Health System": "tags2",
 # the row takes the hospital that site is, or the system when the site is a
 # clinic, an office or a region. Novant on 2026-10-15: 930 of 1,588 rows at a
 # hospital (facility_names.novant_facility).
-JIBE_FACILITY_RESOLVER = {"Novant Health": facility_names.novant_facility}
+JIBE_FACILITY_RESOLVER = {"Novant Health": facility_names.novant_facility,
+                          # 2026-10-29: "1207 - Gulfgate Kidney Center TX" names the clinic
+                          # (facilities_dialysis.usrc_facility; offices and remote keep the label)
+                          facilities_dialysis.USRC: facilities_dialysis.usrc_facility}
 
 
 # 2026-10-28 (the owner: "yes show facility names on UHS cards"). Every
@@ -33127,6 +33131,16 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         if facilities_text.UNKNOWN:
             logger.info("Text facilities, values no table names: " + facilities_text.unknown_summary())
             facilities_text.UNKNOWN.clear()
+    # 2026-10-29 (facility scale, dialysis chains): DaVita rows take the
+    # clinic their Workday link names ("05107---Fort-Wayne-West" -> DaVita
+    # Fort Wayne West Dialysis), Fresenius rows the clinic of a clinic-code
+    # site ("DE007 Christiana - Clinic" -> Fresenius Kidney Care Christiana)
+    # and a town where the row has none; acute and SNF programs, offices and
+    # town-only sites keep the label (facilities_dialysis).
+    dia = _facility_pass("Dialysis chains", facilities_dialysis.apply_jobs, kept)
+    if dia:
+        logger.info("Dialysis chains: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(dia.items())))
     # 2026-10-29 (facility scale, TOWN family): rows still on the system's
     # name after the adapters' facility hooks and facility_names take the one
     # hospital of their system in their town (facilities_town: a clinic, an

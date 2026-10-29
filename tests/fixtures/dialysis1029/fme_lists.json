@@ -1,0 +1,415 @@
+{
+ "read": "2026-10-29, POST freseniusmedicalcare.wd3 /wday/cxs/freseniusmedicalcare/fme/jobs, limit 20, searchText \"Clinic\" and \"\" (two requests)",
+ "pages": {
+  "list_clinic": {
+   "total": 2000,
+   "jobPostings": [
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Auburn-ME/Clinical-Education-Manager_R0256070",
+     "locationsText": "Auburn, ME",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R0256070"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/CA277-FMCNA-Peralta-RAI---Clinic/Clinical-Educator_R0259323-1",
+     "locationsText": "CA277 FMCNA Peralta RAI - Clinic",
+     "postedOn": "Posted 21 Days Ago",
+     "bulletFields": [
+      "R0259323"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Pineville-NC/Clinical-Education-Manager_R0259307",
+     "locationsText": "Pineville, NC",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R0259307"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Greensboro-NC/Clinical-Education-Manager_R0261319",
+     "locationsText": "Greensboro, NC",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R0261319"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Peabody-MA/Clinical-Education-Manager_R0264312",
+     "locationsText": "Peabody, MA",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R0264312"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Kennewick-WA/Clinical-Education-Manager_R0266810",
+     "locationsText": "Kennewick, WA",
+     "postedOn": "Posted 22 Days Ago",
+     "bulletFields": [
+      "R0266810"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/CA277-FMCNA-Peralta-RAI---Clinic/Clinical-Education-Manager_R0269475",
+     "locationsText": "CA277 FMCNA Peralta RAI - Clinic",
+     "postedOn": "Posted 21 Days Ago",
+     "bulletFields": [
+      "R0269475"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Shreveport-LA/Clinical-Educator_R0270428-1",
+     "locationsText": "Shreveport, LA",
+     "postedOn": "Posted 29 Days Ago",
+     "bulletFields": [
+      "R0270428"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Tyler-TX/Clinical-Education-Manager_R0270441",
+     "locationsText": "Tyler, TX",
+     "postedOn": "Posted 22 Days Ago",
+     "bulletFields": [
+      "R0270441"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/AZ062-Avondale-JV---Clinic/Clinical-Education-Manager_R0270106",
+     "locationsText": "AZ062 Avondale JV - Clinic",
+     "postedOn": "Posted 16 Days Ago",
+     "bulletFields": [
+      "R0270106"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Lagrange-GA/Clinical-Educator_R0271707",
+     "locationsText": "Lagrange, GA",
+     "postedOn": "Posted 23 Days Ago",
+     "bulletFields": [
+      "R0271707"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Voorhees-NJ/Clinical-Educator_R0272042",
+     "locationsText": "Voorhees, NJ",
+     "postedOn": "Posted 17 Days Ago",
+     "bulletFields": [
+      "R0272042"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator",
+     "externalPath": "/job/Lubbock-TX-USA/Clinical-Educator_R0274430",
+     "locationsText": "Lubbock, TX, USA",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R0274430"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinic Administrative Assistant",
+     "externalPath": "/job/Mission-TX/Clinic-Administrative-Assistant_R0251094",
+     "locationsText": "Mission, TX",
+     "postedOn": "Posted 9 Days Ago",
+     "bulletFields": [
+      "R0251094"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinic Administrative Assistant",
+     "externalPath": "/job/Spring-TX/Clinic-Administrative-Assistant_R0258520",
+     "locationsText": "Spring, TX",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R0258520"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinic Administrative Assistant",
+     "externalPath": "/job/Paris-TX/Clinic-Administrative-Assistant_R0264438",
+     "locationsText": "Paris, TX",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R0264438"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinic Administrative Assistant",
+     "externalPath": "/job/Honolulu-HI/Clinic-Administrative-Assistant_R0264166",
+     "locationsText": "Honolulu, HI",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R0264166"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Educator - Travel",
+     "externalPath": "/job/Mechanicsville-MD/Clinical-Education-Manager_R0264124",
+     "locationsText": "Mechanicsville, MD",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R0264124"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinic Administrative Assistant",
+     "externalPath": "/job/Kamuela-HI/Clinic-Administrative-Assistant_R0263452",
+     "locationsText": "Kamuela, HI",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R0263452"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Education Manager",
+     "externalPath": "/job/Fredericksburg-VA/Clinical-Education-Manager_R0264099",
+     "locationsText": "Fredericksburg, VA",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R0264099"
+     ],
+     "timeType": null
+    }
+   ]
+  },
+  "list_first": {
+   "total": 2000,
+   "jobPostings": [
+    {
+     "title": "Outpatient Registered Nurse - RN",
+     "externalPath": "/job/Sellersville-PA/Outpatient-Registered-Nurse---RN_R0261349",
+     "locationsText": "Sellersville, PA",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0261349"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Supply Chain Co-op/Intern",
+     "externalPath": "/job/Waltham-MA-USA/Supply-Chain-Co-op-Intern_R0271581",
+     "locationsText": "Waltham, MA, USA",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0271581"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Dialysis Outpatient Registered Nurse - RN",
+     "externalPath": "/job/Ofallon-IL/Dialysis-Outpatient-Registered-Nurse---RN_R0275602",
+     "locationsText": "Ofallon, IL",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0275602"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Outpatient Registered Nurse - RN",
+     "externalPath": "/job/Springfield-MA/Outpatient-Registered-Nurse---RN_R0250502",
+     "locationsText": "Springfield, MA",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0250502"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Patient Care Technician - PCT CCHT - Dialysis",
+     "externalPath": "/job/San-Antonio-TX/Patient-Care-Technician---PCT-CCHT---Dialysis_R0267903-1",
+     "locationsText": "San Antonio, TX",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0267903"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Dialysis Outpatient Registered - RN",
+     "externalPath": "/job/St-Louis-MO/Dialysis-Outpatient-Registered---RN_R0275601",
+     "locationsText": "St Louis, MO",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0275601"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Master Social Worker - MSW",
+     "externalPath": "/job/Chelmsford-MA/Master-Social-Worker---MSW_R0275652",
+     "locationsText": "Chelmsford, MA",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0275652"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Patient Care Technician",
+     "externalPath": "/job/Bartow-Cartersville-GA/Patient-Care-Technician_R0262232",
+     "locationsText": "Bartow, Cartersville, GA",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0262232"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Patient Care Technician - PCT",
+     "externalPath": "/job/Lake-Charles-LA/Patient-Care-Technician---PCT_R0273461",
+     "locationsText": "Lake Charles, LA",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0273461"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Master Social Worker - MSW",
+     "externalPath": "/job/CO019-FMCNA-Pueblo-West---Clinic/Master-Social-Worker---MSW_R0274292-1",
+     "locationsText": "CO019 FMCNA Pueblo West - Clinic",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0274292"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Patient Care Technician - PCT",
+     "externalPath": "/job/Grove-City-OH/Patient-Care-Technician---PCT_R0275608",
+     "locationsText": "Grove City, OH",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0275608"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Manager II",
+     "externalPath": "/job/Big-Spring-TX-USA/Clinical-Manager-II_R0274736",
+     "locationsText": "Big Spring, TX, USA",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0274736"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Registered Nurse - RN",
+     "externalPath": "/job/Brooklyn-Park-MN/Registered-Nurse---RN_R0275618",
+     "locationsText": "Brooklyn Park, MN",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0275618"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Clinical Coordinator - Charge Registered Nurse - Dialysis",
+     "externalPath": "/job/Harrisburg-IL/Clinical-Coordinator---Charge-Registered-Nurse---Dialysis_R0273931",
+     "locationsText": "Harrisburg, IL",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0273931"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Licensed Practical Nurse - LPN",
+     "externalPath": "/job/Albany-NY/Licensed-Practical-Nurse---LPN_R0272655",
+     "locationsText": "Albany, NY",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0272655"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Patient Care Technician - PCT",
+     "externalPath": "/job/Enid-OK/Patient-Care-Technician---PCT_R0274930",
+     "locationsText": "Enid, OK",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0274930"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Outpatient Registered Nurse - RN",
+     "externalPath": "/job/Albany-NY/Outpatient-Registered-Nurse---RN_R0274156",
+     "locationsText": "Albany, NY",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0274156"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Patient Care Technician - PCT",
+     "externalPath": "/job/Shelbyville-IN/Patient-Care-Technician---PCT_R0275657",
+     "locationsText": "Shelbyville, IN",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0275657"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Patient Care Technician - PCT CCHT - Dialysis",
+     "externalPath": "/job/Laurinburg-NC/Patient-Care-Technician---PCT-CCHT---Dialysis_R0271217",
+     "locationsText": "Laurinburg, NC",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0271217"
+     ],
+     "timeType": null
+    },
+    {
+     "title": "Patient Care Technician",
+     "externalPath": "/job/Monroe-MI/Patient-Care-Technician_R0275132",
+     "locationsText": "Monroe, MI",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R0275132"
+     ],
+     "timeType": null
+    }
+   ]
+  }
+ }
+}

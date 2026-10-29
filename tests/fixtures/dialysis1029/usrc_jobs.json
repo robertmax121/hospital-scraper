@@ -1,0 +1,366 @@
+{
+ "read": "2026-10-29, GET https://careers.usrenalcare.com/api/jobs?page=1..5&limit=100 (five requests, 438 jobs)",
+ "totalCount": 438,
+ "jobs": [
+  {
+   "req_id": "7995",
+   "slug": "7995",
+   "title": "VP, Finance",
+   "city": "Plano",
+   "state": "Texas",
+   "country_code": "US",
+   "location_name": "TX00 - Dallas Corporate TX",
+   "posted_date": "2026-10-29T16:52:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Accounting/Finance"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8425",
+   "slug": "8425",
+   "title": "Dialysis Social Worker",
+   "city": "Oceanside",
+   "state": "California",
+   "country_code": "US",
+   "location_name": "1513 - Oceanside CA",
+   "posted_date": "2026-10-29T16:45:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Social Worker"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "6448",
+   "slug": "6448",
+   "title": "Dialysis LVN/LPN",
+   "city": "Greenwood",
+   "state": "Indiana",
+   "country_code": "US",
+   "location_name": "4003 - Greenwood IN",
+   "posted_date": "2026-10-29T16:21:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " LVN/LPN"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8307",
+   "slug": "8307",
+   "title": "Dialysis PCT Certified",
+   "city": "Las Cruces",
+   "state": "New Mexico",
+   "country_code": "US",
+   "location_name": "1553 - Las Cruces NM",
+   "posted_date": "2026-10-29T13:31:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Patient Care Tech/PCT"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8545",
+   "slug": "8545",
+   "title": "Dialysis PCT Certified",
+   "city": "Burleson",
+   "state": "Texas",
+   "country_code": "US",
+   "location_name": "1112 - Burleson TX",
+   "posted_date": "2026-10-29T13:24:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Patient Care Tech/PCT"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8527",
+   "slug": "8527",
+   "title": "Dialysis Registered Nurse",
+   "city": "Fort Worth",
+   "state": "Texas",
+   "country_code": "US",
+   "location_name": "1102 - East Fort Worth TX",
+   "posted_date": "2026-10-29T08:12:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Registered Nurse"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8313",
+   "slug": "8313",
+   "title": "Dialysis Patient Care Technician",
+   "city": "Monterey",
+   "state": "California",
+   "country_code": "US",
+   "location_name": "0607 - Monterey CA",
+   "posted_date": "2026-10-28T23:38:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Patient Care Tech/PCT"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7354",
+   "slug": "7354",
+   "title": "Dialysis Registered Nurse - Floater",
+   "city": "Lafayette",
+   "state": "Indiana",
+   "country_code": "US",
+   "location_name": "4273 - Lafayette IN",
+   "posted_date": "2026-10-28T22:55:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Registered Nurse"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8542",
+   "slug": "8542",
+   "title": "Dialysis Registered Charge Nurse",
+   "city": "Cincinnati",
+   "state": "Ohio",
+   "country_code": "US",
+   "location_name": "0187 - Norwood OH",
+   "posted_date": "2026-10-28T22:46:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Registered Nurse"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "6426",
+   "slug": "6426",
+   "title": "Dialysis Registered Nurse",
+   "city": "Creve Coeur",
+   "state": "Missouri",
+   "country_code": "US",
+   "location_name": "0197 - Creve Coeur MO",
+   "posted_date": "2026-10-28T22:06:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Registered Nurse"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8703",
+   "slug": "8703",
+   "title": "Registered Nurse-HIRING EVENT NOVEMBER 17TH AND 18TH",
+   "city": "Los Angeles",
+   "state": "California",
+   "country_code": "US",
+   "location_name": "0576 - Westside CA",
+   "posted_date": "2026-10-28T20:41:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Registered Nurse"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8701",
+   "slug": "8701",
+   "title": "PCT Certified-HIRING EVENT NOVEMBER 17TH AND 18TH",
+   "city": "Beverly Hills",
+   "state": "California",
+   "country_code": "US",
+   "location_name": "0653 - Beverly Hills CA",
+   "posted_date": "2026-10-28T20:41:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Patient Care Tech/PCT"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8704",
+   "slug": "8704",
+   "title": "LVN/LPN-HIRING EVENT NOVEMBER 17TH AND 18TH",
+   "city": "Los Angeles",
+   "state": "California",
+   "country_code": "US",
+   "location_name": "0576 - Westside CA",
+   "posted_date": "2026-10-28T20:41:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " LVN/LPN"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7392",
+   "slug": "7392",
+   "title": "Back-End Intake Representative",
+   "city": "Plano",
+   "state": "Texas",
+   "country_code": "US",
+   "location_name": "remote",
+   "posted_date": "2026-10-27T19:13:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Revenue Cycle Mgmt"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7484",
+   "slug": "7484",
+   "title": "VBC Risk Adjustment Scheduler",
+   "city": null,
+   "state": null,
+   "country_code": "US",
+   "location_name": "9999 - Work @ Home ZZ",
+   "posted_date": "2026-10-26T18:58:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Value Based Care"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8272",
+   "slug": "8272",
+   "title": "Acute Dialysis Charge Nurse",
+   "city": "Tonawanda",
+   "state": "New York",
+   "country_code": "US",
+   "location_name": "0441 - Amherst Inc NY",
+   "posted_date": "2026-10-26T18:41:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Registered Nurse"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "8356",
+   "slug": "8356",
+   "title": "Dialysis PCT Non Certified",
+   "city": "Utica",
+   "state": "New York",
+   "country_code": "US",
+   "location_name": "1235 - Masonic Care Community Inc NY",
+   "posted_date": "2026-10-23T18:37:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Patient Care Tech/PCT"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7853",
+   "slug": "7853",
+   "title": "Dialysis LVN/LPN",
+   "city": "Utica",
+   "state": "New York",
+   "country_code": "US",
+   "location_name": "1228 - Faxton Inc NY",
+   "posted_date": "2026-10-16T16:55:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " LVN/LPN"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7680",
+   "slug": "7680",
+   "title": "Dialysis PCT Non Certified",
+   "city": "Kingston",
+   "state": "New York",
+   "country_code": "US",
+   "location_name": "1152 - Ulster Managed Inc NY",
+   "posted_date": "2026-10-07T14:03:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Patient Care Tech/PCT"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7684",
+   "slug": "7684",
+   "title": "Dialysis LVN/LPN",
+   "city": "Blasdell",
+   "state": "New York",
+   "country_code": "US",
+   "location_name": "0175 - Hamburg Inc NY",
+   "posted_date": "2026-10-07T14:02:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " LVN/LPN"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7641",
+   "slug": "7641",
+   "title": "VBC Risk Adjustment Nurse Practitioner",
+   "city": "Syracuse",
+   "state": "New York",
+   "country_code": "US",
+   "location_name": "S NY",
+   "posted_date": "2026-10-07T01:06:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Value Based Care"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7639",
+   "slug": "7639",
+   "title": "Dialysis Patient Care Technician",
+   "city": "Herkimer",
+   "state": "New York",
+   "country_code": "US",
+   "location_name": "1232 - Herkimer Inc NY",
+   "posted_date": "2026-10-05T14:55:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Patient Care Tech/PCT"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7522",
+   "slug": "7522",
+   "title": "Dialysis Registered Nurse",
+   "city": "Utica",
+   "state": "New York",
+   "country_code": "US",
+   "location_name": "1259 - St. Luke Inc NY",
+   "posted_date": "2026-09-24T19:46:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Registered Nurse"
+   ],
+   "description": ""
+  },
+  {
+   "req_id": "7080",
+   "slug": "7080",
+   "title": "Dialysis PCT Non Certified",
+   "city": "Oneida",
+   "state": "New York",
+   "country_code": "US",
+   "location_name": "1238 - Oneida Inc NY",
+   "posted_date": "2026-08-25T14:52:00+0000",
+   "employment_type": "FULL_TIME",
+   "category": [
+    " Patient Care Tech/PCT"
+   ],
+   "description": ""
+  }
+ ]
+}
