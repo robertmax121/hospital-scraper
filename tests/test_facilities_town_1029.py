@@ -238,3 +238,14 @@ def test_finalize_jobs_runs_the_tables_after_the_adapters():
 def test_boilerplate_file_loads():
     assert T.BOILERPLATE and all(isinstance(v, frozenset) for v in T.BOILERPLATE.values())
     assert set(T.BOILERPLATE) <= set(T.SPECS)
+
+
+def test_a_longer_name_wins_over_the_name_inside_it():
+    # "Temple University Hospital - Jeanes Campus" holds "Temple University Hospital"
+    name, city, state, how = T.decide("Temple Health", "Temple Health", "Philadelphia", "PA",
+                                      "RN - Med Surg - Temple University Hospital - Jeanes Campus")
+    assert (name, how) == ("Temple University Hospital - Jeanes Campus", "named")
+    name, city, state, how = T.decide("Temple Health", "Temple Health", "Philadelphia", "PA",
+                                      "SR. RESPIRATORY THERAPIST - Temple University Hospital")
+    assert (name, how) == ("Temple University Hospital", "named")
+    assert T.decide("Temple Health", "Temple Health", "Philadelphia", "PA", "RN - ICU")[3] == "shared"

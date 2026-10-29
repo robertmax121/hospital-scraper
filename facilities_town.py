@@ -559,8 +559,13 @@ def _names(spec, look, name, title) -> bool:
 
 
 def _named_hospitals(spec, look, title="") -> list:
-    """The table's hospitals the title or a location line names (_names)."""
-    return [h[0] for h in spec.hospitals if _names(spec, look, h[0], title)]
+    """The table's hospitals the title or a location line names (_names).
+    A name inside a longer one the posting also names does not count
+    ("Temple University Hospital - Jeanes Campus" is not also Temple
+    University Hospital)."""
+    hit = [h[0] for h in spec.hospitals if _names(spec, look, h[0], title)]
+    keys = {n: name_key(n) for n in hit}
+    return [n for n in hit if not any(o != n and keys[n] in keys[o] for o in hit)]
 
 
 def _has_key(text_key, keys) -> bool:
@@ -639,7 +644,8 @@ def decide(system, hospital_name, city, state, title="", description="", url="")
 
     # The posting names a different hospital of the system: it knows better.
     for other, keys in spec.keys.items():
-        if other != name and _has_key(look, keys) and not _has_key(look, spec.keys[name]):
+        if other != name and _has_key(look, keys) and not _has_key(look, spec.keys[name]) \
+                and name_key(other) not in name_key(name):
             return None, None, None, "other-hospital"
     # A named site inside the town's hospital.
     for sname, scity, sstate, skeys in spec.sites:
@@ -921,6 +927,22 @@ _spec("Capital Health", [
     _h("Capital Health Regional Medical Center", "Trenton", "NJ", "cms 310092", "=RMC"),
     _h("Capital Health Medical Center - Hopewell", "Pennington", "NJ", "cms 310044", "Hopewell"),
 ], default=("Pennington", "NJ"))
+
+_spec("Keck Medicine of USC", [
+    _h("Keck Hospital of USC", "Los Angeles", "CA", "cms 050696"),
+    _h("USC Norris Cancer Hospital", "Los Angeles", "CA", "site"),
+    _h("USC Arcadia Hospital", "Arcadia", "CA", "cms 050238"),
+    _h("USC Verdugo Hills Hospital", "Glendale", "CA", "cms 050124"),
+], default=("Los Angeles", "CA"))
+
+_spec("Temple Health", [
+    _h("Temple University Hospital", "Philadelphia", "PA", "cms 390027"),
+    _h("Temple University Hospital - Jeanes Campus", "Philadelphia", "PA", "site (cms 390027 Jeanes campus)"),
+    _h("Temple University Hospital - Episcopal Campus", "Philadelphia", "PA", "site (cms 390027 Episcopal campus)"),
+    _h("Fox Chase Cancer Center", "Philadelphia", "PA", "site"),
+    _h("Temple Health - Chestnut Hill Hospital", "Philadelphia", "PA", "cms 390026"),
+    _h("Temple Women & Families Hospital", "Philadelphia", "PA", "site"),
+])
 
 _spec("Luminis Health", [
     _h("Luminis Health Anne Arundel Medical Center", "Annapolis", "MD", "cms 210023"),
