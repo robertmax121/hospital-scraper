@@ -405,7 +405,13 @@ def test_finalize_jobs_names_text_and_link_rows(monkeypatch):
     assert by["K9"]["hospital_system"] == "Kaiser Permanente"
     assert by["C9"]["hospital_name"] == "Children's Hughes Spalding Hospital"
     assert by["M9"]["hospital_name"] == "Capital Region Medical Center"
-    assert by["P9"]["hospital_name"] == "PIH Health"          # a town alone names no hospital
+    # 2026-10-29 (integration): the Phenom hook names nothing from a town alone;
+    # the town family runs last in finalize_jobs (facilities_town) and places a
+    # label row at the system's one hospital in its town.
+    p9 = _job("PIH Health", "PIH Health", city="Whittier", state="CA", job_id="P9", description="Location: Whittier" + PAD)
+    P.apply_facility(p9)
+    assert p9.hospital_name == "PIH Health"
+    assert by["P9"]["hospital_name"] == "PIH Health Whittier Hospital"
 
 
 def test_apply_facility_leaves_other_systems_alone():

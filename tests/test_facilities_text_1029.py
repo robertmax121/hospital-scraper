@@ -55,9 +55,18 @@ STATES = set("AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA 
 
 
 def test_every_system_is_a_scraper_label_with_no_other_facility_hook():
+    # 2026-10-29 (integration): facilities_oracle_other registers a Spec for
+    # its Oracle tenants (UChicago, UC Health, HealthPartners), which names a
+    # row from the Oracle work location at list time. Such a Spec reads no
+    # body and keeps no stored name, so the posting text is still read only
+    # here, and only on rows the work location left on the label.
+    registered = set(map(id, F.registered()))
     for system in T.SYSTEMS:
         assert scraper.HOSPITAL_SYSTEM_ALIASES.get(system, system) == system
-        assert system not in F.SPECS                       # facility_names reads its own systems
+        if system in F.SPECS:                              # facility_names reads its own systems
+            spec = F.SPECS[system]
+            assert id(spec) in registered, system
+            assert not spec.fallback and F.text_candidates(system, "Location: X\nFacility: Y", "T") == [], system
         assert system not in scraper.WD_SITE_FACILITY
     assert len(T.SYSTEMS) == 26
 
