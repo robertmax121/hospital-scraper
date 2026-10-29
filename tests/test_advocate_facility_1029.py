@@ -45,9 +45,11 @@ TOWN_HEAD = re.compile(r"^[A-Za-z .'-]+,\s*[A-Z]{2}\s+-\s+")
 def test_the_system_label_is_the_workday_tenant():
     assert A.SYSTEM == SYSTEM
     assert scraper.WORKDAY_TENANTS[SYSTEM] == ("aah", "5", "External")
-    assert scraper.WD_SITE_FACILITY == {SYSTEM: A.facility}
-    assert scraper.WD_SITE_UNKNOWN == {SYSTEM: A.unknown_site}
-    assert SYSTEM not in scraper.WD_FACILITY_MAP     # the elif in scrape_workday would never reach the table
+    # 2026-10-29 (facility scale): WD_SITE_FACILITY now also holds the other
+    # Workday systems' tables (facilities_workday); Advocate's stays its own.
+    assert scraper.WD_SITE_FACILITY[SYSTEM] is A.facility
+    assert scraper.WD_SITE_UNKNOWN[SYSTEM] is A.unknown_site
+    assert SYSTEM not in scraper.WD_FACILITY_MAP     # no map to fall back to for a site the table does not know
 
 
 def test_table_entries_are_clean():
@@ -242,6 +244,8 @@ def test_scrape_workday_stores_the_facility_and_its_town(monkeypatch):
 
 
 def test_other_workday_tenants_are_untouched(monkeypatch):
-    jobs = _crawl(monkeypatch, "Sutter Health")
-    assert jobs and {j.hospital_name for j in jobs} == {"Sutter Health"}
-    assert "Sutter Health" not in scraper.WD_SITE_FACILITY
+    # 2026-10-29 (facility scale): Sutter Health has a town table now
+    # (facilities_workday); a tenant with no table keeps every row on its label.
+    jobs = _crawl(monkeypatch, "Fresenius Medical Care")
+    assert jobs and {j.hospital_name for j in jobs} == {"Fresenius Medical Care"}
+    assert "Fresenius Medical Care" not in scraper.WD_SITE_FACILITY

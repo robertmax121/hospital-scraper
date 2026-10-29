@@ -1,0 +1,1955 @@
+{
+ "note": "First CXS list page (20 postings) of each tenant, read 2026-10-29 a few seconds apart, no login; fields trimmed to what scrape_workday reads.",
+ "pages": {
+  "Bronson Healthcare": {
+   "tenant": [
+    "bronsonhg",
+    "1",
+    "newhires"
+   ],
+   "fetched": "2026-10-29 08:56:00",
+   "total": 424,
+   "jobPostings": [
+    {
+     "title": "APP LakeView Family Care (Suite A) NP or PA-C  - Paw Paw, MI",
+     "externalPath": "/job/Paw-Paw-451-Health-Pkwy---Out-Patient-Center/APP-LakeView-Family-Care--Suite-A--NP-or-PA-C----Paw-Paw--MI_JOB49405-1",
+     "locationsText": "Paw Paw-451 Health Pkwy - Out-Patient Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "JOB49405"
+     ]
+    },
+    {
+     "title": "APP QuickCare - Otsego, Michigan",
+     "externalPath": "/job/Kalamazoo-6220-West-Main-St/APP-QuickCare---Otsego--Michigan_JOB50622",
+     "locationsText": "Kalamazoo-6220 West Main St.",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "JOB50622"
+     ]
+    },
+    {
+     "title": "APP QuickCare - Otsego, Michigan",
+     "externalPath": "/job/Kalamazoo-6220-West-Main-St/APP-QuickCare---Otsego--Michigan_JOB50619",
+     "locationsText": "Kalamazoo-6220 West Main St.",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "JOB50619"
+     ]
+    },
+    {
+     "title": "APP QuickCare Plus On-Call - Battle Creek",
+     "externalPath": "/job/Battle-Creek-2151-W-Columbia-Ave/APP-QuickCare-Plus-On-Call---Battle-Creek_JOB49659-1",
+     "locationsText": "Battle Creek-2151 W. Columbia Ave",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "JOB49659"
+     ]
+    },
+    {
+     "title": "APP Primary Care Same Day Clinic PA-C or NP",
+     "externalPath": "/job/South-Haven-930-Blue-Star-Hwy/APP-Primary-Care-Same-Day-Clinic-PA-C-or-NP_JOB51159",
+     "locationsText": "3 Locations",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "JOB51159"
+     ]
+    },
+    {
+     "title": "APP Primary Care Same Day Clinic PA-C or NP",
+     "externalPath": "/job/South-Haven-930-Blue-Star-Hwy/APP-Primary-Care-Same-Day-Clinic-PA-C-or-NP_JOB51166-1",
+     "locationsText": "South Haven-930 Blue Star Hwy.",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "JOB51166"
+     ]
+    },
+    {
+     "title": "Practice Support Assistant (Clinic Receptionist) - Full time, 40 hrs/wk - Pediatric Surgery - Kalamazoo",
+     "externalPath": "/job/Kalamazoo-601-John-St---Bronson-Methodist-Hospital/Practice-Support-Assistant--Clinic-Receptionist----Full-time--40-hrs-wk---Pediatric-Surgery---Kalamazoo_JOB51494",
+     "locationsText": "Kalamazoo-601 John St. - Bronson Methodist Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "JOB51494"
+     ]
+    },
+    {
+     "title": "EVS Associate – 40 hr/wk – 3rd Shift 11p-7:30a – South Haven",
+     "externalPath": "/job/South-Haven-955-S-Bailey-Ave---Bronson-South-Haven-Hospital/EVS-Associate---40-hr-wk---3rd-Shift-11p-7-30a---South-Haven_JOB51329",
+     "locationsText": "South Haven-955 S. Bailey Ave. - Bronson South Haven Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "JOB51329"
+     ]
+    },
+    {
+     "title": "Referral Coordinator",
+     "externalPath": "/job/Battle-Creek-4625-Beckley-Rd/Referral-Coordinator_JOB51495",
+     "locationsText": "Battle Creek-4625 Beckley Rd.",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "JOB51495"
+     ]
+    },
+    {
+     "title": "Occupational Therapy Assistant, Acute Care, Full-Time, Bronson Methodist Hospital, Kalamazoo **Sign-On Bonus up to $10,000",
+     "externalPath": "/job/Kalamazoo-601-John-St---Bronson-Methodist-Hospital/Occupational-Therapy-Assistant--Acute-Care--Full-Time--Bronson-Methodist-Hospital--Kalamazoo---Sign-On-Bonus-up-to--10-000_JOB51565",
+     "locationsText": "Kalamazoo-601 John St. - Bronson Methodist Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "JOB51565"
+     ]
+    },
+    {
+     "title": "Pt Safety/Quality Coordinator",
+     "externalPath": "/job/Portage-2825-Airview-Blvd/Pt-Safety-Quality-Coordinator_JOB50218",
+     "locationsText": "Portage-2825 Airview Blvd.",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "JOB50218"
+     ]
+    },
+    {
+     "title": "Physical Therapist Assistant, Part-Time, Subacute Rehabilitation, Bronson Commons, Mattawan **Up to $2,500 Sign-On Bonus",
+     "externalPath": "/job/Mattawan--Bronson-Commons---233332-Red-Arrow-Hwy/Physical-Therapist-Assistant--Part-Time--Subacute-Rehabilitation--Bronson-Commons--Mattawan---Up-to--2-500-Sign-On-Bonus_JOB51290",
+     "locationsText": "Mattawan- Bronson Commons - 233332 Red Arrow Hwy.",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "JOB51290"
+     ]
+    },
+    {
+     "title": "BMH Registered Nurse Ortho Surgical Unit Full-Time Nights 12N (7p-7a)",
+     "externalPath": "/job/Kalamazoo-601-John-St---Bronson-Methodist-Hospital/BMH-Registered-Nurse-Ortho-Surgical-Unit-Full-Time-Nights-12N--7p-7a-_JOB49295-1",
+     "locationsText": "Kalamazoo-601 John St. - Bronson Methodist Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "JOB49295"
+     ]
+    },
+    {
+     "title": "Patient Representative - Full Time 80 Hours Per Pay Period: (Bronson Cancer Center) - Kalamazoo",
+     "externalPath": "/job/Kalamazoo---827-John-Street--Bronson-Cancer-Center/Patient-Representative---Full-Time-80-Hours-Per-Pay-Period---Bronson-Cancer-Center----Kalamazoo_JOB51462",
+     "locationsText": "Kalamazoo- -827 John Street -Bronson Cancer Center",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "JOB51462"
+     ]
+    },
+    {
+     "title": "Full-Time Interventional Radiology Technologist (Multiple Openings) (Bronson Methodist Hospital) *Up to $10K Sign on Bonus Available*",
+     "externalPath": "/job/Kalamazoo-601-John-St---Bronson-Methodist-Hospital/Full-Time-Interventional-Radiology-Technologist--Multiple-Openings---Bronson-Methodist-Hospital---Up-to--10K-Sign-on-Bonus-Available-_JOB51549",
+     "locationsText": "Kalamazoo-601 John St. - Bronson Methodist Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "JOB51549"
+     ]
+    },
+    {
+     "title": "Patient Coordinator: QuickCare Plus Bronson Battle Creek (PRN - On Call))",
+     "externalPath": "/job/Battle-Creek--300-North-Ave---Bronson-Battle-Creek-Hospital/Patient-Coordinator--QuickCare-Plus-Bronson-Battle-Creek--PRN-_JOB49667",
+     "locationsText": "Battle Creek- 300 North Ave - Bronson Battle Creek Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "JOB49667"
+     ]
+    },
+    {
+     "title": "Ultrasound Technologist - Full Time 80 Hours/ Pay Period - BLH",
+     "externalPath": "/job/Paw-Paw-408-Hazen-St---Bronson-Lakeview-Hospital/Ultrasound-Technologist---Full-Time-80-Hours--Pay-Period---BLH_JOB51504",
+     "locationsText": "Paw Paw-408 Hazen St. - Bronson Lakeview Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "JOB51504"
+     ]
+    },
+    {
+     "title": "Respiratory Therapist -  Full Time 72Hrs/Pp, Day Shift - Bronson Battle Creek *Up to $10K Sign on Bonus Available*",
+     "externalPath": "/job/Battle-Creek--300-North-Ave---Bronson-Battle-Creek-Hospital/Respiratory-Therapist----Multiple-Openings--Full-Time-72Hrs-Pp--Day-Shift---Bronson-Battle-Creek--Up-to--10K-Sign-on-Bonus-Available-_JOB49073",
+     "locationsText": "Battle Creek- 300 North Ave - Bronson Battle Creek Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "JOB49073"
+     ]
+    },
+    {
+     "title": "Inpatient Gastroenterologist",
+     "externalPath": "/job/Kalamazoo-601-John-St---Bronson-Methodist-Hospital/Inpatient-Gastroenterologist_JOB51512-1",
+     "locationsText": "Kalamazoo-601 John St. - Bronson Methodist Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "JOB51512"
+     ]
+    },
+    {
+     "title": "Radiation Oncologist",
+     "externalPath": "/job/Battle-Creek--300-North-Ave---Bronson-Battle-Creek-Hospital/Radiation-Oncologist_JOB51145-1",
+     "locationsText": "Battle Creek- 300 North Ave - Bronson Battle Creek Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "JOB51145"
+     ]
+    }
+   ]
+  },
+  "Cleveland Clinic": {
+   "tenant": [
+    "ccf",
+    "1",
+    "ClevelandClinicCareers"
+   ],
+   "fetched": "2026-10-29 08:55:44",
+   "total": 2375,
+   "jobPostings": [
+    {
+     "title": "Medical Assistant - Women's Health",
+     "externalPath": "/job/Euclid-Hospital/Medical-Assistant---Women-s-Health_358927",
+     "locationsText": "Euclid Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "358927"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Outpatient Clinical Care Assistant - Orthopedics",
+     "externalPath": "/job/Solon-Family-Health-Center/Outpatient-Clinical-Care-Assistant---Orthopedics_358741",
+     "locationsText": "Solon Family Health Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "358741"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Patient Care Nurse Assistant - Clinical Decision Unit",
+     "externalPath": "/job/Mercy-Hospital/Patient-Care-Nurse-Assistant---Clinical-Decision-Unit_353729-1",
+     "locationsText": "Mercy Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "353729"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "LPN Hospice",
+     "externalPath": "/job/Akron-General-Medical-Center/LPN-Hospice_358080",
+     "locationsText": "Akron General Medical Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "358080"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Hospice Aide - STNA required",
+     "externalPath": "/job/Business-Operations-Center/Hospice-Aide---STNA-required_347317-1",
+     "locationsText": "Business Operations Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "347317"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Hospice Aide, PRN - STNA required",
+     "externalPath": "/job/Business-Operations-Center/Hospice-Aide--PRN---STNA-required_331640",
+     "locationsText": "Business Operations Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "331640"
+     ],
+     "timeType": "Part time"
+    },
+    {
+     "title": "RN Hospice PRN",
+     "externalPath": "/job/Business-Operations-Center/RN-Hospice-PRN_328347",
+     "locationsText": "Business Operations Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "328347"
+     ],
+     "timeType": "Part time"
+    },
+    {
+     "title": "RN Hospice PRN",
+     "externalPath": "/job/Business-Operations-Center/RN-Hospice-PRN_332738",
+     "locationsText": "Business Operations Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "332738"
+     ],
+     "timeType": "Part time"
+    },
+    {
+     "title": "RN Home Case Manager - Summit and Cuyahoga Counties",
+     "externalPath": "/job/Business-Operations-Center/RN-Home-Health-Case-Manager---East-of-I-77_309035",
+     "locationsText": "Business Operations Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "309035"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Float Pool PCNA, PRN",
+     "externalPath": "/job/Medina-Hospital/Float-Pool-PCNA--PRN_353963",
+     "locationsText": "Medina Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "353963"
+     ],
+     "timeType": "Part time"
+    },
+    {
+     "title": "Home Health Admissions Nurse - Cuyahoga and Summit County",
+     "externalPath": "/job/Business-Operations-Center/Nursing-Admission-Specialist---Home-Care-East-2-Team_301543",
+     "locationsText": "Business Operations Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "301543"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Patient Service Specialist",
+     "externalPath": "/job/Cleveland-Clinic-Main-Campus/Patient-Service-Specialist_360218",
+     "locationsText": "Cleveland Clinic Main Campus",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "360218"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "LPN Clinic - Primary Care",
+     "externalPath": "/job/Palm-City-Medical-Center/LPN-Clinic---Primary-Care_340128",
+     "locationsText": "Palm City Medical Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "340128"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "LPN - Primary Care",
+     "externalPath": "/job/Palm-City-Medical-Center/LPN---Primary-Care_354767",
+     "locationsText": "Palm City Medical Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "354767"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Area Cleaner II",
+     "externalPath": "/job/Fairview-Hospital/Area-Cleaner-II_357142",
+     "locationsText": "Fairview Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "357142"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "area cleaner II",
+     "externalPath": "/job/Fairview-Hospital/area-cleaner-II_357131",
+     "locationsText": "Fairview Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "357131"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "CT MRI Scan Technologist Assistant",
+     "externalPath": "/job/Middleburg-Heights-Family-Health-Center/CT-MRI-Scan-Technologist-Assistant_355712",
+     "locationsText": "Middleburg Heights Family Health Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "355712"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Clinical Technician -  Surgical Short Stay",
+     "externalPath": "/job/Cleveland-Clinic-Main-Campus/Clinical-Technician----Surgical-Short-Stay_356276",
+     "locationsText": "Cleveland Clinic Main Campus",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "356276"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "New Grad RN Resident - Trauma Acute Care",
+     "externalPath": "/job/Cleveland-Clinic-Main-Campus/New-Grad-RN-Resident---Trauma-Acute-Care_359975",
+     "locationsText": "Cleveland Clinic Main Campus",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "359975"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Hospice RN - Inpatient Care Center, Nights",
+     "externalPath": "/job/Justin-Rogers-Hosp-Care-Center/Hospice-RN---Inpatient-Care-Center--Nights_360131",
+     "locationsText": "Justin Rogers Hosp Care Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "360131"
+     ],
+     "timeType": "Part time"
+    }
+   ]
+  },
+  "Endeavor Health": {
+   "tenant": [
+    "nshs",
+    "1",
+    "ns-eeh"
+   ],
+   "fetched": "2026-10-29 08:55:40",
+   "total": 1242,
+   "jobPostings": [
+    {
+     "title": "Clinical Nurse Manager - ICU + IMCU",
+     "externalPath": "/job/SWH-Swedish-Hospital-Chicago/Clinical-Nurse-Manager---ICU---IMCU_R49151",
+     "locationsText": "SWH Swedish Hospital Chicago",
+     "bulletFields": [
+      "R49151"
+     ]
+    },
+    {
+     "title": "RN - ICU - Nights",
+     "externalPath": "/job/SWH-Swedish-Hospital-Chicago/RN---ICU---Nights_R46607",
+     "locationsText": "SWH Swedish Hospital Chicago",
+     "bulletFields": [
+      "R46607"
+     ]
+    },
+    {
+     "title": "Radiologic Technologist I",
+     "externalPath": "/job/EDH-Main-Hospital-Naperville/Radiologic-Technologist-II_R894",
+     "locationsText": "3 Locations",
+     "bulletFields": [
+      "R894"
+     ]
+    },
+    {
+     "title": "Registered Nurse-Sexual Assault Nurse -Per-Diem",
+     "externalPath": "/job/EVH-Evanston-Hospital/Registered-Nurse-SANE--Per-Diem_R41824-1",
+     "locationsText": "EVH Evanston Hospital",
+     "bulletFields": [
+      "R41824"
+     ]
+    },
+    {
+     "title": "Prospect Development & Research Coordinator",
+     "externalPath": "/job/NSO-1001-University-Place-Evanston/Prospect-Development---Research-Coordinator_R47271",
+     "locationsText": "2 Locations",
+     "bulletFields": [
+      "R47271"
+     ]
+    },
+    {
+     "title": "Cardiac Sonographer",
+     "externalPath": "/job/HPH-Highland-Park-Hospital/Cardiac-Sonographer_R3015",
+     "locationsText": "3 Locations",
+     "bulletFields": [
+      "R3015"
+     ]
+    },
+    {
+     "title": "Mammography Technologist I",
+     "externalPath": "/job/EVH-Evanston-Hospital/Mammography-Technologist_R4838",
+     "locationsText": "7 Locations",
+     "bulletFields": [
+      "R4838"
+     ]
+    },
+    {
+     "title": "RN - Resource Team/Float Pool - Per Diem - Nights",
+     "externalPath": "/job/NCH-800-W-Central-Rd-Arlington-Heights/RN---Resource-Team-Float-Pool---Per-Diem---Nights_R34777",
+     "locationsText": "NCH 800 W Central Rd Arlington Heights",
+     "bulletFields": [
+      "R34777"
+     ]
+    },
+    {
+     "title": "CT Technologist I - Multiple Locations",
+     "externalPath": "/job/EDH-Main-Hospital-Naperville/CT-Technologist_R2995",
+     "locationsText": "7 Locations",
+     "bulletFields": [
+      "R2995"
+     ]
+    },
+    {
+     "title": "Radiology Technologist- Cardiac Cath Lab",
+     "externalPath": "/job/GBH-Glenbrook-Hospital-Glenview/Interventional-Procedures-Technologist_R18922",
+     "locationsText": "6 Locations",
+     "bulletFields": [
+      "R18922"
+     ]
+    },
+    {
+     "title": "Radiologic Technologist I - Chicago and North Suburbs",
+     "externalPath": "/job/EVH-Evanston-Hospital/Radiologic-Technologist-I---Chicago-and-North-Suburbs_R33447",
+     "locationsText": "4 Locations",
+     "bulletFields": [
+      "R33447"
+     ]
+    },
+    {
+     "title": "Physical Therapist II (Outpatient- Northwest Suburbs)",
+     "externalPath": "/job/NCO-21481-N-Rand-Rd-Kildeer/Physical-Therapist--Outpatient--Northwest-Suburbs_R23766",
+     "locationsText": "5 Locations",
+     "bulletFields": [
+      "R23766"
+     ]
+    },
+    {
+     "title": "Respiratory Therapist RRT - Multiple Campuses",
+     "externalPath": "/job/EDH-Main-Hospital-Naperville/Respiratory-Therapist-RRT_R890",
+     "locationsText": "7 Locations",
+     "bulletFields": [
+      "R890"
+     ]
+    },
+    {
+     "title": "Respiratory Therapist - Evenings/NOC",
+     "externalPath": "/job/SWH-Main-Building-Chicago/Respiratory-Therapist---Evenings-NOC_R35329",
+     "locationsText": "SWH Main Building Chicago",
+     "bulletFields": [
+      "R35329"
+     ]
+    },
+    {
+     "title": "Respiratory Therapist - Nights",
+     "externalPath": "/job/GBH-Glenbrook-Hospital-Glenview/Respiratory-Therapist---Nights_R36107-1",
+     "locationsText": "GBH Glenbrook Hospital Glenview",
+     "bulletFields": [
+      "R36107"
+     ]
+    },
+    {
+     "title": "Physical Therapist II (Outpatient - North Suburbs)",
+     "externalPath": "/job/SKH-Skokie-Hospital/Physical-Therapist--Outpatient--Multiple-Locations_R23768-1",
+     "locationsText": "5 Locations",
+     "bulletFields": [
+      "R23768"
+     ]
+    },
+    {
+     "title": "Physical Therapist II (Outpatient - Western Suburbs)",
+     "externalPath": "/job/EMH-Main-Hospital-Elmhurst/Physical-Therapist--Outpatient-Western-Suburbs_R23764",
+     "locationsText": "3 Locations",
+     "bulletFields": [
+      "R23764"
+     ]
+    },
+    {
+     "title": "Physical Therapist II - PRN (Inpatient and Outpatient - Multiple Locations)",
+     "externalPath": "/job/EMH-Main-Hospital-Elmhurst/Physical-Therapist--Inpatient-and-Outpatient--Multiple-Locations_R23763",
+     "locationsText": "7 Locations",
+     "bulletFields": [
+      "R23763"
+     ]
+    },
+    {
+     "title": "Billing Compliance, Senior Auditor",
+     "externalPath": "/job/NSO-1301-Central-St-Corporate-Office-Evanston/Billing-Compliance--Senior-Auditor_R41419",
+     "locationsText": "NSO 1301 Central St Corporate Office Evanston",
+     "bulletFields": [
+      "R41419"
+     ]
+    },
+    {
+     "title": "Surgical Technologist- Multiple Campuses",
+     "externalPath": "/job/GBH-Glenbrook-Hospital-Glenview/Certified-Surgical-Technologist_R2894",
+     "locationsText": "5 Locations",
+     "bulletFields": [
+      "R2894"
+     ]
+    }
+   ]
+  },
+  "Great River Health": {
+   "tenant": [
+    "greatriverhealth",
+    "5",
+    "External"
+   ],
+   "fetched": "2026-10-29 08:34:14",
+   "total": 223,
+   "jobPostings": [
+    {
+     "title": "CNA/Universal Worker | 21 Hours Per Week | Klein Center",
+     "externalPath": "/job/West-Burlington-Iowa/CNA-Universal-Worker---28-Hours-Per-Week---Klein-Center_R-08922",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R-08922"
+     ]
+    },
+    {
+     "title": "Certified Nurse Assistant (CNA) | 32 Hours per Week | Klein Center",
+     "externalPath": "/job/West-Burlington-Iowa/Certified-Nurse-Assistant--CNA----32-Hours-per-Week---Klein-Center_R-09020",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R-09020"
+     ]
+    },
+    {
+     "title": "Registered Nurse | PRN | Cardiac Rehab WB/HCHC/FM",
+     "externalPath": "/job/Mt-Pleasant-Iowa/Registered-Nurse---PRN---Cardiac-Rehab-WB-HCHC-FM_R-09383",
+     "locationsText": "Mt. Pleasant, Iowa",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R-09383"
+     ]
+    },
+    {
+     "title": "Certified Nurse Assistant (CNA) | 24 Hours per Week | Klein Center",
+     "externalPath": "/job/West-Burlington-Iowa/Certified-Nurse-Assistant--CNA----24-Hours-per-Week---Klein-Center_R-09382",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R-09382"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) | 35 hours per week | Outpatient Surgery",
+     "externalPath": "/job/West-Burlington-Iowa/Registered-Nurse--RN----35-hours-per-week---Outpatient-Surgery_R-09379",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R-09379"
+     ]
+    },
+    {
+     "title": "Delivery Driver | PRN | Heritage Partners Pharmacy",
+     "externalPath": "/job/West-Burlington-Iowa/Delivery-Driver---PRN---Heritage-Partners-Pharmacy_R-09381",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R-09381"
+     ]
+    },
+    {
+     "title": "Pharmacy Technician-Retail / LTC | PRN | Heritage Partner Pharmacy",
+     "externalPath": "/job/West-Burlington-Iowa/Pharmacy-Technician-Retail---LTC---PRN---Heritage-Partner-Pharmacy_R-09380",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R-09380"
+     ]
+    },
+    {
+     "title": "Certified Nurse Assistant (CNA) | 36 Hours per Week | Klein Center",
+     "externalPath": "/job/West-Burlington-Iowa/Certified-Nurse-Assistant--CNA----36-Hours-per-Week---Klein-Center_R-09377",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R-09377"
+     ]
+    },
+    {
+     "title": "Certified Nurse Assistant (CNA) | 36 Hours per Week | Klein Center",
+     "externalPath": "/job/West-Burlington-Iowa/Certified-Nurse-Assistant--CNA----36-Hours-per-Week---Klein-Center_R-09374",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R-09374"
+     ]
+    },
+    {
+     "title": "Certified Nurse Assistant (CNA) | 28 Hours per Week | Klein Center",
+     "externalPath": "/job/West-Burlington-Iowa/Certified-Nurse-Assistant--CNA----28-Hours-per-Week---Klein-Center_R-09376",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R-09376"
+     ]
+    },
+    {
+     "title": "Registered Nurse | 36 hours per week | Telemetry",
+     "externalPath": "/job/West-Burlington-Iowa/Registered-Nurse---36-hours-per-week---Telemetry_R-09318",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R-09318"
+     ]
+    },
+    {
+     "title": "Sterile Processing Tech | 40 hours per week | Sterile Processing",
+     "externalPath": "/job/West-Burlington-Iowa/Sterile-Processing-Tech---40-hours-per-week---Sterile-Processing_R-09365",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "R-09365"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) | 18 hours per week | Emergency Department",
+     "externalPath": "/job/West-Burlington-Iowa/Registered-Nurse--RN----18-hours-per-week---Emergency-Department_R-09352",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "R-09352"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) | 32 Hours Per Week | Klein Center / SNF",
+     "externalPath": "/job/West-Burlington-Iowa/Registered-Nurse--RN----32-Hours-Per-Week---Klein-Center---SNF_R-09369",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "R-09369"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) | 35 hours per week | Emergency Department",
+     "externalPath": "/job/West-Burlington-Iowa/Registered-Nurse--RN----35-hours-per-week---Emergency-Department_R-09349",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "R-09349"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) | 36 hours per week | Emergency Department",
+     "externalPath": "/job/West-Burlington-Iowa/Registered-Nurse--RN----36-hours-per-week---Emergency-Department_R-09350",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "R-09350"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) | 36 hours per week | Emergency Department",
+     "externalPath": "/job/West-Burlington-Iowa/Registered-Nurse--RN----36-hours-per-week---Emergency-Department_R-09351",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "R-09351"
+     ]
+    },
+    {
+     "title": "Administrative Assistant | 40 Hours per Week | Clinical Education",
+     "externalPath": "/job/West-Burlington-Iowa/Administrative-Assistant---40-Hours-per-Week---Clinical-Education_R-09366",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "R-09366"
+     ]
+    },
+    {
+     "title": "Patient Care Technician (CNA) | 12 hours per week | Telemetry Unit",
+     "externalPath": "/job/West-Burlington-Iowa/Patient-Care-Technician--CNA----12-hours-per-week---Telemetry-Unit_R-09368",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "R-09368"
+     ]
+    },
+    {
+     "title": "Patient Care Technician | 24 hours per week | Medical Surgical Unit",
+     "externalPath": "/job/West-Burlington-Iowa/Patient-Care-Technician---24-hours-per-week---Medical-Surgical-Unit_R-09367",
+     "locationsText": "West Burlington, Iowa",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "R-09367"
+     ]
+    }
+   ]
+  },
+  "Logan Health": {
+   "tenant": [
+    "loganhealth",
+    "1",
+    "Logan_Careers"
+   ],
+   "fetched": "2026-10-29 08:34:09",
+   "total": 419,
+   "jobPostings": [
+    {
+     "title": "Polysomnographic Technician | Sleep Medicine",
+     "externalPath": "/job/Kalispell-Montana/Polysomnographic-Technician_Req11262",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "Night Shift - 12 Hours (United States of America)",
+      "Req11262"
+     ]
+    },
+    {
+     "title": "Retail Pharmacy Technician | Part-time (24 hours per week)",
+     "externalPath": "/job/Kalispell-Montana/Retail-Pharmacy-Technician---Part-time--24-hours-per-week-_Req18482",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "Variable (United States of America)",
+      "Req18482"
+     ]
+    },
+    {
+     "title": "RN Supervisor | Primary Care/Walk-in Clinic 1287 Burns Way",
+     "externalPath": "/job/Kalispell-Montana/RN-Supervisor---Primary-Care-Walk-in-Clinic-1287-Burns-Way_Req19136",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "Day Shift - 8 Hours (United States of America)",
+      "Req19136"
+     ]
+    },
+    {
+     "title": "RN Outpatient Specialty | Breast Center/Plastic Surgery Clinic",
+     "externalPath": "/job/Kalispell-Montana/RN-Outpatient-Specialty---Breast-Center-Plastic-Surgery-Clinic_Req19207",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "Day Shift - 8 Hours (United States of America)",
+      "Req19207"
+     ]
+    },
+    {
+     "title": "Staff Development Educator | Behavioral Health",
+     "externalPath": "/job/Kalispell-Montana/Staff-Development-Educator---Behavioral-Health_Req19248",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 9 Days Ago",
+     "bulletFields": [
+      "Day Shift - Variable Hours (United States of America)",
+      "Req19248"
+     ]
+    },
+    {
+     "title": "Nursing Excellence Coordinator (RN)",
+     "externalPath": "/job/Kalispell-Montana/Nursing-Excellence-Coordinator--RN-_Req19251",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "Day Shift - Variable Hours (United States of America)",
+      "Req19251"
+     ]
+    },
+    {
+     "title": "Patient Care Scheduler | Centralized Scheduling",
+     "externalPath": "/job/Kalispell-Montana/Patient-Care-Scheduler---Centralized-Scheduling_Req16845-1",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "Day Shift - 8 Hours (United States of America)",
+      "Req16845"
+     ]
+    },
+    {
+     "title": "Certified Surgical Technologist (CST)",
+     "externalPath": "/job/Kalispell-Montana/Certified-Surgical-Technologist--CST-_Req18532",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "Day Shift - 12 Hours (United States of America)",
+      "Req18532"
+     ]
+    },
+    {
+     "title": "Accounts Payable Supervisor | Finance",
+     "externalPath": "/job/Kalispell-Montana/Supervisor-Accounts-Payable---Finance_Req18960-1",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "Day Shift - 8 Hours (United States of America)",
+      "Req18960"
+     ]
+    },
+    {
+     "title": "Seasonal Registered Respiratory Therapist (RRT) | Whitefish",
+     "externalPath": "/job/Whitefish-Montana/Seasonal-Registered-Respiratory-Therapist--RRT----Whitefish_Req18014",
+     "locationsText": "Whitefish, Montana",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "Variable (United States of America)",
+      "Req18014"
+     ]
+    },
+    {
+     "title": "Nursing Workforce Planning Specialist",
+     "externalPath": "/job/Kalispell-Montana/Nursing-Workforce-Analyst_Req18821-1",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 13 Days Ago",
+     "bulletFields": [
+      "Day Shift - 8 Hours (United States of America)",
+      "Req18821"
+     ]
+    },
+    {
+     "title": "RN | Hematology/Oncology Clinic",
+     "externalPath": "/job/Kalispell-Montana/RN-Outpatient-Specialty---Hematology-Oncology-Clinic---PRN-Status_Req17405",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 14 Days Ago",
+     "bulletFields": [
+      "Day Shift - 10 Hours (United States of America)",
+      "Req17405"
+     ]
+    },
+    {
+     "title": "Customer Service Representative",
+     "externalPath": "/job/Kalispell-Montana/Customer-Service-Representative_Req17565",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 15 Days Ago",
+     "bulletFields": [
+      "Day Shift - 8 Hours (United States of America)",
+      "Req17565"
+     ]
+    },
+    {
+     "title": "RN Supervisor | Nursing Operations",
+     "externalPath": "/job/Kalispell-Montana/RN-Supervisor---Nursing-Operations_Req18564",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 15 Days Ago",
+     "bulletFields": [
+      "Night Shift - 12 Hours (United States of America)",
+      "Req18564"
+     ]
+    },
+    {
+     "title": "Hospital Pharmacy Operations Supervisor",
+     "externalPath": "/job/Kalispell-Montana/Hospital-Pharmacy-Operations-Supervisor_Req18893",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 16 Days Ago",
+     "bulletFields": [
+      "Day Shift - 8 Hours (United States of America)",
+      "Req18893"
+     ]
+    },
+    {
+     "title": "Certified Occupational Therapy Assistant (COTA) | Brendan House Skilled Nursing | PRN Status",
+     "externalPath": "/job/Kalispell-Montana/Certified-Occupational-Therapy-Assistant_Req13985",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 16 Days Ago",
+     "bulletFields": [
+      "Day Shift - Variable Hours (United States of America)",
+      "Req13985"
+     ]
+    },
+    {
+     "title": "RN Supervisor | Outpatient Oncology Clinics",
+     "externalPath": "/job/Kalispell-Montana/RN-Outpatient-Supervisor---Cancer-Care_Req16592-1",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 17 Days Ago",
+     "bulletFields": [
+      "Day Shift - 8 Hours (United States of America)",
+      "Req16592"
+     ]
+    },
+    {
+     "title": "Seasonal Registered Respiratory Therapist (RRT)",
+     "externalPath": "/job/Kalispell-Montana/Seasonal-Registered-Respiratory-Therapist_Req17730",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 17 Days Ago",
+     "bulletFields": [
+      "Night Shift - 12 Hours (United States of America)",
+      "Req17730"
+     ]
+    },
+    {
+     "title": "Licensed Practical Nurse (LPN) | Conrad Long Term Care",
+     "externalPath": "/job/Conrad-Montana/Licensed-Practical-Nurse--LPN----Conrad-Long-Term-Care_Req18117",
+     "locationsText": "Conrad, Montana",
+     "postedOn": "Posted 20 Days Ago",
+     "bulletFields": [
+      "Night Shift - 12 Hours (United States of America)",
+      "Req18117"
+     ]
+    },
+    {
+     "title": "RN Supervisor | Hospice",
+     "externalPath": "/job/Kalispell-Montana/RN-Supervisor---Hospice_Req18936",
+     "locationsText": "Kalispell, Montana",
+     "postedOn": "Posted 20 Days Ago",
+     "bulletFields": [
+      "Day Shift - 8 Hours (United States of America)",
+      "Req18936"
+     ]
+    }
+   ]
+  },
+  "Memorial Hermann": {
+   "tenant": [
+    "memorialhermann",
+    "5",
+    "External"
+   ],
+   "fetched": "2026-10-29 08:34:24",
+   "total": 666,
+   "jobPostings": [
+    {
+     "title": "Heart Failure ICU Advanced Practice Provider",
+     "externalPath": "/job/TMCChildrens-Hospital/Heart-Failure-ICU-Advanced-Practice-Provider--FT-Nights_100187092",
+     "locationsText": "TMC/Children's Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100187092"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "RN-Critical Care IMCU-FT Nights (Memorial City)",
+     "externalPath": "/job/Memorial-City-Hospital/RN-Critical-Care-IMCU-FT-Nights--Memorial-City-_100187756",
+     "locationsText": "Memorial City Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100187756"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "RN ED- Cypress - Mid-Shift (12-12)",
+     "externalPath": "/job/Cypress-Hospital/RN-ED--Cypress---Mid-Shift--12-12-_100185243",
+     "locationsText": "Cypress Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100185243"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Memorial City - Neuro ICU Nights",
+     "externalPath": "/job/Memorial-City-Hospital/Memorial-City---Neuro-ICU-Nights_100188310",
+     "locationsText": "Memorial City Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100188310"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Registered Nurse, Nights - Observation",
+     "externalPath": "/job/Greater-Heights-Hospital/Registered-Nurse--Days----Observation_100185465",
+     "locationsText": "Greater Heights Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100185465"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "RN, Nights - ICU - Humble",
+     "externalPath": "/job/Northeast-Hospital/RN--Nights---ICU---Humble_100186409",
+     "locationsText": "Northeast Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100186409"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "RN, PRN (Nights) - IMU - Humble",
+     "externalPath": "/job/Northeast-Hospital/Supplemental-RN---IMU---Night---Humble_100183515",
+     "locationsText": "Northeast Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100183515"
+     ],
+     "timeType": "Part time"
+    },
+    {
+     "title": "RN, Cath Lab (Katy)",
+     "externalPath": "/job/Katy-Hospital/RN--Cath-Lab--Katy-_100187838",
+     "locationsText": "Katy Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100187838"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Assistant Nurse Manager, Emergency Department (FT/Nights) - Sugar Land Hospital",
+     "externalPath": "/job/Sugar-Land-Hospital/Assistant-Nurse-Manager--Emergency-Department--FT-Nights----Sugar-Land-Hospital_100188269-1",
+     "locationsText": "Sugar Land Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100188269"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Assistant Nurse Manager, Emergency Department (FT/Days) - Sugar Land Hospital",
+     "externalPath": "/job/Sugar-Land-Hospital/Assistant-Nurse-Manager--Emergency-Department--FT-Days----Sugar-Land-Hospital_100188267",
+     "locationsText": "Sugar Land Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100188267"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Clinical Documentation & Integrity Specialist (Remote)",
+     "externalPath": "/job/Medical-Plaza-North/Clinical-Documentation---Integrity-Specialist--Remote-_100188169",
+     "locationsText": "Medical Plaza North",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100188169"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Patient Relations Manager - TMC/Children's (Onsite)",
+     "externalPath": "/job/TMCChildrens-Hospital/Patient-Relations-Manager---TMC-Children-s_100186450-1",
+     "locationsText": "TMC/Children's Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100186450"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "SCHEDULER",
+     "externalPath": "/job/Greater-Heights-Hospital/SCHEDULER_100187185",
+     "locationsText": "Greater Heights Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100187185"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "PRN RN ED- Katy-  Day",
+     "externalPath": "/job/Katy-Hospital/PRN-RN-ED--Katy---Day_100188552-1",
+     "locationsText": "Katy Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100188552"
+     ],
+     "timeType": "Part time"
+    },
+    {
+     "title": "RN - ICU, Days (Cypress)",
+     "externalPath": "/job/Cypress-Hospital/RN---ICU--Days--Cypress-_100188467",
+     "locationsText": "Cypress Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "100188467"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "RN - Phone Assessment Nurse (Anesthesia Clinic)",
+     "externalPath": "/job/TMCChildrens-Hospital/RN---Phone-Assessment-Nurse--Anesthesia-Clinic-_100188544",
+     "locationsText": "TMC/Children's Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "100188544"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "RN - CV Operating Room",
+     "externalPath": "/job/TMCChildrens-Hospital/RN---CV-Operating-Room_100188342-1",
+     "locationsText": "TMC/Children's Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "100188342"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "OB Monitoring RN",
+     "externalPath": "/job/Memorial-Hermann-Tower/OB-Monitoring-RN_100188371-1",
+     "locationsText": "Memorial Hermann Tower",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "100188371"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "Patient Relations Coord - TMC/Children's",
+     "externalPath": "/job/TMCChildrens-Hospital/Patient-Relations-Coord---TMC-Children-s_100188481",
+     "locationsText": "TMC/Children's Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "100188481"
+     ],
+     "timeType": "Full time"
+    },
+    {
+     "title": "RN, Med Surg Neuro - Day - Greater Heights",
+     "externalPath": "/job/Greater-Heights-Hospital/RN--Med-Surg-Neuro---Day---Greater-Heights_100186933",
+     "locationsText": "Greater Heights Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "100186933"
+     ],
+     "timeType": "Full time"
+    }
+   ]
+  },
+  "NewYork-Presbyterian": {
+   "tenant": [
+    "nyp",
+    "1",
+    "nypcareers"
+   ],
+   "fetched": "2026-10-29 08:55:55",
+   "total": 354,
+   "jobPostings": [
+    {
+     "title": "Patient Care Technician-Medical Surgical Oncology -NIghts",
+     "externalPath": "/job/NYPWeill-Cornell-Medical-Center/Patient-Care-Technician-Medical-Surgical-Oncology--NIghts_00885428-1",
+     "locationsText": "NYP/Weill Cornell Medical Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00885428"
+     ]
+    },
+    {
+     "title": "Per Diem Ultrasound Technologist - Morgan Stanley Children's Hospital",
+     "externalPath": "/job/NYPMorgan-Stanley-Childrens-Hospital/Per-Diem-Ultrasound-Technologist---Morgan-Stanley-Children-s-Hospital_00888078",
+     "locationsText": "NYP/Morgan Stanley Children's Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00888078"
+     ]
+    },
+    {
+     "title": "Per Diem X-Ray Technologist - Weekdays - Morgan Stanley Children's Hospital",
+     "externalPath": "/job/NYPMorgan-Stanley-Childrens-Hospital/Per-Diem-X-Ray-Technologist---Weekdays---Morgan-Stanley-Children-s-Hospital_00888076",
+     "locationsText": "NYP/Morgan Stanley Children's Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00888076"
+     ]
+    },
+    {
+     "title": "Lead Clinical Training and Support- Physician Services Organization- New York",
+     "externalPath": "/job/NYPWeill-Cornell-Medical-Center/Lead-Clinical-Training-and-Support--Physician-Services-Organization--New-York_00887473",
+     "locationsText": "NYP/Weill Cornell Medical Center",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00887473"
+     ]
+    },
+    {
+     "title": "Part time Inpatient Psychologist - Psychiatry - Allen Hospital",
+     "externalPath": "/job/NYPAllen-Hospital/Part-time-Inpatient-Psychologist---Psychiatry---Allen-Hospital_00890066-1",
+     "locationsText": "NYP/Allen Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00890066"
+     ]
+    },
+    {
+     "title": "Staff Nurse - Ambulatory/Outpatient - Multispecialty - Days - Westchester Medical Group - Scarsdale, NY",
+     "externalPath": "/job/NYPWestchester-Medical-Group/Staff-Nurse---Ambulatory-Outpatient---Multispecialty---Days---Westchester-Medical-Group---Scarsdale--NY_00884199",
+     "locationsText": "NYP/Westchester Medical Group",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00884199"
+     ]
+    },
+    {
+     "title": "Plumber - Various Shifts - Weekends/Holidays",
+     "externalPath": "/job/NYPWeill-Cornell-Medical-Center/Plumber---Various-Shifts---Weekends-Holidays_00878282",
+     "locationsText": "NYP/Weill Cornell Medical Center",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00878282"
+     ]
+    },
+    {
+     "title": "Senior Analyst - Clinical Integration and Network Development- New York, NY",
+     "externalPath": "/job/NYPWeill-Cornell-Medical-Center/Senior-Analyst---Clinical-Integration-and-Network-Development--New-York--NY_00884988",
+     "locationsText": "NYP/Weill Cornell Medical Center",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00884988"
+     ]
+    },
+    {
+     "title": "Nurse Practitioner - Medical Oncology Services - Queens Medical Group",
+     "externalPath": "/job/NYPQueens-Medical-Group/Nurse-Practitioner---Medical-Oncology-Services---Queens-Medical-Group_00889267-1",
+     "locationsText": "NYP/Queens Medical Group",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00889267"
+     ]
+    },
+    {
+     "title": "Care Manager (RN) – Pediatric - Full Time",
+     "externalPath": "/job/NYPWeill-Cornell-Medical-Center/Care-Manager--RN----Pediatric---Full-Time_00883659",
+     "locationsText": "NYP/Weill Cornell Medical Center",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00883659"
+     ]
+    },
+    {
+     "title": "Dietary Worker - Food Nutrition Services - Part-time Days (includes working every weekend)",
+     "externalPath": "/job/Gracie-Square-Hospital/Dietary-Worker---Food-Nutrition-Services---Part-time-Days--includes-working-every-weekend-_00888551-3",
+     "locationsText": "Gracie Square Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00888551"
+     ]
+    },
+    {
+     "title": "Nurses Aide - Medical Surgical-Nights",
+     "externalPath": "/job/NYPWeill-Cornell-Medical-Center/Nurses-Aide---Medical-Surgical-Nights_00888995",
+     "locationsText": "NYP/Weill Cornell Medical Center",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00888995"
+     ]
+    },
+    {
+     "title": "Clinical Nurse - RN - Pediatric ICU - 11C - Full Time - Nights",
+     "externalPath": "/job/NYPMorgan-Stanley-Childrens-Hospital/Clinical-Nurse---RN---Pediatric-ICU---11C---Full-Time---Nights_00877526",
+     "locationsText": "NYP/Morgan Stanley Children's Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00877526"
+     ]
+    },
+    {
+     "title": "Mental Health Worker - Dual Focus Unit - Part Time Evenings",
+     "externalPath": "/job/Gracie-Square-Hospital/Mental-Health-Worker---Dual-Focus-Unit---Part-Time-Evenings_00889163-3",
+     "locationsText": "Gracie Square Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00889163"
+     ]
+    },
+    {
+     "title": "Emergency Department Technician – Hudson Valley - Part Time - Mid Shift",
+     "externalPath": "/job/NYPHudson-Valley/Emergency-Department-Technician---Hudson-Valley---Part-Time---Mid-Shift_00889852",
+     "locationsText": "NYP/Hudson Valley",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00889852"
+     ]
+    },
+    {
+     "title": "Housekeeping Worker - Full Time - Weekends/Holidays",
+     "externalPath": "/job/NYPLower-Manhattan-Hospital/Housekeeping-Worker---Full-Time---Weekends-Holidays_00886012",
+     "locationsText": "NYP/Lower Manhattan Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00886012"
+     ]
+    },
+    {
+     "title": "Patient Care Technician - Hudson Valley - 3 South (Med/Surg) - Full Time -Nights",
+     "externalPath": "/job/NYPHudson-Valley/Patient-Care-Technician---Hudson-Valley---3-South--Med-Surg----Full-Time--Nights_00889646",
+     "locationsText": "NYP/Hudson Valley",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00889646"
+     ]
+    },
+    {
+     "title": "Environmental Aide/Housekeeping Worker - Environmental Services - Part Time Days",
+     "externalPath": "/job/Gracie-Square-Hospital/Environmental-Aide-Housekeeping-Worker---Environmental-Services---Part-Time-Days_00887050-3",
+     "locationsText": "Gracie Square Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00887050"
+     ]
+    },
+    {
+     "title": "Physician Assistant - OBGYN - Per Diem - Lower Manhattan Campus",
+     "externalPath": "/job/NYPLower-Manhattan-Hospital/Physician-Assistant---OBGYN---Per-Diem---Lower-Manhattan-Campus_00889336",
+     "locationsText": "NYP/Lower Manhattan Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00889336"
+     ]
+    },
+    {
+     "title": "Clinical Nurse I – RN – Medical Surgical Float Pool - FT - Day Shift",
+     "externalPath": "/job/NYPAllen-Hospital/Clinical-Nurse-I---RN---Medical-Surgical-Float-Pool---FT---Day-Shift_00889503",
+     "locationsText": "NYP/Allen Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "00889503"
+     ]
+    }
+   ]
+  },
+  "Sentara Healthcare": {
+   "tenant": [
+    "sentara",
+    "1",
+    "scs"
+   ],
+   "fetched": "2026-10-29 08:55:50",
+   "total": 2000,
+   "jobPostings": [
+    {
+     "title": "LPN, Emergency Department (ED) - Level 1 Trauma Center",
+     "externalPath": "/job/Norfolk-VA/LPN--Emergency-Department--ED----Level-1-Trauma-Center_JR-108693",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "JR-108693"
+     ]
+    },
+    {
+     "title": "Talent Acquisition Specialist",
+     "externalPath": "/job/Norfolk-VA/Talent-Acquisition-Specialist_JR-105316-1",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "JR-105316"
+     ]
+    },
+    {
+     "title": "Registered Nurse - ICU Critical Care",
+     "externalPath": "/job/Sentara-Williamsburg-Regional-Medical-Center/Registered-Nurse---ICU-Critical-Care_JR-104932",
+     "locationsText": "2 Locations",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "JR-104932"
+     ]
+    },
+    {
+     "title": "Manager, Surgical Services- Main Operating Room",
+     "externalPath": "/job/Charlottesville-VA/Manager--Surgical-Services--Main-Operating-Room_JR-108098-1",
+     "locationsText": "Charlottesville, VA",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "JR-108098"
+     ]
+    },
+    {
+     "title": "Registered Nurse - ICU Critical Care",
+     "externalPath": "/job/Sentara-Williamsburg-Regional-Medical-Center/Registered-Nurse---ICU-Critical-Care_JR-108514",
+     "locationsText": "2 Locations",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "JR-108514"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - Cardiac Cath Lab",
+     "externalPath": "/job/Norfolk-VA/Registered-Nurse--RN----Cardiac-Cath-Lab_JR-104639",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "JR-104639"
+     ]
+    },
+    {
+     "title": "Registered Nurses (RN)-  Cardiac Surgical Intensive Care Unit (CSICU) - ALL SHIFTS",
+     "externalPath": "/job/Norfolk-VA/Registered-Nurses--RN----Cardiac-Surgical-Intensive-Care-Unit--CSICU-_JR-108123",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "JR-108123"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - Cardiac Cath Lab",
+     "externalPath": "/job/Norfolk-VA/Cath-Lab-Registered-Nurse_JR-106493-1",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "JR-106493"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) Electrophysiology Lab (EP Lab)",
+     "externalPath": "/job/Norfolk-VA/Electrophysiology-Lab--EP---RN-Registered-Nurse_JR-104083-1",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "JR-104083"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - Electrophysiology (EP) Lab",
+     "externalPath": "/job/Norfolk-VA/Registered-Nurse--RN----Cardiac-Cath-Lab_JR-106516",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "JR-106516"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - Cardiac Surgical Intensive Care Unit (CSICU)",
+     "externalPath": "/job/Norfolk-VA/Registered-Nurse--RN----CSICU_JR-105403",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "JR-105403"
+     ]
+    },
+    {
+     "title": "We LOVE Our Heart: 12/3 Heart Hospital Nursing Job Fair",
+     "externalPath": "/job/Norfolk-VA/We-LOVE-Our-Heart-12-3-Heart-Hospital-Nursing-Job-Fair_JR-108375-1",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "JR-108375"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - Cardiovascular Surgical ICU Unit (CSICU)",
+     "externalPath": "/job/Norfolk-VA/Registered-Nurse--RN----Cardiovascular-Surgical-ICU-Unit--CSICU-_JR-105390",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "JR-105390"
+     ]
+    },
+    {
+     "title": "Nursing Professional Development Specialist (NPDG) - Cardiac Cath & EP Lab",
+     "externalPath": "/job/Norfolk-VA/Cath---EP-Lab-Educator_JR-107981",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "JR-107981"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - CSICU",
+     "externalPath": "/job/Norfolk-VA/Registered-Nurse--RN----CSICU_JR-105386",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 9 Days Ago",
+     "bulletFields": [
+      "JR-105386"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - CSICU",
+     "externalPath": "/job/Norfolk-VA/Registered-Nurse--RN----CSICU_JR-105401",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 9 Days Ago",
+     "bulletFields": [
+      "JR-105401"
+     ]
+    },
+    {
+     "title": "Registered Nurse Vascular IMC - New Grads Welcome! (Days)",
+     "externalPath": "/job/Norfolk-VA/Registered-Nurse-Vascular-IMC---New-Grads-Welcome---Days-_JR-108324",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 9 Days Ago",
+     "bulletFields": [
+      "JR-108324"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - CSICU",
+     "externalPath": "/job/Norfolk-VA/Registered-Nurse--RN----CSICU_JR-105395",
+     "locationsText": "Norfolk, VA",
+     "postedOn": "Posted 9 Days Ago",
+     "bulletFields": [
+      "JR-105395"
+     ]
+    },
+    {
+     "title": "Nurse Unit Coordinator (UC) - Medical Specialties Unit",
+     "externalPath": "/job/Sentara-Norfolk-General-Hospital/Registered-Nurse--RN--Unit-Coordinator--UC----Medical-Specialties-Unit_JR-104974",
+     "locationsText": "Sentara Norfolk General Hospital",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "JR-104974"
+     ]
+    },
+    {
+     "title": "Nurse (RN) Unit Coordinator - Neuro Unit",
+     "externalPath": "/job/Sentara-Norfolk-General-Hospital/RN-Unit-Coordinator---Neuro-Intermediate_JR-95971",
+     "locationsText": "Sentara Norfolk General Hospital",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "JR-95971"
+     ]
+    }
+   ]
+  },
+  "Trinity Health": {
+   "tenant": [
+    "trinityhealth",
+    "1",
+    "Jobs"
+   ],
+   "fetched": "2026-10-29 08:55:35",
+   "total": 2000,
+   "jobPostings": [
+    {
+     "title": "Receptionist - Ankeny",
+     "externalPath": "/job/MMCIA---MercyOne-Ankeny-Clinic-Central-IA/Receptionist---Ankeny_00703686",
+     "locationsText": "MMCIA - MercyOne Ankeny Clinic Central IA",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703686"
+     ]
+    },
+    {
+     "title": "Ambulatory Care Behavioral Health Social Worker",
+     "externalPath": "/job/St-Marys-Hospital---Troy-New-York/Ambulatory-Care-Behavioral-Health-Social-Worker_00703685",
+     "locationsText": "St. Mary's Hospital - Troy, New York",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703685"
+     ]
+    },
+    {
+     "title": "OR Surgical Tech",
+     "externalPath": "/job/Loyola-Medicine---Loyola-University-Medical-Center/OR-Surgical-Tech_00703687",
+     "locationsText": "Loyola Medicine - Loyola University Medical Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703687"
+     ]
+    },
+    {
+     "title": "Registered Nurse RN Nights Family Birth Center",
+     "externalPath": "/job/St-Marys-Health-Care-System-Georgia/Registered-Nurse-RN-Nights-Family-Birth-Center_00696090",
+     "locationsText": "St. Mary's Health Care System, Georgia",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00696090"
+     ]
+    },
+    {
+     "title": "Medical Assistant (MA)",
+     "externalPath": "/job/SJAGA---Mercy-Care-Chamblee/Certified-Medical-Assistant--CMA-_00696541-1",
+     "locationsText": "SJAGA - Mercy Care Chamblee",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00696541"
+     ]
+    },
+    {
+     "title": "Acute Care - Medical Surgical",
+     "externalPath": "/job/Mount-Carmel-East/Acute-Care---Medical-Surgical_00687445",
+     "locationsText": "Mount Carmel East",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00687445"
+     ]
+    },
+    {
+     "title": "OR Surgical Tech",
+     "externalPath": "/job/Loyola-Medicine---Loyola-University-Medical-Center/OR-Surgical-Tech_00703683",
+     "locationsText": "Loyola Medicine - Loyola University Medical Center",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703683"
+     ]
+    },
+    {
+     "title": "Certified Medical Assistant      Urology     Berwyn",
+     "externalPath": "/job/LUHS-MacNeal-Hospital/Service-Rep------Urology-----Berwyn_00703521",
+     "locationsText": "LUHS-MacNeal Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703521"
+     ]
+    },
+    {
+     "title": "Receptionist - Family Medical Center - Davenport",
+     "externalPath": "/job/MOQ---Genesis-Medical-Education-Foundation/Receptionist---Family-Medical-Center---Davenport_00703680",
+     "locationsText": "MOQ - Genesis Medical Education Foundation",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703680"
+     ]
+    },
+    {
+     "title": "Registered Nurse-Med/Surg (Nights)",
+     "externalPath": "/job/Silver-Spring-Maryland/Registered-Nurse-Med-Surg--Nights-_00703681",
+     "locationsText": "Silver Spring, Maryland",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703681"
+     ]
+    },
+    {
+     "title": "Activities Aide - Part Time - Glen at Hiland Meadows Memory Care",
+     "externalPath": "/job/The-Glen-at-Hiland-Meadows--Terrace-at-The-Glen---Queensbury-New-York/Activities-Aide---Part-Time---Glen-at-Hiland-Meadows-Memory-Care_00703061",
+     "locationsText": "The Glen at Hiland Meadows & Terrace at The Glen - Queensbury, New York",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703061"
+     ]
+    },
+    {
+     "title": "Registered Nurse - Cardiovascular Intensive Care Unit",
+     "externalPath": "/job/SJHSYR-MAINCAMPUS/Registered-Nurse---Cardiovascular-Intensive-Care-Unit_00703678",
+     "locationsText": "SJHSYR-MAINCAMPUS",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703678"
+     ]
+    },
+    {
+     "title": "Dental Assistant",
+     "externalPath": "/job/Saint-Francis-Hospital---Hartford-CT/Dental-Assistant_00701657-1",
+     "locationsText": "Saint Francis Hospital - Hartford, CT",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00701657"
+     ]
+    },
+    {
+     "title": "Receptionist - Family Medicine - Prairie Trail",
+     "externalPath": "/job/MMCIA---MercyOne-Prairie-Trail-Clinic-Central-IA/Receptionist---Family-Medicine---Prairie-Trail_00703675-1",
+     "locationsText": "MMCIA - MercyOne Prairie Trail Clinic Central IA",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703675"
+     ]
+    },
+    {
+     "title": "Director - Compliance (HYBRID)",
+     "externalPath": "/job/Albany-NY/Director---Compliance--HYBRID-_00683825",
+     "locationsText": "2 Locations",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00683825"
+     ]
+    },
+    {
+     "title": "Housekeeper/EVS Dubuque",
+     "externalPath": "/job/Mercy-Medical-Center---Dubuque-Iowa/Housekeeper-EVS-Dubuque_00703674",
+     "locationsText": "Mercy Medical Center - Dubuque, Iowa",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703674"
+     ]
+    },
+    {
+     "title": "Housekeeper/EVS Dubuque",
+     "externalPath": "/job/Mercy-Medical-Center---Dubuque-Iowa/Housekeeper-EVS-Dubuque_00703672",
+     "locationsText": "Mercy Medical Center - Dubuque, Iowa",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703672"
+     ]
+    },
+    {
+     "title": "Community Liaison - Sharon Hill",
+     "externalPath": "/job/Mercy-LIFE--Delaware-County---Sharon-Hill/Community-Liaison---Sharon-Hill_00702688",
+     "locationsText": "Mercy LIFE- Delaware County - Sharon Hill",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00702688"
+     ]
+    },
+    {
+     "title": "Certified Medical Assistant, Internal Medicine",
+     "externalPath": "/job/St-Marys-Health-Care-System-Georgia/Certified-Medical-Assistant--Internal-Medicine_00701804",
+     "locationsText": "St. Mary's Health Care System, Georgia",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00701804"
+     ]
+    },
+    {
+     "title": "Continuum Coordinator (C2) Discharge Planner",
+     "externalPath": "/job/SJHSYR-MAINCAMPUS/Continuum-Coordinator--C2--Discharge-Planner_00703668-1",
+     "locationsText": "SJHSYR-MAINCAMPUS",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "00703668"
+     ]
+    }
+   ]
+  },
+  "Virtua Health": {
+   "tenant": [
+    "virtua",
+    "1",
+    "Virtua_Health_External_Career_Site"
+   ],
+   "fetched": "2026-10-29 08:34:20",
+   "total": 700,
+   "jobPostings": [
+    {
+     "title": "Phlebotomist Weekend Nights / Mount Holly",
+     "externalPath": "/job/Mount-Holly---175-Madison-Avenue/Phlebotomist-Weekend-Nights---Mount-Holly_R1063974",
+     "locationsText": "Mount Holly - 175 Madison Avenue",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1063974"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - Care Coordinator - M/S 1A (FT 7a-7p)",
+     "externalPath": "/job/Voorhees---100-Bowman-Drive/Registered-Nurse--RN----Care-Coordinator---M-S-1A--FT-7a-7p-_R1064472",
+     "locationsText": "Voorhees - 100 Bowman Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064472"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) JRI M/S 4 - Per Diem Level 2 (7a-7p)",
+     "externalPath": "/job/Voorhees---100-Bowman-Drive/Registered-Nurse--RN--JRI-M-S-4---Per-Diem-Level-2--7a-7p-_R1046241",
+     "locationsText": "Voorhees - 100 Bowman Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1046241"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) M/S 1A (FT 7p)",
+     "externalPath": "/job/Voorhees---100-Bowman-Drive/Registered-Nurse--RN--M-S-1A--FT-7p-_R1064466",
+     "locationsText": "Voorhees - 100 Bowman Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064466"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) ICU (FT 7p-7a)",
+     "externalPath": "/job/Voorhees---100-Bowman-Drive/Registered-Nurse--RN--ICU--FT-7p-7a-_R1064630",
+     "locationsText": "Voorhees - 100 Bowman Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064630"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) ICU - Der Diem Level 1 (7a-7p)",
+     "externalPath": "/job/Voorhees---100-Bowman-Drive/Registered-Nurse--RN--ICU---Der-Diem-Level-1--7a-7p-_R1063662",
+     "locationsText": "Voorhees - 100 Bowman Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1063662"
+     ]
+    },
+    {
+     "title": "Nursing Instructor, Medical Surgical, School of Nursing, Rowan/Glassboro",
+     "externalPath": "/job/Glassboro/Nursing-Instructor--Medical-Surgical--School-of-Nursing--Rowan-Glassboro_R1064554-1",
+     "locationsText": "Glassboro",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064554"
+     ]
+    },
+    {
+     "title": "Nursing Instructor, Medical Surgical, School of Nursing, Rowan/Glassboro",
+     "externalPath": "/job/Glassboro/Nursing-Instructor--Medical-Surgical--School-of-Nursing--Rowan-Glassboro_R1064555",
+     "locationsText": "Glassboro",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064555"
+     ]
+    },
+    {
+     "title": "Nursing Instructor, Obstetric/Maternal Child, School of Nursing, Rowan/Glassboro",
+     "externalPath": "/job/Glassboro/Nursing-Instructor--Obstetric-Maternal-Child--School-of-Nursing--Rowan-Glassboro_R1064556",
+     "locationsText": "Glassboro",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064556"
+     ]
+    },
+    {
+     "title": "Connect With Our Talent Team: Pelvic, Lymphedema & Hand Physical Therapist Opportunities (Full-Time, Part-Time & Per Diem)",
+     "externalPath": "/job/Cherry-Hill---53-Haddonfield-Road-Suite-320/Connect-With-Our-Talent-Team--Pelvic--Lymphedema---Hand-Physical-Therapist-Opportunities--Full-Time--Part-Time---Per-Diem-_R1064772",
+     "locationsText": "Cherry Hill - 53 Haddonfield Road, Suite 320",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064772"
+     ]
+    },
+    {
+     "title": "PCU One to One Observer- Mount Holly Part Time Nights",
+     "externalPath": "/job/Mount-Holly---175-Madison-Avenue/PCU-One-to-One-Observer--Mount-Holly-Part-Time-Nights_R1061694",
+     "locationsText": "Mount Holly - 175 Madison Avenue",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1061694"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) Float Obstetric Block (PT 7p-7a)",
+     "externalPath": "/job/Voorhees---100-Bowman-Drive/Registered-Nurse--RN--Float-Obstetric-Block--PT-7p-7a-_R1064478",
+     "locationsText": "Voorhees - 100 Bowman Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064478"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) Float Obstetric Block (PT 7a-7p)",
+     "externalPath": "/job/Voorhees---100-Bowman-Drive/Registered-Nurse--RN--Float-Obstetric-Block--PT-7a-7p-_R1064574",
+     "locationsText": "Voorhees - 100 Bowman Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064574"
+     ]
+    },
+    {
+     "title": "Telemetry Technician, Part-Time Nights, VOLOL Camden",
+     "externalPath": "/job/Lourdes-Health-System---1600-Haddon-Ave/Telemetry-Technician--Part-Time-Nights--VOLOL-Camden_R1062268-1",
+     "locationsText": "Lourdes Health System - 1600 Haddon Ave",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1062268"
+     ]
+    },
+    {
+     "title": "Advanced Practice Provider - Virtua Center for Liver Disease - Part-time",
+     "externalPath": "/job/Lourdes-Health-System---1600-Haddon-Ave/Advanced-Practice-Provider---Virtua-Center-for-Liver-Disease_R1063480",
+     "locationsText": "Lourdes Health System - 1600 Haddon Ave",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1063480"
+     ]
+    },
+    {
+     "title": "Nursing Professional Development Specialist, Home Health Care - Full Time",
+     "externalPath": "/job/Lippincott---301-Lippincott-Drive/Advanced-Nurse-Clinician--ANC---Home-Health-Care---Full-Time_R1064369",
+     "locationsText": "Lippincott - 301 Lippincott Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064369"
+     ]
+    },
+    {
+     "title": "Physical Therapy Assistant (PTA), Outpatient Rehab - Per Diem, Evenings",
+     "externalPath": "/job/Moorestown---401-Young-Ave/Physical-Therapy-Assistant--PTA---Outpatient-Rehab---Per-Diem--Multiple-Locations_R1064564",
+     "locationsText": "Moorestown - 401 Young Ave",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064564"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) Mom Baby 3 - Per Diem Level 2 (7a-7p)",
+     "externalPath": "/job/Voorhees---100-Bowman-Drive/Registered-Nurse--RN--Mom-Baby-3---Per-Diem-Level-2--7a-7p-_R1064547",
+     "locationsText": "Voorhees - 100 Bowman Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064547"
+     ]
+    },
+    {
+     "title": "Physician - Gastroenterology - Outpatient Only - No Call - Egg Harbor Twp, NJ",
+     "externalPath": "/job/Egg-Harbor---3121-Fire-Road/Physician---Gastroenterology---Outpatient-Only---No-Call---Egg-Harbor-Twp--NJ_R1064763",
+     "locationsText": "Egg Harbor - 3121 Fire Road",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064763"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) Per Diem Level 1 - IBCLC Lactation (7p-7a)",
+     "externalPath": "/job/Voorhees---100-Bowman-Drive/Registered-Nurse--RN--Per-Diem-Level-1---IBCLC-Lactation--7p-7a-_R1064471",
+     "locationsText": "Voorhees - 100 Bowman Drive",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R1064471"
+     ]
+    }
+   ]
+  }
+ }
+}
