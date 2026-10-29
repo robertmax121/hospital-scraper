@@ -119,8 +119,10 @@ def test_bullet_location_takes_the_town_after_the_state():
     ("Freeman Health System", "1905 W. 32nd Street Thousand Oaks", ("Thousand Oaks", ""), (None, "Joplin", "MO")),
     ("Freeman Health System", "Freeman Fort Scott (KS)", ("Freeman Fort Scott", "KS"), ("Freeman Fort Scott", "Fort Scott", "KS")),
     ("Freeman Health System", "Freeman Clinic of Baxter Springs (KS)", ("Freeman Clinic of Baxter Springs", "KS"), (None, "Baxter Springs", "KS")),
-    ("Trinity Health", "MMCIA - MercyOne IHC Ottumwa Central IA", ("MMCIA - MercyOne IHC Ottumwa Central IA", ""), ("MercyOne Des Moines Medical Center", "Ottumwa", "IA")),
-    ("Trinity Health", "MMCIA - MercyOne Elkader Central Community Hospital", ("MMCIA - MercyOne Elkader Central Community Hospital", ""), ("MercyOne Des Moines Medical Center", "Elkader", "IA")),
+    # 2026-10-29 (owner calls): an Iowa Heart Center site shows the system
+    # with its town; Elkader's hospital its own name
+    ("Trinity Health", "MMCIA - MercyOne IHC Ottumwa Central IA", ("MMCIA - MercyOne IHC Ottumwa Central IA", ""), (None, "Ottumwa", "IA")),
+    ("Trinity Health", "MMCIA - MercyOne Elkader Central Community Hospital", ("MMCIA - MercyOne Elkader Central Community Hospital", ""), ("MercyOne Elkader Medical Center", "Elkader", "IA")),
     ("Trinity Health", "MMCIA - MercyOne Des Moines Medical Center Central IA", ("MMCIA - MercyOne Des Moines Medical Center Central IA", ""), ("MercyOne Des Moines Medical Center", "Des Moines", "IA")),
     ("Trinity Health", "St. Mary's Health Care System, Georgia", ("St. Mary's Health Care System", "GA"), (None, "Athens", "GA")),
     ("Wellstar Health", "Wellstar MCG Health", ("Wellstar MCG Health", ""), (None, "Augusta", "GA")),

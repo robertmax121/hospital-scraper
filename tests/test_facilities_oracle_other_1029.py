@@ -329,7 +329,10 @@ def test_nyu_spellings():
         assert "—" not in j.hospital_name and "--" not in j.hospital_name
         assert (j.city, j.state) == (r["city"], r["state"])      # the posting's own town stays
         if "Long Island" in r["hospital_name"]:
-            assert j.hospital_name == "NYU Langone Hospital - Long Island"
+            # 2026-10-29 (owner calls): the Long Island entity names the
+            # hospital only in Mineola; its Garden City office is the system
+            want = "NYU Langone Hospital - Long Island" if r["city"] == "Mineola" else "NYU Langone Health"
+            assert j.hospital_name == want, r
         elif "Suffolk" in r["hospital_name"]:
             assert j.hospital_name == "NYU Langone Hospital - Suffolk"
         elif r["hospital_name"] == "NYU Langone Health":

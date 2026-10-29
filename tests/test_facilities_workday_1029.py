@@ -223,7 +223,7 @@ def test_an_unknown_hospital_site_is_reported_not_guessed():
         "00701657": ("Saint Francis Hospital", "Hartford", "CT"),
         "00703674": ("MercyOne Dubuque Medical Center", "Dubuque", "IA"),
         "00703685": ("Samaritan Hospital - St. Mary's Campus", "Troy", "NY"),
-        "00703686": ("MercyOne Des Moines Medical Center", "Ankeny", "IA"),      # WD_FACILITY_MAP, as before
+        "00703686": ("MercyOne Ankeny Clinic", "Ankeny", "IA"),                  # WD_FACILITY_MAP: the clinic (owner 2026-10-29)
     }),
     ("Bronson Healthcare", {
         "JOB49667": ("Bronson Battle Creek Hospital", "Battle Creek", "MI"),     # was Kalamazoo

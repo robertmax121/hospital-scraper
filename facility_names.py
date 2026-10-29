@@ -976,6 +976,138 @@ def upmc_facility(brand, business_unit, city="", state="") -> str:
     return hit[0] if hit else ""
 
 
+# ── UPMC: the hospital the title names (owner 2026-10-29, "go with recs") ────
+# About 100 active UPMC rows stayed on the system name although the title
+# names one hospital ("CRNA, UPMC Carlisle", "PA or CRNP (ACNP), Nights -
+# Critical Care Medicine - UPMC Presbyterian", "Midwife - Magee Womens
+# Hospital"): their business unit is a physician group or a service company
+# (University of Pittsburgh Physicians, UPMC Physician Services), which names
+# no hospital. The owner's call: such a row names the hospital, only when the
+# title names exactly ONE hospital of UPMC; else it keeps "UPMC" with its town.
+# A title names a hospital by its proper name or one of _UPMC_ALIASES, as
+# whole words. The hospital is not taken when:
+#   - the title names two or more ("UPMC Altoona and Bedford", "Paramedic |
+#     UPMC Cole, Wellsboro, & Williamsport Locations", "Graduate Nurse: UPMC
+#     Washington and Greene": a short name after "and" / "&" / "," / "/" counts)
+#   - the name runs on into a practice or site that is not the hospital ("UPMC
+#     Northwest Primary Care", "UPMC East Side Surgery Center", "UPMC Muncy
+#     Place"): _UPMC_TITLE_UNIT_RX right after the name
+#   - the posting sits in another town than that hospital ("PA or CRNP, UPMC
+#     Somerset Ear, Nose, and Throat" in Johnstown is a practice, not the
+#     Somerset hospital). A posting with no town, or at the Pittsburgh head
+#     office default, takes the hospital (and its town, _place), as a business
+#     unit naming it does; no other town is guessed.
+# Only the title is read: UPMC bodies name hospitals in passing ("offices in
+# Beaver, UPMC St. Margaret and UPMC Passavant Cranberry", "UPMC Hillman Cancer
+# Center ... UPMC Horizon location"), so a body names no site.
+_UPMC_TITLE_UNIT_RX = re.compile(
+    r"^\s+(?:primary care|medical group|physicians?\b|practice|outpatient|clinic|place\b|home\b|homecare|"
+    r"hospice|pharmacy|senior|urgent care|express care|surgery center|side\b|regional health|reg health|"
+    r"imaging|lab\b|laboratory|specialty care)", re.I)
+_UPMC_JOIN_RX = re.compile(r"^(?:\s*(?:,|&|/|\band\b|\bor\b)\s*)+", re.I)
+_UPMC_STATE_AFTER_RX = re.compile(r"^\s*,?\s*(?:PA|MD|NY|OH|Pennsylvania|Maryland|New York|Ohio)\b")
+
+
+def _upmc_title_tables():
+    spec = SPECS["UPMC"]
+    spellings = {}
+    for name in spec.hospitals:
+        spellings[name] = name
+    for alias, name in _UPMC_ALIASES.items():
+        spellings[alias] = name
+    def rx_of(s):
+        # words apart by spaces or hyphens ("Magee-Womens" / "Magee Womens"),
+        # the period and the apostrophe optional ("St. Margaret", "Childrens")
+        parts = [re.escape(w).replace(r"\.", r"\.?").replace("'", "'?") for w in re.split(r"[\s-]+", clean_text(s)) if w]
+        return r"[\s-]+".join(parts)
+    full = re.compile(r"(?<![A-Za-z0-9])(" + "|".join(rx_of(s) for s in sorted(spellings, key=len, reverse=True))
+                      + r")(?![A-Za-z0-9])", re.I)
+    # short names, for a list after a full one ("UPMC Altoona and Bedford")
+    short = {}
+    for name in spec.hospitals:
+        s = re.sub(r"^UPMC\s+", "", name)
+        if name.startswith("Magee"):
+            s = "Magee"
+        short[fkey(s)] = name
+    short_rx = re.compile(r"(" + "|".join(rx_of(s) for s in sorted(
+        {re.sub(r"^UPMC\s+", "", n) if not n.startswith("Magee") else "Magee" for n in spec.hospitals},
+        key=len, reverse=True)) + r")(?![A-Za-z0-9])", re.I)
+    by_key = {fkey(s): n for s, n in spellings.items()}
+    return full, short, short_rx, by_key
+
+
+_UPMC_TITLE = _upmc_title_tables()
+
+
+def upmc_title_hospitals(title, city="") -> list:
+    """Every UPMC hospital a title names (proper names and aliases, and the
+    short names listed after one), in order; a name running on into a
+    practice or site (_UPMC_TITLE_UNIT_RX) is not counted. A short name that
+    is a town (a state code after it, or the named hospital's own town, or
+    the posting's town: "CRNA Casual, UPMC Community Osteopathic, Harrisburg
+    PA") is no second hospital."""
+    full, short, short_rx, by_key = _UPMC_TITLE
+    t = clean_text(title)
+    out = []
+
+    def town_word(sm, after, first):
+        if _UPMC_STATE_AFTER_RX.match(after):
+            return True
+        towns = {fkey(SPECS["UPMC"].hospitals[first][0])}
+        if clean_text(city):
+            towns.add(fkey(city))
+        return fkey(sm.group(1)) in towns
+
+    for m in full.finditer(t):
+        name = by_key.get(fkey(m.group(1)))
+        if not name:
+            continue
+        rest = t[m.end():]
+        if not _UPMC_TITLE_UNIT_RX.match(rest):
+            if name not in out:
+                out.append(name)
+        # a list of short names after it: "UPMC Cole, Wellsboro, & Williamsport"
+        while True:
+            j = _UPMC_JOIN_RX.match(rest)
+            if not j:
+                # a short name straight after ("UPMC Presbyterian Shadyside")
+                lead = rest.lstrip()
+                sm = short_rx.match(lead) if rest[:1] == " " else None
+                if sm and short.get(fkey(sm.group(1))) not in (None, name) \
+                        and not town_word(sm, lead[sm.end():], name):
+                    other = short[fkey(sm.group(1))]
+                    if other not in out:
+                        out.append(other)
+                break
+            after = rest[j.end():]
+            sm = short_rx.match(after)
+            if not sm:
+                break
+            other = short.get(fkey(sm.group(1)))
+            if other and other != name and other not in out and not town_word(sm, after[sm.end():], name):
+                out.append(other)
+            rest = after[sm.end():]
+    return out
+
+
+def upmc_title_facility(title, city="", state="") -> str:
+    """The one UPMC hospital the title names, or "" (none, several, or the
+    posting in another town than that hospital). See the block above."""
+    names = upmc_title_hospitals(title, city)
+    if len(names) != 1:
+        return ""
+    name = names[0]
+    spec = SPECS["UPMC"]
+    town, hst = spec.hospitals[name]
+    jc = clean_text(city)
+    js = clean_text(state).upper()
+    if not jc:
+        return name if js in ("", hst) else ""
+    if _at_hq(spec, jc, js):
+        return name
+    return name if fkey(jc) == fkey(town) and js in ("", hst) else ""
+
+
 _NOVANT_CODE_RX = re.compile(r"^\s*([A-Z0-9][A-Z0-9&_.-]*(?: [A-Z0-9&_.-]+)*)\s+-\s+(.+)$")
 
 

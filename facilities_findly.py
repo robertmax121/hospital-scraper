@@ -61,7 +61,9 @@ University Hospitals 300 of 1,164, UCLA Health 300 of 756, UPMC 200 of 2,856):
                   (Resnick). Every other address (clinics, offices, the
                   school's buildings) keeps the system name.
   UPMC            business_unit refined by brand (2026-10-15,
-                  facility_names.upmc_facility, unchanged).
+                  facility_names.upmc_facility); when neither names a
+                  hospital, the one hospital the title names (owner
+                  2026-10-29, facility_names.upmc_title_facility).
 
 Each entry: source spelling -> (clean public name, city, state, source of
 the town). The town is used only when the posting gives none: every row of
@@ -454,13 +456,19 @@ def ucla_unknown(job) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  UPMC: unchanged (facility_names.upmc_facility, 2026-10-15)
+#  UPMC: business_unit refined by brand (facility_names.upmc_facility,
+#  2026-10-15); owner 2026-10-29 ("go with recs"): when neither names a
+#  hospital, the one hospital the title names (facility_names.
+#  upmc_title_facility: exactly one, in the posting's own town or at the
+#  head office default / no town)
 # ══════════════════════════════════════════════════════════════════════════
 def upmc(job, city="", state=""):
     import facility_names
     if not isinstance(job, dict):
         return None
     name = facility_names.upmc_facility(job.get("brand"), job.get("business_unit"), city, state)
+    if not name:
+        name = facility_names.upmc_title_facility(job.get("title"), city, state)
     return (name, city, state) if name else None
 
 

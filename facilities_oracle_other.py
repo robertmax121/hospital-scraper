@@ -81,7 +81,7 @@ SYSTEMS: dict[str, dict] = {}
 
 
 def _sys(system, *, db=None, hq=("", ""), emit=(), hospitals, sites=None, rules=(),
-         rename=None, oracle=False, clean=None, prefixes=()):
+         rename=None, oracle=False, clean=None, prefixes=(), town_only=()):
     """One system's table.
 
     hospitals  {clean public name: (town, state, source of the town)}
@@ -96,13 +96,21 @@ def _sys(system, *, db=None, hq=("", ""), emit=(), hospitals, sites=None, rules=
     oracle     the tenant's Oracle work location is read (ORACLE_SYSTEMS)
     clean      (regex, replacement) applied to an Oracle work location
                before it is looked up
+    town_only  hospitals a feed code names only on a posting in the
+               hospital's own town: the code is the employing entity, which
+               also runs offices and practices in other towns; a posting
+               elsewhere (or with no town) takes the system label with its
+               own town (owner 2026-10-29, "go with recs": NYU Langone)
     """
     db = db or system
     SYSTEMS[system] = dict(db=db, hq=hq, emit=tuple(emit), hospitals=dict(hospitals), sites=dict(sites or {}),
                            rules=tuple(rules),
                            rename=dict(rename or {}), oracle=oracle,
                            clean=(re.compile(clean[0], re.I), clean[1]) if clean else None,
-                           prefixes=tuple(prefixes))
+                           prefixes=tuple(prefixes), town_only=frozenset(town_only))
+    for name in town_only:
+        if name not in SYSTEMS[system]["hospitals"]:
+            raise ValueError(f"{system}: town_only names unknown hospital {name!r}")
 
 
 # ═════════════════════════════ ORACLE HCM ═══════════════════════════════════
@@ -614,7 +622,15 @@ _sys(_JHS, hq=("Miami", "FL"), hospitals={
 
 # NYU Langone: the Findly department names the hospital in the employer's
 # own spelling; one clean spelling each (no em dash: "Hospital - Suffolk").
-_sys("NYU Langone Health", hospitals={
+# Owner 2026-10-29 ("go with recs"): "NYU Langone Hospital--Long Island" is
+# the employing entity (the former Winthrop), not only the Mineola hospital:
+# 178 active rows of it sat in Garden City, Huntington, Lake Success,
+# Bethpage, Manhasset, Patchogue and 15 more towns (faculty group practices,
+# ambulatory sites, offices: "Medical Assistant - Urology - Bethpage",
+# "Practice Manager - Ortho - East Patchogue"). It names the hospital only on a
+# posting in Mineola; elsewhere the row shows "NYU Langone Health" with its own
+# town (town_only).
+_sys("NYU Langone Health", town_only=("NYU Langone Hospital - Long Island",), hospitals={
     "NYU Langone Hospital - Long Island": ("Mineola", "NY", "address 259 First St, Mineola"),
     "NYU Langone Hospital - Suffolk":     ("Patchogue", "NY", "address 101 Hospital Rd, Patchogue"),
     "NYU Langone Hospital - Brooklyn":    ("Brooklyn", "NY", "address 150 55th St, Brooklyn"),
@@ -715,6 +731,7 @@ def _key(s) -> str:
 ORACLE_SYSTEMS = frozenset(name for s, t in SYSTEMS.items() if t["oracle"] for name in (s, *t["emit"]))
 
 _RENAMES: dict = {}     # (emit system or db label) -> {fkey(code): (default, ((rx, name), ...))}
+_TOWN_ONLY: dict = {}   # (emit system or db label) -> (system label, {hospital: (town, state)})
 _SPECS: dict = {}       # emit system -> facility_names.Spec
 
 
@@ -740,6 +757,10 @@ def _build() -> None:
                 ren[_key(raw)] = (default, tuple((re.compile(rx, re.I), n) for rx, n in by_title))
             for name in labels:
                 _RENAMES[name] = ren
+        if t["town_only"]:
+            places = {n: t["hospitals"][n][:2] for n in t["town_only"]}
+            for name in labels:
+                _TOWN_ONLY[name] = (system, places)
 
 
 _build()
@@ -825,10 +846,27 @@ def rename(job) -> str:
         if rx.search(title):
             name = n
             break
+    name = _town_only(job, name)
     if name == cur:
         return ""
     job.hospital_name = name
     return name
+
+
+def _town_only(job, name) -> str:
+    """`name`, or the system label when `name` is a town_only hospital and the
+    posting is not in that hospital's own town (no town counts as elsewhere:
+    a town is never guessed)."""
+    hit = _TOWN_ONLY.get(getattr(job, "hospital_system", "") or "")
+    if not hit or name not in hit[1]:
+        return name
+    label, places = hit
+    town, st = places[name]
+    jc = F.clean_text(getattr(job, "city", ""))
+    js = F.clean_text(getattr(job, "state", "")).upper()
+    if jc and _key(jc) == _key(town) and js in ("", st):
+        return name
+    return label
 
 
 def rename_jobs(jobs) -> dict:

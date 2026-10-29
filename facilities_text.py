@@ -124,14 +124,22 @@ class Read(NamedTuple):
 
 
 class Spec:
-    def __init__(self, system, default, reads, sites, offices=(), canon=None):
+    def __init__(self, system, default, reads, sites, offices=(), canon=None, clinics=(), clinic_rx=None):
         self.system = system
         self.default = default          # (town, state) the scraper stamps when the feed gives none, or None
         self.reads = tuple(reads)
         self.table: dict[str, Site] = {}
         self.lead: list[tuple[str, Site]] = []
         self.names: dict[str, Site] = {}
-        for site, spellings in sites:
+        # 2026-10-29 (owner calls, "go with recs"): named clinics the postings
+        # name in full (decision 2: a named clinic shows its own name), read
+        # like the sites, and the marker of a site line that names a clinic or
+        # an outpatient site (clinic_rx). With clinic_rx set, the adapter's own
+        # hospital value (canon) names the hospital only where the posting is
+        # at the hospital (_canon_site).
+        self.clinic_names = frozenset(site.name for site, _sp in clinics)
+        self.clinic_rx = re.compile(clinic_rx, re.I) if clinic_rx else None
+        for site, spellings in tuple(sites) + tuple(clinics):
             self.names[site.name] = site
             for sp in (site.name,) + tuple(spellings):
                 k = key(sp)
@@ -473,6 +481,17 @@ _SPECS = (
     # BayCare (Infor): "Facility:" / "Location:" lines ("Winter Haven Hospital",
     # "BayCare Health System, Med Surg Unit I-WHH"), and the adapter's own
     # short names for rows the list names ("St Josephs").
+    # 2026-10-29 (owner calls, "go with recs"): the list's short name is the
+    # hospital's business unit, which also runs clinics and outpatient sites
+    # ("Largo:Morton Plant" on the Bardmoor outpatient center, "South
+    # Pasadena:St Anthonys" on a primary care office, "Lutz:Morton Plant North
+    # Bay" on the recovery center). Such a row keeps "BayCare" with its own
+    # town, unless the posting names the clinic itself in full (the six
+    # clinics below, decision 2). A site line naming a clinic or an outpatient
+    # site (clinic_rx: "Bardmoor Outpt and Surgery", "Free Standing ER, 102 S.
+    # Dale Mabry", "Mease Countryside Eastlake Outpt") is a clinic; one opening
+    # with the hospital's own name ("Morton Plant Hospital Axelrod Pavillon -
+    # Outpatient Imaging") is the hospital. See _canon_site.
     Spec("BayCare", ("Clearwater", "FL"), (Read("label", "Facility", "site"), Read("label", _LOC, "site")), (
         S("St. Joseph's Hospital", "Tampa", "FL", "board", "St Joseph's Hospital", "SJH", "St. Joseph's Hospital Tampa"),
         S("St. Joseph's Hospital-North", "Lutz", "FL", "board", "St. Joseph's Hospital - North",
@@ -498,7 +517,22 @@ _SPECS = (
                 "Mease Countryside": "Mease Countryside Hospital", "Mease Dunedin": "Mease Dunedin Hospital",
                 "St Anthonys": "St. Anthony's Hospital", "South Florida Baptist": "South Florida Baptist Hospital",
                 "Bartow Med Ctr": "Bartow Regional Medical Center",
-                "Wesley Chapel Hospital": "BayCare Hospital Wesley Chapel"}),
+                "Wesley Chapel Hospital": "BayCare Hospital Wesley Chapel"},
+         # each spelled in full on its own postings' "Facility:" / "Location:"
+         # line, in the town every one of those postings sits in
+         clinics=(
+             S("Morton Plant North Bay Recovery Center", "Lutz", "FL", "board", "North Bay Recovery Center",
+               "Morton Plant North Bay Recover Center"),
+             S("Bardmoor Outpatient Center", "Largo", "FL", "board"),
+             S("Wesley Chapel Outpatient Imaging", "Wesley Chapel", "FL", "board"),
+             S("BayCare Life Management Countryside", "Safety Harbor", "FL", "board"),
+             S("St. Anthony's Primary Care Pasadena", "South Pasadena", "FL", "board",
+               "St Anthonys Primary Care Pasadena"),
+             S("St. Anthony's Primary Care Baywalk", "St Petersburg", "FL", "board",
+               "St Anthonys Primary Care Baywalk"),
+         ),
+         clinic_rx=(r"\b(?:outpt|outpatient|primary care|medical group|recovery? cent(?:er|re)|urgent care|"
+                    r"free[- ]?standing|wellness center|child care|life management)\b|\bbaycare e[rd]\b")),
     # Allegheny Health Network (Workday): "Location: Allegheny General Hospital".
     Spec("Allegheny Health Network", ("Pittsburgh", "PA"), (Read("label", _LOC, "site"),), (
         S("Allegheny General Hospital", "Pittsburgh", "PA", "address 320 E North Ave, Pittsburgh"),
@@ -647,18 +681,30 @@ KNOWN_MAX_ROWS = 60000
 NO_BODY_CHARS = 600
 
 
+_KNOWN_CANON: dict = {}
+
+
 def set_known_facilities(rows) -> int:
     """{(hospital_system, job_id): stored hospital_name} for rows whose
-    stored name is one of the table's site or campus names."""
-    global _KNOWN
-    out = {}
+    stored name is one of the table's site or campus names. 2026-10-29: and,
+    for the systems with clinic rules (Spec.clinic_rx), every stored name
+    (the system label too) in _KNOWN_CANON, the stored decision a row the
+    adapter names by its hospital's business unit keeps on a night without
+    a body (_canon_site)."""
+    global _KNOWN, _KNOWN_CANON
+    out, canon = {}, {}
     for r in rows or []:
         spec = spec_for(r.get("hospital_system"))
         name, jid = clean_text(r.get("hospital_name")), r.get("job_id")
-        if spec is None or jid in (None, "") or name not in spec.names:
+        if spec is None or jid in (None, ""):
+            continue
+        if spec.clinic_rx is not None and name:
+            canon[(spec.system, str(jid))] = name
+        if name not in spec.names:
             continue
         out[(spec.system, str(jid))] = name
     _KNOWN = out
+    _KNOWN_CANON = canon
     return len(out)
 
 
@@ -683,11 +729,14 @@ def load_known_facilities() -> int:
     for system in sorted(SPECS):
         flt = _urlparse.quote(f"eq.{system}", safe=".")
         nflt = _urlparse.quote(f"neq.{system}", safe=".")
+        # 2026-10-29: a system with clinic rules reads its label rows too
+        # (_KNOWN_CANON: a clinic row the label was stored on stays there)
+        name_flt = "" if SPECS[system].clinic_rx is not None else f"&hospital_name={nflt}"
         last, got = 0, 0
         try:
             while len(rows) < KNOWN_MAX_ROWS:
                 u = (f"{sb_url.rstrip('/')}/rest/v1/hospital_jobs?select=id,hospital_system,job_id,hospital_name"
-                     f"&is_active=is.true&hospital_system={flt}&hospital_name={nflt}"
+                     f"&is_active=is.true&hospital_system={flt}{name_flt}"
                      f"&id=gt.{last}&order=id.asc&limit={KNOWN_PAGE}")
                 rq = _urlreq.Request(u, headers={"apikey": sb_key, "Authorization": f"Bearer {sb_key}"})
                 chunk = None
@@ -737,6 +786,8 @@ def apply_facility(job) -> str:
         site = spec.canon.get(cur)
         if site is None:
             return "other"
+        if spec.clinic_rx is not None:
+            return _canon_site(spec, site, job)
         job.hospital_name = site.name
         return "canon"
     site, kind, what, raw = read_text(spec, job.description)
@@ -759,6 +810,98 @@ def apply_facility(job) -> str:
         d = UNKNOWN.setdefault(spec.system, {})
         d[raw[:80]] = d.get(raw[:80], 0) + 1
     return what
+
+
+def _lead_site(spec, value):
+    """The table site (hospital or clinic) whose spelling the value opens
+    with, word for word ("Morton Plant Hospital Axelrod Pavillon - ..."), or
+    None."""
+    lk = lead_key(value) + " "
+    for k, site in spec.lead:
+        if lk.startswith(k + " "):
+            return site
+    return None
+
+
+def _inner_clinic(spec, value):
+    """A clinic of the table spelled whole inside the value ("Behavioral
+    Health- Morton Plant North Bay Recover Center"), or None."""
+    vk = f" {key(value)} "
+    for k, site in spec.lead:
+        if site.name in spec.clinic_names and f" {k} " in vk:
+            return site
+    return None
+
+
+def _site_line(spec, body):
+    """(site or None, value) for a clinic-rules system: the first label line
+    (Facility, then Location) that decides. A value naming a table site is
+    that site (a hospital or a clinic); else one opening with a site's
+    spelling; else one holding a clinic's spelling; else a value naming a
+    clinic or an outpatient site (clinic_rx) is (None, value), the label. A
+    system-office line ("BayCare Health System, Trinity Nuc Med-MPM SRVCS",
+    a department) or a bare town decides nothing, and the next line is read.
+    (None, "") when no line decides."""
+    lines = _lines(body)
+    for r in spec.reads:
+        if r.mode != "label":
+            continue
+        v = _label_value(spec.rx[r.arg], lines)
+        if not v or not v.strip():
+            continue
+        heads = _candidates(v)[0]
+        if any(key(h) in spec.offices for h in heads):
+            continue
+        site = match_value(spec, v) or _lead_site(spec, v) or _inner_clinic(spec, v)
+        if site is not None:
+            return site, v
+        if spec.clinic_rx.search(v):
+            return None, v
+    return None, ""
+
+
+def _canon_site(spec, site, job) -> str:
+    """The adapter's hospital value (`site`, from spec.canon) on one row of a
+    system with clinic rules (owner 2026-10-29, "go with recs": a clinic job
+    that carries a hospital's name keeps the system name with its town; a
+    named clinic keeps its own name only when the posting names the clinic
+    itself).
+
+    With a body tonight, its site line decides first (_site_line): a clinic
+    of the table is that clinic, placed as a site is (a posting in another
+    town than the clinic keeps the label); a line naming a clinic or an
+    outpatient site (clinic_rx) is the label; a line naming a hospital, or
+    opening with a hospital's own name ("Morton Plant Hospital Axelrod
+    Pavillon - Outpatient Imaging"), leaves the hospital. Without a body (the
+    stored one is kept, scraper._keep_stored_body), the stored decision
+    stands when it is the label or a clinic, so a row never flips between
+    nights. Then the hospital, only on a posting in its own town (or with no
+    town, or at the system default); a posting in any other town is one of
+    the business unit's clinics and keeps the label. Its own town is kept
+    either way. Returns "canon", "clinic", "elsewhere" or "kept"."""
+    body = job.description or ""
+    if len(body.strip()) >= NO_BODY_CHARS:
+        found, raw = _site_line(spec, body)
+        if found is None and raw:
+            job.hospital_name = spec.system
+            return "clinic"
+        if found is not None and found.name in spec.clinic_names:
+            placed = place(spec, found, "site", job.city, job.state, raw)
+            if placed is None:
+                job.hospital_name = spec.system
+                return "elsewhere"
+            _set(job, *placed)
+            return "clinic"
+    else:
+        stored = _KNOWN_CANON.get((spec.system, str(job.job_id)), "")
+        if stored and (stored == spec.system or stored in spec.clinic_names):
+            job.hospital_name = stored
+            return "kept"
+    jc, js = (job.city or "").strip(), (job.state or "").strip().upper()
+    at_site = (not jc or _at_default(spec, jc, js) or (js in ("", site.state) and key(jc) == key(site.city))
+               or any(js in ("", st) and key(jc) == key(t) for t, st, _c in site.campuses))
+    job.hospital_name = site.name if at_site else spec.system
+    return "canon" if at_site else "elsewhere"
 
 
 def _set(job, name, city, state) -> None:

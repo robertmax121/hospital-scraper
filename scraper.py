@@ -5953,37 +5953,60 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         # central-Iowa site in Des Moines ("MMCIA - MercyOne IHC Ottumwa
         # Central IA" read Des Moines, as did Newton, Centerville, Elkader,
         # Ames, Ankeny and 20 more). The sites that name their town, from
-        # the tenant's locations facet on 2026-10-20; the label stays the
-        # region's ("MercyOne Des Moines Medical Center") as before, so no
-        # row changes employer. Prairie Trail is Ankeny's district; Dallas
-        # County Hospital is in Perry; Elkader's Central Community Hospital
-        # is in Elkader.
-        "mmcia - mercyone adel clinic": ("MercyOne Des Moines Medical Center", "Adel", "IA"),
-        "mmcia - mercyone ankeny clinic": ("MercyOne Des Moines Medical Center", "Ankeny", "IA"),
-        "mmcia - mercyone prairie trail clinic": ("MercyOne Des Moines Medical Center", "Ankeny", "IA"),
-        "mmcia - mercyone carlisle clinic": ("MercyOne Des Moines Medical Center", "Carlisle", "IA"),
-        "mmcia - mercyone centerville": ("MercyOne Des Moines Medical Center", "Centerville", "IA"),
-        "mmcia - mercyone clive clinic": ("MercyOne Des Moines Medical Center", "Clive", "IA"),
-        "mmcia - mercyone dallas county hospital": ("MercyOne Des Moines Medical Center", "Perry", "IA"),
-        "mmcia - mercyone elkader": ("MercyOne Des Moines Medical Center", "Elkader", "IA"),
-        "mmcia - mercyone grimes clinic": ("MercyOne Des Moines Medical Center", "Grimes", "IA"),
-        "mmcia - mercyone mercy fam med grimes": ("MercyOne Des Moines Medical Center", "Grimes", "IA"),
-        "mmcia - mercyone ihc ames": ("MercyOne Des Moines Medical Center", "Ames", "IA"),
-        "mmcia - mercyone ihc carroll": ("MercyOne Des Moines Medical Center", "Carroll", "IA"),
-        "mmcia - mercyone ihc newton": ("MercyOne Des Moines Medical Center", "Newton", "IA"),
-        "mmcia - mercyone ihc ottumwa": ("MercyOne Des Moines Medical Center", "Ottumwa", "IA"),
-        "mmcia - mercyone ottumwa": ("MercyOne Des Moines Medical Center", "Ottumwa", "IA"),
-        "mmcia - mercyone internal med urbandale": ("MercyOne Des Moines Medical Center", "Urbandale", "IA"),
-        "mmcia - mercyone johnston clinic": ("MercyOne Des Moines Medical Center", "Johnston", "IA"),
-        "mmcia - mercyone newton medical center": ("MercyOne Des Moines Medical Center", "Newton", "IA"),
-        "mmcia - mercyone norwalk clinic": ("MercyOne Des Moines Medical Center", "Norwalk", "IA"),
-        "mmcia - mercyone perry clinic": ("MercyOne Des Moines Medical Center", "Perry", "IA"),
-        "mmcia - mercyone pleasant hill clinic": ("MercyOne Des Moines Medical Center", "Pleasant Hill", "IA"),
-        "mmcia - mercyone waukee clinic": ("MercyOne Des Moines Medical Center", "Waukee", "IA"),
-        "mmcia - mercyone west des moines medical center": ("MercyOne Des Moines Medical Center", "West Des Moines", "IA"),
-        "mmcia - urgent care - indianola": ("MercyOne Des Moines Medical Center", "Indianola", "IA"),
-        "mmcia - mercyone indianola": ("MercyOne Des Moines Medical Center", "Indianola", "IA"),
-        "mmcia": ("MercyOne Des Moines Medical Center", "Des Moines", "IA"),
+        # the tenant's locations facet on 2026-10-20. Prairie Trail is
+        # Ankeny's district; Dallas County Hospital is in Perry; Elkader's
+        # Central Community Hospital is in Elkader.
+        # 2026-10-29 (owner calls, "go with recs"): these sites read "MercyOne
+        # Des Moines Medical Center" (the region's label) from 10-20 on, the
+        # clinics included: 137 active rows in Clive, Ankeny, Pleasant Hill,
+        # Waukee and Des Moines' Medical Plaza, House of Mercy, Iowa Heart
+        # Center sites. Only the hospital's own site keeps that name. A
+        # site that spells a clinic's full name ("MMCIA - MercyOne Clive
+        # Clinic Central IA") shows that clinic (decision 2: a named clinic
+        # shows its own name); every other site (the Medical Plaza, House of
+        # Mercy, the college, the Iowa Heart Center (IHC) sites, ambulance,
+        # rehab, urgent care, offices, abbreviated practice names) shows the
+        # system name with the town (None). The four Des Moines clinics whose
+        # site names no town keep Des Moines, the town their rows already
+        # carry. The other hospitals (West Des Moines, Newton, Centerville,
+        # Dallas County, Elkader) carry their own names, as the site table
+        # (facilities_workday) gives them.
+        "mmcia - mercyone des moines medical center": ("MercyOne Des Moines Medical Center", "Des Moines", "IA"),
+        "mmcia - mercyone west des moines medical center": ("MercyOne West Des Moines Medical Center", "West Des Moines", "IA"),
+        "mmcia - mercyone newton medical center": ("MercyOne Newton Medical Center", "Newton", "IA"),
+        "mmcia - mercyone centerville medical center": ("MercyOne Centerville Medical Center", "Centerville", "IA"),
+        "mmcia - mercyone dallas county hospital": ("Dallas County Hospital", "Perry", "IA"),
+        "mmcia - mercyone elkader central community hospital": ("MercyOne Elkader Medical Center", "Elkader", "IA"),
+        "mmcia - mercyone adel clinic": ("MercyOne Adel Clinic", "Adel", "IA"),
+        "mmcia - mercyone ankeny clinic": ("MercyOne Ankeny Clinic", "Ankeny", "IA"),
+        "mmcia - mercyone prairie trail clinic": ("MercyOne Prairie Trail Clinic", "Ankeny", "IA"),
+        "mmcia - mercyone carlisle clinic": ("MercyOne Carlisle Clinic", "Carlisle", "IA"),
+        "mmcia - mercyone centerville clinic": ("MercyOne Centerville Clinic", "Centerville", "IA"),
+        "mmcia - mercyone clive clinic": ("MercyOne Clive Clinic", "Clive", "IA"),
+        "mmcia - mercyone grimes clinic": ("MercyOne Grimes Clinic", "Grimes", "IA"),
+        "mmcia - mercyone indianola clinic": ("MercyOne Indianola Clinic", "Indianola", "IA"),
+        "mmcia - mercyone johnston clinic": ("MercyOne Johnston Clinic", "Johnston", "IA"),
+        "mmcia - mercyone norwalk clinic": ("MercyOne Norwalk Clinic", "Norwalk", "IA"),
+        "mmcia - mercyone ottumwa medical clinic": ("MercyOne Ottumwa Medical Clinic", "Ottumwa", "IA"),
+        "mmcia - mercyone perry clinic": ("MercyOne Perry Clinic", "Perry", "IA"),
+        "mmcia - mercyone pleasant hill clinic": ("MercyOne Pleasant Hill Clinic", "Pleasant Hill", "IA"),
+        "mmcia - mercyone waukee clinic": ("MercyOne Waukee Clinic", "Waukee", "IA"),
+        "mmcia - mercyone beaverdale clinic": ("MercyOne Beaverdale Clinic", "Des Moines", "IA"),
+        "mmcia - mercyone briarwood clinic": ("MercyOne Briarwood Clinic", "Des Moines", "IA"),
+        "mmcia - mercyone east village clinic": ("MercyOne East Village Clinic", "Des Moines", "IA"),
+        "mmcia - mercyone west grand clinic": ("MercyOne West Grand Clinic", "Des Moines", "IA"),
+        "mmcia - mercyone centerville": (None, "Centerville", "IA"),
+        "mmcia - mercyone elkader": (None, "Elkader", "IA"),
+        "mmcia - mercyone mercy fam med grimes": (None, "Grimes", "IA"),
+        "mmcia - mercyone ihc ames": (None, "Ames", "IA"),
+        "mmcia - mercyone ihc carroll": (None, "Carroll", "IA"),
+        "mmcia - mercyone ihc newton": (None, "Newton", "IA"),
+        "mmcia - mercyone ihc ottumwa": (None, "Ottumwa", "IA"),
+        "mmcia - mercyone ottumwa": (None, "Ottumwa", "IA"),
+        "mmcia - mercyone internal med urbandale": (None, "Urbandale", "IA"),
+        "mmcia - urgent care - indianola": (None, "Indianola", "IA"),
+        "mmcia - mercyone indianola": (None, "Indianola", "IA"),
+        "mmcia": (None, "Des Moines", "IA"),
         # 2026-10-20: St. Mary's Health Care System is the Athens, Georgia
         # ministry (78 rows read the system's name as the town).
         "st. mary's health care system": (None, "Athens", "GA"),

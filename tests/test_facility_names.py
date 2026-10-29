@@ -193,7 +193,21 @@ def test_upmc_unit_in_another_state_names_no_hospital():
     payload["totalHits"] = 1
     text = "cb(" + json.dumps(payload) + ");"
     jobs = asyncio.run(scraper.scrape_findly_google(_Session(text), "UPMC", scraper.FINDLY_GOOGLE_ORGS["UPMC"]))
-    assert [(x.hospital_name, x.city, x.state) for x in jobs] == [("UPMC", "Cumberland", "MD")]   # 2026-10-29: system name
+    # 2026-10-29 (owner calls, "go with recs"): the unit still names no
+    # hospital (Western Psychiatric is in Pittsburgh), but the title names
+    # exactly one, in the posting's own town: that hospital
+    assert [(x.hospital_name, x.city, x.state) for x in jobs] == [("UPMC Western Maryland", "Cumberland", "MD")]
+    j2 = dict(j, primary_city="Pittsburgh", primary_state="PA",
+              title="Behavioral Health Navigator I - UPMC Chautauqua and Western Maryland")
+    payload["searchResults"] = [dict(payload["searchResults"][0], job=j2)]
+    jobs = asyncio.run(scraper.scrape_findly_google(_Session("cb(" + json.dumps(payload) + ");"), "UPMC",
+                                                    scraper.FINDLY_GOOGLE_ORGS["UPMC"]))
+    assert [x.hospital_name for x in jobs] == [wph]       # the unit names its own hospital first
+    j3 = dict(j, title="Behavioral Health Navigator I - UPMC Chautauqua and Western Maryland")
+    payload["searchResults"] = [dict(payload["searchResults"][0], job=j3)]
+    jobs = asyncio.run(scraper.scrape_findly_google(_Session("cb(" + json.dumps(payload) + ");"), "UPMC",
+                                                    scraper.FINDLY_GOOGLE_ORGS["UPMC"]))
+    assert [x.hospital_name for x in jobs] == ["UPMC"]    # two hospitals named: the system name
 
 
 def test_findly_google_facility_tenants():
