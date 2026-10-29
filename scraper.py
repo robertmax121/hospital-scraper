@@ -52,6 +52,7 @@ import facilities_leftovers   # 2026-10-29 phase 3: town-only Workday systems (t
 import facilities_systems_a   # 2026-10-29 phase 4: NL / KU body sites, Rochester towns, IHS summaries; Emory / Cooper / UMMC town tables (registers in facilities_town)
 import facilities_systems_b   # 2026-10-29 (phase 4 B): Vandalia / UK / Mount Sinai / OHSU / IRC sites; SolutionHealth, Dartmouth, Duke towns; Rochester, Genesis sites
 import facilities_chains   # 2026-10-29 phase 4: RadNet, US Physical Therapy, AFC, NHS, GoHealth, Cantex, Nexion sites
+import facilities_trinity_stays   # 2026-10-29 phase 4: Trinity's town, text and site rows; Sanford's Good Samaritan communities; Gentiva / Elara branches
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -33410,6 +33411,18 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if facilities_senior_rehab.UNKNOWN:
         logger.info("Senior/rehab facilities, values no table names: " + facilities_senior_rehab.unknown_summary())
         facilities_senior_rehab.UNKNOWN.clear()
+    # 2026-10-29 (phase 4, owner: "trinity health not done either"): Trinity
+    # rows still on the label take the hospital their own text names, a
+    # hospital campus site's hospital, or a named site's name and its state;
+    # clinic, office and street sites keep the system name (the town rule is
+    # told to leave them); bare-town sites go on to the town tables below.
+    # Sanford's Good Samaritan Society communities, Gentiva's and Elara's
+    # named branches (facilities_trinity_stays).
+    fts = _facility_pass("Trinity / Sanford / branches (phase 4)", facilities_trinity_stays.apply_jobs, kept,
+                         canon=lambda s: HOSPITAL_SYSTEM_ALIASES.get(s, s))
+    if fts:
+        logger.info("Phase 4 facilities: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fts.items())))
     town = _facility_pass("Town tables", facilities_town.apply_jobs, kept,
                           canon=lambda s: HOSPITAL_SYSTEM_ALIASES.get(s, s))
     if town:
@@ -33652,6 +33665,10 @@ async def run_all() -> list[dict]:
     try:
         n_town = await asyncio.to_thread(facilities_town.load_stored)
         logger.info(f"Town tables: {n_town:,} stored rows loaded")
+        # 2026-10-29 (phase 4): Gentiva's and Elara's stored branch names join
+        # the same map, for nights without a body
+        n_br = await asyncio.to_thread(facilities_trinity_stays.load_stored)
+        logger.info(f"Phase 4 facilities: {n_br:,} stored Gentiva / Elara branch rows loaded")
     except Exception as e:
         logger.warning(f"Town tables: stored rows not loaded at start ({type(e).__name__}: {e})")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
