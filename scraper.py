@@ -49,6 +49,7 @@ import facilities_ambulatory   # 2026-10-29 (phase 3): USPI surgery centres, Con
 import facilities_hospital_systems_a   # 2026-10-29: Lifepoint's body-named sites; Providence / Baptist Memorial work locations
 import facilities_hospital_systems_b   # 2026-10-29 (phase 3 B): Geisinger, Sutter, AHN, Jefferson, Ochsner, Kaiser, Huntsville tables (registers in the family modules)
 import facilities_leftovers   # 2026-10-29 phase 3: town-only Workday systems (town tables + the detail work site)
+import facilities_systems_a   # 2026-10-29 phase 4: NL / KU body sites, Rochester towns, IHS summaries; Emory / Cooper / UMMC town tables (registers in facilities_town)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -13272,6 +13273,12 @@ def _usajobs_jobs(item: dict, system_name: str, stats: dict | None = None) -> li
                 stats[f"va_{how}"] = stats.get(f"va_{how}", 0) + 1
         else:
             hospital = p["facility"] or facility
+            if system_name == facilities_systems_a.IHS and hospital == system_name:
+                # 2026-10-29 (phase 4): the facility a one-town summary names in
+                # this row's own town ("... at the Northern Navajo Medical Center,
+                # Shiprock, NM"); the town alone never names one
+                hospital = _fac_hook("IHS summary facility", facilities_systems_a.ihs_summary_facility, m,
+                                     city, state, default=None) or hospital
         rows.append(Job(
             title=title,
             hospital_system=system_name,
@@ -33328,6 +33335,19 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
             logger.info("Hospital systems A, values no table names: "
                         + facilities_hospital_systems_a.unknown_summary())
             facilities_hospital_systems_a.UNKNOWN.clear()
+    # 2026-10-29 (facility scale phase 4, systems A): Northern Light's "Position
+    # is located:" site (else its entity line, in that hospital's own town), the
+    # University of Kansas Health System's work location ("Bell Hospital"), and
+    # a University of Rochester label row's real town from its own "Job Location
+    # (Full Address)" line; the stored site or town on nights with no body
+    # (facilities_systems_a). Before the town tables, after every feed's own field.
+    fsa = _facility_pass("Systems A (phase 4)", facilities_systems_a.apply_facilities, kept)
+    if fsa:
+        logger.info("Systems A (phase 4): " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fsa.items())))
+        if facilities_systems_a.UNKNOWN:
+            logger.info("Systems A (phase 4), values no table names: " + facilities_systems_a.unknown_summary())
+            facilities_systems_a.UNKNOWN.clear()
     # 2026-10-29 (facility scale, phase 3 B): the Ochsner campus a title names
     # ("... - Jeff Hwy", "- OLGMC"), before the town tables guess from a town.
     hsb = _facility_pass("Hospital systems B (titles)", facilities_hospital_systems_b.apply_before_town, kept)
@@ -33576,6 +33596,10 @@ async def run_all() -> list[dict]:
     # 2026-10-29 (facility scale phase 3): the same for Lifepoint's body-named sites
     n_fha = await asyncio.to_thread(facilities_hospital_systems_a.load_known_facilities)
     logger.info(f"Hospital systems A: {n_fha:,} stored Lifepoint rows name a site")
+    # 2026-10-29 (phase 4, systems A): the sites stored on Northern Light / KU rows
+    # and the towns stored on University of Rochester label rows
+    n_fsa = await asyncio.to_thread(facilities_systems_a.load_known_facilities)
+    logger.info(f"Systems A (phase 4): {n_fsa:,} stored rows carry a site or a town")
     # 2026-10-29 (phase 3): the town tables' stored rows load before the
     # detail passes, so facilities_leftovers.reread_slot knows which stored
     # rows of its Workday systems to read again (apply_jobs loads it
