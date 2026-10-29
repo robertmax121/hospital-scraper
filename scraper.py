@@ -48,6 +48,7 @@ import facilities_senior_rehab   # 2026-10-29 (phase 3): named sites of the seni
 import facilities_ambulatory   # 2026-10-29 (phase 3): USPI surgery centres, Concentra centres, CVS's Oak Street / MinuteClinic / Omnicare
 import facilities_hospital_systems_a   # 2026-10-29: Lifepoint's body-named sites; Providence / Baptist Memorial work locations
 import facilities_hospital_systems_b   # 2026-10-29 (phase 3 B): Geisinger, Sutter, AHN, Jefferson, Ochsner, Kaiser, Huntsville tables (registers in the family modules)
+import facilities_leftovers   # 2026-10-29 phase 3: town-only Workday systems (town tables + the detail work site)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -1802,7 +1803,9 @@ def _known_kind(system: str, job):
       "facility" (2026-10-27) a stored body of an ICIMS_COMPANY_FACILITY
                system still on the system label, on its _company_reread_slot
                night: queued with the force re-reads, so the page's Company
-               field is read
+               field is read; (2026-10-29) or a stored body of a
+               facilities_leftovers system on its reread_slot night, so
+               the page's jobRequisitionLocation is read
                Integration 2026-10-14: the two re-reads never touch the same
                row (_req_reread_slot leaves REQ_REREAD_PLATFORMS to "req"),
                and a row gets one kind a night, so it is queued once.
@@ -1823,6 +1826,8 @@ def _known_kind(system: str, job):
         return "facility"     # 2026-10-27: read for its iCIMS Company field
     if facilities_home_health.reread_slot(key[0], key[1], _run_day()):
         return "facility"     # 2026-10-29: CenterWell, read for its requisition location (the branch)
+    if facilities_leftovers.reread_slot(*key, today=datetime.fromordinal(_run_day()).date()):
+        return "facility"     # 2026-10-29: read for its Workday work site (facilities_leftovers)
     if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
         return "pay"
     if (key in _KNOWN_NOREQ and getattr(job, "ats_platform", "") in REQ_REREAD_PLATFORMS
@@ -4908,6 +4913,12 @@ def _apply_wd_posting_info(job, info: dict) -> bool:
     # reads it in finalize_jobs.
     if job.hospital_system in facilities_home_health.WD_REQ_LOCATION:
         facilities_home_health.stash_requisition(job, info)
+    # 2026-10-29 (facility scale, phase 3): the town-only Workday systems
+    # (MUSC, Sentara, Prisma, Avera ...) take the hospital their
+    # jobRequisitionLocation names; a clinic or office work site keeps the
+    # system name and the town tables leave the row (facilities_leftovers).
+    if facilities_leftovers.covers(job.hospital_system):
+        facilities_leftovers.apply_detail(job, info)
     return ok
 
 
@@ -33526,6 +33537,15 @@ async def run_all() -> list[dict]:
     # 2026-10-29 (facility scale phase 3): the same for Lifepoint's body-named sites
     n_fha = await asyncio.to_thread(facilities_hospital_systems_a.load_known_facilities)
     logger.info(f"Hospital systems A: {n_fha:,} stored Lifepoint rows name a site")
+    # 2026-10-29 (phase 3): the town tables' stored rows load before the
+    # detail passes, so facilities_leftovers.reread_slot knows which stored
+    # rows of its Workday systems to read again (apply_jobs loads it
+    # lazily otherwise; it is the same read, done once).
+    try:
+        n_town = await asyncio.to_thread(facilities_town.load_stored)
+        logger.info(f"Town tables: {n_town:,} stored rows loaded")
+    except Exception as e:
+        logger.warning(f"Town tables: stored rows not loaded at start ({type(e).__name__}: {e})")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool
