@@ -49,6 +49,7 @@ import facilities_ambulatory   # 2026-10-29 (phase 3): USPI surgery centres, Con
 import facilities_hospital_systems_a   # 2026-10-29: Lifepoint's body-named sites; Providence / Baptist Memorial work locations
 import facilities_hospital_systems_b   # 2026-10-29 (phase 3 B): Geisinger, Sutter, AHN, Jefferson, Ochsner, Kaiser, Huntsville tables (registers in the family modules)
 import facilities_leftovers   # 2026-10-29 phase 3: town-only Workday systems (town tables + the detail work site)
+import facilities_systems_b   # 2026-10-29 (phase 4 B): Vandalia / UK / Mount Sinai / OHSU / IRC sites; SolutionHealth, Dartmouth, Duke towns; Rochester, Genesis sites
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -33328,6 +33329,17 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
             logger.info("Hospital systems A, values no table names: "
                         + facilities_hospital_systems_a.unknown_summary())
             facilities_hospital_systems_a.UNKNOWN.clear()
+    # 2026-10-29 (facility scale, phase 4 B): the site a Vandalia title or
+    # "Location:" line, a UK HealthCare Working Title, a Mount Sinai cost-centre
+    # line, an OHSU title or an Innovative Renal Care "Location:" line names
+    # (facilities_systems_b), before the town tables guess from a town.
+    fsb = _facility_pass("Systems B", facilities_systems_b.apply_facilities, kept)
+    if fsb:
+        logger.info("Systems B: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fsb.items())))
+        if facilities_systems_b.UNKNOWN:
+            logger.info("Systems B, values no table names: " + facilities_systems_b.unknown_summary())
+            facilities_systems_b.UNKNOWN.clear()
     # 2026-10-29 (facility scale, phase 3 B): the Ochsner campus a title names
     # ("... - Jeff Hwy", "- OLGMC"), before the town tables guess from a town.
     hsb = _facility_pass("Hospital systems B (titles)", facilities_hospital_systems_b.apply_before_town, kept)
@@ -33576,6 +33588,10 @@ async def run_all() -> list[dict]:
     # 2026-10-29 (facility scale phase 3): the same for Lifepoint's body-named sites
     n_fha = await asyncio.to_thread(facilities_hospital_systems_a.load_known_facilities)
     logger.info(f"Hospital systems A: {n_fha:,} stored Lifepoint rows name a site")
+    # 2026-10-29 (phase 4 B): and the sites (and UK HealthCare's towns) stored
+    # on the body-named rows of facilities_systems_b
+    n_fsb = await asyncio.to_thread(facilities_systems_b.load_known_facilities)
+    logger.info(f"Systems B: {n_fsb:,} stored rows of {len(facilities_systems_b.SYSTEMS)} systems name a site or a town")
     # 2026-10-29 (phase 3): the town tables' stored rows load before the
     # detail passes, so facilities_leftovers.reread_slot knows which stored
     # rows of its Workday systems to read again (apply_jobs loads it

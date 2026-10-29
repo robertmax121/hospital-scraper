@@ -776,6 +776,17 @@ try:
 except Exception as _e:      # pragma: no cover - the tests hold the tables whole
     import logging as _logging
     _logging.getLogger("scraper.facility").warning(f"Oracle tables: phase 3 additions not installed ({_e})")
+
+# 2026-10-29 (facility scale phase 4 B): Northwell's and Parkview's hospitals
+# whose work location these tables did not list yet
+# (facilities_systems_b.ORACLE_EXTRA). Same rules: before _build, all or
+# nothing, never fatal.
+try:
+    import facilities_systems_b as _fsb   # noqa: E402
+    _fsb.extend_oracle(SYSTEMS)
+except Exception as _e:      # pragma: no cover - the tests hold the tables whole
+    import logging as _logging
+    _logging.getLogger("scraper.facility").warning(f"Oracle tables: phase 4 B additions not installed ({_e})")
 _build()
 
 
