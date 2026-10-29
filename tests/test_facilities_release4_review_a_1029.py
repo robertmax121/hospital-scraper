@@ -11,7 +11,7 @@ Fixtures, no network, no database:
   tests/fixtures/facility_release4_reviewA_1029/stored_rows.json  35 stored
       postings (body cut at 6,000 characters, Mount Sinai's at 12,000 so the
       closing cost-centre line stays; emails and phone numbers replaced) plus
-      6 RadNet and US Physical Therapy feed items.
+      8 RadNet, US Physical Therapy and GoHealth feed items.
 """
 import json
 import os
@@ -156,3 +156,9 @@ def test_radnet_float_postings_keep_the_system_name(j):
 @pytest.mark.parametrize("p", DATA["usph"], ids=[p["name"] for p in DATA["usph"]])
 def test_usph_floater_postings_keep_the_system_name(p):
     assert C.smartrecruiters_site(C.USPH, p) == p["want"]
+
+
+@pytest.mark.parametrize("j", DATA["gohealth"], ids=[j["title"] for j in DATA["gohealth"]])
+def test_gohealth_regional_role_keeps_the_system_name(j):
+    got = C.gohealth_site(j["locationsText"], j["externalPath"])
+    assert (list(got) if got else None) == j["want"]

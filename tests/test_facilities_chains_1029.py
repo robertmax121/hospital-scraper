@@ -276,6 +276,8 @@ def test_gohealth_list_rows_multi_location_postings_name_none():
         if "Locations" in j["locationsText"]:
             assert got is None
             assert C.gohealth_unknown(j["locationsText"], j["externalPath"]) == ""
+        elif C.gohealth_pool(j["externalPath"]):
+            assert got is None              # review A 2026-10-29: a regional or float role, no one centre's
         else:
             assert got and got[0].startswith("GoHealth Urgent Care - ")
     assert C.gohealth_unknown("Hartford - Derby") == "Hartford - Derby"

@@ -693,5 +693,23 @@
    ],
    "want": "Metro Physical & Aquatic Therapy - Sayville"
   }
+ ],
+ "gohealth": [
+  {
+   "title": "Physician Assistant - Per Diem",
+   "locationsText": "Astoria - Astoria, NY",
+   "externalPath": "/job/Astoria---Astoria-NY/Physician-Assistant---Per-Diem_JR112975",
+   "want": [
+    "GoHealth Urgent Care - Astoria",
+    "Astoria",
+    "NY"
+   ]
+  },
+  {
+   "title": "Associate Regional Medical Director",
+   "locationsText": "UPMC - Shadyside",
+   "externalPath": "/job/UPMC---Shadyside/Regional-Associate-Medical-Director_JR112934",
+   "want": null
+  }
  ]
 }

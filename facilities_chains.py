@@ -440,11 +440,27 @@ def gohealth_centre(loc: str):
     return centre, m.group("town").strip(), m.group("st")
 
 
+_GH_POOL_SLUG_RX = re.compile(r"(?:^|[-_])(?:regional|float(?:er|ers|ing)?|rover|roving)(?=[-_]|$)", re.I)
+
+
+def gohealth_pool(external_path: str = "") -> bool:
+    """Review A, 2026-10-29: the posting's own title (the job slug of its
+    Workday link, "/job/UPMC---Shadyside/Regional-Associate-Medical-Director_
+    JR112934") says regional or float: a role across a market's centres, no
+    one centre's (decision 2)."""
+    parts = [p for p in str(external_path or "").split("/") if p]
+    slug = parts[2] if len(parts) >= 3 and parts[0] == "job" else (parts[-1] if parts else "")
+    return bool(_GH_POOL_SLUG_RX.search(slug))
+
+
 def gohealth_site(loc: str, external_path: str = ""):
     """The WD_SITE_FACILITY resolver for GoHealth: ("GoHealth Urgent Care -
     <centre>", town, state) from the list's locationsText, None otherwise
-    (the row is placed as before). The path is not read: a "N Locations"
-    posting's path names only its first centre."""
+    (the row is placed as before). The path's site segment is not read (a
+    "N Locations" posting's path names only its first centre); its job slug
+    only keeps a regional or float role off any one centre (gohealth_pool)."""
+    if gohealth_pool(external_path):
+        return None
     got = gohealth_centre(loc)
     if not got:
         return None
