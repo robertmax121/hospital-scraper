@@ -1,0 +1,581 @@
+{
+ "_source": "hospital_jobs rows as stored on 2026-10-29 (title, link, town and the first 1,500 characters of the body; staff names, emails and phone numbers replaced)",
+ "rows": [
+  {
+   "id": 34477803,
+   "hospital_system": "Legacy Health",
+   "hospital_name": "Legacy Health",
+   "city": "GRESHAM",
+   "state": "OR",
+   "title": "Environmental Services Tech",
+   "url": "https://careers-lhs.icims.com/jobs/49519/environmental-services-tech-mh/job",
+   "job_id": "49519",
+   "ats_platform": "iCIMS",
+   "description": "Overview\n\nYour attention to detail makes a lasting difference.\n\nAs you help maintain the cleanliness and safety of patient rooms, care areas, offices, hallways, and other spaces, you set the tone for a welcoming and healing environment. Your work supports a healthcare setting focused on making life better for patients, the community, and your team.\n\nIf you're ready to help create a cleaner, safer space for care, we invite you to join us as an Environmental Services Technician .\n\nResponsibilities\n\nMaintain assigned area in an aseptically clean and visually welcoming manner for guests and co-workers.\n\nUse tools, equipment, and supplies efficiently and safely to maximize productivity.\n\nComplete all job assignments according to scheduled. requirements, ensuring work is done efficiently and safely.\n\nCommunicate openly, effectively, and respectfully with all customers.\n\nQualifications\n\nBasic familiarity with computers preferred.\n\nPay Range\nUSD $18.72 - USD $25.87 /Hr.\n\nOur Commitment to Health and Equal Opportunity\n\nOur Legacy is good for health for Our People, Our Patients, Our Communities, Our World. Above all, we will do the right thing.\n\nIf you are passionate about our mission and believe you can contribute to our team, we encourage you to apply—even if you don't meet every qualification listed. We are committed to fostering an inclusive environment where everyone can grow and succeed.\n\nLegacy Health is an equal opportunity employer and prohibits unlawful discrimination and har",
+   "expect": {
+    "hospital_name": "Legacy Mount Hood Medical Center",
+    "city": "Gresham",
+    "state": "OR",
+    "how": "town"
+   }
+  },
+  {
+   "id": 38758038,
+   "hospital_system": "Legacy Health",
+   "hospital_name": "Legacy Health",
+   "city": "PORTLAND",
+   "state": "OR",
+   "title": "Logistics Technician",
+   "url": "https://careers-lhs.icims.com/jobs/49912/logistics-techn-eh/job",
+   "job_id": "49912",
+   "ats_platform": "iCIMS",
+   "description": "Overview\n\nLegacy strives to make life better for our patients - and that includes ensuring they have access to the supplies and equipment needed for quality care. As a Logistics Technician , your commitment to helping others will shine as you inventory, order, pick, and distribute materials to meet customer demand. You’ll also respond to calls for immediate supply or equipment needs from end-user departments. If this sounds like you, we invite you to join our team and help us make a difference every day.\n\nResponsibilities\n\nWorks as a team member to meet supply and equipment needs at the department level to support quality patient care.\n\nAccurately inventories, orders, picks, and distributes materials to meet customer demand.\n\nResponds promptly to calls for immediate supply or equipment needs from end-user departments.\n\nQualifications\n\nEducation:\n\nHigh school diploma or equivalent.\n\nExperience:\n\nWarehouse, inventory, and medical supply experience preferred.\n\nSkills:\n\nMust be able to read, write and communicate in English.\n\nMust be able to do simple mathematical calculations.\n\nRequires excellent customer service skills and the ability to work in cooperation with other team members in a fast-paced environment.\n\nMust possess keyboard skills and ability to navigate electronic systems applicable to job functions.\n\nPay Range\nUSD $18.47 - USD $25.01 /Hr.\n\nOur Commitment to Health and Equal Opportunity\n\nOur Legacy is good for health for Our People, Our Patients, Our Communities, Our W",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "default"
+   }
+  },
+  {
+   "id": 37140009,
+   "hospital_system": "Baptist Health (KY/IN)",
+   "hospital_name": "Baptist Health (KY/IN)",
+   "city": "New Albany",
+   "state": "IN",
+   "title": "RN Observation Full Time Days",
+   "url": "https://bhs.wd1.myworkdayjobs.com/careers/job/New-Albany-IN/RN-Observation-Full-Time-Days_R26107652-1",
+   "job_id": "R26107652",
+   "ats_platform": "Workday",
+   "description": "Summary\n(3) 12-hr shifts/wk.\nRotates every 4th weekend\nHolidays as required.\nJob Description:\n\nSeeking Registered Nurse!\n\nBaptist Health Floyd, Emergency Department Observation Unit\nFull-time (36 Hours Weekly), Days (7am-7pm)\n\nBenefit Eligible\n\n$$ Sign On Bonus Eligible for Experienced External Applicants Only! $$\n\nJob Duties:\n\nIn this role, the RN will be responsible and accountable for direct comprehensive nursing care for the patient from admission to discharge. The Registered Nurse will function as an on-shift team member providing direct patient care to meet the needs of patients, families, and co-workers.\n\nAbout the Unit:\n\nThe Observation Unit is a 29-bed unit affiliated with the Emergency Department and observes patients who are expected to be in the hospital less than 24 hours. Nurses in this unit care for a variety of patients including chest pain, cardiac arrhythmias, heart catheterizations, laparoscopic cholecystectomies, UTIs, and DVTs. The unit is staffed with a provider between the hours of 7 AM and 5 PM each day of the week to provide support and high-level care. New Graduate RNs welcome.\n\nQualifications:\n\nCurrent Indiana or compact state RN license required.\n\nBLS for healthcare provider required.\n\nACLS for Healthcare provider required (obtained within 12 months of hire).\n\nBaptist Health Floyd is a Pathway to Excellence® designated organization.\n\nWe offer competitive salaries and excellent benefits. We are conveniently located 10 minutes from downtown Louisvill",
+   "expect": {
+    "hospital_name": "Baptist Health Floyd",
+    "city": "New Albany",
+    "state": "IN",
+    "how": "town"
+   }
+  },
+  {
+   "id": 8641,
+   "hospital_system": "Baptist Health (KY/IN)",
+   "hospital_name": "Baptist Health (KY/IN)",
+   "city": "Elizabethtown",
+   "state": "KY",
+   "title": "Physician Assistant",
+   "url": "https://bhs.wd1.myworkdayjobs.com/careers/job/Elizabethtown-KY/Physician-Assistant_R21032080",
+   "job_id": "R21032080",
+   "ats_platform": "Workday",
+   "description": "Baptist Health strives to cultivate a close-knit, positive and professional environment that encourages our employees to want to come to work every day.\n\nWhen you choose Baptist, you have an opportunity to play a role in providing compassionate, quality care that makes a difference in the lives of our patients and promotes joy throughout our communities.\n\nJob Description:\n\nIf you would like to be part of a growing family focused on supporting clinical excellence, teamwork and innovation, we urge you to apply now!\n\nBaptist Health is an Equal Employment Opportunity employer.",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "offsite"
+   }
+  },
+  {
+   "id": 21567356,
+   "hospital_system": "Children's Minnesota",
+   "hospital_name": "Children's Minnesota",
+   "city": "St. Paul",
+   "state": "MN",
+   "title": "Lab Care Technician I",
+   "url": "https://childrensmn.taleo.net/careersection/ex/jobdetail.ftl?job=260271A6&lang=en",
+   "job_id": "260271A6",
+   "ats_platform": "Phenom",
+   "description": "About Children’s Minnesota\n\nChildren’s Minnesota is one of the largest pediatric health systems in the United States and the only health system in Minnesota to provide care exclusively to children, from before birth through young adulthood. An independent and not-for-profit system since 1924, Children’s Minnesota is one system serving kids throughout the Upper Midwest at two free-standing hospitals, nine primary care clinics, multiple specialty clinics and seven rehabilitation sites. As The Kids Experts™ in our region, Children’s Minnesota is regularly ranked by U.S. News & World Report as a top children’s hospital. Find us on Facebook @childrensminnesota or on Twitter and Instagram @childrensmn. Please visit childrensMN.org .\n\nChildren’s Minnesota is proud to be recognized by Modern Healthcare as one of 2023’s Top Diversity Leaders. The national honor recognizes the top diverse healthcare executives and organizations influencing public policy, care delivery, and promoting diversity, equity and inclusion in their organizations and the industry.\n\nDepartment Overview\n\nThe laboratories at Children's Hospitals and Clinics are full service facilities that offer a complete spectrum of laboratory techniques for the evaluation of pediatric disorders. Laboratories are located on both the Minneapolis and St. Paul campuses and and provide services on an inpatient and outpatient basis. Disciplines include Chemistry, Hematology, Microbiology, Virology, Serology, Blood Bank, Immunology/Flo",
+   "expect": {
+    "hospital_name": "Children's Minnesota St. Paul Hospital",
+    "city": "St. Paul",
+    "state": "MN",
+    "how": "town"
+   }
+  },
+  {
+   "id": 36663905,
+   "hospital_system": "Children's Minnesota",
+   "hospital_name": "Children's Minnesota",
+   "city": "Minneapolis",
+   "state": "MN",
+   "title": "Child Adolescent Fellow Physician Moonlighter",
+   "url": "https://childrensmn.taleo.net/careersection/physician/jobdetail.ftl?job=260270PQ&lang=en",
+   "job_id": "260270PQ",
+   "ats_platform": "Phenom",
+   "description": "Children’s Minnesota is the only health system in Minnesota to provide care exclusively to children, from before birth through young adulthood. Children’s serves kids throughout the Upper Midwest at two free-standing hospitals, 12 primary and specialty care clinics and six rehabilitation sites. Additionally, Children’s is Minnesota's only Level I pediatric trauma center inside a hospital dedicated solely to children. An award-winning health system, Children’s is regularly ranked by U.S. News & World Report as a top children’s hospital.\n\nThe inpatient mental health unit at Children’s Minnesota in St. Paul is seeking child and adolescent psychiatric fellows who are interested in moonlighting opportunities. The inpatient mental health program offers a multi-disciplinary care team of psychiatrists, psychologists, licensed clinical social workers, nurses, occupational therapists, child life therapists, mental health specialists and music therapists. Care for youth as young as 6 years old and up to 18 years old and still in high school.\n\nPOSITION INFORMATION\n\nWeekends in person rounds on Saturday/Sunday:\n\n$2500 weekend of Friday night (5pm) to Monday morning (8am) à can be split: recommend Friday night (5pm-8am) $500, Saturday (8am-8am) $1000, Sunday (8am-8am) $1000\n\nAll patients on the inpatient psychiatric unit are seen and rounded upon with note authored at least once over the weekend\n\nEach weekend day (or holiday) prioritize: Admissions/discharges/patients with defined needs\n\nP",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "offsite"
+   }
+  },
+  {
+   "id": 34689132,
+   "hospital_system": "Ochsner Health",
+   "hospital_name": "Ochsner Health",
+   "city": "Slidell",
+   "state": "LA",
+   "title": "Armed Security Officer - Slidell Memorial Hospital East Nights Sign-On Bonus $1500",
+   "url": "https://ochsner.wd1.myworkdayjobs.com/Ochsner/job/Slidell---Northshore-Region---Louisiana/Armed-Security-Officer---Slidell-Memorial-Hospital-East-Nights-Sign-On-Bonus--1500_REQ_00275812",
+   "job_id": "REQ_00275812",
+   "ats_platform": "Workday",
+   "description": "Exceptional care starts with exceptional people.\n\nFor us, this is more than a job– it’s a calling. It’s waking up each day, looking for ways to make a difference with a compassionate, inclusive and talented team. Ochsner empowers you to discover your passion, reach your potential, and Pursue Your Purpose. Exceptional care starts with exceptional people and teams. Together we are leading the way.\n\nThis job provides security for patients, guests and employees as assigned, enforces company policies and procedures, and performs assigned duties that ensure the security of patients, guests, and employees in a courteous and professional manner.\nTo perform this job successfully, an individual must be able to perform each essential duty satisfactorily. The requirements listed below are representative of the knowledge, skill, and/or ability required. Reasonable accommodations may be made to enable qualified individuals with disabilities to perform the essential duties.\n\nThis job description is a summary of the primary duties and responsibilities of the job and position. It is not intended to be a comprehensive or all-inclusive listing of duties and responsibilities. Contents are subject to change at the company's discretion.\n\nEducation\n\nRequired - High School diploma or equivalent\n\nWork Experience\n\nRequired - 1 year of experience in Security, law enforcement, or military\n\nCertifications\n\nRequired:\n\nBasic Life Support (BLS) from the American Heart Association\n\nValid driver’s license in ",
+   "expect": {
+    "hospital_name": "Slidell Memorial Hospital",
+    "city": "Slidell",
+    "state": "LA",
+    "how": "named"
+   }
+  },
+  {
+   "id": 22073977,
+   "hospital_system": "Ochsner Health",
+   "hospital_name": "Ochsner Health",
+   "city": "New Orleans",
+   "state": "LA",
+   "title": "Bone Marrow Transplant Section Head",
+   "url": "https://ochsner.wd1.myworkdayjobs.com/Ochsner/job/New-Orleans---New-Orleans-Region---Louisiana/Bone-Marrow-Transplant-Section-Head_REQ_00253650",
+   "job_id": "REQ_00253650",
+   "ats_platform": "Workday",
+   "description": "We've made a lot of progress since opening the doors in 1942, but one thing has never changed - our commitment to serve, heal, lead, educate, and innovate. We believe that every award earned, every record broken and every patient helped is because of the dedicated employees who fill our hallways.\n\nAt Ochsner, whether you work with patients every day or support those who do, you are making a difference and that matters. Come make a difference at Ochsner Health and discover your future today!\n\nIn cooperation with other members of the department clinical staff, an Ochsner Staff Physician will provide and coordinate patient care by abiding by Ochsner’s core values of Patients First, Integrity, Compassion, Inclusivity, Teamwork and Excellence and The Responsibilities of the Professional Staff\nTo perform this job successfully, an individual must be able to perform each essential duty satisfactorily. The requirements listed below are representative of the knowledge, skill, and/or ability required. Reasonable accommodations may be made to enable qualified individuals with disabilities to perform the essential duties.\n\nThis job description is a summary of the primary duties and responsibilities of the job and position. It is not intended to be a comprehensive or all-inclusive listing of duties and responsibilities. Contents are subject to change at the company's discretion.\n\nEducation and Experience:\n\nRequired - Board certified or eligible for certification in physician’s primary spec",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "shared"
+   }
+  },
+  {
+   "id": 26860109,
+   "hospital_system": "Henry Ford Health",
+   "hospital_name": "Henry Ford Health",
+   "city": "Rochester",
+   "state": "MI",
+   "title": "MRI Technologist",
+   "url": "https://jobs.smartrecruiters.com/HenryFordHealth1/3743990014814972",
+   "job_id": "3743990014814972",
+   "ats_platform": "SmartRecruiters",
+   "description": "Job Description\nLocation: Henry Ford Rochester Hospital , 1101 W University Drive Rochester, MI 48307\n\nSchedule : Full Time, Nights, 8:00 PM - 6:00 AM, No Weekends Required\n\nFull Time Benefit Eligible\n\nGENERAL SUMMARY:\n\nUnder general supervision, performs magnetic resonance imaging studies using a magnetic resonance imaging device, which includes preparing patients, positioning, setting imaging parameters, and performing computer processing and displaying images. Assists in developing protocol for patient studies. Performs quality control procedures on equipment.\n\nQualifications\nEDUCATION/EXPERIENCE REQUIRED:\n\nHigh School diploma equivalency with 2 years of cumulative experience OR Associate's degree/Technical degree OR 4 years of applicable cumulative job specific experience required. No additional preferences.\n\nCERTIFICATION/LICENCES REQUIRED:\n\nBLS Provider obtained within 1 Month (30 days) of hire date or job transfer date required. American Heart Association or American Red Cross accepted.\n\nOne or more of the following required:\n\nRadiologic Technologist specializing in Magnetic Resonance Imaging credentialed from the American Registry of Radiologic Technologists (ARRT) obtained within 12 Months (1 year) of hire date or job transfer date.\n\nNuclear Medical Tech credentialed from the Nuclear Medicine Technology Certification Board (NMTCB) obtained prior to hire date or job transfer date.\n\nRadiologic Technologist specializing in Radiography credentialed from the American Regi",
+   "expect": {
+    "hospital_name": "Henry Ford Rochester Hospital",
+    "city": "Rochester",
+    "state": "MI",
+    "how": "named"
+   }
+  },
+  {
+   "id": 38691807,
+   "hospital_system": "Singing River Health System",
+   "hospital_name": "Singing River Health System",
+   "city": "Ocean Springs",
+   "state": "MS",
+   "title": "Patient Care Associate - 2W | Part Time | Days",
+   "url": "https://mysrhs.wd108.myworkdayjobs.com/SRHS/job/Ocean-Springs-MS/Patient-Care-Associate---2W---Part-Time---Days_JR102516",
+   "job_id": "JR102516",
+   "ats_platform": "Workday",
+   "description": "At Singing River Health System, caring isn’t just part of the job — it’s in our DNA. Whether we’re saving lives, supporting behind the scenes, or showing up for our community, we bring the energy, heart, and hustle every single day.\n\nWith pride, passion, and commitment, we will improve health and save lives in our community every day.\n\nShift:\n7:00am - 7:00pm\n\nLocation:\nSinging River Ocean Springs Hospital\n\nJob Description Summary\n\nJob Description\n\nPosition Overview:\nThe Patient Care Associate provides basic nursing care (i.e. personal and restorative care) to patients according to predefined guidelines; a plan of care established by a Registered Nurse or LPN; and under the direct supervision of the Registered Nurse or LPN. The plan of care will utilize the CDC Guidelines for Infection Control as well as the Singing River Health System Departments of Nursing Plan for Provision of Care, Treatment, and Services. Expectation is for all performed duties to be in accordance with Singing River Health System procedures and policies, accreditation organization, and governing guidance and publications for health care employees.\n\nDISCLAIMER: This is not necessarily an exhaustive list of all responsibilities, duties, skills, efforts, requirements or working conditions associated with the job. While this intends to be an accurate reflection of the current job, management reserves the right to revise the job or to require that other or different tasks performed as assigned.\n\nEducation:\nHig",
+   "expect": {
+    "hospital_name": "Singing River Ocean Springs Hospital",
+    "city": "Ocean Springs",
+    "state": "MS",
+    "how": "named"
+   }
+  },
+  {
+   "id": 38110218,
+   "hospital_system": "Halifax Health",
+   "hospital_name": "Halifax Health",
+   "city": "Daytona Beach",
+   "state": "FL",
+   "title": "Lab Section Supervisor - Point of Care (POC)",
+   "url": "https://halifaxhealth.wd12.myworkdayjobs.com/HalifaxHealth/job/US-FL-Daytona-Beach/Lab-Section-Supervisor---Point-of-Care--POC-_JR105759",
+   "job_id": "JR105759",
+   "ats_platform": "Workday",
+   "description": "Day (United States of America)\n\nLab Section Supervisor - Point of Care (POC)\n\nThe Lab Section Supervisor assists the Manager of the Laboratory in the smooth operation of the Laboratory by providing technical and administrative supervision over testing on newborn, pediatric, adolescent, adult and geriatric patients in the Blood Bank, Clinical Chemistry, Hematology, Serology, Coagulation, Urinalysis or Microbiology sections.\n\n- Bachelor's Degree in Medical Technology, or related science required\n- 3-5 years clinical laboratory experience required\n- 1-2 years supervisory or management experience required\n- Florida Medical Technologist or supervisor license required\n- ASCP or equivalent certification required\n- Must be skilled in testing for newborn, pediatric, adolescent, adult and geriatric patients",
+   "expect": {
+    "hospital_name": "Halifax Health Medical Center",
+    "city": "Daytona Beach",
+    "state": "FL",
+    "how": "town"
+   }
+  },
+  {
+   "id": 38759054,
+   "hospital_system": "Great River Health",
+   "hospital_name": "Great River Health",
+   "city": "West Burlington",
+   "state": "IA",
+   "title": "Pharmacy Technician-Retail / LTC | PRN | Heritage Partner Pharmacy",
+   "url": "https://greatriverhealth.wd5.myworkdayjobs.com/External/job/West-Burlington-Iowa/Pharmacy-Technician-Retail---LTC---PRN---Heritage-Partner-Pharmacy_R-09380",
+   "job_id": "R-09380",
+   "ats_platform": "Workday",
+   "description": "Minimum Hiring Wage:\nFrom $18.89 per hour\n\nJob Details:\nScheduled Hours: Variable\n\nJob Description:\n\nWorks under direct supervision of pharmacists performing clerical tasks, drug distribution activities, computerized order entry, and other medication management duties as authorized by the Iowa Board of Pharmacy Examiner's laws, rules and regulations. Prepare medications under the direction of a pharmacist. May measure, mix, and count out, label, and record amounts and dosages of medications. May review and document patient's arrival medication assuring appropriate dose, route, frequency and duration of therapy.\n\nWhat you will do\n\nReceive written prescription or refill requests and verify that information is complete and accurate.\n\nEstablish and maintain patient profiles, including lists of medications taken by individual patients.\n\nMaintain proper storage and security conditions for drugs.\n\nAnswer telephones, responding to questions or requests.\n\nPrepack bulk medicines, fill bottles with prescribed medications, and type and affix labels.\n\nMix pharmaceutical preparations according to written prescriptions.\n\nClean, and help maintain, equipment and work areas, and sterilize glassware according to prescribed methods.\n\nPrice and file prescriptions that have been filled.\n\nAssist customers by answering simple questions, locating items or referring them to the pharmacist for medication information.\n\nReceive and store incoming supplies, verify quantities against invoices, check for ou",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "offsite"
+   }
+  },
+  {
+   "id": 32708401,
+   "hospital_system": "Penn State Health",
+   "hospital_name": "Penn State Health",
+   "city": "Enola",
+   "state": "PA",
+   "title": "Surgical Technologist - Operating Room",
+   "url": "https://css-pennstatehealth-prd.inforcloudsuite.com/hcm/Jobs/navigation/JobPosting[JobPostingSet](PSH,101116,1).JobPostingDisplayNav?csk.HROrganization=PSH&csk.JobBoard=EXTERNAL",
+   "job_id": "101116",
+   "ats_platform": "Infor",
+   "description": "Invest in Your Future and Theirs: Beginning January 1, 2027, eligible full-time Penn State Health employees receive a 50% Penn State tuition discount for themselves and eligible dependents, including a spouse and children. The discount applies at Penn State University Park, Commonwealth Campuses, World Campus, and Penn College of Technology.\n\n*$7,500 SIGN-ON BONUS - eligible to those that qualify*\n\nPenn State Health - Hampden Medical Center\n\nLocation: US:PA:Enola\n\nWork Type: Full Time\n\nFTE: 1.00\n\nShift: Day\n\nHours: Day Shift with Call Requirement\n\nRecruiter Contact: the recruiter at recruiter@example.org\n\nSUMMARY OF POSITION:\n\nResponsible for providing a sterile patient care environment, for setting-up instrumentation for operating room surgical procedures, for anticipating the needs of the surgical team by providing instruments and supplies, and for providing surgical assistance during operating room procedures.\n\nMINIMUM QUALIFICATION(S):\n\nIndividual must provide evidence of one of the following:\n\nCompletion of an accredited surgical technologist program and maintains a surgical technologist certification; new graduates of accredited surgical tech programs may obtain certification within six months of graduation.\n\nCompletion of an appropriate training program for surgical technology in the US Army, Navy, or Air force\n\nPreviously employed to practice surgical technology by the hiring Penn State Health (PSH) health care facility on or before December 29",
+   "expect": {
+    "hospital_name": "Penn State Health Hampden Medical Center",
+    "city": "Enola",
+    "state": "PA",
+    "how": "entity"
+   }
+  },
+  {
+   "id": 32708980,
+   "hospital_system": "Penn State Health",
+   "hospital_name": "Penn State Health",
+   "city": "Harrisburg",
+   "state": "PA",
+   "title": "Primary Care Internal Medicine Physician – Blue Ridge",
+   "url": "https://css-pennstatehealth-prd.inforcloudsuite.com/hcm/Jobs/navigation/JobPosting[JobPostingSet](PSH,66232,1).JobPostingDisplayNav?csk.HROrganization=PSH&csk.JobBoard=EXTERNAL",
+   "job_id": "66232",
+   "ats_platform": "Infor",
+   "description": "Penn State Health - Medical Group\n\nLocation: US:PA: Harrisburg\nWork Type: Full Time\nFTE: 1.0\nShift: Day\nHours: 8 hours a shift\nRecruiter Contact: the recruiter at recruiter@example.org for additional information.\n\nHealth Care That’s Personal – The Human Connection\n\nPenn State Health is seeking a Full Time BC/BE Internal Medicine Primary Care Physician to join our practice site located in the metro-Harrisburg, PA area proving exceptional care to the patients in our community at our Blue Ridge Practice Site.\n\nWhat we’re offering:\n\nCompetitive salary, productivity bonuses, and robust total rewards package\n\nSign-On bonus, Relocation Assistance, and CME funds\n\nExcellent location to balance your family and professional interests\n\nA collaborative environment rich with diversity\n\nInteraction with dynamic clinicians across departments and participation in innovative educational approaches\n\nWhat we're seeking:\n\nMD, DO, or foreign equivalent\n\nBC/BE in Internal Medicine\n\nCompletion of accredited training program\n\nAbility to acquire a license to practice in the State of Pennsylvania\n\nMust be able to obtain valid federal and state narcotics certificates\n\nPenn State Health is an Equal Opportunity Employer and does not discriminate on the basis of any protected class including disability or veteran status. Penn State Health’s policies and objectives are in direct compliance with all federal and state constitutional provisions, laws, regulations, guidelines, and executi",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "entity-office"
+   }
+  },
+  {
+   "id": 35307152,
+   "hospital_system": "Northside Hospital",
+   "hospital_name": "Northside Hospital",
+   "city": "Atlanta",
+   "state": "GA",
+   "title": "RN, Operating Room, Northside Hospital Cherokee",
+   "url": "https://careers-northside.icims.com/jobs/110604/rn%2c-operating-room%2c-northside-hospital-cherokee/job",
+   "job_id": "110604",
+   "ats_platform": "iCIMS",
+   "description": "Overview\n\nNorthside Hospital is award-winning, state-of-the-art, and continually growing. Constantly expanding the quality and reach of our care to our patients and communities creates even more opportunity for the best healthcare professionals in Atlanta and beyond. Discover all the possibilities of a career at Northside today.\n\nResponsibilities\n\nThe Registered Professional Nurse at Northside Hospital independently plans and provides professional nursing care to patients in accordance with physician orders and established guidelines, and in accordance with the scope of practice as defined by the Georgia Nurse Practice Act.\n\nQualifications\n\nREQUIRED:\n\nMust be a graduate of an accredited school of nursing\n\nLicensed as a RN in the State of Georgia in good standing without limitations.\n\nMust hold Certified in American Heart Association’s Basic Cardiac Life Support (BLS).\n\nPREFERRED:\n\nBSN degree\n\nTwo (2) years of experience as a Registered Professional Nurse (RN).\n\nAdditional Life Support credential (ACLS, PALS, NRP, etc.) or other clinical specialty certifications in specific units.\n\nVisual color acuity depending on the role in specific units.\n\nWork Hours:\n8:45A- 9:15P\n\nWeekend Requirements:\nYes\n\nSchedule: Day shift",
+   "expect": {
+    "hospital_name": "Northside Hospital Cherokee",
+    "city": "Canton",
+    "state": "GA",
+    "how": "named"
+   }
+  },
+  {
+   "id": 35307240,
+   "hospital_system": "Northside Hospital",
+   "hospital_name": "Northside Hospital",
+   "city": "Atlanta",
+   "state": "GA",
+   "title": "RN, OP Oncology",
+   "url": "https://careers-northside.icims.com/jobs/109056/rn%2c-op-oncology/job",
+   "job_id": "109056",
+   "ats_platform": "iCIMS",
+   "description": "Overview\n\nNorthside Hospital is award-winning, state-of-the-art, and continually growing. Constantly expanding the quality and reach of our care to our patients and communities creates even more opportunity for the best healthcare professionals in Atlanta and beyond. Discover all the possibilities of a career at Northside today.\n\nResponsibilities\n\nThe Registered Professional Nurse at Northside Hospital independently plans and provides professional nursing care to patients in accordance with physician orders and established guidelines, and in accordance with the scope of practice as defined by the Georgia Nurse Practice Act.\n\nQualifications\n\nKNOWLEDGE, SKILLS AND ABILITIES, LICENSE OR CERTIFICATION REQUIRED:\n\nMust be a graduate of an accredited school of nursing\n\nLicensed as a RN in the State of Georgia in good standing without limitations.\n\nMust hold Certified in American Heart Association’s Basic Cardiac Life Support (BLS).\n\nKNOWLEDGE SKILLS AND ABILITIES/LICENSE OR CERTIFICATION PREFERRED:\n\nBSN degree\n\nTwo (2) years of experience as a Registered Professional Nurse (RN).\n\nAdditional Life Support credential (ACLS, PALS, NRP, etc.) or other clinical specialty certifications in specific units.\n\nVisual color acuity depending on the role in specific units.\n\nWork Hours:\n8:30pm-5:00pm\n\nWeekend Requirements:\nNo\n\nOn-Call Requirements:\nNo\n\nSchedule: Day shift",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "default"
+   }
+  },
+  {
+   "id": 9630929,
+   "hospital_system": "Mayo Clinic",
+   "hospital_name": "Mayo Clinic",
+   "city": "Jacksonville",
+   "state": "FL",
+   "title": "Sterile Processing Technician - Weekend Days - SPD",
+   "url": "https://fa-euwp-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/Mayo-US/job/386733",
+   "job_id": "386733",
+   "ats_platform": "Oracle HCM",
+   "description": "Responsible for performing delegated activities to support the operating room team in the care of the surgical patient as well as procedural areas within the hospital. Duties are performed under the supervision of the Central Service Team Leaders and Central Service Supervisor and in collaboration with the operating room team.\n\nResponsibilities include:\n\n• Decontamination, assembly, inspection, packaging, sterilization, storage and distribution of reusable instruments and equipment for surgical and other procedures.\n\n• Cleaning, packaging and re-processing of re-usable surgical equipment, instrumentation and scopes per manufacturer’s guidelines.\n\n• Maintaining inventory and storage of processed supplies.\n\n• Meeting the needs of the surgical team through support of activities in the sterile core.\n\n*Qualified applicants must live within a reasonable driving distance to campus to meet the 45-minute on-call report time requirement.\n\nQualifications\nHigh school diploma or GED required.\n\nA minimum of one year of instrumentation experience OR successful completion of a vocational program for Central Service with full (not provisional) Central Service Technician certification.\n\nSuccessful completion of a vocational program for Central Service is preferred.\n\nOne year of instrumentation experience in a hospital setting preferred.\n\nBasic computer knowledge.\n\nGood interpersonal skills.\n\nAbility to establish and maintain effective working relationships and the ability to receive and give c",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "keep"
+   }
+  },
+  {
+   "id": 38557313,
+   "hospital_system": "Mayo Clinic",
+   "hospital_name": "Mayo Clinic",
+   "city": "Phoenix",
+   "state": "AZ",
+   "title": "Registered Nurse - Main PACU - RN",
+   "url": "https://fa-euwp-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/Mayo-US/job/391844",
+   "job_id": "391844",
+   "ats_platform": "Oracle HCM",
+   "description": "The registered nurse (RN) is accountable for the coordination of nursing care, including direct patient care, patient/family education and transitions of care. The RN supports professional nursing practice across practice settings and across the continuum of care to meet the needs of the patient and family. The RN will function within the Mayo Clinic Nursing Professional Practice Model, which includes accountability for planning, implementing, evaluating and communicating all phases of nursing care for assigned patients. The ANA Nursing: Scope and Standards of Practice provide a basis for the practice of the RN. The RN provides leadership through activities such as preceptor role, informal and formal leadership roles, and quality improvement efforts. The RN delegates patient care according to skill level, experience, patient acuity, fiscal accountability and availability of resources. The RN possesses excellent communication skills; is skillful in mentoring and teaching; and may participate on committees or projects. A subset of employees may be required to drive their personal vehicle as a part of the responsibility of their role.\n\nThis role is eligible for TN sponsorship.\n\nQualifications\nGraduate of a baccalaureate nursing program, as recognized by the Accreditation Commission for Education in Nursing (ACEN), Commission on Collegiate Nursing Education (CCNE), National League for Nursing Commission for Nursing Education Accreditation (NLN CNEA).\n\nAll entry-level associate de",
+   "expect": {
+    "hospital_name": "Mayo Clinic Hospital, Phoenix",
+    "city": "Phoenix",
+    "state": "AZ",
+    "how": "town"
+   }
+  },
+  {
+   "id": 12906606,
+   "hospital_system": "Capital Health",
+   "hospital_name": "Capital Health",
+   "city": "RMC",
+   "state": "NJ",
+   "title": "Registered Nurse - Intermediate Care Unit - RMC - Per Diem - Varies",
+   "url": "https://capitalhealth.wd1.myworkdayjobs.com/CapitalHealthCareers/job/RMC/XMLNAME---10K-SIGN-ON-BONUS--Registered-Nurse---Intermediate-Care-Unit---RMC---Per-Diem---Varies_JR107882",
+   "job_id": "JR107882",
+   "ats_platform": "Workday",
+   "description": "Capital Health is the region's leader in providing progressive, quality patient care with significant investments in our exceptional physicians, nurses and staff, as well as advanced technology. Capital Health is a dynamic health care resource accredited by the DNV that includes two hospitals, an outpatient center, satellite ED, and an expansive network of primary and specialty care. Capital Health Medical Group is made up of more than 600 physicians and other providers who offer primary and specialty care, as well as hospital-based services, to patients throughout the region.\n\nCapital Health recognizes that attracting the best talent is key to our strategy and success as an organization. As a result, we aim for flexibility in structuring competitive compensation offers to ensure we can attract the best candidates.\n\nThe listed pay range or pay rate reflects compensation for a full-time equivalent (1.0 FTE) position. Actual compensation may differ depending on assigned hours and position status (e.g., part-time).\n\nPay Range:\n$51.47 - $51.47\n\nPosition Overview\n\nDelivers quality care to patients through a team effort in working with others through the nursing process of assessment, diagnosis, planning, implementation and evaluation.\n\nAssures patient safety by executing appropriate policies & procedures.\n\nProvides appropriate support for pain management, pharmacological and non-pharmacological measures. Assist patient/family in identifying individualized comfort measures.\n\nFollow",
+   "expect": {
+    "hospital_name": "Capital Health Regional Medical Center",
+    "city": "Trenton",
+    "state": "NJ",
+    "how": "town"
+   }
+  },
+  {
+   "id": 38258738,
+   "hospital_system": "MU Health Care",
+   "hospital_name": "University of Missouri Health Care",
+   "city": "Columbia",
+   "state": "MO",
+   "title": "Community Health Navigator",
+   "url": "https://careers.muhealth.org/us/en/job/26003757",
+   "job_id": "26003757",
+   "ats_platform": "Phenom",
+   "description": "Shift : Monday – Friday 8:00 a.m. to 5:00 p.m.\n\nWork Arrangement : Onsite\nDepartment : Care Management\n\nFacility : University Hospital – 1 Hospital Drive, Columbia, MO\nCompensation :\n\n• Base Pay Range: $22.00 - $34.74 per hour, based on experience\n\nABOUT THE JOB\n\nMU Health Care is looking for a compassionate and resourceful Community Health Navigator who is passionate about helping patients overcome barriers and achieve their health goals. The ideal candidate is a strong relationship builder who thrives on connecting people with the resources, support, and services they need to live healthier lives. This role is perfect for someone who is organized, proactive, and skilled at problem-solving, with a genuine commitment to addressing the social factors that impact health and well-being. We value professionals who communicate effectively, collaborate seamlessly with multidisciplinary teams, and advocate for patients with empathy and determination. Join MU Health Care and make a meaningful difference by empowering patients, strengthening community connections, and helping create healthier outcomes for the individuals and families we serve.\n\nABOUT MU HEALTH CARE\n\nMU Health Care is proud to be named one of Forbes’ Best-in-State Employers seven years in a row, and that’s largely a result of the incredible culture and team we’ve built. At MU Health Care, we have an inspired, hard-working and collaborative environment driven by our mission to save and improve lives. Here, we believe an",
+   "expect": {
+    "hospital_name": "University Hospital",
+    "city": "Columbia",
+    "state": "MO",
+    "how": "named"
+   }
+  },
+  {
+   "id": 38816456,
+   "hospital_system": "Blessing Health System",
+   "hospital_name": "Blessing Hospital",
+   "city": "PITTSFIELD",
+   "state": "IL",
+   "title": "FOOD & NUTRITION ASSISTANT",
+   "url": "https://pm.healthcaresource.com/cs/blessing#/job/22945",
+   "job_id": "22945",
+   "ats_platform": "HealthcareSource",
+   "description": "PAY RATE: $15.50 - $20.93\n\nBASED ON RELEVANT EXPERIENCE\n\nCOMPETITIVE BENEFITS\n\nClick here to review our complete Total Rewards Guide.\n\nRetirement + matching\n\nUp to 4 weeks paid time off in first year\n\nOnsite childcare - Quincy\n\n24/7 Wellness Center access\n\nEducational assistance opportunities\n\nJOB SUMMARY\n\nUnder the supervision of the Director of Nutritional Services, prepares and mixes ingredients for salads, fruit cups, beverages and main entry.\n\nJOB QUALIFICATIONS\n\nEducation/Training/Experience:\n\nREQUIRED:\n\nGood verbal communication skills\n\nPREFERRED:\n\nHigh school diploma or equivalent\n\nPrevious hospital and/or food service experience\n\nLicense/Certifications/Special Requirements:\n\nCurrent Illinois Sanitation License must be obtained within first 90 days.\n\nPAY STATUS\n\nNon-exempt hourly\n\nEEO Statement: Blessing Health System provides equal employment opportunities (EEO) to all employees and applicants for employment without regard to race, color, religion, sex, national origin, age, disability or genetics. In addition to federal law requirements, Blessing Health System complies with applicable state and local laws governing nondiscrimination in employment in every location in which the company has facilities. This policy applies to all terms and conditions of employment, including recruiting, hiring, placement, promotion, termination, layoff, recall, transfer, leaves of absence, compensation and training.\n\nBlessing Health System expressly prohibits any form of workplace hara",
+   "expect": {
+    "hospital_name": "Illini Community Hospital",
+    "city": "Pittsfield",
+    "state": "IL",
+    "how": "town"
+   }
+  },
+  {
+   "id": 38387581,
+   "hospital_system": "Sanford Health",
+   "hospital_name": "Sanford Health",
+   "city": "Bismarck",
+   "state": "ND",
+   "title": "Physician - Emergency Medicine",
+   "url": "https://sanford.wd5.myworkdayjobs.com/SanfordHealth/job/ND-Bismarck/Physician---Emergency-Medicine_R-0276296",
+   "job_id": "R-0276296",
+   "ats_platform": "Workday",
+   "description": "Sanford Health, the largest rural health system in the United States, is dedicated to transforming the health care experience and providing access to world-class health care in America’s heartland.\n\nVisas Accepted\nN/A\n\nSpecialty\nEmergency Medicine\n\nPractice Details\nSanford Medical Center is seeking a Board Certified/Board Eligible Emergency Medicine physician to join a well-established team of 16 residency trained Emergency physicians.\n• Level II Trauma Center\n• 30 bed department\n• 38,000 annual patient volume\n• 13-15 shifts per month/8-9 hour shifts\n• 49 hours of physician coverage per day\n• Full sub-specialty call, pediatric and adult hospitalist programs\n• High quality ultrasound and video laryngoscope\n\nAbout Sanford Health\nSanford Health, the largest rural health system in the United States, is dedicated to transforming the health care experience and providing access to world-class health care in America’s heartland. Headquartered in Sioux Falls, South Dakota, the organization has 53,000 employees and serves over 2 million patients and nearly 425,000 health plan members across the upper Midwest including South Dakota, North Dakota, Minnesota, Wyoming, Iowa, Wisconsin and the Upper Peninsula of Michigan. The integrated nonprofit health system includes a network of 56 hospitals, 288 clinic locations, 147 senior care communities, 4,000 physicians and advanced practice providers and nearly 1,500 active clinical trials and studies. The organization’s transformational virtual c",
+   "expect": {
+    "hospital_name": "Sanford Medical Center Bismarck",
+    "city": "Bismarck",
+    "state": "ND",
+    "how": "town"
+   }
+  },
+  {
+   "id": 32194629,
+   "hospital_system": "Sanford Health",
+   "hospital_name": "Sanford Health",
+   "city": "Marshfield",
+   "state": "WI",
+   "title": "Retail Pharmacy Technician",
+   "url": "https://sanford.wd5.myworkdayjobs.com/SanfordHealth/job/WI-Marshfield/Retail-Pharmacy-Technician_R-0275935",
+   "job_id": "R-0275935",
+   "ats_platform": "Workday",
+   "description": "Sanford Health, the largest rural health system in the United States, is dedicated to transforming the health care experience and providing access to world-class health care in America’s heartland.\n\nWork Shift:\n8 Hours - Day Shifts (United States of America)\n\nScheduled Weekly Hours:\n40\n\nCompensation:\nSalary Range: $18.15 - $29.00\n\nEligible for new hire sign-on bonus!\n\nUnion Position:\nNo\n\nDepartment Details\n\nSummary\nPrepare medications under the direction of a pharmacist. May measure, mix, count out, label, and record amounts and dosages of medications according to prescription orders.\n\nJob Description\nIn a retail/community pharmacy setting, the Pharmacy Technician duties consist of assisting pharmacists in compounding, preparing and dispensing medical prescriptions to the public after receiving information from customers or patients according to written/faxed prescriptions. Maintains proper storage and security conditions for drugs; ensures that equipment is functioning properly and assists in resolution of equipment maintenance and repair; controls inventory stock level and timeline to ensure adequate supplies. Assists with billing related functions. May assist with departmental quality assurance and other customer- or patient-focused services with oversight from supervisory staff; assists in the creation and maintenance of a safe working environment and conditions that adhere to state laws and regulations. Requires use of and proficiency in multiple computer programs.\n\nIn a",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "offsite"
+   }
+  },
+  {
+   "id": 29196309,
+   "hospital_system": "UW Health",
+   "hospital_name": "UW Health",
+   "city": "Madison",
+   "state": "WI",
+   "title": "Clinical Pharmacist – Per Diem – East Madison Hospital",
+   "url": "https://eimy.fa.us6.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/41822",
+   "job_id": "41822",
+   "ats_platform": "Oracle HCM",
+   "description": "Work Schedule :\n\n20% FTE, Day/Evening schedules, varying shifts available. Every other weekend scheduled. Additional weekday opportunities may be available based on operational need. Hours may vary based on the operational needs of the department.\n\nPay :\n\nPay range is based on a full-time (100%) position.\n\nBe part of something remarkable\n\nJoin the #1 hospital in Wisconsin!\n\nWe are seeking a per diem Clinical Pharmacist to:\n\nPractice in a setting that supports career growth in the hospital pharmacy and retail pharmacy.\n\nOpportunity to precept UW School of Pharmacy students.\n\nBe part of a health care facility that focuses on wellness.\n\nJoin a cohesive team of collaborative pharmacists.\n\nProvide patient care to a diverse population including emergency department patients and medicine/surgical patients.\n\nAt UW Health, you will have:\n\nOptions for a variety of schedules and shifts that offer flexibility and allow for work-life balance.\n\nAccess to great resources through the UW Health Employee Wellbeing Department that supports your emotional, financial, and physical well-being.\n\nTuition benefits eligibility - UW Health invests in your professional growth by helping pay for coursework associated with career advancement.\n\nThe opportunity to earn a referral bonus for referring friends, former colleagues or others to apply for open, posted positions.\n\nQualifications\n\nBachelor's Degree in Pharmacy or a PharmD degree Required\n\nCompletion of an ASHP Accredited Residency training program P",
+   "expect": {
+    "hospital_name": "UW Health East Madison Hospital",
+    "city": "Madison",
+    "state": "WI",
+    "how": "named"
+   }
+  },
+  {
+   "id": 26859279,
+   "hospital_system": "Henry Ford Health",
+   "hospital_name": "Henry Ford Health",
+   "city": "Troy",
+   "state": "MI",
+   "title": "Outpatient Complex Coder - Acute Care Multispecialty/Physician Services -E/M",
+   "url": "https://jobs.smartrecruiters.com/HenryFordHealth1/3743990015182051",
+   "job_id": "3743990015182051",
+   "ats_platform": "SmartRecruiters",
+   "description": "Job Description\nThis position is remote\n\nGENERAL SUMMARY:\n\nA more specific posting summary:\n\nThe Complex Coder is responsible for accurately coding professional bedside services in acute hospital settings rendered by employed and contracted providers. This multispecialty professional-fee coding position supports providers across a broad range of medical and surgical specialties and subspecialties requiring the ability to interpret diverse clinical documentation and apply appropriate coding guidelines across a wide variety of patient populations, diagnoses, procedures, and clinical scenarios.\n\nKey Responsibilities:\n\nReview and analyze diagnostic and procedural information from patient medical records using established coding principles\n\nCode complex outpatient cases with precision to support accurate reimbursement and billing processes\n\nAbstract and compile patient data for medical research projects, care evaluation, and administrative decision-making\n\nMaintain strict adherence to coding guidelines, third-party reimbursement policies, and regulatory requirements\n\nEnsure compliance with accreditation standards and quality benchmarks\n\nContribute to provider-patient continuity through accurate, reliable data management\n\nOptimize reimbursement outcomes while maintaining coding accuracy and integrity\n\nQualifications\nEDUCATION/EXPERIENCE REQUIRED:\n\nHigh School Diploma or G.E.D. equivalent required.\n\nAdditional specialty coding certification required or five (5) years coding experien",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "remote"
+   }
+  },
+  {
+   "id": 35995037,
+   "hospital_system": "KPC Health",
+   "hospital_name": "KPC Health",
+   "city": "Hemet",
+   "state": "CA",
+   "title": "CNA PER DIEM/DAY 12 hr. shift",
+   "url": "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid=1a214979-2739-4245-a1d1-38dc8531018f&ccId=19000101_000001&lang=en_US&selectedMenuKey=CareerCenter&jobId=9201603769247_1",
+   "job_id": "9201603769247_1",
+   "ats_platform": "ADP",
+   "description": "POSITION SUMMARY\n\nDEFINITION\n\nUnder general direction from Nursing Manager, and/or RN/LVN assists, professional nursing personnel in providing resident care in assigned area.\n\nPOSITION QUALIFICATIONS\n\nEducation\n\nPost High School Vocational/Specialized Training\n\nExperience\n\nPrevious experience in a Skilled Nursing Facility/Sub-Acute unit required.\n\nLicensure/Certification\n\nPossession of an appropriate, valid California certificate for nursing assistant.\n\nBLS certification.\n\nKNOWLEDGE & ABILITIES\n\nAbility to:\n\nUnderstand and follow verbal and written directions.\n\nLearn the terminology of parts and supplies associated with area of assignment.\n\nLearn quickly the specific operations of a medical treatment unit.\n\nEstablish and maintain effective working relationships with the public and fellow employees.\n\nWork effectively under stress and in emergency situations\n\nKeep simple records.\n\nManage emergency or crisis situations; requires judgement/action which could result in undesirable resident outcomes.\n\nAGE-SPECIFIC COMPETANCY (if applicable)\n\nMaintains, demonstrates and is assessed on the knowledge and skills necessary to provide for physical, psychosocial and cultural needs appropriate to the age of the residents served on his/her assigned unit.",
+   "expect": {
+    "hospital_name": "Hemet Global Medical Center",
+    "city": "Hemet",
+    "state": "CA",
+    "how": "town"
+   }
+  },
+  {
+   "id": 38103995,
+   "hospital_system": "Northwestern Medicine",
+   "hospital_name": "Northwestern Medicine",
+   "city": "Lake Forest",
+   "state": "IL",
+   "title": "Senior Practice Manager-Cardiology",
+   "url": "https://jobs.smartrecruiters.com/northwesternmedicine/744000154748724",
+   "job_id": "744000154748724",
+   "ats_platform": "SmartRecruiters",
+   "description": "Job Description\nThe Sr. Practice Manager reflects the mission, vision, and values of Northwestern Memorial, adheres to the organization’s Code of Ethics and Corporate Compliance Program, and complies with all relevant policies, procedures, guidelines, and all other regulatory and accreditation standards.\n\nThe Sr. Practice Manager is responsible for managing complex clinical programs that require ongoing collaboration across business units, operations of one or more practice sites and supervising both clinical and administrative support staff.\n\nResponsibilities:\n\nManage the office’s front-line non-exempt staff, requiring interviewing, hiring, training, progressive discipline, dismissals, performance appraisals, and employee relations.\n\nSchedule staff and allocate resources across hours of operation to maximize patient access and satisfaction, provider productivity and efficiency, staff productivity, cost-savings, and operational efficiencies.\n\nConduct supply purchasing via the Group’s on-line ordering and shopping list system within specified budget.\n\nReport monthly productivity results to providers and staff.\n\nEnsure accuracy of all data collection and data entry by site staff through training and compliance monitoring and facilitate and oversee flow of information to and from NMG’s Central Office.\n\nConduct timely and accurate cash management duties, including overseeing the collection of co-pays and patient balances and processing of clean super bill batches, in-house cash b",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "offsite"
+   }
+  },
+  {
+   "id": 22075997,
+   "hospital_system": "VCU Health",
+   "hospital_name": "VCU Health",
+   "city": "Richmond",
+   "state": "VA",
+   "title": "Multi-Modality Tech I/II (X-Ray & CT) - Children's Hospital of Richmond - Days",
+   "url": "https://vcuhealth.wd1.myworkdayjobs.com/VCUHealth_careers/job/Richmond-VA/Multi-Modality-Tech-I-II--X-Ray---CT----Children-s-Hospital-of-Richmond---Nights_R45117",
+   "job_id": "R45117",
+   "ats_platform": "Workday",
+   "description": "**$20,000 sign-on incentive available for offers accepted prior to October 31, 2026. Terms and conditions apply.**\n\nThe Multi-Modality Technologist performs routine and complex high-quality imaging exams in assigned modalities. The Multi-Modality Technologist provides safe, patient-centered care with attention to the physical and emotional needs of patients of all age groups.\n\nCore Competencies\n\nPerform all the duties of a Multi-Modality Technologist I.\n\nCapable of safely administering contrast or other imaging agents including the identification of incompatibilities and/or interactions.\n\nExpected to assess a patient’s risk for allergic reaction to contrast media and other related medications prior to administration and following appropriate protocols for escalation of concerns.\n\nExpected to evaluate lab values prior to administering contrast media or other related medications and beginning the ordered examination.\n\nCapable of providing accurate explanations and instructions to the patient and family using age-appropriate language and verifying that the patient understands and agrees to the completion of the ordered exam.\n\nCapable of performing ordered exams or therapy in accordance with established imaging protocols while respecting the patient’s ability and comfort.\n\nCapable of adhering to policies and utilizing protocols to determine that expected outcomes have been met.\n\nCapable of documenting deviations from protocol and/or patient-specific issues that may impact image q",
+   "expect": {
+    "hospital_name": "Children's Hospital of Richmond at VCU",
+    "city": "Richmond",
+    "state": "VA",
+    "how": "site"
+   }
+  },
+  {
+   "id": 25543,
+   "hospital_system": "Jefferson Health",
+   "hospital_name": "Jefferson Health",
+   "city": "Philadelphia",
+   "state": "PA",
+   "title": "Palliative Care Advance Practice Provider (Nurse Practitioner) - Jefferson Einstein Philadelphia Hospital",
+   "url": "https://jeffersonhealth.wd5.myworkdayjobs.com/ThomasJeffersonExternal/job/Einstein-Hosp-Phila---Tower-Bldg/Palliative-Care-Advance-Practice-Provider--Nurse-Practitioner----Jefferson-Einstein-Philadelphia-Hospital_JR_9308796-1",
+   "job_id": "JR_9308796",
+   "ats_platform": "Workday",
+   "description": "Job Details\n\nJob Description\n\nWork Shift\nWorkday Day (United States of America)\n\nWorker Sub Type\nRegular\n\nPrimary Location Address\n5501 Old York Road, Philadelphia, Pennsylvania, United States of America\n\nNationally ranked, Jefferson, which is principally located in the greater Philadelphia region, Lehigh Valley and Northeastern Pennsylvania and southern New Jersey, is reimagining health care and higher education to create unparalleled value. Jefferson is more than 65,000 people strong, dedicated to providing the highest-quality, compassionate clinical care for patients; making our communities healthier and stronger; preparing tomorrow's professional leaders for 21st-century careers; and creating new knowledge through basic/programmatic, clinical and applied research. Thomas Jefferson University , home of Sidney Kimmel Medical College, Jefferson College of Nursing, and the Kanbar College of Design, Engineering and Commerce, dates back to 1824 and today comprises 10 colleges and three schools offering 200+ undergraduate and graduate programs to more than 8,300 students. Jefferson Health , nationally ranked as one of the top 15 not-for-profit health care systems in the country and the largest provider in the Philadelphia and Lehigh Valley areas, serves patients through millions of encounters each year at 32 hospitals campuses and more than 700 outpatient and urgent care locations throughout the region. Jefferson Health Plans is a not-for-profit managed health care organization ",
+   "expect": {
+    "hospital_name": "Jefferson Einstein Philadelphia Hospital",
+    "city": "Philadelphia",
+    "state": "PA",
+    "how": "named"
+   }
+  },
+  {
+   "id": 36522608,
+   "hospital_system": "Tidelands Health",
+   "hospital_name": "Tidelands Health",
+   "city": "Murrells Inlet",
+   "state": "SC",
+   "title": "Rad Technologist I",
+   "url": "https://tidelandshealth.wd12.myworkdayjobs.com/Tidelands/job/Tidelands-Health-900-21st-Avenue/Rad-Technologist-I_JR105174-1",
+   "job_id": "JR105174",
+   "ats_platform": "Workday",
+   "description": "Employee Type:\nRegular\nWork Shift:\nDay - 8 hour shift (United States of America)\n\nJoin Team Tidelands and help people live better lives through better health!\n\nRadiologic Technologist I\nAre you passionate about quality and committed to excellence? Consider joining our Tidelands Health team. As our region's largest health care provider, we are also one of our area's largest employers. More than 2,500 team members at more than 70 Tidelands Health locations bring our healing mission to life each day.\n\nA Brief Overview\nPerforms radiographic procedures at a technical level requiring sound understanding of anatomical positioning and physiology; a high degree of technical competency and with the ability to act with initiative and ingenuity with minimal supervision. Apply ionizing radiation for radiologic diagnosis in adult and/or pediatric radiology.\n\nWhat you will do\n\nProvide excellent patient care by educating and preparing patients for their procedure while utilizing effective communication.\n\nEnsure patient comfort and safety for the duration of their procedure.\n\nObtain and document accurate patient medical history to assist radiologist’s interpretation.\n\nPosition and instruct patient while utilizing protective shielding, immobilization, and supportive devices as required.\n\nPerform standard diagnostic radiographic procedures as required by physician’s order.\n\nPerform a variety of diagnostic procedures to include but not limited to fluoroscopy, C-arm in the Operating Room, digital",
+   "expect": {
+    "hospital_name": null,
+    "city": null,
+    "state": null,
+    "how": "default"
+   }
+  },
+  {
+   "id": 28391405,
+   "hospital_system": "Great River Health",
+   "hospital_name": "Great River Health",
+   "city": "West Burlington",
+   "state": "IA",
+   "title": "Nutrition Services Aide | PRN | Nutrition Services at HCHC",
+   "url": "https://greatriverhealth.wd5.myworkdayjobs.com/External/job/Mt-Pleasant-Iowa/Nutrition-Services-Aide---PRN---Nutrition-Services-at-HCHC_R-09182",
+   "job_id": "R-09182",
+   "ats_platform": "Workday",
+   "description": "Minimum Hiring Wage:\nFrom $16.50 per hour\n\nJob Details:\nVariable Hours/Shifts\n\nJob Description:\n\nA Brief Overview\n\nTo provide high quality food service in accordance with prescribed medical nutrition therapy while meeting all food safety and sanitation codes. To assist patients in menu selections in accordance to their prescribed medical nutrition therapeutic needs.\n\nWhat you will do\n\nPrepare and cook food items, including meats, fish, poultry, and baked goods, according to planned menus, special dietary needs, and portion requirements.\n\nServe meals to facility residents, employees, or patrons, ensuring proper portioning and adherence to dietary guidelines.\n\nAdhere to food safety regulations for sanitation, storage, and handling, including monitoring the use of government food commodities.\n\nClean, inspect, and maintain galley equipment, kitchen appliances, and work areas to ensure cleanliness and functional operation.\n\nWash and sanitize pots, pans, dishes, utensils, and other cooking equipment.\n\nMonitor food temperatures and maintain records of food use, expenditures, and compliance with safety standards.\n\nDirect and coordinate activities of staff assisting in meal preparation and service.\n\nMaintain a clean and organized work and storage area, including sweeping, mopping, and waste management.\n\nOperate and maintain kitchen tools and equipment, including proper knife handling and care.\n\nConnect with the Manager daily to prepare and execute menus accurately, incorporating garni",
+   "expect": {
+    "hospital_name": "Henry County Health Center",
+    "city": "Mount Pleasant",
+    "state": "IA",
+    "how": "town"
+   }
+  },
+  {
+   "id": 32485299,
+   "hospital_system": "Children's Minnesota",
+   "hospital_name": "Children's Minnesota",
+   "city": "Minneapolis",
+   "state": "MN",
+   "title": "Medical Lab Technician I",
+   "url": "https://childrensmn.taleo.net/careersection/ex/jobdetail.ftl?job=260271EQ&lang=en",
+   "job_id": "260271EQ",
+   "ats_platform": "Phenom",
+   "description": "About Children’s Minnesota\n\nChildren’s Minnesota is one of the largest pediatric health systems in the United States and the only health system in Minnesota to provide care exclusively to children, from before birth through young adulthood. An independent and not-for-profit system since 1924, Children’s Minnesota is one system serving kids throughout the Upper Midwest at two free-standing hospitals, nine primary care clinics, multiple specialty clinics and seven rehabilitation sites. As The Kids Experts™ in our region, Children’s Minnesota is regularly ranked by U.S. News & World Report as a top children’s hospital. Find us on Facebook @childrensminnesota or on Twitter and Instagram @childrensmn. Please visit childrensMN.org .\n\nChildren’s Minnesota is proud to be recognized by Modern Healthcare as one of 2023’s Top Diversity Leaders. The national honor recognizes the top diverse healthcare executives and organizations influencing public policy, care delivery, and promoting diversity, equity and inclusion in their organizations and the industry.\n\nDepartment Overview\n\nThe laboratories at Children's Hospitals and Clinics are full service facilities that offer a complete spectrum of laboratory techniques for the evaluation of pediatric disorders. Laboratories are located on both the Minneapolis and St. Paul campuses and and provide services on an inpatient and outpatient basis. Disciplines include Chemistry, Hematology, Microbiology, Virology, Serology, Blood Bank, Immunology/Flo",
+   "expect": {
+    "hospital_name": "Children's Minnesota Minneapolis Hospital",
+    "city": "Minneapolis",
+    "state": "MN",
+    "how": "town"
+   }
+  }
+ ]
+}
