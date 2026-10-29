@@ -114,6 +114,8 @@ RADNET_WANT = {
                          ids=lambda r: f"{r['location_name']}|{(r.get('tags2') or [''])[0]}")
 def test_radnet_centre_from_location_name_and_brand(row):
     want = RADNET_WANT[(row["location_name"], (row.get("tags2") or [""])[0])]
+    if C.FLOAT_TITLE_RX.search(row.get("title") or ""):
+        want = C.RADNET                 # review A 2026-10-29: a float works across the market's centres
     assert C.radnet_site(row)[0] == want
     assert scraper._jibe_facility(C.RADNET, row) == want
 
@@ -200,6 +202,8 @@ def test_usph_clinic_from_brand_and_clinic_fields(posting):
     want = USPH_WANT[_clinic(posting)]
     if isinstance(want, dict):         # one clinic posted under two brands
         want = want[{f.get("fieldLabel"): f.get("valueLabel") for f in posting.get("customField", [])}["Brands"]]
+    if C.FLOAT_TITLE_RX.search(posting.get("name") or ""):
+        want = C.USPH                   # review A 2026-10-29: a floater covers several clinics
     assert C.usph_site(posting)[0] == want
 
 

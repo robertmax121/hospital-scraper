@@ -477,7 +477,18 @@ EMORY_TOWNS = TOWN._spec(EMORY, [
     "Emory Warner Robins Hospital": ("Emory Hospital Warner Robins", "Emory Houston Hospital Warner Robins"),
     "Emory Decatur Hospital": ("EDH",),
     "Emory Johns Creek Hospital": ("EJCH", "Emory John's Creek Hospital"),
-})
+# review A, 2026-10-29: "This role will lead communications in both Warner
+# Robins, Ga and Perry, Ga." is no one hospital's job
+}, office_line=r"(?i)\bwarner\s+robins,?\s+(?:ga\.?,?\s+|georgia,?\s+)?(?:and|&)\s+perry\b", entity_chars=12000)
+# Review A, 2026-10-29: postings no one hospital holds, read in the whole
+# stored body (the "About Us" boilerplate pushes them past the head): an
+# anaesthesia team for every site ("CRNA JOB DESCRIPTION - Camden, CDHI, VSC,
+# MSC, BMA, CAPE (all locations)"), a remote option ("For 100% remote RNs"),
+# home visits and the Mobile Integrated Health team in patients' homes.
+P4_BODY_CHARS = 12000
+COOPER_OFFICE_BODY = (r"(?i)\(\s*all\s+locations\s*\)|\b100%\s+remote\b|\bfully\s+remote\b|"
+                      r"\bhome[- ]based\s+primary\s+care\b|\bin[\s\-‐‑]home\s+(?:care|assessments?)\b|"
+                      r"\bfield[- ]based\b")
 COOPER_TOWNS = TOWN._spec(COOPER, [
     # the postings' own names since the rename ("Cooper Norcross Health,
     # formerly Cooper University Health Care ... its 663-bed flagship Cooper
@@ -498,7 +509,7 @@ COOPER_TOWNS = TOWN._spec(COOPER, [
     ("MD Anderson Cancer Center at Cooper", "Camden", "NJ", ("MD Anderson Cancer Center at Cooper", "MD Anderson")),
 ], aliases={
     "Cooper Norcross University Hospital Cape Regional": ("Cape Regional", "Cape May", "Cape"),
-})
+}, office_line=COOPER_OFFICE_BODY, entity_chars=P4_BODY_CHARS)
 # No town table for KU: its bodies name the work location (1,034 of the
 # 1,039 label rows on 2026-10-29) and 510 of those are pavilions, towers,
 # offices and clinics in the hospitals' own towns (Kansas City's Medical
@@ -538,6 +549,16 @@ def _also_named(spec, name, *spellings) -> None:
 # the system name (facilities_town reads the per-system pattern as a site
 # that is no single hospital).
 TOWN.CARE_SITE_BY_SYSTEM.setdefault(EMORY, re.compile(r"\bWarner\s+Robins\s*(?:&|and|/)\s*Perry\b", re.I))
+# Review A, 2026-10-29: Cooper titles that are no Camden or Cape May hospital
+# job: home visits and the Mobile Integrated Health / community paramedicine
+# team, a title naming the surgery centres or other towns ("Perioperative
+# Services Educator ... - Voorhees and Moorestown", "Hospitalist Cape May and
+# Inspira"), and the business offices (patient accounts, collections, prior
+# authorization, provider compensation, sponsored programs).
+TOWN.CARE_SITE_BY_SYSTEM.setdefault(COOPER, re.compile(
+    r"\b(?:home\s+visits?|mobile\s+integrated|community\s+paramedic\w*|community\s+outreach|voorhees|moorestown|"
+    r"willingboro|mount\s+laurel|sewell|inspira|patient\s+accounts?|collections?\s+specialist|"
+    r"authorization\s+specialist|provider\s+compensation|sponsored\s+programs?)\b", re.I))
 
 _also_named(EMORY_TOWNS, "Emory University Hospital Midtown", "Emory Midtown", "EUHM")
 _also_named(EMORY_TOWNS, "Emory Saint Joseph's Hospital", "Emory Saint Joseph's", "Emory St Joseph's", "ESJH")
@@ -694,7 +715,24 @@ def _ku_url(job) -> str:
     return "url"
 
 
+# Review A, 2026-10-29: a KU posting worked remotely or hybrid ("Director of
+# Claims & Senior Counsel - Hybrid", "Choose from traditional on-site,
+# hybrid, or fully remote work arrangements") is no one hospital's (decision
+# 2), whatever its work location line names. "Hospitalist (Hybrid Shift)" and
+# "Core Lab Hybrid 8HR/10HR" are schedules, not remote work.
+KU_REMOTE_TITLE_RX = re.compile(r"(?:[-–(]\s*hybrid\s*\)?\s*$)|\bremote\b", re.I)
+KU_REMOTE_BODY_RX = re.compile(r"\b(?:fully\s+remote|100%\s+remote|remote\s+work\s+arrangements?|work\s+from\s+home)\b",
+                               re.I)
+
+
+def ku_remote(title, description) -> bool:
+    return bool(KU_REMOTE_TITLE_RX.search(T.clean_text(title))
+                or KU_REMOTE_BODY_RX.search(str(description or "")[:12000]))
+
+
 def _ku_one(job) -> str:
+    if ku_remote(job.title, job.description):
+        return "remote"
     site, kind, what, raw = read_ku(job.description)
     if site is not None:
         placed = T.place(KU_SPEC, site, kind, job.city, job.state, raw)

@@ -464,13 +464,13 @@ MercyOne-North-Iowa-Rehab-Services-Chelsea-Creek---Mason-City-Iowa | MercyOne No
 Mercy-LIFE-Chester-County | Mercy LIFE Chester County | Coatesville | PA | rows (posting text: Coatesville, PA)
 Mercy-LIFE---Montgomery-County | Mercy LIFE Norristown | Norristown | PA | rows (posting text: "Location: Norristown, PA", "Mercy LIFE Norristown, part of Trinity Health PACE")
 Mercy-Life-Montgomery-County | Mercy LIFE Norristown | Norristown | PA | rows (posting text: "Location: Norristown, PA", "Mercy LIFE Norristown, part of Trinity Health PACE")
+Mercy-LIFE---Delaware-County---Valley-View | Mercy LIFE Valley View | Elwyn | PA | rows (posting text: "Location: Elwyn, PA", "Mercy LIFE Valley View , part of Trinity Health PACE"; review A 2026-10-29: "Valley View" is the centre, not a town)
 Saint-Francis-LIFE-College-Avenue | Saint Francis LIFE | Newark | DE | rows (posting text: Newark, DE)
 Hospice-of-North-Ottawa-Community | Hospice of North Ottawa Community | Grand Haven | MI | rows (posting text: Grand Haven, MI)
 THSC---Providence-Place | Providence Place | Holyoke | MA | rows (posting text: Holyoke, MA)
 SPARC-Guilderland---Guilderland-New-York | SPARC Guilderland | Guilderland | NY | site
 SPNY---SPARC---Latham | SPARC Latham | Latham | NY | site
 Seton-Health-Rehabilitation--Clifton-Park---Clifton-Park-New-York | Seton Health Rehabilitation Clifton Park | Clifton Park | NY | site
-Riverside-Medical-Center---Green-Island-New-York | Riverside Medical Center | Green Island | NY | site
 Saugerties-Wellness-Center---Saugerties-New-York | Saugerties Wellness Center | Saugerties | NY | site
 THHS---St-Francis-Home-Care---Newark-DE | St. Francis Home Care | Newark | DE | site
 Athens-Home-Care--Hospice | St. Mary's Home Care & Hospice | Athens | GA | site; rows (posting text: St. Mary's Home Care & Hospice, Athens, Georgia)
@@ -505,6 +505,9 @@ SPNY---2-Empire-Dr-East-Greenbush | - | East Greenbush | NY | site
 SPNY---10-Blacksmith-Dr-Malta | - | Malta | NY | site
 SPNY---1-Bell-Tower-Dr-Watervliet | - | Watervliet | NY | site
 SPNY---31-Lower-Hudson-St-Green-Island | - | Green Island | NY | site
+# review A 2026-10-29: the site's own postings name their work site elsewhere ("Location: Northeast Home
+# Medical Equipment, 60 Cohoes Ave, Green Island"), so the descriptor is a building, not a named site
+Riverside-Medical-Center---Green-Island-New-York | - | Green Island | NY | rows (posting text: Northeast Home Medical Equipment, 60 Cohoes Ave, Green Island, NY)
 SPNY---147-Hoosick-St-Troy | - | Troy | NY | site
 SPNY---720-Hoosick-Road-Troy | - | Troy | NY | site
 SPNY---1-Maple-Commons-Drive-Saratoga-Springs | - | Saratoga Springs | NY | site
@@ -560,7 +563,6 @@ NAMED_NO_TOWN = {
     W.key("Mercy-Home-Health---Delaware-County"): ("Mercy Home Health", "PA"),
     W.key("Mercy-Home-Health---Springfield"): ("Mercy Home Health", "PA"),
     W.key("MSEPA---St-Mary-Home-Care"): ("St. Mary Home Care", "PA"),
-    W.key("Mercy-LIFE---Delaware-County---Valley-View"): ("Mercy LIFE Delaware County", "PA"),
     W.key("THHS---Johnson-Memorial-Home-Care--Hospice"): ("Johnson Memorial Home Care and Hospice", None),
     W.key("SPNY---Eddy-Senior-Care"): ("Eddy Senior Care", "NY"),
     W.key("THSC---St-Lukes"): ("St. Luke's Home", None),
@@ -629,6 +631,38 @@ TRINITY_POOL_RX = re.compile(r"\b(?:clinical\s+staffing|staffing\s+(?:center|cen
                              r"regional\s+float|system\s+float)\b", re.I)
 
 
+# Review A, 2026-10-29: a posting that says it is worked mostly from home
+# ("This is a hybrid position with opportunity to work most of the schedule
+# from home", "This position is a hybrid position. Spending 2 days a week in
+# one of the offices ... and 3 days remote") is no one site's (decision 2:
+# remote postings show the system name), even when its location line or its
+# Workday site names one. A hybrid operating room or a hybrid shift is not
+# matched.
+HYBRID_RX = re.compile(
+    r"\b(?:hybrid\s+(?:position|role|work\s+model|work\s+arrangement|schedule\s+with)|"
+    r"this\s+(?:position|role|job)\s+is\s+(?:a\s+)?hybrid|"
+    r"(?:\d|one|two|three|four)\s+days?\s+(?:a\s+week\s+|per\s+week\s+)?remote(?:ly)?|"
+    r"work\s+(?:most\s+of\s+the\s+(?:schedule|week)\s+)?from\s+home|fully\s+remote|100%\s+remote)\b", re.I)
+# A regional leader ("Regional Administrative Director, Heart and Vascular
+# Services ... across the West Michigan market", "Regional Service Line
+# Director - Oncology Services"): no one hospital's (review A, 2026-10-29).
+REGIONAL_ROLE_RX = re.compile(
+    r"\bregional\s+(?:administrative\s+|service\s+line\s+|clinical\s+|operations\s+|executive\s+|senior\s+|"
+    r"sr\.?\s+|medical\s+|nursing\s+)*(?:director|manager|leader|vice\s+president|vp|officer|executive)\b", re.I)
+
+
+def is_hybrid(title, description) -> bool:
+    return bool(HYBRID_RX.search(clean_text(title)) or HYBRID_RX.search(clean_text(str(description or "")[:4000])))
+
+
+def site_table_keep(title, description) -> str:
+    """Why a row the Workday site table gave a named non-hospital site keeps
+    the system name instead ("remote"), or "" (review A, 2026-10-29)."""
+    if T.is_remote(title, description) or is_hybrid(title, description):
+        return "remote"
+    return ""
+
+
 def _exclusions(system, title, description):
     """Why a posting is no one hospital's (the TOWN family's tests), or ""."""
     if T.is_remote(title, description):
@@ -657,6 +691,12 @@ def decide_trinity(hospital_name, city, state, title="", description="", url="")
     title = clean_text(title).replace("_", " ")     # "Medical Oncologist_ Plymouth"
     st = (state or "").strip().upper()
     kind, info = site_kind(url, city, st)
+    # review A, 2026-10-29: a hybrid / mostly-from-home posting or a regional
+    # leader's keeps the system name, and the town rule is told to leave it
+    if is_hybrid(title, description):
+        return _keep("remote")
+    if REGIONAL_ROLE_RX.search(title):
+        return _keep("multi-site")
     if kind == "site":
         nt = NAMED_NO_TOWN.get(W.key(W.path_segment(url or "")))
         if nt is None:
@@ -930,6 +970,35 @@ def _trinity_one(job) -> str:
     return how
 
 
+def _trinity_site_guard(job) -> str:
+    """A row the Workday site table named (a named non-hospital site of
+    _SITES) whose posting says it is worked mostly from home goes back to the
+    system name, with no town and the site's state (review A, 2026-10-29:
+    "Administrative Assistant/CSR local to Hartford, Ct." on the Newark, DE
+    home-care site). On a night without a body the stored decision stands:
+    a row the database holds on the system name keeps it (and its stored
+    town), so the site table does not name it again ("site-kept-label").
+    Returns "site-remote", "site-kept-label", or "" when nothing changes."""
+    entry = _ADDED_SITES.get(W.key(W.path_segment(job.url or "")))
+    if not entry or not entry[0] or clean_text(job.hospital_name) != entry[0]:
+        return ""
+    if not _has_body(job):
+        kept = T.STORED.get((TRINITY, str(job.job_id)))
+        if not kept or kept[0] != TRINITY:
+            return ""
+        job.hospital_name = TRINITY
+        job.city, job.state = kept[1], kept[2]
+        job.location = f"{kept[1]}, {kept[2]}" if kept[1] and kept[2] else kept[1] or kept[2]
+        setattr(job, SKIP_ATTR, True)
+        return "site-kept-label"
+    if not site_table_keep(job.title, job.description):
+        return ""
+    job.hospital_name = TRINITY
+    job.city, job.state, job.location = "", entry[2], entry[2]
+    setattr(job, SKIP_ATTR, True)
+    return "site-remote"
+
+
 def _stored(system, job):
     return T.STORED.get((system, str(job.job_id)))
 
@@ -965,6 +1034,12 @@ def apply_jobs(jobs, canon=None) -> dict:
     stats: dict = {}
     for job in jobs:
         system = canon(job.hospital_system) if canon else job.hospital_system
+        if system == TRINITY and clean_text(job.hospital_name) not in ("", system):
+            how = _row_guard(_trinity_site_guard, job)
+            if how:
+                d = stats.setdefault(system, {})
+                d[how] = d.get(how, 0) + 1
+            continue
         if clean_text(job.hospital_name) not in ("", system):
             continue
         if system == TRINITY:

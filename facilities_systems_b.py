@@ -222,6 +222,28 @@ OHSU_TITLE = (
 )
 _OHSU_ABOUT_RX = re.compile(r"(?mi)^[ \t]*About\s+(?:OHSU\s+)?Doernbecher\s+Children(?:'|’)?s\s+Hospital\b")
 
+# Review A, 2026-10-29: the cost-centre code is the employing entity, not the
+# work site (as release 3's review A ruled for employer lines): MSH employs
+# the off-site practices on Long Island and Staten Island ("Medical Assistant
+# I- Multispecialty - Lynbrook, NY - ... - Offsite"), the Corporate 42nd
+# Street offices, the system's strategy, development, finance, contracting
+# and command-centre staff, and BI the Phillips School of Nursing. The code
+# names the hospital only for a posting that is none of these; a title that
+# spells the hospital ("Mt Sinai Hospital") still names it.
+MS_ENTITY_NOT_SITE_RX = re.compile(
+    r"\b(?:off[\s-]?site|corporate|MSHS|health\s*(?:care)?\s+system|42nd\s+st(?:reet)?|command\s+cent(?:er|re)|"
+    r"school\s+of\s+nursing|PSON|medical\s+associates|health\s+cent(?:er|re)|enterprise|system\s+director|"
+    r"commercialization|reimbursement|contract(?:ing|s)?|revenue|accountant|accounting|development\s+officer|"
+    r"corporate\s+development|planned\s+giving|population\s+health|multispecialty|office\s+assistant|"
+    r"medical\s+secretary|billing|coding)\b", re.I)
+
+
+def ms_entity_offsite(title, description="") -> bool:
+    """A Mount Sinai posting the cost-centre code does not place at the
+    hospital: an off-site practice, an office, a school or a system role."""
+    t = clean_text(title)
+    return bool(MS_ENTITY_NOT_SITE_RX.search(t) or facilities_town._offsite_by_title(t, description))
+
 SPECS = {s.system: s for s in (VANDALIA_SPEC, IRC_SPEC, UK_SPEC, MS_SPEC, OHSU_SPEC)}
 SYSTEMS = frozenset(SPECS)
 
@@ -340,6 +362,8 @@ def decide(system, hospital_name, city, state, title="", description=""):
     if site is not None:
         if kind == "entity" and _REMOTE_RX.search(clean_text(title)):
             return (spec.system, jc, js, "town") if moved else (None, None, None, "remote")
+        if kind == "entity" and spec.system == MOUNT_SINAI and ms_entity_offsite(title, description):
+            return (spec.system, jc, js, "town") if moved else (None, None, None, "office")
         placed = T.place(spec, site, kind, jc, js, raw)
         if placed is None:
             return (spec.system, jc, js, "town") if moved else (None, None, None, "elsewhere")
@@ -610,10 +634,34 @@ Genesis-New-Concord-Pharmacy                         | Genesis New Concord Pharm
 # Titles naming an off-site service of the town's hospital ("Radiology
 # Technologist - Off Site Radiology") or a practice building: no hospital.
 _OFFSITE_TITLE = re.compile(r"\boff[\s-]?site\b|\boutpatient\s+(?:center|centre|clinic)\b|\bMOB\b", re.I)
+# Review A, 2026-10-29: per system, titles that name a clinic or another town
+# of the system, several sites, or a business office, and so no one
+# hospital's job (decision 2):
+#   Duke Raleigh's practices and clinics by place ("Financial Care Counselor -
+#   Oculofacial Eye at Brier Creek", "Physical Therapist - Knightdale",
+#   "Interventional Spine Physiatrist- Duke Health Garner", "Duke Lightner
+#   Dermatology", "Duke Women's Health (Heritage)"), "(3 Campuses)";
+#   SolutionHealth's patient accounts office, the Visiting Nurse Association,
+#   Elliot at River's Edge, and titles for other towns ("Manchester / Derry
+#   Locations", "Nashua & Hudson, NH").
+_OFFSITE_TITLE_BY_SYSTEM = {
+    DUKE: re.compile(_OFFSITE_TITLE.pattern + r"|\b(?:knightdale|holly\s+springs|brier\s+creek|heritage|garner|cary|"
+                     r"wake\s+forest|lightner|dermatology|oculofacial|\d+\s+campuses|multiple\s+campuses)\b", re.I),
+    SOLUTION: re.compile(_OFFSITE_TITLE.pattern + r"|\b(?:patient\s+accounts?|a/?r\s+specialist|accounts?\s+rec\w*|"
+                         r"visiting\s+nurse|VNA|rivers?\s*'?\s*edge|derry|hudson|bedford|hooksett|londonderry|"
+                         r"merrimack|amherst|traveler\s+services)\b", re.I),
+}
 for _sys in (SOLUTION, DARTMOUTH, DUKE):
     if _sys in facilities_town.CARE_SITE_BY_SYSTEM:
         raise ValueError(f"facilities_town already has care sites for {_sys}")
-    facilities_town.CARE_SITE_BY_SYSTEM[_sys] = _OFFSITE_TITLE
+    facilities_town.CARE_SITE_BY_SYSTEM[_sys] = _OFFSITE_TITLE_BY_SYSTEM.get(_sys, _OFFSITE_TITLE)
+# Body lines no one hospital holds (review A, 2026-10-29), read in the whole
+# stored body: "Positions available at multiple hospitals within Duke Health
+# System", "scheduling oncology care at all locations", a remote option.
+DUKE_TOWNS.office_line = re.compile(
+    r"(?i)\bpositions?\s+available\s+at\s+multiple\s+hospitals\b|\bat\s+all\s+(?:locations|campuses|hospitals)\b|"
+    r"\bfully\s+remote\b|\b100%\s+remote\b")
+DUKE_TOWNS.entity_chars = 12000
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -630,7 +678,14 @@ FMOL = "Franciscan Missionaries of Our Lady Health System"
 CEDARS_TOWNS = facilities_town._spec(CEDARS, [
     _h("Cedars-Sinai Medical Center", "Los Angeles", "CA", "cms 050625"),
     _h("Cedars-Sinai Marina del Rey Hospital", "Marina Del Rey", "CA", "cms 050740"),
-])
+# review A, 2026-10-29: "Lead Clinical Interpreter/Translator - Spanish @ Cedars
+# Marina Hospital" on a Los Angeles row names the other hospital; a remote
+# ("Approved Remote States: ...") or hybrid role ("This is a hybrid role") is
+# no one hospital's
+], aliases={"Cedars-Sinai Marina del Rey Hospital": ("Marina Hospital", "Cedars Marina")},
+    office_line=r"(?i)\bapproved\s+remote\s+states?\b|\bthis\s+is\s+a\s+hybrid\s+role\b|\bfully\s+remote\b|"
+                r"\b100%\s+remote\b",
+    entity_chars=12000)
 FMOL_TOWNS = facilities_town._spec(FMOL, [
     _h("St. Dominic Hospital", "Jackson", "MS", "cms 250048"),
     _h("Our Lady of the Lake Regional Medical Center", "Baton Rouge", "LA", "cms 190064"),
@@ -643,8 +698,16 @@ FMOL_TOWNS = facilities_town._spec(FMOL, [
     _h("Our Lady of the Angels Hospital", "Bogalusa", "LA", "cms 190312"),
     _h("St. Elizabeth Hospital", "Gonzales", "LA", "site (1125 W Hwy 30, Gonzales)"),
 ], default=("Baton Rouge", "LA"))
+# Review A, 2026-10-29: Cedars titles naming a practice in another town or
+# another company's hospital ("Medical Scribe - Orthopedics - Santa Monica",
+# "Operations Supervisor, Podiatry & Ortho (Beverly Hills)", "Operations
+# Supervisor, HH (Pasadena)", "Neonatologist - Providence Saint Joseph Medical
+# Center (Burbank)") or an office ("Director, HR Service Center").
+_OFFSITE_TITLE_BY_SYSTEM[CEDARS] = re.compile(
+    _OFFSITE_TITLE.pattern + r"|\b(?:santa\s+monica|beverly\s+hills|pasadena|burbank|providence|tarzana|torrance|"
+    r"culver\s+city|west\s+hollywood|playa\s+vista|HR\s+service\s+cent(?:er|re)|home\s+health)\b|\bHH\b", re.I)
 for _sys in (CEDARS, FMOL):
-    facilities_town.CARE_SITE_BY_SYSTEM.setdefault(_sys, _OFFSITE_TITLE)
+    facilities_town.CARE_SITE_BY_SYSTEM.setdefault(_sys, _OFFSITE_TITLE_BY_SYSTEM.get(_sys, _OFFSITE_TITLE))
 
 
 # ══════════════════════════════════════════════════════════════════════════

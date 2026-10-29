@@ -149,6 +149,14 @@ def _title_case(s: str) -> str:
     return " ".join(w if i and w in small else w[:1].upper() + w[1:] for i, w in enumerate(s.lower().split()))
 
 
+# Review A, 2026-10-29: a float or floater posting ("Physical Therapist
+# Floater (Nassau County)", "CT Technologist Float", "Patient Service
+# Representative Float") works across a market's centres or clinics: no one
+# site's (decision 2, regional pools keep the system name), whatever its
+# home centre or clinic field says.
+FLOAT_TITLE_RX = re.compile(r"\b(?:float(?:er|ers|ing)?|rover|roving)\b", re.I)
+
+
 # ══ RadNet (Jibe) ═══════════════════════════════════════════════════════════
 RADNET_FILE = os.path.join(_HERE, "facilities_chains_radnet.json")
 try:
@@ -225,6 +233,8 @@ def radnet_site(j: dict) -> tuple[str, str]:
     kind = " ".join(str(v) for v in (j.get("tags2") or []) if v).lower()
     if "remote" in kind or "hybrid" in kind:
         return RADNET, "remote"
+    if FLOAT_TITLE_RX.search(clean(j.get("title"))):
+        return RADNET, "float"
     if not loc:
         return RADNET, "none"
     place = radnet_place(loc)
@@ -319,6 +329,8 @@ def usph_site(posting: dict) -> tuple[str, str]:
     loc = p.get("location") or {}
     if loc.get("remote") or loc.get("hybrid"):
         return USPH, "remote"
+    if FLOAT_TITLE_RX.search(clean(p.get("name"))):
+        return USPH, "float"
     f = _usph_fields(p)
     brand = clean(f.get("Brands"))
     clinic = clean(f.get("Clinic"))
