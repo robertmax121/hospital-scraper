@@ -73,7 +73,8 @@ def test_one_spelling_per_facility_and_one_town_per_name():
     # case and punctuation aside, no two names are the same facility
     keys = [re.sub(r"[^a-z0-9]", "", n.lower()) for n in by_name]
     assert len(keys) == len(set(keys))
-    assert A.names() == sorted(by_name)
+    # 2026-10-29 (address sites): names() also gives the campus table's names
+    assert A.names() == sorted(set(by_name) | {v[0] for v in A.ADDRESS_SITES.values()})
 
 
 def test_board_town_is_the_descriptor_town():
@@ -103,22 +104,35 @@ def test_every_location_on_the_board_is_known_or_a_town():
     # every table key is a site the board listed that day
     keys = {A.site_key(v["descriptor"]) for v in LOCATIONS}
     assert set(A.FACILITIES) <= keys and set(A.OFFICES) <= keys
+    assert set(A.ADDRESS_SITES) <= {A.address_key(v["descriptor"]) for v in LOCATIONS}
 
 
 def test_counts_on_the_board():
     fac = sum(v["count"] for v in LOCATIONS if (A.facility(v["descriptor"]) or ("",))[0] not in ("", SYSTEM))
     office = sum(v["count"] for v in LOCATIONS if (A.facility(v["descriptor"]) or ("",))[0] == SYSTEM)
     assert len(LOCATIONS) == 680
-    assert (fac, office) == (4135, 35)
-    assert len({A.facility(v["descriptor"])[0] for v in LOCATIONS if A.facility(v["descriptor"])} - {SYSTEM}) == 63
+    # 2026-10-29 (address sites): 4,135 at the named sites + 250 at the 17 campus addresses
+    assert (fac, office) == (4385, 35)
+    assert len({A.facility(v["descriptor"])[0] for v in LOCATIONS if A.facility(v["descriptor"])} - {SYSTEM}) == 65
 
 
 def test_town_clinics_keep_the_system_and_their_parse():
+    """A "Town, ST - street" site keeps the system label and its own town,
+    unless it is one of the campus addresses (ADDRESS_SITES): then the
+    hospital, in the descriptor's own town."""
+    campus = 0
     for v in LOCATIONS:
         d = v["descriptor"]
         if TOWN_HEAD.match(d):
-            assert A.facility(d) is None, d
+            hit = A.ADDRESS_SITES.get(A.address_key(d))
+            if hit:
+                campus += 1
+                town, state = re.match(r"^([A-Za-z .'-]+),\s*([A-Z]{2})\s+-", d).groups()
+                assert A.facility(d) == (hit[0], town, state), d
+            else:
+                assert A.facility(d) is None, d
             assert A.unknown_site(d) == "", d
+    assert campus == len(A.ADDRESS_SITES) == 17
 
 
 # ── the owner's example and the payload shapes ─────────────────────────────
@@ -144,9 +158,17 @@ def test_the_path_segment_is_the_primary_location():
         assert info["additionalLocations"]
         seg = A.path_segment(info["externalUrl"].split("/External", 1)[1])
         assert A.segment_key(seg) == A.site_key(info["location"])
-    # R282077's primary is a Libertyville clinic; its second site, Condell, is not where it is filed
+    # R282077's primary is 825 S Milwaukee Ave; its second site is Condell (801 S Milwaukee Ave). It is filed by
+    # its primary: 2026-10-29 (address sites) that building is on the Condell campus, so it names Condell
+    # through the campus table, not through the additional location.
     info = DETAILS["2loc_R282077"]["jobPostingInfo"]
+    assert info["location"] == "Libertyville, IL - 825 S Milwaukee Ave"
     assert info["additionalLocations"] == ["Advocate Condell Medical Center - 801 S Milwaukee Ave"]
+    assert A.address_key(info["location"]) in A.ADDRESS_SITES
+    assert A.facility("2 Locations", info["externalUrl"].split("/External", 1)[1]) == \
+        ("Advocate Condell Medical Center", "Libertyville", "IL")
+    # R276221's primary, a Crystal Lake clinic, is no campus
+    info = DETAILS["2loc_R276221"]["jobPostingInfo"]
     assert A.facility("2 Locations", info["externalUrl"].split("/External", 1)[1]) is None
 
 
@@ -184,7 +206,9 @@ def test_descriptor_and_segment_agree_on_every_listed_posting():
     ("AAO-Milwaukee---750-W-Virginia-St", (SYSTEM, "Milwaukee", "WI")),
     ("Charlotte-NC---1237-Harding-Pl", None),
     ("Aurora-IL---1221-N-Highland-Ave", None),                 # the town of Aurora, IL: no facility
-    ("Milwaukee-WI---2801-W-Kinnickinnic-River-Pkwy--2801-W-Kinnickinnic-River-Pkwy", None),
+    # 2026-10-29 (address sites): St. Luke's Medical Offices, on the St. Luke's campus
+    ("Milwaukee-WI---2801-W-Kinnickinnic-River-Pkwy--2801-W-Kinnickinnic-River-Pkwy",
+     ("Aurora St. Luke's Medical Center", "Milwaukee", "WI")),
     ("Remote", None),
     ("", None),
 ])

@@ -1,0 +1,348 @@
+{
+ "read_utc": "2026-10-29",
+ "source": "aah.wd5.myworkdayjobs.com/wday/cxs/aah/External/jobs, two list pages filtered by the locations facet",
+ "pages": [
+  {
+   "appliedFacets": {
+    "locations": [
+     "47b1707d32ff1016ded6634522d50000",
+     "1c18ea8cf0e80110d243f7ff6dcb0000",
+     "20d78ee849f2101282794a46c1160000",
+     "1042818a003310245574030f27880000"
+    ]
+   },
+   "total": 15,
+   "jobPostings": [
+    {
+     "title": "Medical Assistant - Carolinas Rehabilitation",
+     "externalPath": "/job/Belmont-NC---275-Beatty-Dr/Medical-Assistant-Carolinas-Rehabilitation-Concord-FT_R279851",
+     "locationsText": "Belmont, NC - 275 Beatty Dr",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R279851"
+     ]
+    },
+    {
+     "title": "APP - Dermatology",
+     "externalPath": "/job/Concord-NC---200-Medical-Park-Dr/APP---Dermatology_R260624",
+     "locationsText": "2 Locations",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R260624"
+     ]
+    },
+    {
+     "title": "Physical Therapist l - Inpatient",
+     "externalPath": "/job/Belmont-NC---275-Beatty-Dr/Physical-Therapist-l---Inpatient_R282627-1",
+     "locationsText": "Belmont, NC - 275 Beatty Dr",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R282627"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - Cardiology Clinic",
+     "externalPath": "/job/Elgin-IL---1435-N-Randall-Rd/Registered-Nurse--RN----Cardiology-Clinic_R279091",
+     "locationsText": "Elgin, IL - 1435 N Randall Rd",
+     "postedOn": "Posted 15 Days Ago",
+     "bulletFields": [
+      "R279091"
+     ]
+    },
+    {
+     "title": "PRN Physical Therapist - Inpatient",
+     "externalPath": "/job/Belmont-NC---275-Beatty-Dr/Physical-Therapist---Inpatient-Rehab---Greater-Charlotte---PRN_R238844",
+     "locationsText": "2 Locations",
+     "postedOn": "Posted 16 Days Ago",
+     "bulletFields": [
+      "R238844"
+     ]
+    },
+    {
+     "title": "Advanced Practice Nurse, NP, Electrophysiology, Elgin - Full Time",
+     "externalPath": "/job/Elgin-IL---1435-N-Randall-Rd/Advanced-Practice-Nurse-Practitioner--NP--Electrophysiology--Elgin---Full-Time_R257282",
+     "locationsText": "Elgin, IL - 1435 N Randall Rd",
+     "postedOn": "Posted 21 Days Ago",
+     "bulletFields": [
+      "R257282"
+     ]
+    },
+    {
+     "title": "CMA/LPN - Atrium Health Concord IM FT",
+     "externalPath": "/job/Concord-NC---200-Medical-Park-Dr/CMA-LPN---Atrium-Health-Concord-IM-FT_R272043",
+     "locationsText": "Concord, NC - 200 Medical Park Dr",
+     "postedOn": "Posted 23 Days Ago",
+     "bulletFields": [
+      "R272043"
+     ]
+    },
+    {
+     "title": "Medical Assistant (MA) - Family Medicine",
+     "externalPath": "/job/Elgin-IL---1435-N-Randall-Rd/Medical-Assistant--MA----Family-Medicine_R274810",
+     "locationsText": "2 Locations",
+     "postedOn": "Posted 28 Days Ago",
+     "bulletFields": [
+      "R274810"
+     ]
+    },
+    {
+     "title": "Research Laboratory Technician - Comprehensive Cancer Center",
+     "externalPath": "/job/Winston-Salem-NC---342-Medical-Center-Blvd/Research-Laboratory-Technician---Comprehensive-Cancer-Center_R269074",
+     "locationsText": "Winston Salem, NC - 342 Medical Center Blvd",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R269074"
+     ]
+    },
+    {
+     "title": "Minimally Invasive Gynecologic Surgery- Full-Time NP/PA",
+     "externalPath": "/job/Concord-NC---200-Medical-Park-Dr/Job-Posting-Title-Minimally-Invasive-Gynecologic-Surgery--Full-Time-NP-PA_R239868",
+     "locationsText": "Concord, NC - 200 Medical Park Dr",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R239868"
+     ]
+    },
+    {
+     "title": "LPN - Atrium Health Maternal Fetal Medicine Cabarrus FT",
+     "externalPath": "/job/Concord-NC---200-Medical-Park-Dr/LPN---Atrium-Health-Maternal-Fetal-Medicine-Cabarrus-FT_R252169-1",
+     "locationsText": "Concord, NC - 200 Medical Park Dr",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R252169"
+     ]
+    },
+    {
+     "title": "Medical Assistant Atrium Health Mount Holly Pain Management FT",
+     "externalPath": "/job/Belmont-NC---275-Beatty-Dr/Medical-Assistant-Atrium-Health-Mount-Holly-Pain-Management-FT_R268350",
+     "locationsText": "2 Locations",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R268350"
+     ]
+    },
+    {
+     "title": "Cardiovascular Specialist I RN/RT- EP Lab",
+     "externalPath": "/job/Winston-Salem-NC---342-Medical-Center-Blvd/Cardiovascular-Specialist-I-RN-RT--EP-Lab_R257179-1",
+     "locationsText": "Winston Salem, NC - 342 Medical Center Blvd",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R257179"
+     ]
+    },
+    {
+     "title": "Speech Language Pathologist - Inpatient Rehab, Carolinas Rehab Mount Holly, PRN Weekends",
+     "externalPath": "/job/Belmont-NC---275-Beatty-Dr/Speech-Language-Pathologist---Inpatient-Rehab--Carolinas-Rehab-Mount-Holly--PRN-Weekends_R254143",
+     "locationsText": "Belmont, NC - 275 Beatty Dr",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R254143"
+     ]
+    },
+    {
+     "title": "Social Worker, MSW, Carolinas Rehabilitation, PRN",
+     "externalPath": "/job/Charlotte-NC---1100-Blythe-Blvd/Social-Worker--MSW--Carolinas-Rehabilitation--PRN_R177341",
+     "locationsText": "4 Locations",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R177341"
+     ]
+    }
+   ]
+  },
+  {
+   "appliedFacets": {
+    "locations": [
+     "9d01e0c50b551012826bcddb3e8e0000",
+     "1c18ea8cf0e80110d27f83667f4c0000",
+     "996cac4e4e27101549bde4bbdcac0000",
+     "6af6cfb37edc101282775b559c8a0000",
+     "958ab7fbc39a101282769f3ba3660000"
+    ]
+   },
+   "total": 147,
+   "jobPostings": [
+    {
+     "title": "Registered Nurse Ambulatory & Outpatient - Vascular Surgery",
+     "externalPath": "/job/Charlotte-NC---10650-Park-Rd/Registered-Nurse-Ambulatory---Outpatient---Vascular-Surgery_R280897",
+     "locationsText": "Charlotte, NC - 10650 Park Rd",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R280897"
+     ]
+    },
+    {
+     "title": "Patient Service Representative (PSR), Orthopedics Clinic",
+     "externalPath": "/job/Milwaukee-WI---2801-W-Kinnickinnic-River-Pkwy--2801-W-Kinnickinnic-River-Pkwy/Patient-Service-Representative--PSR---Orthopedics-Clinic_R278944",
+     "locationsText": "Milwaukee, WI - 2801 W Kinnickinnic River Pkwy  2801 W Kinnickinnic River Pkwy",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R278944"
+     ]
+    },
+    {
+     "title": "Inpatient Care Manager",
+     "externalPath": "/job/Winston-Salem-NC---1-Medical-Center-Blvd/Inpatient-Care-Manager_R280318",
+     "locationsText": "Winston Salem, NC - 1 Medical Center Blvd",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R280318"
+     ]
+    },
+    {
+     "title": "Minimally Invasive Gynecologic Surgery- Full-Time NP/PA",
+     "externalPath": "/job/Charlotte-NC---10650-Park-Rd/Minimally-Invasive-Gynecologic-Surgery--Full-Time-NP-PA_R239870",
+     "locationsText": "Charlotte, NC - 10650 Park Rd",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R239870"
+     ]
+    },
+    {
+     "title": "Parking Attendant",
+     "externalPath": "/job/Winston-Salem-NC---1-Medical-Center-Blvd/Parking-Attendant_R276822-1",
+     "locationsText": "Winston Salem, NC - 1 Medical Center Blvd",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R276822"
+     ]
+    },
+    {
+     "title": "IT Business Relationship Director",
+     "externalPath": "/job/Charlotte-NC---1001-Blythe-Blvd/IT-Business-Relationship-Director_R270105",
+     "locationsText": "Charlotte, NC - 1001 Blythe Blvd",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R270105"
+     ]
+    },
+    {
+     "title": "Enterprise Internship, Finance/Accounting/Revenue Cyle",
+     "externalPath": "/job/Remote/Enterprise-Internship--Finance-Accounting-Revenue-Cyle_R280107",
+     "locationsText": "6 Locations",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R280107"
+     ]
+    },
+    {
+     "title": "Manager Utilization Care Management",
+     "externalPath": "/job/Charlotte-NC---1001-Blythe-Blvd/Manager-Utilization-Care-Management_R278074",
+     "locationsText": "Charlotte, NC - 1001 Blythe Blvd",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R278074"
+     ]
+    },
+    {
+     "title": "Enterprise Internship, Charlotte Health Care Administration & Operations Undergraduate",
+     "externalPath": "/job/Charlotte-NC---1001-Blythe-Blvd/Enterprise-Internship--Charlotte-Health-Care-Administration---Operations-Undergraduate_R280126",
+     "locationsText": "Charlotte, NC - 1001 Blythe Blvd",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R280126"
+     ]
+    },
+    {
+     "title": "Enterprise Internship, Greater Charlotte Community Relations, Access & Social Impact",
+     "externalPath": "/job/Charlotte-NC---1001-Blythe-Blvd/Enterprise-Internship--Greater-Charlotte-Community-Relations--Access---Social-Impact_R280121",
+     "locationsText": "Charlotte, NC - 1001 Blythe Blvd",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R280121"
+     ]
+    },
+    {
+     "title": "Patient Nurse Navigator - Electrophysiology (EP)",
+     "externalPath": "/job/Charlotte-NC---1237-Harding-Pl/Patient-Nurse-Navigator---Electrophysiology--EP-_R265637",
+     "locationsText": "Charlotte, NC - 1237 Harding Pl",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R265637"
+     ]
+    },
+    {
+     "title": "Enterprise Internship for High School Students, Charlotte NC",
+     "externalPath": "/job/Charlotte-NC---1001-Blythe-Blvd/Enterprise-Internship-for-High-School-Students_R281017",
+     "locationsText": "Charlotte, NC - 1001 Blythe Blvd",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "R281017"
+     ]
+    },
+    {
+     "title": "Histotechnologist",
+     "externalPath": "/job/Charlotte-NC---10650-Park-Rd/Histotechnologist_R282320",
+     "locationsText": "Charlotte, NC - 10650 Park Rd",
+     "postedOn": "Posted 6 Days Ago",
+     "bulletFields": [
+      "R282320"
+     ]
+    },
+    {
+     "title": "Medical Assistant (MA)/LPN - Urology Clinic",
+     "externalPath": "/job/Milwaukee-WI---2801-W-Kinnickinnic-River-Pkwy--2801-W-Kinnickinnic-River-Pkwy/Medical-Assistant--MA--LPN---Urology-Clinic_R278435-1",
+     "locationsText": "Milwaukee, WI - 2801 W Kinnickinnic River Pkwy  2801 W Kinnickinnic River Pkwy",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "R278435"
+     ]
+    },
+    {
+     "title": "Patient Educator Registered Nurse",
+     "externalPath": "/job/Charlotte-NC---1237-Harding-Pl/Patient-Educator-Registered-Nurse_R279661",
+     "locationsText": "Charlotte, NC - 1237 Harding Pl",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "R279661"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - Urology Clinic",
+     "externalPath": "/job/Milwaukee-WI---2801-W-Kinnickinnic-River-Pkwy--2801-W-Kinnickinnic-River-Pkwy/Registered-Nurse--RN----Urology-Clinic_R280735",
+     "locationsText": "Milwaukee, WI - 2801 W Kinnickinnic River Pkwy  2801 W Kinnickinnic River Pkwy",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "R280735"
+     ]
+    },
+    {
+     "title": "Behavioral Health Full-Time NP/PA",
+     "externalPath": "/job/Charlotte-NC---1001-Blythe-Blvd/Behavioral-Health-Full-Time-NP-PA_R252652-1",
+     "locationsText": "2 Locations",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "R252652"
+     ]
+    },
+    {
+     "title": "Registered Nurse (RN) - Levine Children's Ambulatory Pediatric Pulmonology",
+     "externalPath": "/job/Charlotte-NC---1001-Blythe-Blvd/Registered-Nurse--RN----Levine-Children-s-Ambulatory-Pediatric-Pulmonology_R277215",
+     "locationsText": "Charlotte, NC - 1001 Blythe Blvd",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "R277215"
+     ]
+    },
+    {
+     "title": "LPN - Atrium Health Allergy Clinic Kenilworth FT",
+     "externalPath": "/job/Charlotte-NC---1237-Harding-Pl/LPN---Atrium-Health-Allergy-Clinic-Kenilworth-FT_R273206",
+     "locationsText": "Charlotte, NC - 1237 Harding Pl",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "R273206"
+     ]
+    },
+    {
+     "title": "Claims Manager",
+     "externalPath": "/job/Charlotte-NC---1001-Blythe-Blvd/Claims-Manager_R278234",
+     "locationsText": "Charlotte, NC - 1001 Blythe Blvd",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "R278234"
+     ]
+    }
+   ]
+  }
+ ]
+}
