@@ -11205,7 +11205,18 @@ FINDLY_GOOGLE_PAY_KEY = {"UPMC": "salary", "University Hospitals": "relocation"}
 # Wellsboro). Read from the whole payload 2026-10-15: 1,878 of 2,918 rows name
 # a hospital; the rest are physicians, corporate, home care and the like and
 # keep company_name. facility_names.upmc_facility.
-FINDLY_GOOGLE_FACILITY = {"UPMC": facility_names.upmc_facility}
+#
+# 2026-10-29 (owner: every hospital inside a multi-hospital system named and
+# placed correctly): one hook per tenant, system -> fn(job, city, state) ->
+# (hospital_name, city, state) or None, the tables in facilities_findly.py.
+# The hook reads the whole search result: AdventHealth's job.department with
+# its job.education (the location; a region's support cost center under a
+# hospital's company names no hospital), Scripps' job.business_unit,
+# University Hospitals' job.store_id, UCLA Health's job.primary_address (a
+# hospital's own street in its own town), UPMC as before. The posting's own
+# town is kept. None: the row takes FINDLY_GOOGLE_NAME (the system name).
+import facilities_findly   # 2026-10-29: Findly-Google facility tables
+FINDLY_GOOGLE_FACILITY = dict(facilities_findly.HOOKS)
 
 # 2026-10-28 (owner: "yes, change it to that"): the name every row of a tenant
 # carries when its payload's company_name is no name to print. UT
@@ -11218,7 +11229,16 @@ FINDLY_GOOGLE_FACILITY = {"UPMC": facility_names.upmc_facility}
 # business_unit is empty), so every UTSW row takes the system's name. Read
 # before the fallback to company_name; a tenant in neither this map nor
 # FINDLY_GOOGLE_FACILITY keeps company_name.
-FINDLY_GOOGLE_NAME = {"UT Southwestern Medical Center": "UT Southwestern Medical Center"}
+#
+# 2026-10-29 (owner decision 2: a row that names no site shows the system
+# name with its town): AdventHealth's company_name is "Adventist Health
+# System - Florida" on every row (Colorado, Kansas and Illinois rows too),
+# University Hospitals' "University Hospitals (SP)", UPMC's "UPMC - Pittsburgh
+# Medical Center"; their rows that name no site take the system name
+# (facilities_findly.SYSTEM_NAME). Scripps' and UCLA's company_name is
+# already the system name.
+FINDLY_GOOGLE_NAME = {"UT Southwestern Medical Center": "UT Southwestern Medical Center",
+                      **facilities_findly.SYSTEM_NAME}
 
 # 2026-10-12: the employer's requisition number. AdventHealth's job_id is the
 # Findly posting id in its jobs.adventhealth.com URL (23744623); the job page
@@ -11302,6 +11322,7 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
     # Google CTS allows offset-based pagination up to ~5000; beyond that (rare for a
     # single system), we fall through to pageToken-based pagination.
     pages_fetched = 0
+    fac_named, fac_unknown = 0, {}   # 2026-10-29: FINDLY_GOOGLE_FACILITY run log
     while True:
         params = {
             "callback": "CWS.jobs.jobCallback",
@@ -11382,8 +11403,17 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
 
             pay_key = FINDLY_GOOGLE_PAY_KEY.get(system)
             fac_of = FINDLY_GOOGLE_FACILITY.get(system)
-            hospital = ((fac_of(j.get("brand"), j.get("business_unit"), city, state) if fac_of else "")
-                        or FINDLY_GOOGLE_NAME.get(system, ""))
+            # 2026-10-29: the hook reads the whole job and gives the site
+            # with the town (the posting's own, kept); else the system name
+            site = fac_of(j, city, state) if fac_of else None
+            if site:
+                hospital, city, state = site
+                fac_named += 1
+            else:
+                hospital = FINDLY_GOOGLE_NAME.get(system, "")
+                _unk = facilities_findly.unknown(system, j)
+                if _unk:
+                    fac_unknown[_unk] = fac_unknown.get(_unk, 0) + 1
             jobs.append(Job(
                 title=title,
                 hospital_system=system,
@@ -11422,6 +11452,12 @@ async def scrape_findly_google(session: aiohttp.ClientSession, system: str, org_
             break
         await jitter()
 
+    if system in FINDLY_GOOGLE_FACILITY:
+        # 2026-10-29: rows that name their site, and any site value the
+        # facilities_findly table does not know yet (named nothing, logged)
+        top = sorted(fac_unknown.items(), key=lambda kv: -kv[1])[:10]
+        logger.info(f"  FindlyGoogle {system}: {fac_named} of {len(jobs)} rows name their site"
+                    + (f"; unknown site values: {top}" if top else ""))
     logger.info(f"  FindlyGoogle {system}: {len(jobs)} jobs")
     return jobs
 
