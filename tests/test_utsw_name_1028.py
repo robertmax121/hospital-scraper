@@ -101,16 +101,27 @@ def test_the_new_name_changes_the_content_hash(fixture_text):
 
 
 def test_only_utsw_is_renamed(fixture_text):
-    assert scraper.FINDLY_GOOGLE_NAME == {UTSW: UTSW}
+    # 2026-10-29: AdventHealth, University Hospitals and UPMC rows that name no
+    # site take the system name too (facilities_findly.SYSTEM_NAME)
+    assert scraper.FINDLY_GOOGLE_NAME == {UTSW: UTSW, "AdventHealth": "AdventHealth",
+                                          "University Hospitals": "University Hospitals", "UPMC": "UPMC"}
     assert UTSW not in scraper.FINDLY_GOOGLE_FACILITY
     # the same payload under a tenant in neither map keeps company_name
     assert {j.hospital_name for j in _scrape(fixture_text, "Some Other Findly Tenant")} == {CUT}
 
 
 @pytest.mark.parametrize("system,slug,name", [
-    ("University Hospitals", "uh", "University Hospitals (SP)"),
+    ("University Hospitals", "uh", "University Hospitals"),
     ("Scripps Health", "scripps", "Scripps Health"),
 ])
-def test_other_tenants_keep_company_name(fixture_text, system, slug, name):
+def test_other_tenants_name_their_site_or_the_system(fixture_text, system, slug, name):
+    # 2026-10-29 (facilities_findly): each row names its site (UH's store_id,
+    # Scripps' business_unit) or takes the system name; never the legal label
+    import facilities_findly
     jobs = _scrape(fixture_text, system, slug)
-    assert jobs and {j.hospital_name for j in jobs} == {name}
+    raw = {str(j["id"]): j for j in _payload_jobs(fixture_text, slug)}
+    assert jobs
+    for j in jobs:
+        site = facilities_findly.facility(system, raw[j.job_id], j.city, j.state)
+        assert j.hospital_name == (site[0] if site else name)
+    assert "University Hospitals (SP)" not in {j.hospital_name for j in jobs}

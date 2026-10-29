@@ -169,7 +169,9 @@ def test_scrape_findly_google_stores_the_upmc_hospital():
                                                     scraper.FINDLY_GOOGLE_ORGS["UPMC"]))
     assert len(jobs) == len(UPMC_EXPECT)
     for j in jobs:
-        want = UPMC_EXPECT[raw[j.job_id]] or "UPMC - Pittsburgh Medical Center"   # company_name, as before
+        # 2026-10-29 (owner decision 2): a row that names no hospital takes the
+        # system name, no longer company_name ("UPMC - Pittsburgh Medical Center")
+        want = UPMC_EXPECT[raw[j.job_id]] or "UPMC"
         assert j.hospital_name == want and j.hospital_system == "UPMC"
         assert j.req_id                                                          # the 10-14 job number is untouched
 
@@ -191,11 +193,14 @@ def test_upmc_unit_in_another_state_names_no_hospital():
     payload["totalHits"] = 1
     text = "cb(" + json.dumps(payload) + ");"
     jobs = asyncio.run(scraper.scrape_findly_google(_Session(text), "UPMC", scraper.FINDLY_GOOGLE_ORGS["UPMC"]))
-    assert [(x.hospital_name, x.city, x.state) for x in jobs] == [("UPMC - Pittsburgh Medical Center", "Cumberland", "MD")]
+    assert [(x.hospital_name, x.city, x.state) for x in jobs] == [("UPMC", "Cumberland", "MD")]   # 2026-10-29: system name
 
 
-def test_other_findly_tenants_keep_company_name():
-    assert set(scraper.FINDLY_GOOGLE_FACILITY) == {"UPMC"}
+def test_findly_google_facility_tenants():
+    # 2026-10-29: AdventHealth, Scripps, University Hospitals and UCLA Health
+    # joined UPMC (facilities_findly.py, tests/test_findly_facility_1029.py)
+    assert set(scraper.FINDLY_GOOGLE_FACILITY) == {"UPMC", "AdventHealth", "Scripps Health",
+                                                  "University Hospitals", "UCLA Health"}
 
 
 # ── Novant: Jibe location_name ──────────────────────────────────────────────
