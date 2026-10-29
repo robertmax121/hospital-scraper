@@ -1,0 +1,4135 @@
+{
+ "read": "2026-10-29, GET {base}/api/jobs?page=1&limit=100, one page per board; fields trimmed, descriptions cut to 300 characters; _expect is the hospital_name the tables give",
+ "boards": {
+  "Fairview Health": {
+   "base": "https://careers.fairview.org",
+   "totalCount": 1340,
+   "rows": [
+    {
+     "location_name": "UMMC West Bank Rehab Building",
+     "req_id": "176095",
+     "state": "Minnesota",
+     "posted_date": "2026-10-29T13:21:00+0000",
+     "city": "Minneapolis",
+     "category": [
+      " Patient Care (Non RN/LPN)"
+     ],
+     "hiring_organization": "Fairview Health Services",
+     "street_address": "2512 S 7th St",
+     "slug": "176095",
+     "title": "Nursing Assistant - Acute Rehab",
+     "tags1": [
+      "Nursing Assistant/NAR/Resident Assistant"
+     ],
+     "tags2": [
+      "Fairview"
+     ],
+     "tags3": [
+      "evening"
+     ],
+     "tags4": [
+      "56"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags6": [
+      "0.70"
+     ],
+     "tags7": [
+      "Fairview"
+     ],
+     "tags8": [
+      "$23.06- $28.19 /  Hourly *based on qualifying experience step level"
+     ],
+     "tags9": [
+      "Fairview Riverside University Hospital"
+     ],
+     "description": "<STRONG>Job Overview</STRONG><br><br><p style=\"margin: 0px;\"><span style=\"font-size: 10pt; font-family: arial, helvetica, sans-serif;\">Are you interested in becoming a Nursing Assistant in Acute Rehab?</span></p><p style=\"margin: 0px;\"> </p><p style=\"margin: 0px;\"><span style=\"font-size: 10pt; font-",
+     "meta_data": {
+      "canonical_url": "https://careers.fairview.org/jobs/176095?lang=en-us"
+     },
+     "_expect": "Fairview Riverside University Hospital"
+    },
+    {
+     "location_name": "UofM Physicians Heart at FSH",
+     "req_id": "177698",
+     "state": "Minnesota",
+     "posted_date": "2026-10-29T12:59:00+0000",
+     "city": "Edina",
+     "category": [
+      " Patient Care (Non RN/LPN)"
+     ],
+     "hiring_organization": "Fairview Health Services",
+     "street_address": "6405 France Ave S",
+     "slug": "177698",
+     "title": "Medical Assistant/MA - Heart and Vascular Clinic",
+     "tags1": [
+      "Other"
+     ],
+     "tags2": [
+      "Fairview"
+     ],
+     "tags3": [
+      "day"
+     ],
+     "tags4": [
+      "Casual"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags6": [
+      "0.01"
+     ],
+     "tags7": [
+      "Fairview"
+     ],
+     "tags8": [
+      "$22.96- $32.42 /  Hourly"
+     ],
+     "tags9": [
+      "Fairview-Surgery Clinic Edina"
+     ],
+     "description": "<STRONG>Job Overview</STRONG><br><br><p style=\"margin-bottom: 0in;\">Fairview has an immediate opening for a Medical Assistant to join our Heart and Vascular Care team in Edina, MN This is a 0.01 FTE (<strong>Casual/On-Call position</strong>), non-benefit-eligible opening. <strong>Clinic Hours of Ope",
+     "meta_data": {
+      "canonical_url": "https://careers.fairview.org/jobs/177698?lang=en-us"
+     },
+     "_expect": "Fairview-Surgery Clinic Edina"
+    },
+    {
+     "location_name": "HE-Midway Corporate Campus",
+     "req_id": "178250",
+     "state": "Minnesota",
+     "posted_date": "2026-10-29T12:58:00+0000",
+     "city": "St Paul",
+     "category": [
+      " Support & Facility Services"
+     ],
+     "hiring_organization": "Fairview Health Services",
+     "street_address": "1700 University Ave W",
+     "slug": "178250",
+     "title": "HR Onboarding Specialist (Temporary)",
+     "tags1": [
+      "Accounting/Finance/Human Resources/Legal"
+     ],
+     "tags2": [
+      "Fairview"
+     ],
+     "tags3": [
+      "day"
+     ],
+     "tags4": [
+      "80"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags6": [
+      "1.00"
+     ],
+     "tags7": [
+      "Fairview"
+     ],
+     "tags8": [
+      "$25.26- $35.67 /  Hourly"
+     ],
+     "tags9": [
+      "Midway Corporate Campus"
+     ],
+     "description": "<STRONG>Job Overview</STRONG><br><br><p style=\"margin: 0px;\">The Onboarding Specialist (temporary) manages the seamless integration of new hires into the organization by coordinating onboarding activities, ensuring compliance and fostering a welcoming environment for all new employees and non-employ",
+     "meta_data": {
+      "canonical_url": "https://careers.fairview.org/jobs/178250?lang=en-us"
+     },
+     "_expect": "Fairview Health"
+    },
+    {
+     "location_name": "FV Southdale Hospital",
+     "req_id": "178027",
+     "state": "Minnesota",
+     "posted_date": "2026-10-29T02:47:00+0000",
+     "city": "Edina",
+     "category": [
+      " Patient Care (Non RN/LPN)"
+     ],
+     "hiring_organization": "Fairview Health Services",
+     "street_address": "6401 France Ave S",
+     "slug": "178027",
+     "title": "Surgical Technologist - Southdale Hospital",
+     "tags1": [
+      "Surgical Services"
+     ],
+     "tags2": [
+      "Fairview"
+     ],
+     "tags3": [
+      "day/evening/night"
+     ],
+     "tags4": [
+      "64"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags6": [
+      "0.80"
+     ],
+     "tags7": [
+      "Fairview"
+     ],
+     "tags8": [
+      "$37.67- $54.42 /  Hourly"
+     ],
+     "tags9": [
+      "Fairview Southdale Hospital"
+     ],
+     "description": "<STRONG>Job Overview</STRONG><br><br><pre class=\"preField\"><span style=\"font-family: arial, helvetica, sans-serif; font-size: 10pt;\">Fairview has an immediate opening for a Surgical Technologist in the Operating Room at Fairview Southdale Hospital located in Edina, MN.<br /><br /></span><span style=",
+     "meta_data": {
+      "canonical_url": "https://careers.fairview.org/jobs/178027?lang=en-us"
+     },
+     "_expect": "Fairview Southdale Hospital"
+    },
+    {
+     "location_name": "Lakes Medical Center",
+     "req_id": "178120",
+     "state": "Minnesota",
+     "posted_date": "2026-10-29T01:51:00+0000",
+     "city": "Wyoming",
+     "category": [
+      " Patient Care (Non RN/LPN)"
+     ],
+     "hiring_organization": "Fairview Health Services",
+     "street_address": "5200 Fairview Blvd",
+     "slug": "178120",
+     "title": "Respiratory Therapist - Lakes - .6 FTE",
+     "tags1": [
+      "Respiratory/Pulmonary"
+     ],
+     "tags2": [
+      "Fairview"
+     ],
+     "tags3": [
+      "day/evening/night"
+     ],
+     "tags4": [
+      "48"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags6": [
+      "0.60"
+     ],
+     "tags7": [
+      "Fairview"
+     ],
+     "tags8": [
+      "$43.65- $63.04 /  Hourly"
+     ],
+     "tags9": [
+      "Fairview Lakes Hospital"
+     ],
+     "description": "<STRONG>Job Overview</STRONG><br><br><p style=\"margin: 0in;\"><strong><span style=\"font-size: 10pt; font-family: Arial, sans-serif;\">Fairview is hiring a Respiratory Therapist to join our Respiratory Therapy team at our Lakes Medical Center location in Wyoming, MN. We’re offering a $9,000 sign-on bon",
+     "meta_data": {
+      "canonical_url": "https://careers.fairview.org/jobs/178120?lang=en-us"
+     },
+     "_expect": "Fairview Lakes Hospital"
+    },
+    {
+     "location_name": "HealthEast -Woodwinds Hospital",
+     "req_id": "177138",
+     "state": "Minnesota",
+     "posted_date": "2026-10-29T01:32:00+0000",
+     "city": "Woodbury",
+     "category": [
+      " Patient Care (Non RN/LPN)"
+     ],
+     "hiring_organization": "Fairview Health Services",
+     "street_address": "1925 Woodwinds Drive",
+     "slug": "177138",
+     "title": "Surgical Technologist - Woodwinds L&D",
+     "tags1": [
+      "Surgical Services"
+     ],
+     "tags2": [
+      "Fairview"
+     ],
+     "tags3": [
+      "day"
+     ],
+     "tags4": [
+      "48"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags6": [
+      "0.60"
+     ],
+     "tags7": [
+      "Fairview"
+     ],
+     "tags8": [
+      "$37.67- $54.42 /  Hourly"
+     ],
+     "tags9": [
+      "Fairview Woodwinds Hospital"
+     ],
+     "description": "<STRONG>Job Overview</STRONG><br><br><pre class=\"preField\"><span style=\"font-family: arial, helvetica, sans-serif;\"><span style=\"font-size: 13.3333px;\">Fairview has an immediate opening for a Surgical Technologist in the Labor and Delivery Department at Woodwinds Hospital, located in Woodbury, MN.</",
+     "meta_data": {
+      "canonical_url": "https://careers.fairview.org/jobs/177138?lang=en-us"
+     },
+     "_expect": "Fairview Woodwinds Hospital"
+    },
+    {
+     "location_name": "UMMC Hospital Unit J",
+     "req_id": "177486",
+     "state": "Minnesota",
+     "posted_date": "2026-10-28T21:57:00+0000",
+     "city": "Minneapolis",
+     "category": [
+      " Nurse (RN/LPN)"
+     ],
+     "hiring_organization": "Fairview Health Services",
+     "street_address": "500 Harvard St SE",
+     "slug": "177486",
+     "title": "RN-Outpatient Observation",
+     "tags1": [
+      "Med/Surg"
+     ],
+     "tags2": [
+      "Fairview"
+     ],
+     "tags3": [
+      "day"
+     ],
+     "tags4": [
+      "48"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags6": [
+      "0.60"
+     ],
+     "tags7": [
+      "Fairview"
+     ],
+     "tags8": [
+      "$44.68- $75.66 /  Hourly *based on degree and qualifying step level"
+     ],
+     "tags9": [
+      "Fairview East Bank University Hospital"
+     ],
+     "description": "<STRONG>Job Overview</STRONG><br><br><p style=\"margin: 0px;\"><span style=\"font-family: arial, helvetica, sans-serif; font-size: 10pt; color: #000000;\">The University of Minnesota Medical Center is looking for Registered Nurses to join our growing Hospital Observation unit 1B team. The University of ",
+     "meta_data": {
+      "canonical_url": "https://careers.fairview.org/jobs/177486?lang=en-us"
+     },
+     "_expect": "Fairview East Bank University Hospital"
+    },
+    {
+     "location_name": "Seven Lakes Pharmacy",
+     "req_id": "178224",
+     "state": "Minnesota",
+     "posted_date": "2026-10-28T21:35:00+0000",
+     "city": "Shoreview",
+     "category": [
+      " Patient Care (Non RN/LPN)"
+     ],
+     "hiring_organization": "Fairview Health Services",
+     "street_address": "3650 VICTORIA ST N",
+     "slug": "178224",
+     "title": "Patient Services Coordinator - Flexible Workforce",
+     "tags1": [
+      "Rehabilitation Services/Sports Medicine"
+     ],
+     "tags2": [
+      "Fairview"
+     ],
+     "tags3": [
+      "day"
+     ],
+     "tags4": [
+      "80"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags6": [
+      "1.00"
+     ],
+     "tags7": [
+      "Fairview"
+     ],
+     "tags8": [
+      "$21.84- $30.83 /  Hourly"
+     ],
+     "tags9": [
+      "Seven Lakes"
+     ],
+     "description": "<STRONG>Job Overview</STRONG><br><br><p style=\"margin: 0px;\"><span style=\"font-family: arial, helvetica, sans-serif; font-size: 10pt;\"><span style=\"font-size: 10pt; font-family: Arial, sans-serif;\">We have an exciting opportunity for a patient services coordinator (PSC) to join our rehab flexible wo",
+     "meta_data": {
+      "canonical_url": "https://careers.fairview.org/jobs/178224?lang=en-us"
+     },
+     "_expect": "Seven Lakes"
+    }
+   ]
+  },
+  "MedStar Health": {
+   "base": "https://careers.medstarhealth.org",
+   "totalCount": 1317,
+   "rows": [
+    {
+     "location_name": "MedStar Georgetown Univ Hosp",
+     "req_id": "169756",
+     "state": "DC",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T12:53:00+0000",
+     "city": "Washington",
+     "category": [
+      " Quality & Research"
+     ],
+     "hiring_organization": "MedStar Health",
+     "street_address": "3800 Reservoir Rd NW",
+     "slug": "169756",
+     "title": "Research Associate - Gastroenterology",
+     "tags1": [
+      "Other"
+     ],
+     "tags2": [
+      "MedStar Medical Group"
+     ],
+     "tags3": [
+      "Full Time"
+     ],
+     "tags4": [
+      "Day"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags8": [
+      "Christine Long"
+     ],
+     "tags9": [
+      "Christine.Long@medstar.net"
+     ],
+     "description": "<strong class=\"main-description-body\">About the Job</strong><br><br><p><strong> General Summary of Position</strong><br>The research associate is responsible for coordinating individual study activities associated with the fair and responsible conduct of research. This includes performing data colle",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "MedStar Georgetown University Hospital"
+    },
+    {
+     "location_name": "NRH Rehab at 19th Street",
+     "req_id": "174100",
+     "state": "DC",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T22:19:00+0000",
+     "city": "Washington",
+     "category": [
+      " Administrative & Professionals"
+     ],
+     "hiring_organization": "MedStar Health",
+     "street_address": "1145 19th St NW\nSuite 403",
+     "slug": "174100",
+     "title": "Office Assistant / Physical Therapy",
+     "tags1": [
+      "Other"
+     ],
+     "tags2": [
+      "MedStar Health Physical Therapy"
+     ],
+     "tags3": [
+      "Full Time"
+     ],
+     "tags4": [
+      "Day"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags8": [
+      "Bonnie Cohen-Finch"
+     ],
+     "tags9": [
+      "Bonnie.Cohen-Finch@medstar.net"
+     ],
+     "description": "<strong class=\"main-description-body\">About the Job</strong><br><br><strong> General Summary of Position</strong><br>The Office Assistant performs a variety of assigned clerical and patient care duties essential to the daily operations of the assigned department. Duties may vary by department and/or",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "MedStar Health"
+    },
+    {
+     "location_name": "MedStar Washington Hosp Ctr",
+     "req_id": "171825",
+     "state": "DC",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T22:12:00+0000",
+     "city": "Washington",
+     "category": [
+      " Patient Support Services"
+     ],
+     "hiring_organization": "MedStar Health",
+     "street_address": "110 Irving St NW",
+     "slug": "171825",
+     "title": "Patient Care Tech",
+     "tags1": [
+      "Other"
+     ],
+     "tags2": [
+      "MedStar Washington Hospital Center"
+     ],
+     "tags3": [
+      "Full Time"
+     ],
+     "tags4": [
+      "Day/Night (Rotating Weekends)"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags8": [
+      "Kristina Lazration"
+     ],
+     "tags9": [
+      "kristina.m.lazration@medstar.net"
+     ],
+     "description": "<strong class=\"main-description-body\">About the Job</strong><br><br><strong> General Summary of Position</strong><br>Functions as a member of the patient-centered care team to provide direct patient care activities under the supervision of a Registered Nurse or medical staff/providers. Assists nursi",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "MedStar Washington Hospital Center"
+    },
+    {
+     "location_name": "MSMHC-Hospital",
+     "req_id": "172795",
+     "state": "Maryland",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T22:02:00+0000",
+     "city": "Clinton",
+     "category": [
+      " Physician"
+     ],
+     "hiring_organization": "MedStar Health",
+     "street_address": "7503 Surratts Rd",
+     "slug": "172795",
+     "title": "Orthopedic Surgeon - MedStar Southern Maryland Hospital",
+     "tags1": [
+      "Orthopedics"
+     ],
+     "tags2": [
+      "MedStar Medical Group"
+     ],
+     "tags3": [
+      "Full Time"
+     ],
+     "tags4": [
+      "Day (Rotating Weekends)"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags8": [
+      "Karma Limes"
+     ],
+     "tags9": [
+      "karma.a.limes@medstar.net"
+     ],
+     "description": "<strong class=\"main-description-body\">About the Job</strong><br><br><p style=\"margin-right: 0in; margin-left: 0in; font-size: 12pt; font-family: 'Times New Roman', serif;\"><span style=\"font-family: arial, helvetica, sans-serif; font-size: 12pt;\">MedStar Health offers a uniquely rewarding career in a",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "MedStar Southern Maryland Hospital Center"
+    },
+    {
+     "location_name": "MedStar Franklin Square Hosp",
+     "req_id": "174842",
+     "state": "Maryland",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T20:47:00+0000",
+     "city": "Baltimore",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "MedStar Health",
+     "street_address": "9000 Franklin Square Dr",
+     "slug": "174842",
+     "title": "Registered Nurse (RN) Neurological Interventional Radiology",
+     "tags1": [
+      "Interventional Radiology"
+     ],
+     "tags2": [
+      "MedStar Franklin Square Medical Center"
+     ],
+     "tags3": [
+      "Full Time"
+     ],
+     "tags4": [
+      "Day"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags8": [
+      "Niakeya Boykin"
+     ],
+     "tags9": [
+      "Niakeya.Boykin@medstar.net"
+     ],
+     "description": "<strong class=\"main-description-body\">About the Job</strong><br><br><p style=\"margin: 0px;\"><strong>Unit Highlights</strong></p><p style=\"margin: 0px; text-align: justify;\">At MedStar Franklin Square, we are a comprehensive stroke center. The role of the Neuro IR nurse is to circulate and support ou",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "MedStar Franklin Square Medical Center"
+    },
+    {
+     "location_name": "Remote Anywhere US",
+     "req_id": "173593",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T19:26:00+0000",
+     "category": [
+      " Nurse Practitioner"
+     ],
+     "hiring_organization": "MedStar Health",
+     "slug": "173593",
+     "title": "Diabetes Telemedicine Nurse Practitioner",
+     "tags1": [
+      "Endocrinology"
+     ],
+     "tags2": [
+      "MedStar Medical Group"
+     ],
+     "tags3": [
+      "Full Time"
+     ],
+     "tags4": [
+      "Day"
+     ],
+     "tags5": [
+      "Remote"
+     ],
+     "tags8": [
+      "Samantha Waddell"
+     ],
+     "tags9": [
+      "Samantha.H.Seo@medstar.net"
+     ],
+     "description": "<strong class=\"main-description-body\">About the Job</strong><br><br><p><strong>Nurse Practitioner, MedStar Health Diabetes Boot Camp (Remote)</strong></p><p> </p><p><strong>MedStar Medical Group</strong> offers a rewarding career serving a unique patient population across the Washington, D.C., Maryl",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "MedStar Health"
+    },
+    {
+     "location_name": "Urgent Care-Adams Morgan",
+     "req_id": "174216",
+     "state": "DC",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T19:17:00+0000",
+     "city": "Washington",
+     "category": [
+      " Allied Health"
+     ],
+     "hiring_organization": "MedStar Health",
+     "street_address": "1805 Columbia Rd NW",
+     "slug": "174216",
+     "title": "Medical Assistant - Urgent Care",
+     "tags1": [
+      "Other"
+     ],
+     "tags2": [
+      "MedStar Health Urgent Care"
+     ],
+     "tags3": [
+      "Full Time"
+     ],
+     "tags4": [
+      "Day/Evening (Rotating Weekends)"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags8": [
+      "Jessica Clary"
+     ],
+     "tags9": [
+      "jessica.l.clary@medstar.net"
+     ],
+     "description": "<strong class=\"main-description-body\">About the Job</strong><br><br><strong> General Summary of Position</strong><br>The Medical Assistant performs clinical and administrative duties in an ambulatory care setting under the supervision of a physician/provider and/or a registered nurse. Duties may inc",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "MedStar Health Urgent Care - Adams Morgan"
+    },
+    {
+     "location_name": "Urgent Care-Catonsville",
+     "req_id": "173820",
+     "state": "Maryland",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T19:13:00+0000",
+     "city": "Catonsville",
+     "category": [
+      " Allied Health"
+     ],
+     "hiring_organization": "MedStar Health",
+     "street_address": "6500 Baltimore National Pike",
+     "slug": "173820",
+     "title": "Certified Medical Assistant - Urgent  Care",
+     "tags1": [
+      "Other"
+     ],
+     "tags2": [
+      "MedStar Health Urgent Care"
+     ],
+     "tags3": [
+      "Full Time"
+     ],
+     "tags4": [
+      "Day/Evening (Rotating Weekends)"
+     ],
+     "tags5": [
+      "Onsite"
+     ],
+     "tags8": [
+      "Jessica Clary"
+     ],
+     "tags9": [
+      "jessica.l.clary@medstar.net"
+     ],
+     "description": "<strong class=\"main-description-body\">About the Job</strong><br><br><strong> General Summary of Position</strong><br>The Medical Assistant performs clinical and administrative duties in an ambulatory care setting under the supervision of a physician/provider and/or a registered nurse. Duties may inc",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "MedStar Health Urgent Care - Catonsville"
+    }
+   ]
+  },
+  "MyMichigan Health": {
+   "base": "https://careers.mymichigan.org",
+   "totalCount": 949,
+   "rows": [
+    {
+     "location_name": "Medical Center Tawas",
+     "req_id": "42251",
+     "state": "Michigan",
+     "employment_type": "CONTRACTOR",
+     "posted_date": "2026-10-29T13:17:00+0000",
+     "city": "Tawas City",
+     "category": [
+      " Clerical/Admin Support"
+     ],
+     "hiring_organization": "MyMichigan Health",
+     "slug": "42251",
+     "title": "Admitting Representative",
+     "tags2": [
+      "Patient Access"
+     ],
+     "tags3": [
+      "Careers (External)"
+     ],
+     "tags4": [
+      "varies"
+     ],
+     "tags5": [
+      "Resignation"
+     ],
+     "tags6": [
+      "0.0"
+     ],
+     "tags7": [
+      "Any Shift"
+     ],
+     "tags8": [
+      "Casual"
+     ],
+     "description": "Summary<br><br><p><span style=\"font-family: arial, helvetica, sans-serif; font-size: 10pt;\">This position is responsible for registration and insurance verification in all registration areas within MyMichigan Health. This position will make financial arrangements for patients without insurance or wi",
+     "meta_data": {
+      "canonical_url": "https://careers.mymichigan.org/jobs/42251?lang=en-us"
+     },
+     "_expect": "MyMichigan Medical Center Tawas"
+    },
+    {
+     "location_name": "Medical Center West Branch",
+     "req_id": "49447",
+     "state": "Michigan",
+     "employment_type": "CONTRACTOR",
+     "posted_date": "2026-10-29T12:54:00+0000",
+     "city": "West Branch",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "MyMichigan Health",
+     "slug": "49447",
+     "title": "Registered Nurse RN Wound Treatment Center",
+     "tags1": [
+      "Registered Nurse"
+     ],
+     "tags2": [
+      "Wound Treatment Center"
+     ],
+     "tags3": [
+      "Careers (External)"
+     ],
+     "tags4": [
+      "0730 1630"
+     ],
+     "tags5": [
+      "Transfer"
+     ],
+     "tags6": [
+      "0"
+     ],
+     "tags7": [
+      "Day Shift"
+     ],
+     "tags8": [
+      "Casual"
+     ],
+     "description": "Summary<br><br><p style=\"margin: 0px;\"><span style=\"font-family: Arial; font-size: 10pt;\">The registered nurse will perform direct patient/resident care and delegation to patient care technicians in providing care and comfort to the residents. Knowledge and compliance with all local, state and feder",
+     "meta_data": {
+      "canonical_url": "https://careers.mymichigan.org/jobs/49447?lang=en-us"
+     },
+     "_expect": "MyMichigan Medical Center West Branch"
+    },
+    {
+     "location_name": "MyMichigan Health",
+     "req_id": "49617",
+     "state": "Michigan",
+     "employment_type": "PART_TIME",
+     "posted_date": "2026-10-29T12:49:00+0000",
+     "city": "Midland",
+     "category": [
+      " Service/Trades"
+     ],
+     "hiring_organization": "MyMichigan Health",
+     "slug": "49617",
+     "title": "Courier",
+     "tags2": [
+      "Courier Services"
+     ],
+     "tags3": [
+      "Careers (External)"
+     ],
+     "tags4": [
+      "8:00 am - 3:30 pm"
+     ],
+     "tags5": [
+      "Transfer"
+     ],
+     "tags6": [
+      ".58"
+     ],
+     "tags7": [
+      "Rotating"
+     ],
+     "tags8": [
+      "Part-Time"
+     ],
+     "description": "Summary<br><br><p><span style=\"font-size: 10pt; font-family: arial, helvetica, sans-serif;\">This position provides for the transportation of materials, including lab specimens, waste, supplies, mail, pharmaceuticals, and medical records/reports throughout the Health System and beyond. This position ",
+     "meta_data": {
+      "canonical_url": "https://careers.mymichigan.org/jobs/49617?lang=en-us"
+     },
+     "_expect": "MyMichigan Health"
+    },
+    {
+     "location_name": "Medical Center Midland",
+     "req_id": "49486",
+     "state": "Michigan",
+     "employment_type": "TEMPORARY",
+     "posted_date": "2026-10-29T12:45:00+0000",
+     "city": "Midland",
+     "category": [
+      " Service/Trades"
+     ],
+     "hiring_organization": "MyMichigan Health",
+     "slug": "49486",
+     "title": "Dining and Catering Aide",
+     "tags1": [
+      "Aide/Assistant"
+     ],
+     "tags2": [
+      "Dining and Catering Services"
+     ],
+     "tags3": [
+      "Careers (External)"
+     ],
+     "tags4": [
+      "11:30 am - 8:00 pm on WK#1 - SU, W, TH, & F and WK#2 - M, TU, W, & SA."
+     ],
+     "tags5": [
+      "New"
+     ],
+     "tags6": [
+      "0.80"
+     ],
+     "tags7": [
+      "Afternoon Shift"
+     ],
+     "tags8": [
+      "Temporary"
+     ],
+     "description": "Summary<br><br><font face=Arial style=font-size:12pt;>This position performs a variety of duties in the Dining and Catering Services Department to provide the best quality care to patients, employees, and visitors. Duties may include, but are not limited to: serving/preparing food for Orchard Dining",
+     "meta_data": {
+      "canonical_url": "https://careers.mymichigan.org/jobs/49486?lang=en-us"
+     },
+     "_expect": "MyMichigan Medical Center Midland"
+    },
+    {
+     "location_name": "Medical Center Alpena",
+     "req_id": "49069",
+     "state": "Michigan",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T18:14:00+0000",
+     "city": "Alpena",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "MyMichigan Health",
+     "slug": "49069",
+     "title": "General Duty RN",
+     "tags1": [
+      "General Nurse"
+     ],
+     "tags2": [
+      "Women's Health"
+     ],
+     "tags3": [
+      "Careers (External)"
+     ],
+     "tags4": [
+      "7a-7p, no rotation"
+     ],
+     "tags5": [
+      "Resignation"
+     ],
+     "tags6": [
+      "0.9"
+     ],
+     "tags7": [
+      "Day Shift"
+     ],
+     "tags8": [
+      "Regular Full-Time"
+     ],
+     "description": "Summary<br><br><p><span style=\"font-family: arial, helvetica, sans-serif; font-size: 12pt;\">Units: WHU/MS/IPR</span></p><p><span style=\"font-family: arial, helvetica, sans-serif; font-size: 12pt;\">Posted internally from 10/21/2026 to 10/28/2026</span></p><p> </p><p><span style=\"font-size: 12pt; font",
+     "meta_data": {
+      "canonical_url": "https://careers.mymichigan.org/jobs/49069?lang=en-us"
+     },
+     "_expect": "MyMichigan Medical Center Alpena"
+    },
+    {
+     "location_name": "Medical Center Sault",
+     "req_id": "41563",
+     "state": "Michigan",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T16:10:00+0000",
+     "city": "Sault Ste. Marie",
+     "category": [
+      " Operating Room/Anesthesia"
+     ],
+     "hiring_organization": "MyMichigan Health",
+     "slug": "41563",
+     "title": "Surgical Tech",
+     "tags1": [
+      "Technician/Technologist"
+     ],
+     "tags2": [
+      "Operating Room"
+     ],
+     "tags3": [
+      "Careers (External)"
+     ],
+     "tags4": [
+      "0700 - 1530"
+     ],
+     "tags5": [
+      "New"
+     ],
+     "tags6": [
+      "0.9"
+     ],
+     "tags7": [
+      "Day Shift"
+     ],
+     "tags8": [
+      "Regular Full-Time"
+     ],
+     "description": "Summary<br><br><ul><li style=\"color: #ba372a;\"><span style=\"font-family: calibri; font-size: 12pt; color: #ba372a;\"><em><strong>Hours: Full-time including a full benefits package /<span class=\"gramm-problem\" data-grayt-phrase=\"\" data-wsc-lang=\"en_US\" data-wsc-id=\"lp72dwcw6lh2t36l2\" data-grammar-rule",
+     "meta_data": {
+      "canonical_url": "https://careers.mymichigan.org/jobs/41563?lang=en-us"
+     },
+     "_expect": "MyMichigan Medical Center Sault"
+    },
+    {
+     "location_name": "Medical Center Saginaw",
+     "req_id": "47549",
+     "state": "Michigan",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T12:47:00+0000",
+     "city": "Saginaw",
+     "category": [
+      " Imaging/Radiology/Sleep"
+     ],
+     "hiring_organization": "MyMichigan Health",
+     "slug": "47549",
+     "title": "Radiologic Technologist",
+     "tags2": [
+      "Diagnostic Radiology"
+     ],
+     "tags3": [
+      "Careers (External)"
+     ],
+     "tags4": [
+      "11-7:30/12-8:30"
+     ],
+     "tags5": [
+      "Retirement"
+     ],
+     "tags6": [
+      "1.0"
+     ],
+     "tags7": [
+      "Afternoon Shift"
+     ],
+     "tags8": [
+      "Regular Full-Time"
+     ],
+     "description": "Summary<br><br><p><strong><span style=\"font-size: 12pt; font-family: Arial;\">***$20,000 Sign on bonus available for qualified candidates***</span></strong></p><p> </p><p><span style=\"font-size: 12pt; font-family: Arial;\">This position accurately applies ionizing radiation for radiologic diagnosis, i",
+     "meta_data": {
+      "canonical_url": "https://careers.mymichigan.org/jobs/47549?lang=en-us"
+     },
+     "_expect": "MyMichigan Medical Center Saginaw"
+    },
+    {
+     "location_name": "Medical Center Gladwin",
+     "req_id": "11648",
+     "state": "Michigan",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T16:40:00+0000",
+     "city": "Gladwin",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "MyMichigan Health",
+     "slug": "11648",
+     "title": "Registered Nurse RN Resource Pool",
+     "tags1": [
+      "Registered Nurse"
+     ],
+     "tags2": [
+      "35045-Resource Pool"
+     ],
+     "tags3": [
+      "Careers (External)"
+     ],
+     "tags4": [
+      "7:00 PM - 7:00 AM"
+     ],
+     "tags5": [
+      "New"
+     ],
+     "tags6": [
+      "0.9"
+     ],
+     "tags7": [
+      "Night Shift"
+     ],
+     "tags8": [
+      "Regular Full-Time"
+     ],
+     "description": "Summary<br><br><p><span style=\"font-family: verdana, geneva, sans-serif; font-size: 9pt;\"><em><strong>This position is part of the Resource Pool/Float Pool and will receive a night shift differential plus incentive pay for Resource Pool.</strong></em> </span></p><p> </p><p><span style=\"font-family: ",
+     "meta_data": {
+      "canonical_url": "https://careers.mymichigan.org/jobs/11648?lang=en-us"
+     },
+     "_expect": "MyMichigan Medical Center Gladwin"
+    }
+   ]
+  },
+  "WakeMed": {
+   "base": "https://jobs.wakemed.org",
+   "totalCount": 541,
+   "rows": [
+    {
+     "location_name": "WakeMed Raleigh Campus",
+     "req_id": "33884",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T13:10:00+0000",
+     "city": "Raleigh",
+     "category": [
+      " Behavioral Health, Community Health & Case Management"
+     ],
+     "hiring_organization": "WakeMed Health & Hospitals",
+     "street_address": "3000 New Bern Avenue",
+     "slug": "33884",
+     "title": "Mental Health Clinician II - Behavioral Health Services",
+     "tags1": [
+      "Full Time"
+     ],
+     "tags2": [
+      "Clinical Professional"
+     ],
+     "tags3": [
+      "Evening"
+     ],
+     "tags4": [
+      "Behavioral Health Services"
+     ],
+     "tags5": [
+      "No Weekends"
+     ],
+     "tags6": [
+      "WakeMed Raleigh Campus"
+     ],
+     "tags7": [
+      "No"
+     ],
+     "tags8": [
+      "Monday, Tuesday, Wednesday 2:45pm-3:15am"
+     ],
+     "tags9": [
+      "WakeMed"
+     ],
+     "description": "<STRONG class=\"jd__header\">Overview</STRONG><br><br><p>Provides mental health and substance use services in person or via telehealth. Conducts emergency psychiatric and substance use assessments, diagnoses using the DSM-5/ICD10 codes, and provides crisis intervention, supportive counseling, and soci",
+     "meta_data": {
+      "canonical_url": "https://jobs.wakemed.org/jobs/33884?lang=en-us"
+     },
+     "_expect": "WakeMed Raleigh Campus"
+    },
+    {
+     "location_name": "WakeMed Cary Hospital",
+     "req_id": "33846",
+     "state": "North Carolina",
+     "employment_type": "PER_DIEM",
+     "posted_date": "2026-10-29T01:51:00+0000",
+     "city": "Cary",
+     "category": [
+      " Surgical Services"
+     ],
+     "hiring_organization": "WakeMed Health & Hospitals",
+     "street_address": "1900 Kildaire Farm Road",
+     "slug": "33846",
+     "title": "Sterile Processing Technician I",
+     "tags1": [
+      "Supplemental"
+     ],
+     "tags2": [
+      "Skilled Crafts/Trades"
+     ],
+     "tags3": [
+      "As Needed"
+     ],
+     "tags4": [
+      "Sterile Processing"
+     ],
+     "tags5": [
+      "As Needed"
+     ],
+     "tags6": [
+      "WakeMed Cary Hospital"
+     ],
+     "tags7": [
+      "No"
+     ],
+     "tags8": [
+      "as needed"
+     ],
+     "tags9": [
+      "WakeMed"
+     ],
+     "description": "<STRONG class=\"jd__header\">Overview</STRONG><br><br><p>At WakeMed, our mission is to improve the health and well-being of our community—and we do it by delivering outstanding, compassionate care.</p><p>We're hiring a Sterile Processing Tech I to help ensure surgical instruments and equipment are cle",
+     "meta_data": {
+      "canonical_url": "https://jobs.wakemed.org/jobs/33846?lang=en-us"
+     },
+     "_expect": "WakeMed Cary Hospital"
+    },
+    {
+     "location_name": "MyCare 365 - Lowes Grove",
+     "req_id": "33887",
+     "state": "North Carolina",
+     "employment_type": "PER_DIEM",
+     "posted_date": "2026-10-28T22:47:00+0000",
+     "city": "Durham",
+     "category": [
+      " Business & Administrative Services"
+     ],
+     "hiring_organization": "WakeMed Health & Hospitals",
+     "street_address": "2216 NC 54",
+     "slug": "33887",
+     "title": "Patient Registration Representative",
+     "tags1": [
+      "Supplemental"
+     ],
+     "tags2": [
+      "Financial Support"
+     ],
+     "tags3": [
+      "As Needed"
+     ],
+     "tags4": [
+      "MyCare 365 - Lowes Grove"
+     ],
+     "tags5": [
+      "As Needed"
+     ],
+     "tags6": [
+      "MyCare 365 - Lowes Grove"
+     ],
+     "tags7": [
+      "No"
+     ],
+     "tags8": [
+      "As needed"
+     ],
+     "tags9": [
+      "WakeMed Physician Practices"
+     ],
+     "description": "<STRONG class=\"jd__header\">Overview</STRONG><br><br>The Patient Registration Representative will enjoy interacting with patients, checking them in for their appointments and coordinating follow up appointments. The Patient Registration Representative will accurately perform administrative duties req",
+     "meta_data": {
+      "canonical_url": "https://jobs.wakemed.org/jobs/33887?lang=en-us"
+     },
+     "_expect": "MyCare 365 - Lowes Grove"
+    },
+    {
+     "location_name": "WakeMed Corporate Center",
+     "req_id": "33449",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T17:30:00+0000",
+     "city": "Raleigh",
+     "category": [
+      " Business & Administrative Services"
+     ],
+     "hiring_organization": "WakeMed Health & Hospitals",
+     "street_address": "3128 Smoketree Court",
+     "slug": "33449",
+     "title": "Finance & Accounting Representative",
+     "tags1": [
+      "Full Time"
+     ],
+     "tags2": [
+      "Financial Support"
+     ],
+     "tags3": [
+      "Day"
+     ],
+     "tags4": [
+      "Claims & Billing"
+     ],
+     "tags5": [
+      "As Needed"
+     ],
+     "tags6": [
+      "WakeMed Corporate Center"
+     ],
+     "tags7": [
+      "As Needed"
+     ],
+     "tags8": [
+      "Monday-Friday 8hrs/day(Hybrid schedule to be determined.)"
+     ],
+     "tags9": [
+      "WakeMed"
+     ],
+     "description": "<STRONG class=\"jd__header\">Overview</STRONG><br><br>The Finance & Accounting Representative is responsible for accurate billing of claims according to payor guidelines, resolving claim edits, claims processing, claims follow up activity, resolving denied claims and special collections. Acts as a res",
+     "meta_data": {
+      "canonical_url": "https://jobs.wakemed.org/jobs/33449?lang=en-us"
+     },
+     "_expect": "WakeMed"
+    },
+    {
+     "location_name": "WakeMed Garner Healthplex",
+     "req_id": "33774",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T16:11:00+0000",
+     "city": "Garner",
+     "category": [
+      " Business & Administrative Services"
+     ],
+     "hiring_organization": "WakeMed Health & Hospitals",
+     "street_address": "400 US 70 Highway East",
+     "slug": "33774",
+     "title": "Team Lead, ED Patient Registration",
+     "tags1": [
+      "Full Time"
+     ],
+     "tags2": [
+      "Team Leader"
+     ],
+     "tags3": [
+      "Day"
+     ],
+     "tags4": [
+      "ED Registration"
+     ],
+     "tags5": [
+      "As Needed"
+     ],
+     "tags6": [
+      "WakeMed Garner Healthplex"
+     ],
+     "tags7": [
+      "As Needed"
+     ],
+     "tags8": [
+      "Monday-Friday 8:00am-4:30pm(Flexibility for evening, night, and weekend coverage is essential.)"
+     ],
+     "tags9": [
+      "WakeMed"
+     ],
+     "description": "<STRONG class=\"jd__header\">Overview</STRONG><br><br><p>The Team Leader, ED Patient Registration Rep will enjoy interacting with patients and registering them for their care. The Team Leader, ED Patient Registration Rep will accurately perform administrative duties required for patient registration a",
+     "meta_data": {
+      "canonical_url": "https://jobs.wakemed.org/jobs/33774?lang=en-us"
+     },
+     "_expect": "WakeMed Garner Healthplex"
+    },
+    {
+     "location_name": "Andrews Center",
+     "req_id": "33785",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T03:39:00+0000",
+     "city": "Raleigh",
+     "category": [
+      " Business & Administrative Services"
+     ],
+     "hiring_organization": "WakeMed Health & Hospitals",
+     "street_address": "3024 New Bern Avenue",
+     "slug": "33785",
+     "title": "Patient Registration Representative, Bilingual",
+     "tags1": [
+      "Full Time"
+     ],
+     "tags2": [
+      "Financial Support"
+     ],
+     "tags3": [
+      "Day"
+     ],
+     "tags4": [
+      "HOPD OB-GYN - Raleigh"
+     ],
+     "tags5": [
+      "No Weekends"
+     ],
+     "tags6": [
+      "Andrews Center"
+     ],
+     "tags7": [
+      "No"
+     ],
+     "tags8": [
+      "Monday - Thursday: 7:30 AM - 4:30 PM Friday: 7:30 AM - 12:30 PM"
+     ],
+     "tags9": [
+      "WakeMed Physician Practices"
+     ],
+     "description": "<STRONG class=\"jd__header\">Overview</STRONG><br><br><div><p>At WakeMed, our mission is to improve the health and well-being of our community—and we do it by delivering outstanding, compassionate care.</p><p> </p><p>We're hiring a <strong>Patient Registration Representative, Bilingual</strong> to be ",
+     "meta_data": {
+      "canonical_url": "https://jobs.wakemed.org/jobs/33785?lang=en-us"
+     },
+     "_expect": "Andrews Center"
+    },
+    {
+     "location_name": "MyCare 365 - Morrisville",
+     "req_id": "33791",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T23:09:00+0000",
+     "city": "Morrisville",
+     "category": [
+      " Medical Assistants"
+     ],
+     "hiring_organization": "WakeMed Health & Hospitals",
+     "street_address": "9648 Chapel Hill Road",
+     "slug": "33791",
+     "title": "Medical Assistant",
+     "tags1": [
+      "Full Time"
+     ],
+     "tags2": [
+      "Clinical Nursing Support"
+     ],
+     "tags3": [
+      "Rotating"
+     ],
+     "tags4": [
+      "MyCare 365 - Morrisville"
+     ],
+     "tags5": [
+      "Some Weekends (Rotating)"
+     ],
+     "tags6": [
+      "MyCare 365 - Morrisville"
+     ],
+     "tags7": [
+      "No"
+     ],
+     "tags8": [
+      "Working 38 hours per week with schedule repeating every 2 weeks. Every other weekend required and some holidays."
+     ],
+     "tags9": [
+      "WakeMed Physician Practices"
+     ],
+     "description": "<STRONG class=\"jd__header\">Overview</STRONG><br><br>Works interdependently with other healthcare professionals to provide quality health care to ambulatory care patients. Provides direct patient care in the office setting and under the delegation of a provider. Understands the needs of the ambulator",
+     "meta_data": {
+      "canonical_url": "https://jobs.wakemed.org/jobs/33791?lang=en-us"
+     },
+     "_expect": "MyCare 365 - Morrisville"
+    },
+    {
+     "location_name": "MyCare 365 - Wake Forest",
+     "req_id": "33792",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T23:08:00+0000",
+     "city": "Wake Forest",
+     "category": [
+      " Medical Assistants"
+     ],
+     "hiring_organization": "WakeMed Health & Hospitals",
+     "street_address": "2001 S Main Street\nSuite 200",
+     "slug": "33792",
+     "title": "Medical Assistant",
+     "tags1": [
+      "Full Time"
+     ],
+     "tags2": [
+      "Clinical Nursing Support"
+     ],
+     "tags3": [
+      "12 Hrs AM-PM"
+     ],
+     "tags4": [
+      "MyCare 365 - Wake Forest"
+     ],
+     "tags5": [
+      "Some Weekends (Rotating)"
+     ],
+     "tags6": [
+      "MyCare 365 - Wake Forest"
+     ],
+     "tags7": [
+      "No"
+     ],
+     "tags8": [
+      "Three 12 hour shifts per week and rotating weekends"
+     ],
+     "tags9": [
+      "WakeMed Physician Practices"
+     ],
+     "description": "<STRONG class=\"jd__header\">Overview</STRONG><br><br>Works interdependently with other healthcare professionals to provide quality health care to ambulatory care patients. Provides direct patient care in the office setting and under the delegation of a provider. Understands the needs of the ambulator",
+     "meta_data": {
+      "canonical_url": "https://jobs.wakemed.org/jobs/33792?lang=en-us"
+     },
+     "_expect": "MyCare 365 - Wake Forest"
+    }
+   ]
+  },
+  "Piedmont Healthcare": {
+   "base": "https://join.piedmont.org",
+   "totalCount": 1748,
+   "rows": [
+    {
+     "location_name": "1255 Highway 54 West",
+     "req_id": "14573",
+     "state": "Georgia",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T11:45:00+0000",
+     "city": "Fayetteville",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "Piedmont Healthcare Inc.",
+     "street_address": "1255 Highway 54 West",
+     "slug": "14573",
+     "title": "RN - TCU",
+     "description": "Overview<br><br>The staff nurse provides nursing care to patients from birth through the lifecycle utilizing nursing processes to assess, plan, implement, and evaluate the care for patients. He/she functions within the framework of the policies and procedures of the organization and demonstrates pro",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Piedmont Fayette Hospital"
+    },
+    {
+     "location_name": "1350 Walton Way",
+     "req_id": "31113",
+     "state": "Georgia",
+     "posted_date": "2026-10-29T08:55:00+0000",
+     "city": "Augusta",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "Piedmont Healthcare Inc.",
+     "street_address": "1350 Walton Way",
+     "slug": "31113",
+     "title": "RN IV - PICC, PRN, Nights",
+     "description": "Overview<br><br><p><strong>Experience the advantages of real career change </strong></p><p>Join Piedmont to move your career in the right direction. Stay for the diverse teams you’ll love, a shared purpose, and schedule flexibility that frees you to live for what matters both in and outside of work.",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Piedmont Augusta Hospital"
+    },
+    {
+     "location_name": "2460 Washington Road",
+     "req_id": "31112",
+     "state": "Georgia",
+     "posted_date": "2026-10-29T08:37:00+0000",
+     "city": "Thomson",
+     "category": [
+      " Surgical Services"
+     ],
+     "hiring_organization": "Piedmont Healthcare Inc.",
+     "street_address": "2460 Washington Road",
+     "slug": "31112",
+     "title": "Surgical Tech - OR, PRN, McDuffie",
+     "description": "Overview<br><br><p><strong>Experience the advantages of real career change </strong></p><p>Join Piedmont to move your career in the right direction. Stay for the diverse teams you’ll love, a shared purpose, and schedule flexibility that frees you to live for what matters both in and outside of work.",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Piedmont McDuffie Hospital"
+    },
+    {
+     "location_name": "2000 10th Avenue",
+     "req_id": "18627",
+     "state": "Georgia",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T04:00:00+0000",
+     "city": "Columbus",
+     "category": [
+      " Physician Practices"
+     ],
+     "hiring_organization": "Piedmont Healthcare Inc.",
+     "street_address": "2000 10th Avenue",
+     "slug": "18627",
+     "title": "Lead Ultrasound Tech -Columbus Maternal Fetal Medicine",
+     "description": "<br>Responsibilities<br><br>Operates ultrasound equipment to perform clinical diagnostic ultrasound exams and routine invasive procedures according to established standards and practices. Provides patient services using imaging modalities. Patient services include diagnostic ultrasounds of inpatient",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Piedmont Healthcare"
+    },
+    {
+     "location_name": "PH Campus 1984 Bldg",
+     "req_id": "30931",
+     "state": "Georgia",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T21:57:00+0000",
+     "city": "Atlanta",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "Piedmont Healthcare Inc.",
+     "street_address": "1984 Peachtree Rd",
+     "slug": "30931",
+     "title": "RN - Medsurg, Ortho",
+     "description": "<br>Responsibilities<br><br>The staff nurse provides nursing care to patients from birth through the lifecycle utilizing nursing processes to assess, plan, implement, and evaluate the care for patients. He/she functions within the framework of the policies and procedures of the organization and demo",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Piedmont Atlanta Hospital"
+    },
+    {
+     "location_name": "710 Center Street",
+     "req_id": "24473",
+     "state": "Georgia",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T20:55:00+0000",
+     "city": "Columbus",
+     "category": [
+      " Lab"
+     ],
+     "hiring_organization": "Piedmont Healthcare Inc.",
+     "street_address": "710 Center Street",
+     "slug": "24473",
+     "title": "Medical Lab Scientist, Nights - Midtown",
+     "description": "Overview<br><br><p><strong>Job Title: Medical Lab Scientist </strong></p><p><strong>Shift: Nights </strong></p><p><strong>Location: Columbus, Georgia </strong></p><p> </p><p>Experience the advantages of real career change</p><p>Join Piedmont to move your career in the right direction. Stay for the d",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Piedmont Columbus Regional Midtown"
+    },
+    {
+     "location_name": "1412 Milstead Ave",
+     "req_id": "28591",
+     "state": "Georgia",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T20:00:00+0000",
+     "city": "Conyers",
+     "category": [
+      " Revenue Cycle"
+     ],
+     "hiring_organization": "Piedmont Healthcare Inc.",
+     "street_address": "1412 Milstead Ave",
+     "slug": "28591",
+     "title": "Patient Access Assoc - Weekends, Days",
+     "description": "Overview<br><br>Serves as patient facing support for the Patient Access Department within Piedmont Healthcare. Ensures patient accounts are complete with valid insurance coverage and current demographic/clinical data. Calculates patient financial responsibility, presents patient financial options/re",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Piedmont Rockdale Hospital"
+    },
+    {
+     "location_name": "745 Poplar Road",
+     "req_id": "14071",
+     "state": "Georgia",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T20:00:00+0000",
+     "city": "Newnan",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "Piedmont Healthcare Inc.",
+     "street_address": "745 Poplar Road",
+     "slug": "14071",
+     "title": "RN - IMCU, Nights",
+     "description": "Overview<br><br><p><strong>Sign-on Bonus Available</strong></p><p> </p><p><span data-teams=\"true\">When you join Piedmont, you’re not just changing your work environment. We open doors to real change in the lives we touch — especially yours. We’re committed to bringing award-winning care to communiti",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Piedmont Newnan Hospital"
+    }
+   ]
+  },
+  "Yale New Haven Health System": {
+   "base": "https://jobs.ynhhs.org",
+   "totalCount": 1558,
+   "rows": [
+    {
+     "location_name": "RI02891",
+     "req_id": "92078",
+     "state": "Rhode Island",
+     "posted_date": "2026-10-29T13:08:00+0000",
+     "city": "Westerly",
+     "category": [
+      " NURSING-SUPPORT"
+     ],
+     "hiring_organization": "Yale New Haven Health",
+     "slug": "92078",
+     "title": "Health Unit Coordinator - Inpatient Psych",
+     "tags2": [
+      "Geriatric Psych Inpatient"
+     ],
+     "tags3": [
+      "24"
+     ],
+     "tags4": [
+      "Part Time Benefits Eligible"
+     ],
+     "tags5": [
+      "196926"
+     ],
+     "tags6": [
+      "Onsite 100%"
+     ],
+     "tags7": [
+      "25 wells street, Westerly Rhode Island  02891"
+     ],
+     "tags9": [
+      "USD $18.59/Hr.-USD $32.78/Hr."
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\"><span style=\"font-size: 12pt; font-family: arial, helvetica, sans-serif;\">To be part of our organization, every employee should understand and share in the YNHHS Vision, support our Mission, and live our Values. These values - integrity, patie",
+     "meta_data": {
+      "canonical_url": "https://jobs.ynhhs.org/jobs/92078?lang=en-us"
+     },
+     "_expect": "Westerly Hospital"
+    },
+    {
+     "location_name": "CT06510",
+     "req_id": "92379",
+     "state": "Connecticut",
+     "posted_date": "2026-10-29T13:07:00+0000",
+     "city": "NEW HAVEN",
+     "category": [
+      " NURSING-STAFF - PEDI CRITICAL CARE"
+     ],
+     "hiring_organization": "Yale New Haven Health",
+     "slug": "92379",
+     "title": "Ambulatory Pediatric Registered Nurse; Registered Nurse",
+     "tags1": [
+      "DAYS"
+     ],
+     "tags2": [
+      "Childrens Specialty Ctr WP2"
+     ],
+     "tags3": [
+      "40"
+     ],
+     "tags4": [
+      "Full Time Benefits Eligible"
+     ],
+     "tags5": [
+      "197449"
+     ],
+     "tags6": [
+      "Onsite 100%"
+     ],
+     "tags7": [
+      "1 Park Street, New Haven, CT 06510"
+     ],
+     "tags9": [
+      "USD $35.00/Hr.-USD $79.07/Hr."
+     ],
+     "description": "<strong>Overview</strong><br><br>To be part of our organization, every employee should understand and share in the YNHHS Vision, support our Mission, and live our Values. These values - integrity, patient-centered, respect, accountability, and compassion - must guide what we do, as individuals and p",
+     "meta_data": {
+      "canonical_url": "https://jobs.ynhhs.org/jobs/92379?lang=en-us"
+     },
+     "_expect": "Yale New Haven Children's Hospital"
+    },
+    {
+     "location_name": "CT06510",
+     "req_id": "92375",
+     "state": "Connecticut",
+     "posted_date": "2026-10-29T12:50:00+0000",
+     "city": "NEW HAVEN",
+     "category": [
+      " PHARMACY"
+     ],
+     "hiring_organization": "Yale New Haven Health",
+     "slug": "92375",
+     "title": "Clinical Pharmacist I",
+     "tags1": [
+      "DAYS"
+     ],
+     "tags2": [
+      "Pharmacy CMHC"
+     ],
+     "tags3": [
+      "16"
+     ],
+     "tags4": [
+      "Part Time Non-Benefits Eligible"
+     ],
+     "tags5": [
+      "196780"
+     ],
+     "tags6": [
+      "Onsite 100%"
+     ],
+     "tags7": [
+      "55 Park Street, New Haven, CT 06510"
+     ],
+     "tags9": [
+      "USD $36.66/Hr.-USD $80.87/Hr."
+     ],
+     "description": "<strong>Overview</strong><br><br>To be part of our organization, every employee should understand and share in the YNHHS Vision, support our Mission, and live our Values. These values - integrity, patient-centered, respect, accountability, and compassion - must guide what we do, as individuals and p",
+     "meta_data": {
+      "canonical_url": "https://jobs.ynhhs.org/jobs/92375?lang=en-us"
+     },
+     "_expect": "Yale New Haven Health System"
+    },
+    {
+     "location_name": "CT06604",
+     "req_id": "92312",
+     "state": "Connecticut",
+     "posted_date": "2026-10-29T12:30:00+0000",
+     "city": "Bridgeport",
+     "category": [
+      " NURSING-SUPPORT - CLINICAL"
+     ],
+     "hiring_organization": "Yale New Haven Health",
+     "slug": "92312",
+     "title": "Patient Care Technician PCT - Medicine FT Days",
+     "tags1": [
+      "12 HOUR AM-PM"
+     ],
+     "tags2": [
+      "Medicine NorthWest 9"
+     ],
+     "tags3": [
+      "36"
+     ],
+     "tags4": [
+      "Full Time Benefits Eligible"
+     ],
+     "tags5": [
+      "197611"
+     ],
+     "tags6": [
+      "Onsite 100%"
+     ],
+     "tags7": [
+      "267 Grant Street, Bridgeport, CT 06610"
+     ],
+     "tags9": [
+      "USD $18.09/Hr.-USD $35.90/Hr."
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\"><span style=\"font-size: 12pt; font-family: arial, helvetica, sans-serif;\">To be part of our organization, every employee should understand and share in the YNHHS Vision, support our Mission, and live our Values. These values - integrity, patie",
+     "meta_data": {
+      "canonical_url": "https://jobs.ynhhs.org/jobs/92312?lang=en-us"
+     },
+     "_expect": "Bridgeport Hospital"
+    },
+    {
+     "location_name": "CT06830",
+     "req_id": "89628",
+     "state": "Connecticut",
+     "posted_date": "2026-10-28T18:37:00+0000",
+     "city": "Greenwich",
+     "category": [
+      " MGMT/LEADERSHIP"
+     ],
+     "hiring_organization": "Yale New Haven Health",
+     "slug": "89628",
+     "title": "Core Laboratory Manager",
+     "tags1": [
+      "DAY/EVENING"
+     ],
+     "tags2": [
+      "Core Lab"
+     ],
+     "tags3": [
+      "37.5"
+     ],
+     "tags4": [
+      "Full Time Benefits Eligible"
+     ],
+     "tags5": [
+      "185705"
+     ],
+     "tags6": [
+      "Onsite 100%"
+     ],
+     "tags7": [
+      "5 Perryridge Road, Greenwich, CT 06830"
+     ],
+     "tags9": [
+      "USD $36.66/Hr.-USD $80.87/Hr."
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\"><span style=\"font-size: 12pt; font-family: arial, helvetica, sans-serif;\">To be part of our organization, every employee should understand and share in the YNHHS Vision, support our Mission, and live our Values. These values - integrity, patie",
+     "meta_data": {
+      "canonical_url": "https://jobs.ynhhs.org/jobs/89628?lang=en-us"
+     },
+     "_expect": "Greenwich Hospital"
+    },
+    {
+     "location_name": "CT06510",
+     "req_id": "90863",
+     "state": "Connecticut",
+     "posted_date": "2026-10-28T18:00:00+0000",
+     "city": "NEW HAVEN",
+     "category": [
+      " NURSING-SUPPORT - CLINICAL"
+     ],
+     "hiring_organization": "Yale New Haven Health",
+     "slug": "90863",
+     "title": "1110",
+     "tags1": [
+      "DAYS"
+     ],
+     "tags2": [
+      "Med 7.5"
+     ],
+     "tags3": [
+      "24"
+     ],
+     "tags4": [
+      "Part Time Non-Benefits Eligible"
+     ],
+     "tags5": [
+      "191800"
+     ],
+     "tags6": [
+      "Onsite 100%"
+     ],
+     "tags7": [
+      "20 York Street, New Haven, CT 06510"
+     ],
+     "tags9": [
+      "USD $18.09/Hr.-USD $35.90/Hr."
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\"><span style=\"font-size: 12pt; font-family: arial, helvetica, sans-serif;\">To be part of our organization, every employee should understand and share in the YNHHS Vision, support our Mission, and live our Values. These values - integrity, patie",
+     "meta_data": {
+      "canonical_url": "https://jobs.ynhhs.org/jobs/90863?lang=en-us"
+     },
+     "_expect": "Yale New Haven Hospital"
+    },
+    {
+     "location_name": "CT06320",
+     "req_id": "92287",
+     "state": "Connecticut",
+     "posted_date": "2026-10-28T17:40:00+0000",
+     "city": "New London",
+     "category": [
+      " MGMT/LEADERSHIP - NON-CLINICAL"
+     ],
+     "hiring_organization": "Yale New Haven Health",
+     "slug": "92287",
+     "title": "Senior Manager, Human Resources (Labor Management)",
+     "tags1": [
+      "DAYS"
+     ],
+     "tags2": [
+      "Human Resources"
+     ],
+     "tags3": [
+      "40"
+     ],
+     "tags4": [
+      "Full Time Benefits Eligible"
+     ],
+     "tags5": [
+      "197998"
+     ],
+     "tags6": [
+      "Onsite 100%"
+     ],
+     "tags7": [
+      "365 Montauk Ave New London, CT 06320"
+     ],
+     "tags9": [
+      "USD $41.06/Hr.-USD $90.58/Hr."
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\"><span style=\"font-family: arial, helvetica, sans-serif; font-size: 12pt;\">To be part of our organization, every employee should understand and share in the YNHHS Vision, support our Mission, and live our Values. These values - integrity, patie",
+     "meta_data": {
+      "canonical_url": "https://jobs.ynhhs.org/jobs/92287?lang=en-us"
+     },
+     "_expect": "Lawrence + Memorial Hospital"
+    },
+    {
+     "location_name": "CT06511",
+     "req_id": "87994",
+     "state": "Connecticut",
+     "posted_date": "2026-10-28T14:03:00+0000",
+     "city": "New Haven",
+     "category": [
+      " NURSING-STAFF - OTHER"
+     ],
+     "hiring_organization": "Yale New Haven Health",
+     "slug": "87994",
+     "title": "RN Registered Nurse –Neuro/Surgical Intermediate Care",
+     "tags1": [
+      "NIGHTS"
+     ],
+     "tags2": [
+      "ANC 5 Adams Tower B"
+     ],
+     "tags3": [
+      "36"
+     ],
+     "tags4": [
+      "Full Time Benefits Eligible"
+     ],
+     "tags6": [
+      "Onsite 100%"
+     ],
+     "tags7": [
+      "1450 Chapel Street, New Haven, CT 06511"
+     ],
+     "tags9": [
+      "USD $35.00/Hr.-USD $79.07/Hr."
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\"><strong><span style=\"font-family: 'Aptos',sans-serif;\">Registered Nurse – Neuro/Surgical Intermediate Care</span></strong></p><p style=\"margin: 0px;\"><strong><span style=\"font-family: 'Aptos',sans-serif;\">Location:</span></strong><span style=\"",
+     "meta_data": {
+      "canonical_url": "https://jobs.ynhhs.org/jobs/87994?lang=en-us"
+     },
+     "_expect": "Yale New Haven Hospital - Saint Raphael Campus"
+    }
+   ]
+  },
+  "OSF HealthCare": {
+   "base": "https://www.osfcareers.org",
+   "totalCount": 1631,
+   "rows": [
+    {
+     "location_name": "OSF HealthCare Min Hdqtrs",
+     "req_id": "113334",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T12:54:00+0000",
+     "city": "Peoria",
+     "category": [
+      " Administrative/Clerical"
+     ],
+     "hiring_organization": "OSF HealthCare",
+     "street_address": "124 SW Adams St",
+     "slug": "113334",
+     "title": "Coordinator Hospitality",
+     "tags1": [
+      "OSF HealthCare Min Hdqtrs"
+     ],
+     "tags2": [
+      "Monday-Friday 7:30am-4:00pm"
+     ],
+     "tags3": [
+      "40"
+     ],
+     "tags4": [
+      "Full Time"
+     ],
+     "tags5": [
+      "1st Shift Days"
+     ],
+     "tags6": [
+      "PCMS-Administration"
+     ],
+     "tags7": [
+      "Judith.M.Plumb@osfhealthcare.org"
+     ],
+     "tags9": [
+      "No – Onsite work is required"
+     ],
+     "description": "<strong>Total Rewards</strong><br><br><p style=\"margin: 0px;\">OSF HealthCare is dedicated to provide Mission Partners with a comprehensive and market-competitive total rewards package that includes benefits, compensation, recognition and well-being offerings that focus on the whole person and engage",
+     "meta_data": {
+      "canonical_url": "https://www.osfcareers.org/jobs/113334?lang=en-us"
+     },
+     "_expect": "OSF HealthCare"
+    },
+    {
+     "location_name": "OSF St.Francis Med Center",
+     "req_id": "113353",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T12:00:00+0000",
+     "city": "PEORIA",
+     "category": [
+      " Leadership"
+     ],
+     "hiring_organization": "OSF HealthCare",
+     "street_address": "530 NE GLEN OAK AVE",
+     "slug": "113353",
+     "title": "Supervisor Phlebotomy",
+     "tags1": [
+      "OSF St.Francis Med Center"
+     ],
+     "tags2": [
+      "Monday-Friday 8- or 10-hour shifts between the hours of 7pm-7am"
+     ],
+     "tags3": [
+      "40"
+     ],
+     "tags4": [
+      "Full Time"
+     ],
+     "tags5": [
+      "3rd Shift Nights"
+     ],
+     "tags6": [
+      "Laboratory Admin"
+     ],
+     "tags7": [
+      "Kadie.L.Klauer@osfhealthcare.org"
+     ],
+     "description": "<strong>Total Rewards</strong><br><br><p style=\"margin: 0px;\">OSF HealthCare is dedicated to provide Mission Partners with a comprehensive and market-competitive total rewards package that includes benefits, compensation, recognition and well-being offerings that focus on the whole person and engage",
+     "meta_data": {
+      "canonical_url": "https://www.osfcareers.org/jobs/113353?lang=en-us"
+     },
+     "_expect": "OSF Saint Francis Medical Center"
+    },
+    {
+     "location_name": "OSFMG Fam Med Brimfield",
+     "req_id": "113234",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T21:30:00+0000",
+     "city": "BRIMFIELD",
+     "category": [
+      " Clinical Support Services"
+     ],
+     "hiring_organization": "OSF HealthCare",
+     "street_address": "111 E KNOXVILLE ST",
+     "slug": "113234",
+     "title": "Medical Office Assistant Family Practice",
+     "tags1": [
+      "OSFMG Fam Med Brimfield"
+     ],
+     "tags2": [
+      "M-F 8-5"
+     ],
+     "tags3": [
+      "40"
+     ],
+     "tags4": [
+      "Full Time"
+     ],
+     "tags5": [
+      "1st Shift Days"
+     ],
+     "tags6": [
+      "Peo-MS FP-Brimfield"
+     ],
+     "tags7": [
+      "Marcy.J.Rimmey@osfhealthcare.org"
+     ],
+     "tags9": [
+      "No – Onsite work is required"
+     ],
+     "description": "<strong>Total Rewards</strong><br><br><p style=\"margin: 0px;\">OSF HealthCare is dedicated to provide Mission Partners with a comprehensive and market-competitive total rewards package that includes benefits, compensation, recognition and well-being offerings that focus on the whole person and engage",
+     "meta_data": {
+      "canonical_url": "https://www.osfcareers.org/jobs/113234?lang=en-us"
+     },
+     "_expect": "OSF HealthCare"
+    },
+    {
+     "location_name": "OSF St. Mary Med Ctr",
+     "req_id": "113235",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T20:29:00+0000",
+     "city": "GALESBURG",
+     "category": [
+      " Clinical Support Services"
+     ],
+     "hiring_organization": "OSF HealthCare",
+     "street_address": "3333 N SEMINARY ST",
+     "slug": "113235",
+     "title": "Safety Companion",
+     "tags1": [
+      "OSF St. Mary Med Ctr"
+     ],
+     "tags2": [
+      "Variable (Sun-Sat) 7:00pm - 7:30am. 12-hour shifts. Every other weekend and holiday. Plus a night pay shift differential"
+     ],
+     "tags3": [
+      "36"
+     ],
+     "tags4": [
+      "Full Time"
+     ],
+     "tags5": [
+      "3rd Shift Nights"
+     ],
+     "tags6": [
+      "Nursing Float Personnel"
+     ],
+     "tags7": [
+      "Carol.A.Bainbridge@osfhealthcare.org"
+     ],
+     "tags9": [
+      "No – Onsite work is required"
+     ],
+     "description": "<strong>Total Rewards</strong><br><br><p style=\"margin: 0px;\">OSF HealthCare is dedicated to provide Mission Partners with a comprehensive and market-competitive total rewards package that includes benefits, compensation, recognition and well-being offerings that focus on the whole person and engage",
+     "meta_data": {
+      "canonical_url": "https://www.osfcareers.org/jobs/113235?lang=en-us"
+     },
+     "_expect": "OSF Saint Mary Medical Center"
+    },
+    {
+     "location_name": "OSF St.James-JWAlbrechtMC",
+     "req_id": "113176",
+     "state": "Illinois",
+     "employment_type": "PART_TIME",
+     "posted_date": "2026-10-28T20:05:00+0000",
+     "city": "PONTIAC",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "OSF HealthCare",
+     "street_address": "2500 W REYNOLDS ST",
+     "slug": "113176",
+     "title": "Registered Nurse RN Comprehensive Care",
+     "tags1": [
+      "OSF St.James-JWAlbrechtMC"
+     ],
+     "tags2": [
+      "2-12hr night shifts each week, every third weekend, and holiday rotation"
+     ],
+     "tags3": [
+      "24"
+     ],
+     "tags4": [
+      "Part Time"
+     ],
+     "tags5": [
+      "3rd Shift Nights"
+     ],
+     "tags6": [
+      "Comprehensive Care"
+     ],
+     "tags7": [
+      "Brock.A.Slavik@osfhealthcare.org"
+     ],
+     "tags9": [
+      "No – Onsite work is required"
+     ],
+     "description": "<strong>Total Rewards</strong><br><br><p style=\"margin: 0px;\">OSF HealthCare is dedicated to provide Mission Partners with a comprehensive and market-competitive total rewards package that includes benefits, compensation, recognition and well-being offerings that focus on the whole person and engage",
+     "meta_data": {
+      "canonical_url": "https://www.osfcareers.org/jobs/113176?lang=en-us"
+     },
+     "_expect": "OSF Saint James - John W. Albrecht Medical Center"
+    },
+    {
+     "location_name": "OSF Saint Elizabeth Md Ct",
+     "req_id": "105810",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T19:08:00+0000",
+     "city": "OTTAWA",
+     "category": [
+      " Clinical/Professional"
+     ],
+     "hiring_organization": "OSF HealthCare",
+     "street_address": "1100 E NORRIS DR",
+     "slug": "105810",
+     "title": "Patient Safety Specialist",
+     "tags1": [
+      "OSF Saint Elizabeth Md Ct"
+     ],
+     "tags2": [
+      "M-F"
+     ],
+     "tags3": [
+      "40"
+     ],
+     "tags4": [
+      "Full Time"
+     ],
+     "tags5": [
+      "1st Shift Days"
+     ],
+     "tags6": [
+      "Safety"
+     ],
+     "tags7": [
+      "Carolyn.K.Meyer@osfhealthcare.org"
+     ],
+     "description": "<strong>Total Rewards</strong><br><br><p style=\"margin: 0px;\">\"Your life - our Mission\"</p><p style=\"margin: 0px;\">OSF HealthCare is dedicated to provide Mission Partners with a comprehensive and market-competitive total rewards package that includes benefits, compensation, recognition and well-bein",
+     "meta_data": {
+      "canonical_url": "https://www.osfcareers.org/jobs/105810?lang=en-us"
+     },
+     "_expect": "OSF Saint Elizabeth Medical Center"
+    },
+    {
+     "location_name": "OSF Little Co of Mary Med",
+     "req_id": "105802",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T19:05:00+0000",
+     "city": "Evergreen Park",
+     "category": [
+      " Clinical/Professional"
+     ],
+     "hiring_organization": "OSF HealthCare",
+     "street_address": "2800 W 95th St",
+     "slug": "105802",
+     "title": "Patient Safety Specialist",
+     "tags1": [
+      "OSF Little Co of Mary Med"
+     ],
+     "tags2": [
+      "M-F"
+     ],
+     "tags3": [
+      "40"
+     ],
+     "tags4": [
+      "Full Time"
+     ],
+     "tags5": [
+      "1st Shift Days"
+     ],
+     "tags6": [
+      "Safety"
+     ],
+     "tags7": [
+      "Carolyn.K.Meyer@osfhealthcare.org"
+     ],
+     "description": "<strong>Total Rewards</strong><br><br><p style=\"margin: 0px;\">\"Your life - our Mission\"</p><p style=\"margin: 0px;\">OSF HealthCare is dedicated to provide Mission Partners with a comprehensive and market-competitive total rewards package that includes benefits, compensation, recognition and well-bein",
+     "meta_data": {
+      "canonical_url": "https://www.osfcareers.org/jobs/105802?lang=en-us"
+     },
+     "_expect": "OSF Little Company of Mary Medical Center"
+    },
+    {
+     "location_name": "OSF Saint Anthony Med Ctr",
+     "req_id": "105807",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T19:04:00+0000",
+     "city": "ROCKFORD",
+     "category": [
+      " Clinical/Professional"
+     ],
+     "hiring_organization": "OSF HealthCare",
+     "street_address": "5666 E STATE ST",
+     "slug": "105807",
+     "title": "Patient Safety Specialist",
+     "tags1": [
+      "OSF Saint Anthony Med Ctr"
+     ],
+     "tags2": [
+      "M-F"
+     ],
+     "tags3": [
+      "40"
+     ],
+     "tags4": [
+      "Full Time"
+     ],
+     "tags5": [
+      "1st Shift Days"
+     ],
+     "tags6": [
+      "Safety"
+     ],
+     "tags7": [
+      "Carolyn.K.Meyer@osfhealthcare.org"
+     ],
+     "description": "<strong>Total Rewards</strong><br><br><p style=\"margin: 0px;\">\"Your life - our Mission\"</p><p style=\"margin: 0px;\">OSF HealthCare is dedicated to provide Mission Partners with a comprehensive and market-competitive total rewards package that includes benefits, compensation, recognition and well-bein",
+     "meta_data": {
+      "canonical_url": "https://www.osfcareers.org/jobs/105807?lang=en-us"
+     },
+     "_expect": "OSF Saint Anthony Medical Center"
+    }
+   ]
+  },
+  "Carle Health": {
+   "base": "https://careers.carlehealth.org",
+   "totalCount": 769,
+   "rows": [
+    {
+     "location_name": "Carle Orthopedics & Sports Medicine",
+     "req_id": "20894",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T23:19:00+0000",
+     "city": "Champaign",
+     "category": [
+      " Podiatrists"
+     ],
+     "hiring_organization": "Carle Health",
+     "street_address": "2300 S First St",
+     "slug": "20894",
+     "title": "Podiatrist (Surgical)",
+     "tags1": [
+      "Full-Time"
+     ],
+     "tags2": [
+      "No"
+     ],
+     "tags3": [
+      "Day"
+     ],
+     "tags4": [
+      "Podiatry, Surgery"
+     ],
+     "tags5": [
+      "M-F 8:00-5:00"
+     ],
+     "tags6": [
+      "When on call"
+     ],
+     "tags7": [
+      "When on call"
+     ],
+     "tags8": [
+      "Yes"
+     ],
+     "description": "Overview<br><br><p>Carle Health is seeking an additional <strong>BE/BC Surgical Podiatrist</strong> to join our established practice in Urbana, Illinois.</p> <br>Opportunity Details<br><br><ul type=\"disc\"><li>Candidates must be BE/BC through the American Board of Foot and Ankle Surgery</li><li>Foot ",
+     "meta_data": {
+      "canonical_url": "https://careers.carlehealth.org/jobs/20894?lang=en-us"
+     },
+     "_expect": "Carle Orthopedics & Sports Medicine"
+    },
+    {
+     "location_name": "Carle Foundation Hospital",
+     "req_id": "23762",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T21:43:00+0000",
+     "city": "Urbana",
+     "category": [
+      " Physicians"
+     ],
+     "hiring_organization": "Carle Health",
+     "street_address": "611 W Park St",
+     "slug": "23762",
+     "title": "Pediatric Surgery - Physician",
+     "tags1": [
+      "Full-Time"
+     ],
+     "tags2": [
+      "No"
+     ],
+     "tags3": [
+      "Rotating"
+     ],
+     "tags4": [
+      "Surgery, Pediatric"
+     ],
+     "description": "Overview<br><br><p>Carle Health is seeking an additional <strong>BE/BC Pediatric Surgeon</strong> to join our expanding Pediatric Surgery Department at Carle Foundation Hospital in Urbana, Illinois. </p> <br>Opportunity Details<br><br><p><strong><span data-olk-copy-source=\"MessageBody\">Practice oppo",
+     "meta_data": {
+      "canonical_url": "https://careers.carlehealth.org/jobs/23762?lang=en-us"
+     },
+     "_expect": "Carle Foundation Hospital"
+    },
+    {
+     "location_name": "Illinois Wesleyan",
+     "req_id": "23765",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T21:31:00+0000",
+     "city": "Bloomington",
+     "category": [
+      " Advanced Practice Provider"
+     ],
+     "hiring_organization": "Carle Health",
+     "street_address": "Magill Hall\n1301 Park St.",
+     "slug": "23765",
+     "title": "Family Medicine (Illinois Wesleyan) - Advanced Practice Provider",
+     "tags1": [
+      "Full-Time"
+     ],
+     "tags2": [
+      "No"
+     ],
+     "tags3": [
+      "Day"
+     ],
+     "tags4": [
+      "Family Medicine, General"
+     ],
+     "tags5": [
+      "8a-4:30p Mon-Fri"
+     ],
+     "tags6": [
+      "None"
+     ],
+     "tags7": [
+      "None"
+     ],
+     "tags8": [
+      "None"
+     ],
+     "description": "Overview<br><br><p><!--StartFragment--><span data-olk-copy-source=\"MessageBody\">Carle Health is seeking a Family Medicine APP to join the Illinois Wesleyan Campus in Normal, Illinois.</span></p> <br>Opportunity Details<br><br><p><strong data-olk-copy-source=\"MessageBody\">Practice Details Include:</s",
+     "meta_data": {
+      "canonical_url": "https://careers.carlehealth.org/jobs/23765?lang=en-us"
+     },
+     "_expect": "Illinois Wesleyan"
+    },
+    {
+     "location_name": "Trillium - RRC",
+     "req_id": "23724",
+     "state": "Illinois",
+     "employment_type": "PART_TIME",
+     "posted_date": "2026-10-28T20:52:00+0000",
+     "city": "Peoria",
+     "category": [
+      " Allied Health"
+     ],
+     "hiring_organization": "Carle Health",
+     "street_address": "1005 NE Jefferson Ave",
+     "slug": "23724",
+     "title": "Recovery Support Technician - Residential Reentry Center (RRC)",
+     "tags1": [
+      "Part-Time"
+     ],
+     "tags2": [
+      "No"
+     ],
+     "tags3": [
+      "Evening"
+     ],
+     "tags5": [
+      "F/Sat/Sun 2:30p-11p"
+     ],
+     "tags6": [
+      "yes"
+     ],
+     "tags7": [
+      "yes"
+     ],
+     "description": "Overview<br><br>Under the supervision of the Assistant Manager, RRC, ensures the security of the Federal Bureau of Prison (FBOP) Residential Reentry Center (RRC). Oversees the residents' movement in and out of the facility and ensures the accountability of home confinement residents. <br>Qualificati",
+     "meta_data": {
+      "canonical_url": "https://careers.carlehealth.org/jobs/23724?lang=en-us"
+     },
+     "_expect": "Trillium - RRC"
+    },
+    {
+     "location_name": "Carle Champaign on Curtis",
+     "req_id": "22478",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T20:31:00+0000",
+     "city": "Champaign",
+     "category": [
+      " Allied Health"
+     ],
+     "hiring_organization": "Carle Health",
+     "street_address": "1701 Curtis Rd",
+     "slug": "22478",
+     "title": "Registered Dietitian (RD) - Diabetes/Nutrition/Endo",
+     "tags1": [
+      "Full-Time"
+     ],
+     "tags2": [
+      "No"
+     ],
+     "tags3": [
+      "Day"
+     ],
+     "tags5": [
+      "5-8 hour shifts for 4-10 hour shifts"
+     ],
+     "description": "Overview<br><br><h3>Make a Meaningful Impact Every Day!!!</h3><p>Are you a passionate Clinical Dietitian looking to make a real difference in patients’ lives? Join a highly collaborative care team where your expertise directly impacts outcomes across a wide range of patient populations and clinical ",
+     "meta_data": {
+      "canonical_url": "https://careers.carlehealth.org/jobs/22478?lang=en-us"
+     },
+     "_expect": "Carle Champaign on Curtis"
+    },
+    {
+     "location_name": "Carle Cancer Institute",
+     "req_id": "23087",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T18:34:00+0000",
+     "city": "Urbana",
+     "category": [
+      " Professional"
+     ],
+     "hiring_organization": "Carle Health",
+     "street_address": "509 W University Ave",
+     "slug": "23087",
+     "title": "Clinical Research Coordinator",
+     "tags1": [
+      "Full-Time"
+     ],
+     "tags2": [
+      "No"
+     ],
+     "tags3": [
+      "Day"
+     ],
+     "tags5": [
+      "Monday - Friday 7 am - 4 pm"
+     ],
+     "tags6": [
+      "N/A"
+     ],
+     "tags7": [
+      "N/A"
+     ],
+     "tags8": [
+      "N/A"
+     ],
+     "description": "Overview<br><br>The Clinical Research Coordinator (CRC) is a specialized research professional that facilitates and coordinates the daily activities of a clinical trial and plays a critical role in the conduct of the study. The CRC conducts clinical trials using good clinical/scientific practices un",
+     "meta_data": {
+      "canonical_url": "https://careers.carlehealth.org/jobs/23087?lang=en-us"
+     },
+     "_expect": "Carle Cancer Institute"
+    },
+    {
+     "location_name": "BroMenn Medical Center",
+     "req_id": "22705",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T18:20:00+0000",
+     "city": "Normal",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "Carle Health",
+     "street_address": "1304 Franklin Ave",
+     "slug": "22705",
+     "title": "RN - Intensive Care Unit",
+     "tags1": [
+      "Full-Time"
+     ],
+     "tags2": [
+      "No"
+     ],
+     "tags3": [
+      "Night"
+     ],
+     "tags5": [
+      "7p-730a (3-12hr Shifts)"
+     ],
+     "tags6": [
+      "every 3rd"
+     ],
+     "tags7": [
+      "every other"
+     ],
+     "description": "Overview<br><br><p style=\"text-align: justify; margin: 0in; font-size: 11pt; font-family: Calibri, sans-serif;\"><strong><u>Must have RN experience >1yr ideally ICU or Intermediate </u></strong></p><p style=\"text-align: justify; margin: 0in; font-size: 11pt; font-family: Calibri, sans-serif;\"> </p><p",
+     "meta_data": {
+      "canonical_url": "https://careers.carlehealth.org/jobs/22705?lang=en-us"
+     },
+     "_expect": "Carle BroMenn Medical Center"
+    },
+    {
+     "location_name": "Proctor Hospital",
+     "req_id": "22878",
+     "state": "Illinois",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T15:38:00+0000",
+     "city": "Peoria",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "Carle Health",
+     "street_address": "5409 N Knoxville Ave",
+     "slug": "22878",
+     "title": "LPN - Cardiac Med/Surg - Proctor",
+     "tags1": [
+      "Full-Time"
+     ],
+     "tags2": [
+      "No"
+     ],
+     "tags3": [
+      "Night"
+     ],
+     "tags5": [
+      "3,12hr shifts/wk 7p-7:30a"
+     ],
+     "tags6": [
+      "every other"
+     ],
+     "tags7": [
+      "every other"
+     ],
+     "tags8": [
+      "none"
+     ],
+     "description": "Overview<br><br>As a member of the interdisciplinary team, contributes professional nursing knowledge and skills in the provision and management of care to patients through the application of the nursing process. <br>Qualifications<br><br>Certifications: Licensed Practical Nurse (LPN) - Illinois Dep",
+     "meta_data": {
+      "canonical_url": "https://careers.carlehealth.org/jobs/22878?lang=en-us"
+     },
+     "_expect": "Carle Health Proctor Hospital"
+    }
+   ]
+  },
+  "FirstHealth of the Carolinas": {
+   "base": "https://talent.firsthealth.org",
+   "totalCount": 556,
+   "rows": [
+    {
+     "location_name": "FirstHealth Moore Regional Hospital",
+     "req_id": "20891",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T13:18:00+0000",
+     "city": "Pinehurst",
+     "category": [
+      " Allied Health"
+     ],
+     "hiring_organization": "FirstHealth of the Carolinas, Inc.",
+     "street_address": "155 Memorial Drive",
+     "slug": "20891",
+     "title": "Ultrasound Technologist",
+     "tags1": [
+      "Weekend"
+     ],
+     "tags2": [
+      "Full Time: 36 or more hrs/wk"
+     ],
+     "tags3": [
+      "7:30pm - 8:00am"
+     ],
+     "tags4": [
+      "Moore"
+     ],
+     "tags5": [
+      "ULTRASOUND - 10-7041"
+     ],
+     "description": "Position Summary<br><br><p style=\"margin: 0in;\">Ultrasound technologist performs diagnostic ultrasound examinations for emergency department, inpatient, and outpatient populations in a 24/7 hospital environment. This night-shift position requires a skilled, dependable sonographer who can work indepe",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "FirstHealth Moore Regional Hospital"
+    },
+    {
+     "location_name": "FirstHealth Moore Regional Hospital - Hoke",
+     "req_id": "21302",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T15:57:00+0000",
+     "city": "Raeford",
+     "category": [
+      " Allied Health"
+     ],
+     "hiring_organization": "FirstHealth of the Carolinas, Inc.",
+     "street_address": "6408 Fayetteville Road",
+     "slug": "21302",
+     "title": "MLT/MT",
+     "tags1": [
+      "Night Shift"
+     ],
+     "tags2": [
+      "Full Time: 36 or more hrs/wk"
+     ],
+     "tags3": [
+      "5p-530a plus rotating weekends and holidays"
+     ],
+     "tags4": [
+      "Hoke"
+     ],
+     "tags5": [
+      "LABORATORY-CLINICAL - 17-7011"
+     ],
+     "description": "Position Summary<br><br><p style=\"margin: 0in 0in 0in 0.25in; line-height: normal; font-size: 11pt; font-family: Calibri, sans-serif;\"><span style=\"font-size: 13.5pt; font-family: Arial, sans-serif; color: black;\">FirstHealth of the Carolinas is a nationally recognized health care system located in ",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "FirstHealth Moore Regional Hospital - Hoke"
+    },
+    {
+     "location_name": "FirstHealth Moore Regional Hospital - Richmond",
+     "req_id": "21386",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T20:51:00+0000",
+     "city": "Rockingham",
+     "category": [
+      " Environmental Services/Food Services"
+     ],
+     "hiring_organization": "FirstHealth of the Carolinas, Inc.",
+     "street_address": "925 Long Drive",
+     "slug": "21386",
+     "title": "Floor Tech",
+     "tags1": [
+      "Night Shift"
+     ],
+     "tags2": [
+      "Full Time: 40 hrs/wk"
+     ],
+     "tags3": [
+      "11:00pm - 7:30a.m."
+     ],
+     "tags4": [
+      "Richmond"
+     ],
+     "tags5": [
+      "ENVIRONMENTAL SERV - 15-8091"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0px;\">The floor Technician is responsible for maintaining a clean, safe and sanitary environment within a healthcare facility. The role supports patient care by ensuring hospital floors and surrounding areas meet strict cleanliness, infection-control and safety stan",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "FirstHealth Moore Regional Hospital - Richmond"
+    },
+    {
+     "location_name": "FirstHealth EMS- Lee",
+     "req_id": "21383",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T20:32:00+0000",
+     "city": "Sanford",
+     "category": [
+      " Allied Health"
+     ],
+     "hiring_organization": "FirstHealth of the Carolinas, Inc.",
+     "street_address": "1218 Central Drive",
+     "slug": "21383",
+     "title": "EMT",
+     "tags1": [
+      "Day Shift"
+     ],
+     "tags2": [
+      "Full Time: 36 or more hrs/wk"
+     ],
+     "tags3": [
+      "7am-7p"
+     ],
+     "tags4": [
+      "Lee"
+     ],
+     "tags5": [
+      "LEE EMS - 10-6245"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0px; padding: 0px; color: windowtext;\"><strong><span style=\"margin: 0px; padding: 0px; font-size: 12pt; font-family: 'Times New Roman', 'Times New Roman_EmbeddedFont', 'Times New Roman_MSFontService', serif;\" data-contrast=\"auto\"><span style=\"margin: 0px; padding: 0",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "FirstHealth EMS- Lee"
+    },
+    {
+     "location_name": "FIRSTHEALTH ENT VALLEYGATE",
+     "req_id": "21381",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T20:32:00+0000",
+     "city": "Fayetteville",
+     "category": [
+      " Clinical Support"
+     ],
+     "hiring_organization": "FirstHealth of the Carolinas, Inc.",
+     "street_address": "5053 Valleygate Dr.\nSuite 101",
+     "slug": "21381",
+     "title": "Scheduling Coordinator",
+     "tags1": [
+      "Day Shift"
+     ],
+     "tags2": [
+      "Full Time: 40 hrs/wk"
+     ],
+     "tags3": [
+      "Monday - Friday 8am-5pm"
+     ],
+     "tags4": [
+      "Cumberland"
+     ],
+     "tags5": [
+      "FIRSTHEALTH ENT VALLEYGATE 66-7593"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0in 0in 9.0pt 0in;\"><span style=\"font-size: 10pt; font-family: Arial, sans-serif; color: black;\">This position is responsible for coordinating surgery schedules, authorizations, administrative/clerical support and all other front office duties to ensure smooth clini",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "FIRSTHEALTH ENT VALLEYGATE"
+    },
+    {
+     "location_name": "OB/GYN Clinic",
+     "req_id": "21339",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T00:44:00+0000",
+     "city": "Fayetteville",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "FirstHealth of the Carolinas, Inc.",
+     "street_address": "2053 Valleygate Dr.",
+     "slug": "21339",
+     "title": "OB GYN Clinic Nurse RN",
+     "tags1": [
+      "Day Shift"
+     ],
+     "tags2": [
+      "Full Time: 36 or more hrs/wk"
+     ],
+     "tags3": [
+      "8-5"
+     ],
+     "tags4": [
+      "Cumberland"
+     ],
+     "tags5": [
+      "FIRSTHEALTH OB/GYN CUMBERLAND"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0px;\">RN will facilitate and provide care to patients in our busy and fast paced OB/GYN clinic.</p> <br>Responsibilities<br><br><p style=\"margin: 0px;\"><span style=\"font-size: 10pt;\">Obtains basic vital signs on patients (weight, BP, EKG, etc.). Triage patient phone",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "FirstHealth of the Carolinas"
+    },
+    {
+     "location_name": "FirstHealth Family Medicine - Sanford",
+     "req_id": "21303",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T00:44:00+0000",
+     "city": "Sanford",
+     "category": [
+      " Clinical Support"
+     ],
+     "hiring_organization": "FirstHealth of the Carolinas, Inc.",
+     "street_address": "2919 Beechtree Drive",
+     "slug": "21303",
+     "title": "CMA/LPN/Clinic Tech",
+     "tags1": [
+      "Day Shift"
+     ],
+     "tags2": [
+      "Full Time: 36 or more hrs/wk"
+     ],
+     "tags3": [
+      "8am-5pm Monday-Thursday 8am-12pm Friday (may vary)"
+     ],
+     "tags4": [
+      "Lee"
+     ],
+     "tags5": [
+      "FH PRIMARY CARE SANFORD - 66-7628"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0px;\"><span>Obtain vital signs and general health information for patient chart and prepares patient for examination. Assists the provider as needed with examinations and procedures. Assists in the collection of laboratory specimens and performance of tests on patie",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "FirstHealth Family Medicine - Sanford"
+    },
+    {
+     "location_name": "FirstHealth Montgomery Memorial Hospital",
+     "req_id": "20858",
+     "state": "North Carolina",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-26T15:51:00+0000",
+     "city": "Troy",
+     "category": [
+      " Security and Safety"
+     ],
+     "hiring_organization": "FirstHealth of the Carolinas, Inc.",
+     "street_address": "520 Allen St",
+     "slug": "20858",
+     "title": "Company Police Officer",
+     "tags1": [
+      "Varied Shifts"
+     ],
+     "tags2": [
+      "Full Time: 40 hrs/wk"
+     ],
+     "tags3": [
+      "6:00am-6:00pm"
+     ],
+     "tags4": [
+      "Montgomery"
+     ],
+     "tags5": [
+      "SECURITY - 20-8076"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0px 0px 0.266667px 48px; padding: 0px; color: #000000;\"><span style=\"margin: 0px; padding: 0px; font-size: 11pt; font-family: 'Courier New', 'Courier New_EmbeddedFont', 'Courier New_MSFontService', monospace; color: #000000;\" data-ccp-props=\"{\"201341983\":0,\"33555968",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "FirstHealth Montgomery Memorial Hospital"
+    }
+   ]
+  },
+  "Tanner Health": {
+   "base": "https://careers.tanner.org",
+   "totalCount": 248,
+   "rows": [
+    {
+     "location_name": "Tanner Hospital Villa Rica-V0001",
+     "req_id": "26-1519",
+     "state": "GA",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T00:00:00+0000",
+     "city": "Villa Rica",
+     "category": [
+      " Nursing"
+     ],
+     "slug": "26-1519",
+     "title": "Registered Nurse (RN) - ED Inpatient Overflow (Nights)",
+     "tags1": [
+      "Not Applicable"
+     ],
+     "description": "<P><SPAN data-preserver-spaces=\"true\">The Registered Nurse performs nursing functions and supervises other RNs, LPNs, and other assistive personnel in the performance of nursing care according to the state nurse practice act. The Registered Nurse assesses patient needs, plans and implements patient ",
+     "meta_data": {
+      "canonical_url": "https://careers.tanner.org/jobs/26-1519?lang=en-us"
+     },
+     "_expect": "Tanner Hospital Villa Rica"
+    },
+    {
+     "location_name": "Tanner Hospital Carrollton-C0001",
+     "req_id": "26-1255",
+     "state": "GA",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T00:00:00+0000",
+     "city": "Carrollton",
+     "category": [
+      " Service/Skilled Worker"
+     ],
+     "slug": "26-1255",
+     "title": "Hospitality Associate - Food and Nutrition (Days)",
+     "tags1": [
+      "Sign On Bonus Eligible-$1,000"
+     ],
+     "description": "<p><span style=\"color: #ff0000;\"><strong><span style=\"font-size: 12pt;\">$1,000 Sign On Bonus – External Hires Only</span></strong></span></p> <p> </p> <p style=\"margin-bottom: 0in;\">The Hospitality Associate (HA) acts as the liaison between the patient, Food and Nutrition Services, and Nursing Servi",
+     "meta_data": {
+      "canonical_url": "https://careers.tanner.org/jobs/26-1255?lang=en-us"
+     },
+     "_expect": "Tanner Hospital Carrollton"
+    },
+    {
+     "location_name": "Tanner Hospital East Alabama-E0001",
+     "req_id": "26-1497",
+     "state": "AL",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-29T00:00:00+0000",
+     "city": "Wedowee",
+     "category": [
+      " Allied Health"
+     ],
+     "slug": "26-1497",
+     "title": "Registered CT Technologist - Radiology (Days)",
+     "tags1": [
+      "Sign On Bonus Eligible-$5,000"
+     ],
+     "description": "<div> <p style=\"margin-bottom: 0in;\"><span style=\"color: #ff0000;\"><strong><span style=\"font-size: 12pt;\">$5,000 Sign On Bonus - External Hires Only </span></strong></span></p> <p style=\"margin-bottom: 0in;\"> </p> <p style=\"margin-bottom: 0in;\">Plans, coordinates, supervises, and carries out the act",
+     "meta_data": {
+      "canonical_url": "https://careers.tanner.org/jobs/26-1497?lang=en-us"
+     },
+     "_expect": "Tanner Hospital East Alabama"
+    },
+    {
+     "location_name": "West Ga Splty Center Suite 202-V0006",
+     "req_id": "26-1523",
+     "state": "GA",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T00:00:00+0000",
+     "city": "Carrollton",
+     "category": [
+      " Clinical Support"
+     ],
+     "slug": "26-1523",
+     "title": "Licensed Practical Nurse (LPN) Care Coordinator - Northwest Georgia Oncology Services (Days)",
+     "tags1": [
+      "Sign On Bonus Eligible-$10,000"
+     ],
+     "description": "<p style=\"margin-bottom: 0in;\"><span style=\"color: #ff0000;\"><strong><span style=\"font-size: 12pt;\">$10,000 Sign On Bonus – External Hires Only</span></strong></span></p> <p style=\"margin-bottom: 0in;\"> </p> <p style=\"margin-bottom: 0in;\">Responsible for assisting the physician in clinical care of a",
+     "meta_data": {
+      "canonical_url": "https://careers.tanner.org/jobs/26-1523?lang=en-us"
+     },
+     "_expect": "Tanner Health"
+    },
+    {
+     "location_name": "Willowbrooke at Tanner-T0059",
+     "req_id": "26-1543",
+     "state": "GA",
+     "employment_type": "PART_TIME",
+     "posted_date": "2026-10-28T00:00:00+0000",
+     "city": "Carrollton",
+     "category": [
+      " Behavioral Health"
+     ],
+     "slug": "26-1543",
+     "title": "Administrative Assistant - Willowbrooke (Days) (Part-time)",
+     "tags1": [
+      "Not Applicable"
+     ],
+     "description": "<DIV>The Administrative Assistant provides clerical services under the direction of the Program Manager. Acts as a unit Administrative Assistant, responsible for clerical, reception, and registrar functions. Works as an interdepartmental liaison, supports managers and clinical staff, as needed, and ",
+     "meta_data": {
+      "canonical_url": "https://careers.tanner.org/jobs/26-1543?lang=en-us"
+     },
+     "_expect": "Willowbrooke at Tanner"
+    },
+    {
+     "location_name": "Tanner Hospital Bremen-B0001",
+     "req_id": "26-1541",
+     "state": "GA",
+     "employment_type": "PART_TIME",
+     "posted_date": "2026-10-26T00:00:00+0000",
+     "city": "Bremen",
+     "category": [
+      " Nursing"
+     ],
+     "slug": "26-1541",
+     "title": "Registered Nurse (RN) Case Manager - Resource and Care Mgmt (Days) (Part-time)",
+     "tags1": [
+      "Not Applicable"
+     ],
+     "description": "<P style=\"margin-bottom: 0in;\"><SPAN style=\"font-size: 10pt; font-family: verdana;\">The role of the RN Case Manager is to ensure that each patient is treated at the appropriate level of care, and that transition to the next level is appropriate and complete. The RN Case Manager will work under the M",
+     "meta_data": {
+      "canonical_url": "https://careers.tanner.org/jobs/26-1541?lang=en-us"
+     },
+     "_expect": "Tanner Hospital Bremen"
+    },
+    {
+     "location_name": "Tanner Care Point Sargent-T0062",
+     "req_id": "26-1463",
+     "state": "GA",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-19T00:00:00+0000",
+     "city": "Sargent",
+     "category": [
+      " Clinical Support"
+     ],
+     "slug": "26-1463",
+     "title": "Certified Medical Assistant (CMA) - Tanner Care Point Sargent (Days)",
+     "tags1": [
+      "Not Applicable"
+     ],
+     "description": "<P style=\"margin-bottom: 0in;\"><SPAN style=\"font-size: 10pt; font-family: verdana; color: #0e101a;\">Responsible for rendering clinical care within the medical practice in support of and as directed by the physician. Will also have general responsibilities to assist in the day to day operation of thi",
+     "meta_data": {
+      "canonical_url": "https://careers.tanner.org/jobs/26-1463?lang=en-us"
+     },
+     "_expect": "Tanner Care Point Sargent"
+    },
+    {
+     "location_name": "West Georgia Urology",
+     "req_id": "26-1286",
+     "state": "GA",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-14T00:00:00+0000",
+     "city": "Carrollton",
+     "category": [
+      " Administrative or Clerical"
+     ],
+     "slug": "26-1286",
+     "title": "Front Office Representative - West Georgia Urology (Days)",
+     "tags1": [
+      "Not Applicable"
+     ],
+     "description": "<div> <p style=\"margin-bottom: 0in;\"><span style=\"font-size: 10pt; font-family: verdana;\">Patients' first and last point of contact in the office, responsible for Check-in and check-out duties, which may include entering charges, collecting deductibles and coinsurances, posting payments and scheduli",
+     "meta_data": {
+      "canonical_url": "https://careers.tanner.org/jobs/26-1286?lang=en-us"
+     },
+     "_expect": "West Georgia Urology"
+    }
+   ]
+  },
+  "USA Health": {
+   "base": "https://careers.usahealthsystem.com",
+   "totalCount": 375,
+   "rows": [
+    {
+     "location_name": "Technology and Research Park III",
+     "department": "USA Health SSO Information Technology | 999979",
+     "req_id": "23333",
+     "state": "Alabama",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T19:48:00+0000",
+     "city": "MOBILE",
+     "category": [
+      " Professional"
+     ],
+     "hiring_organization": "USA Health",
+     "street_address": "650 Clinic Drive",
+     "slug": "23333",
+     "title": "Manager, IT Help Desk - SSO Information Technology - USA Health Shared Services",
+     "tags1": [
+      "USA Health Shared Services"
+     ],
+     "tags2": [
+      "USA Health SSO Information Technology | 999979"
+     ],
+     "tags3": [
+      "7:00 a.m. - 3:30 p.m."
+     ],
+     "tags4": [
+      "Regular Full-Time"
+     ],
+     "tags5": [
+      "Monday - Friday"
+     ],
+     "tags6": [
+      "40"
+     ],
+     "description": "<strong>Overview</strong><br><br>USA Health is Transforming Medicine along the Gulf Coast to care for the unique needs of our community. USA Health is changing how medical care, education, and research impact the health of people who live in Mobile and the surrounding area. Our team of doctors, adva",
+     "meta_data": {
+      "canonical_url": "https://careers.usahealthsystem.com/jobs/23333?lang=en-us"
+     },
+     "_expect": "USA Health"
+    },
+    {
+     "location_name": "Mitchell Cancer Institute",
+     "department": "Hope CW MCI | 902690",
+     "req_id": "23735",
+     "state": "Alabama",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T19:42:00+0000",
+     "city": "Mobile",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "USA Health",
+     "street_address": "1660 Spring Hill Ave.",
+     "slug": "23735",
+     "title": "Registered Nurse / Infusion Specialist - Mitchell Cancer Institute at Children's and Women's Hospital",
+     "tags1": [
+      "USA Health Mitchell Cancer Institute"
+     ],
+     "tags2": [
+      "Hope CW MCI | 902690"
+     ],
+     "tags3": [
+      "8:00 am - 4:30 pm"
+     ],
+     "tags4": [
+      "Regular Full-Time"
+     ],
+     "tags5": [
+      "Monday - Friday"
+     ],
+     "tags6": [
+      "40"
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\">USA Health is Transforming Medicine along the Gulf Coast to care for the unique needs of our community. USA Health is changing how medical care, education, and research impact the health of people who live in Mobile and the surrounding area. O",
+     "meta_data": {
+      "canonical_url": "https://careers.usahealthsystem.com/jobs/23735?lang=en-us"
+     },
+     "_expect": "USA Health Mitchell Cancer Institute"
+    },
+    {
+     "location_name": "USA Health Providence Hospital",
+     "department": "Prov Operating Room|907660",
+     "req_id": "23200",
+     "state": "Alabama",
+     "posted_date": "2026-10-28T19:02:00+0000",
+     "city": "Mobile",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "USA Health",
+     "street_address": "6801 Airport Blvd.",
+     "slug": "23200",
+     "title": "Registered Nurse (PRN) - Surgical Services / Operating Room, Providence Hospital",
+     "tags1": [
+      "USA Health Providence Hospital"
+     ],
+     "tags2": [
+      "Prov Operating Room|907660"
+     ],
+     "tags3": [
+      "rotating"
+     ],
+     "tags4": [
+      "Temporary Part-Time"
+     ],
+     "tags5": [
+      "rotating"
+     ],
+     "tags6": [
+      "PRN"
+     ],
+     "description": "<strong>Overview</strong><br><br>USA Health is Transforming Medicine along the Gulf Coast to care for the unique needs of our community. USA Health is changing how medical care, education, and research impact the health of people who live in Mobile and the surrounding area. Our team of doctors, adva",
+     "meta_data": {
+      "canonical_url": "https://careers.usahealthsystem.com/jobs/23200?lang=en-us"
+     },
+     "_expect": "USA Health Providence Hospital"
+    },
+    {
+     "location_name": "University Hospital",
+     "department": "Telemetry UH | 901681",
+     "req_id": "23147",
+     "state": "Alabama",
+     "posted_date": "2026-10-28T18:58:00+0000",
+     "city": "Mobile",
+     "category": [
+      " Clinical"
+     ],
+     "hiring_organization": "USA Health",
+     "street_address": "2451 University Hospital Dr.",
+     "slug": "23147",
+     "title": "Telemetry Technician (PRN) - Telemetry, University Hospital",
+     "tags1": [
+      "USA Health University Hospital"
+     ],
+     "tags2": [
+      "Telemetry UH | 901681"
+     ],
+     "tags3": [
+      "7:00 p.m. - 7:00 a.m."
+     ],
+     "tags4": [
+      "Temporary Part-Time"
+     ],
+     "tags5": [
+      "Rotating"
+     ],
+     "tags6": [
+      "40"
+     ],
+     "description": "<strong>Overview</strong><br><br>USA Health is Transforming Medicine along the Gulf Coast to care for the unique needs of our community. USA Health is changing how medical care, education, and research impact the health of people who live in Mobile and the surrounding area. Our team of doctors, adva",
+     "meta_data": {
+      "canonical_url": "https://careers.usahealthsystem.com/jobs/23147?lang=en-us"
+     },
+     "_expect": "USA Health University Hospital"
+    },
+    {
+     "location_name": "USA Health Systemwide",
+     "department": "USA Health SSO Human Resources | 999903",
+     "req_id": "23802",
+     "state": "Alabama",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T14:49:00+0000",
+     "category": [
+      " Clerical"
+     ],
+     "hiring_organization": "USA Health",
+     "street_address": "Multiple Locations",
+     "slug": "23802",
+     "title": "Human Resources Assistant - SSO Human Resources - USA Health Shared Services",
+     "tags1": [
+      "USA Health Shared Services"
+     ],
+     "tags2": [
+      "USA Health SSO Human Resources | 999903"
+     ],
+     "tags3": [
+      "7:30am - 4:00om"
+     ],
+     "tags4": [
+      "Regular Full-Time"
+     ],
+     "tags5": [
+      "Monday - Friday"
+     ],
+     "tags6": [
+      "40"
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\">USA Health is Transforming Medicine along the Gulf Coast to care for the unique needs of our community. USA Health is changing how medical care, education, and research impact the health of people who live in Mobile and the surrounding area. O",
+     "meta_data": {
+      "canonical_url": "https://careers.usahealthsystem.com/jobs/23802?lang=en-us"
+     },
+     "_expect": "USA Health"
+    },
+    {
+     "location_name": "Freestanding Emergency Department",
+     "department": "Freestanding ED (FED) UH | 901615",
+     "req_id": "23151",
+     "state": "Alabama",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-22T19:46:00+0000",
+     "city": "Mobile",
+     "category": [
+      " Clinical"
+     ],
+     "hiring_organization": "USA Health",
+     "street_address": "171 Hillcrest Rd.",
+     "slug": "23151",
+     "title": "Respiratory Therapist I - UH Freestanding ED FED - University Hospital",
+     "tags1": [
+      "USA Health University Hospital"
+     ],
+     "tags2": [
+      "Freestanding ED (FED) UH | 901615"
+     ],
+     "tags3": [
+      "7:00am-7:00pm"
+     ],
+     "tags4": [
+      "Regular Full-Time"
+     ],
+     "tags5": [
+      "Monday-Friday rotating"
+     ],
+     "tags6": [
+      "36"
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\">USA Health is Transforming Medicine along the Gulf Coast to care for the unique needs of our community. USA Health is changing how medical care, education, and research impact the health of people who live in Mobile and the surrounding area. O",
+     "meta_data": {
+      "canonical_url": "https://careers.usahealthsystem.com/jobs/23151?lang=en-us"
+     },
+     "_expect": "USA Health University Hospital"
+    },
+    {
+     "location_name": "Mitchell Cancer Institute Fairhope",
+     "department": "MCI Oncology Clinic Fairhope | 800301",
+     "req_id": "23126",
+     "state": "Alabama",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-22T16:13:00+0000",
+     "city": "Fairhope",
+     "category": [
+      " Professional"
+     ],
+     "hiring_organization": "USA Health",
+     "street_address": "1047 Fairhope Ave.",
+     "slug": "23126",
+     "title": "Clinical Nurse Practitioner - MCI Oncology Clinic Fairhope - University Hospital",
+     "tags1": [
+      "USA Health Mitchell Cancer Institute"
+     ],
+     "tags2": [
+      "MCI Oncology Clinic Fairhope | 800301"
+     ],
+     "tags3": [
+      "7:00 am - 5:00 pm"
+     ],
+     "tags4": [
+      "Regular Full-Time"
+     ],
+     "tags5": [
+      "Monday - Friday"
+     ],
+     "tags6": [
+      "40"
+     ],
+     "description": "<strong>Overview</strong><br><br>USA Health is Transforming Medicine along the Gulf Coast to care for the unique needs of our community. USA Health is changing how medical care, education, and research impact the health of people who live in Mobile and the surrounding area. Our team of doctors, adva",
+     "meta_data": {
+      "canonical_url": "https://careers.usahealthsystem.com/jobs/23126?lang=en-us"
+     },
+     "_expect": "USA Health Mitchell Cancer Institute"
+    },
+    {
+     "location_name": "Children's and Women's Hospital",
+     "department": "4th/5th Fl -Adolescent/Pediatrics CW | 902606",
+     "req_id": "22212",
+     "state": "Alabama",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-21T18:29:00+0000",
+     "city": "Mobile",
+     "category": [
+      " Clinical"
+     ],
+     "hiring_organization": "USA Health",
+     "street_address": "1700 Center St.",
+     "slug": "22212",
+     "title": "Patient Care Assistant - CW Pediatrics - Children's and Women's Hospital",
+     "tags1": [
+      "USA Health Children's & Women's Hospital"
+     ],
+     "tags2": [
+      "4th/5th Fl -Adolescent/Pediatrics CW | 902606"
+     ],
+     "tags3": [
+      "7:00PM-07:00AM"
+     ],
+     "tags4": [
+      "Regular Full-Time"
+     ],
+     "tags5": [
+      "Rotating"
+     ],
+     "tags6": [
+      "36"
+     ],
+     "description": "<strong>Overview</strong><br><br><p style=\"margin: 0px;\">USA Health is Transforming Medicine along the Gulf Coast to care for the unique needs of our community. USA Health is changing how medical care, education, and research impact the health of people who live in Mobile and the surrounding area. O",
+     "meta_data": {
+      "canonical_url": "https://careers.usahealthsystem.com/jobs/22212?lang=en-us"
+     },
+     "_expect": "USA Health Children's & Women's Hospital"
+    }
+   ]
+  },
+  "UCI Health": {
+   "base": "https://jobs.uci.edu",
+   "totalCount": 482,
+   "rows": [
+    {
+     "location_name": "Remote Worksite",
+     "req_id": "152620",
+     "state": "California",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-22T17:26:00+0000",
+     "city": "Irvine",
+     "category": [
+      " IT - Information Technology"
+     ],
+     "hiring_organization": "University of California, Irvine",
+     "slug": "152620",
+     "title": "Cloud Compliance Engineer",
+     "tags1": [
+      "UCI Campus"
+     ],
+     "tags2": [
+      "USD $111,300.00/Yr."
+     ],
+     "tags3": [
+      "Hybrid"
+     ],
+     "tags4": [
+      "USD $211,100.00/Yr."
+     ],
+     "tags5": [
+      "No"
+     ],
+     "tags6": [
+      "006662-INFO SYS ANL 4 TX"
+     ],
+     "tags7": [
+      "Office of Info Technology"
+     ],
+     "tags8": [
+      "OIT/Enterprise Infrastructure"
+     ],
+     "tags9": [
+      "000668-INFO SYS MGR 2"
+     ],
+     "description": "Who We Are Founded in 1965, UC Irvine is a member of the prestigious Association of American Universities and is ranked among the nation’s top 10 public universities by U.S. News & World Report. The campus has produced five Nobel laureates and is known for its academic achievement, premier research,",
+     "meta_data": {
+      "canonical_url": "https://jobs.uci.edu/jobs/152620?lang=en-us"
+     },
+     "_expect": "UCI Health"
+    },
+    {
+     "location_name": "Building 1 (MC)-3rd Fl",
+     "req_id": "151919",
+     "state": "California",
+     "employment_type": "PART_TIME",
+     "posted_date": "2026-10-23T16:44:00+0000",
+     "city": "Orange",
+     "category": [
+      " Clinical Professionals"
+     ],
+     "hiring_organization": "University of California, Irvine",
+     "street_address": "101 The City Drive",
+     "slug": "151919",
+     "title": "Nursing Assistant-Float Pool Orange & Irvine-PT  Day Shift",
+     "tags1": [
+      "UCI Health"
+     ],
+     "tags2": [
+      "USD $26.53/Hr."
+     ],
+     "tags3": [
+      "Fully Onsite"
+     ],
+     "tags4": [
+      "USD $31.69/Hr."
+     ],
+     "tags5": [
+      "No"
+     ],
+     "tags6": [
+      "008904-HOSP AST SR"
+     ],
+     "tags7": [
+      "Medical Center"
+     ],
+     "tags8": [
+      "UCI Float Pool-Other"
+     ],
+     "tags9": [
+      "006508-NURSE SVC SUPV 2"
+     ],
+     "description": "Who We Are UCI Health is one of California's largest academic health systems and the clinical enterprise of the University of California, Irvine. Established on July 1, 1976, UCI Health has grown into a 1,461-bed health system that includes UCI Health - Orange, UCI Health - Irvine, four Community Ne",
+     "meta_data": {
+      "canonical_url": "https://jobs.uci.edu/jobs/151919?lang=en-us"
+     },
+     "_expect": "UCI Medical Center"
+    },
+    {
+     "location_name": "Env Health & Safety",
+     "req_id": "152197",
+     "state": "California",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-09T22:32:00+0000",
+     "city": "Irvine",
+     "category": [
+      " Professionals"
+     ],
+     "hiring_organization": "University of California, Irvine",
+     "street_address": "4600 Health Sciences Road",
+     "slug": "152197",
+     "title": "Fire Safety Inspector",
+     "tags1": [
+      "UCI Campus"
+     ],
+     "tags2": [
+      "USD $83,165.04/Yr."
+     ],
+     "tags3": [
+      "Fully Onsite"
+     ],
+     "tags4": [
+      "USD $150,565.68/Yr."
+     ],
+     "tags5": [
+      "No"
+     ],
+     "tags6": [
+      "005303-EHS SPEC 3 RX"
+     ],
+     "tags7": [
+      "Div of Finance/ Administration"
+     ],
+     "tags8": [
+      "Environmental Health & Safety"
+     ],
+     "tags9": [
+      "000296-EHS SUPV 2"
+     ],
+     "description": "Who We Are Founded in 1965, UC Irvine is a member of the prestigious Association of American Universities and is ranked among the nation’s top 10 public universities by U.S. News & World Report. The campus has produced five Nobel laureates and is known for its academic achievement, premier research,",
+     "meta_data": {
+      "canonical_url": "https://jobs.uci.edu/jobs/152197?lang=en-us"
+     },
+     "_expect": "UCI Health"
+    },
+    {
+     "location_name": "Fountain Valley Med - Floor 1",
+     "req_id": "152323",
+     "state": "California",
+     "employment_type": "PER_DIEM",
+     "posted_date": "2026-10-14T20:48:00+0000",
+     "city": "Fountain Valley",
+     "category": [
+      " Trades/Services"
+     ],
+     "hiring_organization": "University of California, Irvine",
+     "street_address": "17100 Euclid Street",
+     "slug": "152323",
+     "title": "Per Diem-Medical Center Cook-Culinary and Nutrition-Fountain Valley-Variable",
+     "tags1": [
+      "UCI Health"
+     ],
+     "tags2": [
+      "USD $27.78/Hr."
+     ],
+     "tags3": [
+      "Fully Onsite"
+     ],
+     "tags4": [
+      "USD $27.78/Hr."
+     ],
+     "tags5": [
+      "No"
+     ],
+     "tags6": [
+      "005124-MED CTR COOK PD"
+     ],
+     "tags7": [
+      "Medical Center"
+     ],
+     "tags8": [
+      "Culinary and Nutrition - FVR"
+     ],
+     "tags9": [
+      "CWR010-Temp Agency Staff-Non UC"
+     ],
+     "description": "Who We Are UCI Health is one of California's largest academic health systems and the clinical enterprise of the University of California, Irvine. Established on July 1, 1976, UCI Health has grown into a 1,461-bed health system that includes UCI Health - Orange, UCI Health - Irvine, four Community Ne",
+     "meta_data": {
+      "canonical_url": "https://jobs.uci.edu/jobs/152323?lang=en-us"
+     },
+     "_expect": "UCI Health - Fountain Valley"
+    },
+    {
+     "location_name": "Irvine Hospital - 4th Floor",
+     "req_id": "151006",
+     "state": "California",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-09T00:39:00+0000",
+     "city": "Irvine",
+     "category": [
+      " Clinical Professionals"
+     ],
+     "hiring_organization": "University of California, Irvine",
+     "street_address": "19210 Jamboree Rd",
+     "slug": "151006",
+     "title": "Nursing Assistant - Stepdown - Irvine (4N) - FT, Day Shift",
+     "tags1": [
+      "UCI Health"
+     ],
+     "tags2": [
+      "USD $26.53/Hr."
+     ],
+     "tags3": [
+      "Fully Onsite"
+     ],
+     "tags4": [
+      "USD $31.69/Hr."
+     ],
+     "tags5": [
+      "No"
+     ],
+     "tags6": [
+      "008904-HOSP AST SR"
+     ],
+     "tags7": [
+      "Medical Center"
+     ],
+     "tags8": [
+      "Stepdown - IRV (4N)"
+     ],
+     "tags9": [
+      "006508-NURSE SVC SUPV 2"
+     ],
+     "description": "Who We Are UCI Health is one of California's largest academic health systems and the clinical enterprise of the University of California, Irvine. Established on July 1, 1976, UCI Health has grown into a 1,461-bed health system that includes UCI Health - Orange, UCI Health - Irvine, four Community Ne",
+     "meta_data": {
+      "canonical_url": "https://jobs.uci.edu/jobs/151006?lang=en-us"
+     },
+     "_expect": "UCI Health - Irvine"
+    },
+    {
+     "location_name": "Los Alamitos Medical Center",
+     "req_id": "121905",
+     "state": "California",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2025-11-13T16:00:00+0000",
+     "city": "Los Alamitos",
+     "category": [
+      " Technician/Technologist"
+     ],
+     "hiring_organization": "University of California, Irvine",
+     "street_address": "3751 Katella Ave",
+     "slug": "121905",
+     "title": "Nuclear Med Tech Total Care  FT Days Los Alamitos",
+     "tags1": [
+      "UCI Health"
+     ],
+     "tags2": [
+      "USD $61.55/Hr."
+     ],
+     "tags3": [
+      "Fully Onsite"
+     ],
+     "tags4": [
+      "USD $81.21/Hr."
+     ],
+     "tags5": [
+      "No"
+     ],
+     "tags6": [
+      "009004-NUC MED TCHNO"
+     ],
+     "tags7": [
+      "Medical Center"
+     ],
+     "tags8": [
+      "Total Care-LOM"
+     ],
+     "tags9": [
+      "005768-NUC MED MGR 1"
+     ],
+     "description": "Who We Are UCI Health is one of California’s largest academic health systems and the clinical enterprise of the University of California, Irvine. Established on July 1, 1976, UCI Health has grown into a 1,461-bed health system that includes UCI Health — Orange, UCI Health — Irvine, four Community Ne",
+     "meta_data": {
+      "canonical_url": "https://jobs.uci.edu/jobs/121905?lang=en-us"
+     },
+     "_expect": "UCI Health - Los Alamitos"
+    },
+    {
+     "location_name": "Lakewood Medical Ctr - Floor 2",
+     "req_id": "152797",
+     "state": "California",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T00:26:00+0000",
+     "city": "Lakewood",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "University of California, Irvine",
+     "street_address": "3700 East South Street",
+     "slug": "152797",
+     "title": "RN - ICU - Lakewood - FT Nights",
+     "tags1": [
+      "UCI Health"
+     ],
+     "tags2": [
+      "USD $67.55/Hr."
+     ],
+     "tags3": [
+      "Fully Onsite"
+     ],
+     "tags4": [
+      "USD $92.72/Hr."
+     ],
+     "tags5": [
+      "No"
+     ],
+     "tags6": [
+      "009139-CLIN NURSE 2"
+     ],
+     "tags7": [
+      "Medical Center"
+     ],
+     "tags8": [
+      "ICU-LAK"
+     ],
+     "tags9": [
+      "006506-NURSE SVC MGR 2"
+     ],
+     "description": "Who We Are UCI Health is one of California's largest academic health systems and the clinical enterprise of the University of California, Irvine. Established on July 1, 1976, UCI Health has grown into a 1,461-bed health system that includes UCI Health - Orange, UCI Health - Irvine, four Community Ne",
+     "meta_data": {
+      "canonical_url": "https://jobs.uci.edu/jobs/152797?lang=en-us"
+     },
+     "_expect": "UCI Health - Lakewood"
+    },
+    {
+     "location_name": "Placentia Linda Hospital",
+     "req_id": "150225",
+     "state": "California",
+     "employment_type": "PART_TIME",
+     "posted_date": "2026-08-27T19:18:00+0000",
+     "city": "Placentia",
+     "category": [
+      " Nursing"
+     ],
+     "hiring_organization": "University of California, Irvine",
+     "street_address": "1301 North Rose Drive",
+     "slug": "150225",
+     "title": "RNFA - OR - Placentia - PT Days",
+     "tags1": [
+      "UCI Health"
+     ],
+     "tags2": [
+      "USD $74.39/Hr."
+     ],
+     "tags3": [
+      "Fully Onsite"
+     ],
+     "tags4": [
+      "USD $102.12/Hr."
+     ],
+     "tags5": [
+      "No"
+     ],
+     "tags6": [
+      "009137-CLIN NURSE 4"
+     ],
+     "tags7": [
+      "Medical Center"
+     ],
+     "tags8": [
+      "Surgery-PLA"
+     ],
+     "tags9": [
+      "006507-NURSE SVC MGR 1"
+     ],
+     "description": "Who We Are UCI Health is one of California's largest academic health systems and the clinical enterprise of the University of California, Irvine. Established on July 1, 1976, UCI Health has grown into a 1,461-bed health system that includes UCI Health - Orange, UCI Health - Irvine, four Community Ne",
+     "meta_data": {
+      "canonical_url": "https://jobs.uci.edu/jobs/150225?lang=en-us"
+     },
+     "_expect": "UCI Health - Placentia Linda"
+    }
+   ]
+  },
+  "Infirmary Health": {
+   "base": "https://careers.infirmaryhealth.org",
+   "totalCount": 272,
+   "rows": [
+    {
+     "location_name": "Mobile Infirmary",
+     "req_id": "45230",
+     "state": "Alabama",
+     "posted_date": "2026-10-28T22:36:00+0000",
+     "city": "Mobile",
+     "category": [
+      " Therapy Services -Inpatient and Outpatient"
+     ],
+     "hiring_organization": "Infirmary Health",
+     "street_address": "5 Mobile Infirmary Circle",
+     "slug": "45230",
+     "title": "Physical Therapist  (Opening is in Foley office.)",
+     "tags2": [
+      "Regular Full Time Hourly"
+     ],
+     "tags3": [
+      "Days"
+     ],
+     "tags4": [
+      "Gulf Health Therapy Servi"
+     ],
+     "description": "<Strong>Overview </Strong><br><br><p style=\"margin: 0px; text-align: center;\"><img src=\"https://infirmaryhealth.icims.com/icims2/servlet/icims2?module=AppInert&action=download&id=57797&hashed=1006808838\" alt=\"Infirmary_Health_Main_New_Logo_2017_jpg\" /></p> <br><Strong>Responsibilities</Strong><br><b",
+     "meta_data": {
+      "canonical_url": "https://careers.infirmaryhealth.org/jobs/45230?lang=en-us"
+     },
+     "_expect": "Mobile Infirmary"
+    },
+    {
+     "location_name": "Thomas Hospital",
+     "req_id": "45058",
+     "state": "Alabama",
+     "posted_date": "2026-10-28T21:07:00+0000",
+     "city": "Fairhope",
+     "category": [
+      " Clinical"
+     ],
+     "hiring_organization": "Infirmary Health",
+     "street_address": "750 Morphy Ave.",
+     "slug": "45058",
+     "title": "Registered Nurse (RN)",
+     "tags2": [
+      "Regular Full Time Hourly"
+     ],
+     "tags3": [
+      "Days"
+     ],
+     "tags4": [
+      "TH 2S"
+     ],
+     "description": "<Strong>Overview </Strong><br><br><p style=\"text-align: center;\"><img src=\"https://infirmaryhealth.icims.com/icims2/servlet/icims2?module=AppInert&action=download&id=57614&hashed=758337602\" alt=\"Infirmary Health Main New Logo 2017 jpg\" width=\"165\" height=\"132\" /></p> <br><Strong>Responsibilities</St",
+     "meta_data": {
+      "canonical_url": "https://careers.infirmaryhealth.org/jobs/45058?lang=en-us"
+     },
+     "_expect": "Thomas Hospital"
+    },
+    {
+     "location_name": "FED Saraland",
+     "req_id": "45130",
+     "state": "Alabama",
+     "posted_date": "2026-10-28T20:55:00+0000",
+     "city": "Saraland",
+     "category": [
+      " Clerical/Support Services"
+     ],
+     "hiring_organization": "Infirmary Health",
+     "street_address": "95 Shell St\nBuilding B",
+     "slug": "45130",
+     "title": "Admissions Assistant",
+     "tags2": [
+      "Regular Full Time Hourly"
+     ],
+     "tags4": [
+      "FED Saraland"
+     ],
+     "description": "<Strong>Overview </Strong><br><br><p style=\"margin: 0px; text-align: center;\"><img src=\"https://infirmaryhealth.icims.com/icims2/servlet/icims2?module=AppInert&action=download&id=57797&hashed=1006808838\" alt=\"Infirmary_Health_Main_New_Logo_2017_jpg\" /></p> <br><Strong>Responsibilities</Strong><br><b",
+     "meta_data": {
+      "canonical_url": "https://careers.infirmaryhealth.org/jobs/45130?lang=en-us"
+     },
+     "_expect": "Infirmary Health"
+    },
+    {
+     "location_name": "North Baldwin Infirmary",
+     "req_id": "45213",
+     "state": "Alabama",
+     "posted_date": "2026-10-27T18:04:00+0000",
+     "city": "Bay Minette",
+     "category": [
+      " Radiology"
+     ],
+     "hiring_organization": "Infirmary Health",
+     "street_address": "1815 Hand Ave",
+     "slug": "45213",
+     "title": "Radiology Assistant",
+     "tags2": [
+      "Flex Part Time Hourly"
+     ],
+     "tags3": [
+      "Nights"
+     ],
+     "tags4": [
+      "NBI Radiology"
+     ],
+     "description": "<Strong>Overview </Strong><br><br><p style=\"margin: 0px; text-align: center;\"><img src=\"https://infirmaryhealth.icims.com/icims2/servlet/icims2?module=AppInert&action=download&id=57797&hashed=1006808838\" alt=\"Infirmary_Health_Main_New_Logo_2017_jpg\" /></p> <br><Strong>Responsibilities</Strong><br><b",
+     "meta_data": {
+      "canonical_url": "https://careers.infirmaryhealth.org/jobs/45213?lang=en-us"
+     },
+     "_expect": "North Baldwin Infirmary"
+    },
+    {
+     "location_name": "1720 Springhill",
+     "req_id": "45180",
+     "state": "Alabama",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T16:51:00+0000",
+     "city": "Mobile",
+     "category": [
+      " Professional"
+     ],
+     "hiring_organization": "Infirmary Health",
+     "street_address": "1720 Springhill Ave",
+     "slug": "45180",
+     "title": "Physician Practice Manager I",
+     "tags2": [
+      "Regular Full Time Salary"
+     ],
+     "tags3": [
+      "Days"
+     ],
+     "tags4": [
+      "IMC DMC Support Staff"
+     ],
+     "description": "<Strong>Overview </Strong><br><br><p style=\"margin: 0px; text-align: center;\"><img src=\"https://infirmaryhealth.icims.com/icims2/servlet/icims2?module=AppInert&action=download&id=57797&hashed=1006808838\" alt=\"Infirmary_Health_Main_New_Logo_2017_jpg\" /></p> <br><Strong>Responsibilities</Strong><br><b",
+     "meta_data": {
+      "canonical_url": "https://careers.infirmaryhealth.org/jobs/45180?lang=en-us"
+     },
+     "_expect": "Infirmary Health"
+    }
+   ]
+  },
+  "One Brooklyn Health": {
+   "base": "https://careers.onebrooklynhealth.org",
+   "totalCount": 165,
+   "rows": [
+    {
+     "location_name": "The Brookdale Hospital Medical Center",
+     "req_id": "20920",
+     "state": "New York",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-28T03:55:00+0000",
+     "city": "Brooklyn",
+     "category": [
+      " BHMC - B0610-5151-LABOR & DELIVERY ROOM"
+     ],
+     "hiring_organization": "One Brooklyn Health",
+     "street_address": "1 Brookdale Plaza",
+     "slug": "20920",
+     "title": "Registered Nurse (Flex) - Labor and Delivery",
+     "tags1": [
+      "One Brooklyn Health"
+     ],
+     "tags2": [
+      "Night Flex"
+     ],
+     "tags3": [
+      "Full-Time"
+     ],
+     "tags4": [
+      "Monday through Friday w/alternate weekends"
+     ],
+     "tags5": [
+      "8:00pm"
+     ],
+     "tags6": [
+      "8:30am"
+     ],
+     "tags7": [
+      "USD $61.33/Hr."
+     ],
+     "tags8": [
+      "USD $78.99/Hr."
+     ],
+     "tags9": [
+      "BHMC - B0610-5151-LABOR & DELIVERY ROOM"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0px;\"><span style=\"font-family: arial, helvetica, sans-serif; font-size: 10pt;\">Under the supervision of the Nurse Manager, the staff nurse is responsible for the application of the nursing process and evidence-based knowledge, judgment and technical nursing skills ",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "The Brookdale Hospital Medical Center"
+    },
+    {
+     "location_name": "Interfaith Medical Center",
+     "req_id": "21557",
+     "state": "New York",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-27T12:00:00+0000",
+     "city": "Brooklyn",
+     "category": [
+      " IMC - B0200-3314-Medical MS-3E-3W"
+     ],
+     "hiring_organization": "One Brooklyn Health",
+     "street_address": "1545 Atlantic Avenue",
+     "slug": "21557",
+     "title": "Registered Nurse - Medical Surgical",
+     "tags1": [
+      "One Brooklyn Health"
+     ],
+     "tags2": [
+      "Night Flex"
+     ],
+     "tags3": [
+      "Full-Time"
+     ],
+     "tags4": [
+      "Monday through Friday w/alternate weekends"
+     ],
+     "tags5": [
+      "7:00pm"
+     ],
+     "tags6": [
+      "7:15am"
+     ],
+     "tags7": [
+      "USD $61.48/Hr."
+     ],
+     "tags8": [
+      "USD $79.63/Hr."
+     ],
+     "tags9": [
+      "IMC - B0200-3314-Medical MS-3E-3W"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0px;\"><span style=\"font-size: 10pt; font-family: arial, helvetica, sans-serif;\">The Registered Professional Nurse is responsible and accountable for prescribing, delegating and coordinating all nursing care as defined by The New York State Nursing Practice Act. Comp",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Interfaith Medical Center"
+    },
+    {
+     "location_name": "Rutland Nursing Home",
+     "req_id": "20359",
+     "state": "New York",
+     "employment_type": "PER_DIEM",
+     "posted_date": "2026-10-26T13:52:00+0000",
+     "city": "Brooklyn",
+     "category": [
+      " RNH - B0810-9072-Vent Unit"
+     ],
+     "hiring_organization": "One Brooklyn Health",
+     "street_address": "585 Schenectady Avenue",
+     "slug": "20359",
+     "title": "RNH - Nursing Attendant, Certified",
+     "tags1": [
+      "One Brooklyn Health"
+     ],
+     "tags2": [
+      "Night"
+     ],
+     "tags3": [
+      "Per Diem/On Call"
+     ],
+     "tags4": [
+      "Alternate Weekends"
+     ],
+     "tags5": [
+      "10:45pm"
+     ],
+     "tags6": [
+      "7:00am"
+     ],
+     "tags7": [
+      "USD $24.29/Hr."
+     ],
+     "tags8": [
+      "USD $26.47/Hr."
+     ],
+     "tags9": [
+      "RNH - B0810-9072-Vent Unit"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0px;\"><span style=\"font-size: 10pt; font-family: arial, helvetica, sans-serif;\">Provides direct patient care and related support. Performs other related duties.</span></p> <br>Responsibilities<br><br><ul><li><span style=\"font-family: arial, helvetica, sans-serif; fo",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Rutland Nursing Home"
+    },
+    {
+     "location_name": "Schulman and Schachne Nursing Homae",
+     "req_id": "21518",
+     "state": "New York",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-19T16:15:00+0000",
+     "city": "Brooklyn",
+     "category": [
+      " SSI - B0700-5645-RECREATIONAL THERAPY"
+     ],
+     "hiring_organization": "One Brooklyn Health",
+     "street_address": "555 Rockaway Parkway",
+     "slug": "21518",
+     "title": "NH - Specialist, Recreational Therapeutic",
+     "tags1": [
+      "One Brooklyn Health"
+     ],
+     "tags2": [
+      "Day"
+     ],
+     "tags3": [
+      "Full-Time"
+     ],
+     "tags4": [
+      "Tuesday through Saturday"
+     ],
+     "tags5": [
+      "8:30AM"
+     ],
+     "tags6": [
+      "4:30PM"
+     ],
+     "tags7": [
+      "USD $38.53/Hr."
+     ],
+     "tags8": [
+      "USD $49.44/Hr."
+     ],
+     "tags9": [
+      "SSI - B0700-5645-RECREATIONAL THERAPY"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0px;\"><span style=\"font-family: arial,helvetica,sans-serif; font-size: 10pt;\">Plans, organizes, and delivers Therapeutic Recreation services to all populations at Schulman and Schachne Institute. Caseload responsibility as assigned. </span></p> <br>Responsibilities<",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Schulman and Schachne Nursing Home"
+    },
+    {
+     "location_name": "Kingsbrook Jewish Medical Center",
+     "req_id": "19391",
+     "state": "New York",
+     "employment_type": "FULL_TIME",
+     "posted_date": "2026-10-14T14:42:00+0000",
+     "city": "Brooklyn",
+     "category": [
+      " KJMC - B0300-6204-Main Clinic OPD"
+     ],
+     "hiring_organization": "One Brooklyn Health",
+     "street_address": "585 Schenectady Avenue",
+     "slug": "19391",
+     "title": "Health Coach",
+     "tags1": [
+      "One Brooklyn Health"
+     ],
+     "tags2": [
+      "Day"
+     ],
+     "tags3": [
+      "Full-Time"
+     ],
+     "tags4": [
+      "Monday through Friday"
+     ],
+     "tags5": [
+      "8:30am"
+     ],
+     "tags6": [
+      "4:30pm"
+     ],
+     "tags7": [
+      "USD $30.61/Hr."
+     ],
+     "tags8": [
+      "USD $30.61/Hr."
+     ],
+     "tags9": [
+      "KJMC - B0300-6204-Main Clinic OPD"
+     ],
+     "description": "Overview<br><br><p style=\"margin: 0in 2.4pt 0in 5.0pt;\"><span style=\"font-size: 10.0pt; font-family: 'Arial',sans-serif;\">The Health Coach will report to the administrative director and collaborates with licensed Registered Nurse on the practice's staff. Will have primary responsibility for implemen",
+     "meta_data": {
+      "canonical_url": null
+     },
+     "_expect": "Kingsbrook Jewish Medical Center"
+    }
+   ]
+  }
+ }
+}

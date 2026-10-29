@@ -193,8 +193,12 @@ def test_jibe_facility_tag_and_site_code_location_name():
     rows = json.loads(_read("jibe_cne_yale_rows.json"))
     assert scraper._jibe_facility("Care New England Health System", rows["cne"]) == "Kent Hospital"
     assert rows["cne"]["location_name"].startswith("Kent Hospital, 455")   # the address form never becomes the name
-    # Yale's location_name is a site code; without a tag or JIBE_FACILITY_NAME the system stays.
-    assert scraper._jibe_facility("Yale New Haven Health System", rows["yale"]) == "Yale New Haven Health System"
+    # Yale's location_name is a site code; since 2026-10-29 the street in tags7
+    # ("267 Grant Street Bridgeport CT 06610") names the hospital (facilities_icims).
+    assert scraper._jibe_facility("Yale New Haven Health System", rows["yale"]) == "Bridgeport Hospital"
+    assert scraper._jibe_facility("Yale New Haven Health System",
+                                  {**rows["yale"], "tags7": ["5520 Park Avenue, Trumbull, CT 06611"]}) \
+        == "Yale New Haven Health System"
     assert scraper._jibe_facility("Care New England Health System", {"tags2": [], "location_name": "x"}) == "Care New England Health System"
     assert scraper._jibe_facility("Garnet Health", {"location_name": "Garnet Health Medical Center"}) == "Garnet Health Medical Center"
     city, st = scraper.parse_city_state(f"{rows['yale']['city']}, {rows['yale']['state']}")
