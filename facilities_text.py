@@ -509,7 +509,9 @@ _SPECS = (
         S("Winter Haven Hospital", "Winter Haven", "FL", "board", "WHH"),
         S("Winter Haven Women's Hospital", "Winter Haven", "FL", "board", "Winter Haven Womens", "WHWH", "WHW"),
         S("Bartow Regional Medical Center", "Bartow", "FL", "board", "BRMC"),
-        S("BayCare Hospital Wesley Chapel", "Wesley Chapel", "FL", "board"),
+        S("BayCare Hospital Wesley Chapel", "Wesley Chapel", "FL", "board",
+          # owner 2026-10-29 "keep on hospital": the imaging site on its campus counts as the hospital
+          "Wesley Chapel Outpatient Imaging"),
     ), offices=("BayCare Health System", "BCHS", "BayCare HomeCare", "Remote"),
          canon={"St Josephs": "St. Joseph's Hospital", "St Josephs North": "St. Joseph's Hospital-North",
                 "St Josephs South": "St. Joseph's Hospital-South", "Morton Plant": "Morton Plant Hospital",
@@ -524,7 +526,6 @@ _SPECS = (
              S("Morton Plant North Bay Recovery Center", "Lutz", "FL", "board", "North Bay Recovery Center",
                "Morton Plant North Bay Recover Center"),
              S("Bardmoor Outpatient Center", "Largo", "FL", "board"),
-             S("Wesley Chapel Outpatient Imaging", "Wesley Chapel", "FL", "board"),
              S("BayCare Life Management Countryside", "Safety Harbor", "FL", "board"),
              S("St. Anthony's Primary Care Pasadena", "South Pasadena", "FL", "board",
                "St Anthonys Primary Care Pasadena"),
