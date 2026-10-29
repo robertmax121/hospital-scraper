@@ -7549,6 +7549,7 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         if _ss and (not _state or _state == _ss):
                             _city, _state = _sc, _ss
                     _facility = system
+                    _site_how, _unk = "town or remote", ""   # 2026-10-29: WD_SITE_FACILITY log counts
                     if tenant == "montefiore":
                         _facility, _city, _state = _montefiore_loc(loc, _city, _state)
                     elif system in WD_FACILITY_MAP:
@@ -7558,7 +7559,6 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     elif system in WD_SITE_FACILITY:
                         # 2026-10-29: the site's facility and its own town (WD_SITE_FACILITY)
                         _site = WD_SITE_FACILITY[system](loc, j.get("externalPath", ""))
-                        _unk = ""
                         if _site:
                             _facility, _city, _state = _site
                             _site_how = "table" if _facility != system else "office"
