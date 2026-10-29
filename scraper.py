@@ -29,6 +29,7 @@ import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a
 import va_facilities    # 2026-10-27: one clean name per VA facility on USAJOBS rows
 import uhs_facilities   # 2026-10-28: one clean name per UHS facility on jobs.uhsinc.com rows
 import advocate_facilities   # 2026-10-29: one clean name and the real town per Advocate Health facility
+import facilities_workday    # 2026-10-29: the hospital and its real town on the other Workday systems
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
@@ -7152,6 +7153,15 @@ WD_LOCATION_FACILITY = frozenset({"Vanderbilt (VUMC)", "Corewell Health"})
 # (WD_SITE_UNKNOWN) so it can be added.
 WD_SITE_FACILITY = {advocate_facilities.SYSTEM: advocate_facilities.facility}
 WD_SITE_UNKNOWN = {advocate_facilities.SYSTEM: advocate_facilities.unknown_site}
+# 2026-10-29 (the owner: "any multi system hospital is subject to this"): the
+# same mechanism for every other Workday system with a site table
+# (facilities_workday: one table per system, read off the stored links of
+# its active rows and of the expired rows that carry applies). A tenant also
+# in WD_FACILITY_MAP keeps the map for a site its table does not know.
+WD_SITE_FACILITY.update({s: facilities_workday.resolver(s) for s in WORKDAY_TENANTS
+                         if s != advocate_facilities.SYSTEM and facilities_workday.covers(s)})
+WD_SITE_UNKNOWN.update({s: facilities_workday.unknown_resolver(s) for s in WD_SITE_FACILITY
+                        if s != advocate_facilities.SYSTEM})
 WD_TITLE_FACILITY: dict[str, tuple[tuple[re.Pattern, str, str, str], ...]] = {
     "Georgia DBHDD": (
         (re.compile(r"East Central Regional Hospital|\bECRH\b|Gracewood", re.I),
@@ -7548,16 +7558,26 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                             _sc, _ss = _wd_state_first(_wd_path_segment(j.get("externalPath", "")))
                         if _ss and (not _state or _state == _ss):
                             _city, _state = _sc, _ss
+                    # 2026-10-29 (facility scale): a "Town, StateName" or
+                    # "Town-StateName" site is that town on any tenant
+                    # ("Mt-Pleasant-Iowa" parsed as "Iowa", MT); a "N
+                    # Locations" posting still without a state takes its
+                    # primary site's (the externalPath segment). Only a known
+                    # town of that state counts (facilities_workday).
+                    _ts = None
+                    if (loc or "").strip() and not _WD_N_LOCATIONS_RE.match(loc):
+                        _ts = facilities_workday.town_state_name(loc)
+                    elif not _state:
+                        _ts = facilities_workday.town_state_name(_wd_path_segment(j.get("externalPath", "")))
+                    if _ts and (_ts[1] != _state or not (_city or "").strip()):
+                        _city, _state = _ts
                     _facility = system
                     _site_how, _unk = "town or remote", ""   # 2026-10-29: WD_SITE_FACILITY log counts
-                    if tenant == "montefiore":
-                        _facility, _city, _state = _montefiore_loc(loc, _city, _state)
-                    elif system in WD_FACILITY_MAP:
-                        _fac, _city, _state = _wd_facility(system, loc, _city, _state)
-                        if _fac:
-                            _facility = _fac
-                    elif system in WD_SITE_FACILITY:
-                        # 2026-10-29: the site's facility and its own town (WD_SITE_FACILITY)
+                    _site = None
+                    if system in WD_SITE_FACILITY:
+                        # 2026-10-29: the site's facility and its own town
+                        # (WD_SITE_FACILITY); a site its table does not know
+                        # falls through to WD_FACILITY_MAP as before.
                         _site = WD_SITE_FACILITY[system](loc, j.get("externalPath", ""))
                         if _site:
                             _facility, _city, _state = _site
@@ -7565,6 +7585,14 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         else:
                             _unk = WD_SITE_UNKNOWN[system](loc, j.get("externalPath", ""))
                             _site_how = "unknown site" if _unk else "town or remote"
+                    if _site:
+                        pass
+                    elif tenant == "montefiore":
+                        _facility, _city, _state = _montefiore_loc(loc, _city, _state)
+                    elif system in WD_FACILITY_MAP:
+                        _fac, _city, _state = _wd_facility(system, loc, _city, _state)
+                        if _fac:
+                            _facility = _fac
                     if not _state:
                         # 2026-10-04 coverage round 3: Banner's locationsText is
                         # the site plus its street ("Banner Del Webb Med Ctr
@@ -28480,7 +28508,11 @@ def normalize_job(j: Job) -> dict:
     _ren = SYSTEM_CITY_RENAME.get(_sys_key)
     if _ren and city.strip().lower() in _ren:
         city = _ren[city.strip().lower()]
-    if _sys_key in FORCE_LOCATION_OVERRIDE:
+    # 2026-10-29 (facility scale): a facility the Workday site table placed
+    # in its own town (Memorial Hermann Katy Hospital, Katy; Logan Health
+    # rows in Whitefish) is not moved to the head office.
+    if _sys_key in FORCE_LOCATION_OVERRIDE and not facilities_workday.placed(
+            d.get("hospital_system"), d.get("hospital_name"), city, state):
         city, state = FORCE_LOCATION_OVERRIDE[_sys_key]
 
     # Keep only the 2-char state code if state is noisy (e.g. "TX, United States" or "United States")
