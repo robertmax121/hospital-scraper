@@ -41,6 +41,7 @@ from specialty_canon import ATS_ALIASES as _SPEC_ALIASES, _norm_ats as _spec_nor
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
 import facilities_town   # 2026-10-29: the hospital on a system-label row from its town (TOWN family)
+import facilities_hospital_systems_b   # 2026-10-29 (phase 3 B): Geisinger, Sutter, AHN, Jefferson, Ochsner, Kaiser, Huntsville tables (registers in the family modules)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -33127,6 +33128,12 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         if facilities_text.UNKNOWN:
             logger.info("Text facilities, values no table names: " + facilities_text.unknown_summary())
             facilities_text.UNKNOWN.clear()
+    # 2026-10-29 (facility scale, phase 3 B): the Ochsner campus a title names
+    # ("... - Jeff Hwy", "- OLGMC"), before the town tables guess from a town.
+    hsb = _facility_pass("Hospital systems B (titles)", facilities_hospital_systems_b.apply_before_town, kept)
+    if hsb:
+        logger.info("Hospital systems B (titles): " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(hsb.items())))
     # 2026-10-29 (facility scale, TOWN family): rows still on the system's
     # name after the adapters' facility hooks and facility_names take the one
     # hospital of their system in their town (facilities_town: a clinic, an
@@ -33138,6 +33145,13 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if town:
         logger.info("Town tables: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(town.items())))
+    # 2026-10-29 (phase 3 B): Jefferson's "Primary Location Address" names the
+    # hospital at its street, else gives a county row its real town; after the
+    # town tables, so they never guess a hospital from that town.
+    hsb = _facility_pass("Hospital systems B (addresses)", facilities_hospital_systems_b.apply_after_town, kept)
+    if hsb:
+        logger.info("Hospital systems B (addresses): " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(hsb.items())))
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
     pairs = []

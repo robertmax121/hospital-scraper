@@ -54,6 +54,15 @@ STATES = set("AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA 
              "NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split())
 
 
+# 2026-10-29 phase 3 B: Workday site hooks on three text systems. Geisinger's
+# table names only the descriptors that are a site; Allegheny Health
+# Network's names the hospital streets of its "Town ST, zip, street"
+# descriptors (its text Spec still reads the rare "Location:" line on a row
+# the adapter left); Sutter Health's (facilities_workday.TOWN_SITE) reads only
+# the town of a bare-town descriptor, never a hospital.
+TEXT_AND_WORKDAY = {"Geisinger", "Allegheny Health Network", "Sutter Health"}
+
+
 def test_every_system_is_a_scraper_label_with_no_other_facility_hook():
     # 2026-10-29 (integration): facilities_oracle_other registers a Spec for
     # its Oracle tenants (UChicago, UC Health, HealthPartners), which names a
@@ -67,8 +76,9 @@ def test_every_system_is_a_scraper_label_with_no_other_facility_hook():
             spec = F.SPECS[system]
             assert id(spec) in registered, system
             assert not spec.fallback and F.text_candidates(system, "Location: X\nFacility: Y", "T") == [], system
-        assert system not in scraper.WD_SITE_FACILITY
-    assert len(T.SYSTEMS) == 26
+        assert system not in scraper.WD_SITE_FACILITY or system in TEXT_AND_WORKDAY, system
+    # 26 + Geisinger and Sutter Health (facilities_hospital_systems_b, phase 3 B)
+    assert len(T.SYSTEMS) == 28
 
 
 def test_table_entries_are_clean():
