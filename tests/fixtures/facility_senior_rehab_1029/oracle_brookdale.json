@@ -1,0 +1,685 @@
+{
+ "read": "2026-10-29 ibmwjb CX_1 recruitingCEJobRequisitions offset 0 (limit 200), 40 requisitions",
+ "requisitions": [
+  {
+   "Id": "25030285",
+   "Title": "Caregiver- Full Time",
+   "PrimaryLocation": "Citrus Heights, CA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24305-Brookdale Sylvan Ranch (CA)",
+      "TownOrCity": "Citrus Heights",
+      "Region2": "CA",
+      "Country": "US",
+      "PostalCode": "95621"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25031842",
+   "Title": "Nurse Supervisor-LPN",
+   "PrimaryLocation": "High Point, NC, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "18380-Brookdale High Point (NC)",
+      "TownOrCity": "High Point",
+      "Region2": "NC",
+      "Country": "US",
+      "PostalCode": "27265"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032484",
+   "Title": "Housekeeper",
+   "PrimaryLocation": "La Crosse, WI, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "08740-Brookdale LaCrosse 2 (WI)",
+      "TownOrCity": "La Crosse",
+      "Region2": "WI",
+      "Country": "US",
+      "PostalCode": "54601"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032714",
+   "Title": "Caregiver and Med Tech $500.00 Sign On Bonus",
+   "PrimaryLocation": "Bend, OR, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "12300-Brookdale Bend (OR)",
+      "TownOrCity": "Bend",
+      "Region2": "OR",
+      "Country": "US",
+      "PostalCode": "97701"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032754",
+   "Title": "Houseman",
+   "PrimaryLocation": "Williamsburg, VA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "00753-Brookdale Chambrel Williamsburg (VA)",
+      "TownOrCity": "Williamsburg",
+      "Region2": "VA",
+      "Country": "US",
+      "PostalCode": "23185"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032830",
+   "Title": "Caregiver",
+   "PrimaryLocation": "Tualatin, OR, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24606-Brookdale River Valley Tualatin (OR)",
+      "TownOrCity": "Tualatin",
+      "Region2": "OR",
+      "Country": "US",
+      "PostalCode": "97062"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032847",
+   "Title": "Wellness Director",
+   "PrimaryLocation": "High Point, NC, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "18380-Brookdale High Point (NC)",
+      "TownOrCity": "High Point",
+      "Region2": "NC",
+      "Country": "US",
+      "PostalCode": "27265"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032832",
+   "Title": "Caregiver",
+   "PrimaryLocation": "Las Vegas, NV, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24176-Brookdale Las Vegas (NV)",
+      "TownOrCity": "Las Vegas",
+      "Region2": "NV",
+      "Country": "US",
+      "PostalCode": "89120"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032840",
+   "Title": "Caregiver",
+   "PrimaryLocation": "Bowling Green, OH, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "11260-Brookdale Bowling Green (OH)",
+      "TownOrCity": "Bowling Green",
+      "Region2": "OH",
+      "Country": "US",
+      "PostalCode": "43402"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032846",
+   "Title": "Registered Medication Aide- Medication Technician",
+   "PrimaryLocation": "Bristol, VA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "00761-Brookdale Bristol (VA)",
+      "TownOrCity": "Bristol",
+      "Region2": "VA",
+      "Country": "US",
+      "PostalCode": "24201"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032853",
+   "Title": "PT  Caregiver",
+   "PrimaryLocation": "Midland, TX, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24085-Brookdale Midland (TX)",
+      "TownOrCity": "Midland",
+      "Region2": "TX",
+      "Country": "US",
+      "PostalCode": "79705"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032858",
+   "Title": "Cook",
+   "PrimaryLocation": "Brighton, CO, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "07800-Brookdale Brighton (CO)",
+      "TownOrCity": "Brighton",
+      "Region2": "CO",
+      "Country": "US",
+      "PostalCode": "80601"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032841",
+   "Title": "Part Time Cook",
+   "PrimaryLocation": "Monroe Township, NJ, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "17885-Brookdale Monroe (NJ)",
+      "TownOrCity": "Monroe Township",
+      "Region2": "NJ",
+      "Country": "US",
+      "PostalCode": "08831"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032833",
+   "Title": "CMA - KS Certified",
+   "PrimaryLocation": "Salina, KS, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "11180-Brookdale Salina Kirwin (KS)",
+      "TownOrCity": "Salina",
+      "Region2": "KS",
+      "Country": "US",
+      "PostalCode": "67401"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032842",
+   "Title": "Receptionist",
+   "PrimaryLocation": "Palm Beach Gardens, FL, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "18212-Brookdale Palm Beach Gardens (FL)",
+      "TownOrCity": "Palm Beach Gardens",
+      "Region2": "FL",
+      "Country": "US",
+      "PostalCode": "33410"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032844",
+   "Title": "Caregiver",
+   "PrimaryLocation": "Johnson City, TN, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "17750-Brookdale Johnson City (TN)",
+      "TownOrCity": "Johnson City",
+      "Region2": "TN",
+      "Country": "US",
+      "PostalCode": "37604"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032845",
+   "Title": "LPN or LVN $3,000.00 SIGN ON BONUS!",
+   "PrimaryLocation": "Ormond Beach, FL, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "04480-Brookdale Ormond Beach West (FL)",
+      "TownOrCity": "Ormond Beach",
+      "Region2": "FL",
+      "Country": "US",
+      "PostalCode": "32174"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032856",
+   "Title": "Certified Nursing Assistant CNA",
+   "PrimaryLocation": "High Point, NC, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "18460-Brookdale Skeet Club (NC)",
+      "TownOrCity": "High Point",
+      "Region2": "NC",
+      "Country": "US",
+      "PostalCode": "27265"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032835",
+   "Title": "Cook",
+   "PrimaryLocation": "Charlotte, NC, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "50610-Brookdale Carriage Club Providence (NC)",
+      "TownOrCity": "Charlotte",
+      "Region2": "NC",
+      "Country": "US",
+      "PostalCode": "28226"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032839",
+   "Title": "Home Care Aide",
+   "PrimaryLocation": "Tucson, AZ, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "50710-Brookdale Santa Catalina (AZ)",
+      "TownOrCity": "Tucson",
+      "Region2": "AZ",
+      "Country": "US",
+      "PostalCode": "85718"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032848",
+   "Title": "Cook",
+   "PrimaryLocation": "Wake Forest, NC, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "18300-Brookdale Wake Forest (NC)",
+      "TownOrCity": "Wake Forest",
+      "Region2": "NC",
+      "Country": "US",
+      "PostalCode": "27587"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032849",
+   "Title": "Housekeeper",
+   "PrimaryLocation": "Greensboro, NC, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "18350-Brookdale Northwest Greensboro (NC)",
+      "TownOrCity": "Greensboro",
+      "Region2": "NC",
+      "Country": "US",
+      "PostalCode": "27410"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032851",
+   "Title": "LPN or LVN",
+   "PrimaryLocation": "Granger, IN, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24429-Brookdale Granger (IN)",
+      "TownOrCity": "Granger",
+      "Region2": "IN",
+      "Country": "US",
+      "PostalCode": "46530"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032852",
+   "Title": "Caregiver",
+   "PrimaryLocation": "Orland Park, IL, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24686-Brookdale Orland Park (IL)",
+      "TownOrCity": "Orland Park",
+      "Region2": "IL",
+      "Country": "US",
+      "PostalCode": "60467"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032859",
+   "Title": "Dishwasher",
+   "PrimaryLocation": "Austin, TX, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "18730-Brookdale Gaines Ranch (TX)",
+      "TownOrCity": "Austin",
+      "Region2": "TX",
+      "Country": "US",
+      "PostalCode": "78735"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032857",
+   "Title": "Maintenance Manager",
+   "PrimaryLocation": "Durham, NC, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "18200-Brookdale Durham (NC)",
+      "TownOrCity": "Durham",
+      "Region2": "NC",
+      "Country": "US",
+      "PostalCode": "27704"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25031763",
+   "Title": "Cook - FT with weekend hours",
+   "PrimaryLocation": "West Hartford, CT, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "00827-Brookdale Chatfield (CT)",
+      "TownOrCity": "West Hartford",
+      "Region2": "CT",
+      "Country": "US",
+      "PostalCode": "06110"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032785",
+   "Title": "MDS Specialist RN Coordinator",
+   "PrimaryLocation": "Greenwood Village, CO, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "59000-Nashville Office, TN",
+      "TownOrCity": "Brentwood",
+      "Region2": "TN",
+      "Country": "US",
+      "PostalCode": "37027"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032755",
+   "Title": "RN Wellness Director",
+   "PrimaryLocation": "Chubbuck, ID, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24071-Brookdale Chubbuck (ID)",
+      "TownOrCity": "Chubbuck",
+      "Region2": "ID",
+      "Country": "US",
+      "PostalCode": "83202"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032757",
+   "Title": "Receptionist",
+   "PrimaryLocation": "Tarpon Springs, FL, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "52010-Brookdale Tarpon Springs (FL)",
+      "TownOrCity": "Tarpon Springs",
+      "Region2": "FL",
+      "Country": "US",
+      "PostalCode": "34689"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032752",
+   "Title": "Dishwasher",
+   "PrimaryLocation": "Santa Monica, CA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "00967-Brookdale Ocean House (CA)",
+      "TownOrCity": "Santa Monica",
+      "Region2": "CA",
+      "Country": "US",
+      "PostalCode": "90405"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032753",
+   "Title": "Cook",
+   "PrimaryLocation": "Mechanicsburg, PA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24192-Brookdale Grandon Farms (PA)",
+      "TownOrCity": "Mechanicsburg",
+      "Region2": "PA",
+      "Country": "US",
+      "PostalCode": "17050"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032760",
+   "Title": "Part-Time Assistant Resident Engagement Coordinator",
+   "PrimaryLocation": "Ormond Beach, FL, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "18540-Brookdale Ormond Beach (FL)",
+      "TownOrCity": "Ormond Beach",
+      "Region2": "FL",
+      "Country": "US",
+      "PostalCode": "32174"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032782",
+   "Title": "Medication Technician",
+   "PrimaryLocation": "Shawnee, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "17240-Brookdale Shawnee (OK)",
+      "TownOrCity": "Shawnee",
+      "Region2": "OK",
+      "Country": "US",
+      "PostalCode": "74804"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032784",
+   "Title": "Server",
+   "PrimaryLocation": "Dayton, OH, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "00762-Brookdale Kettering (OH)",
+      "TownOrCity": "Dayton",
+      "Region2": "OH",
+      "Country": "US",
+      "PostalCode": "45440"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032762",
+   "Title": "Caregiver",
+   "PrimaryLocation": "Mentor, OH, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24407-Brookdale Mentor (OH)",
+      "TownOrCity": "Mentor",
+      "Region2": "OH",
+      "Country": "US",
+      "PostalCode": "44060"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032770",
+   "Title": "Receptionist - Experience and Multi-Tasking needed",
+   "PrimaryLocation": "Portland, OR, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24595-Brookdale Oswego Springs Portland (OR)",
+      "TownOrCity": "Portland",
+      "Region2": "OR",
+      "Country": "US",
+      "PostalCode": "97219"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032781",
+   "Title": "Caregiver/DCA",
+   "PrimaryLocation": "Harrisonburg, VA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24195-Brookdale Harrisonburg (VA)",
+      "TownOrCity": "Harrisonburg",
+      "Region2": "VA",
+      "Country": "US",
+      "PostalCode": "22801"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032786",
+   "Title": "Dishwasher",
+   "PrimaryLocation": "Russellville, AR, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "24231-Brookdale Russellville (AR)",
+      "TownOrCity": "Russellville",
+      "Region2": "AR",
+      "Country": "US",
+      "PostalCode": "72801"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "25032771",
+   "Title": "Cook",
+   "PrimaryLocation": "Fort Walton Beach, FL, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "17830-Brookdale Fort Walton Beach (FL)",
+      "TownOrCity": "Fort Walton Beach",
+      "Region2": "FL",
+      "Country": "US",
+      "PostalCode": "32547"
+     }
+    ]
+   }
+  }
+ ]
+}

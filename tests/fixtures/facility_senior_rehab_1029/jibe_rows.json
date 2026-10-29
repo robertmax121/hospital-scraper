@@ -1,0 +1,1588 @@
+{
+ "read": "2026-10-29 /api/jobs page 1 (limit 100) of each board; one row per distinct location_name",
+ "Signature HealthCARE": [
+  {
+   "req_id": "32333",
+   "title": "Registered Nurse (RN)",
+   "city": "Bremen",
+   "state": "Indiana",
+   "location_name": "Signature HealthCARE of Bremen",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Bremen"
+   ],
+   "street_address": "316 Woodies Lane",
+   "description": " About Us    Signature HealthCARE of Bremen is a 97-bed offering short-term rehabilitative care as well as long-term care. It is our mission as a family-based organization to revolutionize the healthc"
+  },
+  {
+   "req_id": "32331",
+   "title": "Registered Nurse (RN)",
+   "city": "Owensboro",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE at Hillcrest",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE at Hillcrest"
+   ],
+   "street_address": "3740 Old Hartford Road",
+   "description": " About Us    Signature HealthCARE at Hillcrest is a 140-bed facility, offering short-term rehabilitative care as well as long-term care. It is our mission as a family-based organization to revolutioni"
+  },
+  {
+   "req_id": "32330",
+   "title": "Staff Development Coordinator RN",
+   "city": "Carrollton",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE of Carrollton Rehab & Wellness",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Carrollton Rehab & Wellness"
+   ],
+   "street_address": "1206 Eleventh Street",
+   "description": " About Us      Signature HealthCARE of Carrollton Rehab & Wellness Center is a 78-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. It is "
+  },
+  {
+   "req_id": "30591",
+   "title": "Speech Language Pathologist (SLP)",
+   "city": "Harrodsburg",
+   "state": "Kentucky",
+   "location_name": "Harrodsburg Health & Rehab Center",
+   "multipleLocations": false,
+   "tags1": [
+    "Rehab"
+   ],
+   "tags3": [
+    "Harrodsburg Health & Rehab Center"
+   ],
+   "street_address": "853 Lexington Road",
+   "description": " About Us     Harrodsburg Health & Rehab Center  is a 112-bed center offering short-term rehabilitative care as well as long-term care. We offer a variety of clinical care programs, along with physica"
+  },
+  {
+   "req_id": "31638",
+   "title": "Physical Therapist Assistant (PTA)",
+   "city": "Winchester",
+   "state": "Kentucky",
+   "location_name": "Fountain Circle Care & Rehab Center",
+   "multipleLocations": false,
+   "tags1": [
+    "Rehab"
+   ],
+   "tags3": [
+    "Fountain Circle Care & Rehab Center"
+   ],
+   "street_address": "200 Glenway Road",
+   "description": " About Us     Fountain Circle Care & Rehab Center  is a 179-bed nursing and rehabilitation center offering short-term rehabilitative care as well as long-term care. The vision, to radically change the"
+  },
+  {
+   "req_id": "30677",
+   "title": "Director of Nursing (DON)",
+   "city": "Louisville",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE East Louisville",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE East Louisville"
+   ],
+   "street_address": "2529 Six Mile Lane",
+   "description": " About Us    Signature HealthCARE of East Louisville is a 128-bed facility offering long-term care facility is noted for its Center for Advanced Diabetes Care, inpatient and outpatient rehab, in-house"
+  },
+  {
+   "req_id": "32329",
+   "title": "Clinical Reimbursement Specialist (MDS RN)",
+   "city": "JAMESTOWN",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE Fentress Co.",
+   "multipleLocations": false,
+   "tags1": [
+    "Signature HealthCARE - Home Office"
+   ],
+   "tags3": [
+    "Signature HealthCARE Fentress Co."
+   ],
+   "street_address": "208 DUNCAN STREET N",
+   "description": " About Us     Signature HealthCARE of Fentress County  is a 140-bed skilled nursing facility. We offer superior Clinical, Rehabilitation, Quality of Life programs. Our therapy department offers in-hou"
+  },
+  {
+   "req_id": "32328",
+   "title": "Clinical Reimbursement Specialist (MDS RN)",
+   "city": "Cookeville",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE TN, Cookeville",
+   "multipleLocations": false,
+   "tags1": [
+    "Signature HealthCARE - Home Office"
+   ],
+   "tags3": [
+    "Signature HealthCARE TN, Cookeville"
+   ],
+   "description": "  Signature HealthCARE  is a family-based healthcare company offering integrated services across multiple states. Our continuum of care includes skilled nursing, rehabilitation, assisted and memory ca"
+  },
+  {
+   "req_id": "32327",
+   "title": "Licensed Practical Nurse (LPN)",
+   "city": "Pine Knot",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE of McCreary County Rehab & Wellness",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of McCreary County Rehab & Wellness"
+   ],
+   "street_address": "58 Cal Hill Road",
+   "description": " About Us    Signature HealthCARE of McCreary County Rehab & Wellness Center is a 60-bed facility that offers a wide array of from short-term rehabilitation to traditional long-term care. It is our mi"
+  },
+  {
+   "req_id": "32326",
+   "title": "MDS Coordinator (LPN)",
+   "city": "Lawrenceburg",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE at Heritage Hall Rehab & Wellness",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE at Heritage Hall Rehab & Wellness"
+   ],
+   "street_address": "331 South Main Street",
+   "description": " About Us    Signature HealthCARE at Heritage Hall Rehab & Wellness Center is a 112-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. It i"
+  },
+  {
+   "req_id": "29797",
+   "title": "Registered Nurse (RN) PT DAYS",
+   "city": "Chapel Hill",
+   "state": "North Carolina",
+   "location_name": "Signature HealthCARE of Chapel Hill",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Chapel Hill"
+   ],
+   "street_address": "1602 East Franklin Street",
+   "description": " About Us    Signature HealthCARE of Chapel Hill is a 108-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. It is our mission as a family-"
+  },
+  {
+   "req_id": "32323",
+   "title": "Rehab Services Manager",
+   "city": "Louisville",
+   "state": "Kentucky",
+   "location_name": "Signature Healthcare at Rockford",
+   "multipleLocations": false,
+   "tags1": [
+    "Rehab"
+   ],
+   "tags3": [
+    "Signature Healthcare at Rockford"
+   ],
+   "street_address": "4700 Quinn Drive",
+   "description": " About Us    Signature HealthCARE at Rockford Rehab & Wellness Center is a 110-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. It is our"
+  },
+  {
+   "req_id": "32322",
+   "title": "Certified Occupational Therapist Assistant (COTA)",
+   "city": "Muncie",
+   "state": "Indiana",
+   "location_name": "Signature HealthCARE of Muncie",
+   "multipleLocations": false,
+   "tags1": [
+    "Rehab"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Muncie"
+   ],
+   "street_address": "4301 N. Walnut",
+   "description": " About Us    Welcome to Signature Healthcare of Muncie, it is a 185-bed facility. It is our mission as a family- based organization to revolutionize the long-term care industry through a culture of pa"
+  },
+  {
+   "req_id": "32321",
+   "title": "Registered Nurse (RN) FT EVENINGS",
+   "city": "Norfolk",
+   "state": "Virginia",
+   "location_name": "Signature HealthCARE of Norfolk",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Norfolk"
+   ],
+   "street_address": "1005 Hampton Boulevard",
+   "description": " About Us    Signature HealthCARE of Norfolk is a 169-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. It is our mission as a family-base"
+  },
+  {
+   "req_id": "31504",
+   "title": "Certified Nursing Assistant (CNA)",
+   "city": "Lexington",
+   "state": "Kentucky",
+   "location_name": "Bluegrass Care & Rehab Center",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Bluegrass Care & Rehab Center"
+   ],
+   "street_address": "3576 Pimlico Parkway",
+   "description": " About Us     Bluegrass Care and Rehab Center  is a 124-bed facility, providing skilled nursing and long-term care. We are very proud to provide our patients with the team approach and caring team mem"
+  },
+  {
+   "req_id": "32285",
+   "title": "Registered Nurse (RN) $10,000 Sign on Bonus!",
+   "city": "Liberty",
+   "state": "Kentucky",
+   "location_name": "Liberty Care & Rehabilitation Cente",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Liberty Care & Rehabilitation Cente"
+   ],
+   "street_address": "616 Wallace Wilkinson Blvd.",
+   "description": " About Us     Liberty Care and Rehabilitation Center  is a 97-bed facility whose mission as a family- based organization to revolutionize the long-term care industry through a culture of resident cent"
+  },
+  {
+   "req_id": "32283",
+   "title": "Staff Development Coordinator RN",
+   "city": "Tompkinsville",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE of Monroe County Rehab & Wellness",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Monroe County Rehab & Wellness"
+   ],
+   "street_address": "706 North Magnolia Street",
+   "description": " About Us    Signature HealthCARE of Monroe County Rehab & Wellness Center is a 108-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. It i"
+  },
+  {
+   "req_id": "32282",
+   "title": "Restorative Aide",
+   "city": "Elizabethtown",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE of Elizabethtown",
+   "multipleLocations": false,
+   "tags1": [
+    "Rehab"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Elizabethtown"
+   ],
+   "street_address": "1850 Veterans Way",
+   "description": " About Us    Signature HealthCARE of Elizabethtown is a 112-bed facility offering short-term rehabilitative care as well as long-term care. It is our mission as a family-based organization to revoluti"
+  },
+  {
+   "req_id": "32281",
+   "title": "Restorative Aide",
+   "city": "Greeneville",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE of Greeneville",
+   "multipleLocations": false,
+   "tags1": [
+    "Rehab"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Greeneville"
+   ],
+   "street_address": "106 HOLT COURT",
+   "description": " About Us    Signature HealthCARE of Greeneville is a 154-bed facility that provides long-term or short-term 24-hour nursing services by a dedicated and caring staff in a home-like atmosphere. Special"
+  },
+  {
+   "req_id": "32280",
+   "title": "Certified Nursing Assistant (CNA)",
+   "city": "Radcliff",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE of North Hardin Rehab & Wellness",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of North Hardin Rehab & Wellness"
+   ],
+   "street_address": "599 Rogersville Road",
+   "description": " About Us    Signature HealthCARE at North Hardin Rehab & Wellness Center is a 164-bed facility that offers a wide array of from short-term rehabilitation to traditional long-term care. It is our miss"
+  },
+  {
+   "req_id": "31998",
+   "title": "Restorative Nurse",
+   "city": "Monteagle",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE of Monteagle Rehab & Wellness Center",
+   "multipleLocations": false,
+   "tags1": [
+    "Rehab"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Monteagle Rehab & Wellness Center"
+   ],
+   "street_address": "26 Second Street",
+   "description": " About Us    Signature HealthCARE of Monteagle Rehab & Wellness Center is a 150-bed skilled and intermediate nursing facility provides a safe, secure environment for those in need of medical care, and"
+  },
+  {
+   "req_id": "32279",
+   "title": "Learning Experience Designer",
+   "city": "Louisville",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE, LLC",
+   "multipleLocations": false,
+   "tags1": [
+    "Signature HealthCARE - Home Office"
+   ],
+   "tags3": [
+    "Signature HealthCARE, LLC"
+   ],
+   "street_address": "12201 Bluegrass Parkway",
+   "description": "  Signature HealthCARE  is a family-based healthcare company offering integrated services across multiple states. Our continuum of care includes skilled nursing, rehabilitation, assisted and memory ca"
+  },
+  {
+   "req_id": "32275",
+   "title": "Licensed Practical Nurse (LPN)- Nights",
+   "city": "Memphis",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE of Memphis",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Memphis"
+   ],
+   "street_address": "1150 DOVE CREST ROAD",
+   "description": " About Us    Signature HealthCARE of Memphis is a 140-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. The vision, to radically change th"
+  },
+  {
+   "req_id": "32274",
+   "title": "Certified Nursing Assistant (CNA) FT DAYS",
+   "city": "Kinston",
+   "state": "North Carolina",
+   "location_name": "Signature HealthCARE of Kinston",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Kinston"
+   ],
+   "street_address": "907 Cunningham Road",
+   "description": " About Us    Signature HealthCARE of Kinston is a 106-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. The vision, to radically change th"
+  },
+  {
+   "req_id": "32269",
+   "title": "Assistant Director of Nursing (RN ADON)",
+   "city": "Calvert City",
+   "state": "Kentucky",
+   "location_name": "Oakview Nursing & Rehab Center",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Oakview Nursing & Rehab Center"
+   ],
+   "street_address": "10456 US Highway 62",
+   "description": " About Us     Oakview Nursing and Rehabilitation Center  is a 100-bed facility whose mission as a family-based organization to revolutionize the long term care industry through a culture of resident c"
+  },
+  {
+   "req_id": "32264",
+   "title": "Physical Therapist (PT)",
+   "city": "Hartford",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE of Hartford Rehab & Wellness",
+   "multipleLocations": false,
+   "tags1": [
+    "Rehab"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Hartford Rehab & Wellness"
+   ],
+   "street_address": "114 McMurry Avenue",
+   "description": " About Us    Signature HealthCARE of Hartford Rehab & Wellness Center is a 110-bed facility that offers a wide array of from short-term rehabilitation to traditional long-term care. It is our mission "
+  },
+  {
+   "req_id": "32262",
+   "title": "Admissions Director",
+   "city": "Louisville",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE South Louisville",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE South Louisville"
+   ],
+   "street_address": "1120 Cristland Road",
+   "description": " About Us     Signature HealthCARE of South Louisville  is a 100-bed facility offering a broad range of services, from short-term and long-term skilled care and intermediate care to inpatient and outp"
+  },
+  {
+   "req_id": "32260",
+   "title": "Registered Nurse (RN) - FT Nights",
+   "city": "Westmoreland",
+   "state": "Tennessee",
+   "location_name": "Westmoreland Care & Rehab Center",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Westmoreland Care & Rehab Center"
+   ],
+   "street_address": "1559 New Highway 52",
+   "description": " About Us     Westmoreland Care & Rehabilitation Center  is a 100-bed nursing facility that specializes in short-term, long-term, and outpatient therapies. The vision, to radically change the landscap"
+  },
+  {
+   "req_id": "32259",
+   "title": "Licensed Practical Nurse (LPN) - PRN",
+   "city": "Portland",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE of Portland Rehab & Wellness Center",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Portland Rehab & Wellness Center"
+   ],
+   "street_address": "215 Highland Circle Drive",
+   "description": " About Us    Signature HealthCARE of Portland Rehab & Wellness Center is a 112-bed long term care/rehab-to-home facility located in Portland, TN. Signature HealthCARE of Portland provides comprehensiv"
+  },
+  {
+   "req_id": "32258",
+   "title": "Registered Nurse (RN) - FT Nights",
+   "city": "Erin",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE of Erin",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Erin"
+   ],
+   "street_address": "278 Rocky Hollow Road",
+   "description": " About Us    Signature HealthCARE of Erin is a 164-bed facility. We have the largest therapy department in the area. We have a rehab to home program for our short term patients and help maintain the f"
+  },
+  {
+   "req_id": "32257",
+   "title": "Registered Nurse (RN) - FT Nights",
+   "city": "CLARKSVILLE",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE of Clarksville",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Clarksville"
+   ],
+   "street_address": "198 OLD FARMERS ROAD",
+   "description": " About Us    Signature HealthCARE of Clarksville is a 120-bed skilled nursing facility. It is our mission as a family-based organization to revolutionize the healthcare industry through a culture of r"
+  },
+  {
+   "req_id": "32252",
+   "title": "Speech Language Pathologist (SLP)",
+   "city": "Owensboro",
+   "state": "Kentucky",
+   "location_name": "Hermitage Care and Rehab Center",
+   "multipleLocations": false,
+   "tags1": [
+    "Rehab"
+   ],
+   "tags3": [
+    "Hermitage Care and Rehab Center"
+   ],
+   "street_address": "1614 PARISH AVENUE",
+   "description": " About Us     Hermitage Care & Rehabilitation Center  is a 92-bed premier skilled nursing located in the heart of Owensboro, Ky. Specializing in short term rehab and long-term nursing care. Rehabilita"
+  },
+  {
+   "req_id": "32185",
+   "title": "Activities Staff",
+   "city": "Georgetown",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE of Georgetown",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Georgetown"
+   ],
+   "street_address": "102 Pocahontas Trail",
+   "description": " About Us    Signature HealthCARE of Georgetown is a 65-bed facility, of which 15-beds are Signature Villa Transitional rehab unit, where personal service is a way of life. The vision, to radically ch"
+  },
+  {
+   "req_id": "32184",
+   "title": "Certified Nursing Assistant (CNA)",
+   "city": "PRESTONSBURG",
+   "state": "Kentucky",
+   "location_name": "Prestonsburg Health Care Center",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Prestonsburg Health Care Center"
+   ],
+   "street_address": "147 NORTH HIGHLAND AVE",
+   "description": " About Us     Prestonsburg Health Care Center , an affiliate of Signature HealthCARE LLC, is a 56-bed facility that offers residents a wide variety of in-house medical initiatives such as physical, oc"
+  },
+  {
+   "req_id": "31842",
+   "title": "Registered Nurse (RN)",
+   "city": "Bardstown",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE at Colonial Rehab & Wellness",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE at Colonial Rehab & Wellness"
+   ],
+   "street_address": "708 Bartley Avenue",
+   "description": " About Us     Signature HealthCARE at Colonial Rehab & Wellness Center  is a 69-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. It is ou"
+  },
+  {
+   "req_id": "32175",
+   "title": "Weekend Registered Nurse (RN)",
+   "city": "Calhoun",
+   "state": "Kentucky",
+   "location_name": "Riverside Care & Rehab Center",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Riverside Care & Rehab Center"
+   ],
+   "street_address": "190 Highway 136 E",
+   "description": " About Us     Riverside Care & Rehabilitation Center  is a 79-bed center offering short-term rehabilitative care as well as long-term care. We offer a variety of clinical care programs, along with phy"
+  },
+  {
+   "req_id": "32165",
+   "title": "Certified Nursing Assistant (CNA)",
+   "city": "Louisville",
+   "state": "Kentucky",
+   "location_name": "Signature Consulting Services LLC",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature Consulting Services LLC"
+   ],
+   "street_address": "12201 Bluegrass Parkway",
+   "description": "  Signature HealthCARE  is a family-based healthcare company offering integrated services across multiple states. Our continuum of care includes skilled nursing, rehabilitation, assisted and memory ca"
+  },
+  {
+   "req_id": "32164",
+   "title": "Certified Nursing Assistant (CNA)",
+   "city": "Elizabethton",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE of Elizabethton Rehab & Wellness Center",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Elizabethton Rehab & Wellness Center"
+   ],
+   "street_address": "1200 Spruce Lane",
+   "description": " About Us    Signature HealthCARE of Elizabethton Rehab & Wellness Center is a 94-bed facility providing both short-term and long-term care with an experienced rehabilitation and nursing staff, whose "
+  },
+  {
+   "req_id": "32162",
+   "title": "Hiring Event - Registered Nurse (RN)",
+   "city": "Terre Haute",
+   "state": "Indiana",
+   "location_name": "Signature HealthCARE of Terre Haute",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Terre Haute"
+   ],
+   "street_address": "3500 Maple Ave",
+   "description": " About Us     Signature HealthCARE of Terre Haute , a 176-bed facility. It is our mission as a family-based organization to revolutionize the long-term care industry through a culture of patient cente"
+  },
+  {
+   "req_id": "32158",
+   "title": "Activities Staff",
+   "city": "Brodhead",
+   "state": "Kentucky",
+   "location_name": "Rockcastle Health & Rehab Center",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Rockcastle Health & Rehab Center"
+   ],
+   "street_address": "371 West Main Street",
+   "description": " About Us     Rockcastle Health & Rehabilitation Center  is a 104-bed skilled nursing facility. Our management team has exceptional dedication to those that we serve, and we pride ourselves in working"
+  },
+  {
+   "req_id": "32121",
+   "title": "Activities Staff",
+   "city": "Beattyville",
+   "state": "Kentucky",
+   "location_name": "Lee County Care & Rehab Center",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Lee County Care & Rehab Center"
+   ],
+   "street_address": "249 East Main St",
+   "description": " About Us     Lee County Care & Rehabilitation Center  is a 109-bed skilled nursing facility located along the middle fork of the Kentucky River in the quaint town of Beattyville, Kentucky. The facili"
+  },
+  {
+   "req_id": "32120",
+   "title": "Resource MDS Coordinator (RN/LPN)",
+   "city": "Lexington",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE KY, Lexington",
+   "multipleLocations": false,
+   "tags1": [
+    "Signature HealthCARE - Home Office"
+   ],
+   "tags3": [
+    "Signature HealthCARE KY, Lexington"
+   ],
+   "street_address": "Lexington",
+   "description": "  Signature HealthCARE  is a family-based healthcare company offering integrated services across multiple states. Our continuum of care includes skilled nursing, rehabilitation, assisted and memory ca"
+  },
+  {
+   "req_id": "32119",
+   "title": "Resource MDS Coordinator (RN/LPN)",
+   "city": "Bowling Green",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE KY, Bowling Green",
+   "multipleLocations": false,
+   "tags1": [
+    "Signature HealthCARE - Home Office"
+   ],
+   "tags3": [
+    "Signature HealthCARE KY, Bowling Green"
+   ],
+   "description": "  Signature HealthCARE  is a family-based healthcare company offering integrated services across multiple states. Our continuum of care includes skilled nursing, rehabilitation, assisted and memory ca"
+  },
+  {
+   "req_id": "32118",
+   "title": "Resource Director of Nursing (DON)",
+   "city": "Elizabethtown",
+   "state": "Kentucky",
+   "location_name": "Signature HealthCARE KY, Elizabethtown",
+   "multipleLocations": false,
+   "tags1": [
+    "Signature HealthCARE - Home Office"
+   ],
+   "tags3": [
+    "Signature HealthCARE KY, Elizabethtown"
+   ],
+   "description": "  Signature HealthCARE  is a family-based healthcare company offering integrated services across multiple states. Our continuum of care includes skilled nursing, rehabilitation, assisted and memory ca"
+  },
+  {
+   "req_id": "32116",
+   "title": "Resource Director of Nursing (DON)",
+   "city": "Nashville",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE TN, Nashville",
+   "multipleLocations": false,
+   "tags1": [
+    "Signature HealthCARE - Home Office"
+   ],
+   "tags3": [
+    "Signature HealthCARE TN, Nashville"
+   ],
+   "description": "  Signature HealthCARE  is a family-based healthcare company offering integrated services across multiple states. Our continuum of care includes skilled nursing, rehabilitation, assisted and memory ca"
+  },
+  {
+   "req_id": "32113",
+   "title": "Resource Director of Nursing (DON)",
+   "city": "Memphis",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE TN, Memphis",
+   "multipleLocations": false,
+   "tags1": [
+    "Signature HealthCARE - Home Office"
+   ],
+   "tags3": [
+    "Signature HealthCARE TN, Memphis"
+   ],
+   "description": "  Signature HealthCARE  is a family-based healthcare company offering integrated services across multiple states. Our continuum of care includes skilled nursing, rehabilitation, assisted and memory ca"
+  },
+  {
+   "req_id": "32108",
+   "title": "Hiring Event - RNs",
+   "city": "Memphis",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE of Primacy",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Primacy"
+   ],
+   "street_address": "6025 Primacy Parkway",
+   "description": " About Us    Signature HealthCARE of Primacy is a 120-bed facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. The vision, to radically change th"
+  },
+  {
+   "req_id": "32105",
+   "title": "Licensed Practical Nurse (LPN)",
+   "city": "Cookeville",
+   "state": "Tennessee",
+   "location_name": "Signature HealthCARE of Putnam Co",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Signature HealthCARE of Putnam Co"
+   ],
+   "street_address": "278 Dry Valley Road",
+   "description": " About Us    Signature HealthCARE of Putnam County is a 175-bed skilled nursing facility that offers a wide array of services from short-term rehabilitation to traditional long-term care. The vision, "
+  },
+  {
+   "req_id": "32099",
+   "title": "Licensed Practical Nurse (LPN)",
+   "city": "Johnson City",
+   "state": "Tennessee",
+   "location_name": "Princeton",
+   "multipleLocations": false,
+   "tags1": [
+    "SCH \u2013 Facilities"
+   ],
+   "tags3": [
+    "Princeton"
+   ],
+   "street_address": "401 Princeton Rd",
+   "description": " About Us     Princeton Transitional Care & Assisted Living  is a partnership between Signature HealthCARE and Ballad Health bringing a new level of health care services to the Tri-Cities area. The ne"
+  }
+ ],
+ "Trilogy Health Services": [
+  {
+   "req_id": "212772",
+   "title": "Certified Nursing Assistant (CNA)",
+   "city": "Lowell",
+   "state": "Indiana",
+   "location_name": "Cedar Creek Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Part-Time"
+   ],
+   "tags3": [
+    "$15.67/Hr. -  $19.58/Hr."
+   ],
+   "tags5": [
+    "Cedar Creek Health Campus"
+   ],
+   "street_address": "18275 S. Burr Street",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212769",
+   "title": "Physical Therapist - PT",
+   "city": "Lancaster",
+   "state": "Ohio",
+   "location_name": "The Springs at Wyandot Trail",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$38.00/Hr. -  $44.00/Hr."
+   ],
+   "tags5": [
+    "The Springs at Wyandot Trail"
+   ],
+   "street_address": "1495 Granville Pike",
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health, dental, and vision benefits after your first month, student loan repayment, a competitive 401(k) match, and more! If you\u2019re looking for a place that embraces"
+  },
+  {
+   "req_id": "212767",
+   "title": "Physical Therapist Assistant (PTA)",
+   "city": "Harrison",
+   "state": "Ohio",
+   "location_name": "Harrison Trail Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "PRN"
+   ],
+   "tags3": [
+    "$30.00/Hr. -  $35.00/Hr."
+   ],
+   "tags5": [
+    "Harrison Trail Health Campus"
+   ],
+   "street_address": "10460 Progress Way",
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health and dental after your first month, student loan repayment, a competitive 401(k) match, and more! Make a living while you make a difference at Trilogy Health S"
+  },
+  {
+   "req_id": "212764",
+   "title": "Certified Occupational Therapy Assistant - COTA",
+   "city": "Hilliard",
+   "state": "Ohio",
+   "location_name": "Norwich Springs Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$26.00/Hr. -  $30.00/Hr."
+   ],
+   "tags5": [
+    "Norwich Springs Health Campus"
+   ],
+   "street_address": "4680 Library Way",
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health, dental, and vision benefits after your first month, student loan repayment, a competitive 401(k) match, and more! If you\u2019re looking for a place that embraces"
+  },
+  {
+   "req_id": "212759",
+   "title": "Occupational Therapist",
+   "city": "Hamilton",
+   "state": "Ohio",
+   "location_name": "Gateway Springs Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$40.00/Hr. -  $45.00/Hr."
+   ],
+   "tags5": [
+    "Gateway Springs Health Campus"
+   ],
+   "street_address": "7250 Gateway Avenue",
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health, dental, and vision benefits after your first month, student loan repayment, a competitive 401(k) match, and more! If you\u2019re looking for a place that embraces"
+  },
+  {
+   "req_id": "212758",
+   "title": "Therapy Program Director",
+   "city": "Miamisburg",
+   "state": "Ohio",
+   "location_name": "Stoney Ridge",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$33.00/Hr. -  $50.00/Hr."
+   ],
+   "tags5": [
+    "Stoney Ridge"
+   ],
+   "street_address": "8630 Washington Church Road",
+   "description": "  JOIN TEAM TRILOGY     Weekly pay, health and dental after your first month, student loan repayment, a competitive 401(k) match, and more! Make a living while you make a difference at Synchrony Rehab"
+  },
+  {
+   "req_id": "212755",
+   "title": "Assistant Director of Nursing (ADON, RN)",
+   "city": "Peru",
+   "state": "Indiana",
+   "location_name": "Blair Ridge Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags5": [
+    "Blair Ridge Health Campus"
+   ],
+   "street_address": "269 Meadowview Dr",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212752",
+   "title": "Manager of Facilities Maintenance",
+   "city": "Warsaw",
+   "state": "Indiana",
+   "location_name": "Paddock Springs",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags5": [
+    "Paddock Springs"
+   ],
+   "street_address": "2695 Shelden Street",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212751",
+   "title": "Physical Therapist - PT",
+   "city": "Wabash",
+   "state": "Indiana",
+   "location_name": "Wellbrooke of Wabash",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & PRN"
+   ],
+   "tags3": [
+    "$40.00/Hr. -  $52.00/Hr."
+   ],
+   "tags5": [
+    "Wellbrooke of Wabash"
+   ],
+   "street_address": "20 John Kissinger Drive",
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health, dental, and vision benefits after your first month, student loan repayment, a competitive 401(k) match, and more! If you\u2019re looking for a place that embraces"
+  },
+  {
+   "req_id": "212750",
+   "title": "Physical Therapist Assistant - PTA",
+   "city": "Lafayette",
+   "state": "Indiana",
+   "location_name": "The Springs at Lafayette",
+   "multipleLocations": true,
+   "tags1": [
+    "Full-Time & PRN"
+   ],
+   "tags3": [
+    "$28.00/Hr. -  $33.00/Hr."
+   ],
+   "tags5": [
+    "The Springs at Lafayette"
+   ],
+   "street_address": "2400 South Street",
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health, dental, and vision benefits after your first month, student loan repayment, a competitive 401(k) match, and more! If you\u2019re looking for a place that embraces"
+  },
+  {
+   "req_id": "212749",
+   "title": "Physical Therapist - PT",
+   "city": "Lafayette",
+   "state": "Indiana",
+   "location_name": "Synchrony Rehab -",
+   "multipleLocations": true,
+   "tags1": [
+    "Full-Time & PRN"
+   ],
+   "tags3": [
+    "$45.00/Hr. -  $55.00/Hr."
+   ],
+   "tags5": [
+    "Synchrony Rehab -"
+   ],
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health, dental, and vision benefits after your first month, student loan repayment, a competitive 401(k) match, and more! If you\u2019re looking for a place that embraces"
+  },
+  {
+   "req_id": "212746",
+   "title": "Physical Therapist - PT",
+   "city": "Muskegon",
+   "state": "Michigan",
+   "location_name": "Harbor Terrace Senior Living",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time, Part-Time & PRN"
+   ],
+   "tags3": [
+    "$50.00/Hr. -  $55.00/Hr."
+   ],
+   "tags5": [
+    "Harbor Terrace Senior Living"
+   ],
+   "street_address": "60 Veridian Drive",
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health, dental, and vision benefits after your first month, student loan repayment, a competitive 401(k) match, and more! If you\u2019re looking for a place that embraces"
+  },
+  {
+   "req_id": "212745",
+   "title": "Licensed Practical Nurse (LPN)",
+   "city": "Commerce",
+   "state": "Michigan",
+   "location_name": "Westlake Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$26.49/Hr. -  $33.12/Hr."
+   ],
+   "tags5": [
+    "Westlake Health Campus"
+   ],
+   "street_address": "10735 Bogie Lake Road",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212744",
+   "title": "Registered Nurse (RN)",
+   "city": "Shelby Township",
+   "state": "Michigan",
+   "location_name": "Shelby Crossing Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & Part-Time"
+   ],
+   "tags3": [
+    "$30.05/Hr. -  $40.07/Hr."
+   ],
+   "tags5": [
+    "Shelby Crossing Health Campus"
+   ],
+   "street_address": "13794 21 Mile Road",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212731",
+   "title": "Caregiver (CNA in-training)",
+   "city": "Romeo",
+   "state": "Michigan",
+   "location_name": "Orchard Grove Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & Part-Time"
+   ],
+   "tags3": [
+    "$15.13/Hr. -  $17.80/Hr."
+   ],
+   "tags5": [
+    "Orchard Grove Health Campus"
+   ],
+   "street_address": "71150 Orchard Crossing Lane",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "210488",
+   "title": "Speech Language Pathologist - SLP",
+   "city": "Willard",
+   "state": "Ohio",
+   "location_name": "The Willows at Willard",
+   "multipleLocations": false,
+   "tags1": [
+    "Part-Time"
+   ],
+   "tags3": [
+    "$46.00/Hr. -  $49.00/Hr."
+   ],
+   "tags5": [
+    "The Willows at Willard"
+   ],
+   "street_address": "1050 Neal Zick Rd",
+   "description": "  JOIN TEAM TRILOGY      Are you compassionately committed to customer service?   If so, we would like to hear from you!  \u00a0  Synchrony Rehab, a subsidiary of Trilogy Health Services LLC, is seeking a "
+  },
+  {
+   "req_id": "212652",
+   "title": "Caregiver (non-certified)",
+   "city": "Novi",
+   "state": "Michigan",
+   "location_name": "Novi Lakes Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$15.13/Hr. -  $17.80/Hr."
+   ],
+   "tags5": [
+    "Novi Lakes Health Campus"
+   ],
+   "street_address": "41795 Twelve Mile Road",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212651",
+   "title": "Registered Nurse (RN)",
+   "city": "Seymour",
+   "state": "Indiana",
+   "location_name": "Covered Bridge Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & Part-Time"
+   ],
+   "tags3": [
+    "$27.19/Hr. -  $45.32/Hr."
+   ],
+   "tags5": [
+    "Covered Bridge Health Campus"
+   ],
+   "street_address": "1675 W Tipton Street",
+   "description": "Wage Increase 4 Times Per Year-Shift Differentials-Weekend Options   JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize mean"
+  },
+  {
+   "req_id": "212648",
+   "title": "Caregiver (CNA in-training)",
+   "city": "Delphos",
+   "state": "Ohio",
+   "location_name": "The Meadows of Delphos",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$12.42/Hr. -  $16.11/Hr."
+   ],
+   "tags5": [
+    "The Meadows of Delphos"
+   ],
+   "street_address": "800 Amrose Drive",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212640",
+   "title": "Registered Nurse (RN)",
+   "city": "Bowling Green",
+   "state": "Ohio",
+   "location_name": "The Willows at Bowling Green",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time, Part-Time & PRN"
+   ],
+   "tags3": [
+    "$28.62/Hr. -  $38.17/Hr."
+   ],
+   "tags5": [
+    "The Willows at Bowling Green"
+   ],
+   "street_address": "525 South Dunbridge Road",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212638",
+   "title": "Weekend Package Licensed Practical Nurse (LPN)",
+   "city": "Ottawa",
+   "state": "Ohio",
+   "location_name": "The Meadows of Ottawa",
+   "multipleLocations": false,
+   "tags1": [
+    "Weekend Only, Full-Time & Part-Time"
+   ],
+   "tags3": [
+    "$23.97/Hr. -  $29.96/Hr."
+   ],
+   "tags5": [
+    "The Meadows of Ottawa"
+   ],
+   "street_address": "147 Putnam Parkway",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212628",
+   "title": "Weekend Package Registered Nurse (RN)",
+   "city": "Kalida",
+   "state": "Ohio",
+   "location_name": "The Meadows of Kalida",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & Part-Time"
+   ],
+   "tags5": [
+    "The Meadows of Kalida"
+   ],
+   "street_address": "PO Box 388, 755 Ottawa Street",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212616",
+   "title": "Caregiver (CNA in-training)",
+   "city": "Leipsic",
+   "state": "Ohio",
+   "location_name": "The Meadows of Leipsic",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & Part-Time"
+   ],
+   "tags3": [
+    "$13.69/Hr. -  $20.14/Hr."
+   ],
+   "tags5": [
+    "The Meadows of Leipsic"
+   ],
+   "street_address": "901 East Main Street",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212609",
+   "title": "Director of Sales",
+   "city": "Carmel",
+   "state": "Indiana",
+   "location_name": "Wellbrooke of Carmel",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags5": [
+    "Wellbrooke of Carmel"
+   ],
+   "street_address": "12315 Pennsylvania Street",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212608",
+   "title": "Campus GL Accountant",
+   "city": "Louisville",
+   "state": "Kentucky",
+   "location_name": "Trilogy Health Services",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags5": [
+    "Trilogy Health Services"
+   ],
+   "street_address": "303 N. Hurstbourne Parkway\nSuite 200",
+   "description": "  JOIN TEAM TRILOGY     Weekly pay, health and dental after your first month, student loan repayment, a competitive 401(k) match, and more! Make a living while you make a difference at Trilogy Health "
+  },
+  {
+   "req_id": "212606",
+   "title": "Weekend Package Licensed Practical Nurse (LPN)",
+   "city": "Findlay",
+   "state": "Ohio",
+   "location_name": "The Heritage",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & Part-Time"
+   ],
+   "tags5": [
+    "The Heritage"
+   ],
+   "street_address": "2820 Greenacre Drive",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212596",
+   "title": "Caregiver (CNA in-training)",
+   "city": "North Baltimore",
+   "state": "Ohio",
+   "location_name": "Briar Hill Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & Part-Time"
+   ],
+   "tags3": [
+    "$13.69/Hr. -  $16.11/Hr."
+   ],
+   "tags5": [
+    "Briar Hill Health Campus"
+   ],
+   "street_address": "600 Sterling Drive",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212459",
+   "title": "Physical Therapist Assistant - PTA",
+   "city": "Fort Wayne",
+   "state": "Indiana",
+   "location_name": "Kingston Health Center of Fort Wayne",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$27.00/Hr. -  $32.00/Hr."
+   ],
+   "tags5": [
+    "Kingston Health Center of Fort Wayne"
+   ],
+   "street_address": "1010 W Washington Center Rd",
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health, dental, and vision benefits after your first month, student loan repayment, a competitive 401(k) match, and more! If you\u2019re looking for a place that embraces"
+  },
+  {
+   "req_id": "212457",
+   "title": "Activities Director",
+   "city": "Anderson",
+   "state": "Indiana",
+   "location_name": "Bethany Pointe Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$20.85/Hr. -  $26.07/Hr."
+   ],
+   "tags5": [
+    "Bethany Pointe Health Campus"
+   ],
+   "street_address": "1707 Bethany Road",
+   "description": "  JOIN TEAM TRILOGY    At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With "
+  },
+  {
+   "req_id": "212456",
+   "title": "Director of Sales",
+   "city": "Noblesville",
+   "state": "Indiana",
+   "location_name": "Prairie Lakes Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags5": [
+    "Prairie Lakes Health Campus"
+   ],
+   "street_address": "9730 Prairie Lake Blvd East",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212386",
+   "title": "Floor Technician",
+   "city": "Portage",
+   "state": "Michigan",
+   "location_name": "The Lakes at Portage",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$14.41/Hr. -  $16.96/Hr."
+   ],
+   "tags5": [
+    "The Lakes at Portage"
+   ],
+   "street_address": "732 E. Centre Ave",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212385",
+   "title": "Scheduling Coordinator",
+   "city": "Bedford",
+   "state": "Indiana",
+   "location_name": "StoneBridge Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$19.81/Hr. -  $24.76/Hr."
+   ],
+   "tags5": [
+    "StoneBridge Health Campus"
+   ],
+   "street_address": "3100 Shawnee Drive South",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212351",
+   "title": "MDS Coordinator (LPN, RN)",
+   "city": "Logansport",
+   "state": "Indiana",
+   "location_name": "WoodBridge Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags5": [
+    "WoodBridge Health Campus"
+   ],
+   "street_address": "602 Woodbridge Avenue",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212349",
+   "title": "Physical Therapist Assistant - PTA",
+   "city": "East Lansing",
+   "state": "Michigan",
+   "location_name": "The Willows at East Lansing",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$30.00/Hr. -  $32.00/Hr."
+   ],
+   "tags5": [
+    "The Willows at East Lansing"
+   ],
+   "street_address": "3500 Coolidge Road",
+   "description": "  JOIN TEAM TRILOGY    Weekly pay, health, dental, and vision benefits after your first month, student loan repayment, a competitive 401(k) match, and more! If you\u2019re looking for a place that embraces"
+  },
+  {
+   "req_id": "212348",
+   "title": "Housekeeping & Laundry Assistant",
+   "city": "Miamisburg",
+   "state": "Ohio",
+   "location_name": "Kingston of Miamisburg",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$14.41/Hr. -  $19.08/Hr."
+   ],
+   "tags5": [
+    "Kingston of Miamisburg"
+   ],
+   "street_address": "1120 South Dunaway St",
+   "description": "Kingston HealthCare Company is now part of the Trilogy Health Services family. This role is part of our continued commitment to compassionate, high-quality care and people-first values.   JOIN TEAM TR"
+  },
+  {
+   "req_id": "212313",
+   "title": "Floor Technician",
+   "city": "Springfield",
+   "state": "Ohio",
+   "location_name": "Wooded Glen Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Part-Time"
+   ],
+   "tags5": [
+    "Wooded Glen Health Campus"
+   ],
+   "street_address": "2900 Bechtle Avenue",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212300",
+   "title": "Registered Nurse (RN)",
+   "city": "Hanover",
+   "state": "Indiana",
+   "location_name": "Thornton Terrace Health Campus",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & Part-Time"
+   ],
+   "tags3": [
+    "$28.00/Hr. -  $45.32/Hr."
+   ],
+   "tags5": [
+    "Thornton Terrace Health Campus"
+   ],
+   "street_address": "188 Thornton Road",
+   "description": "Wage Increase 4 Times Per Year-Shift Differentials-Weekend Options   JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize mean"
+  },
+  {
+   "req_id": "212298",
+   "title": "Sales Associate",
+   "city": "Delphi",
+   "state": "Indiana",
+   "location_name": "St. Elizabeth Healthcare",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time"
+   ],
+   "tags3": [
+    "$13.69/Hr. -  $16.11/Hr."
+   ],
+   "tags5": [
+    "St. Elizabeth Healthcare"
+   ],
+   "street_address": "701 Armory Rd",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  },
+  {
+   "req_id": "212295",
+   "title": "Certified Nursing Assistant (CNA)",
+   "city": "Hudsonville",
+   "state": "Michigan",
+   "location_name": "The Oaks at Jamestown",
+   "multipleLocations": false,
+   "tags1": [
+    "Full-Time & Part-Time"
+   ],
+   "tags3": [
+    "$17.63/Hr. -  $23.01/Hr."
+   ],
+   "tags5": [
+    "The Oaks at Jamestown"
+   ],
+   "street_address": "3145 Sun Chase Avenue",
+   "description": "  JOIN TEAM TRILOGY     At Trilogy, you\u2019ll experience a caring, supportive community that values each team member. We prioritize meaningful relationships, genuine teamwork, and continuous growth. With"
+  }
+ ],
+ "signature_tags3_facet": [
+  "Bluegrass Care & Rehab Center",
+  "Clinton County Care & Rehab Center",
+  "Danville Centre for Health & Rehab",
+  "Fountain Circle Care & Rehab Center",
+  "Harrodsburg Health & Rehab Center",
+  "Hermitage Care and Rehab Center",
+  "Lee County Care & Rehab Center",
+  "Liberty Care & Rehabilitation Cente",
+  "Mayfair Manor",
+  "Morgantown Care & Rehab Center",
+  "Mountain City Care & Rehab Center",
+  "Northwest Florida Hospital",
+  "Oakview Nursing & Rehab Center",
+  "Pickett Care and Rehab Center",
+  "Prestonsburg Health Care Center",
+  "Princeton",
+  "Princeton Transitional & ALF",
+  "Riverside Care & Rehab Center",
+  "Riverview Health Care Center",
+  "Rockcastle Health & Rehab Center",
+  "Signature Consulting Services LLC",
+  "Signature HealthCARE at Colonial Rehab & Wellness",
+  "Signature HealthCARE at Heritage Hall Rehab & Wellness",
+  "Signature HealthCARE at Hillcrest",
+  "Signature HealthCARE at Jackson Manor Rehab & Wellness",
+  "Signature HealthCARE at Jefferson Manor Rehab & Wellness",
+  "Signature HealthCARE at Jefferson Place Rehab & Wellness",
+  "Signature Healthcare at Rockford",
+  "Signature Healthcare At Summerfield",
+  "Signature HealthCARE at Summit Manor Rehab & Wellness",
+  "Signature HealthCARE East Louisville",
+  "Signature HealthCARE Fentress Co.",
+  "Signature HealthCARE KY, Bowling Green",
+  "Signature HealthCARE KY, Elizabethtown",
+  "Signature HealthCARE KY, Georgetown",
+  "Signature HealthCARE KY, Lexington",
+  "Signature HealthCARE KY, Louisville",
+  "Signature HealthCARE KY, Paducah",
+  "Signature HealthCARE, LLC",
+  "Signature HealthCARE, LLC - North Carolina Regional",
+  "Signature HealthCARE NC, Raleigh",
+  "Signature HealthCARE of Bowling Green",
+  "Signature HealthCARE of Bremen",
+  "Signature HealthCARE of Carrollton Rehab & Wellness",
+  "Signature HealthCARE of Chapel Hill",
+  "Signature HealthCARE of Clarksville",
+  "Signature HealthCARE of Cleveland",
+  "Signature HealthCARE of Elizabethton Rehab & Wellness Center",
+  "Signature HealthCARE of Elizabethtown",
+  "Signature HealthCARE of Erin",
+  "Signature HealthCARE of Georgetown",
+  "Signature HealthCARE of Glasgow Rehab & Wellness Center",
+  "Signature HealthCARE of Greeneville",
+  "Signature HealthCARE of Hart County Rehab & Wellness",
+  "Signature HealthCARE of Hartford Rehab & Wellness",
+  "Signature HealthCARE of Kinston",
+  "Signature HealthCARE of McCreary County Rehab & Wellness",
+  "Signature HealthCARE of Memphis",
+  "Signature HealthCARE of Monroe County Rehab & Wellness",
+  "Signature HealthCARE of Monteagle Rehab & Wellness Center",
+  "Signature HealthCARE of Muncie",
+  "Signature HealthCARE of Norfolk",
+  "Signature HealthCARE of North Hardin Rehab & Wellness",
+  "Signature HealthCARE of Parkwood",
+  "Signature HealthCARE of Portland Rehab & Wellness Center",
+  "Signature HealthCARE of Primacy",
+  "Signature HealthCARE of Putnam Co",
+  "Signature HealthCARE of Ridgely Rehab & Wellness Center",
+  "Signature HealthCARE of Roanoke Rapids",
+  "Signature HealthCARE of Rockwood Rehab & Wellness Center",
+  "Signature HealthCARE of Rogersville",
+  "Signature HealthCARE of South Pittsburg Rehab & Wellness Center",
+  "Signature HealthCARE of Spencer Co.",
+  "Signature HealthCARE of Terre Haute",
+  "Signature HealthCARE Owensboro",
+  "Signature HealthCARE South Louisville",
+  "Signature HealthCARE TN, Cookeville",
+  "Signature HealthCARE TN, Knoxville",
+  "Signature HealthCARE TN, Memphis",
+  "Signature HealthCARE TN, Nashville",
+  "Signature HealthCARE TN, Portland",
+  "Signature HealthCARE VA, Norfolk",
+  "Silver Angels of Tennessee - Sevier, LLC",
+  "Spring City Care and Rehab Center",
+  "Standing Stone Care and Rehab Center",
+  "Sunrise Manor Nursing Home",
+  "Westmoreland Care & Rehab Center"
+ ]
+}
