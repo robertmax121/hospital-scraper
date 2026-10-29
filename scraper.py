@@ -47,6 +47,7 @@ import facilities_home_health   # 2026-10-29 (phase 3): named branches of the ho
 import facilities_senior_rehab   # 2026-10-29 (phase 3): named sites of the senior living, rehab and post-acute chains
 import facilities_ambulatory   # 2026-10-29 (phase 3): USPI surgery centres, Concentra centres, CVS's Oak Street / MinuteClinic / Omnicare
 import facilities_hospital_systems_a   # 2026-10-29: Lifepoint's body-named sites; Providence / Baptist Memorial work locations
+import facilities_hospital_systems_b   # 2026-10-29 (phase 3 B): Geisinger, Sutter, AHN, Jefferson, Ochsner, Kaiser, Huntsville tables (registers in the family modules)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -33282,6 +33283,12 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
             logger.info("Hospital systems A, values no table names: "
                         + facilities_hospital_systems_a.unknown_summary())
             facilities_hospital_systems_a.UNKNOWN.clear()
+    # 2026-10-29 (facility scale, phase 3 B): the Ochsner campus a title names
+    # ("... - Jeff Hwy", "- OLGMC"), before the town tables guess from a town.
+    hsb = _facility_pass("Hospital systems B (titles)", facilities_hospital_systems_b.apply_before_town, kept)
+    if hsb:
+        logger.info("Hospital systems B (titles): " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(hsb.items())))
     # 2026-10-29 (facility scale, TOWN family): rows still on the system's
     # name after the adapters' facility hooks and facility_names take the one
     # hospital of their system in their town (facilities_town: a clinic, an
@@ -33305,6 +33312,13 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if town:
         logger.info("Town tables: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(town.items())))
+    # 2026-10-29 (phase 3 B): Jefferson's "Primary Location Address" names the
+    # hospital at its street, else gives a county row its real town; after the
+    # town tables, so they never guess a hospital from that town.
+    hsb = _facility_pass("Hospital systems B (addresses)", facilities_hospital_systems_b.apply_after_town, kept)
+    if hsb:
+        logger.info("Hospital systems B (addresses): " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(hsb.items())))
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
     pairs = []

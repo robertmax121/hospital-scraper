@@ -208,7 +208,10 @@ def _resolve(row, *, fallback=False):
     ("Kaiser Permanente", "Department: Oakland Hospital - HIV Clinic - 0206", "Oakland",
      "Kaiser Permanente Oakland Medical Center"),
     ("Kaiser Permanente", "Department: Walnut Creek Hospital - Anesthesiology-Nurse Anesthes - 0206", "Antioch", None),
-    ("Kaiser Permanente", "Department: Maui Lani Medical Offices - After Hours Clinic - 1208", "Wailuku", None),
+    # 2026-10-29 phase 3 B (facilities_hospital_systems_b.KAISER_SITES): a named
+    # medical office is a named site (decision 2) and shows its own name
+    ("Kaiser Permanente", "Department: Maui Lani Medical Offices - After Hours Clinic - 1208", "Wailuku",
+     "Kaiser Permanente Maui Lani Medical Offices"),
     ("Hartford HealthCare", "Location Detail: Windham Community Memorial (10183)", "Willimantic", "Windham Hospital"),
     ("Hartford HealthCare", "Location Detail: 79 Jefferson St HH Bliss Wing (10064)", "Hartford", "Hartford Hospital"),
     ("Hartford HealthCare", "Location Detail: 15 Corporate Drive Trumbull (10530)", "Trumbull", None),

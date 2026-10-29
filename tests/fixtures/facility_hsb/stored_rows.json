@@ -1,0 +1,735 @@
+{
+"read": "2026-10-29",
+"note": "real stored hospital_jobs label rows (bodies cut after the line that names the site); want = the stored-row change list answer (null = the row stays on the label); ahn_live_list = locationsText and externalPath of a live highmarkhealth Workday list page, 2026-10-29; adventist_live = requisitions of a live Adventist Health Oracle page (CX_1, 2026-10-29), workLocation only",
+"rows": [
+{
+"id": 14749757,
+"tag": "hospital",
+"hospital_system": "Geisinger",
+"hospital_name": "Geisinger",
+"title": "Foodservice Worker (Flex)",
+"city": "Lewistown",
+"state": "PA",
+"url": "https://geisinger.wd5.myworkdayjobs.com/GeisingerExternal/job/Lewistown-PA/Foodservice-Worker-Flex_R-99092",
+"job_id": "R-99092",
+"description": "Location:\nGeisinger Lewistown Hospital (GLH)\n\nShift:\nRotation (United States of America)\n\nScheduled Weekly Hours:\n0\n\nWorker Type:\nRegular\n\nExemption Status:\nNo\n\nJob Summary:\nPerforms routine tasks related to the portioning and serving of food and cleaning of tableware, equipment or work area. Follows special cleaning and trash handling techniques as required by regulatory agencies. Ensures a professional and appropriate Service Standard while performing the job.\n\nJob Duties:\n\nFoodservice Workers will be assigned to perform various tasks within the foodservice area.\n\nThis may include but is not limited to food preparation, packaging, and deliveries.\n\nCleans and sanitizes any and all food service areas as required by management and regulatory agencies.\n\nTakes and records temperature of food and food storage areas, such as refrigerators and freezers.\n\nPlaces food trays over food warmers for immediate service or stores them in refrigerated storage cabinets.\n\nWeighs or measures ingredients.\n\nReceives and stores food supplies, equipment, and utensils in refrigerators, cupboards, and other storage areas.\n\nMay handle cash depending on needs.\n\nRead and interpret patient meal tickets, read and confirm patient identifiers, recipes, ingredients, labels and dating.\n\n​​Work is typically performed in a clinical environment. Accountable for satisfying all job specific obligations and complying with all organization policies and procedures. The specific statements in this profile are not inte",
+"want": [
+"Geisinger Lewistown Hospital",
+"Lewistown",
+"PA"
+]
+},
+{
+"id": 14749644,
+"tag": "hospital",
+"hospital_system": "Geisinger",
+"hospital_name": "Geisinger",
+"title": "Cardiac Catheterization Technologist",
+"city": "Wilkes-Barre",
+"state": "PA",
+"url": "https://geisinger.wd5.myworkdayjobs.com/GeisingerExternal/job/Wilkes-Barre-PA/Cardiac-Catheterization-Technologist_R-02343",
+"job_id": "R-02343",
+"description": "Location:\nGeisinger Wyoming Valley (GWV)\n\nShift:\nDays (United States of America)\n\nScheduled Weekly Hours:\n40\n\nWorker Type:\nRegular\n\nExemption Status:\nNo\n\nJob Summary:\nProvides technical assistance to performing physician during diagnostic and interventional cardiac catheterizations, structural heart procedures, and other related procedures. Responsible for direct care of patient during procedure as well as management of hemostasis post procedure. Meets the qualifications to provide care for patients in the specific age range in their assigned laboratory.\n\nJob Duties:\n\nAssists the physician with adult and pediatric cardiac catheterizations including but not limited to the following procedures and techniques: myocardial biopsy, transluminal coronary angioplasty and stenting, rotational atherectomy, temporary pacemaker insertion, pericardiocentesis, Swan-Ganz catheter insertion, cardiac assist device insertion, percutaneous valvuloplasty, percutaneous valve implantation, peripheral vascular diagnostic and interventional procedures.\n\nPractice of sterile technique preparing for procedure including scrubbing, applying surgical gown, gloving, draping and setup of instrument table.\n\nPerforms emergency therapeutic maneuvers during procedures.\n\nInitiates life support techniques in the event of a cardiac and respiratory arrest including CPR, defibrillation, temporary pacemaker insertion and airway management.\n\nAssists with ongoing clinical research trials pertinent to the cardiac cathet",
+"want": [
+"Geisinger Wyoming Valley Medical Center",
+"Wilkes-Barre",
+"PA"
+]
+},
+{
+"id": 14749853,
+"tag": "clinic",
+"hospital_system": "Geisinger",
+"hospital_name": "Geisinger",
+"title": "Phlebotomist - Primary Care Pottsville- Float",
+"city": "Pottsville",
+"state": "PA",
+"url": "https://geisinger.wd5.myworkdayjobs.com/GeisingerExternal/job/Geisinger-Primary-Care-Pottsville/Phlebotomist---Float_R-97486-1",
+"job_id": "R-97486",
+"description": "Location:\nGeisinger Primary Care Pottsville\n\nShift:\nDays (United States of America)\n\nScheduled Weekly Hours:\n40\n\nWorker Type:\nRegular\n\nExemption Status:\nNo\n\nJob Summary:\nJoin our team at Geisinger Medical Laboratories. You can find your passion for caring and innovation as a team member in our state-of-the-art laboratories. Our mission is to provide exceptional patient care through innovative, efficient, and high-quality laboratory services.\n\nJob Duties:\n\nPhlebotomists are responsible for collection and procurement of blood and human specimens in the clinical setting. This role is an important component of patient experience, and the individual is expected to collaborate with clinical counterparts to provide a safe environment that promotes the best possible outcomes.\n\nPerforms venipunctures and skin punctures to obtain blood specimens according to the Clinical laboratory Standards Institute guidelines.\n\nDemonstrates expertise in patient identification, specimen collection, labeling, accessioning, and processing.\n\nExhibit strong problem solving skills.\n\nUnderstands the criteria for specimen acceptability and rejection.\n\nFunctions effectively in a team environment.\n\nWorks under the leadership of Phlebotomist III, Preanalytical Specialist, Team Lead, Supervisor, or other Laboratory Leader and escalates issues accordingly.\n\nPossess critical thinking skills to adjust to changing work conditions.\n\nCarries out responsibilities in an independent and accountable manner in all assigne",
+"want": [
+"Geisinger Primary Care Pottsville",
+"Pottsville",
+"PA"
+]
+},
+{
+"id": 14749784,
+"tag": "remote",
+"hospital_system": "Geisinger",
+"hospital_name": "Geisinger",
+"title": "Marketing Strategist",
+"city": "Danville",
+"state": "PA",
+"url": "https://geisinger.wd5.myworkdayjobs.com/GeisingerExternal/job/Work-from-Home/Marketing-Strategist_R-99919",
+"job_id": "R-99919",
+"description": "Location:\nWork from home (Pennsylvania)\n\nShift:\nDays (United States of America)\n\nScheduled Weekly Hours:\n40\n\nWorker Type:\nRegular\n\nExemption Status:\nYes\n\nJob Summary:\nResponsible for the developing and leading the implementation of marketing, communications and/or digital engagement plans and projects for assigned internal stakeholders, lines of business, and/or functional departments to advance and achieve Geisinger’s strategic priorities and business objectives.\n\nJob Duties:\n\nPlans, research, and performs analysis to develop a comprehensive marketing/communications/digital engagement strategy for internal clients.\n\nUses analytical and critical thinking to interpret data to understand and respond to industry and market trends as they relate to relevant clients.\n\nProduces a matrixed, cross-functional team of marketing, communications, and digital engagement experts to implement their plans.\n\nIn partnership with clients, develops proactive strategies, plans, and initiatives to achieve Geisinger’s priorities and objectives.\n\nUnderstands the business objectives of the organization at the enterprise, business unit, departmental, institute, and regional level and applies that understanding to strategy development.\n\nIdentifies, evaluates, and recommends audience, market, product, program and/or service opportunities based on market/audience need and translate those needs into a value-added marketing/communication/digital strategy.\n\nWorking in a matrixed environment, leads a team of",
+"want": null
+},
+{
+"id": 27783442,
+"tag": "office",
+"hospital_system": "Geisinger",
+"hospital_name": "Geisinger",
+"title": "Certified Medical Assistant - CMA - Central Float Pool",
+"city": "Danville",
+"state": "PA",
+"url": "https://geisinger.wd5.myworkdayjobs.com/GeisingerExternal/job/Danville-PA/Certified-Medical-Assistant---CMA---Central-Float-Pool_R-02999",
+"job_id": "R-02999",
+"description": "Location:\nMill Street Office Building\n\nShift:\nDays (United States of America)\n\nScheduled Weekly Hours:\n40\n\nWorker Type:\nRegular\n\nExemption Status:\nNo\n\nJob Summary:\nProvides direct patient care and clinical support for physicians and other providers in the outpatient setting. Functions as an integral member of the health care team under the direction of the provider. Performs clinical duties such as preparing patients, collecting and reviewing pertinent information, performing technical duties, documenting using the electronic medical record, and supporting a safe environment for patients. Provides administrative and clerical support for the clinic/department including patient scheduling, filing reports, and following up on documentation, phone calls, and billing inquiries. Graduate of an accredited 1-year certificate or 2-year diploma Medical Assistant program preferred. Certified Medical Assistant (CMA) or Registered Medical Assist (RMA) required. Certified by one of the listed governing associations required: NHA, AMT, AAMA, NAHP, NCCT, AAH, or AMCA.\n\nJob Duties:\n\nObtains and documents, using the rooming tool in the electronic medical record, the patient’s reason for visit, weight, vital signs, visit screening information, medication review, and pertinent information for provider.\n\nSets up examination and treatment rooms between cases.\n\nAssists patient as needed to prepare for visit with provider, takes appropriate measures to assure patient’s safety and privacy.\n\nProvides ",
+"want": null
+},
+{
+"id": 14750217,
+"tag": "elsewhere",
+"hospital_system": "Geisinger",
+"hospital_name": "Geisinger",
+"title": "Urologist Physician",
+"city": "State College",
+"state": "PA",
+"url": "https://geisinger.wd5.myworkdayjobs.com/GeisingerExternal/job/State-College-PA/Urologist-Physician_R-72693-1",
+"job_id": "R-72693",
+"description": "Location:\nGeisinger Lewistown Hospital (GLH)\n\nShift:\nDays (United States of America)\n\nScheduled Weekly Hours:\n40\n\nWorker Type:\nRegular\n\nExemption Status:\nYes\n\nJob Summary:\nUrologist – Geisinger\n📍 Location: State College & Lewistown, PA\n💼 Employer: Geisinger\n📧 Contact: Christie Blair – cblair2@geisinger.edu\n\nJob Duties:\n\nUrologist Opportunity – Academic Health System\n\nGeisinger | Central Pennsylvania\n\nGeisinger’s Department of Urology is seeking a Board-Certified or Board-Eligible Urologist to join its innovative, collaborative, and nationally recognized team. This is an excellent opportunity to practice high-quality academic urology within a physician-led, integrated health system while enjoying an outstanding quality of life in Central Pennsylvania.\n\nWhy Geisinger?\n\nHighly competitive compensation linked to value-based care\n\nGenerous signing incentives and forgivable recruitment stipends\n\nAcademic appointment potential through Geisinger Commonwealth School of Medicine\n\nNationally recognized health system focused on quality, innovation, and education\n\nPosition Highlights\n\nCommunity & Location --\n\nState College, located in Centre County, Pennsylvania, is home to Penn State University and was recently named America’s #1 Best Small College Town by USA Today . The area offers:\n\nNCAA Division I athletics, concerts, festivals, and cultural events\n\nExcellent dining, arts, and nightlife\n\nEasy access to hiking, fishing, trails, and outdoor recreation\n\nSafe, family-friendly communities",
+"want": null
+},
+{
+"id": 14750219,
+"tag": "workday clinic site",
+"hospital_system": "Geisinger",
+"hospital_name": "Geisinger",
+"title": "Urologist Geisinger Medical Center",
+"city": "Selinsgrove",
+"state": "PA",
+"url": "https://geisinger.wd5.myworkdayjobs.com/GeisingerExternal/job/Geisinger-Urology-Selinsgrove/Urologist-Geisinger-Medical-Center_R-70778",
+"job_id": "R-70778",
+"description": "Location:\nGeisinger Medical Center (GMC)\n\nShift:\nDays (United States of America)\n\nScheduled Weekly Hours:\n40\n\nWorker Type:\nRegular\n\nExemption Status:\nYes\n\nJob Summary:\n\nJob Duties:\n\nUrologist- Geisinger, Pennsylvania\n\nJoin Our Team at Geisinger Medical Center!\n\nThe Department of Urology at Geisinger, a national leader in quality, innovation, research, and education, is seeking a Urologist to join our esteemed group in Danville, Pennsylvania.\n\nWhy Geisinger?\n\nHighly Competitive Salary : Our compensation model is linked to value-based care, ensuring a rewarding and sustainable career.\n\nSigning Incentives : Attractive signing bonuses, forgivable recruitment loans, and medical school loan repayment options for residents and fellows.\n\nPosition Highlights\n\nState-of-the-Art Technology : Access to robotic systems, high-powered lasers, transperitoneal/fusion biopsies, Robotic Aquablation, and Rezum in the office setting.\n\nCollaborative Environment : Shared weekend call (1:9) with partial Advanced Practitioner/Resident support.\n\nAcademic Opportunities : Potential for an academic appointment through Geisinger Commonwealth School of Medicine and our fully accredited residency program.\n\nBenefits\n\nRelocation and PTO : Fully paid relocation, generous PTO (4 weeks), and annual CME time (3 weeks).\n\nComprehensive Coverage : Malpractice & Tail coverage, excellent benefits package including 401(k), 403(b), 457(b), life insurance, AD&D, and disability coverage.\n\nIntegrated Systems : Fully integra",
+"want": [
+"Geisinger Urology Selinsgrove",
+"Selinsgrove",
+"PA"
+]
+},
+{
+"id": 14751080,
+"tag": "other system",
+"hospital_system": "Geisinger",
+"hospital_name": "Geisinger",
+"title": "Emergency Medicine Physician",
+"city": "Honesdale",
+"state": "PA",
+"url": "https://geisinger.wd5.myworkdayjobs.com/GeisingerExternal/job/Honesdale-PA/Emergency-Medicine-Physician_R-57735",
+"job_id": "R-57735",
+"description": "Location:\nWayne Memorial Hospital\n\nShift:\nRotation (United States of America)\n\nScheduled Weekly Hours:\n40\n\nWorker Type:\nRegular\n\nExemption Status:\nYes\n\nJob Summary:\nGeisinger is seeking a board-certified/board-eligible Emergency Medicine physician for the department of Emergency Medicine at Wayne Memorial Hospital located in Honesdale, Pa.\n\nJob Duties:\n\nAs a Geisinger physician, you have an opportunity to make a meaningful impact on your patients’ lives! Everything we do is about caring for our patients, our members, our students, our Geisinger family, and our communities.\n\nWith Geisinger, you can also take advantage of:\n\nCompetitive compensation package & benefits including three robust retirement plans, CME, relocation, and more! To learn more about our extensive benefits that allow our employees to live well both in their professional and personal lives, click here .\n\nAcademic opportunities with Geisinger Commonwealth School of Medicine.\n\nBetter quality of life - Enjoy the fresh air, short commutes, a lower cost of living, and tight-knit communities in our respective regions across Pennsylvania.\n\nSatisfaction of working for a nationally recognized, physician-led healthcare organization committed to leading healthcare change.\n\nWayne Memorial Hospital is a 90-bed acute care hospital with an additional 14 beds dedicated to inpatient rehabilitation. The hospital includes state-of-the-art imaging services, laboratory services, outpatient lab and rehabilitation facilities, a bir",
+"want": null
+},
+{
+"id": 14750430,
+"tag": "workday site",
+"hospital_system": "Geisinger",
+"hospital_name": "Geisinger",
+"title": "Respiratory Therapist Registered Float (RRT)",
+"city": "Danville",
+"state": "PA",
+"url": "https://geisinger.wd5.myworkdayjobs.com/GeisingerExternal/job/Geisinger-Medical-Center-Muncy-GMCM/Respiratory-Therapist-Registered--RRT--Respiratory-Therapist-Certified--CRT-_R-91754",
+"job_id": "R-91754",
+"description": "Location:\nGeisinger Medical Center (GMC)\n\nShift:\nRotation (United States of America)\n\nScheduled Weekly Hours:\n36\n\nWorker Type:\nRegular\n\nExemption Status:\nNo\n\nJob Summary:\nGeisinger is proud to offer a full time Respiratory Therapist (RRT) and Certified Respiratory Therapist (CRT) a $15,000 hiring incentive for eligible candidates, competitive rates and up to $5.50/hr. shift differentials for evening, nights, and weekend shifts!\n\nJob Duties:\n\nBenefits of working at Geisinger:\n\nFull benefits (medical, dental and vision) starting on day one\n\nThree medical plan choices, including an expanded network for out-of-area employees and dependents\n\nPre-tax savings plans with healthcare and dependent care flexible spending accounts (FSA) and a health savings account (HSA) with employer contribution\n\nCompany-paid life insurance, short-term disability, and long-term disability coverage\n\n401(k) plan that includes automatic Geisinger contributions\n\nGenerous paid time off (PTO) plan that allows you to accrue time quickly\n\nUp to $5,000 in tuition reimbursement per calendar year\n\nMyHealth Rewards wellness program to improve your health while earning a financial incentive\n\nFamily-friendly support including adoption and fertility assistance, parental leave pay, military leave pay and a free Care.com membership with discounted backup care for your loved ones\n\nEmployee Assistance Program (EAP): Referrals for childcare, eldercare, & pet care; Access free legal guidance, mental health visits, work-lif",
+"want": [
+"Geisinger Medical Center Muncy",
+"Muncy",
+"PA"
+]
+},
+{
+"id": 22074991,
+"tag": "hospital",
+"hospital_system": "Sutter Health",
+"hospital_name": "Sutter Health",
+"title": "Inpatient Clinical Pharmacist III, Kidney Transplant",
+"city": "San Francisco",
+"state": "CA",
+"url": "https://sutterhealth.wd1.myworkdayjobs.com/SH/job/San-Francisco/Inpatient-Clinical-Pharmacist-III--Kidney-Transplant_R-139223",
+"job_id": "R-139223",
+"description": "We are so glad you are interested in joining Sutter Health!\n\nOrganization:\nCPMC-California Pacific Med Center Van Ness\n\nPosition Overview:\n\nDelivers pharmaceutical care through the provision of patient-centered clinical service, medication information, education, medication preparation and distribution that ensures safe, effective, and cost efficient medication therapy. Exercises sound judgment, and developed clinical skills to provide input to and implement the patient's plan of care based on the diagnosis in a timely manner. Gains confidence and cooperation from the patient, their family/support group, and other healthcare providers through competent patient assessment, attentive monitoring and care, and effective communication. Adheres to all local/state/federal regulations, codes, policies and procedures to ensure privacy and safety while delivering optimal patient care. May also be responsible for performing specific tasks and/or orient other staff to the department.\n\nBLS-Basic Life Support Certification is highly desired.\nACLS-Advanced Cardiac Life Support Certification is not required, but is a plus\nPALS-Pediatric Life Support Certification is not required, but is a plus\n\nJob Description :\n\nEDUCATION\n\nPHARMD-Graduate of an accredited pharmacy school\n\nCERTIFICATION & LICENSURE\n\nRPH-Registered Pharmacist within 120 days\n\nTYPICAL EXPERIENCE:\n\n1 year of recent relevant experience.\n\nSKILLS AND KNOWLEDGE:\n\nKnowledge of medical terminology, generic and trade pharmaceutical na",
+"want": [
+"California Pacific Medical Center - Van Ness Campus",
+"San Francisco",
+"CA"
+]
+},
+{
+"id": 22074823,
+"tag": "hospital",
+"hospital_system": "Sutter Health",
+"hospital_name": "Sutter Health",
+"title": "Staff Nurse II, Neuro ICU",
+"city": "Castro Valley",
+"state": "CA",
+"url": "https://sutterhealth.wd1.myworkdayjobs.com/SH/job/Castro-Valley/Staff-Nurse-II--Neuro-ICU_R-138676-1",
+"job_id": "R-138676",
+"description": "We are so glad you are interested in joining Sutter Health!\n\nOrganization:\nSEMC - Sutter Eden Medical Center\n\nPosition Overview:\n\nAccountable for the assessment, coordination, delivery and evaluation of nursing care, including direct patient care, patient/family education and transitions of care in an acute patient setting. Delivers holistic and individualized care to all patients in an assigned area. Develops, implements, and coordinates a plan of care that incorporates psychological, sociocultural, spiritual, economic, and life-style factors. Fosters and maintains collaborative relationships between patients, their family/support group, physicians, and other healthcare providers through timely and effective communications. Adheres to hospital policies, industry standards, best practices, and applicable laws and regulations to promote an optimal patient experience.\n\nJob Description :\n\nEDUCATION\n\nGraduate from an accredited school of nursing Required\n\nBSN Preferred\n\nEXPERIENCE\n\nMinimum two year current experience in area of specialty Required\n\nLICENSURES AND CERTIFICATIONS\n\nRegistered Nurse - State Licensure - RN Required\n\nBasic Life Support Certification - BLS Required\n\nAdvanced Cardiac Life Support - ACLS Required\n\nCritical Care Registered Nurse - CCRN within 18 months of hire\n\nSKILLS AND KNOWLEDGE:\n\nDemonstrated general knowledge and competence with regard to nursing theories, concepts and practices; medical terminology; anatomy; and physiology.\n\nWorking knowledge of the h",
+"want": [
+"Eden Medical Center",
+"Castro Valley",
+"CA"
+]
+},
+{
+"id": 22075053,
+"tag": "campus",
+"hospital_system": "Sutter Health",
+"hospital_name": "Sutter Health",
+"title": "Mammography Technologist III",
+"city": "San Mateo",
+"state": "CA",
+"url": "https://sutterhealth.wd1.myworkdayjobs.com/SH/job/San-Mateo/Mammography-Technologist-III--PT_R-137251",
+"job_id": "R-137251",
+"description": "We are so glad you are interested in joining Sutter Health!\n\nOrganization:\nSMPMC-Sutter Mills Peninsula Medical Center\n\nPosition Overview:\nCompetently performs routine and specialized breast procedures including biopsies and needle localization procedures to produce quality images to physicians and other health care providers for the diagnosis, treatment, monitoring and prevention of injury or disease. Works independently, exercising sound judgment, and developed clinical skills to execute safe and precise procedures to deliver accurate results in a timely manner. Gains confidence and cooperation from the patient, their family/support group, and other healthcare providers through competent patient assessment, attentive monitoring, and effective communication. Adheres to all local/state/federal regulations, codes, policies and procedures to ensure privacy and safety while delivering optimal patient care. May also be responsible for performing specific procedures and/or orienting other staff to the department.\n\nJob Description :\n\nMAMMOGRAPHY SERVICES\n• Performs a variety of diagnostic mammographic examinations.\n• Performs breast ultrasound, ultrasound guided breast biopsies, stereotactic breast biopsies and nedle localizations procedures.\n• Operates complex stationary and mobile diagnostic equipment.\n• Ensures that routine and priority tasks are completed within established departmental time frames.\n• Prepares for and assists physicians in a variety of mammographic diagnostic a",
+"want": [
+"Mills-Peninsula Medical Center",
+"San Mateo",
+"CA"
+]
+},
+{
+"id": 22074809,
+"tag": "foundation",
+"hospital_system": "Sutter Health",
+"hospital_name": "Sutter Health",
+"title": "Medical Assistant II - SMSHCC Surgical Oncology - GI Surgery",
+"city": "Oakland",
+"state": "CA",
+"url": "https://sutterhealth.wd1.myworkdayjobs.com/SH/job/Oakland/Medical-Assistant-II---SMSHCC-Surgical-Oncology---GI-Surgery_R-139522",
+"job_id": "R-139522",
+"description": "We are so glad you are interested in joining Sutter Health!\n\nOrganization:\nSEBMF-East Bay Medical Foundation\n\nPosition Overview:\n\nProvides clinical and clerical support to providers and members of the patient care team(s) by performing a variety of back office and patient-related tasks supporting the delivery of high-quality patient care. Helps ensure smooth patient and workflow within the department and assists the patient care team in implementing the medical plan of care. Integrates education, technical competence, and patient interaction skills to gain confidence and cooperation from the patient, their family/support group, and other healthcare providers. Performs all duties under the direction of a clinician.\n\nJob Description :\n\nMEDICAL SERVICES\n\nManages rooming and patient flow by preparing and escorting patients to examination rooms.\n\nProvides clinical support and patient care by obtaining appropriate identification and medical information from the patient and/or their family/support team.\n\nPerforms vital signs, tests and collects/prepares specimens according to clinician orders.\n\nSupports physicians and patient care team to perform medical procedures and patient examinations by preparing the room, equipment, instruments and/or supplies appropriate for the exam/procedure.\n\nAdministers treatments, injections, and skin tests, and collects patient specimens as directed by a physician.\n\nMaintains equipment and understands procedures and treatments performed by clinicians.\n",
+"want": null
+},
+{
+"id": 38764709,
+"tag": "elsewhere",
+"hospital_system": "Sutter Health",
+"hospital_name": "Sutter Health",
+"title": "Licensed Vocational Nurse II, Sutter Coast Harbor Clinic",
+"city": "Brookings",
+"state": "CA",
+"url": "https://sutterhealth.wd1.myworkdayjobs.com/SH/job/Brookings/Licensed-Vocational-Nurse-II--Sutter-Coast-Harbor-Clinic_R-144841",
+"job_id": "R-144841",
+"description": "We are so glad you are interested in joining Sutter Health!\n\nOrganization:\nSCH-Sutter Coast Hospital\n\nPosition Overview:\n\n* Sign-on Bonus Opportunity: Up to $15,000.00 *\n\nProvides nursing care, under the direct supervision of a registered nurse (RN) or physician, in accordance with the legal scope of practice and within established standards of care, policies, and procedures. Integrates education, technical competence and patient interaction skills to gain confidence and cooperation from the patient, their family/support group, and other healthcare providers. Exercises sound judgment and developed clinical skills to implement the patient's plan of care based on the diagnosis in a timely manner. Supports the functionality of the department by distributing supplies and performing equipment maintenance, testing, and setup as needed. Adheres to all local/state/federal regulations, codes, policies and procedures to ensure privacy and safety to help deliver optimal patient care.\n\nAbout Sutter Coast Hospital:\nResting on the scenic Northern California Coast, Sutter Coast Hospital continues to evolve to meet the changing needs of the residents of Crescent City, California and Brookings-Harbor, Oregon and the surrounding areas. As a part of Sutter Health - one of the nation’s leading community-based, health care networks - we are a 49-bed, not-for-profit hospital, serving a population of approximately 43,000. Our services include a 24-hour emergency department, intensive care/critical ",
+"want": null
+},
+{
+"id": 25060,
+"tag": "hospital from county",
+"hospital_system": "Jefferson Health",
+"hospital_name": "Jefferson Health",
+"title": "Diagnostic Radiologists",
+"city": "Montgomery County",
+"state": "PA",
+"url": "https://jeffersonhealth.wd5.myworkdayjobs.com/ThomasJeffersonExternal/job/Montgomery-County-PA/Diagnostic-Radiologists_REQ-0010797",
+"job_id": "REQ-0010797",
+"description": "Job Details\nRadiologist - Jefferson Abington Hospital | Abington, Pennsylvania\nSign-On Bonus Available\n\nJob Description\n\nJefferson Abington Hospital is seeking a fellowship-trained Radiologist to join our highly regarded Radiology Department. This is an excellent opportunity to practice in a modern, technologically advanced community hospital while being supported by the resources and reputation of Jefferson Health , one of the nation’s leading academic health systems.\n\nYou will join a collegial, collaborative team dedicated to delivering high-quality imaging services that directly impact patient care across a broad and diverse patient population.\n\nJefferson Health continues to invest in its physicians through a newly enhanced compensation plan and a system-wide Sectra PACS implementation in 2026 , reinforcing our commitment to innovation, efficiency, and radiologist satisfaction.\n\nPosition Highlights\n\nPractice in a state-of-the-art imaging environment with advanced technology and strong clinical support\n\nFocus on Subspecialty training up to 70% of the time while maintaining a balanced and varied case mix\n\nWork within a collaborative, multidisciplinary medical staff\n\nEnjoy the stability and resources of a large academic health system with the culture of a community hospital\n\nKey Responsibilities\n\nInterpret a broad range of diagnostic imaging studies including MRI, CT, ultrasound, and radiography , with an emphasis on body imaging\n\nDeliver timely, accurate, and clinically impa\n[cut]\ncome.\n\nWork Shift\nRotating (United States of America)\n\nWorker Sub Type\nRegular\n\nEmployee Entity\nMethodist Associates in Healthcare, Inc. (d/b/a Jefferson Community Physicians)\nPrimary Location Address\n1200 Old York Road, Abington, Pennsylvania, United States of America\n\nNationally ranked, Jefferson, which is principally located in the gre",
+"want": [
+"Jefferson Abington Hospital",
+"Abington",
+"PA"
+]
+},
+{
+"id": 25034,
+"tag": "TJUH",
+"hospital_system": "Jefferson Health",
+"hospital_name": "Jefferson Health",
+"title": "Pharmacy Informatics Manager - Full Time / Days - Center City",
+"city": "Philadelphia",
+"state": "PA",
+"url": "https://jeffersonhealth.wd5.myworkdayjobs.com/ThomasJeffersonExternal/job/Philadelphia-PA/Pharmacy-Informatics-Manager---Full-Time---Days---Center-City_REQ-0024527-1",
+"job_id": "REQ-0024527",
+"description": "Job Details\nThe Pharmacy Informatics Manager is the resident expert in the use of automated dispensing unit technology systems. Maintains overall responsibility for the systems and daily operational integrity of the technology. Works closely with pharmacy staff, information systems, and nursing managers to operationalize practices and implement new processes and technology. Provides leadership and supervision of daily operations to assigned pharmacy team, including the Technology Systems Specialists across all divisional campuses. Contributes to the departmental Quality Assurance/Quality Improvement activities\n\nJob Description\n\nResponsibilities:\n\nOversees the automated dispensing unit technology, centralized distribution technology and BCMA technology used throughout TJUH, Inc. Assists with re-engineering workflow and daily operations to optimize use of technology.\n\nCoordinates the implementation, testing, expansion and upgrade of automated technology systems and processes to assure the quality and continuity of Pharmacy services throughout the division.\n\nResponsible for all human resources and personnel activity for Technology Systems Specialists, including scheduling, performance management, training and development, etc.\n\nAssumes primary responsibility for managing the automated technology user database, facilitating issuance and control of new ID access. Deletes users as appropriate. Maintains HIPAA database for terminations.\n\nDevelops and leads planning efforts to monito\n[cut]\nd.\n\nWork Shift\nWorkday Day (United States of America)\n\nWorker Sub Type\nRegular\n\nEmployee Entity\nThomas Jefferson University Hospitals, Inc.\nPrimary Location Address\n111 S 11th Street, Philadelphia, Pennsylvania, United States of America\n\nNationally ranked, Jefferson, which is principally located in the greater Philadelphia region, Lehigh ",
+"want": [
+"Thomas Jefferson University Hospital",
+"Philadelphia",
+"PA"
+]
+},
+{
+"id": 24496,
+"tag": "NJ hospital",
+"hospital_system": "Jefferson Health",
+"hospital_name": "Jefferson Health",
+"title": "Hospital Medicine- Advanced Practice Clinician- Per Diem",
+"city": "Gloucester County",
+"state": "NJ",
+"url": "https://jeffersonhealth.wd5.myworkdayjobs.com/ThomasJeffersonExternal/job/Gloucester-County-NJ/Hospital-Medicine--Advanced-Practice-Clinician_REQ-0026397",
+"job_id": "REQ-0026397",
+"description": "Job Details\nThe advanced practice provider (Nurse Practitioner/Physician Assistant) within the acute care hospital setting works in collaboration with, and is an integral member of, a multidisciplinary health care team.\n\nJob Description\n\nAssessment & Management\n\nPerforms complete history & physicals and documents in the medical record.\n\nOrders and collects data using appropriate assessment techniques, relevant supporting diagnostic information and diagnostic procedures where indicated.\n\nThe APP may serve as the first responder for both nursing and house staff in the event of patient status changes, orders, and in situations requiring procedural and resuscitative interventions.\n\nAssesses for risks associated with the care of the acute and complex chronically ill patient including: medication side effects, immobility, impaired nutrition, fluid and electrolyte imbalance, immunocompetence, invasive interventions and diagnostic procedures.\n\nDiagnosis\n\nCollaborates with interdisciplinary health care team in making diagnoses of acute and complex chronic conditions.\n\nManages diagnostic tests through ordering, interpretation, performance, and supervision.\n\nFormulates differential diagnoses by priority.\n\nDiagnoses complications and orders appropriate interventions\n\nFormulates Plan of Care\n\nIdentifies expected outcomes from diagnosis, and formulates and documents a plan of care to address complex acute and chronic health care needs.\n\nUtilizes evidenced based practice guidelines and prot\n[cut]\nntive.\n\nWork Shift\nRotating (United States of America)\n\nWorker Sub Type\nRegular\nEmployee Entity\n\nKennedy University Hospitals, Inc\nPrimary Location Address\n435 Hurffville-Cross Keys Rd, Turnersville, New Jersey, United States of America\n\nNationally ranked, Jefferson, which is principally located in the greater Philadelphia region, Lehigh ",
+"want": [
+"Jefferson Washington Township Hospital",
+"Turnersville",
+"NJ"
+]
+},
+{
+"id": 132209,
+"tag": "office town",
+"hospital_system": "Jefferson Health",
+"hospital_name": "Jefferson Health",
+"title": "Intern",
+"city": "Montgomery County",
+"state": "PA",
+"url": "https://jeffersonhealth.wd5.myworkdayjobs.com/ThomasJeffersonExternal/job/Montgomery-County-PA/Intern_REQ-0024681-1",
+"job_id": "REQ-0024681",
+"description": "Job Details\nIntern\n\nJob Description\n\nJOB SUMMARY\nThe intern will gain hands-on experience in a professional environment, providing opportunities to develop industry-specific skills\nand gain insight into our IS&T's operations. The intern will have the opportunity to learn and contribute to meaningful projects\nwhile building their professional network.\n\nESSENTIAL FUNCTIONS\nArticulates the job's main responsibilities. This is not intended to be an exhaustive list of all essential functions or all duties\nperformed. The essential functions listed below and percentage of time may vary between departments and locations, and are\nsubject to change based on management discretion and organizational needs. Other responsibilities may be assigned at the\ndiscretion of management to meet organizational needs.\n• Assist with daily tasks and projects across various departments as assigned by their supervisor\n• Participate in team meetings\n• Support ongoing IT projects by completing tasks assigned by their supervisor\n• Collaborate with team members to complete assigned tasks efficiently and effectively\n\nQUALIFICATIONS\nThe requirements listed below are representative of the knowledge, skill, and/or ability required or preferred.\nEducation - Required\n• High School Diploma/GED Currently enrolled in an accredited educational program or recent graduate\nKnowledge, Skills and Abilities - Required\n• Strong communication skills, both written and verbal\n• Ability to work independently as well as part of a\n[cut]\nld\n\nWork Shift\nWorkday Day (United States of America)\n\nWorker Sub Type\nRegular\n\nEmployee Entity\nThomas Jefferson University\nPrimary Location Address\n1100 Virginia Drive, Fort Washington, Pennsylvania, United States of America\n\nNationally ranked, Jefferson, which is principally located in the greater Philadelphia region, Lehigh Valley and ",
+"want": [
+"Jefferson Health",
+"Fort Washington",
+"PA"
+]
+},
+{
+"id": 18013,
+"tag": "office philadelphia",
+"hospital_system": "Jefferson Health",
+"hospital_name": "Jefferson Health",
+"title": "Senior Revenue Cycle Optimization Analyst",
+"city": "Philadelphia",
+"state": "PA",
+"url": "https://jeffersonhealth.wd5.myworkdayjobs.com/ThomasJeffersonExternal/job/Philadelphia-PA/Revenue-Management-Consultant_REQ-0024481-2",
+"job_id": "REQ-0024481",
+"description": "Job Details\nSenior Revenue Cycle Optimization Analyst\n\nJob Description\n\nThe Senior Revenue Cycle Optimization Analyst serves as a senior individual contributor responsible for designing and advancing enterprise strategies that improve revenue performance across the Revenue Cycle Continuum. This role focuses on identifying opportunities to enhance net revenue, reduce leakage, and accelerate cash through scalable, data-driven frameworks.\n\nPartnering closely with Revenue Cycle leadership, Finance, IT, and operational teams, the Architect translates complex financial and operational data into actionable strategies and implementation roadmaps. This position combines strategic thought leadership with practical execution planning to drive measurable, sustainable improvement across Jefferson Health.\n\nESSENTIAL FUNCTIONS\n\nExecute on the Revenue Cycle Value Creation roadmap, identifying enterprise opportunities to improve yield, reduce leakage, and accelerate cash.\n\nDefine future-state workflows and operating models aligned to organizational financial goals and system capabilities.\n\nLeverage Epic and business intelligence tools (Power BI) to identify actionable revenue opportunities.\n\nSupport development of predictive and trend-based analytics to inform proactive decision-making.\n\nLead and support a portfolio of high-value, cross-functional initiatives focused on revenue cycle improvement.\n\nProvide structured guidance to project teams; influence direction without direct reporting autho\n[cut]\ns.\n\nWork Shift\nWorkday Day (United States of America)\n\nWorker Sub Type\nRegular\n\nEmployee Entity\nThomas Jefferson University\nPrimary Location Address\n1101 Market, Philadelphia, Pennsylvania, United States of America\n\nNationally ranked, Jefferson, which is principally located in the greater Philadelphia region, Lehigh Valley and Northeaster",
+"want": null
+},
+{
+"id": 25233,
+"tag": "care site",
+"hospital_system": "Jefferson Health",
+"hospital_name": "Jefferson Health",
+"title": "Physical Therapist Per Diem- Jefferson Einstein- Willowcrest",
+"city": "Philadelphia",
+"state": "PA",
+"url": "https://jeffersonhealth.wd5.myworkdayjobs.com/ThomasJeffersonExternal/job/Einstein-Hosp-Phila---Tower-Bldg/Physical-Therapist-Per-Diem--Jefferson-Einstein--Willowcrest_REQ-0020900-1",
+"job_id": "REQ-0020900",
+"description": "Job Details\nThe Physical Therapist is responsible for the evaluation, treatment, and discharge planning of all patients referred for their given services. The Physical Therapist is an integral healthcare provider accountable to assist the patient to their highest level of function. The Physical Therapist will uphold the mission, vision, and values of Jefferson Health.\n\nWorks in conjunction with other health care professionals to coordinate treatment plans and care.\n\nEssential Functions:\n\n• Provide therapy evaluations, treatment planning, treatment interventions and discharge planning for a full patient caseload in acute care, skilled facility, acute rehab, outpatient settings as appropriate.\n\n• Plans, organizes and delivers treatment programs that help clients/patients recover and rehabilitate.\n\n• Utilizes tools and techniques to administer safe therapeutic interventions and trainings, for patient and families.\n\n• Records and documents clients/patients' health progress information for evaluation, all therapeutic interventions including daily treatments, progress notes, evaluations and discharge summaries.\n\n• Performs other duties as assigned.\n\nJob Description\n\nBachelor’s, Master’s, or Doctoral Degree from an accredited Physical Therapy Program.\n\nAND\n\nExperience:\n\n0-2 years of clinical practice required. 1 year preferred\n\nValid state license in Physical Therapy.\n\nBLS, CPR certification required via AHA\n\nWork Shift\nWorkday Day (United States of America)\n\nWorker Sub Type\nRegular\n[cut]\n\n\nEmployee Entity\nAlbert Einstein Medical Center\nPrimary Location Address\n5501 Old York Road, Philadelphia, Pennsylvania, United States of America\n\nNationally ranked, Jefferson, which is principally located in the greater Philadelphia region, Lehigh Valley and N",
+"want": null
+},
+{
+"id": 25542,
+"tag": "title",
+"hospital_system": "Jefferson Health",
+"hospital_name": "Jefferson Health",
+"title": "Neurology - Nurse Practitioner - Jefferson Methodist Hospital",
+"city": "Philadelphia",
+"state": "PA",
+"url": "https://jeffersonhealth.wd5.myworkdayjobs.com/ThomasJeffersonExternal/job/901-Walnut-Street/Neurology---Nurse-Practitioner---Jefferson-Methodist-Hospital_JR_9303415-1",
+"job_id": "JR_9303415",
+"description": "Job Details\n\nJob Description\nMasterâ¿¿s degree in nursing or a related field, with certification as an Advanced Practice Clinician. Experience in neurology, with a strong focus on stroke care, neurorehabilitation, and post-acute neurological management. Commitment to interdisciplinary collaboration and continuous professional development in the field of neurology and stroke care National Board Certification as an Nurse Practitioner or Physician Assistant BLS and ACLS certification\n\nWork Shift\nWorkday Day (United States of America)\n\nWorker Sub Type\nRegular\n\nPrimary Location Address\n901 Walnut Street, Philadelphia, Pennsylvania, United States of America\n\nNationally ranked, Jefferson, which is principally located in the greater Philadelphia region, Lehigh Valley and Northeastern Pennsylvania and southern New Jersey, is reimagining health care and higher education to create unparalleled value. Jefferson is more than 65,000 people strong, dedicated to providing the highest-quality, compassionate clinical care for patients; making our communities healthier and stronger; preparing tomorrow's professional leaders for 21st-century careers; and creating new knowledge through basic/programmatic, clinical and applied research. Thomas Jefferson University , home of Sidney Kimmel Medical College, Jefferson College of Nursing, and the Kanbar College of Design, Engineering and Commerce, dates back to 1824 and today comprises 10 colleges and three schools offering 200+ undergraduate and graduate programs to more than 8,300 students. Jefferson Health , nationally ranked as one of the top 15 not-for-profit health care systems in the country and the largest provider in the Philadelphia and Lehigh Valley areas, serves patients through millions of encounters each year at 32 hospitals campuses and more than 700 outpatient and urgent care locations throughout the region. Jefferson Health Plans is a not-for-profit managed health care organization providing a broad range of health coverage options in Pennsylvania and New Jersey for more than 35 years.\n\nJefferson is committed to providing equal educa­tional and employment opportunities for all persons without regard to age, race, color, religion, creed, sexual orientation, gender, gender identity, marital status, pregnancy, national origin, ancestry, citizenship, military status, veteran status, handicap or disability or any other protected group or status.",
+"want": [
+"Jefferson Methodist Hospital",
+"Philadelphia",
+"PA"
+]
+},
+{
+"id": 22072261,
+"tag": "jeff hwy hybrid",
+"hospital_system": "Ochsner Health",
+"hospital_name": "Ochsner Health",
+"title": "Hybrid OR Interventional Radiologic Specialist - Full Time - Jeff Hwy",
+"city": "New Orleans",
+"state": "LA",
+"url": "https://ochsner.wd1.myworkdayjobs.com/Ochsner/job/New-Orleans---New-Orleans-Region---Louisiana/Hybrid-OR-Interventional-Radiologic-Specialist---Full-Time---Jeff-Hwy_REQ_00268674",
+"job_id": "REQ_00268674",
+"description": "Exceptional care starts with exceptional people.\n\nFor us, this is more than a job– it’s a calling. It’s waking up each day, looking for ways to make a difference with a compassionate, inclusive and talented team. Ochsner empowers you to discover your passion, reach your potential, and Pursue Your Purpose. Exceptional care starts with exceptional people and teams. Together we are leading the way.\n\nHybrid OR / Angio Technologist / Interventional Radiology / Interventional Cardiology – Required Experience & Skills:\n• Hybrid Operating Room Experience:\nSignificant experience working in a hybrid surgical suite that integrates a traditional operating room with advanced imaging technology, enabling surgeons to perform both open surgical and minimally invasive and complex endovascular procedures in the same setting.\n• Specialized Vascular Supply Management:\nKnowledge and experience with ordering, handling, and preparing specialized vascular supplies such as guidewires, grafts, catheters, stents, and other endovascular devices necessary to support complex vascular procedures.\n• Sterile Technique & Surgical Environment:\nStrong understanding of sterile technique and infection control protocols to maintain a safe surgical field during hybrid and endovascular procedures.\n• Fixed Imaging Equipment Operation:\nExperience operating and assisting with specialized fixed imaging systems used in hybrid OR or angiography suites (e.g., fluoroscopy and advanced vascular imaging equipment).\n• On-Call ",
+"want": [
+"Ochsner Medical Center",
+"New Orleans",
+"LA"
+]
+},
+{
+"id": 22072299,
+"tag": "olgmc",
+"hospital_system": "Ochsner Health",
+"hospital_name": "Ochsner Health",
+"title": "Respiratory Therapist - OLGMC Respiratory Therapy - Full Time",
+"city": "Lafayette",
+"state": "LA",
+"url": "https://ochsner.wd1.myworkdayjobs.com/Ochsner/job/Lafayette---Acadiana-Region---Louisiana/Respiratory-Therapist---OLGMC-Respiratory-Therapy---Full-Time_REQ_00272673",
+"job_id": "REQ_00272673",
+"description": "We've made a lot of progress since opening the doors in 1942, but one thing has never changed - our commitment to serve, heal, lead, educate, and innovate. We believe that every award earned, every record broken and every patient helped is because of the dedicated employees who fill our hallways.\n\nAt Ochsner, whether you work with patients every day or support those who do, you are making a difference and that matters. Come make a difference at Ochsner Health and discover your future today!\n\nThis job provides respiratory care treatment, oxygen services, diagnostic testing and ventilation support services to both in-patients and out-patients ranging in age from neonatal to geriatric. The RT-CRT set-ups, monitors and weans Oxygen Therapy and Artificial ventilation. The RT-CRT draws, analyzes and reports Arterial Blood Gases and EKGs. The RT-CRT delivers intermittent therapy and assists with changing of artificial airways. The RT-CRT provides services as ordered by a physician and in accordance with established policies and procedures.\nTo perform this job successfully, an individual must be able to perform each essential duty satisfactorily. The requirements listed below are representative of the knowledge, skill, and/or ability required. Reasonable accommodations may be made to enable qualified individuals with disabilities to perform the essential duties.\n\nThis job description is a summary of the primary duties and responsibilities of the job and position. It is not intended t",
+"want": [
+"Ochsner Lafayette General Medical Center",
+"Lafayette",
+"LA"
+]
+},
+{
+"id": 22072624,
+"tag": "chabert",
+"hospital_system": "Ochsner Health",
+"hospital_name": "Ochsner Health",
+"title": "RN - Critical Care - Chabert Campus - PRN",
+"city": "Houma",
+"state": "LA",
+"url": "https://ochsner.wd1.myworkdayjobs.com/Ochsner/job/Houma---HoumaRaceland-Region---Louisiana/RN---Critical-Care---Chabert-Campus---PRN_REQ_00255370",
+"job_id": "REQ_00255370",
+"description": "We've made a lot of progress since opening the doors in 1942, but one thing has never changed - our commitment to serve, heal, lead, educate, and innovate. We believe that every award earned, every record broken and every patient helped is because of the dedicated employees who fill our hallways.\n\nAt Ochsner, whether you work with patients every day or support those who do, you are making a difference and that matters. Come make a difference at Ochsner Health and discover your future today!\n\nThis job acts as a leader in the provision of patient care using the nursing process within the framework of the Nurse Practice Act, ANA Code for Nurses and Scope & Standards of Practice. Effectively delegates, directs, and assists licensed and ancillary team members. Assumes accountability for quality patient outcomes, exhibits sensitivity to cultural, ethnic and religious diversity in all interactions, and maintains involvement in activities aimed toward the achievement of unit and the department’s strategic goals and objectives. Demonstrates professional responsibility and accountability for his/her own practice and supports the company's philosophy of nursing.\nTo perform this job successfully, an individual must be able to perform each essential duty satisfactorily. The requirements listed below are representative of the knowledge, skill, and/or ability required. Reasonable accommodations may be made to enable qualified individuals with disabilities to perform the essential duties.\n\nT",
+"want": [
+"Leonard J. Chabert Medical Center",
+"Houma",
+"LA"
+]
+},
+{
+"id": 22072277,
+"tag": "multi",
+"hospital_system": "Ochsner Health",
+"hospital_name": "Ochsner Health",
+"title": "Cardiovascular Rad Tech - Baptist/Clearview/Jeff Hwy campuses",
+"city": "New Orleans",
+"state": "LA",
+"url": "https://ochsner.wd1.myworkdayjobs.com/Ochsner/job/New-Orleans---New-Orleans-Region---Louisiana/Cardiovascular-Rad-Tech---Baptist-Clearview-Jeff-Hwy-campuses_REQ_00267965-1",
+"job_id": "REQ_00267965",
+"description": "Exceptional care starts with exceptional people.\n\nFor us, this is more than a job– it’s a calling. It’s waking up each day, looking for ways to make a difference with a compassionate, inclusive and talented team. Ochsner empowers you to discover your passion, reach your potential, and Pursue Your Purpose. Exceptional care starts with exceptional people and teams. Together we are leading the way.\n\nThis job, as a part of a multidisciplinary team, assumes responsibility for the operation of the heart catheterization laboratory suite. Operates diagnostic fluoroscopy and various types of cardiac equipment, monitors patient vitals, performs routine calculations, circulates, and assists the physician during the procedure upon request. Prepares the procedure rooms, equipment, and patient for the procedure. Acts as liaison to the hospital Radiation Safety Officer (RSO).\nTo perform this job successfully, an individual must be able to perform each essential duty satisfactorily. The requirements listed below are representative of the knowledge, skill, and/or ability required. Reasonable accommodations may be made to enable qualified individuals with disabilities to perform the essential duties.\n\nThis job description is a summary of the primary duties and responsibilities of the job and position. It is not intended to be a comprehensive or all-inclusive listing of duties and responsibilities. Contents are subject to change at the company's discretion.\n\nEducation\n\nRequired – Associate degr",
+"want": null
+},
+{
+"id": 22072746,
+"tag": "clinic",
+"hospital_system": "Ochsner Health",
+"hospital_name": "Ochsner Health",
+"title": "Certified Medical Assistant- OUHC Internal Medicine Clinic GME- Full Time",
+"city": "Lafayette",
+"state": "LA",
+"url": "https://ochsner.wd1.myworkdayjobs.com/Ochsner/job/Lafayette---Acadiana-Region---Louisiana/Certified-Medical-Assistant--OUHC-Internal-Medicine-Clinic-GME--Full-Time_REQ_00271626",
+"job_id": "REQ_00271626",
+"description": "We've made a lot of progress since opening the doors in 1942, but one thing has never changed - our commitment to serve, heal, lead, educate, and innovate. We believe that every award earned, every record broken and every patient helped is because of the dedicated employees who fill our hallways.\n\nAt Ochsner, whether you work with patients every day or support those who do, you are making a difference and that matters. Come make a difference at Ochsner Health and discover your future today!\n\nThis job provides individualized, medical care of assigned patients in person, electronically and via telephone under the supervision of a licensed health care provider. Assists in the delivery of health care services to patients of various backgrounds and age and maintains positive relationships with patients and their families. Works effectively with fellow employees to ensure the efficient flow of patients throughout their visit, providing support to them as well as to the attending physician. Communicates via phone to ensure patient needs are met timely and accurately. Accesses company's data systems to document pertinent medical information.\nTo perform this job successfully, an individual must be able to perform each essential duty satisfactorily. The requirements listed below are representative of the knowledge, skill, and/or ability required. Reasonable accommodations may be made to enable qualified individuals with disabilities to perform the essential duties.\n\nThis job descriptio",
+"want": null
+},
+{
+"id": 38730778,
+"tag": "health center",
+"hospital_system": "Ochsner Health",
+"hospital_name": "Ochsner Health",
+"title": "LPN- OLG Community Health Center- Full Time",
+"city": "Lafayette",
+"state": "LA",
+"url": "https://ochsner.wd1.myworkdayjobs.com/Ochsner/job/Lafayette---Acadiana-Region---Louisiana/LPN--OLG-Community-Health-Center--Full-Time_REQ_00277426",
+"job_id": "REQ_00277426",
+"description": "Exceptional care starts with exceptional people.\n\nFor us, this is more than a job– it’s a calling. It’s waking up each day, looking for ways to make a difference with a compassionate, inclusive and talented team. Ochsner empowers you to discover your passion, reach your potential, and Pursue Your Purpose. Exceptional care starts with exceptional people and teams. Together we are leading the way.\n\nThis job provides direct care (including IV therapy) of assigned patients within the framework of the Licensed Practical Nurse Act under the direction of a registered nurse. Directs and assists ancillary nursing staff with assigned duties and interacts with the multidisciplinary team and other personnel. Demonstrates professional responsibilities and is responsible for own practice and assists other members of the healthcare team in providing the highest quality personalized patient care.\nTo perform this job successfully, an individual must be able to perform each essential duty satisfactorily. The requirements listed below are representative of the knowledge, skill, and/or ability required. Reasonable accommodations may be made to enable qualified individuals with disabilities to perform the essential duties.\n\nThis job description is a summary of the primary duties and responsibilities of the job and position. It is not intended to be a comprehensive or all-inclusive listing of duties and responsibilities. Contents are subject to change at the company's discretion.\n\nEducation\n\nRequi",
+"want": null
+},
+{
+"id": 1681876,
+"tag": "medical office",
+"hospital_system": "Kaiser Permanente",
+"hospital_name": "Kaiser Permanente",
+"title": "RN, First Assist-Ambulatory Surgery",
+"city": "Clackamas",
+"state": "OR",
+"url": "https://www.kaiserpermanentejobs.org/job/clackamas/rn-first-assist-ambulatory-surgery/641/93994838752",
+"job_id": "93994838752",
+"description": "Job Summary:\n\nProvides assistance to the surgical team during the intra-operative phase of surgical care for the Northwest Region Ambulatory Surgery Centers. Works in collaboration with the surgeon and health care team in the performance of surgical procedures, including assessment, planning, directing, providing and evaluating advanced nursing care.\n\nEssential Responsibilities:\n\nPractice standards of performance: Pre-operative: Performs pre-operative assessment and evaluation if required. Collaborates with the surgical team on plan of care. Coordinate and communicate with circulator regarding equipment and implant needs for case, assist in obtaining.\n\nPractice standards of performance: Intra-operative: Provides knowledge based technical assistance to the surgeon and operating room team during the operative procedure according to AORN standards, licensure, state regulation and facility/practice protocols, including: Use of instruments and medical devices. Providing surgical exposure. Handling and/or cutting tissue. Providing hemostatis, clamp, cut, and ligate tissue as directed by the surgeon. Suturing as directed by the surgeon.\n\nPractice standards of performance: Post-Operative: Apply post-op splints and/or braces. During Anesthesia emergence, bring stretcher into room. Help transfer patient to stretcher. Remain in room for turnover unless specific instructions for Post-op care required in PACU.\n\nAssessment Standard of Performance & Planning: Communicates information so tha\n[cut]\ne Group/Union Affiliation: W01|AFT|Local 5017\nJob Level: Individual Contributor\nDepartment: Sunnybrook Medical Ofcs - Day Surgery - 1001\nPay Range: $62.4 - $92.57 / hour\nTravel: No\nOn-site: Work location is on-site (KP designated office, medical office building or hospital).",
+"want": [
+"Kaiser Permanente Sunnybrook Medical Offices",
+"Clackamas",
+"OR"
+]
+},
+{
+"id": 1612363,
+"tag": "office",
+"hospital_system": "Kaiser Permanente",
+"hospital_name": "Kaiser Permanente",
+"title": "Clinical Consultant III - Supply Chain Operations - Operating Room",
+"city": "San Jose",
+"state": "CA",
+"url": "https://www.kaiserpermanentejobs.org/job/san-jose/clinical-consultant-iii-supply-chain-operations-operating-room/641/94184096944",
+"job_id": "94184096944",
+"description": "Job Summary:\n\nServes as part of a consultant team to ensure the alignment, buy-in, and coordination of diverse stakeholders to drive successful initiatives and projects within clinical settings within a technical area or workstream. Provides insight and supports the development and implementation of clinical initiatives, systems, and/or processes to a desired future state. Supports clinical or care delivery strategy and organizational alignment and prioritization of clinical initiatives by defining, developing, and evaluating performance metrics. Manages moderately complex projects or project components, participates in change management activities, and performs data analyses in support of care delivery or clinical initiatives. Supports vendor management as required. Monitors compliance of work activities by ensuring project plans and team members adhere to relevant policies and procedures.\n\nEssential Responsibilities:\n\nPursues effective relationships with others by proactively providing resources, information, advice, and expertise with coworkers and members. Listens to, seeks, and addresses performance feedback; provides mentoring to team members. Pursues self-development; creates plans and takes action to capitalize on strengths and develop weaknesses; influences others through technical explanations and examples. Adapts to and learns from change, challenges, and feedback; demonstrates flexibility in approaches to work; helps others adapt to new tasks and processes. Suppor\n[cut]\nAffiliation: NUE-PO-01|NUE|Non Union Employee\nJob Level: Individual Contributor\nDepartment: Po/Ho Corp - Supply Chain Ops Admin - 0308\nPay Range: $109000 - $141020 / year\nTravel: Yes, 25 % of the Time",
+"want": null
+},
+{
+"id": 1612134,
+"tag": "other system",
+"hospital_system": "Kaiser Permanente",
+"hospital_name": "Kaiser Permanente",
+"title": "LMSW Case Manager, Social Work- In Patient II Arlington, VA Virginia Hospital (24 hrs.)",
+"city": "Arlington",
+"state": "VA",
+"url": "https://www.kaiserpermanentejobs.org/job/arlington/lmsw-case-manager-social-work-in-patient-ii-arlington-va-virginia-hospital-24-hrs/641/94819224416",
+"job_id": "94819224416",
+"description": "This role is eligble for a $4,500 sign on bonus!\n\nJob Summary:\n\nFor members of a defined population, responsible for collaborating with the members of the health care team to facilitate the coordination of appropriate, cost-effective services that are consistent with members plan of care, help achieve his/her optimal level of independence, and enhance quality of life.\n\nEssential Responsibilities:\n\nResponsibilities include, but are not limited to, problem identification, psychosocial assessment, financial counseling/referral, accessing community resources, placement for care, guiding the member through health-related legal processes, or consultation and support to other health care professionals.\n\nEffectively manages and coordinates assigned caseload consistent with established criteria. Completes comprehensive psychosocial assessment to evaluate patient goals, social support systems, resources, health status, functional limitations, psychological status, environmental factors, and response to treatment so as to decrease inappropriate utilization of medical services.\n\nIn close collaboration with the nurse case manager and other members of the health care team, develops and monitors a plan of care designed to promote the members optimal level of functioning and enhance the quality of life.\n\nIdentifies, facilitates, and advocates appropriate organizational and community resources to meet the plan of care and ensures that they are implemented for in a cost effective, efficient, a\n[cut]\ne Group/Union Affiliation: M38|UFCW|Local 400\nJob Level: Individual Contributor\nDepartment: Virginia Hospital Center - UR-Discharge Planning - 1808\nPay Range: $44.94 - $59.02 / hour\nTravel: Yes, 10 % of the Time\nOn-site: Work location is on-site (KP designated office, medical office building or hospital).",
+"want": null
+},
+{
+"id": 1972012,
+"tag": "building",
+"hospital_system": "Kaiser Permanente",
+"hospital_name": "Kaiser Permanente",
+"title": "LVN II - Baldwin Park - Physical Medicine, On-Call (Spanish/Bilingual)",
+"city": "Baldwin Park",
+"state": "CA",
+"url": "https://www.kaiserpermanentejobs.org/job/baldwin-park/lvn-ii-baldwin-park-physical-medicine-on-call-spanish-bilingual/641/95393361136",
+"job_id": "95393361136",
+"description": "Job Summary:\n\nUnder the direct supervision of a Registered Nurse or physician provides nursing care in accordance with the legal scope of practice and within established standards of care, policies and procedures. Demonstrates performance consistent with the Mission, Vision and Strategic Plan of the organization. Demonstrates quality and effectiveness in work habits and clinical practice and treats co-workers, patients, families and all members of the health care team with dignity and respect.\n\nEssential Responsibilities:\n\nRepresentative Duties:\n\nUpholds Kaiser Permanentes Policies and Procedures, Principles of Responsibilities and applicable state, federal and local laws.\n\nPerforms patient care functions, within the scope of competency, considering age related needs of the patient as prescribed by physician/health care professional(s) following established protocols, policies and procedures.\n\nAssist medical personnel with special procedures, minor surgical procedures and/or diagnostic exams.\n\nAssess and monitor patients condition and notify physician/health care professional for disposition.\n\nPrepare and administer medications as directed by physician order following established protocols.\n\nMaintain equipment and supplies.\n\nIdentify and arrange for equipment needing repair. Apply principles of aseptic technique and infection control as directed by the Infection Control Manual.\n\nMonitor patient flow and assign/direct other ancillary personnel as needed.\n\nProvide medical infor\n[cut]\ne Group/Union Affiliation: B01|SEIU|Local 399\nJob Level: Individual Contributor\nDepartment: Baldwin Park MOB - Physical Medicine-Regular Clin - 0806\nPay Range: $39.31 - $43.54 / hour\nTravel: Yes, 10 % of the Time",
+"want": null
+},
+{
+"id": 35304559,
+"tag": "crestwood",
+"hospital_system": "Huntsville Hospital Health System",
+"hospital_name": "Huntsville Hospital Health System",
+"title": "Env Services Aide-Crestwood Medical Center-FT-2nd shift",
+"city": "Huntsville",
+"state": "AL",
+"url": "https://careers-hhsys.icims.com/jobs/76036/env-services-aide-crestwood-medical-center-ft-2nd-shift/job",
+"job_id": "76036",
+"description": "Overview\n\nSuccessfully perform a wide range of housekeeping tasks and projects. Maintain high standards of cleanliness and sanitation throughout the facility\n\nQualifications\n\nEducation: A high school diploma or GED preferred\n\nExperience: Previous housekeeping or floor care experience preferred",
+"want": [
+"Crestwood Medical Center",
+"Huntsville",
+"AL"
+]
+},
+{
+"id": 35304550,
+"tag": "decatur town",
+"hospital_system": "Huntsville Hospital Health System",
+"hospital_name": "Huntsville Hospital Health System",
+"title": "ER Attendant, PRN, Nights",
+"city": "Decatur",
+"state": "AL",
+"url": "https://careers-hhsys.icims.com/jobs/75703/er-attendant%2c-prn%2c-nights/job",
+"job_id": "75703",
+"description": "Overview\n\nUnder the direct supervision of licensed nurses, the Emergency Room Attendant performs various duties to assist in the care of patients in accordance with established policies and procedures. These duties include, but are not limited to, obtaining EKG's, venipuncture, ambulation assistance, toilet assistance, feeding, measuring vital signs and blood glucose, and transporting.\n\nQualifications\n\nEducation/Licensure: Must have high school diploma or GED. Experience: No previous experience required, but preferred. Additional Skills/Abilities: BLS required before the conclusion of the orientation period. Must have excellent communication skills with the ability to work in a fast paced environment, requiring prioritizing and changing tasks frequently and quickly.",
+"want": [
+"Decatur Morgan Hospital",
+"Decatur",
+"AL"
+]
+},
+{
+"id": 35304669,
+"tag": "care center",
+"hospital_system": "Huntsville Hospital Health System",
+"hospital_name": "Huntsville Hospital Health System",
+"title": "Patient Care Aide Certified SNF - Highlands Care Center - PRN - 1st Shift",
+"city": "Scottsboro",
+"state": "AL",
+"url": "https://careers-hhsys.icims.com/jobs/75882/patient-care-aide-certified-snf---highlands-care-center---prn---1st-shift/job",
+"job_id": "75882",
+"description": "Overview\n\nThe Patient Care Aide works under the direction of the RN/LPN. The responsibilities of the Patient Care Aide include providing direct patient care and maintaining patient care standards. The Patient Care Aide must exhibit the ability to work with people from diverse socio-economic backgrounds; to organize, set priorities and manage multiple priorities, and to adapt to a rapidly changing environment.\n\nQualifications\n\nEducation: High School/GED preferred\n\nLicense, certification and/or registration: BLS required before the conclusion of the orientation period. Proof of Nursing Assistant (CNA) class completion required from a state approved program. Active certification preferred (including Certified Medical Assistant) but not required. EMT Certification accepted\n\nAbout Us\n\nHighlands Medical Center is a 170-bed hospital located in Scottsboro, offering a wide variety of emergency, inpatient and outpatient services to support the wellness of our community. A part of the Huntsville Hospital Health System, HMC has the strength of a collaborative group of high-performing hospitals across North Alabama to share information, processes, ideas and best practices for continual enhancements to the care and services offered to meet the health care needs of our diverse community. Accredited by the Joint Commission, Highlands Medical Center stands out as one of the top-rated healthcare providers in the state.\n\nIn addition to Highlands Medical Center, the system provides many services through owned-entities across the community - Highlands Family Medicine, Highlands Home Health, Highlands Occupational Medicine, Highlands Surgical Services, Jackson County Family Medicine, Scottsboro OB-GYN, Highlands Pediatrics, and Highlands Health & Rehab and Cumberland Health & Rehab, two rehabilitation and long-term care nursing homes. With over 720 employees, HMC is one of the largest employers in Jackson County.",
+"want": null
+},
+{
+"id": 35304564,
+"tag": "shared town",
+"hospital_system": "Huntsville Hospital Health System",
+"hospital_name": "Huntsville Hospital Health System",
+"title": "Health Care Assistant Weekend - Women & Children Adult ICU - PT - 1st Shift",
+"city": "Huntsville",
+"state": "AL",
+"url": "https://careers-hhsys.icims.com/jobs/75533/health-care-assistant-weekend---women-%26-children-adult-icu---pt---1st-shift/job",
+"job_id": "75533",
+"description": "Overview\n\nUnder the direction of the physicians and clinical staff the Health Care Assistant supports the assigned unit by providing technical patient care services and support related to patients on the nursing unit. Additionally assists staff, physicians, visitors and ancillary departments with routine patient care activities and clerical support as needed. Patient Care activities include vital signs, activities of daily living, transport, and transfer of patients to include discharge. Clerical support includes directing incoming calls and responding to patient calls, entering patient charges in the computer system, maintaining patient charts, unit files and secretarial supply levels and being responsible for maintaining a safe and orderly environment.\n\nQualifications\n\nEducation required: High School Diploma or GED\n\nEducation preferred: Completion of a Certified Nursing Assistant and/or Huntsville Hospital Health Care Assistant course preferred.\n\nLicense, Certification and/or Registration: BCLS is required by the conclusion of orientation\n\nExperience: Requires previous patient care and/or two years clerical experience with successful work history. Comparable combinations of education and experience in both clerical positions as well as patient care aide positions will be considered.\n\nAdditional Skills/Abilities: Familiarity with medical terminology preferred\n\nAbout Us\n\nBuild your career with us\n\nAt Huntsville Hospital, Huntsville Hospital for Women & Children and Madison Ho",
+"want": null
+},
+{
+"id": 32586942,
+"tag": "agh",
+"hospital_system": "Allegheny Health Network",
+"hospital_name": "Allegheny Health Network",
+"title": "Medical Assistant - Neurosurgery - Allegheny General Hospital - Full Time (Travel))",
+"city": "Pittsburgh",
+"state": "PA",
+"url": "https://highmarkhealth.wd1.myworkdayjobs.com/highmark/job/Pittsburgh-PA-15212-320-E-N-Ave/Medical-Assistant---Neurosurgery---Allegheny-General-Hospital---Full-Time--Hybrid-_J285741",
+"job_id": "J285741",
+"description": "Company :\nAllegheny Health Network\nJob Description :\n\n$1,000 Sign-On Bonus\n*Sign-On bonus is for External Hires only\nRecipient must stay with AHN for a minimum of 1 year\nRe-Hires may not have worked for AHN within the previous 12 months to qualify\n\nGENERAL OVERVIEW:\n\nUnder the direction of the provider and as a member of the health care team, assists in coordinating the examination, treatment and health care planning for patients. Assists with other office functions to support patient care and office operations. Follows all established protocols, policies, procedures and standardized workflows.\n\nESSENTIAL RESPONSIBILITIES:\n\nUsing the team based approach, assists in the coordination of patient care under supervision of the health care provider.\n\nPrepares and rooms patients within the clinical practice setting according to standardized work flows. Accurately obtains patient vital signs, documents patient information, patient history, tobacco, and medication screening. May assist in the administration of depression screening tools. Completes annual wellness visit screenings. Reviews, updates and screens medication list in the EHR. Reviews social history with patient and updates record. If applicable, pends/''cues up'' orders for required age appropriate screenings, patient prescriptions, refills, or other orders based on AHN approved protocols.\n\nPerforms back office testing following approved AHN protocols and policies.\n\nAssists providers with examination and procedures.\n\nMay se",
+"want": [
+"Allegheny General Hospital",
+"Pittsburgh",
+"PA"
+]
+},
+{
+"id": 32587024,
+"tag": "westfield",
+"hospital_system": "Allegheny Health Network",
+"hospital_name": "Allegheny Health Network",
+"title": "Radiology Technologist Multi / New York 15K sign on Bonus Eligible",
+"city": "Westfield",
+"state": "NY",
+"url": "https://highmarkhealth.wd1.myworkdayjobs.com/highmark/job/Westfield-NY-14787-189-E-Main-St/Radiology-Technologist-Multi---New-York_J282167",
+"job_id": "J282167",
+"description": "Company :\nAllegheny Health Network\nJob Description :\nSign on Bonus Eligible: $15,000 (3 year commitment)\n\nGENERAL OVERVIEW:\n\nThis role performs prescribed Radiographic, CT, MRI, Mammography, and/or Special Procedure imaging at a technical level not requiring constant supervision. Competently performs a variety of technical procedures that require independent judgement and initiative.\n\nESSENTIAL RESPONSIBILITIES:\n\nPositions patients, selects anatomical and technical parameters accurately to independently perform imaging in assigned modalities. Prepares for and assists the physician in radiographic and fluoroscopic procedures. (50%)\n\nImplements radiation protection and patient safety standards. (20%)\n\nCompletes all required documentation for procedures e.g. regulatory, billing protocols and image distribution. (15%)\n\nPrepares and administers contrast media and/or medications within accepted scope of practice and applicable state and federal regulations. (10%)\n\nMaintains adequate supplies for efficient section/department operations. Participates in inventory control and monitoring. (5%)\n\nOther duties as assigned.\n\nQUALIFICATIONS:\n\nMinimum\n\nAssociate’s Degree or equivalent from a two-year college or technical school; or six months to one year related experience and/or training; or equivalent education and experience.\n\nAmerican Registry of Radiologic Technologists (ARRT) (R) certification.\n\nLicensed Radiology Technology – New York State Department of Health\n\n1 year experience as a",
+"want": [
+"Westfield Memorial Hospital",
+"Westfield",
+"NY"
+]
+},
+{
+"id": 32586929,
+"tag": "outpatient",
+"hospital_system": "Allegheny Health Network",
+"hospital_name": "Allegheny Health Network",
+"title": "Medical Assistant Certified-Obesity Medicine-West Penn Hospital",
+"city": "Pittsburgh",
+"state": "PA",
+"url": "https://highmarkhealth.wd1.myworkdayjobs.com/highmark/job/Pittsburgh-PA-15224-4815-Liberty-Ave/Medical-Assistant-Certified-Obesity-Medicine-West-Penn-Hospital_J284976",
+"job_id": "J284976",
+"description": "Company :\nAllegheny Health Network\nJob Description :\n\nGENERAL OVERVIEW:\n\nUnder the direction of the provider and as a member of the health care team, assists in coordinating the examination, treatment and health care planning for patients. Assists with other office functions to support patient care and office operations. Follows all established protocols, policies, procedures and standardized workflows.\n\nESSENTIAL RESPONSIBILITIES:\n\nUsing the team based approach, assists in the coordination of patient care under supervision of the health care provider.\n\nPrepares and rooms patients within the clinical practice setting according to standardized work flows. Accurately obtains patient vital signs, documents patient information, patient history, tobacco, and medication screening. May assist in the administration of depression screening tools. Completes annual wellness visit screenings. Reviews, updates and screens medication list in the EHR. Reviews social history with patient and updates record. If applicable, pends/''cues up'' orders for required age appropriate screenings, patient prescriptions, refills, or other orders based on AHN approved protocols.\n\nPerforms back office testing following approved AHN protocols and policies.\n\nAssists providers with examination and procedures.\n\nMay serve as a scribe with additional training.\n\nProvides follow up with patients at designated intervals via patient's preferred method (telephone, electronic, written) in accordance with provider ins",
+"want": null
+}
+],
+"ahn_live_list": [
+[
+"Pittsburgh PA, 15224, West Penn 4800 Friendship Ave",
+"/job/Pittsburgh-PA-15224-West-Penn-4800-Friendship-Ave/Nurse-Practitioner-Neonatal_J277408"
+],
+[
+"Erie PA, 16502, 2315 Myrtle St",
+"/job/Erie-PA-16502-2315-Myrtle-St/Certified-Nurse-Midwife_J277951"
+],
+[
+"Monroeville PA, 15146, 2570 Haymaker Road",
+"/job/Monroeville-PA-15146-2570-Haymaker-Road/Certified-Nurse-Midwife_J284039"
+],
+[
+"Monroeville PA, 15146, 2580 Haymaker Rd",
+"/job/Monroeville-PA-15146-2580-Haymaker-Rd/Certified-Nurse-Midwife_J287367"
+],
+[
+"Erie PA, 16502, 232 West 25th St",
+"/job/Erie-PA-16502-232-West-25th-St/RN-Nurse-Navigator_J290209"
+],
+[
+"Natrona Heights PA, 15065, 1301 Carlisle Street",
+"/job/Natrona-Heights-PA-15065-1301-Carlisle-Street/Manager-Nursing--Operating-Room--AVH_J2"
+],
+[
+"Pittsburgh PA, 15212, 320 E N Ave.",
+"/job/Pittsburgh-PA-15212-320-E-N-Ave/Graduate-Nurse-6A-Stepdown--Allegheny-General_J281604"
+]
+],
+"adventist_live": [
+{
+"Title": "RN - Telemetry, Full-time, Night Shift",
+"Id": "60792",
+"workLocation": {
+"items": [
+{
+"LocationName": "AHMB - Hospital",
+"AddressLine1": "309 W Beverly Blvd",
+"TownOrCity": "Montebello",
+"PostalCode": "90640",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+"want": "Adventist Health White Memorial Montebello"
+},
+{
+"Title": "RN ICU - Full Time, Night Shift",
+"Id": "65937",
+"workLocation": {
+"items": [
+{
+"LocationName": "AHRO - Hospital",
+"AddressLine1": "726 4th St",
+"TownOrCity": "Marysville",
+"PostalCode": "95901",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+"want": "Adventist Health Rideout"
+},
+{
+"Title": "Social Worker - Care Management (Full-Time, Day Shift)",
+"Id": "74646",
+"workLocation": {
+"items": [
+{
+"LocationName": "AHSE - Hospital",
+"AddressLine1": "1141 Rose Ave",
+"TownOrCity": "Selma",
+"PostalCode": "93662",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+"want": "Adventist Health Selma"
+},
+{
+"Title": "Field RN, Care Manager (Hospice) Full Time",
+"Id": "74770",
+"workLocation": {
+"items": [
+{
+"LocationName": "AHPL - Home Care Services",
+"AddressLine1": "5835 NE 122nd Ave",
+"TownOrCity": "Portland",
+"PostalCode": "97230",
+"Region2": "OR",
+"Country": "US"
+}
+]
+},
+"want": null
+},
+{
+"Title": "Clinical Data Analyst (Remote)",
+"Id": "71409",
+"workLocation": {
+"items": [
+{
+"LocationName": "AHRS - Remote",
+"AddressLine1": "1 Adventist Health Way",
+"TownOrCity": "Roseville",
+"PostalCode": "95661",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+"want": null
+},
+{
+"Title": "Sr. Mechanical Technician, Full time, Day shift",
+"Id": "74870",
+"workLocation": {
+"items": [
+{
+"LocationName": "AHCG - Hospital",
+"AddressLine1": "1700 E 19th St",
+"TownOrCity": "The Dalles",
+"PostalCode": "97058",
+"Region2": "OR",
+"Country": "US"
+}
+]
+},
+"want": "Adventist Health Columbia Gorge"
+},
+{
+"Title": "Referral Associate, Full time, Day shift",
+"Id": "74863",
+"workLocation": {
+"items": [
+{
+"LocationName": "AHCG - The Dalles - Gorge Urology",
+"AddressLine1": "1805 E 19th St",
+"TownOrCity": "The Dalles",
+"PostalCode": "97058",
+"Region2": "OR",
+"Country": "US"
+}
+]
+},
+"want": null
+}
+]
+}
