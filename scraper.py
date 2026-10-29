@@ -33035,6 +33035,20 @@ def _drop_same_req_same_place(pairs: list) -> list:
     return out
 
 
+def _facility_pass(label: str, fn, *args, **kwargs) -> dict:
+    """One of finalize_jobs' 2026-10-29 facility passes (oracle-other codes,
+    Phenom family, text, town), guarded (review B 2026-10-29): a pass that
+    raises on a row nobody foresaw is logged and skipped, and the run goes on
+    to normalize and upsert every row. Rows the pass had not reached keep the
+    name they had; a row whose payload is then unchanged keeps its stored
+    name through the content_hash skip. Returns the pass's stats, or {}."""
+    try:
+        return fn(*args, **kwargs) or {}
+    except Exception as e:
+        logger.warning(f"{label}: pass failed, the run goes on without it ({type(e).__name__}: {e})")
+        return {}
+
+
 def finalize_jobs(all_jobs: list) -> list[dict]:
     """The tail every push shares (run_all and hca_local_push.py), hoisted
     2026-09-10 (S-scraper-2): exact dedupe on (ats, post-alias system,
@@ -33088,7 +33102,7 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     # hospital's clean name or the system label first (Jackson "Jackson Main",
     # "Corporate"; NYU "NYU Langone Hospital--Long Island"; CHS "CHS
     # Corporate"), so apply_facilities below places it like any hospital.
-    ren = facilities_oracle_other.rename_jobs(kept)
+    ren = _facility_pass("Facility codes", facilities_oracle_other.rename_jobs, kept)
     if ren:
         logger.info("Facility codes renamed: " + ", ".join(f"{s} {n:,}" for s, n in sorted(ren.items())))
     # 2026-10-15 (wages): the hospital on rows of the systems that file every
@@ -33100,13 +33114,13 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fac.items())))
     # 2026-10-29: and on the Phenom / TalentBrew family's rows (facilities_phenom:
     # the Workday link's site, the posting text's site, the stored site).
-    fac = facilities_phenom.apply_facilities(kept)
+    fac = _facility_pass("Phenom-family facilities", facilities_phenom.apply_facilities, kept)
     if fac:
         logger.info("Phenom-family facilities: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fac.items())))
     # 2026-10-29: the same for the systems whose posting text names the site
     # (facilities_text: UNC's "Entity:", Kaleida's "Location:", ...).
-    ftx = facilities_text.apply_facilities(kept)
+    ftx = _facility_pass("Text facilities", facilities_text.apply_facilities, kept)
     if ftx:
         logger.info("Text facilities: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(ftx.items())))
@@ -33119,7 +33133,8 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     # office, a remote posting, a stamped default town or a town with two of
     # the system's hospitals keeps the label). Last, so the posting's own
     # facility always wins.
-    town = facilities_town.apply_jobs(kept, canon=lambda s: HOSPITAL_SYSTEM_ALIASES.get(s, s))
+    town = _facility_pass("Town tables", facilities_town.apply_jobs, kept,
+                          canon=lambda s: HOSPITAL_SYSTEM_ALIASES.get(s, s))
     if town:
         logger.info("Town tables: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(town.items())))
