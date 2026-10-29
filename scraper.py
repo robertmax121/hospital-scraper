@@ -41,6 +41,7 @@ from specialty_canon import ATS_ALIASES as _SPEC_ALIASES, _norm_ats as _spec_nor
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
 import facilities_town   # 2026-10-29: the hospital on a system-label row from its town (TOWN family)
+import facilities_home_health   # 2026-10-29 (phase 3): named branches of the home health / hospice chains
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -1814,6 +1815,8 @@ def _known_kind(system: str, job):
         return "force"
     if _company_reread_slot(key):
         return "facility"     # 2026-10-27: read for its iCIMS Company field
+    if facilities_home_health.reread_slot(key[0], key[1], _run_day()):
+        return "facility"     # 2026-10-29: CenterWell, read for its requisition location (the branch)
     if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
         return "pay"
     if (key in _KNOWN_NOREQ and getattr(job, "ats_platform", "") in REQ_REREAD_PLATFORMS
@@ -4880,6 +4883,11 @@ def _apply_wd_posting_info(job, info: dict) -> bool:
         job.posted_date = start
     if job.hospital_system in WD_LOCATION_FACILITY:
         _wd_location_facility(job, info)
+    # 2026-10-29 (phase 3, home health): CenterWell's requisition location is
+    # the branch ("CWHH Ballston Lk"); facilities_home_health.apply_facility
+    # reads it in finalize_jobs.
+    if job.hospital_system in facilities_home_health.WD_REQ_LOCATION:
+        facilities_home_health.stash_requisition(job, info)
     return ok
 
 
@@ -7576,6 +7584,15 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         _ts = facilities_workday.town_state_name(_wd_path_segment(j.get("externalPath", "")))
                     if _ts and (_ts[1] != _state or not (_city or "").strip()):
                         _city, _state = _ts
+                    if (system in facilities_home_health.WD_TOWN_SYSTEMS and (loc or "").strip()
+                            and not _WD_N_LOCATIONS_RE.match(loc) and not known_town(_city or "", _state or None)):
+                        # 2026-10-29 (phase 3): an Elara site "Abilene - TX
+                        # Hospital" or "Valparaiso - IN SHH" parsed as no town;
+                        # only a known town of the row's state is taken, and a
+                        # "N Locations" posting stays without one (2026-10-13).
+                        _et = facilities_home_health.elara_town(loc, _state)
+                        if _et:
+                            _city, _state = _et
                     _facility = system
                     _site_how, _unk = "town or remote", ""   # 2026-10-29: WD_SITE_FACILITY log counts
                     _site = None
@@ -10666,6 +10683,10 @@ def _jibe_facility(system: str, j: dict) -> str:
     got = facilities_icims.jibe_facility(system, j)   # 2026-10-29: Fairview, MedStar, Piedmont ... (JIBE_SYSTEMS)
     if got is not None:
         return got[0]
+    # 2026-10-29 (phase 3): Amedisys' care center ("2214 Sumter, SC Winyah")
+    # and AccentCare's branch ("Fort Worth TX HH") in location_name.
+    if system in facilities_home_health.JIBE_SYSTEMS:
+        return facilities_home_health.jibe_branch(system, j) or system
     resolver = JIBE_FACILITY_RESOLVER.get(system)
     if resolver:
         return resolver(j.get("location_name") or "") or system
@@ -11675,7 +11696,9 @@ async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: st
             jobs.append(Job(
                 title=j.get("title", ""),
                 hospital_system=system,
-                hospital_name=system,
+                # 2026-10-29 (phase 3): BAYADA's department is the service
+                # office ("Millville (MIL) - 52"); facilities_home_health.
+                hospital_name=facilities_home_health.greenhouse_branch(system, j) or system,
                 city=_city,
                 state=_state,
                 location=loc,
@@ -17126,6 +17149,10 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                 _facility = system
                 if system == "Mount Sinai Health System":
                     _facility, _city, _state = _mount_sinai_loc(j.get("Title", j.get("title", "")), _city, _state)
+                elif system in facilities_home_health.ORACLE_SYSTEMS:
+                    # 2026-10-29 (phase 3): VITAS' work location is the hospice
+                    # program ("Broward North - Main"); the town stays the posting's.
+                    _facility = facilities_home_health.oracle_branch(system, j) or system
                 elif system in ORACLE_LOCATION_FACILITY:
                     _facility = _oracle_work_location_facility(system, j, _city, _state) or system
                     # 2026-10-29: the work location's own town when it is that hospital's (facilities_oracle_other)
@@ -33127,6 +33154,16 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         if facilities_text.UNKNOWN:
             logger.info("Text facilities, values no table names: " + facilities_text.unknown_summary())
             facilities_text.UNKNOWN.clear()
+    # 2026-10-29 (phase 3): the home health / hospice chains' branch from the
+    # body or the detail read tonight, else the one stored on the row
+    # (facilities_home_health: BrightSpring, Compassus, CenterWell).
+    fhh = _facility_pass("Home-health branches", facilities_home_health.apply_facilities, kept)
+    if fhh:
+        logger.info("Home-health branches: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fhh.items())))
+        if facilities_home_health.UNKNOWN:
+            logger.info("Home-health branches, values no table names: " + facilities_home_health.unknown_summary())
+            facilities_home_health.UNKNOWN.clear()
     # 2026-10-29 (facility scale, TOWN family): rows still on the system's
     # name after the adapters' facility hooks and facility_names take the one
     # hospital of their system in their town (facilities_town: a clinic, an
@@ -33330,6 +33367,9 @@ async def run_all() -> list[dict]:
     # kept on nights a row's body is not read again
     n_ftx = await asyncio.to_thread(facilities_text.load_known_facilities)
     logger.info(f"Text facilities: {n_ftx:,} stored rows of {len(facilities_text.SYSTEMS)} systems name a site")
+    # 2026-10-29 (phase 3): and the branches stored on the home health chains'
+    # body / detail rows (facilities_home_health), plus CenterWell's re-read set
+    await asyncio.to_thread(facilities_home_health.load_known_facilities)
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool
