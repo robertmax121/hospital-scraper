@@ -46,6 +46,7 @@ import facilities_dialysis   # 2026-10-29: the clinic on DaVita / Fresenius / US
 import facilities_home_health   # 2026-10-29 (phase 3): named branches of the home health / hospice chains
 import facilities_senior_rehab   # 2026-10-29 (phase 3): named sites of the senior living, rehab and post-acute chains
 import facilities_ambulatory   # 2026-10-29 (phase 3): USPI surgery centres, Concentra centres, CVS's Oak Street / MinuteClinic / Omnicare
+import facilities_hospital_systems_a   # 2026-10-29: Lifepoint's body-named sites; Providence / Baptist Memorial work locations
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -33270,6 +33271,17 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if amb:
         logger.info("Ambulatory facilities: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(amb.items())))
+    # 2026-10-29 (facility scale phase 3): Lifepoint rows the work location
+    # left on the label take the site their body names ("Sovah Danville is
+    # part of Lifepoint Health", "Facility Name: ..."): facilities_hospital_systems_a.
+    fha = _facility_pass("Hospital systems A", facilities_hospital_systems_a.apply_facilities, kept)
+    if fha:
+        logger.info("Hospital systems A: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fha.items())))
+        if facilities_hospital_systems_a.UNKNOWN:
+            logger.info("Hospital systems A, values no table names: "
+                        + facilities_hospital_systems_a.unknown_summary())
+            facilities_hospital_systems_a.UNKNOWN.clear()
     # 2026-10-29 (facility scale, TOWN family): rows still on the system's
     # name after the adapters' facility hooks and facility_names take the one
     # hospital of their system in their town (facilities_town: a clinic, an
@@ -33497,6 +33509,9 @@ async def run_all() -> list[dict]:
     # 2026-10-29 (phase 3): the sites and towns stored on CVS Health's rows
     n_amb = await asyncio.to_thread(facilities_ambulatory.load_known_facilities)
     logger.info(f"Ambulatory facilities: {n_amb:,} stored CVS Health rows carry a site or a town")
+    # 2026-10-29 (facility scale phase 3): the same for Lifepoint's body-named sites
+    n_fha = await asyncio.to_thread(facilities_hospital_systems_a.load_known_facilities)
+    logger.info(f"Hospital systems A: {n_fha:,} stored Lifepoint rows name a site")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool

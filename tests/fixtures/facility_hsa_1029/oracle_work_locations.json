@@ -1,0 +1,576 @@
+{
+ "Lifepoint Health": [
+  [
+   "Haywood Regional Medical Center",
+   95
+  ],
+  [
+   "Ottumwa Regional Health Center",
+   76
+  ],
+  [
+   "Raleigh General Hospital",
+   75
+  ],
+  [
+   "Conemaugh Memorial Medical Center",
+   75
+  ],
+  [
+   "Frye Regional Medical Center",
+   74
+  ],
+  [
+   "North Alabama Medical Center",
+   71
+  ],
+  [
+   "Harris Regional Hospital",
+   69
+  ],
+  [
+   "Lake Cumberland Regional Hospital",
+   67
+  ],
+  [
+   "Havasu Regional Medical Center",
+   59
+  ],
+  [
+   "UP Health System - Marquette General Hospital",
+   56
+  ],
+  [
+   "Highpoint - Sumner Regional Medical Center",
+   51
+  ],
+  [
+   "Sovah Health - Danville",
+   43
+  ],
+  [
+   "Jackson Purchase Medical Center",
+   41
+  ],
+  [
+   "Highpoint Health - Winchester with Ascension Saint Thomas",
+   39
+  ],
+  [
+   "Centerpoint Health - Winchester Hospital",
+   32
+  ],
+  [
+   "Meadowview Regional Medical Center",
+   30
+  ],
+  [
+   "Starr Regional Medical Center",
+   29
+  ],
+  [
+   "Lifepoint Health - Corporate",
+   28
+  ],
+  [
+   "Spring View Hospital",
+   27
+  ],
+  [
+   "Sovah Health - Martinsville",
+   23
+  ],
+  [
+   "Southern TN Regional Health System - Pulaski",
+   22
+  ],
+  [
+   "Wythe County Community Hospital",
+   21
+  ],
+  [
+   "Centerpoint Health - Georgetown Hospital",
+   20
+  ],
+  [
+   "Twin County Regional Hospital",
+   19
+  ],
+  [
+   "Starr Regional - Health and Rehab",
+   19
+  ],
+  [
+   "CHC PR & MSA - Centra Health Rehab Hospital - Lynchburg VA",
+   17
+  ],
+  [
+   "Centerpoint Health - Versailles Hospital",
+   17
+  ],
+  [
+   "Southern TN Regional Health System - Lawrenceburg",
+   16
+  ],
+  [
+   "Clinch Valley Medical Center",
+   15
+  ],
+  [
+   "Highpoint - Riverview Regional Medical Center",
+   14
+  ],
+  [
+   "Centerpoint Health - Paris Hospital",
+   13
+  ],
+  [
+   "Ascension St. Thomas Rehabilitation Hospital - IRF",
+   13
+  ],
+  [
+   "Highpoint - Trousdale Medical Center",
+   10
+  ],
+  [
+   "Centra BH MSA JV",
+   9
+  ],
+  [
+   "Fleming County Hospital",
+   9
+  ],
+  [
+   "CHC PR & MSA - UofL Health Frazier Rehab Hosp - Brownsboro",
+   8
+  ],
+  [
+   "Sovah Health - Danville - ARU - R362J",
+   5
+  ],
+  [
+   "Sovah Health - Danville Pulmonology",
+   2
+  ],
+  [
+   "Twin County Galax Family Care Center",
+   2
+  ]
+ ],
+ "Providence Health": [
+  [
+   "Sacred Heart Medical Center-Spokane(HR)",
+   90
+  ],
+  [
+   "Providence Alaska Medical Ctr-Anchorage(HR)",
+   82
+  ],
+  [
+   "Providence Portland Medical Ctr-Portland(HR)",
+   65
+  ],
+  [
+   "Covenant Medical Center(HR)",
+   61
+  ],
+  [
+   "Providence St Vincent Medical Ctr-Portland(HR)",
+   58
+  ],
+  [
+   "Providence St Peter Hospital-Olympia(HR)",
+   57
+  ],
+  [
+   "Swedish First Hill 747 Broadway-Seattle(HR)",
+   57
+  ],
+  [
+   "St Mary Medical Center-Walla Walla(HR)",
+   43
+  ],
+  [
+   "Everett Medical Ctr Colby-Everett(HR)",
+   41
+  ],
+  [
+   "St Patrick Hospital-Broadway Bldg-Missoula MT(HR)",
+   37
+  ],
+  [
+   "Mission Hospital Mission Viejo(HR)",
+   37
+  ],
+  [
+   "Swedish Edmonds 21601 76th(HR)",
+   35
+  ],
+  [
+   "Providence Saint John's Health Ctr-Santa Monica(HR)",
+   35
+  ],
+  [
+   "St Joseph Hospital Eureka(HR)",
+   34
+  ],
+  [
+   "St Joseph Hospital-Orange(HR)",
+   34
+  ],
+  [
+   "Swedish Issaquah(HR)",
+   32
+  ],
+  [
+   "Providence Medford Medical Center(HR)",
+   31
+  ],
+  [
+   "Kadlec Regional Medical Ctr-Richland(HR)",
+   29
+  ],
+  [
+   "Providence Little Co of Mary Medical Ctr-Torrance(HR)",
+   28
+  ],
+  [
+   "Santa Rosa Memorial Hospital(HR)",
+   27
+  ],
+  [
+   "Providence Saint Joseph Medical Ctr-Burbank(HR)",
+   26
+  ],
+  [
+   "Queen of the Valley Medical Center(HR)",
+   25
+  ],
+  [
+   "Providence Holy Cross Medical Ctr-Mission Hills(HR)",
+   24
+  ],
+  [
+   "Providence Kodiak Island Medical Ctr-Kodiak(HR)",
+   24
+  ],
+  [
+   "Centralia Hospital-Centralia(HR)",
+   23
+  ],
+  [
+   "St Mary Medical Center-Apple Valley(HR)",
+   23
+  ],
+  [
+   "Holy Family Hospital-Spokane(HR)",
+   21
+  ],
+  [
+   "Swedish First Hill 1101 Madison-Seattle(HR)",
+   21
+  ],
+  [
+   "Providence Milwaukie Hospital-Milwaukie(HR)",
+   19
+  ],
+  [
+   "Covenant Medical Grp-Nashville Ave(HR)",
+   19
+  ],
+  [
+   "Providence Regional Bldg-Anchorage(HR)",
+   18
+  ],
+  [
+   "St Lukes Rehab-Spokane(HR)",
+   18
+  ],
+  [
+   "Providence Newberg Medical Ctr-Newberg(HR)",
+   17
+  ],
+  [
+   "Swedish Cherry Hill 500 17th-Seattle(HR)",
+   16
+  ],
+  [
+   "Providence Willamette Falls Medical Ctr-Oregon City(HR)",
+   15
+  ],
+  [
+   "Providence Seaside Hospital-Seaside(HR)",
+   14
+  ],
+  [
+   "Covenant Children's Hospital(HR)",
+   14
+  ],
+  [
+   "Providence Health Plaza (HR) Bldg 1-Portland (HR)",
+   13
+  ],
+  [
+   "Covenant Health Plainview & Ctr for Outpt Diabetes Ed(HR)",
+   13
+  ],
+  [
+   "Providence Hood River Memorial Hosp-Hood River(HR)",
+   12
+  ],
+  [
+   "St Joseph Medical Ctr Polso-Polson(HR)",
+   12
+  ],
+  [
+   "Providence Valdez Medical Ctr-Valdez(HR)",
+   11
+  ],
+  [
+   "Providence Seward Mountain Haven-Seward(HR)",
+   11
+  ],
+  [
+   "Providence St Elias Specialty Hospital-Anchorage(HR)",
+   11
+  ],
+  [
+   "Mount St Vincent-Seattle(HR)",
+   11
+  ],
+  [
+   "Swedish Cherry Hill 550 17th-Seattle(HR)",
+   10
+  ],
+  [
+   "Covenant Hobbs Hospital-4900 N Lovington Hwy(HR)",
+   10
+  ],
+  [
+   "Swedish Ballard 5300 Tallman-Seattle(HR)",
+   9
+  ],
+  [
+   "Providence Valley Office Park-Renton(HR)",
+   8
+  ],
+  [
+   "Swedish First Hill 600 Broadway-Seattle(HR)",
+   8
+  ],
+  [
+   "Providence Seward Medical Ctr-Seward(HR)",
+   7
+  ],
+  [
+   "Swedish First Hill 601 Broadway-Seattle(HR)",
+   7
+  ],
+  [
+   "PACMED Admin Bh-Seattle(HR)",
+   7
+  ],
+  [
+   "Covenant Health Levelland Hospital(HR)",
+   6
+  ],
+  [
+   "Providence PACE Seattle-Seattle(HR)",
+   6
+  ],
+  [
+   "Mother Gamelin Ctr-Spokane(HR)",
+   5
+  ],
+  [
+   "Covenant Hobbs-5419 Lovington Hwy(HR)",
+   4
+  ],
+  [
+   "Providence Medical Grp AK-Anchorage(HR)",
+   3
+  ],
+  [
+   "Covenant Medical Grp-22nd Place(HR)",
+   3
+  ],
+  [
+   "St Joseph Assisted Living Ctr-Polson(HR)",
+   3
+  ],
+  [
+   "Medical Ctr-Bldg Mcclella Spokane(HR)",
+   3
+  ],
+  [
+   "Spokane Heart Institute-Spokane(HR)",
+   3
+  ],
+  [
+   "Matsu PBMG-Palmer(HR)",
+   2
+  ],
+  [
+   "Redmond Junction At Bear Creek(HR)",
+   2
+  ],
+  [
+   "Lloyd-Portland(HR)",
+   2
+  ],
+  [
+   "Covenant Specialty Hospital(HR)",
+   2
+  ],
+  [
+   "Providence Center-Missoula MT(HR)",
+   2
+  ],
+  [
+   "Sacred Heart Doctors Bldg-Spokane(HR)",
+   2
+  ],
+  [
+   "Providence South Division-Spokane(HR)",
+   2
+  ],
+  [
+   "Argonne Bldg-Spokane Valley(HR)",
+   2
+  ],
+  [
+   "Sisters Of St Dominic-Tacoma(HR)",
+   1
+  ],
+  [
+   "Covenant Hobbs Urgent Care-5320 Lovington Hwy(HR)",
+   1
+  ],
+  [
+   "Northpointe Medical Bldg-Spokane(HR)",
+   1
+  ]
+ ],
+ "Baptist Memorial Health Care": [
+  [
+   "BMH - Memphis Hospital",
+   190
+  ],
+  [
+   "MBMC - Hospital",
+   152
+  ],
+  [
+   "BMH - NEA Hospital",
+   134
+  ],
+  [
+   "BMH - Desoto Hospital",
+   91
+  ],
+  [
+   "BMH - North Mississippi Oxford Hospital",
+   91
+  ],
+  [
+   "BMHCC Corporate Office",
+   89
+  ],
+  [
+   "BMH - Golden Triangle Hospital",
+   70
+  ],
+  [
+   "BAMC-Baptist Anderson Regional Medical Center North",
+   47
+  ],
+  [
+   "BMH - Union County Hospital",
+   45
+  ],
+  [
+   "BMH - Collierville Hospital",
+   39
+  ],
+  [
+   "BMH - Oktibbeha County Hospital",
+   34
+  ],
+  [
+   "BMH - Women's Hospital",
+   34
+  ],
+  [
+   "Baptist Health Sciences University",
+   30
+  ],
+  [
+   "NEA - Clinic",
+   27
+  ],
+  [
+   "BMH - Huntingdon Hospital",
+   26
+  ],
+  [
+   "BMG - Central Business Office",
+   26
+  ],
+  [
+   "BMH - Booneville Hospital",
+   23
+  ],
+  [
+   "BMH - Rankin County Hospital",
+   22
+  ],
+  [
+   "BMH - Paragould Hospital",
+   22
+  ],
+  [
+   "BMH - Calhoun Hospital",
+   20
+  ],
+  [
+   "BMH - Tipton Hospital",
+   19
+  ],
+  [
+   "BMH - Union City Hospital",
+   14
+  ],
+  [
+   "BMH - Crittenden Hospital",
+   13
+  ],
+  [
+   "BMG - The Medical Group",
+   11
+  ],
+  [
+   "NEA - Clinics",
+   9
+  ],
+  [
+   "NEA - Stadium Clinic",
+   5
+  ],
+  [
+   "NEA - Woodsprings Clinic",
+   2
+  ],
+  [
+   "NEA - Cancer Center",
+   2
+  ],
+  [
+   "NEA - Paragould Clinic",
+   2
+  ],
+  [
+   "NEA - Manila",
+   2
+  ]
+ ]
+}

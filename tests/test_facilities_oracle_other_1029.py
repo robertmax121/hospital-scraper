@@ -213,7 +213,9 @@ LIST_EXPECT = {
     "Indiana University Health": ("IU Health West Hospital", "Avon", "IN"),
     "Inova Health System": ("Inova Fairfax Hospital", "Falls Church", "VA"),
     "Inspira Health Network": ("Inspira Medical Center Mullica Hill", "Mullica Hill", "NJ"),
-    "Lifepoint Health": ("", "Fort Worth", "TX"),
+    # 2026-10-29 phase 3: Mesa Springs (a Lifepoint behavioral hospital) is in
+    # the full Lifepoint table now (facilities_hospital_systems_a.extend_oracle)
+    "Lifepoint Health": ("Mesa Springs", "Fort Worth", "TX"),
     "Loma Linda University Health": ("Loma Linda University Medical Center - Murrieta", "Murrieta", "CA"),
     "McLeod Health": ("McLeod Health Dillon", "Dillon", "SC"),
     # listed at Vacaville; the work location is the Fairfield hospital's own address

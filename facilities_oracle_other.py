@@ -763,6 +763,19 @@ def _build() -> None:
                 _TOWN_ONLY[name] = (system, places)
 
 
+# 2026-10-29 (facility scale phase 3): the work-location spellings of the
+# Lifepoint, Providence and Baptist Memorial sites these tables did not list
+# yet (facilities_hospital_systems_a.ORACLE_EXTRA), added before the Specs
+# are built so scrape_oracle names them from the list payload every night.
+# All or nothing, and never fatal: a table that fails its checks leaves these
+# tables as they were and the run goes on.
+import facilities_hospital_systems_a as _hsa   # noqa: E402
+
+try:
+    _hsa.extend_oracle(SYSTEMS)
+except Exception as _e:      # pragma: no cover - the tests hold the tables whole
+    import logging as _logging
+    _logging.getLogger("scraper.facility").warning(f"Oracle tables: phase 3 additions not installed ({_e})")
 _build()
 
 
