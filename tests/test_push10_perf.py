@@ -31,10 +31,19 @@ def _job(**kw):
     return Job(**base)
 
 
+# 2026-10-29 (facility release 3): the corpus is the first fixtures in sorted
+# order, so new fixture folders that sort early (dialysis1029, facility_*)
+# pushed the first body with a state-code licence line ("PA RN License") past
+# the limit. A synthetic line keeps every gate pattern exercised whatever the
+# fixture tree holds.
+LIC_BODY = ("Requirements:\nCurrent PA RN License required. A VA License or NYS license is accepted "
+            "with a compact licence within 90 days of hire.\n")
+
+
 def _corpus(limit=120):
     """Bodies the suite already ships, as the parsers see them (strip_html
-    on markup), for the gate checks; plus the synthetic body above."""
-    out = [BODY]
+    on markup), for the gate checks; plus the synthetic bodies above."""
+    out = [BODY, LIC_BODY]
     for p in sorted(glob.glob(os.path.join(FIXTURES, "**", "*"), recursive=True)):
         if not os.path.isfile(p):
             continue
