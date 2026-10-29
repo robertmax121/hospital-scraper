@@ -41,6 +41,7 @@ from specialty_canon import ATS_ALIASES as _SPEC_ALIASES, _norm_ats as _spec_nor
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
 import facilities_town   # 2026-10-29: the hospital on a system-label row from its town (TOWN family)
+import facilities_senior_rehab   # 2026-10-29 (phase 3): named sites of the senior living, rehab and post-acute chains
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -7167,6 +7168,12 @@ WD_SITE_FACILITY.update({s: facilities_workday.resolver(s) for s in WORKDAY_TENA
                          if s != advocate_facilities.SYSTEM and facilities_workday.covers(s)})
 WD_SITE_UNKNOWN.update({s: facilities_workday.unknown_resolver(s) for s in WD_SITE_FACILITY
                         if s != advocate_facilities.SYSTEM})
+# 2026-10-29 (phase 3, senior-rehab): Sunrise Senior Living's descriptor is
+# "Town, ST - <community>" ("Kennebunk, ME - Huntington Common"): the
+# community's own name and the board's town (facilities_senior_rehab); the
+# head office and the recruiting pools ("Boston Metro Area") keep the system.
+WD_SITE_FACILITY[facilities_senior_rehab.SUNRISE] = facilities_senior_rehab.sunrise_site
+WD_SITE_UNKNOWN[facilities_senior_rehab.SUNRISE] = facilities_senior_rehab.sunrise_unknown
 WD_TITLE_FACILITY: dict[str, tuple[tuple[re.Pattern, str, str, str], ...]] = {
     "Georgia DBHDD": (
         (re.compile(r"East Central Regional Hospital|\bECRH\b|Gracewood", re.I),
@@ -10663,6 +10670,10 @@ def _jibe_facility(system: str, j: dict) -> str:
     A UHS row: uhs_jibe_facility (2026-10-28)."""
     if system == uhs_facilities.SYSTEM:
         return uhs_jibe_facility(j)[0]
+    # 2026-10-29 (phase 3): Trilogy's campus and Signature's center (location_name)
+    got = facilities_senior_rehab.jibe_facility(system, j)
+    if got is not None:
+        return got[0]
     got = facilities_icims.jibe_facility(system, j)   # 2026-10-29: Fairview, MedStar, Piedmont ... (JIBE_SYSTEMS)
     if got is not None:
         return got[0]
@@ -14069,7 +14080,11 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     # memberOrganization, a Broward street address, ...) or the
                     # Workday link's site (CHOA); "" is the system label.
                     _fp = facilities_phenom.list_facility(system, doc, city, state, url)
-                    if _fp:
+                    # 2026-10-29 (phase 3): PruittHealth's workLocation names the center or branch
+                    _sr = facilities_senior_rehab.phenom_facility(system, doc)
+                    if _sr is not None:
+                        _hn = _sr
+                    elif _fp:
                         _hn = _fp[0] or system
                         if (_fp[1], _fp[2]) != (city, state):
                             city, state = _fp[1], _fp[2]
@@ -17126,6 +17141,9 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                 _facility = system
                 if system == "Mount Sinai Health System":
                     _facility, _city, _state = _mount_sinai_loc(j.get("Title", j.get("title", "")), _city, _state)
+                elif system in facilities_senior_rehab.ORACLE_SYSTEMS:
+                    # 2026-10-29 (phase 3): Brookdale's work location is the community, at its own town
+                    _facility, _city, _state = facilities_senior_rehab.oracle_facility(system, j, _city, _state)
                 elif system in ORACLE_LOCATION_FACILITY:
                     _facility = _oracle_work_location_facility(system, j, _city, _state) or system
                     # 2026-10-29: the work location's own town when it is that hospital's (facilities_oracle_other)
@@ -33133,6 +33151,18 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     # office, a remote posting, a stamped default town or a town with two of
     # the system's hospitals keeps the label). Last, so the posting's own
     # facility always wins.
+    # 2026-10-29 (phase 3, senior-rehab): Life Care Services' community from
+    # the posting text (or the stored name on a night without a body),
+    # Encompass Health's one rehab hospital in the posting's town, and the
+    # body's site on Trilogy / Signature rows the feed left on the label
+    # (facilities_senior_rehab). Before the town tables, after every feed's own field.
+    srh = _facility_pass("Senior/rehab facilities", facilities_senior_rehab.apply_jobs, kept)
+    if srh:
+        logger.info("Senior/rehab facilities: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(srh.items())))
+    if facilities_senior_rehab.UNKNOWN:
+        logger.info("Senior/rehab facilities, values no table names: " + facilities_senior_rehab.unknown_summary())
+        facilities_senior_rehab.UNKNOWN.clear()
     town = _facility_pass("Town tables", facilities_town.apply_jobs, kept,
                           canon=lambda s: HOSPITAL_SYSTEM_ALIASES.get(s, s))
     if town:
@@ -33330,6 +33360,9 @@ async def run_all() -> list[dict]:
     # kept on nights a row's body is not read again
     n_ftx = await asyncio.to_thread(facilities_text.load_known_facilities)
     logger.info(f"Text facilities: {n_ftx:,} stored rows of {len(facilities_text.SYSTEMS)} systems name a site")
+    # 2026-10-29 (phase 3): and the communities stored on Life Care Services rows
+    n_srh = await asyncio.to_thread(facilities_senior_rehab.load_known_facilities)
+    logger.info(f"Senior/rehab facilities: {n_srh:,} stored rows name a community")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool
