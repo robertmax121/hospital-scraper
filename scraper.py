@@ -41,6 +41,7 @@ from specialty_canon import ATS_ALIASES as _SPEC_ALIASES, _norm_ats as _spec_nor
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
 import facilities_town   # 2026-10-29: the hospital on a system-label row from its town (TOWN family)
+import facilities_uhg   # 2026-10-29 (phase 3): the business a UnitedHealth Group posting names (agency, clinic, pharmacy)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -9235,6 +9236,13 @@ async def run_kaiser(session: aiohttp.ClientSession) -> list[Job]:
 #
 # Same pagination pattern as Kaiser: ?p={N}, 15 jobs/page, plain HTML.
 # No proxy needed (tested 2026-05-27, direct fetch works).
+#
+# 2026-10-29 (facility scale phase 3): the rows keep hospital_system
+# "UnitedHealth Group"; finalize_jobs' facilities_uhg pass writes the business
+# the posting's opening line names as hospital_name (an LHC Group or Amedisys
+# agency, Kelsey-Seybold Clinic, WellMed, Genoa Healthcare ...). The job page
+# has no facility field (JSON-LD hiringOrganization is always UHG), so the
+# name comes from the body _tb_page_pass reads, or the stored one.
 UHG_BASE = "https://careers.unitedhealthgroup.com"
 UHG_JOB_PATTERN = re.compile(r'href="(/job/([^/]+)/([^/]+)/34088/(\d+))"')
 UHG_TITLE_NEAR_HREF = re.compile(
@@ -33127,6 +33135,18 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         if facilities_text.UNKNOWN:
             logger.info("Text facilities, values no table names: " + facilities_text.unknown_summary())
             facilities_text.UNKNOWN.clear()
+    # 2026-10-29 (facility scale phase 3): UnitedHealth Group rows take the
+    # business the posting's opening line names (facilities_uhg: an LHC Group
+    # or Amedisys agency, Kelsey-Seybold Clinic, WellMed, Genoa Healthcare ...);
+    # corporate, insurance, remote and house-call postings keep the system
+    # name with their town; the stored name is kept on nights with no body.
+    fuh = _facility_pass("UHG facilities", facilities_uhg.apply_facilities, kept)
+    if fuh:
+        logger.info("UHG facilities: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fuh.items())))
+        if facilities_uhg.UNKNOWN:
+            logger.info("UHG facilities, opening-line names no table names: " + facilities_uhg.unknown_summary())
+            facilities_uhg.UNKNOWN.clear()
     # 2026-10-29 (facility scale, TOWN family): rows still on the system's
     # name after the adapters' facility hooks and facility_names take the one
     # hospital of their system in their town (facilities_town: a clinic, an
@@ -33330,6 +33350,9 @@ async def run_all() -> list[dict]:
     # kept on nights a row's body is not read again
     n_ftx = await asyncio.to_thread(facilities_text.load_known_facilities)
     logger.info(f"Text facilities: {n_ftx:,} stored rows of {len(facilities_text.SYSTEMS)} systems name a site")
+    # 2026-10-29 (phase 3): and the businesses stored on UnitedHealth Group rows (facilities_uhg)
+    n_fuh = await asyncio.to_thread(facilities_uhg.load_known_facilities)
+    logger.info(f"UHG facilities: {n_fuh:,} stored {facilities_uhg.SYSTEM} rows name a site")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool
