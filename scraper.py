@@ -12658,6 +12658,24 @@ _NON_US_PLACES = {
     "zapopan", "baja california", "bonifacio global city", "alabang", "muntinlupa city (metro manila)",
     "metro manila", "pathumwan", "shanghai", "beijing", "suzhou", "guangzhou", "hangzhou",
     "quanzhou", "mengzi", "jiangsu", "zhejiang", "fujian", "guangdong", "yunnan",
+    # 2026-10-29 (owner "yes" to taking UnitedHealth Group's overseas rows off):
+    # its TalentBrew board writes the town alone, with no state or country.
+    "makati", "makati city", "city of muntinglupa", "muntinlupa", "cebu city", "davao city",
+    "taguig", "taguig city", "quezon city", "pasig city", "letterkenny", "hong kong sar",
+}
+# 2026-10-29: a row with no state whose only place is a country or a UK nation
+# ("United Kingdom", "England", "India" on UnitedHealth Group's board).
+_NON_US_LONE_PLACES = _NON_US_COUNTRY_NAME_SET | {"england", "scotland", "wales", "northern ireland"}
+# 2026-10-29: towns a US town shares, overseas only when the row has no state
+# and the posting names the country (31 UnitedHealth Group "Dublin" rows, all
+# Optum Ireland; one Vancouver, B.C. row).
+_IRELAND_RX = re.compile(r"\bIreland\b")
+_UK_RX = re.compile(r"\b(?:United Kingdom|England|Scotland|Wales)\b")
+_CANADA_RX = re.compile(r"\b(?:Canada|British Columbia|Ontario|Alberta|Quebec)\b")
+_NON_US_BODY_TOWNS = {
+    "dublin": _IRELAND_RX, "cork": _IRELAND_RX, "galway": _IRELAND_RX, "limerick": _IRELAND_RX,
+    "london": _UK_RX, "belfast": _UK_RX, "manchester": _UK_RX, "birmingham": _UK_RX,
+    "vancouver": _CANADA_RX, "toronto": _CANADA_RX, "ottawa": _CANADA_RX, "calgary": _CANADA_RX,
 }
 # A Workday path segment (/job/<segment>/...): an ISO country prefix
 # ("GBR-Hereford--Clinic", "DEU-Ludwigshafen---Clinic", "CHN-FCH-Shanghai-
@@ -12675,7 +12693,7 @@ _NON_US_PATH_END_RX = re.compile(
 _CA_PATH_END_RX = re.compile(r"[A-Za-z]-(?:" + "|".join(sorted(_CA_PROVINCES)) + r")(?:---|$)")
 
 
-def non_us_reason(location: str, city: str, state: str, url: str = "") -> str | None:
+def non_us_reason(location: str, city: str, state: str, url: str = "", description: str = "") -> str | None:
     """The rule that marks a posting as outside the US, or None."""
     st = (state or "").strip().upper()
     parts = [p.strip() for p in str(location or "").split(",") if p.strip()]
@@ -12692,6 +12710,12 @@ def non_us_reason(location: str, city: str, state: str, url: str = "") -> str | 
             return "path_place"
     if st in _US_STATE_SET or st in ("PR", "GU", "VI"):
         return None
+    if not st:
+        if places & _NON_US_LONE_PLACES:
+            return "lone_country"
+        rx = _NON_US_BODY_TOWNS.get(re.sub(r"\s+", " ", str(city or "")).strip().lower())
+        if rx and description and rx.search(str(description)):
+            return "body_country"
     if st in _CA_PROVINCES or st in _NON_US_REGION_CODES:
         return "region_code"
     if len(parts) >= 2:
@@ -33266,7 +33290,7 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         if job is None:
             continue
         # 2026-10-13: postings outside the US are not listed (non_us_reason).
-        why = non_us_reason(job.location, job.city, job.state, job.url)
+        why = non_us_reason(job.location, job.city, job.state, job.url, job.description)
         if why:
             non_us[job.hospital_system] = non_us.get(job.hospital_system, 0) + 1
             continue
