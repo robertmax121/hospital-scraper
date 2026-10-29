@@ -51,6 +51,7 @@ import facilities_hospital_systems_b   # 2026-10-29 (phase 3 B): Geisinger, Sutt
 import facilities_leftovers   # 2026-10-29 phase 3: town-only Workday systems (town tables + the detail work site)
 import facilities_systems_a   # 2026-10-29 phase 4: NL / KU body sites, Rochester towns, IHS summaries; Emory / Cooper / UMMC town tables (registers in facilities_town)
 import facilities_systems_b   # 2026-10-29 (phase 4 B): Vandalia / UK / Mount Sinai / OHSU / IRC sites; SolutionHealth, Dartmouth, Duke towns; Rochester, Genesis sites
+import facilities_chains   # 2026-10-29 phase 4: RadNet, US Physical Therapy, AFC, NHS, GoHealth, Cantex, Nexion sites
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -7240,6 +7241,11 @@ WD_SITE_UNKNOWN.update({s: facilities_workday.unknown_resolver(s) for s in WD_SI
 # head office and the recruiting pools ("Boston Metro Area") keep the system.
 WD_SITE_FACILITY[facilities_senior_rehab.SUNRISE] = facilities_senior_rehab.sunrise_site
 WD_SITE_UNKNOWN[facilities_senior_rehab.SUNRISE] = facilities_senior_rehab.sunrise_unknown
+# 2026-10-29 (phase 4, chains): GoHealth's descriptor is "<centre> - <town>, ST"
+# ("Seminary Plaza - Alexandria, VA"): "GoHealth Urgent Care - <centre>" and
+# that town; a "N Locations" posting and "Remote" are placed as before.
+WD_SITE_FACILITY[facilities_chains.GOHEALTH] = facilities_chains.gohealth_site
+WD_SITE_UNKNOWN[facilities_chains.GOHEALTH] = facilities_chains.gohealth_unknown
 WD_TITLE_FACILITY: dict[str, tuple[tuple[re.Pattern, str, str, str], ...]] = {
     "Georgia DBHDD": (
         (re.compile(r"East Central Regional Hospital|\bECRH\b|Gracewood", re.I),
@@ -10759,6 +10765,10 @@ def _jibe_facility(system: str, j: dict) -> str:
     A UHS row: uhs_jibe_facility (2026-10-28)."""
     if system == uhs_facilities.SYSTEM:
         return uhs_jibe_facility(j)[0]
+    # 2026-10-29 (phase 4, chains): RadNet's imaging centre (location_name + tags1 brand)
+    got = _fac_hook("RadNet Jibe centres", facilities_chains.jibe_site, system, j, default=None)
+    if got is not None:
+        return got
     # 2026-10-29 (phase 3): Trilogy's campus and Signature's center (location_name)
     got = _fac_hook("Senior/rehab Jibe sites", facilities_senior_rehab.jibe_facility, system, j, default=None)
     if got is not None:
@@ -11897,7 +11907,9 @@ async def scrape_smartrecruiters(session: aiohttp.ClientSession, system: str, or
                 jobs.append(Job(
                     title=j.get("name", ""),
                     hospital_system=system,
-                    hospital_name=system,
+                    # 2026-10-29 (phase 4): US Physical Therapy's clinic (Brands + Clinic fields)
+                    hospital_name=_fac_hook("US Physical Therapy clinics", facilities_chains.smartrecruiters_site,
+                                            system, j, default=None) or system,
                     city=city, state=state, location=f"{city}, {state}",
                     specialty=j.get("department", {}).get("label", ""),
                     job_type=j.get("typeOfEmployment", {}).get("label", ""),
@@ -14938,10 +14950,12 @@ def _adpcx_job(j: dict, system: str, domain: str, default_state: str = "") -> Jo
     quals = strip_html(j.get("jobQualifications") or "").strip()
     if quals and quals[:120] not in desc:
         desc = f"{desc}\n\nQualifications\n{quals}".strip()
+    # 2026-10-29 (phase 4): Nexion's nursing home, from the title or the requisition location's entity
+    site = _fac_hook("Nexion homes", facilities_chains.adpcx_site, system, title, city, st, loc0, default=None)
     return Job(
         title=title,
         hospital_system=system,
-        hospital_name=system,
+        hospital_name=site or system,
         city=city,
         state=st,
         location=f"{city}, {st}".strip(", "),
@@ -18358,7 +18372,9 @@ async def scrape_kronos(session: aiohttp.ClientSession, system: str, org_data: t
                 jobs.append(Job(
                     title=j.get("job_title", ""),
                     hospital_system=system,
-                    hospital_name=system,
+                    # 2026-10-29 (phase 4): NHS Management's nursing home (location.address_line_1)
+                    hospital_name=_fac_hook("NHS Management homes", facilities_chains.kronos_site, system, loc,
+                                            default=None) or system,
                     city=city, state=state,
                     location=f"{city}, {state}".strip(", "),
                     specialty=cats[0] if cats else "",
@@ -20283,8 +20299,10 @@ def _paycom_job(prev: dict, detail: dict | None, system: str, client_key: str, d
         posted = ""                      # "1 day ago" style strings are not dates
     if city.isupper():
         city = city.title()              # "SWEETWATER" (Rolling Plains)
+    # 2026-10-29 (phase 4): Cantex's community or branch, the location value's site part
+    site = _fac_hook("Cantex sites", facilities_chains.paycom_site, system, loc_text, default=None)
     return Job(
-        title=title, hospital_system=system, hospital_name=system,
+        title=title, hospital_system=system, hospital_name=site or system,
         city=city, state=st, location=f"{city}, {st}".strip(", "),
         specialty="", job_type=str(prev.get("positionType") or det.get("positionType") or ""),
         url=f"https://www.paycomonline.net/v4/ats/web.php/portal/{client_key}/jobs/{jid}",
@@ -33325,6 +33343,14 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if amb:
         logger.info("Ambulatory facilities: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(amb.items())))
+    # 2026-10-29 (phase 4, chains): an American Family Care franchise centre
+    # the posting's title or body names at the row's own town ("AFC Urgent
+    # Care Cicero"), or the one stored on the row on a night without a body
+    # (facilities_chains; the other chains are named by their adapters' hooks).
+    chn = _facility_pass("Chains facilities", facilities_chains.apply_facilities, kept)
+    if chn:
+        logger.info("Chains facilities: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(chn.items())))
     # 2026-10-29 (facility scale phase 3): Lifepoint rows the work location
     # left on the label take the site their body names ("Sovah Danville is
     # part of Lifepoint Health", "Facility Name: ..."): facilities_hospital_systems_a.
@@ -33605,6 +33631,9 @@ async def run_all() -> list[dict]:
     # 2026-10-29 (phase 3): the sites and towns stored on CVS Health's rows
     n_amb = await asyncio.to_thread(facilities_ambulatory.load_known_facilities)
     logger.info(f"Ambulatory facilities: {n_amb:,} stored CVS Health rows carry a site or a town")
+    # 2026-10-29 (phase 4, chains): the AFC centres stored on its rows (body-named, kept on nights without a body)
+    n_chn = await asyncio.to_thread(facilities_chains.load_known_facilities)
+    logger.info(f"Chains facilities: {n_chn:,} stored American Family Care rows name a centre")
     # 2026-10-29 (facility scale phase 3): the same for Lifepoint's body-named sites
     n_fha = await asyncio.to_thread(facilities_hospital_systems_a.load_known_facilities)
     logger.info(f"Hospital systems A: {n_fha:,} stored Lifepoint rows name a site")

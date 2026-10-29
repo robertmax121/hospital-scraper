@@ -1,0 +1,549 @@
+[
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148776,
+   "name": "Part-Time Hourly"
+  },
+  "id": 2185053440,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Maintenance Assistant (8a-5p)",
+  "location": {
+   "address_line_1": "Huntsville Health and Rehab",
+   "address_line_2": "4010 Chris Drive",
+   "city": "Huntsville",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35802"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185052412,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Housekeeping Supervisor (7a-3p)",
+  "location": {
+   "address_line_1": "Tallassee Health and Rehab",
+   "address_line_2": "2639 Gilmer Ave, P.O. Box 780277",
+   "city": "Tallassee",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36078"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148773,
+   "name": "Full-Time Salary"
+  },
+  "has_questionnaire": true,
+  "id": 2185052410,
+  "is_remote_job": false,
+  "job_description": "RN Staff Development Nurse Working with us means being part of something special: A family that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique oppor...",
+  "job_title": "RN Staff Development Nurse",
+  "location": {
+   "address_line_1": "Pleasant Grove Health and Rehab",
+   "address_line_2": "30 7th Street",
+   "city": "Pleasant Grove",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35127"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148773,
+   "name": "Full-Time Salary"
+  },
+  "has_questionnaire": true,
+  "id": 2185052409,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "RN Unit Manager (Day Shift)",
+  "location": {
+   "address_line_1": "Daytona Beach Health and Rehab",
+   "address_line_2": "1055 3rd Street",
+   "city": "Daytona Beach",
+   "country": "USA",
+   "state": "FL",
+   "zip": "32117"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148773,
+   "name": "Full-Time Salary"
+  },
+  "id": 2185052118,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Admissions Coordinator 8a-5p",
+  "location": {
+   "address_line_1": "Ocala Health and Rehab",
+   "address_line_2": "1201 South East 24th Road",
+   "city": "Ocala",
+   "country": "USA",
+   "state": "FL",
+   "zip": "34471"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185051923,
+  "is_remote_job": false,
+  "job_description": "SSD",
+  "job_title": "Social Services Designee",
+  "location": {
+   "address_line_1": "575 Southland Drive",
+   "city": "Vestavia Hills",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35226"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148773,
+   "name": "Full-Time Salary"
+  },
+  "has_questionnaire": true,
+  "id": 2185051914,
+  "is_remote_job": false,
+  "job_categories": [
+   "Management"
+  ],
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Assistant Director of Nursing (ADON)",
+  "location": {
+   "address_line_1": "Gulf Coast Health and Rehab",
+   "address_line_2": "8002 Grelot Road",
+   "city": "Mobile",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36695"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148773,
+   "name": "Full-Time Salary"
+  },
+  "has_questionnaire": true,
+  "id": 2185051913,
+  "is_remote_job": false,
+  "job_categories": [
+   "MDS"
+  ],
+  "job_description": "Are you looking for something a little different in a healthcare career? A position that only requires patient assessment as the only direct care and Monday through Friday schedule? If so, then you might be the perfect fit for a MDS Coordinator (RN) pos...",
+  "job_title": "MDS Coordinator (RN) (8a-5p)",
+  "location": {
+   "address_line_1": "Fayette Health and Rehab",
+   "address_line_2": "3100 Old Missouri Road",
+   "city": "Fayetteville",
+   "country": "USA",
+   "state": "AR",
+   "zip": "72703"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148773,
+   "name": "Full-Time Salary"
+  },
+  "has_questionnaire": true,
+  "id": 2185052045,
+  "is_remote_job": false,
+  "job_categories": [
+   "Management"
+  ],
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Director of Nursing",
+  "location": {
+   "address_line_1": "Sumter Health and Rehab",
+   "address_line_2": "1505 East 4th Avenue",
+   "city": "York",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36925"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185051910,
+  "is_remote_job": false,
+  "job_categories": [
+   "Maintenance"
+  ],
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Maintenance Director  ",
+  "location": {
+   "address_line_1": "Ashland Place Health and Rehab",
+   "address_line_2": "148 Tuscaloosa Street",
+   "city": "Mobile",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36607"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148773,
+   "name": "Full-Time Salary"
+  },
+  "id": 2185051410,
+  "is_remote_job": false,
+  "job_description": "Southern Nurse Practitioner Associates, LLC. is currently accepting applications for the position of Mid- Level Provider at several Alabama location. The Mid-Level Provider will function as a primary care provider for the subsequent and annual and perio...",
+  "job_title": " Nurse Practitioner ",
+  "location": {
+   "address_line_1": "3070 Healthy Way",
+   "city": "Vestavia",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35243"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185051215,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Cook (7a-3p)",
+  "location": {
+   "address_line_1": "Opp Health and Rehab",
+   "address_line_2": "115 Paul, Ave, P.O. Box 730",
+   "city": "Opp",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36467"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185051213,
+  "is_remote_job": false,
+  "job_categories": [
+   "Wound Care"
+  ],
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": " RN Treatment Nurse (7a-5p) Mon-Thur",
+  "location": {
+   "address_line_1": "Valley View Health and Rehab",
+   "address_line_2": "5968 Wall Triana Hwy",
+   "city": "Madison",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35757"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148773,
+   "name": "Full-Time Salary"
+  },
+  "has_questionnaire": true,
+  "id": 2185050977,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "RN Unit Manager",
+  "location": {
+   "address_line_1": "3141 Old Columbiana Road",
+   "address_line_2": "3141 Old Columbiana Rd",
+   "city": "Birmingham",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35226"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185050968,
+  "is_remote_job": false,
+  "job_description": "Join our family as a Certified Nursing Assistant/Caregiver and help care for those that cared for us when we were young. Working with us means being part of something special: a team that is passionate about making an impact on our patients’ lives each ...",
+  "job_title": "Certified Nursing Assistant",
+  "location": {
+   "address_line_1": "Columbiana Health and Rehab",
+   "address_line_2": "22969 Highway 25",
+   "city": "Columbiana",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35051"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185050964,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. This isn't a hospital setting. Our facility offers you the unique opportunity to walk alongside patients o...",
+  "job_title": "Dietary Assistant/Aide",
+  "location": {
+   "address_line_1": "Lineville Health and Rehab",
+   "address_line_2": "88073 Highway 9",
+   "city": "Lineville",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36266"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185049811,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Financial Specialist Assistant - HR/Payroll",
+  "location": {
+   "address_line_1": "Springdale Health and Rehab",
+   "address_line_2": "102 N Gutensohn",
+   "city": "Springdale",
+   "country": "USA",
+   "state": "AR",
+   "zip": "72762"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74148773,
+   "name": "Full-Time Salary"
+  },
+  "id": 2185049377,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Financial Specialist (7a-3p)",
+  "location": {
+   "address_line_1": "Crystal River Health and Rehab",
+   "address_line_2": "136 North East 12th Avenue",
+   "city": "Crystal River",
+   "country": "USA",
+   "state": "FL",
+   "zip": "34429"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185048107,
+  "is_remote_job": false,
+  "job_description": "Start your healthcare career with us and train to become a CNA at no cost to you! Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospi...",
+  "job_title": "Nursing Assistant",
+  "location": {
+   "address_line_1": "Aspire Cahaba River",
+   "address_line_2": "3070 Healthy Way",
+   "city": "Birmingham",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35243"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "has_questionnaire": true,
+  "id": 2185048092,
+  "is_remote_job": false,
+  "job_categories": [
+   "CNA",
+   "Certified Nursing Assistant",
+   "Caregiver"
+  ],
+  "job_description": "Join our family as a Certified Nursing Assistant/Caregiver and help care for those that cared for us when we were young. Working with us means being part of something special: a team that is passionate about making an impact on our patients’ lives each ...",
+  "job_title": "Certified Nursing Assistant",
+  "location": {
+   "address_line_1": "Florala Health and Rehab",
+   "address_line_2": "23621 Goldenrod Avenue",
+   "city": "Florala",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36442"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "has_questionnaire": true,
+  "id": 2185048089,
+  "is_remote_job": false,
+  "job_description": "Join our family as a Registered Nurse and help care for those that cared for us when we were young. Working with us means being part of something special: a team that is passionate about making an impact on our patients’ lives each and every day. As a R...",
+  "job_title": "RN Charge Nurse",
+  "location": {
+   "address_line_1": "Georgiana Health and Rehab",
+   "address_line_2": "206 Palmer Avenue",
+   "city": "Georgiana",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36033"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185048084,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. This isn't a hospital setting. Our facility offers you the unique opportunity to walk alongside patients o...",
+  "job_title": "Dietary Assistant/Aide",
+  "location": {
+   "address_line_1": "Luverne Health and Rehab",
+   "address_line_2": "142 West 3rd Street",
+   "city": "Luverne",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36049"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "has_questionnaire": true,
+  "id": 2185047031,
+  "is_remote_job": false,
+  "job_description": "Join our family as a Registered Nurse and help care for those that cared for us when we were young. Working with us means being part of something special: a team that is passionate about making an impact on our patients’ lives each and every day. As a R...",
+  "job_title": "RN Charge Nurse",
+  "location": {
+   "address_line_1": "Park Manor Health and Rehab",
+   "address_line_2": "2201 McFarland Blvd",
+   "city": "Northport",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35476"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185046433,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Housekeeping Assistant/Aide",
+  "location": {
+   "address_line_1": "Moundville Health and Rehab",
+   "address_line_2": "121 Union Street",
+   "city": "Moundville",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35474"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185046427,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Cook",
+  "location": {
+   "address_line_1": "Hunter Creek Health and Rehab",
+   "address_line_2": "600 34th Street",
+   "city": "Northport",
+   "country": "USA",
+   "state": "AL",
+   "zip": "35473"
+  }
+ },
+ {
+  "allow_quick_apply": false,
+  "base_pay_frequency": "YEAR",
+  "employee_type": {
+   "id": 74159808,
+   "name": "Full-Time Hourly"
+  },
+  "id": 2185046775,
+  "is_remote_job": false,
+  "job_description": "Working with us means being part of something special: A team that is passionate about making an impact on our patients’ lives each and every day. Unlike the typical hospital setting, our facility offers you the unique opportunity to walk alongside pati...",
+  "job_title": "Housekeeping Assistant/Aide",
+  "location": {
+   "address_line_1": "Ozark Health and Rehab",
+   "address_line_2": "312 Bryan Drive",
+   "city": "Ozark",
+   "country": "USA",
+   "state": "AL",
+   "zip": "36360"
+  }
+ }
+]

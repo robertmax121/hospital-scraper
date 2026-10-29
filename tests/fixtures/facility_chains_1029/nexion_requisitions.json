@@ -1,0 +1,4363 @@
+[
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "837",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Maintenance Director - FT - Sterling Hills Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-29T18:45:24Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Maintenance Director - FT - Sterling Hills Healthcare Center",
+  "reqId": "5001235098706",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Sweetwater",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "705 NE Georgia Avenue",
+     "postalCode": "79556"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867606",
+    "nameCode": {
+     "codeValue": "AVQ",
+     "longName": "Nexion Health at Sweetwater Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "836",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Laundry Aide - FT - Pecan Creek Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-29T18:24:14Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Laundry Aide - FT - Pecan Creek Healthcare Center",
+  "reqId": "5001235088906",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Hamilton",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "910 E Pierson Street",
+     "postalCode": "76351"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866506",
+    "nameCode": {
+     "codeValue": "TE9",
+     "longName": "Nexion Health at Pecan Creek Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "835",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Cook - Weekend Double - Cedar Ridge Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-29T13:25:12Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Cook - Weekend Double - Cedar Ridge Healthcare Center",
+  "reqId": "5001234970506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Pilot Point",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "1700 N Washington Street",
+     "postalCode": "76258"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867306",
+    "nameCode": {
+     "codeValue": "AVS",
+     "longName": "Nexion Health at Pilot Point Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "834",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Cook-Vivian Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-29T13:15:14Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Cook-Vivian Healthcare",
+  "reqId": "5001234968106",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Vivian",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "912 South Pecan Street",
+     "postalCode": "71082"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864806",
+    "nameCode": {
+     "codeValue": "V84",
+     "longName": "Nexion Health at Vivian Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "833",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "MDS Coordinator-New Iberia South",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-29T12:49:04Z",
+  "postingLocations": [],
+  "publishedJobTitle": "MDS Coordinator-New Iberia South",
+  "reqId": "5001234961706",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "600 Bayard Street",
+     "postalCode": "70560"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865106",
+    "nameCode": {
+     "codeValue": "JFC",
+     "longName": "Nexion Health at New Iberia South Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "832",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Certified Medication Aide - 6a-2p - Cross Timbers Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-28T22:11:40Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Medication Aide - 6a-2p - Cross Timbers Healthcare Center",
+  "reqId": "5001234926106",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Flower Mound",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "3315  Cross Timbers Road",
+     "postalCode": "75028"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866606",
+    "nameCode": {
+     "codeValue": "ZPA",
+     "longName": "Nexion Health at Flower Mound Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "831",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Assistant Social Worker-Many Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-28T21:11:43Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Assistant Social Worker-Many Healthcare",
+  "reqId": "5001234909406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Many",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "120 Natchitoches Highway 6 East",
+     "postalCode": "71449"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865606",
+    "nameCode": {
+     "codeValue": "SZT",
+     "longName": "Nexion Health at Many North Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "830",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Director of Social Services (PT) - Bay Ridge Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-28T20:35:31Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Director of Social Services (PT) - Bay Ridge Rehabilitation",
+  "reqId": "5001234894006",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "LaPorte",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "208 S Utah Street",
+     "postalCode": "77571"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867006",
+    "nameCode": {
+     "codeValue": "WKR",
+     "longName": "Nexion Health at Bay Ridge Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "764",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "CNA-Restorative Aide FT Meadowview",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-28T18:44:11Z",
+  "postingLocations": [],
+  "publishedJobTitle": "CNA-Restorative Aide FT Meadowview",
+  "reqId": "5001231499806",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Minden",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "400 Meadowview Road",
+     "postalCode": "71055"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866106",
+    "nameCode": {
+     "codeValue": "SZR",
+     "longName": "Nexion Health at Minden Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "827",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Kitchen Aide - Thibodaux Healthcare and Rehab",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-28T15:54:20Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Kitchen Aide - Thibodaux Healthcare and Rehab",
+  "reqId": "5001234765406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Thibodaux",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "150 Percy Brown Road",
+     "postalCode": "70301"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867206",
+    "nameCode": {
+     "codeValue": "SWU",
+     "longName": "Nexion Health at Thibodaux Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "826",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Cook - Sterling Hills Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-28T15:32:46Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Cook - Sterling Hills Healthcare",
+  "reqId": "5001234753606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Sweetwater",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "705 NE Georgia Avenue",
+     "postalCode": "79556"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867606",
+    "nameCode": {
+     "codeValue": "AVQ",
+     "longName": "Nexion Health at Sweetwater Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "825",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Licensed Nursing Home Administrator (LNHA) - Flatonia",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-28T13:38:07Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Licensed Nursing Home Administrator (LNHA) - Flatonia",
+  "reqId": "5001234706506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Flatonia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "624 N converse Street",
+     "postalCode": "78941"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865306",
+    "nameCode": {
+     "codeValue": "WKP",
+     "longName": "Nexion Health at Flatonia Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "824",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Laundry Attendant - FT - North Star Ranch",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-28T00:23:11Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Laundry Attendant - FT - North Star Ranch",
+  "reqId": "5001234667206",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Bonham",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "709 West Fifth Street",
+     "postalCode": "75418"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866406",
+    "nameCode": {
+     "codeValue": "WKS",
+     "longName": "Nexion Health at Bonham Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "823",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Certified Medication Aide - FT - Sterling Hills",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-27T20:20:03Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Medication Aide - FT - Sterling Hills",
+  "reqId": "5001234612706",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Sweetwater",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "705 NE Georgia Avenue",
+     "postalCode": "79556"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867606",
+    "nameCode": {
+     "codeValue": "AVQ",
+     "longName": "Nexion Health at Sweetwater Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "820",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LVN - FT - Ridgecrest Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-27T19:00:53Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LVN - FT - Ridgecrest Healthcare Center",
+  "reqId": "5001234572006",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Forney",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "561 East Ridgecrest Road",
+     "postalCode": "75126"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865506",
+    "nameCode": {
+     "codeValue": "WXE",
+     "longName": "Nexion Health at Forney Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "819",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "MDS Coordinator - Lake Hills Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-27T18:37:44Z",
+  "postingLocations": [],
+  "publishedJobTitle": "MDS Coordinator - Lake Hills Healthcare Center",
+  "reqId": "5001234557906",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Brownwood",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "1514 Indian Creek Drive",
+     "postalCode": "76801"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868706",
+    "nameCode": {
+     "codeValue": "TE6",
+     "longName": "Nexion Health at Lake Hills Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "724",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Director of Nursing: Grenada Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-27T14:20:06Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Director of Nursing: Grenada Rehabilitation and Healthcare Center",
+  "reqId": "5001228550506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Grenada",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "1966 FS Hill Drive",
+     "postalCode": "38901"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428863306",
+    "nameCode": {
+     "codeValue": "S3B",
+     "longName": "Nexion Health at Grenada Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "654",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Hospitality Aide: The Bluffs Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-27T14:13:53Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Hospitality Aide: The Bluffs Rehabilitation and Healthcare Center",
+  "reqId": "5001223345306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Vicksburg",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "2850 Proters Chapel Road",
+     "postalCode": "39180"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428863606",
+    "nameCode": {
+     "codeValue": "RDD",
+     "longName": "Nexion Health at Vicksburg Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "815",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Director of Nursing (DON): Crystal Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-26T18:17:32Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Director of Nursing (DON): Crystal Rehabilitation and Healthcare Center",
+  "reqId": "5001234251406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Greenwood",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "902 Sgt John Pittman Drive",
+     "postalCode": "38930"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866306",
+    "nameCode": {
+     "codeValue": "SHD",
+     "longName": "Nexion Health at Greenwood Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "814",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Regional Financial Specialist",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-26T17:08:08Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Regional Financial Specialist",
+  "reqId": "5001234214006",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Flower Mound",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "3315  Cross Timbers Road",
+     "postalCode": "75028"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866606",
+    "nameCode": {
+     "codeValue": "ZPA",
+     "longName": "Nexion Health at Flower Mound Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "812",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Assistant Director of Nursing - Sterling Hills Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-23T21:48:56Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Assistant Director of Nursing - Sterling Hills Healthcare",
+  "reqId": "5001234005106",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Sweetwater",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "705 NE Georgia Avenue",
+     "postalCode": "79556"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867606",
+    "nameCode": {
+     "codeValue": "AVQ",
+     "longName": "Nexion Health at Sweetwater Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "809",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Treatment Nurse - Prairie Meadows Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-23T13:10:29Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Treatment Nurse - Prairie Meadows Rehabilitation",
+  "reqId": "5001233809806",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Floresville",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "1615 11th Street",
+     "postalCode": "78114"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865706",
+    "nameCode": {
+     "codeValue": "XEH",
+     "longName": "Nexion Health at Floresville Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "730",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "RN Weekend Supervisor -Kaplan Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-22T19:03:21Z",
+  "postingLocations": [],
+  "publishedJobTitle": "RN Weekend Supervisor -Kaplan Healthcare",
+  "reqId": "5001228855906",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Kaplan",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "1300 West 8th Street",
+     "postalCode": "70548"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864006",
+    "nameCode": {
+     "codeValue": "BTZ",
+     "longName": "Nexion Health at Kaplan Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "807",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Staff Development Coordinator: Picayune Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-21T16:21:39Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Staff Development Coordinator: Picayune Rehabilitation and Healthcare Center",
+  "reqId": "5001233332300",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Picayune",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "1620 Read Road",
+     "postalCode": "39466"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428863906",
+    "nameCode": {
+     "codeValue": "SAA",
+     "longName": "Nexion Health at Picayune Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "725",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Housekeeper - Whispering Springs Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-21T15:36:02Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Housekeeper - Whispering Springs Rehabilitation",
+  "reqId": "5001228580306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Carrizo Springs",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "506 S 7th Steet",
+     "postalCode": "78834"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867506",
+    "nameCode": {
+     "codeValue": "H3A",
+     "longName": "Nexion Health at Carrizo Springs Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "805",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Activities Director - Barton Valley Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-21T14:19:36Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Activities Director - Barton Valley Rehabilitation",
+  "reqId": "5001233274506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Austin",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "4501 Dudmar Drive",
+     "postalCode": "78735"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868906",
+    "nameCode": {
+     "codeValue": "C9P",
+     "longName": "Nexion Health at Austin Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "793",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Director of Social Services - Duncanville Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-19T18:54:59Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Director of Social Services - Duncanville Healthcare Center",
+  "reqId": "5001232844006",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Duncanville",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "419 South Cockrell Hill Road",
+     "postalCode": "75116"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866006",
+    "nameCode": {
+     "codeValue": "SED",
+     "longName": "Nexion Health at Duncanville Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "789",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Dietary Aide - FT - Renaissance Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-19T15:03:14Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Dietary Aide - FT - Renaissance Healthcare Center",
+  "reqId": "5001232729306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Italy",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "220 Davenport Street",
+     "postalCode": "76651"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865206",
+    "nameCode": {
+     "codeValue": "3BU",
+     "longName": "Nexion Health at Italy Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "787",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "RN Supervisor, Weekend Baylor Program: Woodlands Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-17T10:24:49Z",
+  "postingLocations": [],
+  "publishedJobTitle": "RN Supervisor, Weekend Baylor Program: Woodlands Rehabilitation and Healthcare Center",
+  "reqId": "5001232611700",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Clinton",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "102 Woodchase Park Drive",
+     "postalCode": "39056"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867906",
+    "nameCode": {
+     "codeValue": "S7K",
+     "longName": "Nexion Health at Clinton Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "707",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Patient Care Attendant",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-16T20:14:17Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Patient Care Attendant",
+  "reqId": "5001226975206",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Morgan City",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "516 Roderick Street",
+     "postalCode": "70380"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865906",
+    "nameCode": {
+     "codeValue": "SUE",
+     "longName": "Nexion Health at Maison Jardin Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "783",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Maintenance Assistant (PT): Delt Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-16T19:04:32Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Maintenance Assistant (PT): Delt Rehabilitation and Healthcare Center",
+  "reqId": "5001232529606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Cleveland",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "200 North Martin Luther King Drive",
+     "postalCode": "38732"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867406",
+    "nameCode": {
+     "codeValue": "SZF",
+     "longName": "Nexion Health at Cleveland Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "781",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Licensed Nursing Home Administrator - Terrell Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-16T16:49:03Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Licensed Nursing Home Administrator - Terrell Healthcare Center",
+  "reqId": "5001232470506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Terrell",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "204 West Nash Street",
+     "postalCode": "75160"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864106",
+    "nameCode": {
+     "codeValue": "SDM",
+     "longName": "Nexion Health at Terrell Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "777",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "CNA - FT - Terrell Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-15T15:01:43Z",
+  "postingLocations": [],
+  "publishedJobTitle": "CNA - FT - Terrell Healthcare Center",
+  "reqId": "5001232167206",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Terrell",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "204 West Nash Street",
+     "postalCode": "75160"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864106",
+    "nameCode": {
+     "codeValue": "SDM",
+     "longName": "Nexion Health at Terrell Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "689",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Registered Nurse FT 2pm-10pm Thibodaux Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-15T14:40:19Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Registered Nurse FT 2pm-10pm Thibodaux Healthcare",
+  "reqId": "5001225708006",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Thibodaux",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "150 Percy Brown Road",
+     "postalCode": "70301"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867206",
+    "nameCode": {
+     "codeValue": "SWU",
+     "longName": "Nexion Health at Thibodaux Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "720",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Admissions Coordinator-LPN Thibodaux",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-15T14:36:49Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Admissions Coordinator-LPN Thibodaux",
+  "reqId": "5001228264606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Thibodaux",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "150 Percy Brown Road",
+     "postalCode": "70301"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867206",
+    "nameCode": {
+     "codeValue": "SWU",
+     "longName": "Nexion Health at Thibodaux Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "182",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Certified Nursing Assistant (CNA) - Gonzales Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-15T12:09:48Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Nursing Assistant (CNA) - Gonzales Healthcare",
+  "reqId": "5001206865006",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Gonzales",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "905 West Cornerview Road",
+     "postalCode": "70737"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864706",
+    "nameCode": {
+     "codeValue": "W8E",
+     "longName": "Nexion Health at Gonzales Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "775",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Activity Assistant: Holly Springs Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-14T22:29:59Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Activity Assistant: Holly Springs Rehabilitation and Healthcare Center",
+  "reqId": "5001232079406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Holly Springs",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "1315 Highway 4 East",
+     "postalCode": "38635"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428863506",
+    "nameCode": {
+     "codeValue": "WJM",
+     "longName": "Nexion Health at Holly Springs Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "328",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Certified Nursing Assistant (CNA) - Thibodaux Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-14T18:53:30Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Nursing Assistant (CNA) - Thibodaux Healthcare",
+  "reqId": "5001207540206",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Thibodaux",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "150 Percy Brown Road",
+     "postalCode": "70301"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867206",
+    "nameCode": {
+     "codeValue": "SWU",
+     "longName": "Nexion Health at Thibodaux Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "773",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "CNA - 6a-6p Midwestern Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-14T14:55:37Z",
+  "postingLocations": [],
+  "publishedJobTitle": "CNA - 6a-6p Midwestern Healthcare Center",
+  "reqId": "5001231894206",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Wichita Falls",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "601 Midwestern Parkway East",
+     "postalCode": "76302"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868106",
+    "nameCode": {
+     "codeValue": "V82",
+     "longName": "Nexion Health at Wichita Falls Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "180",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LPN - Claiborne Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-14T12:22:21Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LPN - Claiborne Rehabilitation",
+  "reqId": "5001206847806",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Shreveport",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "1536 Claiborne Ave",
+     "postalCode": "76834"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428863706",
+    "nameCode": {
+     "codeValue": "SEE",
+     "longName": "Nexion Health at Claiborne Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "770",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "RN, Medication Cart Nurse: Columbia Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-13T21:27:30Z",
+  "postingLocations": [],
+  "publishedJobTitle": "RN, Medication Cart Nurse: Columbia Rehabilitation and Healthcare Center",
+  "reqId": "5001231795506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Columbia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "1506 North Main Street",
+     "postalCode": "39429"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864606",
+    "nameCode": {
+     "codeValue": "ST7",
+     "longName": "Nexion Health at Columbia Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "247",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Certified Nursing Assistant (CNA) New Shifts- Patterson Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-13T17:06:00Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Nursing Assistant (CNA) New Shifts- Patterson Healthcare",
+  "reqId": "5001206993206",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Patterson",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "910 Lia Street",
+     "postalCode": "70392"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865806",
+    "nameCode": {
+     "codeValue": "6XT",
+     "longName": "Nexion Health at Patterson Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "768",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Respiratory Therapist: Yazoo Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-13T16:36:48Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Respiratory Therapist: Yazoo Rehabilitation and Healthcare Center",
+  "reqId": "5001231659406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Yazoo city",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "925 Calhoun Avenue",
+     "postalCode": "39194"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868006",
+    "nameCode": {
+     "codeValue": "RDB",
+     "longName": "Nexion Health at Yazoo City Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "763",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LPN FT 2pm-10pm Thibodaux Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-12T20:33:55Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LPN FT 2pm-10pm Thibodaux Healthcare",
+  "reqId": "5001231488606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Thibodaux",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "150 Percy Brown Road",
+     "postalCode": "70301"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867206",
+    "nameCode": {
+     "codeValue": "SWU",
+     "longName": "Nexion Health at Thibodaux Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "738",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Wound Care / Treatment RN: Indianola Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-09T17:31:23Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Wound Care / Treatment RN: Indianola Rehabilitation and Healthcare Center",
+  "reqId": "5001229472406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Indianola",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "401 US Highway 82 West",
+     "postalCode": "38751"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866706",
+    "nameCode": {
+     "codeValue": "WJX",
+     "longName": "Nexion Health at Indianola Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "430",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Housekeeping Attendant - Gulf Shores Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-09T15:49:59Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Housekeeping Attendant - Gulf Shores Rehabilitation",
+  "reqId": "5001211559706",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Falfurrias",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "1301 South Terrell Street",
+     "postalCode": "78355"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866906",
+    "nameCode": {
+     "codeValue": "3BV",
+     "longName": "Nexion Health at Falfurrias Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "754",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Cook - Terrell",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-08T20:22:45Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Cook - Terrell",
+  "reqId": "5001230902700",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Terrell",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "204 West Nash Street",
+     "postalCode": "75160"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864106",
+    "nameCode": {
+     "codeValue": "SDM",
+     "longName": "Nexion Health at Terrell Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "753",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Activities Assistant - Brazos Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-08T17:24:24Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Activities Assistant - Brazos Rehabilitation",
+  "reqId": "5001230818606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Lake Jackson",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "413 Garland Drive",
+     "postalCode": "77566"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866806",
+    "nameCode": {
+     "codeValue": "WKQ",
+     "longName": "Nexion Health at Brazos Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "126",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LVN/LPN $3,000 Sign On - Golden Creek Healthcare and Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-08T16:46:54Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LVN/LPN $3,000 Sign On - Golden Creek Healthcare and Rehabilitation",
+  "reqId": "5001206138506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Navasota",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "2100 Dove Crossing Lane",
+     "postalCode": "77868"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864306",
+    "nameCode": {
+     "codeValue": "STR",
+     "longName": "Nexion Health at Navasota Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "748",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Administrator/LNFA New Iberia North",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-07T00:32:00Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Administrator/LNFA New Iberia North",
+  "reqId": "5001230157806",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "1803 Jane Street",
+     "postalCode": "70563"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867106",
+    "nameCode": {
+     "codeValue": "JZL",
+     "longName": "Nexion Health at New Iberia North Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "744",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "RN - FT 6a-6p - $5,000.00 sign on bonus - Coleman Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-10-05T20:52:03Z",
+  "postingLocations": [],
+  "publishedJobTitle": "RN - FT 6a-6p - $5,000.00 sign on bonus - Coleman Healthcare Center",
+  "reqId": "5001229913106",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Coleman",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "2713 S Commercial Ave",
+     "postalCode": "76834"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864206",
+    "nameCode": {
+     "codeValue": "EA7",
+     "longName": "Nexion Health at Coleman Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "698",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "RN: Natchez Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-21T17:36:51Z",
+  "postingLocations": [],
+  "publishedJobTitle": "RN: Natchez Rehabilitation and Healthcare Center",
+  "reqId": "5001226745306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Natchez",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "344 Arlington Avenue",
+     "postalCode": "39120"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865406",
+    "nameCode": {
+     "codeValue": "Q8X",
+     "longName": "Nexion Health at Natchez Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "693",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Respiratory Therapist - FT - Truman Smith",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-17T18:17:16Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Respiratory Therapist - FT - Truman Smith",
+  "reqId": "5001226033406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Gladewater",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "2200 West Upshur Avenue",
+     "postalCode": "75647"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428863406",
+    "nameCode": {
+     "codeValue": "SHG",
+     "longName": "Nexion Health at Truman Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "218",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Hospitality Aide (PRN) - Maison Bienvenue",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-15T14:07:52Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Hospitality Aide (PRN) - Maison Bienvenue",
+  "reqId": "5001206967506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Thibodaux",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "152 Percy Brown Road",
+     "postalCode": "70301"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867806",
+    "nameCode": {
+     "codeValue": "R26",
+     "longName": "Nexion Health at Maison Bienvenue"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "678",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Staff Accountant",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-11T14:23:57Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Staff Accountant",
+  "reqId": "5001224549706",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Sykesville",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MD",
+      "longName": "Maryland"
+     },
+     "lineOne": "6938 Warfield Ave",
+     "postalCode": "21784"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868806",
+    "nameCode": {
+     "codeValue": "SEG",
+     "longName": "Nexion Health Management Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "299",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LPN: Yazoo City Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-10T18:50:00Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LPN: Yazoo City Rehabilitation and Healthcare Center",
+  "reqId": "5001207021106",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Yazoo city",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "925 Calhoun Avenue",
+     "postalCode": "39194"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868006",
+    "nameCode": {
+     "codeValue": "RDB",
+     "longName": "Nexion Health at Yazoo City Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "543",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Certified Nursing Assistant - FT - Lakeview - $3,000.00 Sign on Bonus",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-08T19:47:07Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Nursing Assistant - FT - Lakeview - $3,000.00 Sign on Bonus",
+  "reqId": "5001217983800",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Winnsboro",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "502 East Coke Road",
+     "postalCode": "75494"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868606",
+    "nameCode": {
+     "codeValue": "R28",
+     "longName": "Nexion Health at Winnsboro Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "664",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Certified Medication Aide (CMA) Baylor Double Weekend - Village Creek Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-08T16:50:58Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Medication Aide (CMA) Baylor Double Weekend - Village Creek Rehabilitation",
+  "reqId": "5001223713306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Lumberton",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "705 North Main Street",
+     "postalCode": "77657"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867706",
+    "nameCode": {
+     "codeValue": "AHE",
+     "longName": "Nexion Health at Lumberton Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "603",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Housekeeping Attendant - Willow Park - PT",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-04T13:33:36Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Housekeeping Attendant - Willow Park - PT",
+  "reqId": "5001220536000",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Clifton",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "1000 FM 3220",
+     "postalCode": "76634"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428869006",
+    "nameCode": {
+     "codeValue": "BFS",
+     "longName": "Nexion Health at Clifton Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "640",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Dietary Aide - Lily Springs Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-01T17:08:22Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Dietary Aide - Lily Springs Rehabilitation",
+  "reqId": "5001222477606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Lampasas",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "901 Central Texas Expressway",
+     "postalCode": "76550"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428863806",
+    "nameCode": {
+     "codeValue": "FSZ",
+     "longName": "Nexion Health at Lampasas Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "638",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Hospitality Aide - Arbor Hills Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-09-01T13:45:20Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Hospitality Aide - Arbor Hills Rehabilitation",
+  "reqId": "5001222386106",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Eagle Lake",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "535 South Austin Road",
+     "postalCode": "77434"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864906",
+    "nameCode": {
+     "codeValue": "APE",
+     "longName": "Nexion Health at Eagle Lake Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "287",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "CNA: Natchez Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-08-26T13:25:29Z",
+  "postingLocations": [],
+  "publishedJobTitle": "CNA: Natchez Rehabilitation and Healthcare Center",
+  "reqId": "5001207013306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Natchez",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "344 Arlington Avenue",
+     "postalCode": "39120"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865406",
+    "nameCode": {
+     "codeValue": "Q8X",
+     "longName": "Nexion Health at Natchez Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "615",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Transportation Aide - Sterling Hills",
+  "organizationalUnits": [],
+  "postingDate": "2026-08-25T14:37:40Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Transportation Aide - Sterling Hills",
+  "reqId": "5001220983506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Sweetwater",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "705 NE Georgia Avenue",
+     "postalCode": "79556"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867606",
+    "nameCode": {
+     "codeValue": "AVQ",
+     "longName": "Nexion Health at Sweetwater Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "582",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Cook - Cass Valley Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-08-18T19:32:23Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Cook - Cass Valley Rehabilitation",
+  "reqId": "5001219671900",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Centerville",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "103 Teakwood Road",
+     "postalCode": "75833"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428863206",
+    "nameCode": {
+     "codeValue": "WKM",
+     "longName": "Nexion Health at Cass Valley Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "579",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "RN - Weekend Double - Terrell",
+  "organizationalUnits": [],
+  "postingDate": "2026-08-18T00:16:03Z",
+  "postingLocations": [],
+  "publishedJobTitle": "RN - Weekend Double - Terrell",
+  "reqId": "5001219451006",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Terrell",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "204 West Nash Street",
+     "postalCode": "75160"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864106",
+    "nameCode": {
+     "codeValue": "SDM",
+     "longName": "Nexion Health at Terrell Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "578",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Dietary Aide Marrero Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-08-17T18:11:45Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Dietary Aide Marrero Healthcare",
+  "reqId": "5001219315306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Marrero",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "5301 August Avenue",
+     "postalCode": "70072"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868206",
+    "nameCode": {
+     "codeValue": "SZS",
+     "longName": "Nexion Health at Marrero Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "569",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "RN Supervisor: Yazoo City Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-08-13T19:49:35Z",
+  "postingLocations": [],
+  "publishedJobTitle": "RN Supervisor: Yazoo City Rehabilitation and Healthcare Center",
+  "reqId": "5001218740306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Yazoo city",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "925 Calhoun Avenue",
+     "postalCode": "39194"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868006",
+    "nameCode": {
+     "codeValue": "RDB",
+     "longName": "Nexion Health at Yazoo City Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "557",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Staff Development Coordinator - Terrell",
+  "organizationalUnits": [],
+  "postingDate": "2026-08-12T18:12:34Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Staff Development Coordinator - Terrell",
+  "reqId": "5001218399506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Terrell",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "204 West Nash Street",
+     "postalCode": "75160"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864106",
+    "nameCode": {
+     "codeValue": "SDM",
+     "longName": "Nexion Health at Terrell Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "467",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LPN - Pierremont Healthcare",
+  "organizationalUnits": [],
+  "postingDate": "2026-07-22T15:46:42Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LPN - Pierremont Healthcare",
+  "reqId": "5001213674406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Shreveport",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "725 Mitchell Lane",
+     "postalCode": "71106"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864506",
+    "nameCode": {
+     "codeValue": "4VA",
+     "longName": "Nexion Health at Pierremont Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "349",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "CNA - PRN - Sterling Hills",
+  "organizationalUnits": [],
+  "postingDate": "2026-07-08T16:56:18Z",
+  "postingLocations": [],
+  "publishedJobTitle": "CNA - PRN - Sterling Hills",
+  "reqId": "5001208144500",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Sweetwater",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "705 NE Georgia Avenue",
+     "postalCode": "79556"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867606",
+    "nameCode": {
+     "codeValue": "AVQ",
+     "longName": "Nexion Health at Sweetwater Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "397",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "MDS Coordinator RN/LPN-New Iberia Manor North",
+  "organizationalUnits": [],
+  "postingDate": "2026-07-06T18:18:01Z",
+  "postingLocations": [],
+  "publishedJobTitle": "MDS Coordinator RN/LPN-New Iberia Manor North",
+  "reqId": "5001209956606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "1803 Jane Street",
+     "postalCode": "70563"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867106",
+    "nameCode": {
+     "codeValue": "JZL",
+     "longName": "Nexion Health at New Iberia North Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "395",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LPN: Natchez Rehabilitation and Healthcare Center.",
+  "organizationalUnits": [],
+  "postingDate": "2026-07-06T17:55:52Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LPN: Natchez Rehabilitation and Healthcare Center.",
+  "reqId": "5001209945906",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Natchez",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "344 Arlington Avenue",
+     "postalCode": "39120"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865406",
+    "nameCode": {
+     "codeValue": "Q8X",
+     "longName": "Nexion Health at Natchez Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "372",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Treatment / Wound Care LPN: Cornerstone Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-29T20:01:38Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Treatment / Wound Care LPN: Cornerstone Rehabilitation and Healthcare Center",
+  "reqId": "5001208717606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Corinth",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "302 Alcorn Drive",
+     "postalCode": "38834"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864406",
+    "nameCode": {
+     "codeValue": "SHC",
+     "longName": "Nexion Health at Corinth Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "313",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Registered Nurse - Green Valley Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-22T20:36:40Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Registered Nurse - Green Valley Rehabilitation",
+  "reqId": "5001207248306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "North Richland Hills",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "6850 Rufe snow Drive",
+     "postalCode": "76148"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868506",
+    "nameCode": {
+     "codeValue": "F8F",
+     "longName": "Nexion Health at North Richland Hills"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "298",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "CNA: Yazoo City Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-22T11:08:34Z",
+  "postingLocations": [],
+  "publishedJobTitle": "CNA: Yazoo City Rehabilitation and Healthcare Center",
+  "reqId": "5001207021006",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Yazoo city",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "925 Calhoun Avenue",
+     "postalCode": "39194"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428868006",
+    "nameCode": {
+     "codeValue": "RDB",
+     "longName": "Nexion Health at Yazoo City Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "279",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LPN: Great Oaks Rehabilitation and Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-21T22:59:00Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LPN: Great Oaks Rehabilitation and Healthcare Center",
+  "reqId": "5001207007906",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Byhalia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "MS",
+      "longName": "Mississippi"
+     },
+     "lineOne": "111 Chase Street",
+     "postalCode": "38611"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865006",
+    "nameCode": {
+     "codeValue": "WJL",
+     "longName": "Nexion Health at Byhalia Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "245",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Registered Nurse/RN - New Iberia Manor South",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-21T12:11:50Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Registered Nurse/RN - New Iberia Manor South",
+  "reqId": "5001206992806",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "600 Bayard Street",
+     "postalCode": "70560"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865106",
+    "nameCode": {
+     "codeValue": "JFC",
+     "longName": "Nexion Health at New Iberia South Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "244",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Clinical Liaison-New Iberia Manor South",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-21T12:05:11Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Clinical Liaison-New Iberia Manor South",
+  "reqId": "5001206992606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "600 Bayard Street",
+     "postalCode": "70560"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865106",
+    "nameCode": {
+     "codeValue": "JFC",
+     "longName": "Nexion Health at New Iberia South Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "243",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LPN - New Iberia Manor South",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-21T12:00:33Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LPN - New Iberia Manor South",
+  "reqId": "5001206992306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "600 Bayard Street",
+     "postalCode": "70560"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865106",
+    "nameCode": {
+     "codeValue": "JFC",
+     "longName": "Nexion Health at New Iberia South Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "241",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Certified Nursing Assistant (CNA) - New Iberia South",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-21T11:43:36Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Nursing Assistant (CNA) - New Iberia South",
+  "reqId": "5001206992006",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "600 Bayard Street",
+     "postalCode": "70560"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428865106",
+    "nameCode": {
+     "codeValue": "JFC",
+     "longName": "Nexion Health at New Iberia South Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "238",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "RN - New Iberia North",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-20T18:04:38Z",
+  "postingLocations": [],
+  "publishedJobTitle": "RN - New Iberia North",
+  "reqId": "5001206979506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "1803 Jane Street",
+     "postalCode": "70563"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867106",
+    "nameCode": {
+     "codeValue": "JZL",
+     "longName": "Nexion Health at New Iberia North Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "237",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LPN - New Iberia North",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-20T17:57:22Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LPN - New Iberia North",
+  "reqId": "5001206979306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "1803 Jane Street",
+     "postalCode": "70563"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867106",
+    "nameCode": {
+     "codeValue": "JZL",
+     "longName": "Nexion Health at New Iberia North Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "236",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Certified Nursing Assistant (CNA) - New Iberia North",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-20T17:52:34Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Nursing Assistant (CNA) - New Iberia North",
+  "reqId": "5001206979206",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "New Iberia",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "LA",
+      "longName": "Louisiana"
+     },
+     "lineOne": "1803 Jane Street",
+     "postalCode": "70563"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867106",
+    "nameCode": {
+     "codeValue": "JZL",
+     "longName": "Nexion Health at New Iberia North Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "209",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LVN - Terrell Healthcare Center",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-19T21:49:44Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LVN - Terrell Healthcare Center",
+  "reqId": "5001206945406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Terrell",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "204 West Nash Street",
+     "postalCode": "75160"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428864106",
+    "nameCode": {
+     "codeValue": "SDM",
+     "longName": "Nexion Health at Terrell Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "206",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "LVN/LPN - PRN - Sterling Hills",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-19T21:25:56Z",
+  "postingLocations": [],
+  "publishedJobTitle": "LVN/LPN - PRN - Sterling Hills",
+  "reqId": "5001206940406",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Sweetwater",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "705 NE Georgia Avenue",
+     "postalCode": "79556"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428867606",
+    "nameCode": {
+     "codeValue": "AVQ",
+     "longName": "Nexion Health at Sweetwater Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "133",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Registered Nurse - Lone Star Ranch Rehabilitation",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-16T21:00:25Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Registered Nurse - Lone Star Ranch Rehabilitation",
+  "reqId": "5001206151806",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Kingsville",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "316 General Cavazos Boulevard",
+     "postalCode": "78363"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866206",
+    "nameCode": {
+     "codeValue": "L6T",
+     "longName": "Nexion Health at Kingsville Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "119",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Registered Nurse - Duncanville",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-16T18:16:43Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Registered Nurse - Duncanville",
+  "reqId": "5001206077606",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Duncanville",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "419 South Cockrell Hill Road",
+     "postalCode": "75116"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866006",
+    "nameCode": {
+     "codeValue": "SED",
+     "longName": "Nexion Health at Duncanville Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "118",
+  "easyApplyEnabled": false,
+  "gridControl": "001",
+  "jobTitle": "Licensed Vocation Nurse - Duncanville",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-16T18:10:42Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Licensed Vocation Nurse - Duncanville",
+  "reqId": "5001206075506",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Duncanville",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "419 South Cockrell Hill Road",
+     "postalCode": "75116"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866006",
+    "nameCode": {
+     "codeValue": "SED",
+     "longName": "Nexion Health at Duncanville Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ },
+ {
+  "canApply": true,
+  "careerSiteDomains": [
+   "nexion"
+  ],
+  "clientRequisitionID": "101",
+  "easyApplyEnabled": false,
+  "gridControl": "002",
+  "jobTitle": "Certified Nursing Assistant - Duncanville $3K Sign On Bonus!",
+  "organizationalUnits": [],
+  "postingDate": "2026-06-16T15:39:42Z",
+  "postingLocations": [],
+  "publishedJobTitle": "Certified Nursing Assistant - Duncanville $3K Sign On Bonus!",
+  "reqId": "5001206006306",
+  "requisitionLocations": [
+   {
+    "address": {
+     "cityName": "Duncanville",
+     "country": {
+      "codeValue": "USA",
+      "longName": "United States"
+     },
+     "countrySubdivisionLevel1": {
+      "codeValue": "TX",
+      "longName": "Texas"
+     },
+     "lineOne": "419 South Cockrell Hill Road",
+     "postalCode": "75116"
+    },
+    "aliasNames": [
+     {
+      "nameValue": "",
+      "typeCode": {
+       "codeValue": ""
+      }
+     }
+    ],
+    "itemID": "5000428866006",
+    "nameCode": {
+     "codeValue": "SED",
+     "longName": "Nexion Health at Duncanville Inc"
+    },
+    "postingIndicator": false,
+    "primaryIndicator": true
+   }
+  ],
+  "type": "Normal",
+  "workLocations": []
+ }
+]
