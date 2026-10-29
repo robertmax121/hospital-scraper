@@ -102,3 +102,27 @@ def test_a_hospitals_own_skilled_nursing_unit_is_no_care_site():
     assert not T.CARE_SITE_RX.search("Certified Nursing Assistant-Skilled Nursing Unit")
     assert not T.CARE_SITE_RX.search("Nurse Resident - RN Surgical Ortho")
     assert not T.CARE_SITE_RX.search("RN Residency Program - Med/Surg")
+
+
+@pytest.mark.parametrize("system,city,state,title", [
+    ("Boston Medical Center Health System", "Boston", "MA", "Registered Nurse, Critical Care (All Locations)"),
+    ("St. Luke's University Health Network", "Coaldale", "PA",
+     "Experienced Registered Nurse, Emergency Department, Opportunities at Multiple Campuses"),
+    ("UCLA Health", "Santa Monica", "CA", "Float RN - Oncology, Various Locations"),
+])
+def test_a_posting_for_several_sites_keeps_the_label(system, city, state, title):
+    got = T.decide(system, T.SPECS[system].system, city, state, title, "")
+    assert got == (None, None, None, "multi-site")
+
+
+def test_a_posting_that_names_another_campus_by_its_short_name_keeps_the_label():
+    bmc = "Boston Medical Center Health System"
+    # Boston is the stamped town: the posting's own location line names it
+    where = "Location: Boston, MA\nDepartment: Med/Surg"
+    assert T.decide(bmc, bmc, "Boston", "MA", "Certified Nursing Assistant - 32 Hours, Days (BMC South)",
+                    where)[3] == "other-hospital"
+    assert T.decide(bmc, bmc, "Boston", "MA", "Certified Nursing Assistant - 32 Hours, Days",
+                    where)[0] == "Boston Medical Center"
+    # the short name never names a hospital by itself; the town still does
+    assert T.decide(bmc, bmc, "Brockton", "MA", "Certified Nursing Assistant - 32 Hours, Days (BMC South)",
+                    "")[0] == "Boston Medical Center - Brockton"

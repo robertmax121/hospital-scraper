@@ -152,6 +152,7 @@ OFFSITE_RX = re.compile(
     r"research|(?<!lab\s)(?<!laboratory\s)(?<!lab\.\s)scientist|postdoc\w*|post-doctoral|faculty|professor|"
     r"lecturer|instructor|"
     r"call\s+cent(?:er|re)|contact\s+cent(?:er|re)|access\s+cent(?:er|re)|scheduling\s+cent(?:er|re)|"
+    r"government\s+(?:affairs|advocacy|relations)|treasury|"
     r"health\s+plan|insurance|population\s+health)\b", re.I)
 # A named site that is no hospital, by the posting's title, even when the
 # title also names the town's hospital ("Wait Staff Mon Valley Residence at
@@ -190,6 +191,21 @@ def is_care_site(system, title) -> bool:
         return True
     rx = CARE_SITE_BY_SYSTEM.get(system)
     return bool(rx and rx.search(t))
+
+
+# A posting for several of the system's sites at once ("Registered Nurse,
+# Critical Care (All Locations)", "Opportunities at Multiple Campuses",
+# "Float RN - Oncology, Various Locations"): no one hospital is its own, so it
+# keeps the system name (review A, 2026-10-29).
+MULTI_SITE_RX = re.compile(
+    r"\b(?:all|multiple|various|several)\s+(?:locations|campuses|sites|facilities|hospitals)\b|"
+    r"\bmulti[- ]site\b|\bsystem[- ]?wide\b", re.I)
+
+
+def is_multi_site(title, description) -> bool:
+    if MULTI_SITE_RX.search(clean_text(title)):
+        return True
+    return any(MULTI_SITE_RX.search(v) for v in where_lines(description))
 
 
 # Lines of a posting that say where it is: "Location: ...", "Department: ...".
@@ -391,7 +407,7 @@ _GENERIC_CORE = frozenset((
 
 class TownSpec:
     def __init__(self, system, hospitals, *, emit=(), labels=(), default=None, keep=None, sites=(),
-                 entity=None, town_line=None):
+                 entity=None, town_line=None, aliases=None):
         self.system = system                      # hospital_system as stored
         self.emit = tuple(emit)                   # scraper emit names (HOSPITAL_SYSTEM_ALIASES keys)
         self.labels = frozenset(name_key(x) for x in (system, *emit, *labels))
@@ -446,6 +462,13 @@ class TownSpec:
                 self.keys[h[0]].add(core)
                 if core != name_key(h[1]):
                     self.named_keys[h[0]].add(core)
+        # the system's own short names for a hospital ("BMC South"): they only
+        # stop the town's hospital being given to a posting that names another
+        # one ("other-hospital"); they never name a hospital themselves
+        for name, alts in (aliases or {}).items():
+            if name not in self.keys:
+                raise ValueError(f"{system}: alias for unknown hospital {name!r}")
+            self.keys[name] |= {name_key(a) for a in alts}
         self.keep_keys = set()
         for h in self.hospitals:
             if (town_key(h[1]), h[2]) in self.keep:
@@ -631,7 +654,8 @@ def decide(system, hospital_name, city, state, title="", description="", url="")
     site inside it), "entity" (the system's employer line).
     Kept: "not-table", "named-already", "remote", "care-site" (the title
     names a nursing home, a senior residence or another site that is no
-    hospital), "entity-office", "entity-offsite" / "entity-elsewhere" (the
+    hospital), "multi-site" (a posting for several of the system's sites),
+    "entity-office", "entity-offsite" / "entity-elsewhere" (the
     employer line names a hospital, but the posting is a clinic's or an
     office's, or sits in another town than that hospital's), "other-hospital",
     "offsite", "shared", "keep", "default" (the stamped default town and the
@@ -647,6 +671,8 @@ def decide(system, hospital_name, city, state, title="", description="", url="")
         return None, None, None, "remote"
     if is_care_site(spec.system, title):
         return None, None, None, "care-site"
+    if is_multi_site(title, description):
+        return None, None, None, "multi-site"
 
     # The system's own employer line names the hospital (or an office). The
     # employer line is the employing entity, not the work site (review A,
@@ -1255,7 +1281,10 @@ _spec("Boston Medical Center Health System", [
     _h("Boston Medical Center", "Boston", "MA", "cms 220031"),
     _h("Boston Medical Center - Brighton", "Brighton", "MA", "cms 220036"),
     _h("Boston Medical Center - Brockton", "Brockton", "MA", "cms 220111"),
-], default=("Boston", "MA"))
+], default=("Boston", "MA"), aliases={
+    "Boston Medical Center - Brighton": ("BMC Brighton", "BMC-Brighton"),
+    "Boston Medical Center - Brockton": ("BMC South", "BMC-South"),
+})
 
 _spec("Munson Healthcare", [
     _h("Munson Medical Center", "Traverse City", "MI", "cms 230097"),
