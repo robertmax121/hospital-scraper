@@ -859,6 +859,11 @@ def apply_job(job, canon=None) -> str:
         return "not-table"
     if not spec.is_label(job.hospital_name):
         return "named-already"
+    if getattr(job, "_town_skip", False):
+        # 2026-10-29 (phase 3): tonight's Workday detail named a work site
+        # that is no hospital (a clinic, an office building, home health:
+        # facilities_leftovers.apply_detail); the town's hospital is not given.
+        return "detail-office"
     if len(str(job.description or "").strip()) < NO_BODY_CHARS:
         kept = STORED.get((spec.system, str(job.job_id)))
         if kept is not None:
