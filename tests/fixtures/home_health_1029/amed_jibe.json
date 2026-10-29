@@ -1,0 +1,1305 @@
+{
+ "read": "2026-10-29 Amedisys Jibe /api/jobs?page=1&limit=100 (one request), rows trimmed to the fields read",
+ "rows": [
+  {
+   "slug": "58606",
+   "title": "SLP Speech Pathologist Home Health",
+   "location_name": "2225 West Columbia, SC",
+   "street_address": "2611 Forest Drive\nSuite 120",
+   "city": "Columbia",
+   "state": "South Carolina",
+   "postal_code": "29204-2372",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58753",
+   "title": "RN Registered Nurse Home Health $10K Sign on Bonus",
+   "location_name": "2204 Clinton, SC",
+   "street_address": "210 Physicians Park Drive\nSuite U",
+   "city": "Clinton",
+   "state": "South Carolina",
+   "postal_code": "29325-7563",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58752",
+   "title": "RN Registered Nurse Home Health",
+   "location_name": "2257 Greenwood, SC",
+   "street_address": "210 Birchtree Dr.\nSuite 210A",
+   "city": "Greenwood",
+   "state": "South Carolina",
+   "postal_code": "29649-1502",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58751",
+   "title": "RN Behavioral Health Psych Home Health",
+   "location_name": "2213 Orangeburg, SC Winyah",
+   "street_address": "1704 Village Park Drive",
+   "city": "Orangeburg",
+   "state": "South Carolina",
+   "postal_code": "29118-2401",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58744",
+   "title": "PTA Physical Therapist Assistant Home Health",
+   "location_name": "2216 Camden, SC",
+   "street_address": "1111 Broad Street\nSuite 4G",
+   "city": "Camden",
+   "state": "South Carolina",
+   "postal_code": "29020-3636",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58754",
+   "title": "OT Occupational Therapist Home Health $5k Sign on Bonus",
+   "location_name": "2204 Clinton, SC",
+   "street_address": "210 Physicians Park Drive\nSuite U",
+   "city": "Clinton",
+   "state": "South Carolina",
+   "postal_code": "29325-7563",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58743",
+   "title": "PTA Physical Therapist Assistant Home Health",
+   "location_name": "2216 Camden, SC",
+   "street_address": "1111 Broad Street\nSuite 4G",
+   "city": "Camden",
+   "state": "South Carolina",
+   "postal_code": "29020-3636",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58689",
+   "title": "Home Health RN, Fayette County Territory",
+   "location_name": "2614 Masontown, PA TLC",
+   "street_address": "2181 McClellandtown Road",
+   "city": "Masontown",
+   "state": "Pennsylvania",
+   "postal_code": "15461-2593",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58609",
+   "title": "CNA Hospice Aide",
+   "location_name": "2659 Media, PA HOS CCH",
+   "street_address": "600 North Jackson\nSuite 103",
+   "city": "Media",
+   "state": "Pennsylvania",
+   "postal_code": "19063-2561",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58300",
+   "title": "Licensed Practical Nurse",
+   "location_name": "5445 Melbourne, FL",
+   "street_address": "6905 N Wickham Road\nSuite 303",
+   "city": "Melbourne",
+   "state": "Florida",
+   "postal_code": "32940-7551",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58299",
+   "title": "HH Registered Nurse - PRN",
+   "location_name": "5445 Melbourne, FL",
+   "street_address": "6905 N Wickham Road\nSuite 303",
+   "city": "Melbourne",
+   "state": "Florida",
+   "postal_code": "32940-7551",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58682",
+   "title": "Registered Nurse - Hospice - Weekend Baylor",
+   "location_name": "3014 Bluefield, WV HSP INT",
+   "street_address": "545 Airport Road\nSuite 201",
+   "city": "Bluefield",
+   "state": "West Virginia",
+   "postal_code": "24701-7388",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58746",
+   "title": "PT Physical Therapist Home Health $5K Sign on Bonus",
+   "location_name": "2214 Sumter, SC Winyah",
+   "street_address": "3481 Declaration Blvd.",
+   "city": "Sumter",
+   "state": "South Carolina",
+   "postal_code": "29154-8140",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58747",
+   "title": "Physical Therapist PT Home Health",
+   "location_name": "2214 Sumter, SC Winyah",
+   "street_address": "3481 Declaration Blvd.",
+   "city": "Sumter",
+   "state": "South Carolina",
+   "postal_code": "29154-8140",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58742",
+   "title": "PT Physical Therapist Home Health $5K Sign on Bonus",
+   "location_name": "Columbia, SC",
+   "street_address": null,
+   "city": "Columbia",
+   "state": "South Carolina",
+   "postal_code": "29204",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58596",
+   "title": "Licensed Practical Nurse Home Health",
+   "location_name": "2254 Spartanburg, SC HH",
+   "street_address": "300 E. Blackstock Rd.\nSuite F",
+   "city": "Spartanburg",
+   "state": "South Carolina",
+   "postal_code": "29301-3787",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "56721",
+   "title": "RN Case Manager Hospice",
+   "location_name": "2660 Olyphant, PA  HOS CCH",
+   "street_address": "1444 East Lackawanna Ave\nSuite 218",
+   "city": "Olyphant",
+   "state": "Pennsylvania",
+   "postal_code": "18447-2181",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58472",
+   "title": "RN Case Manager Hospice",
+   "location_name": "2660 Olyphant, PA  HOS CCH",
+   "street_address": "1444 East Lackawanna Ave\nSuite 218",
+   "city": "Olyphant",
+   "state": "Pennsylvania",
+   "postal_code": "18847-2181",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58590",
+   "title": "Licensed Practical Nurse",
+   "location_name": "3340 Augusta, GA",
+   "street_address": "3633 Wheeler Road\nSuite 200",
+   "city": "Augusta",
+   "state": "Georgia",
+   "postal_code": "30909-6551",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58483",
+   "title": "Registered Nurse",
+   "location_name": "5050 Largo, MD-HSP",
+   "street_address": "1400 Mercantile Lane\nSuite 228",
+   "city": "Largo",
+   "state": "Maryland",
+   "postal_code": "20774-5341",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58205",
+   "title": "Licensed Practical Nurse",
+   "location_name": "3340 Augusta, GA",
+   "street_address": "3633 Wheeler Road\nSuite 200",
+   "city": "Augusta",
+   "state": "Georgia",
+   "postal_code": "30909-6551",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58204",
+   "title": "Licensed Practical Nurse",
+   "location_name": "3340 Augusta, GA",
+   "street_address": "3633 Wheeler Road\nSuite 200",
+   "city": "Augusta",
+   "state": "Georgia",
+   "postal_code": "30909-6551",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58462",
+   "title": "Licensed Practical Nurse",
+   "location_name": "8324 Douglas, GA",
+   "street_address": "101 Peterson Ave N\nSuite 2B",
+   "city": "Douglas",
+   "state": "Georgia",
+   "postal_code": "31533-3534",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58475",
+   "title": "RN Hospice Nurse Case Manager",
+   "location_name": "4708 East Hartford, CT HSP BEACN",
+   "street_address": "77 Hartland Street\nSuite 230",
+   "city": "East Hartford",
+   "state": "Connecticut",
+   "postal_code": "06108-6201",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "57840",
+   "title": "Registered Nurse - PRN Weekend",
+   "location_name": "2618 Uniontown, PA TLC",
+   "street_address": "649 Cherry Tree Lane\nSuite 628",
+   "city": "Uniontown",
+   "state": "Pennsylvania",
+   "postal_code": "15401-8947",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58408",
+   "title": "Medical Records Coordinator",
+   "location_name": "3901 Roseburg, OR INT",
+   "street_address": "1820 NW Mulholland Drive",
+   "city": "Roseburg",
+   "state": "Oregon",
+   "postal_code": "97470-1945",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58591",
+   "title": "RN Oncall Hospice Nurse",
+   "location_name": "4803 Augusta, ME HSP BEACN",
+   "street_address": "5 Community Drive\nSuite A",
+   "city": "Augusta",
+   "state": "Maine",
+   "postal_code": "04330-8087",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58476",
+   "title": "Registered Nurse - PRN",
+   "location_name": "1002 Demopolis, AL",
+   "street_address": "1050 Bailey Drive",
+   "city": "Demopolis",
+   "state": "Alabama",
+   "postal_code": "36732-3114",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58402",
+   "title": "Hospice Aide CNA",
+   "location_name": "5539 Elizabethton, TN Adv HSP",
+   "street_address": "1500 West Elk Ave.\nSuite 110",
+   "city": "Elizabethton",
+   "state": "Tennessee",
+   "postal_code": "37643-2655",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "57691",
+   "title": "CNA Hospice Aide",
+   "location_name": "4344 Berea, OH Asana HSP",
+   "street_address": "885 W. Bagley Road",
+   "city": "Berea",
+   "state": "Ohio",
+   "postal_code": "44017-2903",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58303",
+   "title": "RN Registered Nurse Home Health",
+   "location_name": "2211 Lexington, SC Winyah",
+   "street_address": "714 South Lake Drive\nSuite 250",
+   "city": "Lexington",
+   "state": "South Carolina",
+   "postal_code": "29072-3462",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58302",
+   "title": "Physical Therapist Home Health",
+   "location_name": "2211 Lexington, SC Winyah",
+   "street_address": "714 South Lake Drive\nSuite 250",
+   "city": "Lexington",
+   "state": "South Carolina",
+   "postal_code": "29072-3462",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58393",
+   "title": "Licensed Practical Nurse Home Health",
+   "location_name": "2216 Camden, SC",
+   "street_address": "1111 Broad Street\nSuite 4G",
+   "city": "Camden",
+   "state": "South Carolina",
+   "postal_code": "29020-3636",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58484",
+   "title": "Social Worker MSW - LSW",
+   "location_name": "5014 Rosedale, MD HSP UCSJ",
+   "street_address": "7106 Ridge Road\nSuite 140",
+   "city": "Rosedale",
+   "state": "Maryland",
+   "postal_code": "21237-3876",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58460",
+   "title": "RN Case Manager Hospice",
+   "location_name": "2672 Johnstown, PA Asera HSP",
+   "street_address": "100 CTC Drive\nSuite 110",
+   "city": "Johnstown",
+   "state": "Pennsylvania",
+   "postal_code": "15904-1935",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "57277",
+   "title": "RN Case Manager Hospice",
+   "location_name": "4208 Bloomfield, NJ HOS CCH",
+   "street_address": "300 Broadacres Drive\nSuite 275",
+   "city": "Bloomfield",
+   "state": "New Jersey",
+   "postal_code": "07003-3170",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58264",
+   "title": "Registered Nurse - PRN",
+   "location_name": "5015 Elkton, MD HSP",
+   "street_address": "107 Chesapeake Blvd.\nSuite 134",
+   "city": "Elkton",
+   "state": "Maryland",
+   "postal_code": "21921-6390",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58198",
+   "title": "RN Hospice Nurse Case Manager",
+   "location_name": "New Haven, CT",
+   "street_address": null,
+   "city": "New Haven",
+   "state": "Connecticut",
+   "postal_code": "06511",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58478",
+   "title": "RN Hospice Oncall Nurse",
+   "location_name": "0912 Somersworth, NH Hospice INT JV",
+   "street_address": "9 Andrews Road",
+   "city": "Somersworth",
+   "state": "New Hampshire",
+   "postal_code": "03878-1042",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58457",
+   "title": "Registered Nurse",
+   "location_name": "5050 Largo, MD-HSP",
+   "street_address": "1400 Mercantile Lane\nSuite 228",
+   "city": "Largo",
+   "state": "Maryland",
+   "postal_code": "20774-5341",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58206",
+   "title": "Registered Nurse",
+   "location_name": "5050 Largo, MD-HSP",
+   "street_address": "1400 Mercantile Lane\nSuite 228",
+   "city": "Largo",
+   "state": "Maryland",
+   "postal_code": "20774-5341",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58471",
+   "title": "RN Registered Nurse Home Health",
+   "location_name": "8316 College Park, GA TLC",
+   "street_address": "2314 Sullivan Road\nSuite 120",
+   "city": "College Park",
+   "state": "Georgia",
+   "postal_code": "30337-6313",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58467",
+   "title": "LPN Licensed Practical Nurse Home Health",
+   "location_name": "3320 Rome, GA",
+   "street_address": "800 Broad Street\nSuite 202",
+   "city": "Rome",
+   "state": "Georgia",
+   "postal_code": "30161-2306",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "56646",
+   "title": "Registered Nurse Hospice",
+   "location_name": "Mystic, CT",
+   "street_address": null,
+   "city": "Mystic",
+   "state": "Connecticut",
+   "postal_code": "06355",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "57026",
+   "title": "RN Case Manager - $10,000 Sign On Bonus",
+   "location_name": "0905 Bedford, NH INT",
+   "street_address": "8 Commerce Drive\nSuite101",
+   "city": "Bedford",
+   "state": "New Hampshire",
+   "postal_code": "03110-6946",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "56271",
+   "title": "OT Assistant - $2500 Sign On Bonus",
+   "location_name": "4703 Shelton, CT",
+   "street_address": "12 Progress Drive\nSuite 1",
+   "city": "Shelton",
+   "state": "Connecticut",
+   "postal_code": "06484-6290",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58450",
+   "title": "RN Registered Nurse Home Health",
+   "location_name": "3350 Stockbridge, GA",
+   "street_address": "250 Village Center Parkway\nSuite 200",
+   "city": "Stockbridge",
+   "state": "Georgia",
+   "postal_code": "30281-9044",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58449",
+   "title": "OT Assistant Home Health",
+   "location_name": "3350 Stockbridge, GA",
+   "street_address": "250 Village Center Parkway\nSuite 200",
+   "city": "Stockbridge",
+   "state": "Georgia",
+   "postal_code": "30281-9044",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58391",
+   "title": "RN Registered Nurse Home Health",
+   "location_name": "2222 Conway, SC Alliance",
+   "street_address": "208 Elm Street",
+   "city": "Conway",
+   "state": "South Carolina",
+   "postal_code": "29526-5118",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58387",
+   "title": "Director of Operations",
+   "location_name": "3351 Dallas, GA",
+   "street_address": "105 Village Walk\nSuite 282",
+   "city": "Dallas",
+   "state": "Georgia",
+   "postal_code": "30132-5506",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58336",
+   "title": "RN Registered Nurse Home Health $7500 Sign on Bonus",
+   "location_name": "3343 Winder, GA",
+   "street_address": "30 Piedmont Drive",
+   "city": "Winder",
+   "state": "Georgia",
+   "postal_code": "30680-8117",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "56809",
+   "title": "Registered Nurse- $7,500 Sign on bonus",
+   "location_name": "3901 Roseburg, OR INT",
+   "street_address": "1820 NW Mulholland Drive",
+   "city": "Roseburg",
+   "state": "Oregon",
+   "postal_code": "97470-1945",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58386",
+   "title": "Speech Pathologist SLP",
+   "location_name": "8320 Lafayette, GA",
+   "street_address": "1408 N. Main Street",
+   "city": "LaFayette",
+   "state": "Georgia",
+   "postal_code": "30728-6434",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58338",
+   "title": "Licensed Practical Nurse",
+   "location_name": "4410 West Bridgewater, MA",
+   "street_address": "35 United Drive\nSuite 301",
+   "city": "West Bridgewater",
+   "state": "Massachusetts",
+   "postal_code": "02379-1056",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58250",
+   "title": "Home Health Aide - PRN New Castle County",
+   "location_name": "1501 Dover, DE HHCA",
+   "street_address": "2520 Wrangle Hill Road\nSuite 210",
+   "city": "Bear",
+   "state": "Delaware",
+   "postal_code": "19701-3850",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58344",
+   "title": "RN Case Manager Hospice",
+   "location_name": "5523 Morristown, TN Adv HSP",
+   "street_address": "1423 West Morris Blvd.\nSte. C",
+   "city": "Morristown",
+   "state": "Tennessee",
+   "postal_code": "37813-2975",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58342",
+   "title": "Licensed Practical Nurse",
+   "location_name": "5452 Jacksonville, FL",
+   "street_address": "10199 Southside Blvd\nSuite 300",
+   "city": "Jacksonville",
+   "state": "Florida",
+   "postal_code": "32256-8634",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58390",
+   "title": "Licensed Practical Nurse",
+   "location_name": "5445 Melbourne, FL",
+   "street_address": "6905 N Wickham Road\nSuite 303",
+   "city": "Melbourne",
+   "state": "Florida",
+   "postal_code": "32940-7551",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58395",
+   "title": "Physical Therapist Assistant",
+   "location_name": "5482 Port Charlotte, FL Infinity",
+   "street_address": "4161 Tamiami Trail\nBuilding 8, Unit 801A",
+   "city": "Port Charlotte",
+   "state": "Florida",
+   "postal_code": "33952-9299",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58049",
+   "title": "Speech Pathologist",
+   "location_name": "5423 Venice, FL",
+   "street_address": "195A Center Road",
+   "city": "Venice",
+   "state": "Florida",
+   "postal_code": "34285-5565",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58341",
+   "title": "RN Case Manager",
+   "location_name": "2634 Amedisys Hme Hth of Butler, PA",
+   "street_address": "240 Pullman Square\nSuite 255",
+   "city": "Butler",
+   "state": "Pennsylvania",
+   "postal_code": "16001-5654",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58313",
+   "title": "RN Hospice On-Call Nurse Afterhours - $5,000 SOB",
+   "location_name": "0475 The Village FL HOS CCH",
+   "street_address": "304 LaGrande Blvd",
+   "city": "The Villages",
+   "state": "Florida",
+   "postal_code": "32159-2388",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58191",
+   "title": "RN Registered Nurse Home Health  Sign on Bonus $15K",
+   "location_name": "3213 Fayetteville, NC Interim",
+   "street_address": "2021 Valleygate Drive\nSuite 201",
+   "city": "Fayetteville",
+   "state": "North Carolina",
+   "postal_code": "28304-3763",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58054",
+   "title": "RN Case Manager Hospice",
+   "location_name": "5529 Knoxville, TN Adventa HSP",
+   "street_address": "1420 Dutch Valley Drive\nSuite C",
+   "city": "Knoxville",
+   "state": "Tennessee",
+   "postal_code": "37918-1424",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58330",
+   "title": "Physical Therapist Home Health sign on bonus $10K",
+   "location_name": "3236 Snow Hill, NC",
+   "street_address": "369 Highway 13 South\nUnit C",
+   "city": "Snow Hill",
+   "state": "North Carolina",
+   "postal_code": "28580-8472",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58260",
+   "title": "Clinical Manager",
+   "location_name": "1028 Opelika, AL",
+   "street_address": "3320 Skyway Drive\nSuite 804",
+   "city": "Opelika",
+   "state": "Alabama",
+   "postal_code": "36801-7141",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58308",
+   "title": "Physical Therapist",
+   "location_name": "2033 Tulsa, OK",
+   "street_address": "4608 South Garnett Road\nSuite 105",
+   "city": "Tulsa",
+   "state": "Oklahoma",
+   "postal_code": "74146-5234",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58304",
+   "title": "RN Case Manager",
+   "location_name": "2033 Tulsa, OK",
+   "street_address": "4608 South Garnett Road\nSuite 105",
+   "city": "Tulsa",
+   "state": "Oklahoma",
+   "postal_code": "74146-5234",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58384",
+   "title": "Physical Therapist",
+   "location_name": "1307 Lee's Summit, MO",
+   "street_address": "500 NE 291 Highway\nSuite 202",
+   "city": "Lee's Summit",
+   "state": "Missouri",
+   "postal_code": "64086-2533",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58335",
+   "title": "Licensed Practical Nurse",
+   "location_name": "2043 Stroud, OK TSG",
+   "street_address": "404 West Main St.",
+   "city": "Stroud",
+   "state": "Oklahoma",
+   "postal_code": "74079-3614",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58307",
+   "title": "Licensed Practical Nurse",
+   "location_name": "2033 Tulsa, OK",
+   "street_address": "4608 South Garnett Road\nSuite 105",
+   "city": "Tulsa",
+   "state": "Oklahoma",
+   "postal_code": "74146-5234",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58305",
+   "title": "Account Executive Hospice",
+   "location_name": "2233 Greenville, SC HSP Winyah",
+   "street_address": "10 Patewood Drive\nSuite 375",
+   "city": "Greenville",
+   "state": "South Carolina",
+   "postal_code": "29615-6317",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58337",
+   "title": "Clinical Manager",
+   "location_name": "0411 Winter Haven, FL",
+   "street_address": "70 Fourth Street NW",
+   "city": "Winter Haven",
+   "state": "Florida",
+   "postal_code": "33881-4667",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58340",
+   "title": "RN Hospice Case Manager Nurse",
+   "location_name": "0475 The Village FL HOS CCH",
+   "street_address": "304 LaGrande Blvd",
+   "city": "The Villages",
+   "state": "Florida",
+   "postal_code": "32159-2388",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "57479",
+   "title": "RN Hospice Nurse (Part-time)",
+   "location_name": "0476 Minneola, FL HOS CCH",
+   "street_address": "1645 E HIGHWAY 50\nSte 302",
+   "city": "Clermont",
+   "state": "Florida",
+   "postal_code": "34711-5199",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58112",
+   "title": "Account Executive Hospice",
+   "location_name": "1759 Glen Allen, VA Asera HSP",
+   "street_address": "201 Concourse Blvd.\nSuite 250",
+   "city": "Glen Allen",
+   "state": "Virginia",
+   "postal_code": "23059-5640",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58310",
+   "title": "RN Case Manager",
+   "location_name": "0421 Tallahassee, FL A HP",
+   "street_address": "2623 Centennial Blvd\nSuite 201",
+   "city": "Tallahassee",
+   "state": "Florida",
+   "postal_code": "32308-0601",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58019",
+   "title": "RN Registered Nurse Home Health",
+   "location_name": "0421 Tallahassee, FL A HP",
+   "street_address": "2623 Centennial Blvd\nSuite 201",
+   "city": "Tallahassee",
+   "state": "Florida",
+   "postal_code": "32308-0601",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58023",
+   "title": "PTA Physical Therapy Assistant Home Health $10K Sign on Bonus",
+   "location_name": "0421 Tallahassee, FL A HP",
+   "street_address": "2623 Centennial Blvd\nSuite 201",
+   "city": "Tallahassee",
+   "state": "Florida",
+   "postal_code": "32308-0601",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58025",
+   "title": "PTA Physical Therapist Assistant Home Health",
+   "location_name": "0421 Tallahassee, FL A HP",
+   "street_address": "2623 Centennial Blvd\nSuite 201",
+   "city": "Tallahassee",
+   "state": "Florida",
+   "postal_code": "32308-0601",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58254",
+   "title": "CNA Hospice Aide FRI-SAT-SUN 12hr",
+   "location_name": "0472 Lakeland, FL HOS CCH",
+   "street_address": "2393 E Highland Drive\nSuite 105",
+   "city": "Lakeland",
+   "state": "Florida",
+   "postal_code": "33813",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58315",
+   "title": "Licensed Practical Nurse",
+   "location_name": "8318 Moultrie, GA",
+   "street_address": "699 GA Highway  133 South",
+   "city": "Moultrie",
+   "state": "Georgia",
+   "postal_code": "31788-0579",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58251",
+   "title": "RN Case Manager Hospice",
+   "location_name": "2673 Exton, PA Asera HOS",
+   "street_address": "415 Eagleview Blvd.\nSuite 108",
+   "city": "Exton",
+   "state": "Pennsylvania",
+   "postal_code": "19341-1143",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "57887",
+   "title": "CNA Hospice Aide",
+   "location_name": "1771 Chesapeake, VA HOS CCH",
+   "street_address": "814 Greenbrier Circle\nSuite F",
+   "city": "Chesapeake",
+   "state": "Virginia",
+   "postal_code": "23320-2643",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58040",
+   "title": "Registered Nurse - After Hour On-Call",
+   "location_name": "3015 Vienna, WV HSP INT",
+   "street_address": "2200 Grand Central Avenue\nSuite 102",
+   "city": "Vienna",
+   "state": "West Virginia",
+   "postal_code": "26105-1300",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58249",
+   "title": "RN Case Manager",
+   "location_name": "4408 Pittsfield, MA",
+   "street_address": "1 Dan Fox Drive\nUnit 3",
+   "city": "Pittsfield",
+   "state": "Massachusetts",
+   "postal_code": "01201-8247",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58261",
+   "title": "Physical Therapist",
+   "location_name": "1824 Bloomington, IN",
+   "street_address": "1332 W. Arch Haven Ave\nSuite E",
+   "city": "Bloomington",
+   "state": "Indiana",
+   "postal_code": "47403-2078",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58265",
+   "title": "Physical Therapist",
+   "location_name": "3340 Augusta, GA",
+   "street_address": "3633 Wheeler Road\nSuite 200",
+   "city": "Augusta",
+   "state": "Georgia",
+   "postal_code": "30909-6551",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "56720",
+   "title": "Occupational Therapist OT Part Time",
+   "location_name": "5524 Knoxville, TN HHC",
+   "street_address": "1225 E. Weisgarber Rd\nSuite S280",
+   "city": "Knoxville",
+   "state": "Tennessee",
+   "postal_code": "37909-2642",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58258",
+   "title": "Registered Nurse RN Clinical Manager",
+   "location_name": "0716 Sherman, TX EVO",
+   "street_address": "100 W Lamberth Road\nSuite A",
+   "city": "Sherman",
+   "state": "Texas",
+   "postal_code": "75092-2674",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58252",
+   "title": "Hospice RN Clinical Manager - $5,000 SOB",
+   "location_name": "0476 Minneola, FL HOS CCH",
+   "street_address": "1645 E HIGHWAY 50\nSte 302",
+   "city": "Clermont",
+   "state": "Florida",
+   "postal_code": "34711-5199",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58197",
+   "title": "Physical Therapist PT Home Health",
+   "location_name": "2214 Sumter, SC Winyah",
+   "street_address": "3481 Declaration Blvd.",
+   "city": "Sumter",
+   "state": "South Carolina",
+   "postal_code": "29154-8140",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58248",
+   "title": "Hospice Aide CNA",
+   "location_name": "5545 Kimball, TN Adventa Co. HSP",
+   "street_address": "310 Kimball Crossing\nSuite 3 & 4",
+   "city": "Kimball",
+   "state": "Tennessee",
+   "postal_code": "37347-5644",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58246",
+   "title": "Occupational Therapist",
+   "location_name": "8318 Moultrie, GA",
+   "street_address": "699 GA Highway  133 South",
+   "city": "Moultrie",
+   "state": "Georgia",
+   "postal_code": "31788-0579",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58202",
+   "title": "Licensed Medical Social Worker",
+   "location_name": "0536 Murfreesboro, TN BptStT",
+   "street_address": "1809 Ward Drive",
+   "city": "Murfreesboro",
+   "state": "Tennessee",
+   "postal_code": "37129-0502",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58244",
+   "title": "RN Case Manager",
+   "location_name": "5494 Ocala, FL Infinity",
+   "street_address": "2772 NW 43rd Street\nSuite C",
+   "city": "Gainesville",
+   "state": "Florida",
+   "postal_code": "32606-7434",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "57896",
+   "title": "Physician Associate Medical Director",
+   "location_name": "4708 East Hartford, CT HSP BEACN",
+   "street_address": "77 Hartland Street\nSuite 230",
+   "city": "East Hartford",
+   "state": "Connecticut",
+   "postal_code": "06108-6201",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "57364",
+   "title": "Physician Associate Medical Director",
+   "location_name": "3902 Roseburg, OR Hospice INT",
+   "street_address": "1813 West Harvard Ave.\nSuite 220",
+   "city": "Roseburg",
+   "state": "Oregon",
+   "postal_code": "97471-2755",
+   "tags1": [
+    "Hospice"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58051",
+   "title": "Licensed Practical Nurse",
+   "location_name": "0412 Riverview, FL",
+   "street_address": "1901 E State Rd 60\nSuite 1903E",
+   "city": "Valrico",
+   "state": "Florida",
+   "postal_code": "33594-3673",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  },
+  {
+   "slug": "58100",
+   "title": "HH Registered Nurse - PRN",
+   "location_name": "0412 Riverview, FL",
+   "street_address": "1901 E State Rd 60\nSuite 1903E",
+   "city": "Valrico",
+   "state": "Florida",
+   "postal_code": "33594-3673",
+   "tags1": [
+    "Homecare"
+   ],
+   "hiring_organization": "Amedisys, Inc."
+  }
+ ]
+}

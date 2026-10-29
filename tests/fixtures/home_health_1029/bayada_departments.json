@@ -1,0 +1,1550 @@
+{
+ "read": "2026-10-29 boards-api.greenhouse.io/v1/boards/bayada/offices (one request); every department that held a job, with its job count",
+ "jobs": 2613,
+ "departments": [
+  {
+   "name": " Indiana County State Programs (ISP) - 947",
+   "jobs": 5
+  },
+  {
+   "name": "Acacia Division (ACD) - 1047",
+   "jobs": 65
+  },
+  {
+   "name": "Acquisition #1 Office (FVV) - 1167",
+   "jobs": 9
+  },
+  {
+   "name": "Adult Nursing of Winston-Salem (ANW) - 1397",
+   "jobs": 1
+  },
+  {
+   "name": "Albemarle (ALB) - 138",
+   "jobs": 4
+  },
+  {
+   "name": "Allentown (ALL) - 36",
+   "jobs": 1
+  },
+  {
+   "name": "Altoona Skilled (ALT) - 1229",
+   "jobs": 3
+  },
+  {
+   "name": "Anne Arundel County (ACV) - 149",
+   "jobs": 18
+  },
+  {
+   "name": "Arizona Tucson Hospice (ATH) - 1145",
+   "jobs": 4
+  },
+  {
+   "name": "Asheville (ASH) - 84",
+   "jobs": 11
+  },
+  {
+   "name": "Asheville Assistive Care (AVA) - 908",
+   "jobs": 6
+  },
+  {
+   "name": "Asheville Skilled Nursing and Pediatrics (AVL) - 256",
+   "jobs": 1
+  },
+  {
+   "name": "Assistive Care Monmouth County (AMC) - 61",
+   "jobs": 5
+  },
+  {
+   "name": "Assistive Care Plus Reimbursement Services (APR) - 415",
+   "jobs": 1
+  },
+  {
+   "name": "Assistive Care of Durham - Chapel Hill (DCH) - 1150",
+   "jobs": 3
+  },
+  {
+   "name": "Assistive Care of Huntersville (HUN) - 1069",
+   "jobs": 3
+  },
+  {
+   "name": "Assistive Care of Raleigh (ACR) - 714",
+   "jobs": 5
+  },
+  {
+   "name": "Assistive Care of the Triad (ACG) - 1316",
+   "jobs": 6
+  },
+  {
+   "name": "Aster Division (AST) - 498",
+   "jobs": 1
+  },
+  {
+   "name": "Atlantic County Visits (AYV) - 1309",
+   "jobs": 11
+  },
+  {
+   "name": "BAYADA",
+   "jobs": 3
+  },
+  {
+   "name": "Baltimore (BAL) - 144",
+   "jobs": 3
+  },
+  {
+   "name": "Baltimore Senior Living (BVF) - 481",
+   "jobs": 10
+  },
+  {
+   "name": "Baltimore Skilled Nursing (BSK) - 1379",
+   "jobs": 1
+  },
+  {
+   "name": "Baltimore Southwest Senior Living (BSF) - 553",
+   "jobs": 5
+  },
+  {
+   "name": "Baltimore Visits (BV) - 94",
+   "jobs": 11
+  },
+  {
+   "name": "Baltimore West Visits (BWV) - 209",
+   "jobs": 5
+  },
+  {
+   "name": "Baptist Home Health Care By BAYADA - Jacksonville (BHJ) - 1026",
+   "jobs": 8
+  },
+  {
+   "name": "Begonia Division (BGA) - 815",
+   "jobs": 27
+  },
+  {
+   "name": "Behavior Analysis Pennsauken (BPN) - 1068",
+   "jobs": 2
+  },
+  {
+   "name": "Behavior Analysis Wall (BWL) - 1265",
+   "jobs": 3
+  },
+  {
+   "name": "Behavior Analysis Wall - Pennsauken (BWP) - 1297",
+   "jobs": 1
+  },
+  {
+   "name": "Berks County Visits (BRK) - 135",
+   "jobs": 7
+  },
+  {
+   "name": "Beverly Assistive Care (BAC) - 757",
+   "jobs": 3
+  },
+  {
+   "name": "Beverly Assistive Care State Programs (BAS) - 913",
+   "jobs": 6
+  },
+  {
+   "name": "Big Island Behavioral Health (BBH) - 603",
+   "jobs": 6
+  },
+  {
+   "name": "Big Island Habilitation (BHA) - 624",
+   "jobs": 6
+  },
+  {
+   "name": "Big Island Visits (BIV) - 397",
+   "jobs": 11
+  },
+  {
+   "name": "Blazing Star Division (BTD) - 313",
+   "jobs": 16
+  },
+  {
+   "name": "Bloomsburg (BLU) - 102",
+   "jobs": 3
+  },
+  {
+   "name": "Bradenton Florida Assistive Care (BFA) - 1250",
+   "jobs": 6
+  },
+  {
+   "name": "Braintree Assistive Care (BTA) - 674",
+   "jobs": 2
+  },
+  {
+   "name": "Bucks County (BC) - 43",
+   "jobs": 3
+  },
+  {
+   "name": "Bucks County Senior Living (BCF) - 557",
+   "jobs": 4
+  },
+  {
+   "name": "Burlington (BUR) - 26",
+   "jobs": 7
+  },
+  {
+   "name": "Burlington East Visits (BEV) - 345",
+   "jobs": 4
+  },
+  {
+   "name": "Butler County Pediatrics (BTP) - 328",
+   "jobs": 15
+  },
+  {
+   "name": "CMRHC Cape May (Mirror Office) (CMC) - 644",
+   "jobs": 4
+  },
+  {
+   "name": "Cabarrus Visits (CAV) - 268",
+   "jobs": 2
+  },
+  {
+   "name": "Cactus Home Care Division (CHC) - 464",
+   "jobs": 5
+  },
+  {
+   "name": "Camden Adults (CAM) - 663",
+   "jobs": 15
+  },
+  {
+   "name": "Camden County Visits (CCV) - 51",
+   "jobs": 2
+  },
+  {
+   "name": "Carnation Division (CAR) - 157",
+   "jobs": 84
+  },
+  {
+   "name": "Celosia Division (CEL) - 684",
+   "jobs": 73
+  },
+  {
+   "name": "Central Delaware (CD) - 661",
+   "jobs": 6
+  },
+  {
+   "name": "Central Delaware Nursing (CDN) - 800",
+   "jobs": 1
+  },
+  {
+   "name": "Central Jersey Senior Living (CJF) - 1347",
+   "jobs": 13
+  },
+  {
+   "name": "Central PA Community Sales (OPL) - 6033",
+   "jobs": 2
+  },
+  {
+   "name": "Central Pennsylvania Senior Living (CPF) - 605",
+   "jobs": 15
+  },
+  {
+   "name": "Charleston Assistive Care (CRL) - 845",
+   "jobs": 6
+  },
+  {
+   "name": "Charlotte Adult Nursing (CAN) - 699",
+   "jobs": 1
+  },
+  {
+   "name": "Charlotte Metro State Programs (CMS) - 77",
+   "jobs": 2
+  },
+  {
+   "name": "Charlotte Pediatrics North (CPN) - 48",
+   "jobs": 2
+  },
+  {
+   "name": "Charlotte Personal Care (CPC) - 712",
+   "jobs": 6
+  },
+  {
+   "name": "Charlotte Senior Living (CHF) - 591",
+   "jobs": 1
+  },
+  {
+   "name": "Charlotte Visits (CV) - 435",
+   "jobs": 7
+  },
+  {
+   "name": "Cherry Hill Assistive Care (CAC) - 754",
+   "jobs": 3
+  },
+  {
+   "name": "Chester County Home Health (CHV) - 651",
+   "jobs": 6
+  },
+  {
+   "name": "Chester County Senior Living (CCF) - 650",
+   "jobs": 4
+  },
+  {
+   "name": "Clarks Summit Pediatric (CSP) - 250",
+   "jobs": 2
+  },
+  {
+   "name": "Columbia Assistive Care State Programs (CLS) - 611",
+   "jobs": 3
+  },
+  {
+   "name": "Columbia Visits (COV) - 1326",
+   "jobs": 1
+  },
+  {
+   "name": "Concord Home Health  (CNV) - 1208",
+   "jobs": 11
+  },
+  {
+   "name": "Concord New Hampshire Hospice (CNH) - 704",
+   "jobs": 5
+  },
+  {
+   "name": "Cumberland County BAYADA at Inspira (CBJ) - 631",
+   "jobs": 5
+  },
+  {
+   "name": "Dartmouth Assistive Care State Programs (DMH) - 610",
+   "jobs": 1
+  },
+  {
+   "name": "Dartmouth Visits (DMV) - 287",
+   "jobs": 7
+  },
+  {
+   "name": "Davidson County Visits (DAV) - 432",
+   "jobs": 17
+  },
+  {
+   "name": "Dedham Visits (DHV) - 336",
+   "jobs": 9
+  },
+  {
+   "name": "Delaware Assistive Care (DAC) - 459",
+   "jobs": 3
+  },
+  {
+   "name": "Delaware Assistive Care State Programs (DSP) - 430",
+   "jobs": 4
+  },
+  {
+   "name": "Delaware County Pediatrics (DCP) - 694",
+   "jobs": 1
+  },
+  {
+   "name": "Delaware New Castle County Hospice (DNH) - 795",
+   "jobs": 4
+  },
+  {
+   "name": "Delaware Pediatric Visits (DPV) - 363",
+   "jobs": 13
+  },
+  {
+   "name": "Delaware Pediatrics South (DPS) - 220",
+   "jobs": 1
+  },
+  {
+   "name": "Delaware-Eastern PA Community Sales (DEL) - 6035",
+   "jobs": 1
+  },
+  {
+   "name": "Denver (DEN) - 7",
+   "jobs": 4
+  },
+  {
+   "name": "Denver North Visits (DNV) - 637",
+   "jobs": 6
+  },
+  {
+   "name": "Denver Visits (DV) - 90",
+   "jobs": 8
+  },
+  {
+   "name": "Dover (DOV) - 121",
+   "jobs": 13
+  },
+  {
+   "name": "Dover BAYADA at Bayhealth (Mirror Office) (DBT) - 701",
+   "jobs": 14
+  },
+  {
+   "name": "Downingtown Skilled Nursing  (DOW) - 213",
+   "jobs": 1
+  },
+  {
+   "name": "Downtown Boston Assistive Care (DBA) - 912",
+   "jobs": 4
+  },
+  {
+   "name": "Enterprise Digital Platforms (EDP) - 1177",
+   "jobs": 1
+  },
+  {
+   "name": "Erie (ERI) - 143",
+   "jobs": 9
+  },
+  {
+   "name": "Erie State Programs (ESP) - 794",
+   "jobs": 4
+  },
+  {
+   "name": "Essex (ESS) - 67",
+   "jobs": 2
+  },
+  {
+   "name": "Essex County Assistive Care (ECA) - 409",
+   "jobs": 1
+  },
+  {
+   "name": "Essex County Visits (ECV) - 779",
+   "jobs": 2
+  },
+  {
+   "name": "Fairfax Assistive Care (FFA) - 1251",
+   "jobs": 3
+  },
+  {
+   "name": "Fairfax Home Health (Closed) (FFV) - 728",
+   "jobs": 11
+  },
+  {
+   "name": "Fairfax Senior Living (FFF) - 383",
+   "jobs": 17
+  },
+  {
+   "name": "Falmouth State Programs (FLS) - 899",
+   "jobs": 6
+  },
+  {
+   "name": "Fayetteville (FAY) - 107",
+   "jobs": 11
+  },
+  {
+   "name": "Fayetteville State Programs (FSP) - 812",
+   "jobs": 3
+  },
+  {
+   "name": "Fitness & Wellness Senior Living (FWF) - 320",
+   "jobs": 4
+  },
+  {
+   "name": "Flame Lily Division (FLM) - 548",
+   "jobs": 45
+  },
+  {
+   "name": "Forget-Me-Not Division (FMN) - 587",
+   "jobs": 1
+  },
+  {
+   "name": "Forget-Me-Not Sales (FML) - 1019",
+   "jobs": 1
+  },
+  {
+   "name": "Forsyth County Visits (FSV) - 433",
+   "jobs": 10
+  },
+  {
+   "name": "Fort Collins Visits (FCV) - 342",
+   "jobs": 3
+  },
+  {
+   "name": "Fort Wayne Skilled Nursing (FWS) - 700",
+   "jobs": 8
+  },
+  {
+   "name": "Garden City Skilled (GCS) - 49",
+   "jobs": 2
+  },
+  {
+   "name": "Gastonia Visits (GAV) - 436",
+   "jobs": 3
+  },
+  {
+   "name": "Gladiolus Division (GLD) - 1111",
+   "jobs": 5
+  },
+  {
+   "name": "Glendale Visits (GLV) - 284",
+   "jobs": 1
+  },
+  {
+   "name": "Gloucester Assistive Care (GAC) - 1121",
+   "jobs": 3
+  },
+  {
+   "name": "Gloucester County BAYADA at Inspira (GCJ) - 633",
+   "jobs": 7
+  },
+  {
+   "name": "Gloucester Hospice BAYADA at Inspira (NGJ) - 649",
+   "jobs": 7
+  },
+  {
+   "name": "Greater Boston Senior Living  (GBF) - 939",
+   "jobs": 3
+  },
+  {
+   "name": "Greater Cleveland Visits (CLV) - 1328",
+   "jobs": 4
+  },
+  {
+   "name": "Green Valley State Programs (GVS) - 1446",
+   "jobs": 2
+  },
+  {
+   "name": "Greensboro Pediatrics (GRP) - 137",
+   "jobs": 16
+  },
+  {
+   "name": "Greenville Home Health (GNV) - 813",
+   "jobs": 1
+  },
+  {
+   "name": "Greenville Pediatrics (GVP) - 428",
+   "jobs": 21
+  },
+  {
+   "name": "Guilford County Visits (GUV) - 434",
+   "jobs": 4
+  },
+  {
+   "name": "Habilitation Asheville (HAA) - 1383",
+   "jobs": 2
+  },
+  {
+   "name": "Habilitation Blairsville (HBL) - 1037",
+   "jobs": 9
+  },
+  {
+   "name": "Habilitation Capital Area (HCA) - 1200",
+   "jobs": 6
+  },
+  {
+   "name": "Habilitation Central Missouri (HCE) - 1381",
+   "jobs": 2
+  },
+  {
+   "name": "Habilitation Charlotte (HCH) - 147",
+   "jobs": 12
+  },
+  {
+   "name": "Habilitation Chester-Delaware County (HCD) - 1129",
+   "jobs": 6
+  },
+  {
+   "name": "Habilitation Erie (HAE) - 825",
+   "jobs": 3
+  },
+  {
+   "name": "Habilitation Greensboro (HGR) - 203",
+   "jobs": 4
+  },
+  {
+   "name": "Habilitation Hickory (HHI) - 225",
+   "jobs": 10
+  },
+  {
+   "name": "Habilitation Kansas City (HKC) - 1342",
+   "jobs": 4
+  },
+  {
+   "name": "Habilitation Lehigh Valley (HLE) - 919",
+   "jobs": 3
+  },
+  {
+   "name": "Habilitation North Delaware (HND) - 1201",
+   "jobs": 4
+  },
+  {
+   "name": "Habilitation PA (HPA) - 487",
+   "jobs": 6
+  },
+  {
+   "name": "Habilitation Philadelphia (HPH) - 635",
+   "jobs": 3
+  },
+  {
+   "name": "Habilitation Philadelphia North (HPN) - 921",
+   "jobs": 6
+  },
+  {
+   "name": "Habilitation Philadelphia Proper (HPL) - 920",
+   "jobs": 1
+  },
+  {
+   "name": "Habilitation Pittsburgh (HPI) - 673",
+   "jobs": 3
+  },
+  {
+   "name": "Habilitation Pittsburgh South (HPT) - 1176",
+   "jobs": 6
+  },
+  {
+   "name": "Habilitation Raleigh (HRA) - 1340",
+   "jobs": 5
+  },
+  {
+   "name": "Habilitation Shelby (HSH) - 379",
+   "jobs": 5
+  },
+  {
+   "name": "Habilitation Springfield (HMS) - 1281",
+   "jobs": 3
+  },
+  {
+   "name": "Habilitation State College (HST) - 768",
+   "jobs": 10
+  },
+  {
+   "name": "Habilitation Wilmington (HWI) - 456",
+   "jobs": 4
+  },
+  {
+   "name": "Habilitation Winston-Salem (HWS) - 278",
+   "jobs": 4
+  },
+  {
+   "name": "Hackensack (HAC) - 12",
+   "jobs": 1
+  },
+  {
+   "name": "Hampton Roads Senior Living (Closed) (HRF) - 900",
+   "jobs": 4
+  },
+  {
+   "name": "Harford County Visits (HFV) - 286",
+   "jobs": 10
+  },
+  {
+   "name": "Harrisburg (HAR) - 310",
+   "jobs": 2
+  },
+  {
+   "name": "Harrisburg Visits (HAV) - 79",
+   "jobs": 2
+  },
+  {
+   "name": "Hickory Adult Skilled (HAS) - 821",
+   "jobs": 2
+  },
+  {
+   "name": "Hickory State Programs (HSP) - 78",
+   "jobs": 3
+  },
+  {
+   "name": "Home Health Reimbursement Services (VRS) - 289",
+   "jobs": 1
+  },
+  {
+   "name": "Hospice Services (HOS) - 253",
+   "jobs": 2
+  },
+  {
+   "name": "Hudson County Visits (HCV) - 269",
+   "jobs": 7
+  },
+  {
+   "name": "Hyannis (HYS) - 243",
+   "jobs": 7
+  },
+  {
+   "name": "Hyannis Assistive Care (HYA) - 669",
+   "jobs": 4
+  },
+  {
+   "name": "Hyannis Visits (HYV) - 45",
+   "jobs": 5
+  },
+  {
+   "name": "Indianapolis Skilled  (INP) - 597",
+   "jobs": 24
+  },
+  {
+   "name": "Indigo Division (IND) - 258",
+   "jobs": 1
+  },
+  {
+   "name": "Insurance Confirmation Home Health (ICV) - 599",
+   "jobs": 1
+  },
+  {
+   "name": "Integrity Columbia MO State Programs (CPJ) - 1100",
+   "jobs": 3
+  },
+  {
+   "name": "Integrity Community Sales (INL) - 6060",
+   "jobs": 1
+  },
+  {
+   "name": "Integrity Joplin MO CDS (JCJ) - 1133",
+   "jobs": 1
+  },
+  {
+   "name": "Integrity Joplin MO Home Health (JOJ) - 1091",
+   "jobs": 8
+  },
+  {
+   "name": "Integrity Joplin MO State Programs (JPJ) - 1101",
+   "jobs": 5
+  },
+  {
+   "name": "Integrity Kansas Lees Summit State Programs (KPJ) - 1102",
+   "jobs": 5
+  },
+  {
+   "name": "Integrity Lebanon MO Home Health (LBJ) - 1092",
+   "jobs": 8
+  },
+  {
+   "name": "Integrity Lebanon MO State Programs (LPJ) - 1103",
+   "jobs": 2
+  },
+  {
+   "name": "Integrity Missouri Joplin Hospice (MJJ) - 1106",
+   "jobs": 3
+  },
+  {
+   "name": "Integrity Missouri Lebanon Hospice (MLJ) - 1108",
+   "jobs": 1
+  },
+  {
+   "name": "Integrity Missouri Springfield Hospice (MSJ) - 1110",
+   "jobs": 1
+  },
+  {
+   "name": "Integrity Springfield MO Home Health (SPJ) - 1095",
+   "jobs": 13
+  },
+  {
+   "name": "Integrity Springfield MO State Programs (SSJ) - 1104",
+   "jobs": 5
+  },
+  {
+   "name": "Jacksonville Assistive Care (JAC) - 1355",
+   "jobs": 4
+  },
+  {
+   "name": "Jefferson Health at Home by BAYADA – Hospice (PAJ) - 1073",
+   "jobs": 3
+  },
+  {
+   "name": "Jefferson at Home by BAYADA NJ (JNJ) - 1075",
+   "jobs": 6
+  },
+  {
+   "name": "Jefferson at Home by BAYADA – Abington (JAJ) - 1070",
+   "jobs": 10
+  },
+  {
+   "name": "Jefferson at Home by BAYADA – Philadelphia (PVJ) - 1071",
+   "jobs": 6
+  },
+  {
+   "name": "Jersey City (JC) - 88",
+   "jobs": 6
+  },
+  {
+   "name": "Kauai Habilitation  (KHA) - 622",
+   "jobs": 4
+  },
+  {
+   "name": "Kauai Home Care (KHC) - 626",
+   "jobs": 3
+  },
+  {
+   "name": "Lancaster (LAN) - 59",
+   "jobs": 9
+  },
+  {
+   "name": "Lancaster Office Home Health (LOV) - 1142",
+   "jobs": 4
+  },
+  {
+   "name": "Las Vegas Assistive Care (VAC) - 1249",
+   "jobs": 3
+  },
+  {
+   "name": "Laurel Highlands High Tech (LHT) - 925",
+   "jobs": 3
+  },
+  {
+   "name": "Laurel Highlands Pediatrics (LHP) - 356",
+   "jobs": 2
+  },
+  {
+   "name": "Legal Services Division (LGS) - 1056",
+   "jobs": 1
+  },
+  {
+   "name": "Lehigh Valley Adult (LVA) - 68",
+   "jobs": 4
+  },
+  {
+   "name": "Lehigh Valley Home Health (LVV) - 418",
+   "jobs": 5
+  },
+  {
+   "name": "Lehigh Valley Senior Living (LHF) - 617",
+   "jobs": 9
+  },
+  {
+   "name": "Linwood Assistive Care (LAC) - 731",
+   "jobs": 3
+  },
+  {
+   "name": "Lock Haven Pediatrics (LOK) - 468",
+   "jobs": 4
+  },
+  {
+   "name": "Long Island Nassau (LIN) - 177",
+   "jobs": 3
+  },
+  {
+   "name": "Long Island Suffolk Assistive Care (LIS) - 1028",
+   "jobs": 1
+  },
+  {
+   "name": "Loudoun County Senior Living (LOF) - 1099",
+   "jobs": 5
+  },
+  {
+   "name": "Lower Bucks Adult (LBA) - 755",
+   "jobs": 2
+  },
+  {
+   "name": "Luzerne County Pediatrics (LUZ) - 91",
+   "jobs": 3
+  },
+  {
+   "name": "Lycoming State Program (LSP) - 165",
+   "jobs": 18
+  },
+  {
+   "name": "MUSC Health Hospice at Home by BAYADA - Charleston (CSJ) - 833",
+   "jobs": 3
+  },
+  {
+   "name": "MUSC Health at Home by BAYADA - Charleston (CHJ) - 685",
+   "jobs": 3
+  },
+  {
+   "name": "MUSC Health at Home by BAYADA - Conway (COJ) - 748",
+   "jobs": 9
+  },
+  {
+   "name": "Main Line Adult (MLA) - 72",
+   "jobs": 4
+  },
+  {
+   "name": "Marlborough Assistive Care State Programs (MAS) - 337",
+   "jobs": 7
+  },
+  {
+   "name": "Maui Behavior Analysis (MBA) - 709",
+   "jobs": 4
+  },
+  {
+   "name": "Maui Habilitation (MHA) - 623",
+   "jobs": 4
+  },
+  {
+   "name": "Maui Home Care (MHC) - 627",
+   "jobs": 4
+  },
+  {
+   "name": "Maui Visits (MAV) - 398",
+   "jobs": 2
+  },
+  {
+   "name": "Meadville Pediatrics (MDP) - 762",
+   "jobs": 3
+  },
+  {
+   "name": "Mechanicsburg Pediatrics (MBP) - 304",
+   "jobs": 10
+  },
+  {
+   "name": "Media  (MED) - 816",
+   "jobs": 5
+  },
+  {
+   "name": "Media Assistive Care State Programs (MSP) - 218",
+   "jobs": 2
+  },
+  {
+   "name": "Media Home Health (MEV) - 283",
+   "jobs": 5
+  },
+  {
+   "name": "Media Senior Living (MEF) - 280",
+   "jobs": 1
+  },
+  {
+   "name": "Mercer County Assistive Care (MER) - 808",
+   "jobs": 3
+  },
+  {
+   "name": "Middlesex Assistive Care (MAC) - 690",
+   "jobs": 7
+  },
+  {
+   "name": "Millville (MIL) - 52",
+   "jobs": 22
+  },
+  {
+   "name": "Missouri East Skilled (MES) - 797",
+   "jobs": 15
+  },
+  {
+   "name": "Missouri West Skilled (MWS) - 814",
+   "jobs": 11
+  },
+  {
+   "name": "Moccasin Community Sales (MCL) - 6001",
+   "jobs": 1
+  },
+  {
+   "name": "Montgomery County Maryland Visits (MMV) - 495",
+   "jobs": 17
+  },
+  {
+   "name": "Montgomery Maryland Assistive Care (MMA) - 1354",
+   "jobs": 3
+  },
+  {
+   "name": "Montgomery Maryland Senior Living (MMF) - 556",
+   "jobs": 11
+  },
+  {
+   "name": "Montgomery PA Home Health (MPV) - 325",
+   "jobs": 8
+  },
+  {
+   "name": "Morning Glory Community Sales (MGL) - 6011",
+   "jobs": 1
+  },
+  {
+   "name": "Morristown (MOR) - 6",
+   "jobs": 2
+  },
+  {
+   "name": "Mountain Laurel Division",
+   "jobs": 1
+  },
+  {
+   "name": "Mountain Laurel Division (MTL) - 370",
+   "jobs": 76
+  },
+  {
+   "name": "NC Fayetteville Hospice (NFH) - 810",
+   "jobs": 1
+  },
+  {
+   "name": "NJ Ocean County Hospice (NOH) - 724",
+   "jobs": 2
+  },
+  {
+   "name": "Naples Assistive Care (NAC) - 1377",
+   "jobs": 3
+  },
+  {
+   "name": "Nashville Visits (NVV) - 1345",
+   "jobs": 1
+  },
+  {
+   "name": "New Hampshire Home Health (NHV) - 1097",
+   "jobs": 5
+  },
+  {
+   "name": "New Hampshire Senior Living (NHF) - 1396",
+   "jobs": 8
+  },
+  {
+   "name": "New Hampshire Skilled (NHS) - 735",
+   "jobs": 1
+  },
+  {
+   "name": "New Jersey Atlantic County Hospice (NAH) - 749",
+   "jobs": 1
+  },
+  {
+   "name": "New Jersey Burlington County Hospice (NBH) - 753",
+   "jobs": 3
+  },
+  {
+   "name": "New Jersey Hudson Hospice (NHH) - 492",
+   "jobs": 1
+  },
+  {
+   "name": "Newton (NWT) - 231",
+   "jobs": 10
+  },
+  {
+   "name": "Newton State Programs (NTS) - 798",
+   "jobs": 1
+  },
+  {
+   "name": "North Boston Senior Living (NBF) - 1141",
+   "jobs": 4
+  },
+  {
+   "name": "North Boston Visits (NBV) - 387",
+   "jobs": 20
+  },
+  {
+   "name": "North Brunswick Pediatrics (NBP) - 42",
+   "jobs": 1
+  },
+  {
+   "name": "North Carolina Rowan County Hospice (NRH) - 1116",
+   "jobs": 2
+  },
+  {
+   "name": "North Carolina Senior Living (NCL) - 6043",
+   "jobs": 1
+  },
+  {
+   "name": "North Tucson Visits (NTV) - 497",
+   "jobs": 16
+  },
+  {
+   "name": "Northampton Monroe Visits (NMV) - 1194",
+   "jobs": 4
+  },
+  {
+   "name": "Northeast Ohio Home Health (NOV) - 791",
+   "jobs": 8
+  },
+  {
+   "name": "Northeast Ohio Senior Living (NOF) - 1126",
+   "jobs": 2
+  },
+  {
+   "name": "Northeast SRL Division (NRE) - 1485",
+   "jobs": 3
+  },
+  {
+   "name": "Not For Profit Taxation and Grants (NTG) - 1238",
+   "jobs": 1
+  },
+  {
+   "name": "Oahu Behavior Analysis (OBA) - 708",
+   "jobs": 5
+  },
+  {
+   "name": "Oahu Behavioral Health (OBH) - 600",
+   "jobs": 5
+  },
+  {
+   "name": "Oahu Community Sales (OAL) - 6008",
+   "jobs": 1
+  },
+  {
+   "name": "Oahu Habilitation (OHA) - 621",
+   "jobs": 5
+  },
+  {
+   "name": "Oahu Home Care (OHC) - 625",
+   "jobs": 7
+  },
+  {
+   "name": "Oahu Neighbor Islands (ONI) - 927",
+   "jobs": 8
+  },
+  {
+   "name": "Oahu Visits (OAV) - 390",
+   "jobs": 8
+  },
+  {
+   "name": "Ocean County Senior Living (OCF) - 613",
+   "jobs": 4
+  },
+  {
+   "name": "Ocean County Visits (OCV) - 576",
+   "jobs": 6
+  },
+  {
+   "name": "Office Payroll (OPR) - 585",
+   "jobs": 1
+  },
+  {
+   "name": "Orlando (ORL) - 99",
+   "jobs": 4
+  },
+  {
+   "name": "Orlando Adult Nursing (OAN) - 727",
+   "jobs": 6
+  },
+  {
+   "name": "Orlando South Assistive Care (OSA) - 1029",
+   "jobs": 4
+  },
+  {
+   "name": "PA Boyertown Hospice (PTH) - 1025",
+   "jobs": 3
+  },
+  {
+   "name": "PCA (PCA) - 9",
+   "jobs": 1
+  },
+  {
+   "name": "PCA-West (PW) - 22",
+   "jobs": 2
+  },
+  {
+   "name": "Paoli (PAO) - 57",
+   "jobs": 2
+  },
+  {
+   "name": "Passaic County (PAS) - 74",
+   "jobs": 2
+  },
+  {
+   "name": "Passaic County Pediatrics (PCP) - 568",
+   "jobs": 1
+  },
+  {
+   "name": "Passion Division (PSN) - 606",
+   "jobs": 57
+  },
+  {
+   "name": "Peace Lily Division (PLD) - 455",
+   "jobs": 41
+  },
+  {
+   "name": "Peach Blossom Division (PBL) - 670",
+   "jobs": 4
+  },
+  {
+   "name": "Pennsylvania Harrisburg Hospice (PEH) - 655",
+   "jobs": 5
+  },
+  {
+   "name": "Pennsylvania Media Hospice (PMH) - 321",
+   "jobs": 6
+  },
+  {
+   "name": "Pennsylvania Warminster Hospice (PWH) - 656",
+   "jobs": 5
+  },
+  {
+   "name": "Person County Visits (PRV) - 438",
+   "jobs": 13
+  },
+  {
+   "name": "Perth Amboy (PER) - 128",
+   "jobs": 6
+  },
+  {
+   "name": "Philadelphia (PHI) - 1",
+   "jobs": 1
+  },
+  {
+   "name": "Philadelphia Skilled (PHS) - 588",
+   "jobs": 1
+  },
+  {
+   "name": "Phoenix Pediatrics (PXP) - 717",
+   "jobs": 11
+  },
+  {
+   "name": "Pinellas County (PC) - 207",
+   "jobs": 3
+  },
+  {
+   "name": "Pinellas County Skilled (PCS) - 647",
+   "jobs": 4
+  },
+  {
+   "name": "Pitt County Visits (PTV) - 1315",
+   "jobs": 9
+  },
+  {
+   "name": "Pittsburgh (PIT) - 64",
+   "jobs": 6
+  },
+  {
+   "name": "Pittsfield State Programs (PFS) - 1000",
+   "jobs": 4
+  },
+  {
+   "name": "Plymouth (PLY) - 245",
+   "jobs": 2
+  },
+  {
+   "name": "Plymouth Senior Living (PLF) - 550",
+   "jobs": 4
+  },
+  {
+   "name": "Plymouth Visits (PLV) - 139",
+   "jobs": 6
+  },
+  {
+   "name": "Pocono PA Pediatrics (PPP) - 190",
+   "jobs": 5
+  },
+  {
+   "name": "Quality Assurance (QA) - 281",
+   "jobs": 1
+  },
+  {
+   "name": "Quincy Assistive Care State Programs (QUS) - 201",
+   "jobs": 2
+  },
+  {
+   "name": "Raleigh Durham Senior Living (RDF) - 555",
+   "jobs": 6
+  },
+  {
+   "name": "Raleigh Pediatrics (RAP) - 83",
+   "jobs": 20
+  },
+  {
+   "name": "Raleigh Visits (RV) - 228",
+   "jobs": 10
+  },
+  {
+   "name": "Reading Skilled Nursing (REA) - 1191",
+   "jobs": 8
+  },
+  {
+   "name": "Recruiting Habilitation and Behavioral Health (RHB) - 1302",
+   "jobs": 1
+  },
+  {
+   "name": "Red Everlasting Division (REV) - 652",
+   "jobs": 33
+  },
+  {
+   "name": "Rhode Island Assistive Care (RAC) - 563",
+   "jobs": 3
+  },
+  {
+   "name": "Rhode Island State Programs (RSP) - 148",
+   "jobs": 2
+  },
+  {
+   "name": "Rhode Island Visits (RIV) - 44",
+   "jobs": 9
+  },
+  {
+   "name": "Richmond Skilled Nursing (RSN) - 1378",
+   "jobs": 3
+  },
+  {
+   "name": "Richmond Virginia Assistive Care (RVA) - 928",
+   "jobs": 1
+  },
+  {
+   "name": "Rochester Skilled (RCS) - 1324",
+   "jobs": 8
+  },
+  {
+   "name": "Rock Hill State Programs (RHS) - 796",
+   "jobs": 4
+  },
+  {
+   "name": "Rock Hill Visits (RHV) - 752",
+   "jobs": 4
+  },
+  {
+   "name": "Rutland (RUT) - 366",
+   "jobs": 3
+  },
+  {
+   "name": "Saddle Brook Nursing (SAN) - 1231",
+   "jobs": 1
+  },
+  {
+   "name": "Salem County BAYADA at Inspira (SAJ) - 1298",
+   "jobs": 4
+  },
+  {
+   "name": "Salisbury Assistive Care State Programs (SAL) - 71",
+   "jobs": 4
+  },
+  {
+   "name": "Salisbury Senior Living (SAF) - 824",
+   "jobs": 5
+  },
+  {
+   "name": "Salisbury Visits (SV) - 437",
+   "jobs": 4
+  },
+  {
+   "name": "Scotland County Visits (STV) - 1168",
+   "jobs": 8
+  },
+  {
+   "name": "Sellersville Pediatrics (SEL) - 300",
+   "jobs": 2
+  },
+  {
+   "name": "Senior Living BAYADA at Inspira (GFJ) - 654",
+   "jobs": 6
+  },
+  {
+   "name": "Senior Living Solutions (SRL) - 302",
+   "jobs": 1
+  },
+  {
+   "name": "Sequoia Region (SQU) - 692",
+   "jobs": 1
+  },
+  {
+   "name": "Shelby (SHE) - 123",
+   "jobs": 6
+  },
+  {
+   "name": "Sierra Vista Visits (SVV) - 326",
+   "jobs": 12
+  },
+  {
+   "name": "Skilled Nursing HICU Service Office (HIC) - 1450",
+   "jobs": 21
+  },
+  {
+   "name": "Skilled Nursing Reimbursement Services (SR) - 596",
+   "jobs": 1
+  },
+  {
+   "name": "Skilled Nursing Unit (SNU) - 291",
+   "jobs": 7
+  },
+  {
+   "name": "Snowdrop Division (SNW) - 358",
+   "jobs": 1
+  },
+  {
+   "name": "Snyder County Pediatrics (SNY) - 329",
+   "jobs": 1
+  },
+  {
+   "name": "South Jersey Senior Living (SJF) - 163",
+   "jobs": 3
+  },
+  {
+   "name": "Southern Delaware Assistive Care  (SDA) - 926",
+   "jobs": 4
+  },
+  {
+   "name": "Southern Maine Home Health (SMV) - 1207",
+   "jobs": 1
+  },
+  {
+   "name": "Southern Vermont State Programs  (SVT) - 365",
+   "jobs": 5
+  },
+  {
+   "name": "Springfield Hospice  (MSJ) - 1110",
+   "jobs": 4
+  },
+  {
+   "name": "St. Cloud Pediatrics (SCP) - 260",
+   "jobs": 17
+  },
+  {
+   "name": "State College (STC) - 273",
+   "jobs": 6
+  },
+  {
+   "name": "State Programs of Raleigh (SPR) - 781",
+   "jobs": 3
+  },
+  {
+   "name": "State Programs of Winston Salem (SPW) - 223",
+   "jobs": 5
+  },
+  {
+   "name": "State Programs of the Triad (SPT) - 118",
+   "jobs": 2
+  },
+  {
+   "name": "Sundrop Division (SDP) - 639",
+   "jobs": 63
+  },
+  {
+   "name": "Tampa (TAM) - 18",
+   "jobs": 1
+  },
+  {
+   "name": "Tampa Assistive Care (TAC) - 664",
+   "jobs": 4
+  },
+  {
+   "name": "Tempe (TEM) - 122",
+   "jobs": 6
+  },
+  {
+   "name": "Toms River Assistive Care (TRA) - 772",
+   "jobs": 3
+  },
+  {
+   "name": "Toms River Pediatrics (TRP) - 214",
+   "jobs": 1
+  },
+  {
+   "name": "Towanda Pediatrics (TWP) - 729",
+   "jobs": 2
+  },
+  {
+   "name": "Triad Senior Living (TRF) - 575",
+   "jobs": 4
+  },
+  {
+   "name": "Tucson East Adult (TEA) - 141",
+   "jobs": 2
+  },
+  {
+   "name": "Tucson East Visits (TEV) - 39",
+   "jobs": 5
+  },
+  {
+   "name": "Tucson Senior Living (TUF) - 539",
+   "jobs": 1
+  },
+  {
+   "name": "Tucson Skilled (TES) - 193",
+   "jobs": 9
+  },
+  {
+   "name": "Union (UNI) - 69",
+   "jobs": 2
+  },
+  {
+   "name": "Union County Visits (UCV) - 1308",
+   "jobs": 11
+  },
+  {
+   "name": "VCU Health Hospice at Home by BAYADA (VRJ) - 997",
+   "jobs": 1
+  },
+  {
+   "name": "VCU Health at Home by BAYADA – Home Health (VCJ) - 995",
+   "jobs": 4
+  },
+  {
+   "name": "Valley Health at Home Community Sales (Mirror) (VMT) - 9051",
+   "jobs": 1
+  },
+  {
+   "name": "Valley Health at Home by BAYADA (VHJ) - 996",
+   "jobs": 1
+  },
+  {
+   "name": "Vermont Brattleboro Hospice (VZH) - 490",
+   "jobs": 2
+  },
+  {
+   "name": "Vermont Burlington Hospice (VBH) - 339",
+   "jobs": 5
+  },
+  {
+   "name": "Vermont Home Health (VTV) - 1447",
+   "jobs": 25
+  },
+  {
+   "name": "Vermont Hospice (VTH) - 265",
+   "jobs": 11
+  },
+  {
+   "name": "Vermont Rutland Hospice (VRH) - 327",
+   "jobs": 3
+  },
+  {
+   "name": "Vermont Senior Living (VTF) - 1449",
+   "jobs": 7
+  },
+  {
+   "name": "Violet Division (VIO) - 169",
+   "jobs": 114
+  },
+  {
+   "name": "Virginia Southwest Senior Living (VSF) - 1245",
+   "jobs": 6
+  },
+  {
+   "name": "Washington Township (WT) - 31",
+   "jobs": 2
+  },
+  {
+   "name": "West Chester PA Assistive Care (WCA) - 1252",
+   "jobs": 4
+  },
+  {
+   "name": "Westchester NY Assistive Care (WNA) - 1380",
+   "jobs": 1
+  },
+  {
+   "name": "Westfield (WES) - 210",
+   "jobs": 1
+  },
+  {
+   "name": "Wildflower Division (WLF) - 494",
+   "jobs": 15
+  },
+  {
+   "name": "Wilkes-Barre State Programs (WSP) - 799",
+   "jobs": 5
+  },
+  {
+   "name": "Wilkes-Barre-Scranton Visits (WSV) - 126",
+   "jobs": 10
+  },
+  {
+   "name": "Williamsburg (WIM) - 242",
+   "jobs": 4
+  },
+  {
+   "name": "Williamsport (WLM) - 272",
+   "jobs": 1
+  },
+  {
+   "name": "Willow Grove (WG) - 4",
+   "jobs": 10
+  },
+  {
+   "name": "Willow Grove Pediatrics (WGP) - 47",
+   "jobs": 3
+  },
+  {
+   "name": "Willow Grove Staffing (WGS) - 56",
+   "jobs": 14
+  },
+  {
+   "name": "Wilmington (WIL) - 8",
+   "jobs": 3
+  },
+  {
+   "name": "Wilmington Assistive Care State Programs (WLA) - 743",
+   "jobs": 3
+  },
+  {
+   "name": "Wilmington Pediatrics (WIP) - 446",
+   "jobs": 6
+  },
+  {
+   "name": "Wilmington Senior Living (WIF) - 477",
+   "jobs": 7
+  },
+  {
+   "name": "Winooski (SKI) - 364",
+   "jobs": 3
+  },
+  {
+   "name": "Worcester Visits (WRV) - 354",
+   "jobs": 13
+  },
+  {
+   "name": "Yavapai Visits (YAV) - 355",
+   "jobs": 6
+  },
+  {
+   "name": "York Home Health (YRV) - 1143",
+   "jobs": 5
+  },
+  {
+   "name": "York Skilled Nursing (YAS) - 1237",
+   "jobs": 5
+  }
+ ]
+}

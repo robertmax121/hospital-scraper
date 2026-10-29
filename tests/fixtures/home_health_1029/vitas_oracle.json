@@ -1,0 +1,352 @@
+{
+ "read": "2026-10-29 VITAS Oracle recruitingCEJobRequisitions findReqs CX_5001 limit 25 (one request), trimmed",
+ "requisitions": [
+  {
+   "Id": "48426",
+   "Title": "Vitas Sales Representative",
+   "PrimaryLocation": "Dallas, TX, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Dallas - Main",
+      "TownOrCity": "Dallas",
+      "Region2": "TX",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48550",
+   "Title": "Team Manager Home Care",
+   "PrimaryLocation": "Clermont, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Lake-Sumter - Main",
+      "TownOrCity": "Mount Dora",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48570",
+   "Title": "Hospice Aide- CNA/HHA",
+   "PrimaryLocation": "Joliet, IL, United States",
+   "workLocation": {
+    "items": []
+   }
+  },
+  {
+   "Id": "47431",
+   "Title": "Social Worker - Hospice",
+   "PrimaryLocation": "Bradenton, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Manatee - Main",
+      "TownOrCity": "Bradenton",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "47540",
+   "Title": "Social Worker - Hospice",
+   "PrimaryLocation": "Deerfield Beach, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Broward North - Main",
+      "TownOrCity": "Deerfield Beach",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "47617",
+   "Title": "Social Worker - Hospice",
+   "PrimaryLocation": "Miramar, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Broward - South",
+      "TownOrCity": "Miramar",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48493",
+   "Title": "Program Scheduler",
+   "PrimaryLocation": "Fairfax, VA, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Northern Virginia - Main",
+      "TownOrCity": "Fairfax",
+      "Region2": "VA",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48527",
+   "Title": "Manager Bereavement",
+   "PrimaryLocation": "Lenexa, KS, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Kansas City - Main",
+      "TownOrCity": "Lenexa",
+      "Region2": "KS",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48536",
+   "Title": "Hospice Registered Nurse (RN)",
+   "PrimaryLocation": "Austin, TX, United States",
+   "workLocation": {
+    "items": []
+   }
+  },
+  {
+   "Id": "48539",
+   "Title": "Social Worker - Hospice",
+   "PrimaryLocation": "Austin, TX, United States",
+   "workLocation": {
+    "items": []
+   }
+  },
+  {
+   "Id": "48556",
+   "Title": "Hospice Registered Nurse (RN)",
+   "PrimaryLocation": "Joliet, IL, United States",
+   "workLocation": {
+    "items": []
+   }
+  },
+  {
+   "Id": "44124",
+   "Title": "Physician (MD/DO)- Home Care & Inpatient",
+   "PrimaryLocation": "Walnut Creek, CA, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "East Bay - Main",
+      "TownOrCity": "Walnut Creek",
+      "Region2": "CA",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "45921",
+   "Title": "Physician - (MD/DO) Home Care & Inpatient",
+   "PrimaryLocation": "Tinley Park, IL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Chicagoland South - Main",
+      "TownOrCity": "Tinley Park",
+      "Region2": "IL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "47771",
+   "Title": "Social Worker - Hospice",
+   "PrimaryLocation": "Houston, TX, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Houston - Main",
+      "TownOrCity": "Houston",
+      "Region2": "TX",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "47785",
+   "Title": "Social Worker - Hospice",
+   "PrimaryLocation": "San Antonio, TX, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "San Antonio - Main",
+      "TownOrCity": "San Antonio",
+      "Region2": "TX",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48234",
+   "Title": "Performance Improvement Specialist",
+   "PrimaryLocation": "Maitland, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Central Florida - Main",
+      "TownOrCity": "Maitland",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48434",
+   "Title": "Physician (MD/DO)- Home Hospice Care",
+   "PrimaryLocation": "Chicago, IL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Chicagoland Central  - Main",
+      "TownOrCity": "Chicago",
+      "Region2": "IL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48435",
+   "Title": "Physician (MD/DO)- Home Hospice Care",
+   "PrimaryLocation": "Chicago, IL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Chicagoland Central  - Main",
+      "TownOrCity": "Chicago",
+      "Region2": "IL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48470",
+   "Title": "Benefits Analyst 1",
+   "PrimaryLocation": "Miramar, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Corporate - Miramar HR & Legal",
+      "TownOrCity": "Miramar",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48445",
+   "Title": "Vitas Sales Representative",
+   "PrimaryLocation": "Melbourne, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Brevard - Melbourne",
+      "TownOrCity": "Melbourne",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48447",
+   "Title": "Vitas Sales Representative",
+   "PrimaryLocation": "Melbourne, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Brevard - Melbourne",
+      "TownOrCity": "Melbourne",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48475",
+   "Title": "Chaplain Home Care",
+   "PrimaryLocation": "Kissimmee, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Central Florida - Main",
+      "TownOrCity": "Maitland",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48506",
+   "Title": "CCC Dispatch Coordinator",
+   "PrimaryLocation": "Miramar, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "CCC - C500, CC After-Hours",
+      "TownOrCity": "Miramar",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48507",
+   "Title": "CCC Dispatch Coordinator",
+   "PrimaryLocation": "Miramar, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "CCC - C500, CC After-Hours",
+      "TownOrCity": "Miramar",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  },
+  {
+   "Id": "48508",
+   "Title": "CCC Dispatch Coordinator",
+   "PrimaryLocation": "Miramar, FL, United States",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "CCC - C500, CC After-Hours",
+      "TownOrCity": "Miramar",
+      "Region2": "FL",
+      "Country": "US"
+     }
+    ]
+   }
+  }
+ ]
+}
