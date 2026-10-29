@@ -1018,7 +1018,10 @@ def stored_facility(system: str, row: dict) -> Optional[FacilityHit]:
     if system == MYMICHIGAN:
         m = MYMI_STORED_RX.search(" ".join(str(row.get(k) or "") for k in ("location", "city")))
         if m:
-            short = "Mount Pleasant" if m.group(1).lower().startswith("m") else m.group(1).title()
+            # 2026-10-29 (integration): only Mount / Mt. Pleasant is Mount Pleasant;
+            # "Midland" also starts with an m (row 404438 had read as Mount Pleasant)
+            g = m.group(1)
+            short = "Mount Pleasant" if re.match(r"m(oun)?t\b", g, re.I) else g.title()
             hit = MYMICHIGAN_HOSPITALS.get(key(f"Medical Center {short}"))
             if hit:
                 return hit[0], hit[1], hit[2], "stored location"

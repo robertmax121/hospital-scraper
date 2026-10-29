@@ -373,6 +373,10 @@ def test_stored_jibe_rows_take_only_their_own_site_line_or_title():
     hit = F.stored_facility(F.MYMICHIGAN, {"title": "Phlebotomist", "city": "Location\nMedical Center Saginaw",
                                            "state": "MI", "description": ""})
     assert hit[:3] == ("MyMichigan Medical Center Saginaw", "Saginaw", "MI")
+    for town, want in (("Midland", "Midland"), ("Mt. Pleasant", "Mount Pleasant"), ("Mount Pleasant", "Mount Pleasant")):
+        hit = F.stored_facility(F.MYMICHIGAN, {"title": "RN", "city": f"Location\nMedical Center {town}\n{want}",
+                                               "state": "MI", "description": ""})
+        assert hit[:3] == (f"MyMichigan Medical Center {want}", want, "MI"), town
 
 
 def test_stored_classic_rows_use_the_nightly_rule():
