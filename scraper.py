@@ -30,6 +30,7 @@ import va_facilities    # 2026-10-27: one clean name per VA facility on USAJOBS 
 import uhs_facilities   # 2026-10-28: one clean name per UHS facility on jobs.uhsinc.com rows
 import advocate_facilities   # 2026-10-29: one clean name and the real town per Advocate Health facility
 import facilities_workday    # 2026-10-29: the hospital and its real town on the other Workday systems
+import facilities_phenom   # 2026-10-29: the hospital on Phenom / TalentBrew rows filed under a system name
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
@@ -14033,11 +14034,24 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     doc.get("department", "")
                 )
                 if title and job_id:
+                    # 2026-10-29 (owner: every hospital of a multi-hospital
+                    # system named and placed): facilities_phenom reads the
+                    # field that names the site (Hartford businessUnit, UMMS
+                    # memberOrganization, a Broward street address, ...) or the
+                    # Workday link's site (CHOA); "" is the system label.
+                    _fp = facilities_phenom.list_facility(system, doc, city, state, url)
+                    if _fp:
+                        _hn = _fp[0] or system
+                        if (_fp[1], _fp[2]) != (city, state):
+                            city, state = _fp[1], _fp[2]
+                            loc = f"{city}, {state}"
+                    else:
+                        _hn = (_phenom_list_facility(system, doc, city, state, title)
+                               or doc.get("facility", "") or doc.get("company", "") or system)
                     job = Job(
                         title=title,
                         hospital_system=system,
-                        hospital_name=(_phenom_list_facility(system, doc, city, state, title)
-                                       or doc.get("facility", "") or doc.get("company", "") or system),
+                        hospital_name=_hn,
                         city=city, state=state,
                         location=loc or f"{city}, {state}",
                         specialty=specialty_val,
@@ -33037,6 +33051,12 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     fac = facility_names.apply_facilities(kept)
     if fac:
         logger.info("Facilities: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fac.items())))
+    # 2026-10-29: and on the Phenom / TalentBrew family's rows (facilities_phenom:
+    # the Workday link's site, the posting text's site, the stored site).
+    fac = facilities_phenom.apply_facilities(kept)
+    if fac:
+        logger.info("Phenom-family facilities: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fac.items())))
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
