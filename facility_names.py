@@ -537,6 +537,9 @@ _ASC = {
     "Ascension St. Vincent Mercy": ("Elwood", "IN"),
     "Ascension St. Vincent Jennings": ("North Vernon", "IN"),
     "Ascension St. Vincent Dunn": ("Bedford", "IN"),
+    # 2026-10-29 (facility scale): the micro hospital its postings name
+    # ("Facility: Ascension St Vincent Plainfield Micro Hospital", Plainfield, IN)
+    "Ascension St. Vincent Plainfield": ("Plainfield", "IN"),
     # Florida
     "Ascension St. Vincent's Riverside": ("Jacksonville", "FL"),
     "Ascension St. Vincent's Southside": ("Jacksonville", "FL"),
@@ -676,6 +679,10 @@ _ASC_ALIASES = {
     "ASV Salem": "Ascension St. Vincent Salem", "ASV Williamsport": "Ascension St. Vincent Williamsport",
     "ASV Mercy": "Ascension St. Vincent Mercy", "ASV Jennings": "Ascension St. Vincent Jennings",
     "ASV Dunn": "Ascension St. Vincent Dunn",
+    # 2026-10-29 (facility scale): spellings on stored Facility lines the table lacked
+    "St. Vincent Plainfield Micro Hospital": "Ascension St. Vincent Plainfield",
+    "St. Vincent Plainfield Hospital": "Ascension St. Vincent Plainfield",
+    "Stress Center": {"IN": "Ascension St. Vincent Stress Center"},
     "St. Vincent": _ASC_ST_VINCENT_TOWNS, "St. Vincent Hospital": _ASC_ST_VINCENT_TOWNS,
     "St. Vincent Medical Center": _ASC_ST_VINCENT_TOWNS,
     # Florida
@@ -706,6 +713,7 @@ _ASC_ALIASES = {
     "Saint Thomas Heart Midtown": "Ascension Saint Thomas Midtown",
     "Saint Thomas West Hospital": "Ascension Saint Thomas West",
     "Saint Thomas Rutherford Hospital": "Ascension Saint Thomas Rutherford",
+    "Saint Thomas Heart West": "Ascension Saint Thomas West",     # 2026-10-29: the heart program at West
     "Saint Thomas River Park Hospital": "Ascension Saint Thomas River Park",
     "Saint Thomas": _ASC_ST_THOMAS_TOWNS,
     # Oklahoma

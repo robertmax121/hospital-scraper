@@ -1,0 +1,901 @@
+{
+ "read": "2026-10-29, read-only from the DATA project (hospital_jobs, active rows on the system label): the one line of each stored body the resolver reads, with the row's id, town and link",
+ "rows": [
+  {
+   "id": 24469638,
+   "system": "Hartford HealthCare",
+   "job_id": "26163086",
+   "city": "Norwich",
+   "state": "CT",
+   "line": "Location Detail: Backus Hospital (10309)"
+  },
+  {
+   "id": 33771231,
+   "system": "Hartford HealthCare",
+   "job_id": "26164786",
+   "city": "Trumbull",
+   "state": "CT",
+   "line": "Location Detail: 15 Corporate Drive Trumbull (10530)"
+  },
+  {
+   "id": 26202534,
+   "system": "Hartford HealthCare",
+   "job_id": "26163688",
+   "city": "Torrington",
+   "state": "CT",
+   "line": "Location Detail: Charlotte Hungerford Hospital (10115)"
+  },
+  {
+   "id": 29396048,
+   "system": "Hartford HealthCare",
+   "job_id": "26157903",
+   "city": "Norwich",
+   "state": "CT",
+   "line": "Location Detail: 111 Salem Tpke Norwich (10365)"
+  },
+  {
+   "id": 28292913,
+   "system": "Hartford HealthCare",
+   "job_id": "26164170",
+   "city": "Willimantic",
+   "state": "CT",
+   "line": "Location Detail: Windham Community Memorial (10183)"
+  },
+  {
+   "id": 11167145,
+   "system": "Hartford HealthCare",
+   "job_id": "26159474",
+   "city": "Hartford",
+   "state": "CT",
+   "line": "Location Detail: 27 Jefferson St - HH Data Bld (10020)"
+  },
+  {
+   "id": 1461894,
+   "system": "Hartford HealthCare",
+   "job_id": "26157961",
+   "city": "Portland",
+   "state": "CT",
+   "line": "Location Detail: Rushford Portland Facility (10170)"
+  },
+  {
+   "id": 2484352,
+   "system": "Hartford HealthCare",
+   "job_id": "26157631",
+   "city": "Bridgeport",
+   "state": "CT",
+   "line": "Location Detail: 765 Fairfield Ave Bridgeport (10411)"
+  },
+  {
+   "id": 19887100,
+   "system": "Hartford HealthCare",
+   "job_id": "26162671",
+   "city": "Hartford",
+   "state": "CT",
+   "line": "Location Detail: 85 Seymour Street - HHMOB (10117)"
+  },
+  {
+   "id": 38698928,
+   "system": "Hartford HealthCare",
+   "job_id": "26165980",
+   "city": "Manchester",
+   "state": "CT",
+   "line": "Location Detail: 71 Haynes Street (10627)"
+  },
+  {
+   "id": 37947492,
+   "system": "Hartford HealthCare",
+   "job_id": "26165136",
+   "city": "Hartford",
+   "state": "CT",
+   "line": "Location Detail: 79 Jefferson St HH Bliss Wing (10064)"
+  },
+  {
+   "id": 19022465,
+   "system": "Hartford HealthCare",
+   "job_id": "26162545",
+   "city": "Middletown",
+   "state": "CT",
+   "line": "Location Detail: 1250 Silver St Middletown (10168)"
+  },
+  {
+   "id": 1090835,
+   "system": "Hartford HealthCare",
+   "job_id": "26156092",
+   "city": "Hartford",
+   "state": "CT",
+   "line": "Location Detail: 79 Retreat Ave HH Brownstone (10065)"
+  },
+  {
+   "id": 38852530,
+   "system": "Hartford HealthCare",
+   "job_id": "26166435",
+   "city": "East Hartford",
+   "state": "CT",
+   "line": "Location Detail: 60 Hartland St E. Hartford (10630)To Be Determined Qualifications To Be Determined"
+  },
+  {
+   "id": 11868658,
+   "system": "Kaiser Permanente",
+   "job_id": "98149027424",
+   "city": "Los Angeles",
+   "state": "CA",
+   "line": "Department: Sunset/Edgemont MOB - Head and Neck-Audiology - 0806"
+  },
+  {
+   "id": 38628015,
+   "system": "Kaiser Permanente",
+   "job_id": "102349579184",
+   "city": "Oakland",
+   "state": "CA",
+   "line": "Department: Oakland Hospital - HIV Clinic - 0206"
+  },
+  {
+   "id": 38628165,
+   "system": "Kaiser Permanente",
+   "job_id": "102309070848",
+   "city": "Los Angeles",
+   "state": "CA",
+   "line": "Department: Sunset Medical Center - Intensive Care Unit- 1 - 0801"
+  },
+  {
+   "id": 1612164,
+   "system": "Kaiser Permanente",
+   "job_id": "94620106272",
+   "city": "Sacramento",
+   "state": "CA",
+   "line": "Department: So Sacramento Hospital North - Anesthesiology-Nurse Anesthes - 0206"
+  },
+  {
+   "id": 26690096,
+   "system": "Kaiser Permanente",
+   "job_id": "100415374816",
+   "city": "Beaverton",
+   "state": "OR",
+   "line": "Department: WALKER RD DENTAL/MED OFFICE - Dental Office - 1008"
+  },
+  {
+   "id": 1611606,
+   "system": "Kaiser Permanente",
+   "job_id": "77716084608",
+   "city": "Los Angeles",
+   "state": "CA",
+   "line": "Department: Sunset Medical Center - Anesthesiology-Inpatient - 0806"
+  },
+  {
+   "id": 38825355,
+   "system": "Kaiser Permanente",
+   "job_id": "102529316752",
+   "city": "San Francisco",
+   "state": "CA",
+   "line": "Department: San Francisco Hospital - Home Health - Internal - Admin - 0201"
+  },
+  {
+   "id": 12975920,
+   "system": "Kaiser Permanente",
+   "job_id": "98435895424",
+   "city": "Walnut Creek",
+   "state": "CA",
+   "line": "Department: Walnut Crk Shadelands Sequoia - Ophthalmology - 0206"
+  },
+  {
+   "id": 34322190,
+   "system": "Kaiser Permanente",
+   "job_id": "101361860544",
+   "city": "Wailuku",
+   "state": "HI",
+   "line": "Department: Maui Lani Medical Offices - After Hours Clinic - 1208"
+  },
+  {
+   "id": 38825252,
+   "system": "Kaiser Permanente",
+   "job_id": "102558580848",
+   "city": "Antioch",
+   "state": "CA",
+   "line": "Department: Antioch Hospital - Emergency - 0206"
+  },
+  {
+   "id": 38737980,
+   "system": "Kaiser Permanente",
+   "job_id": "102525731552",
+   "city": "Antioch",
+   "state": "CA",
+   "line": "Department: Walnut Creek Hospital - Anesthesiology-Nurse Anesthes - 0206"
+  },
+  {
+   "id": 6936593,
+   "system": "Kaiser Permanente",
+   "job_id": "97175571968",
+   "city": "Los Angeles",
+   "state": "CA",
+   "line": "Department: Sunset Medical Center - Emergency-Day - 0806"
+  },
+  {
+   "id": 37881585,
+   "system": "Kaiser Permanente",
+   "job_id": "101858976048",
+   "city": "Walnut Creek",
+   "state": "CA",
+   "line": "Department: Walnut Creek Hospital - Mental Hlth/Psych-Intensiv O/P - 0206"
+  },
+  {
+   "id": 24070105,
+   "system": "Kaiser Permanente",
+   "job_id": "100051598912",
+   "city": "Modesto",
+   "state": "CA",
+   "line": "Department: Modesto Hospital - Optometry - 0206"
+  },
+  {
+   "id": 27397700,
+   "system": "Children's Health",
+   "job_id": "32816",
+   "city": "Dallas",
+   "state": "TX",
+   "line": "Location: Dallas"
+  },
+  {
+   "id": 38720940,
+   "system": "Children's Health",
+   "job_id": "33737",
+   "city": "Dallas",
+   "state": "TX",
+   "line": "Location: Dallas, TX"
+  },
+  {
+   "id": 26867674,
+   "system": "Children's Health",
+   "job_id": "32853",
+   "city": "Dallas",
+   "state": "TX",
+   "line": "Location: Dallas, Texas"
+  },
+  {
+   "id": 34551563,
+   "system": "Children's Health",
+   "job_id": "32615",
+   "city": "Plano",
+   "state": "TX",
+   "line": "Location: Children's Health Plano"
+  },
+  {
+   "id": 38588054,
+   "system": "Children's Health",
+   "job_id": "31376",
+   "city": "Dallas",
+   "state": "TX",
+   "line": "Location: Dallas Campus"
+  },
+  {
+   "id": 38755520,
+   "system": "Children's Health",
+   "job_id": "32761",
+   "city": "Dallas",
+   "state": "TX",
+   "line": "Location : Dallas, TX"
+  },
+  {
+   "id": 26666408,
+   "system": "Children's Health",
+   "job_id": "32309",
+   "city": "Wylie",
+   "state": "TX",
+   "line": "Location: Wylie, TX"
+  },
+  {
+   "id": 29386691,
+   "system": "Children's Health",
+   "job_id": "32881",
+   "city": "Dallas",
+   "state": "TX",
+   "line": "Location: Dallas; 2222 Medical District Dr., Dallas, TX"
+  },
+  {
+   "id": 32718679,
+   "system": "Children's Health",
+   "job_id": "33369",
+   "city": "Dallas",
+   "state": "TX",
+   "line": "Location: Children's Health Dallas"
+  },
+  {
+   "id": 31120542,
+   "system": "Children's Health",
+   "job_id": "33014",
+   "city": "Plano",
+   "state": "TX",
+   "line": "Location: Plano, TX"
+  },
+  {
+   "id": 38568523,
+   "system": "Children's Health",
+   "job_id": "32608",
+   "city": "Plano",
+   "state": "TX",
+   "line": "Location : Plano, TX"
+  },
+  {
+   "id": 38526287,
+   "system": "Children's Health",
+   "job_id": "33286",
+   "city": "Dallas",
+   "state": "TX",
+   "line": "Location: Dallas, TX - Floating throughout the DFW Metroplex"
+  },
+  {
+   "id": 36644570,
+   "system": "Children's Health",
+   "job_id": "33197",
+   "city": "Plano",
+   "state": "TX",
+   "line": "Location: Plano, Texas"
+  },
+  {
+   "id": 26666439,
+   "system": "Children's Health",
+   "job_id": "32555",
+   "city": "Dallas",
+   "state": "TX",
+   "line": "Location: Dallas, TX (Main Hospital)"
+  },
+  {
+   "id": 32726020,
+   "system": "Duke Health",
+   "job_id": "275228",
+   "city": "Durham",
+   "state": "NC",
+   "line": "Location: 2301 Erwin Rd, Durham, NC 27705"
+  },
+  {
+   "id": 901367,
+   "system": "Duke Health",
+   "job_id": "269273",
+   "city": "Durham",
+   "state": "NC",
+   "line": "Location:"
+  },
+  {
+   "id": 38411361,
+   "system": "Duke Health",
+   "job_id": "276171",
+   "city": "Cary",
+   "state": "NC",
+   "line": "Location: Duke Health Cary Hospital"
+  },
+  {
+   "id": 5568485,
+   "system": "Duke Health",
+   "job_id": "271444",
+   "city": "Durham",
+   "state": "NC",
+   "line": "Location: Duke Regional Hospital"
+  },
+  {
+   "id": 38357881,
+   "system": "Duke Health",
+   "job_id": "276297",
+   "city": "Durham",
+   "state": "NC",
+   "line": "Location: 1821 Hillandale Road, Suite 24A, Durham, North Carolina 27705"
+  },
+  {
+   "id": 24046865,
+   "system": "Duke Health",
+   "job_id": "274064",
+   "city": "Durham",
+   "state": "NC",
+   "line": "JOB LOCATION:"
+  },
+  {
+   "id": 2482028,
+   "system": "Duke Health",
+   "job_id": "270783",
+   "city": "Durham",
+   "state": "NC",
+   "line": "Location : Duke University Hospital"
+  },
+  {
+   "id": 36970084,
+   "system": "Duke Health",
+   "job_id": "275733",
+   "city": "Durham",
+   "state": "NC",
+   "line": "Job Location:"
+  },
+  {
+   "id": 37617491,
+   "system": "Duke Health",
+   "job_id": "275353",
+   "city": "Durham",
+   "state": "NC",
+   "line": "Location: 100 Golden Drive, Durham, NC 27705"
+  },
+  {
+   "id": 19020100,
+   "system": "Duke Health",
+   "job_id": "273562",
+   "city": "Raleigh",
+   "state": "NC",
+   "line": "Location: Duke Raleigh Hospital"
+  },
+  {
+   "id": 38715876,
+   "system": "Duke Health",
+   "job_id": "276653",
+   "city": "Raleigh",
+   "state": "NC",
+   "line": "Location: 4101 Macon Pond Road, Raleigh 27607"
+  },
+  {
+   "id": 35085253,
+   "system": "Duke Health",
+   "job_id": "275433",
+   "city": "Durham",
+   "state": "NC",
+   "line": "Job Location: Duke University Hospital"
+  },
+  {
+   "id": 15418389,
+   "system": "Duke Health",
+   "job_id": "273385",
+   "city": "Morrisville",
+   "state": "NC",
+   "line": "Location: Duke Ambulatory Imaging-Arringdon - Morrisville"
+  },
+  {
+   "id": 1032776,
+   "system": "Duke Health",
+   "job_id": "269554",
+   "city": "Durham",
+   "state": "NC",
+   "line": "Location: Duke Hospital Neurodiagnostic Lab"
+  },
+  {
+   "id": 35388572,
+   "system": "MU Health Care",
+   "job_id": "26000886",
+   "city": "Jefferson City",
+   "state": "MO",
+   "line": "Facility : Madison Street Medical Building - 1125 Madison Street, Jefferson City, MO"
+  },
+  {
+   "id": 37287179,
+   "system": "MU Health Care",
+   "job_id": "26001998",
+   "city": "Columbia",
+   "state": "MO",
+   "line": "Facility : University Hospital – 1 Hospital Drive, Columbia, MO"
+  },
+  {
+   "id": 35388564,
+   "system": "MU Health Care",
+   "job_id": "26003487",
+   "city": "Jefferson City",
+   "state": "MO",
+   "line": "Facility : 1705 Christy Drive, Suite 215, Jefferson City, MO 65101"
+  },
+  {
+   "id": 35388471,
+   "system": "MU Health Care",
+   "job_id": "25004094",
+   "city": "Jefferson City",
+   "state": "MO",
+   "line": "Facility : Capital Region Medical Center - 1125 Madison St, Jefferson City, MO"
+  },
+  {
+   "id": 35388605,
+   "system": "MU Health Care",
+   "job_id": "26002862",
+   "city": "Columbia",
+   "state": "MO",
+   "line": "Facility : Children’s Hospital – 1021 Hitt St, Columbia, MO"
+  },
+  {
+   "id": 36650816,
+   "system": "MU Health Care",
+   "job_id": "26002917",
+   "city": "Columbia",
+   "state": "MO",
+   "line": "Facility: University Hospital – 1 Hospital Drive, Columbia, MO"
+  },
+  {
+   "id": 35388448,
+   "system": "MU Health Care",
+   "job_id": "26003243",
+   "city": "Columbia",
+   "state": "MO",
+   "line": "Facility : Missouri Orthopaedic Institute, 1100 Virginia Ave, Columbia, MO"
+  },
+  {
+   "id": 35388506,
+   "system": "MU Health Care",
+   "job_id": "26003656",
+   "city": "Columbia",
+   "state": "MO",
+   "line": "Facility : University Hospital, 1 Hospital Drive, Columbia, MO"
+  },
+  {
+   "id": 35388765,
+   "system": "MU Health Care",
+   "job_id": "26003020",
+   "city": "Columbia",
+   "state": "MO",
+   "line": "Facility : Physical Medicine and Rehabilitation Clinic – 315 Business Loop 70 W Columbia, MO 65203"
+  },
+  {
+   "id": 37287330,
+   "system": "MU Health Care",
+   "job_id": "26003891",
+   "city": "Columbia",
+   "state": "MO",
+   "line": "Facility : South Providence Urgent Care – 3916 S Providence Rd, Columbia, MO 65201"
+  },
+  {
+   "id": 35388546,
+   "system": "MU Health Care",
+   "job_id": "26003220",
+   "city": "Columbia",
+   "state": "MO",
+   "line": "Facility : Keene Street Medical Center – 404 North Keene Street, Columbia, MO"
+  },
+  {
+   "id": 35388449,
+   "system": "MU Health Care",
+   "job_id": "24002841",
+   "city": "Jefferson City",
+   "state": "MO",
+   "line": "Facility : Sam B. Cook Healthplex, 1432 Southwest Blvd, Jefferson City, MO 65109"
+  },
+  {
+   "id": 35388695,
+   "system": "MU Health Care",
+   "job_id": "26003477",
+   "city": "Columbia",
+   "state": "MO",
+   "line": "Facility : University Hospital - 1 Hospital Drive, Columbia, MO"
+  },
+  {
+   "id": 38574762,
+   "system": "MU Health Care",
+   "job_id": "26003727",
+   "city": "Fulton",
+   "state": "MO",
+   "line": "Facility : Fulton Family Health – 2613 Fairway Dr, Fulton MO"
+  },
+  {
+   "id": 38545133,
+   "system": "MemorialCare",
+   "job_id": "102221171088",
+   "city": "Laguna Hills",
+   "state": "CA",
+   "line": "Location: Saddleback Memorial Medical Center"
+  },
+  {
+   "id": 38545065,
+   "system": "MemorialCare",
+   "job_id": "102221182944",
+   "city": "Fountain Valley",
+   "state": "CA",
+   "line": "Location: Fountain Valley, Predominantly Remote (Must reside in CA)"
+  },
+  {
+   "id": 38555235,
+   "system": "MemorialCare",
+   "job_id": "102263361712",
+   "city": "Long Beach",
+   "state": "CA",
+   "line": "Location: Long Beach"
+  },
+  {
+   "id": 38545129,
+   "system": "MemorialCare",
+   "job_id": "102221171440",
+   "city": "Fountain Valley",
+   "state": "CA",
+   "line": "Location: Fountain Valley, CA"
+  },
+  {
+   "id": 38773722,
+   "system": "MemorialCare",
+   "job_id": "102526214880",
+   "city": "Long Beach",
+   "state": "CA",
+   "line": "Location: Long Beach, CA"
+  },
+  {
+   "id": 38545104,
+   "system": "MemorialCare",
+   "job_id": "102221175504",
+   "city": "Long Beach",
+   "state": "CA",
+   "line": "Location: Miller Children’s Hospital @ Long Beach Memorial Medical Center"
+  },
+  {
+   "id": 38545107,
+   "system": "MemorialCare",
+   "job_id": "102221175024",
+   "city": "Fountain Valley",
+   "state": "CA",
+   "line": "Location: Fountain Valley, On-Site"
+  },
+  {
+   "id": 38545064,
+   "system": "MemorialCare",
+   "job_id": "102221183008",
+   "city": "Fountain Valley",
+   "state": "CA",
+   "line": "Location: Fountain Valley, Hybrid"
+  },
+  {
+   "id": 38545126,
+   "system": "MemorialCare",
+   "job_id": "102221171808",
+   "city": "Laguna Hills",
+   "state": "CA",
+   "line": "Location: Laguna Hills"
+  },
+  {
+   "id": 38545100,
+   "system": "MemorialCare",
+   "job_id": "102221176000",
+   "city": "Laguna Hills",
+   "state": "CA",
+   "line": "Location: Saddleback Medical Center"
+  },
+  {
+   "id": 38492453,
+   "system": "MemorialCare",
+   "job_id": "102178471952",
+   "city": "Fountain Valley",
+   "state": "CA",
+   "line": "Location: Fountain Valley, California"
+  },
+  {
+   "id": 38492441,
+   "system": "MemorialCare",
+   "job_id": "102178473808",
+   "city": "Fountain Valley",
+   "state": "CA",
+   "line": "Location: Fountain Valley"
+  },
+  {
+   "id": 38492420,
+   "system": "MemorialCare",
+   "job_id": "102183689488",
+   "city": "Laguna Hills",
+   "state": "CA",
+   "line": "Location: Laguna Hills, CA"
+  },
+  {
+   "id": 38615592,
+   "system": "MemorialCare",
+   "job_id": "102350086720",
+   "city": "Huntington Beach",
+   "state": "CA",
+   "line": "Location: Huntington Beach, CA"
+  },
+  {
+   "id": 28297389,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-38438",
+   "city": "Atlanta",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Scottish-Rite-Medical-Office-Building/PRN-Dental-Hygienist_R-38438-1"
+  },
+  {
+   "id": 38413714,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-38914",
+   "city": "Brookhaven",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-Healthcare-of-Atlanta-Support-Center/Health-Informatics-Core-Research-Program-Coordinator_R-38914"
+  },
+  {
+   "id": 38568508,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-39102",
+   "city": "Atlanta",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Arthur-M-Blank-Hospital/Retail-Sales-Associate_R-39102"
+  },
+  {
+   "id": 32729889,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-37908",
+   "city": "Brookhaven",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/NDH-Facility-Operations/Maintenance-Technician-1---1st-Shift-1_R-37908"
+  },
+  {
+   "id": 903767,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-34114",
+   "city": "Sandy Springs",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-at-Mount-Vernon-Highway/Pulmonary-Diagnostics-Tech-1_R-34114"
+  },
+  {
+   "id": 32996032,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-38715",
+   "city": "Atlanta",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-Scottish-Rite-Hospital/Float-Pool-Patient-Safety-Supporter_R-38715"
+  },
+  {
+   "id": 1093618,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-35253",
+   "city": "Atlanta",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Center-for-Advanced-Pediatrics/Registered-Nurse---ENT-Specialty-Care-Clinic_R-35253"
+  },
+  {
+   "id": 37624827,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-38841",
+   "city": "Atlanta",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-Hughes-Spalding-Hospital/Clinical-Nurse-2---FT-Weekends_R-38841"
+  },
+  {
+   "id": 21249623,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-37303",
+   "city": "Canton",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-at-CherokeeSports-Medicine/Registration-Associate_R-37303"
+  },
+  {
+   "id": 903713,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-30641",
+   "city": "Dacula",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-at-Hamilton-Creek/Physician---Urgent-Care-at-Hamilton-Creek---part-time_R-30641"
+  },
+  {
+   "id": 34566225,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-37410",
+   "city": "Kennesaw",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-at-Town-Center-Outpatient-Care-Center/Registration-Associate_R-37410-1"
+  },
+  {
+   "id": 1464614,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-35722",
+   "city": "Stockbridge",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-at-Hudson-Bridge/Advanced-Practice-Provider---Urgent-Care---Hudson-Bridge--part-time-_R-35722"
+  },
+  {
+   "id": 34830231,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-38647",
+   "city": "Atlanta",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-at-Meridian-Mark/Clinical-Educator-RN---Ambulatory-Surgical-Services---Sandy-Springs_R-38647-1"
+  },
+  {
+   "id": 903646,
+   "system": "Children's Healthcare ATL",
+   "job_id": "R-30636",
+   "city": "Cumming",
+   "state": "GA",
+   "url": "https://choa.wd12.myworkdayjobs.com/externalcareers/job/Childrens-at-Forsyth/Physician---Urgent-Care-at-Forsyth---full-time-or-part-time_R-30636"
+  },
+  {
+   "id": 904222,
+   "system": "Franciscan Health",
+   "job_id": "R-109484",
+   "city": "Michigan City",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/IN---Michigan-City/Physician---Urology_R-109484"
+  },
+  {
+   "id": 18168582,
+   "system": "Franciscan Health",
+   "job_id": "R-130906",
+   "city": "Crown Point",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/IN---Crown-Point/Respiratory-Therapist--6-FTE-Alternating-Shifts-_R-130906"
+  },
+  {
+   "id": 24474351,
+   "system": "Franciscan Health",
+   "job_id": "R-117093",
+   "city": "Indianapolis",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/Indianapolis-5230-Lauth-Medical-Arts-Building/Physician---Endocrinology_R-117093"
+  },
+  {
+   "id": 38108030,
+   "system": "Franciscan Health",
+   "job_id": "R-132707",
+   "city": "Indianapolis",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/IN---Indianapolis/Medical-Assistant_R-132707"
+  },
+  {
+   "id": 32484884,
+   "system": "Franciscan Health",
+   "job_id": "R-132330",
+   "city": "Lafayette",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/Franciscan-Health-Lafayette-Central-Campus/Assistant-Professor-Nursing_R-132330"
+  },
+  {
+   "id": 38770892,
+   "system": "Franciscan Health",
+   "job_id": "R-133345",
+   "city": "Mooresville",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/IN---Mooresville/Respiratory-Therapist--PRN-Days-_R-133345"
+  },
+  {
+   "id": 21855880,
+   "system": "Franciscan Health",
+   "job_id": "R-131341",
+   "city": "Lafayette",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/IN---Lafayette/Ultrasound-Technologist--PRN-Alternating---Lafayette-_R-131341"
+  },
+  {
+   "id": 27973766,
+   "system": "Franciscan Health",
+   "job_id": "R-131872",
+   "city": "Mishawaka",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/Foundation-Park-Place/Manager-Grants_R-131872"
+  },
+  {
+   "id": 38703346,
+   "system": "Franciscan Health",
+   "job_id": "R-133259",
+   "city": "Indianapolis",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/Southport-Family-And-Sports-Medicine/Physical-Therapist-Outpatient-Ortho-PRN_R-133259"
+  },
+  {
+   "id": 2488052,
+   "system": "Franciscan Health",
+   "job_id": "R-128060",
+   "city": "Carmel",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/IN---Carmel/Medical-Assistant-or-LPN_R-128060"
+  },
+  {
+   "id": 23381169,
+   "system": "Franciscan Health",
+   "job_id": "R-131212",
+   "city": "Carmel",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/Franciscan-Health-Indianapolis-Orthopedic-Hospital/Registered-Nurse-ASD---PACU--PRN_R-131212"
+  },
+  {
+   "id": 34043382,
+   "system": "Franciscan Health",
+   "job_id": "R-132508",
+   "city": "Munster",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/IN---Munster/Registered-Nurse-7D-Endoscopy_R-132508"
+  },
+  {
+   "id": 11403221,
+   "system": "Franciscan Health",
+   "job_id": "R-129848",
+   "city": "Indianapolis",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/Indiana-Heart-Physicians-Building/Physician---Cardiology-Non-Invasive_R-129848"
+  },
+  {
+   "id": 27411122,
+   "system": "Franciscan Health",
+   "job_id": "R-131799",
+   "city": "West Lafayette",
+   "state": "IN",
+   "url": "https://wd5.myworkdaysite.com/recruiting/franciscanalliance/FA_External_Career_Site/job/West-Lafayette-Medical-Center/Medical-Assistant_R-131799"
+  }
+ ]
+}
