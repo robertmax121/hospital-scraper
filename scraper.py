@@ -35,6 +35,7 @@ from specialty_canon import canonical_specialty
 from specialty_canon import ATS_ALIASES as _SPEC_ALIASES, _norm_ats as _spec_norm   # 2026-10-28: the Nomad / AMN specialty
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
+import facilities_town   # 2026-10-29: the hospital on a system-label row from its town (TOWN family)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -32970,6 +32971,16 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if fac:
         logger.info("Facilities: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fac.items())))
+    # 2026-10-29 (facility scale, TOWN family): rows still on the system's
+    # name after the adapters' facility hooks and facility_names take the one
+    # hospital of their system in their town (facilities_town: a clinic, an
+    # office, a remote posting, a stamped default town or a town with two of
+    # the system's hospitals keeps the label). Last, so the posting's own
+    # facility always wins.
+    town = facilities_town.apply_jobs(kept, canon=lambda s: HOSPITAL_SYSTEM_ALIASES.get(s, s))
+    if town:
+        logger.info("Town tables: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(town.items())))
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
     pairs = []
