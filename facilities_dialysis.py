@@ -457,6 +457,25 @@ def resolve_row(system, *, hospital_name="", url="", city="", state="", descript
     return name, city, state or s2, kind
 
 
+# review B 2026-10-29 (facility release 3): one row nobody foresaw must not
+# end the pass for every row after it. The row that raises keeps the name and
+# town it came with and counts as "error" in the pass's stats.
+_ROW_FIELDS = ("hospital_name", "city", "state", "location")
+
+
+def _row_guard(fn, job, *args):
+    keep = [(a, getattr(job, a)) for a in _ROW_FIELDS if hasattr(job, a)]
+    try:
+        return fn(job, *args)
+    except Exception:
+        for a, v in keep:
+            try:
+                setattr(job, a, v)
+            except Exception:
+                pass
+        return "error"
+
+
 def apply_jobs(jobs) -> dict:
     """finalize_jobs pass: DaVita and Fresenius rows on their label take the
     clinic's name (and a town only where the row has none). Returns
@@ -466,16 +485,22 @@ def apply_jobs(jobs) -> dict:
         system = getattr(job, "hospital_system", "")
         if system not in (DAVITA, FRESENIUS):
             continue
-        got = resolve_row(system, hospital_name=job.hospital_name, url=job.url, city=job.city,
-                          state=job.state, description=job.description)
-        how = "none"
-        if got:
-            name, city, state, how = got
-            if name:
-                job.hospital_name = name
-            if (city, state) != ((job.city or "").strip(), (job.state or "").strip()) and (city or state):
-                job.city, job.state = city, state
-                job.location = f"{city}, {state}" if city else state
+        how = _row_guard(_apply_one, job, system)
         d = stats.setdefault(system, {})
         d[how] = d.get(how, 0) + 1
     return stats
+
+
+def _apply_one(job, system) -> str:
+    """apply_jobs on one DaVita / Fresenius row; returns how."""
+    got = resolve_row(system, hospital_name=job.hospital_name, url=job.url, city=job.city,
+                      state=job.state, description=job.description)
+    how = "none"
+    if got:
+        name, city, state, how = got
+        if name:
+            job.hospital_name = name
+        if (city, state) != ((job.city or "").strip(), (job.state or "").strip()) and (city or state):
+            job.city, job.state = city, state
+            job.location = f"{city}, {state}" if city else state
+    return how

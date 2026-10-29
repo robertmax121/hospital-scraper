@@ -1824,9 +1824,11 @@ def _known_kind(system: str, job):
         return "force"
     if _company_reread_slot(key):
         return "facility"     # 2026-10-27: read for its iCIMS Company field
-    if facilities_home_health.reread_slot(key[0], key[1], _run_day()):
+    if _fac_hook("CenterWell re-read slot", facilities_home_health.reread_slot, key[0], key[1], _run_day(),
+                 default=False):
         return "facility"     # 2026-10-29: CenterWell, read for its requisition location (the branch)
-    if facilities_leftovers.reread_slot(*key, today=datetime.fromordinal(_run_day()).date()):
+    if _fac_hook("Workday work-site re-read slot", facilities_leftovers.reread_slot, *key,
+                 today=datetime.fromordinal(_run_day()).date(), default=False):
         return "facility"     # 2026-10-29: read for its Workday work site (facilities_leftovers)
     if key in _KNOWN_UNPRICED and key[0] in PAY_REREAD_SYSTEMS and _pay_slot(*key):
         return "pay"
@@ -4405,7 +4407,8 @@ async def _jsonld_detail(session, job) -> bool:
     # 2026-10-29 (phase 3): USPI's page names the site in its Facility field;
     # an office, float pool or remote value keeps the system name.
     if job.hospital_system in facilities_ambulatory.TB_FACILITY_SYSTEMS:
-        site, named = facilities_ambulatory.tb_page_facility(job.hospital_system, html)
+        site, named = _fac_hook("USPI page facility", facilities_ambulatory.tb_page_facility,
+                                job.hospital_system, html, default=("", False))
         if named:
             job.hospital_name = site or job.hospital_system
     posting = _jobposting_from_html(html)
@@ -4912,7 +4915,7 @@ def _apply_wd_posting_info(job, info: dict) -> bool:
     # the branch ("CWHH Ballston Lk"); facilities_home_health.apply_facility
     # reads it in finalize_jobs.
     if job.hospital_system in facilities_home_health.WD_REQ_LOCATION:
-        facilities_home_health.stash_requisition(job, info)
+        _fac_hook("CenterWell requisition location", facilities_home_health.stash_requisition, job, info)
     # 2026-10-29 (facility scale, phase 3): the town-only Workday systems
     # (MUSC, Sentara, Prisma, Avera ...) take the hospital their
     # jobRequisitionLocation names; a clinic or office work site keeps the
@@ -7650,7 +7653,7 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         # Hospital" or "Valparaiso - IN SHH" parsed as no town;
                         # only a known town of the row's state is taken, and a
                         # "N Locations" posting stays without one (2026-10-13).
-                        _et = facilities_home_health.elara_town(loc, _state)
+                        _et = _fac_hook("Elara towns", facilities_home_health.elara_town, loc, _state, default=None)
                         if _et:
                             _city, _state = _et
                     _facility = system
@@ -7660,12 +7663,14 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         # 2026-10-29: the site's facility and its own town
                         # (WD_SITE_FACILITY); a site its table does not know
                         # falls through to WD_FACILITY_MAP as before.
-                        _site = WD_SITE_FACILITY[system](loc, j.get("externalPath", ""))
+                        _site = _fac_hook(f"{system} site table", WD_SITE_FACILITY[system], loc,
+                                          j.get("externalPath", ""), default=None)
                         if _site:
                             _facility, _city, _state = _site
                             _site_how = "table" if _facility != system else "office"
                         else:
-                            _unk = WD_SITE_UNKNOWN[system](loc, j.get("externalPath", ""))
+                            _unk = _fac_hook(f"{system} site table (unknown)", WD_SITE_UNKNOWN[system], loc,
+                                             j.get("externalPath", ""), default="")
                             _site_how = "unknown site" if _unk else "town or remote"
                     if _site:
                         pass
@@ -10753,7 +10758,7 @@ def _jibe_facility(system: str, j: dict) -> str:
     if system == uhs_facilities.SYSTEM:
         return uhs_jibe_facility(j)[0]
     # 2026-10-29 (phase 3): Trilogy's campus and Signature's center (location_name)
-    got = facilities_senior_rehab.jibe_facility(system, j)
+    got = _fac_hook("Senior/rehab Jibe sites", facilities_senior_rehab.jibe_facility, system, j, default=None)
     if got is not None:
         return got[0]
     got = facilities_icims.jibe_facility(system, j)   # 2026-10-29: Fairview, MedStar, Piedmont ... (JIBE_SYSTEMS)
@@ -10762,10 +10767,10 @@ def _jibe_facility(system: str, j: dict) -> str:
     # 2026-10-29 (phase 3): Amedisys' care center ("2214 Sumter, SC Winyah")
     # and AccentCare's branch ("Fort Worth TX HH") in location_name.
     if system in facilities_home_health.JIBE_SYSTEMS:
-        return facilities_home_health.jibe_branch(system, j) or system
+        return _fac_hook("Home-health Jibe branches", facilities_home_health.jibe_branch, system, j, default="") or system
     resolver = JIBE_FACILITY_RESOLVER.get(system)
     if resolver:
-        return resolver(j.get("location_name") or "") or system
+        return _fac_hook(f"{system} Jibe location", resolver, j.get("location_name") or "", default=None) or system
     tag = JIBE_FACILITY_TAG.get(system)
     if tag:
         vals = j.get(tag)
@@ -11774,7 +11779,8 @@ async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: st
                 hospital_system=system,
                 # 2026-10-29 (phase 3): BAYADA's department is the service
                 # office ("Millville (MIL) - 52"); facilities_home_health.
-                hospital_name=facilities_home_health.greenhouse_branch(system, j) or system,
+                hospital_name=_fac_hook("BAYADA departments", facilities_home_health.greenhouse_branch, system, j,
+                                        default="") or system,
                 city=_city,
                 state=_state,
                 location=loc,
@@ -12100,8 +12106,9 @@ async def scrape_concentra(session: aiohttp.ClientSession) -> list[Job]:
             # ("Concentra Kansas Avenue"); onsite, corporate and remote postings
             # are at no centre point and keep "Concentra" (facilities_ambulatory).
             geo = it.get("Geospatial") or {}
-            center = facilities_ambulatory.concentra_center(
-                geo.get("Latitude"), geo.get("Longitude"), city, state, title, specialty) if isinstance(geo, dict) else ""
+            center = _fac_hook("Concentra centres", facilities_ambulatory.concentra_center,
+                               geo.get("Latitude"), geo.get("Longitude"), city, state, title, specialty,
+                               default="") if isinstance(geo, dict) else ""
             jobs.append(Job(
                 title=title,
                 hospital_system="Concentra",
@@ -14175,7 +14182,8 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     # Workday link's site (CHOA); "" is the system label.
                     _fp = facilities_phenom.list_facility(system, doc, city, state, url)
                     # 2026-10-29 (phase 3): PruittHealth's workLocation names the center or branch
-                    _sr = facilities_senior_rehab.phenom_facility(system, doc)
+                    _sr = _fac_hook("PruittHealth work locations", facilities_senior_rehab.phenom_facility, system, doc,
+                                    default=None)
                     if _sr is not None:
                         _hn = _sr
                     elif _fp:
@@ -17238,10 +17246,12 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                 elif system in facilities_home_health.ORACLE_SYSTEMS:
                     # 2026-10-29 (phase 3): VITAS' work location is the hospice
                     # program ("Broward North - Main"); the town stays the posting's.
-                    _facility = facilities_home_health.oracle_branch(system, j) or system
+                    _facility = _fac_hook("VITAS work locations", facilities_home_health.oracle_branch, system, j,
+                                          default="") or system
                 elif system in facilities_senior_rehab.ORACLE_SYSTEMS:
                     # 2026-10-29 (phase 3): Brookdale's work location is the community, at its own town
-                    _facility, _city, _state = facilities_senior_rehab.oracle_facility(system, j, _city, _state)
+                    _facility, _city, _state = _fac_hook("Brookdale work locations", facilities_senior_rehab.oracle_facility,
+                                                         system, j, _city, _state, default=(system, _city, _state))
                 elif system in ORACLE_LOCATION_FACILITY:
                     _facility = _oracle_work_location_facility(system, j, _city, _state) or system
                     # 2026-10-29: the work location's own town when it is that hospital's (facilities_oracle_other)
@@ -33151,6 +33161,30 @@ def _drop_same_req_same_place(pairs: list) -> list:
     return out
 
 
+_FAC_HOOK_ERRORS: dict = {}     # label -> rows a facility hook raised on this run
+
+
+def _fac_hook(label: str, fn, *args, default=None, **kwargs):
+    """An adapter's facility hook (the 2026-10-29 site tables and readers:
+    Workday site tables, Jibe / Phenom / Oracle / Greenhouse location fields,
+    the USPI page field, Concentra's map point, the re-read slots), guarded
+    (review B, facility release 3): a hook that raises on a row nobody
+    foresaw returns `default`, so that row keeps the name and town it had
+    (the system label) instead of being dropped from tonight's list (a
+    dropped row reads as gone to the sweep) or ending its system's scrape.
+    The first three failures per hook are logged; finalize_jobs logs the
+    totals."""
+    try:
+        return fn(*args, **kwargs)
+    except Exception as e:
+        n = _FAC_HOOK_ERRORS.get(label, 0) + 1
+        _FAC_HOOK_ERRORS[label] = n
+        if n <= 3:
+            logger.warning(f"{label}: facility hook failed on one row, the row keeps its name "
+                           f"({type(e).__name__}: {e})")
+        return default
+
+
 def _facility_pass(label: str, fn, *args, **kwargs) -> dict:
     """One of finalize_jobs' 2026-10-29 facility passes (oracle-other codes,
     Phenom family, text, town), guarded (review B 2026-10-29): a pass that
@@ -33330,6 +33364,11 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if hsb:
         logger.info("Hospital systems B (addresses): " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(hsb.items())))
+    if _FAC_HOOK_ERRORS:
+        # review B 2026-10-29: rows an adapter's facility hook raised on (each kept its name)
+        logger.warning("Facility hooks that failed on a row (the row kept its name): "
+                       + ", ".join(f"{k} {v:,}" for k, v in sorted(_FAC_HOOK_ERRORS.items())))
+        _FAC_HOOK_ERRORS.clear()
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
     pairs = []

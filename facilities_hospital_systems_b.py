@@ -767,6 +767,43 @@ def _set(job, name, city, state):
         job.city, job.state, job.location = city, state, f"{city}, {state}"
 
 
+# review B 2026-10-29 (facility release 3): one row nobody foresaw must not
+# end the pass for every row after it. The row that raises keeps the name and
+# town it came with and counts as "error" in the pass's stats.
+_ROW_FIELDS = ("hospital_name", "city", "state", "location")
+
+
+def _row_guard(fn, job, *args):
+    keep = [(a, getattr(job, a)) for a in _ROW_FIELDS if hasattr(job, a)]
+    try:
+        return fn(job, *args)
+    except Exception:
+        for a, v in keep:
+            try:
+                setattr(job, a, v)
+            except Exception:
+                pass
+        return "error"
+
+
+def _ochsner_one(job) -> str:
+    """apply_before_town on one Ochsner label row; returns how."""
+    hit = ochsner_title(job.title, job.description, job.city, job.state)
+    if hit:
+        _set(job, *hit[:3])
+    return "title" if hit else "none"
+
+
+def _jefferson_one(job) -> str:
+    """apply_after_town on one Jefferson row; returns how."""
+    stored = facilities_town.STORED.get((JEFFERSON, str(job.job_id)))
+    got = jefferson_decide(job.hospital_name, job.city, job.state, job.description, job.job_id, stored,
+                           title=job.title)
+    if got:
+        _set(job, *got[:3])
+    return got[3] if got else "none"
+
+
 def apply_before_town(jobs) -> dict:
     """After the text pass, before the town tables: the Ochsner campus a title
     names. Returns {system: {how: rows}}."""
@@ -774,10 +811,7 @@ def apply_before_town(jobs) -> dict:
     for job in jobs:
         if job.hospital_system != OCHSNER or clean_text(job.hospital_name) not in ("", OCHSNER):
             continue
-        hit = ochsner_title(job.title, job.description, job.city, job.state)
-        how = "title" if hit else "none"
-        if hit:
-            _set(job, *hit[:3])
+        how = _row_guard(_ochsner_one, job)
         d = stats.setdefault(OCHSNER, {})
         d[how] = d.get(how, 0) + 1
     return stats
@@ -792,12 +826,7 @@ def apply_after_town(jobs) -> dict:
     for job in jobs:
         if job.hospital_system != JEFFERSON:
             continue
-        stored = facilities_town.STORED.get((JEFFERSON, str(job.job_id)))
-        got = jefferson_decide(job.hospital_name, job.city, job.state, job.description, job.job_id, stored,
-                               title=job.title)
-        how = got[3] if got else "none"
-        if got:
-            _set(job, *got[:3])
+        how = _row_guard(_jefferson_one, job)
         d = stats.setdefault(JEFFERSON, {})
         d[how] = d.get(how, 0) + 1
     return stats

@@ -930,11 +930,30 @@ def _set_town(job, city, state) -> None:
         job.city, job.state, job.location = city, state, f"{city}, {state}"
 
 
+# review B 2026-10-29 (facility release 3): one row nobody foresaw must not
+# end the pass for every row after it. The row that raises keeps the name and
+# town it came with and counts as "error" in the pass's stats.
+_ROW_FIELDS = ("hospital_name", "city", "state", "location")
+
+
+def _row_guard(fn, job, *args):
+    keep = [(a, getattr(job, a)) for a in _ROW_FIELDS if hasattr(job, a)]
+    try:
+        return fn(job, *args)
+    except Exception:
+        for a, v in keep:
+            try:
+                setattr(job, a, v)
+            except Exception:
+                pass
+        return "error"
+
+
 def apply_facilities(jobs) -> dict:
     """apply_facility over a run's rows. Returns {system: {how: rows}}."""
     stats: dict = {}
     for job in jobs:
-        how = apply_facility(job)
+        how = _row_guard(apply_facility, job)
         if how:
             d = stats.setdefault(job.hospital_system, {})
             d[how] = d.get(how, 0) + 1
