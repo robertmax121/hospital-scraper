@@ -29,6 +29,7 @@ import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a
 import va_facilities    # 2026-10-27: one clean name per VA facility on USAJOBS rows
 import uhs_facilities   # 2026-10-28: one clean name per UHS facility on jobs.uhsinc.com rows
 import advocate_facilities   # 2026-10-29: one clean name and the real town per Advocate Health facility
+import facilities_text   # 2026-10-29: the hospital a posting's own text names (Entity / Location / Facility lines)
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
@@ -32970,6 +32971,15 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if fac:
         logger.info("Facilities: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fac.items())))
+    # 2026-10-29: the same for the systems whose posting text names the site
+    # (facilities_text: UNC's "Entity:", Kaleida's "Location:", ...).
+    ftx = facilities_text.apply_facilities(kept)
+    if ftx:
+        logger.info("Text facilities: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(ftx.items())))
+        if facilities_text.UNKNOWN:
+            logger.info("Text facilities, values no table names: " + facilities_text.unknown_summary())
+            facilities_text.UNKNOWN.clear()
     _FACTS_SKIPS["n"] = 0
     rows = normalize_jobs(kept)
     pairs = []
@@ -33158,6 +33168,10 @@ async def run_all() -> list[dict]:
                                                 asyncio.to_thread(load_stored_uhs_names))
     logger.info(f"Known facilities: {n_fac:,} stored rows of {', '.join(facility_names.FALLBACK_DB_LABELS)} "
                 f"name a hospital")
+    # 2026-10-29: the sites stored on the text-family rows (facilities_text),
+    # kept on nights a row's body is not read again
+    n_ftx = await asyncio.to_thread(facilities_text.load_known_facilities)
+    logger.info(f"Text facilities: {n_ftx:,} stored rows of {len(facilities_text.SYSTEMS)} systems name a site")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool
