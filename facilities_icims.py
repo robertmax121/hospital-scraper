@@ -304,6 +304,8 @@ PIEDMONT_STREETS = _street_table([
     ("1968 Peachtree Rd NW", "Atlanta", "Piedmont Atlanta Hospital", "GA", "cms 110083"),
     ("1199 Prince Avenue", "Athens", "Piedmont Athens Regional Medical Center", "GA", "cms 110074"),
     ("1350 Walton Way", "Augusta", "Piedmont Augusta Hospital", "GA", "cms 110028"),
+    # 2026-10-29 phase 3: the Summerville campus, CMS's own street (an applied row, "Lab, Days - Summerville")
+    ("2260 Wrightsboro Road", "Augusta", "Piedmont Augusta Summerville Campus", "GA", "cms 110039"),
     ("960 Joe Frank Harris Parkway", "Cartersville", "Piedmont Cartersville Medical Center", "GA", "cms 110030"),
     ("710 Center Street", "Columbus", "Piedmont Columbus Regional Midtown", "GA", "cms 110064"),
     ("100 Frist Court", "Columbus", "Piedmont Columbus Regional Northside", "GA", "cms 110200"),

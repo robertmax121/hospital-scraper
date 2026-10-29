@@ -41,6 +41,7 @@ from specialty_canon import ATS_ALIASES as _SPEC_ALIASES, _norm_ats as _spec_nor
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
 import facilities_town   # 2026-10-29: the hospital on a system-label row from its town (TOWN family)
+import facilities_hospital_systems_a   # 2026-10-29: Lifepoint's body-named sites; Providence / Baptist Memorial work locations
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -33127,6 +33128,17 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         if facilities_text.UNKNOWN:
             logger.info("Text facilities, values no table names: " + facilities_text.unknown_summary())
             facilities_text.UNKNOWN.clear()
+    # 2026-10-29 (facility scale phase 3): Lifepoint rows the work location
+    # left on the label take the site their body names ("Sovah Danville is
+    # part of Lifepoint Health", "Facility Name: ..."): facilities_hospital_systems_a.
+    fha = _facility_pass("Hospital systems A", facilities_hospital_systems_a.apply_facilities, kept)
+    if fha:
+        logger.info("Hospital systems A: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fha.items())))
+        if facilities_hospital_systems_a.UNKNOWN:
+            logger.info("Hospital systems A, values no table names: "
+                        + facilities_hospital_systems_a.unknown_summary())
+            facilities_hospital_systems_a.UNKNOWN.clear()
     # 2026-10-29 (facility scale, TOWN family): rows still on the system's
     # name after the adapters' facility hooks and facility_names take the one
     # hospital of their system in their town (facilities_town: a clinic, an
@@ -33330,6 +33342,9 @@ async def run_all() -> list[dict]:
     # kept on nights a row's body is not read again
     n_ftx = await asyncio.to_thread(facilities_text.load_known_facilities)
     logger.info(f"Text facilities: {n_ftx:,} stored rows of {len(facilities_text.SYSTEMS)} systems name a site")
+    # 2026-10-29 (facility scale phase 3): the same for Lifepoint's body-named sites
+    n_fha = await asyncio.to_thread(facilities_hospital_systems_a.load_known_facilities)
+    logger.info(f"Hospital systems A: {n_fha:,} stored Lifepoint rows name a site")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool
