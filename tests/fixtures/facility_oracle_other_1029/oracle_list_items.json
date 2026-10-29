@@ -1,0 +1,674 @@
+{
+ "Adena Health": [
+  {
+   "Id": "12733",
+   "Title": "Medical Assistant or LPN - Gastro Clinic (FT) Days",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Chillicothe, OH, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Medical Office Building",
+      "AddressLine1": "4439 State Route 159",
+      "TownOrCity": "Chillicothe",
+      "PostalCode": "45601",
+      "Country": "US",
+      "Region2": "OH"
+     }
+    ]
+   }
+  }
+ ],
+ "Adventist Health": [
+  {
+   "Id": "L47269-2",
+   "Title": "RN Med/Surg, Full Time, Day Shift",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Portland, OR, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "AHPL - Hospital",
+      "AddressLine1": "10123 SE Market St",
+      "TownOrCity": "Portland",
+      "PostalCode": "97216",
+      "Country": "US",
+      "Region2": "OR"
+     }
+    ]
+   }
+  }
+ ],
+ "AtlantiCare": [
+  {
+   "Id": "07-38977",
+   "Title": "New Graduate Registered Nurse - 2 Pines Acute Care/Cardiac/Tele/Stroke",
+   "PostedDate": "2026-10-26",
+   "PrimaryLocation": "Galloway, NJ, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Mainland Hosp",
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "Atlantic Health System": [
+  {
+   "Id": "32689",
+   "Title": "Advanced Practice Provider, Women's Health - Atlantic Health CentraState Hospital System",
+   "PostedDate": "2026-10-26",
+   "PrimaryLocation": "Freehold, NJ, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "465 South Street",
+      "AddressLine1": "465 South St",
+      "TownOrCity": "Morristown",
+      "PostalCode": "07960",
+      "Country": "US",
+      "Region2": "NJ"
+     }
+    ]
+   }
+  }
+ ],
+ "Baptist Health Care (Pensacola)": [
+  {
+   "Id": "11084",
+   "Title": "Patient Care Technician I - Medical Unit - Full-Time/Nights",
+   "PostedDate": "2026-10-26",
+   "PrimaryLocation": "Pensacola, FL, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "HR_BH",
+      "AddressLine1": "123 Baptist Way",
+      "TownOrCity": "Pensacola",
+      "PostalCode": "32503",
+      "Country": "US",
+      "Region2": "FL"
+     }
+    ]
+   }
+  }
+ ],
+ "Baptist Memorial Health Care": [
+  {
+   "Id": "34869",
+   "Title": "Assistant Director (RN)- Perioperative Services",
+   "PostedDate": "2026-10-28",
+   "PrimaryLocation": "Memphis, TN, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "BMH - Memphis Hospital",
+      "AddressLine1": "6019 Walnut Grove Road",
+      "TownOrCity": "Memphis",
+      "PostalCode": "38120",
+      "Country": "US",
+      "Region2": "TN"
+     }
+    ]
+   }
+  }
+ ],
+ "Cedars-Sinai": [
+  {
+   "Id": "13493",
+   "Title": "Per Diem Technical Assistant - MRI - 8-Hour Day Shift",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Beverly Hills, CA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": null,
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "Centra Health": [
+  {
+   "Id": "20872",
+   "Title": "Pharmacy Technician-LGH-Full time, Days-Evenings",
+   "PostedDate": "2026-10-28",
+   "PrimaryLocation": "Lynchburg, VA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Lynchburg General Hospital",
+      "AddressLine1": "1901 Tate Springs Rd",
+      "TownOrCity": "Lynchburg",
+      "PostalCode": "24501",
+      "Country": "US",
+      "Region2": "VA"
+     }
+    ]
+   }
+  }
+ ],
+ "Cottage Health": [
+  {
+   "Id": "14648",
+   "Title": "Patient Financial Advocate",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Goleta, CA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "The Ranch",
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "Franciscan Missionaries of Our Lady Health System": [
+  {
+   "Id": "48872",
+   "Title": "Registered Nurse 2- CVICU (Nights)",
+   "PostedDate": "2026-10-22",
+   "PrimaryLocation": "Jackson, MS, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": null,
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "HealthPartners": [
+  {
+   "Id": "117156",
+   "Title": "Pharmacist, Inpatient Pharmacy - Float",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Hudson, WI, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": null,
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "Hoag": [
+  {
+   "Id": "127395",
+   "Title": "Member Advocate I: Hoag Clinic Engagement Service",
+   "PostedDate": "2026-10-28",
+   "PrimaryLocation": "Costa Mesa, CA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Redhill Business Center",
+      "AddressLine1": "2975 Red Hill Ave",
+      "TownOrCity": "Costa Mesa",
+      "PostalCode": "92626",
+      "Country": "US",
+      "Region2": "CA"
+     }
+    ]
+   }
+  }
+ ],
+ "INTEGRIS Health": [
+  {
+   "Id": "112418",
+   "Title": "Revenue Integrity Analyst I - Regional Based (IHMG)",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Oklahoma City, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": null,
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "Indiana University Health": [
+  {
+   "Id": "421652",
+   "Title": "Technician-Unit Support - Full Time Nights - Adult Surgical Step-down Unit - West",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Avon, IN, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "West Hospital",
+      "AddressLine1": "1111 N Ronald Reagan Pkwy",
+      "TownOrCity": "Avon",
+      "PostalCode": "46123",
+      "Country": "US",
+      "Region2": "IN"
+     }
+    ]
+   }
+  }
+ ],
+ "Inova Health System": [
+  {
+   "Id": "667000",
+   "Title": "Night Shift Registered Nurse (RN) Labor and Delivery",
+   "PostedDate": "2026-10-26",
+   "PrimaryLocation": "Falls Church, VA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Inova Fairfax Hospital",
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "Inspira Health Network": [
+  {
+   "Id": "20062028",
+   "Title": "Security Officer - Security -PART TIME NIGHTS 7P-730A Mullica Hill",
+   "PostedDate": "2026-10-26",
+   "PrimaryLocation": "Mullica Hill, NJ, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Medical Center Mullica Hill",
+      "AddressLine1": "700 Mullica Hill Road",
+      "TownOrCity": "Mullica Hill",
+      "PostalCode": "08062",
+      "Country": "US",
+      "Region2": "NJ"
+     }
+    ]
+   }
+  }
+ ],
+ "Lifepoint Health": [
+  {
+   "Id": "307450",
+   "Title": "Registered Nurse, Behavioral Health",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Fort Worth, TX, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Mesa Springs",
+      "AddressLine1": "5560 Mesa Springs Dr",
+      "TownOrCity": "Fort Worth",
+      "PostalCode": "76123",
+      "Country": "US",
+      "Region2": "TX"
+     }
+    ]
+   }
+  }
+ ],
+ "Loma Linda University Health": [
+  {
+   "Id": "14920",
+   "Title": "RN-Cath Lab",
+   "PostedDate": "2026-10-28",
+   "PrimaryLocation": "Murrieta, CA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Loma Linda University Medical Center - Murrieta/2nd Floor",
+      "AddressLine1": "28062 Baxter Rd",
+      "TownOrCity": "Murrieta",
+      "PostalCode": "92563",
+      "Country": "US",
+      "Region2": "CA"
+     }
+    ]
+   }
+  }
+ ],
+ "McLeod Health": [
+  {
+   "Id": "26699",
+   "Title": "Patient Access Representative Dillon - PRN, As Needed - Night Shift",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Dillon, SC, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "McLeod Medical Center - Dillon",
+      "AddressLine1": "301 E Jackson St",
+      "TownOrCity": "Dillon",
+      "PostalCode": "29536",
+      "Country": "US",
+      "Region2": "SC"
+     }
+    ]
+   }
+  }
+ ],
+ "Mosaic Life Care": [
+  {
+   "Id": "2512",
+   "Title": "Stroke Coordinator",
+   "PostedDate": "2026-10-29",
+   "PrimaryLocation": "Saint Joseph, MO, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": null,
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "NorthBay Health": [
+  {
+   "Id": "5596",
+   "Title": "Radiologic Technologist III",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Vacaville, CA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "NorthBay Medical Center",
+      "AddressLine1": "1200 B Gale Wilson Blvd",
+      "TownOrCity": "Fairfield",
+      "PostalCode": "94533",
+      "Country": "US",
+      "Region2": "CA"
+     }
+    ]
+   }
+  }
+ ],
+ "Northwell Health": [
+  {
+   "Id": "166018",
+   "Title": "Nursing Assistant II (SY)",
+   "PostedDate": "2026-10-26",
+   "PrimaryLocation": "Syosset, Nassau, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Syosset Hospital",
+      "AddressLine1": "221 Jericho Tpke",
+      "TownOrCity": "Syosset",
+      "PostalCode": "11791",
+      "Country": "US",
+      "Region2": "NY"
+     }
+    ]
+   }
+  }
+ ],
+ "Parkview Health": [
+  {
+   "Id": "208",
+   "Title": "Registered Nurse",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Fort Wayne, IN, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Parkview Regional Medical Ctr",
+      "AddressLine1": "11109 Parkview Plaza Dr",
+      "TownOrCity": "Fort Wayne",
+      "PostalCode": "46845",
+      "Country": "US",
+      "Region2": "IN"
+     }
+    ]
+   }
+  }
+ ],
+ "Providence Health": [
+  {
+   "Id": "450035",
+   "Title": "RN NEB Full Time Night",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Burbank, CA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Providence Saint Joseph Medical Ctr-Burbank(HR)",
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "St. Joseph's Health": [
+  {
+   "Id": "20252016",
+   "Title": "Registered Nurse Outpatient Department Hospital",
+   "PostedDate": "2026-10-28",
+   "PrimaryLocation": "NJ, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "St. Joseph's University Medical Center",
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "Texas Children's": [
+  {
+   "Id": "424380",
+   "Title": "Nurse Practitioner or Physician Assistant - Emergency Medicine",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "The Woodlands, TX, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": null,
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "TriHealth": [
+  {
+   "Id": "309357",
+   "Title": "Medical Assistant- TriHealth Heart Institute",
+   "PostedDate": "2026-10-29",
+   "PrimaryLocation": "Montgomery, OH, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "TRIHEALTH HEART INSTITUTE",
+      "AddressLine1": "10525 Montgomery Rd",
+      "TownOrCity": "Montgomery",
+      "PostalCode": "45242",
+      "Country": "US",
+      "Region2": "OH"
+     }
+    ]
+   }
+  }
+ ],
+ "UC Health": [
+  {
+   "Id": "22596",
+   "Title": "Migraine Clinical Pharmacy Specialist, First Shift Hybrid, Specialty Pharmacy",
+   "PostedDate": "2026-10-28",
+   "PrimaryLocation": "Cincinnati, OH, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": null,
+      "AddressLine1": null,
+      "TownOrCity": null,
+      "PostalCode": null,
+      "Country": null,
+      "Region2": null
+     }
+    ]
+   }
+  }
+ ],
+ "UCSF Health": [
+  {
+   "Id": "3847",
+   "Title": "Biospecimens and Genetics Data Manager",
+   "PostedDate": "2026-10-26",
+   "PrimaryLocation": "San Francisco, CA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Sandler Center - FL 01 - RM 192C",
+      "AddressLine1": "675 Nelson Rising Lane",
+      "TownOrCity": "San Francisco",
+      "PostalCode": "94158",
+      "Country": "US",
+      "Region2": "CA"
+     }
+    ]
+   }
+  }
+ ],
+ "UChicago Medicine": [
+  {
+   "Id": "2025-80991",
+   "Title": "Advanced Practice Provider - MICU - Full - Time, Rotating",
+   "PostedDate": "2026-10-28",
+   "PrimaryLocation": "Chicago, IL, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "HR_Chicago - Hyde Park",
+      "AddressLine1": "5841 S Maryland Ave",
+      "TownOrCity": "Chicago",
+      "PostalCode": "60637",
+      "Country": "US",
+      "Region2": "IL"
+     }
+    ]
+   }
+  }
+ ],
+ "UW Health": [
+  {
+   "Id": "51616",
+   "Title": "Corporate Strategy Planning Consultant",
+   "PostedDate": "2026-10-28",
+   "PrimaryLocation": "WI, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "Building: 7974 UW HEALTH CT",
+      "AddressLine1": "7974 Uw Health Ct",
+      "TownOrCity": "Middleton",
+      "PostalCode": "53562",
+      "Country": "US",
+      "Region2": "WI"
+     }
+    ]
+   }
+  }
+ ],
+ "WellSpan Health": [
+  {
+   "Id": "220061",
+   "Title": "Physiatrist- Chambersburg, PA",
+   "PostedDate": "2026-10-27",
+   "PrimaryLocation": "Chambersburg, PA, United States",
+   "PrimaryLocationCountry": "US",
+   "workLocation": {
+    "items": [
+     {
+      "LocationName": "12 St Paul Dr-Summit Center 2-EMP",
+      "AddressLine1": "12 St Paul Dr",
+      "TownOrCity": "Chambersburg",
+      "PostalCode": "17201",
+      "Country": "US",
+      "Region2": "PA"
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,3602 @@
+{
+ "stored_names": [
+  {
+   "id": 903509,
+   "hospital_name": "Jackson Main",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Respiratory Registered Therapist Specialty, Jackson Memorial Hospital, Full Time, Nights",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 17645993,
+   "hospital_name": "Jackson Main",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Respiratory Registered Therapist Specialty, Full-Time, Night Shift",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 13689906,
+   "hospital_name": "Jackson Main",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Respiratory Registered Therapist Specialty, Jackson Memorial Hospital, Per Diem, Day or Night",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 11401960,
+   "hospital_name": "North",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Respiratory Registered Therapist Specialty, Part time with Benefits, Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 24053513,
+   "hospital_name": "South",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Orthopedic Technician, Specialty, Per Diem, Jackson South M.C.",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 903512,
+   "hospital_name": "North",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Respiratory Registered Therapist Specialty, Per Diem, Nights",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38556472,
+   "hospital_name": "South",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Respiratory Registered Therapist Specialty, Per-Diem, Jackson South",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38587751,
+   "hospital_name": "North",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Respiratory Support Technician, Per Diem, Variable shift",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 37298134,
+   "hospital_name": "South",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Respiratory Registered Therapist Specialty, Per-Diem, Jackson South",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 34042109,
+   "hospital_name": "Behavioral Health",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Mental Health Intake Specialist, Jackson Community Health Center, Per Diem",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 29399883,
+   "hospital_name": "Behavioral Health",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Mental Health Intake Specialist, Behavioral Health, Day Treatment Center, Full-Time, Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 11854145,
+   "hospital_name": "Behavioral Health",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Licensed Practical Nurse, Jackson Behavioral Health, Full-Time, Days, M-F, 8:00AM-4:30PM",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38751252,
+   "hospital_name": "Corrections",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Health Services Counselor, CHS, Full Time",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 12084971,
+   "hospital_name": "Corrections",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Mental Health Counselor, Full Time, Corrections",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 32484012,
+   "hospital_name": "Corrections",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Licensed Mental Health Counselor, Crisis Services, CHS, Full Time, Nights",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 29624918,
+   "hospital_name": "Jackson West Medical Ctr",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Telemetry Technician- Perdiem, Flexible shift- Jackson West. M.C",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 23379904,
+   "hospital_name": "Corporate",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Hospital Communications Specialist, 3p-1130p Rotating weekends",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38718368,
+   "hospital_name": "Corporate",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Authorization & Clearance Specialist, Full Time",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 19458235,
+   "hospital_name": "Corporate",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Inpatient Coder 2",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38056236,
+   "hospital_name": "Private Practices",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Authorization & Clearance Specialist; Days ; Jackson Main",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38587750,
+   "hospital_name": "ACC CH",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Health Services Associate, Full Time",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 903433,
+   "hospital_name": "Jackson West Medical Ctr",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Nurse Anesthetist, CRNA/ Per diem/ Flexible Shift/ Anesthesia/ Jackson West Medical Center",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 903434,
+   "hospital_name": "Jackson West Medical Ctr",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Nurse Anesthetist, CRNA/ Per diem/ Flexible Shift/ Anesthesia/ Jackson West Medical Center",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 17646019,
+   "hospital_name": "Support Svc",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Dietitian",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 19024863,
+   "hospital_name": "Support Svc",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Nutrition Utility Worker, Part Time with Benefits",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 19024858,
+   "hospital_name": "Support Svc",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Nutrition Worker, Full Time",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 5342817,
+   "hospital_name": "Women Children",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Paramedic, PPEC, Holtz Children's Hospital, Per Diem, Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 1396822,
+   "hospital_name": "JM LTC",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Experienced Registered Nurse Supervisor, Long Term Care Center, Per Diem, Variable Shifts",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38256084,
+   "hospital_name": "Jackson Rehab",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Experienced Registered Nurse, Lynn Rehabilitation Center, FT, Nights",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38556483,
+   "hospital_name": "Urgent Care Ctrs",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Medical Assistant, On Call, Variable Shifts",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 28296877,
+   "hospital_name": "Women Children",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Experienced Registered Nurse, Mother-Baby unit, Holtz Women's Hospital, PT, Days (2/2 schedule)",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 28296879,
+   "hospital_name": "Women Children",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Experienced Registered Nurse, Mother-Baby Unit, Holtz Women's Hospital, PT, Days (3/2 schedule)",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 26040877,
+   "hospital_name": "Jackson Rehab",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Experienced Registered Nurse, Lynn Rehabilitation Hospital, FT, Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 23379884,
+   "hospital_name": "JM PMC",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Experienced Registered Nuse, Perdue Medical Center, Cutler Bay, Per Diem, Variable Shifts",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38256082,
+   "hospital_name": "Jackson Rehab",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Experienced Registered Nurse, Lynn Rehabilitation Center, FT, Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38587748,
+   "hospital_name": "ACC CH",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Medical Assistant",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 9587378,
+   "hospital_name": "Other Satellite",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Licensed Practical Nurse; South Beach Medical; Day shift",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38826935,
+   "hospital_name": "JM LTC",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Licensed Practical Nurse, Long Term Care Center, Full-Time, Evenings, 3:00PM-11:30PM",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38751250,
+   "hospital_name": "JM PMC",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Experienced Registered Nuse, Perdue Medical Center, Cutler Bay, Per Diem, Variable Shifts",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 8514285,
+   "hospital_name": "JM LTC",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Experienced Registered Nurse, Long Term Care Center, Per Diem, Variable Shifts",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 11169202,
+   "hospital_name": "JM PMC",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Certified Nursing Assistant, Perdue Medical Center, Cutler Bay, Full-Time, Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 903542,
+   "hospital_name": "Miami Transplant Institute",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Transplant Center Clin Asst",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 2696111,
+   "hospital_name": "Miami Transplant Institute",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Medical Assistant, Full-Time, Days, M-F, 8:00am-4:30pm",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 9587354,
+   "hospital_name": "Miami Transplant Institute",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Organ Placement Clinical Coordinator RN, Transplant Donor Desk, Full Time, Nights 12 hour Shift",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 36348021,
+   "hospital_name": "Clinics",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Medical Assistant; Days; Penalver Clinic Medical",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 8514295,
+   "hospital_name": "Other Satellite",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Licensed Practical Nurse; South Medical Clinic; Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 2905890,
+   "hospital_name": "Private Practices",
+   "city": "Miami",
+   "state": "FL",
+   "title": "General Surgery - Associate Medical Director, JMG",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38826928,
+   "hospital_name": "Design and Construction",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Construction Coordinator",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38826931,
+   "hospital_name": "Private Practices",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Practice Manager",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38056239,
+   "hospital_name": "ACC CH",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Patient Finance Specialist; Days; Jackson Main",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 16054419,
+   "hospital_name": "Urgent Care Ctrs",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Associate Medical Director, JMG, Urgent Care Centers, Part-time with Benefits, 8 shifts monthly",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 27409635,
+   "hospital_name": "Design and Construction",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Project Manager Construction ,Jackson Health System, Facility Design & Construction, Full Time, Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 27972736,
+   "hospital_name": "G and A",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Clinical Database Coordinator",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 903240,
+   "hospital_name": "G and A",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Associate Medical Director - JMG - Endocrinologist",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 903253,
+   "hospital_name": "Urgent Care Ctrs",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Medical Doctor, Urgent Care Physician, Jackson UCCs, Per Diem, Variable Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 17902394,
+   "hospital_name": "G and A",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Business Support Specialist, State and Federal Grants, Jackson Main, FT, Days",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 903324,
+   "hospital_name": "OCC Health",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Occupational Health X-Ray Technician, Physician Group",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 595473,
+   "hospital_name": "Jackson Health System",
+   "city": "Miami",
+   "state": "FL",
+   "title": "Cook 2 (Part-Time) Req 211924",
+   "hospital_system": "Jackson Health System"
+  },
+  {
+   "id": 38793514,
+   "hospital_name": "NYU Langone Health",
+   "city": "Boynton Beach",
+   "state": "FL",
+   "title": "WFM Real Time Associate (FGP) - Boynton Beach, Florida",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793812,
+   "hospital_name": "NYU Langone Health",
+   "city": "Palm Beach Gardens",
+   "state": "FL",
+   "title": "Secretary I - (FGP) - Palm Beach Gardens, Florida",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793890,
+   "hospital_name": "NYU Langone Health",
+   "city": "West Palm Beach",
+   "state": "FL",
+   "title": "Medical Secretary (FGP) - West Palm Beach, Florida",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793175,
+   "hospital_name": "NYU Langone Hospital--Long Island",
+   "city": "Garden City",
+   "state": "NY",
+   "title": "Medical Secretary - Cardiology - Garden City",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793340,
+   "hospital_name": "NYU Langone Hospital--Long Island",
+   "city": "Mineola",
+   "state": "NY",
+   "title": "Medical Secretary - Gyn/Onc - Mineola",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793374,
+   "hospital_name": "NYU Langone Hospital--Long Island",
+   "city": "Mineola",
+   "state": "NY",
+   "title": "Patient Relations Representative - Patient Relations - Mineola",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793670,
+   "hospital_name": "NYU Langone Hospital—Suffolk",
+   "city": "Shirley",
+   "state": "NY",
+   "title": "H. C. Clerical Support - Per Diem",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793295,
+   "hospital_name": "NYU Langone Orthopedic Hospital",
+   "city": "New York",
+   "state": "NY",
+   "title": "Psychologist - NYU Langone Orthopedic Hospital *P/T 21 hrs per week, Monday - Friday 8:00 AM - 4:00 PM*",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793466,
+   "hospital_name": "NYU Langone Orthopedic Hospital",
+   "city": "New York",
+   "state": "NY",
+   "title": "Psychologist, Ph.D - NYU Langone Orthopedic Hospital *F/T 35 hours per week, Monday - Friday 9:00 AM - 5:00 PM*",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793539,
+   "hospital_name": "NYU Langone Orthopedic Hospital",
+   "city": "New York",
+   "state": "NY",
+   "title": "Per Diem Electroneurodiagnostic Technologist II - NYU Langone Orthopedic Hospital *As Needed Varied Days/Schedule*",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38794063,
+   "hospital_name": "NYU Langone Hospital—Suffolk",
+   "city": "Patchogue",
+   "state": "NY",
+   "title": "Care Management Assistant - Full Time, Days",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793932,
+   "hospital_name": "NYU Langone Hospital—Suffolk",
+   "city": "Patchogue",
+   "state": "NY",
+   "title": "Activities Therapist - Nursing Inpatient Psychiatric - Per Diem",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793238,
+   "hospital_name": "NYU Langone Hospital - Brooklyn",
+   "city": "Brooklyn",
+   "state": "NY",
+   "title": "Financial Counselor (required medicaid experience) - Brooklyn",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793321,
+   "hospital_name": "NYU Langone Hospital - Brooklyn",
+   "city": "Brooklyn",
+   "state": "NY",
+   "title": "Financial Counselor - Brooklyn",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 38793752,
+   "hospital_name": "NYU Langone Hospital - Brooklyn",
+   "city": "Brooklyn",
+   "state": "NY",
+   "title": "Cardiovascular Technologist - Sunset Park - 5am-3pm (on-call required)",
+   "hospital_system": "NYU Langone Health"
+  },
+  {
+   "id": 28033728,
+   "hospital_name": "CHS Corporate",
+   "city": "",
+   "state": "",
+   "title": "Sr. Cerner Application Analyst - Nursing and Ancillaries",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21315659,
+   "hospital_name": "CHS Corporate",
+   "city": "",
+   "state": "",
+   "title": "Corporate Manager, Quality",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38528466,
+   "hospital_name": "CHS Corporate",
+   "city": "",
+   "state": "",
+   "title": "Director, Technology Partner (Revenue Cycle)",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705441,
+   "hospital_name": "CHS Shared Business Operations, LLC",
+   "city": "",
+   "state": "",
+   "title": "Senior Director, Supply Chain",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851424,
+   "hospital_name": "CHS Shared Business Operations, LLC",
+   "city": "",
+   "state": "",
+   "title": "Corporate Business Recruiter",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851436,
+   "hospital_name": "Shared Services Center - Nashville",
+   "city": "",
+   "state": "",
+   "title": "Denial & Appeals Coordinator (REMOTE)",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38236991,
+   "hospital_name": "CHS Shared Business Operations, LLC",
+   "city": "",
+   "state": "",
+   "title": "Manager, Process Improvement",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851759,
+   "hospital_name": "Shared Services Center - Nashville",
+   "city": "",
+   "state": "",
+   "title": "Supervisor, Collections (REMOTE)",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37735199,
+   "hospital_name": "HIM Central Services",
+   "city": "",
+   "state": "",
+   "title": "Coder Outpatient-Edits",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 17412877,
+   "hospital_name": "Mat-Su Medical Group",
+   "city": "Palmer",
+   "state": "AK",
+   "title": "Lead Certified Medical Assistant - Mat-Su Palmer Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 2523465,
+   "hospital_name": "Mat-Su Regional Medical Center",
+   "city": "Palmer",
+   "state": "AK",
+   "title": "Chief Nursing Officer (CNO) - Palmer, AK",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 20065103,
+   "hospital_name": "Mat-Su Medical Group",
+   "city": "Anchorage",
+   "state": "AK",
+   "title": "Medical Assistant - South Anchorage Surgery Center - Part Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705293,
+   "hospital_name": "Mat-Su Regional Medical Center",
+   "city": "Palmer",
+   "state": "AK",
+   "title": "Patient Care Technician | FT | Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705295,
+   "hospital_name": "Mat-Su Regional Medical Center",
+   "city": "Palmer",
+   "state": "AK",
+   "title": "Patient Care Technician | FT | Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21907115,
+   "hospital_name": "Mat-Su Medical Group",
+   "city": "Palmer",
+   "state": "AK",
+   "title": "Surgical Technician - Susitna Surgery Center - $5,000 Sign-on Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38377541,
+   "hospital_name": "Grandview Medical Center",
+   "city": "Birmingham",
+   "state": "AL",
+   "title": "Financial Counselor I",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 12130498,
+   "hospital_name": "Gadsden Regional Medical Center",
+   "city": "Gadsden",
+   "state": "AL",
+   "title": "RN Behavioral Health Nights - $10,000 Sign-On Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38740082,
+   "hospital_name": "Grandview Medical Center",
+   "city": "Birmingham",
+   "state": "AL",
+   "title": "RN Behavioral Health Weekends - $5,000 Sign-On Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 14626163,
+   "hospital_name": "Gadsden Regional Medical Center",
+   "city": "Gadsden",
+   "state": "AL",
+   "title": "RN Behavioral Health Weekend Nights - $10,000 Sign-On Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851655,
+   "hospital_name": "Grandview Medical Center",
+   "city": "Birmingham",
+   "state": "AL",
+   "title": "RN Cardiac Med Surg Nights $5000 Sign-On Bonus",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851657,
+   "hospital_name": "Gadsden Regional Medical Center",
+   "city": "Gadsden",
+   "state": "AL",
+   "title": "RN Cardiac - Sign on Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 6737472,
+   "hospital_name": "Grandview Medical Group",
+   "city": "Birmingham",
+   "state": "AL",
+   "title": "Cardiovascular Non-Invasive Technician I - Alabama Cardiovascular Group",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23433274,
+   "hospital_name": "Grandview Medical Group",
+   "city": "Birmingham",
+   "state": "AL",
+   "title": "Medical Assistant - Alabama Cardiovascular Group",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23769717,
+   "hospital_name": "Grandview Medical Group",
+   "city": "Birmingham",
+   "state": "AL",
+   "title": "Echo/Vascular Technologist - Alabama Cardiovascular Group",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 11216219,
+   "hospital_name": "Flowers Hospital",
+   "city": "Dothan",
+   "state": "AL",
+   "title": "Electrophysiology Tech",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38377615,
+   "hospital_name": "Flowers Hospital",
+   "city": "Dothan",
+   "state": "AL",
+   "title": "Nutritional Services Cashier",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37084712,
+   "hospital_name": "Baldwin Health",
+   "city": "Foley",
+   "state": "AL",
+   "title": "Supervisor, Nutritional Services",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 17270760,
+   "hospital_name": "Baldwin Health",
+   "city": "Foley",
+   "state": "AL",
+   "title": "Emergency Room RN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 26091022,
+   "hospital_name": "Baldwin Health",
+   "city": "Foley",
+   "state": "AL",
+   "title": "Director of Free Standing Emergency Room",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37082858,
+   "hospital_name": "Medical Center Enterprise",
+   "city": "Enterprise",
+   "state": "AL",
+   "title": "ER RN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38430535,
+   "hospital_name": "Medical Center Enterprise",
+   "city": "Enterprise",
+   "state": "AL",
+   "title": "ER RN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38606043,
+   "hospital_name": "Medical Center Enterprise",
+   "city": "Enterprise",
+   "state": "AL",
+   "title": "PRN ER Nurse Intern",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851500,
+   "hospital_name": "Flowers Hospital",
+   "city": "Dothan",
+   "state": "AL",
+   "title": "LPN- 5",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23769992,
+   "hospital_name": "Grandview OB/GYN",
+   "city": "Birmingham",
+   "state": "AL",
+   "title": "Licensed Practical Nurse - Women's Health Specialists",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38221878,
+   "hospital_name": "Flowers Medical Group",
+   "city": "Dothan",
+   "state": "AL",
+   "title": "Certified Medical Assistant - Wiregrass Surgical Associates",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 35502637,
+   "hospital_name": "Flowers Medical Group",
+   "city": "Dothan",
+   "state": "AL",
+   "title": "Certified Medical Assistant - Womens Healthcare of Dothan",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38483406,
+   "hospital_name": "Flowers Medical Group",
+   "city": "Dothan",
+   "state": "AL",
+   "title": "Certified Medical Assistant - FMG Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38605870,
+   "hospital_name": "MCE Medical Group",
+   "city": "Enterprise",
+   "state": "AL",
+   "title": "Certified Medical Assistant - Medical Center Enterprise - OBGYN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 18076489,
+   "hospital_name": "Gadsden Physician Clinics",
+   "city": "Gadsden",
+   "state": "AL",
+   "title": "Medical Assistant - Float",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23433291,
+   "hospital_name": "Baldwin Medical Group",
+   "city": "Foley",
+   "state": "AL",
+   "title": "Medical Assistant - Foley Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34644702,
+   "hospital_name": "Baldwin Medical Group",
+   "city": "Gulf Shores",
+   "state": "AL",
+   "title": "Medical Assistant - Gulf Shores",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38739918,
+   "hospital_name": "Baldwin Medical Group",
+   "city": "Foley",
+   "state": "AL",
+   "title": "Licensed Practical Nurse (LPN) - OBGYN Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38739939,
+   "hospital_name": "MCE Medical Group",
+   "city": "Enterprise",
+   "state": "AL",
+   "title": "Medical Assistant - Medical Center Enterprise",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21315433,
+   "hospital_name": "Gadsden Physician Clinics",
+   "city": "Gadsden",
+   "state": "AL",
+   "title": "Billing Specialist - Alabama Cardiology Group",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38237176,
+   "hospital_name": "Grandview OB/GYN",
+   "city": "Birmingham",
+   "state": "AL",
+   "title": "Ultrasound Lead",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27470885,
+   "hospital_name": "Grandview OB/GYN",
+   "city": "Birmingham",
+   "state": "AL",
+   "title": "Ultrasound Technologist - Women's Health Specialist",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34120932,
+   "hospital_name": "South Baldwin Regional Medical Center",
+   "city": "Foley",
+   "state": "AL",
+   "title": "Respiratory Therapist RRT - Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33072123,
+   "hospital_name": "Gadsden Physician Clinics",
+   "city": "Gadsden",
+   "state": "AL",
+   "title": "Receptionist - Women's Health Partners",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27468785,
+   "hospital_name": "Northwest Medical Center Tucson",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "Clinical Nurse Lead Telemetry Full Time Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38236936,
+   "hospital_name": "Northwest Medical Center Tucson",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "Clinical Nurse Lead Telemetry Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 8787642,
+   "hospital_name": "Northwest Medical Center Tucson",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "Director of Cath Lab",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 946366,
+   "hospital_name": "Western Arizona Regional Medical Center",
+   "city": "Bullhead City",
+   "state": "AZ",
+   "title": "RN Cardio - Cath Lab FT Days $10k Sign On Bonus",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38565342,
+   "hospital_name": "Oro Valley Hospital",
+   "city": "Oro Valley",
+   "state": "AZ",
+   "title": "Seasonal RN Telemetry Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851671,
+   "hospital_name": "Oro Valley Hospital",
+   "city": "Oro Valley",
+   "state": "AZ",
+   "title": "RN Emergency Department Per Diem",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34908669,
+   "hospital_name": "Oro Valley Hospital",
+   "city": "Oro Valley",
+   "state": "AZ",
+   "title": "RN Emergency Department Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38739868,
+   "hospital_name": "Northwest Medical Center Sahuarita",
+   "city": "Sahuarita",
+   "state": "AZ",
+   "title": "Emergency Medical Technician I - PRN Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 28031983,
+   "hospital_name": "Northwest Medical Center Sahuarita",
+   "city": "Sahuarita",
+   "state": "AZ",
+   "title": "Emergency Medical Technician | FT | Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38012304,
+   "hospital_name": "Northwest Medical Center Sahuarita",
+   "city": "Sahuarita",
+   "state": "AZ",
+   "title": "Emergency Medical Technician I | FT | Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37407967,
+   "hospital_name": "Western Arizona Regional Medical Center",
+   "city": "Bullhead City",
+   "state": "AZ",
+   "title": "Paramedic | PRN | Evenings",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21620017,
+   "hospital_name": "Northwest Medical Center Houghton",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "Paramedic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 29474535,
+   "hospital_name": "Northwest Primary & Specialty Care",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "Medical Assistant - Northwest Urology - Fountain Plaza",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32554285,
+   "hospital_name": "Western Arizona Regional Medical Center",
+   "city": "Bullhead City",
+   "state": "AZ",
+   "title": "MDS Coordinator RN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38565148,
+   "hospital_name": "Western Arizona Regional Medical Center Physicians' Group",
+   "city": "Bullhead City",
+   "state": "AZ",
+   "title": "Medical Assistant - Western AZ Family Practice",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705259,
+   "hospital_name": "Western Arizona Regional Medical Center Physicians' Group",
+   "city": "Bullhead City",
+   "state": "AZ",
+   "title": "Medical Assistant - WARMC Urgent Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21317428,
+   "hospital_name": "Northwest Medical Center Houghton",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "RN Meg Surg Seasonal Days/Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34121079,
+   "hospital_name": "Northwest Medical Center Houghton",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "RN ED PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38298814,
+   "hospital_name": "Northwest Primary & Specialty Care",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "TEMP Medical Assistant - General Surgery - Tangerine",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38377848,
+   "hospital_name": "Northwest Primary & Specialty Care",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "TEMP Medical Assistant - NW Primary & Specialty Care - La Cholla",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32794920,
+   "hospital_name": "Western Arizona Regional Medical Center Physicians' Group",
+   "city": "Bullhead City",
+   "state": "AZ",
+   "title": "AMR Coordinator (ON-SITE) - WARMC Physician Group",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851497,
+   "hospital_name": "Northwest Urgent Care",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "Limited Scope Rad Tech - Urgent Care - Ina",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34645327,
+   "hospital_name": "Northwest Urgent Care",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "Radiology Technologist - Northwest Urgent Care - Harrison",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34645328,
+   "hospital_name": "Northwest Urgent Care",
+   "city": "Tucson",
+   "state": "AZ",
+   "title": "Radiology Technologist - Northwest Urgent Care - Houghton",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38296850,
+   "hospital_name": "Physicians Regional Medical Center - Pine Ridge",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Financial Counselor I (Full-time, Days)",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37084051,
+   "hospital_name": "Lower Keys Medical Center",
+   "city": "Key West",
+   "state": "FL",
+   "title": "RN Behavioral Health Nights - $10,000 Sign-On Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 19074566,
+   "hospital_name": "North Okaloosa Medical Center",
+   "city": "Crestview",
+   "state": "FL",
+   "title": "Charge RN Cath Lab",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37736403,
+   "hospital_name": "North Okaloosa Medical Center",
+   "city": "Crestview",
+   "state": "FL",
+   "title": "Registered Nurse Cardiac MedSurg Nights - $15k Sign-On Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 28033187,
+   "hospital_name": "Physicians Regional Medical Center - Pine Ridge",
+   "city": "Naples",
+   "state": "FL",
+   "title": "RN Cath Lab PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37084067,
+   "hospital_name": "Physicians Regional Medical Center - Pine Ridge",
+   "city": "Naples",
+   "state": "FL",
+   "title": "RN Cardiac Med/Surg Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38565260,
+   "hospital_name": "North Okaloosa Medical Center",
+   "city": "Crestview",
+   "state": "FL",
+   "title": "Registered Nurse Cardiac MedSurg Seasonal Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37084183,
+   "hospital_name": "Santa Rosa Medical Center",
+   "city": "Milton",
+   "state": "FL",
+   "title": "RN Emergency Department PRN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38430593,
+   "hospital_name": "Physicians Regional Medical Center - Collier",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Nurse Manager Emergency Department",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23770334,
+   "hospital_name": "Santa Rosa Medical Center",
+   "city": "Milton",
+   "state": "FL",
+   "title": "Nurse Manager - Med/Surg",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851403,
+   "hospital_name": "Santa Rosa Medical Group",
+   "city": "Milton",
+   "state": "FL",
+   "title": "Certified Medical Assistant",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851421,
+   "hospital_name": "Physicians Regional North",
+   "city": "Naples",
+   "state": "FL",
+   "title": "CNA (SNF/State) - Creekside North - Full Time - Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38565054,
+   "hospital_name": "Physicians Regional Medical Center - Collier",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Care Manager Registered Nurse",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851614,
+   "hospital_name": "North Okaloosa Physician Group",
+   "city": "Crestview",
+   "state": "FL",
+   "title": "Receptionist - PRN - Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 28357067,
+   "hospital_name": "North Okaloosa Physician Group",
+   "city": "Crestview",
+   "state": "FL",
+   "title": "Certified Medical Assistant - PRN - Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38618342,
+   "hospital_name": "North Okaloosa Physician Group",
+   "city": "Crestview",
+   "state": "FL",
+   "title": "Licensed Practical Nurse (LPN) - General Surgery Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 18871001,
+   "hospital_name": "Santa Rosa Medical Group",
+   "city": "Pace",
+   "state": "FL",
+   "title": "Certified Medical Assistant - Five Points Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 18871018,
+   "hospital_name": "Physicians Regional Medical Group",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Certified Medical Assistant - Multi-Specialty Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 19074581,
+   "hospital_name": "Physicians Regional Medical Center - Collier",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Chief Nursing Officer (CNO) - Naples, FL",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32553710,
+   "hospital_name": "Physicians Regional Medical Group",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Certified Medical Assistant - Urgent Care Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34380697,
+   "hospital_name": "Physicians Regional Medical Group",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Certified Medical Assistant - Pine Ridge MOB Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 24105557,
+   "hospital_name": "Santa Rosa Medical Group",
+   "city": "Milton",
+   "state": "FL",
+   "title": "Licensed Practical Nurse (LPN) - Urology Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 26091568,
+   "hospital_name": "Lower Keys Medical Center",
+   "city": "Key West",
+   "state": "FL",
+   "title": "Monitor Technician - Full time - Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32554040,
+   "hospital_name": "Santa Rosa Medical Center",
+   "city": "Milton",
+   "state": "FL",
+   "title": "Environmental Services Worker II (PRN, Days)",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 29474854,
+   "hospital_name": "Lower Keys Medical Center",
+   "city": "Key West",
+   "state": "FL",
+   "title": "Patient Care Technician - Full Time - Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32555040,
+   "hospital_name": "Physicians Regional North",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Registered Nurse Inpatient Rehab",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 3359917,
+   "hospital_name": "Keys Medical Group",
+   "city": "Key West",
+   "state": "FL",
+   "title": "Medical Assistant - OB/GYN Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 11216799,
+   "hospital_name": "Physicians Regional North",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Certified Occupational Therapy Assistant COTA",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 16874319,
+   "hospital_name": "Keys Medical Group",
+   "city": "Key West",
+   "state": "FL",
+   "title": "Clinic Office Receptionist - Family Medicine Key West Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 16875491,
+   "hospital_name": "Keys Medical Group",
+   "city": "Key West",
+   "state": "FL",
+   "title": "Receptionist - Primary Care Searstown Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34644400,
+   "hospital_name": "Eligibility Screening Services",
+   "city": "Naples",
+   "state": "FL",
+   "title": "Eligibility Screening Services Representative - Onsite",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21317143,
+   "hospital_name": "East Georgia Regional Medical Center",
+   "city": "Statesboro",
+   "state": "GA",
+   "title": "RN Cath Lab Procedural Area",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38298718,
+   "hospital_name": "East Georgia Regional Medical Center",
+   "city": "Statesboro",
+   "state": "GA",
+   "title": "Supervisor of Admissions- Emergency Room",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23769743,
+   "hospital_name": "East Georgia Regional Medical Center",
+   "city": "Statesboro",
+   "state": "GA",
+   "title": "Emergency Medical Tech - Full Time - Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851511,
+   "hospital_name": "East Georgia Medical & Surgical Associates",
+   "city": "Statesboro",
+   "state": "GA",
+   "title": "Medical Assistant",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34380713,
+   "hospital_name": "East Georgia Medical & Surgical Associates",
+   "city": "Statesboro",
+   "state": "GA",
+   "title": "Certified Medical Assistant - Statesboro Family Practice",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37735744,
+   "hospital_name": "East Georgia Medical & Surgical Associates",
+   "city": "Statesboro",
+   "state": "GA",
+   "title": "Certified Medical Assistant - Urology Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27468607,
+   "hospital_name": "Lutheran Hospital of Indiana",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Cardiac Cath Lab RN - Days | Sign-On Bonus",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38606069,
+   "hospital_name": "Lutheran Hospital of Indiana",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Registered Nurse Cardiac Tele 5A Charge Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 19221295,
+   "hospital_name": "Lutheran Hospital of Indiana",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Registered Nurse Advanced Cardiac Therapy",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 29475161,
+   "hospital_name": "Dupont Hospital",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Registered Nurse Cardiac Cath Lab Part-Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27470198,
+   "hospital_name": "Northwest Health - Porter",
+   "city": "Valparaiso",
+   "state": "IN",
+   "title": "RN Cath Lab Procedural",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33072406,
+   "hospital_name": "Northwest Health - Porter",
+   "city": "Valparaiso",
+   "state": "IN",
+   "title": "RN Cath Lab Holding",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38483630,
+   "hospital_name": "Northwest Health - Porter",
+   "city": "Valparaiso",
+   "state": "IN",
+   "title": "RN CHARGE NIGHT - VMC EMERGENCY ROOM",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38739837,
+   "hospital_name": "Lutheran Medical Group",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851409,
+   "hospital_name": "Lutheran Medical Group",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Infectious Disease",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32553698,
+   "hospital_name": "Lutheran Health Physicians",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38012013,
+   "hospital_name": "Northwest Health Medical Group - Porter",
+   "city": "Valparaiso",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 24526566,
+   "hospital_name": "Northwest Health - La Porte",
+   "city": "La Porte",
+   "state": "IN",
+   "title": "RN IMCU Nights | $15,000 Sign On Bonus",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 29475841,
+   "hospital_name": "Lutheran Kosciusko Hospital",
+   "city": "Warsaw",
+   "state": "IN",
+   "title": "RN Swing Bed Unit Part Time Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851526,
+   "hospital_name": "Northwest Health Medical Group - Porter",
+   "city": "Portage",
+   "state": "IN",
+   "title": "Medical Assistant - Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851675,
+   "hospital_name": "Dukes Memorial Hospital",
+   "city": "Peru",
+   "state": "IN",
+   "title": "RN ER Midshift",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 2942776,
+   "hospital_name": "The Orthopedic Hospital",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Admissions Registered Nurse – PACE Clinic (PRN)",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 11216545,
+   "hospital_name": "Lutheran Health Physicians",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Float - Cardiology - Sign On Bonus $5,000",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 16874175,
+   "hospital_name": "Northwest Health Medical Group - LaPorte",
+   "city": "La Porte",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Cardiology",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23432648,
+   "hospital_name": "Lutheran Health Physicians",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Specialty Float",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27758236,
+   "hospital_name": "The Orthopedic Hospital",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Admissions Registered Nurse PT Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 30773673,
+   "hospital_name": "Lutheran Kosciusko Hospital",
+   "city": "Warsaw",
+   "state": "IN",
+   "title": "Charge RN ER Midshift 3p-11p",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32794940,
+   "hospital_name": "The Orthopedic Hospital",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Athletic Trainer PRN - Warsaw",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33856760,
+   "hospital_name": "RediMed/Business Health",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Certified Medical Assistant - RediMed Northeast Urgent Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34119486,
+   "hospital_name": "Bluffton Regional Medical Center",
+   "city": "Bluffton",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37407049,
+   "hospital_name": "Lutheran Downtown Hospital",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Podiatry",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38012592,
+   "hospital_name": "Lutheran Kosciusko Hospital",
+   "city": "North Manchester",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Family Medicine",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37407687,
+   "hospital_name": "RediMed/Business Health",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Medical Assistant - Southwest Allen County Schools Clinic - Part Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38012409,
+   "hospital_name": "Lutheran Downtown Hospital",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Fulltime Patient Care Technician Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38605936,
+   "hospital_name": "Northwest Health - La Porte",
+   "city": "La Porte",
+   "state": "IN",
+   "title": "IMCU Charge RN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705249,
+   "hospital_name": "Northwest Health Medical Group - LaPorte",
+   "city": "Michigan City",
+   "state": "IN",
+   "title": "Medical Assistant - Internal Medicine - Johnson Road",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33070818,
+   "hospital_name": "Dupont Hospital",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Registered Nurse Care Manager PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34120734,
+   "hospital_name": "Bluffton Regional Medical Center",
+   "city": "Bluffton",
+   "state": "IN",
+   "title": "Registered Medical Assistant - Ophthalmology",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37083481,
+   "hospital_name": "Northwest Health - La Porte",
+   "city": "Chesterton",
+   "state": "IN",
+   "title": "Patient Care Technician - Part - Time - Lakeshore Surgicare",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38012921,
+   "hospital_name": "Lutheran Downtown Hospital",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Part-time Nights Patient Care Technician",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 2733956,
+   "hospital_name": "Northwest Health - Starke",
+   "city": "Knox",
+   "state": "IN",
+   "title": "RN ER Part Time Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 9861620,
+   "hospital_name": "Northwest Health - Starke",
+   "city": "Knox",
+   "state": "IN",
+   "title": "RN ER PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 19075962,
+   "hospital_name": "Northwest Health Medical Group - LaPorte",
+   "city": "Granger",
+   "state": "IN",
+   "title": "Registered Nurse - OR - PRN - Granger Surgery Center",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 31567995,
+   "hospital_name": "Dukes Memorial Hospital",
+   "city": "Peru",
+   "state": "IN",
+   "title": "RN ER Nights Part Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33858563,
+   "hospital_name": "Dupont Hospital",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "RN Med/Surg PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 26744481,
+   "hospital_name": "Dukes Memorial Hospital",
+   "city": "Peru",
+   "state": "IN",
+   "title": "RN Surgery PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38739836,
+   "hospital_name": "Lutheran Medical Group",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Certified Medical Assistant - Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 31567996,
+   "hospital_name": "Bluffton Regional Medical Center",
+   "city": "Bluffton",
+   "state": "IN",
+   "title": "RN ER Nights Weekends",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37735564,
+   "hospital_name": "Northwest Health Medical Group - Porter",
+   "city": "Portage",
+   "state": "IN",
+   "title": "Licensed Practical Nurse - Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27758669,
+   "hospital_name": "Lutheran Health System Serv",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Financial Analyst - LHN Market- Onsite",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21316158,
+   "hospital_name": "Lutheran Health System Serv",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Network Manager, Marketing",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 11216156,
+   "hospital_name": "Lutheran Health System Serv",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Director of Finance, Clinics",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 17812762,
+   "hospital_name": "Northwest Health - Starke",
+   "city": "Knox",
+   "state": "IN",
+   "title": "RN Medsurg Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 26092005,
+   "hospital_name": "RediMed/Business Health",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Radiology Technologist(X-Ray Technologist) - RediMed Business Health Clinic - Part Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38739900,
+   "hospital_name": "Optimum Performance Sports",
+   "city": "Fort Wayne",
+   "state": "IN",
+   "title": "Football Coach- PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38740078,
+   "hospital_name": "Moberly Regional Medical Center",
+   "city": "Moberly",
+   "state": "MO",
+   "title": "RN Behavioral Health - $30,000 Sign-On Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32554205,
+   "hospital_name": "Moberly Regional Medical Center",
+   "city": "Moberly",
+   "state": "MO",
+   "title": "Behavioral Health LPN - PRN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38565158,
+   "hospital_name": "Poplar Bluff Regional Medical Center",
+   "city": "Poplar Bluff",
+   "state": "MO",
+   "title": "Mental Health Worker",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705269,
+   "hospital_name": "Poplar Bluff Regional Medical Center",
+   "city": "Poplar Bluff",
+   "state": "MO",
+   "title": "Mental Health Worker",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32555223,
+   "hospital_name": "Moberly Regional Medical Center",
+   "city": "Moberly",
+   "state": "MO",
+   "title": "RN Behavioral Health Nights - $30,000 Sign-On Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38618500,
+   "hospital_name": "Poplar Bluff Regional Medical Center",
+   "city": "Poplar Bluff",
+   "state": "MO",
+   "title": "RN Behavioral Health PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33857015,
+   "hospital_name": "Northeast Regional Medical Center",
+   "city": "Kirksville",
+   "state": "MO",
+   "title": "ED RN - Full Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34119850,
+   "hospital_name": "Northeast Regional Medical Center",
+   "city": "Kirksville",
+   "state": "MO",
+   "title": "ER RN Mid Weekend",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38483452,
+   "hospital_name": "Northeast Regional Medical Center",
+   "city": "Kirksville",
+   "state": "MO",
+   "title": "ER RN PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 9632872,
+   "hospital_name": "Regional Physician Services",
+   "city": "Poplar Bluff",
+   "state": "MO",
+   "title": "Licensed Practical Nurse (LPN) - Urology Clinic - 10K SIGN ON BONUS",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 16874717,
+   "hospital_name": "Northeast Specialty Group",
+   "city": "Kirksville",
+   "state": "MO",
+   "title": "Licensed Practical Nurse (LPN) - Northeast Regional Heart Center",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38430546,
+   "hospital_name": "Northeast Specialty Group",
+   "city": "Kirksville",
+   "state": "MO",
+   "title": "Licensed Practical Nurse (LPN) - Northeast Regional Orthopedics & Sports Medicine",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37735702,
+   "hospital_name": "Northeast Specialty Group",
+   "city": "Kirksville",
+   "state": "MO",
+   "title": "Medical Assistant - Northeast Regional Heart Center",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38013591,
+   "hospital_name": "Merit Health Central",
+   "city": "Jackson",
+   "state": "MS",
+   "title": "RN Behavioral Health Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38483658,
+   "hospital_name": "Merit Health Central",
+   "city": "Jackson",
+   "state": "MS",
+   "title": "RN Manager of Behavioral Health",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705388,
+   "hospital_name": "Merit Health Wesley",
+   "city": "Hattiesburg",
+   "state": "MS",
+   "title": "RN Behavioral Health PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38740080,
+   "hospital_name": "Merit Health Wesley",
+   "city": "Hattiesburg",
+   "state": "MS",
+   "title": "RN Behavioral Health Part Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851399,
+   "hospital_name": "Merit Health River Oaks",
+   "city": "Flowood",
+   "state": "MS",
+   "title": "Cardiac Cath Lab RN, FT",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 2734317,
+   "hospital_name": "Merit Health Wesley",
+   "city": "Hattiesburg",
+   "state": "MS",
+   "title": "RN Acute Cardiac",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 22226012,
+   "hospital_name": "Merit Health River Oaks",
+   "city": "Flowood",
+   "state": "MS",
+   "title": "RN Emergency Room",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 5617071,
+   "hospital_name": "Merit Health River Oaks",
+   "city": "Flowood",
+   "state": "MS",
+   "title": "Registered Nurse Emergency Department Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851719,
+   "hospital_name": "Merit Health Central",
+   "city": "Jackson",
+   "state": "MS",
+   "title": "RN - Nursery",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33072705,
+   "hospital_name": "Merit Health Natchez",
+   "city": "Natchez",
+   "state": "MS",
+   "title": "RN Nursery PRN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 11673267,
+   "hospital_name": "Merit Health Natchez",
+   "city": "Natchez",
+   "state": "MS",
+   "title": "Chief Quality Officer - RN Required",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27468695,
+   "hospital_name": "The Vicksburg Clinic, LLC",
+   "city": "Vicksburg",
+   "state": "MS",
+   "title": "Certified Medical Assistant - Orthopedic Clinic - Vicksburg",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33070885,
+   "hospital_name": "Merit Health Medical Group (hub)",
+   "city": "Madison",
+   "state": "MS",
+   "title": "Certified Medical Assistant - Primary Care - Madison",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38377472,
+   "hospital_name": "Merit Health Medical Group (hub)",
+   "city": "Flowood",
+   "state": "MS",
+   "title": "Certified Medical Assistant - Primary Care - Flowood",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21905394,
+   "hospital_name": "Merit Health Medical Group (hub)",
+   "city": "Natchez",
+   "state": "MS",
+   "title": "Licensed Practical Nurse - Orthopedics - Natchez (PT)",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33071402,
+   "hospital_name": "Merit Health Natchez",
+   "city": "Natchez",
+   "state": "MS",
+   "title": "LPN Rehab",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38236984,
+   "hospital_name": "Merit Health River Region",
+   "city": "Vicksburg",
+   "state": "MS",
+   "title": "Licensed Practical Nurse - Vicksburg",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33072545,
+   "hospital_name": "Merit Health River Region",
+   "city": "Vicksburg",
+   "state": "MS",
+   "title": "RN Graduate",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38236985,
+   "hospital_name": "Merit Health River Region",
+   "city": "Vicksburg",
+   "state": "MS",
+   "title": "Licensed Practical Nurse - Vicksburg",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32554193,
+   "hospital_name": "The Vicksburg Clinic, LLC",
+   "city": "Vicksburg",
+   "state": "MS",
+   "title": "Licensed Practical Nurse - Merit Health Medical Group - Vicksburg",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21316036,
+   "hospital_name": "The Vicksburg Clinic, LLC",
+   "city": "Vicksburg",
+   "state": "MS",
+   "title": "Licensed Practical Nurse - Family Medicine - Vicksburg",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32555437,
+   "hospital_name": "Merit Health Vicksburg",
+   "city": "Vicksburg",
+   "state": "MS",
+   "title": "RN- ICU Nights PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34644653,
+   "hospital_name": "Merit Health Woman's Hospital",
+   "city": "Flowood",
+   "state": "MS",
+   "title": "Mammography Techno I , Part Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32555314,
+   "hospital_name": "Merit Health Vicksburg",
+   "city": "Vicksburg",
+   "state": "MS",
+   "title": "RN - Dialysis - Up to 20k Sign On!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27760336,
+   "hospital_name": "Merit Health Vicksburg",
+   "city": "Vicksburg",
+   "state": "MS",
+   "title": "RN - Wound Care PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 5844697,
+   "hospital_name": "Eastern New Mexico Medical Center",
+   "city": "Roswell",
+   "state": "NM",
+   "title": "RN Behavioral Health PRN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 19635805,
+   "hospital_name": "Eastern New Mexico Medical Center",
+   "city": "Roswell",
+   "state": "NM",
+   "title": "RN Behavioral Health Nights - $15,000 Sign-On Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33072363,
+   "hospital_name": "Eastern New Mexico Medical Center",
+   "city": "Roswell",
+   "state": "NM",
+   "title": "RN Behavioral Health - $15,000 Sign-On Bonus!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34121006,
+   "hospital_name": "Carlsbad Medical Center",
+   "city": "Carlsbad",
+   "state": "NM",
+   "title": "Cath Lab RN (Registered Nurse) - Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33071114,
+   "hospital_name": "Mountain View Regional",
+   "city": "Las Cruces",
+   "state": "NM",
+   "title": "Director of Telemetry",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 3359661,
+   "hospital_name": "Mountain View Regional",
+   "city": "Las Cruces",
+   "state": "NM",
+   "title": "Emergency Room Charge Nurse (RN) – Night Shift | Up to $20,000 Sign‑On Bonus",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38377500,
+   "hospital_name": "Carlsbad Medical Center",
+   "city": "Carlsbad",
+   "state": "NM",
+   "title": "Director Emergency Department",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32555345,
+   "hospital_name": "Carlsbad Medical Center",
+   "city": "Carlsbad",
+   "state": "NM",
+   "title": "RN Emergency Department Nights $ Sign On Bonus! Relocation!",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37407415,
+   "hospital_name": "Mountain View Regional",
+   "city": "Las Cruces",
+   "state": "NM",
+   "title": "ER RN - Nights - Up to $20,000 Sign On Bonus",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851405,
+   "hospital_name": "MountainView Medical Group",
+   "city": "Las Cruces",
+   "state": "NM",
+   "title": "Certified Medical Assistant (CMA) - MountainView Family Care at Lohman",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851407,
+   "hospital_name": "MountainView Medical Group",
+   "city": "Las Cruces",
+   "state": "NM",
+   "title": "Certified Medical Assistant (CMA) - MountainView Orthopedics",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38618361,
+   "hospital_name": "Eastern New Mexico Medical Group",
+   "city": "Roswell",
+   "state": "NM",
+   "title": "Medical Assistant PRN - Orthopedic Specialists/Foot & Ankle Surgical Specialists",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33070843,
+   "hospital_name": "Eastern New Mexico Medical Group",
+   "city": "Roswell",
+   "state": "NM",
+   "title": "Certified Medical Assistant (CMA) - General Surgery Specialists",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34119450,
+   "hospital_name": "MountainView Medical Group",
+   "city": "Las Cruces",
+   "state": "NM",
+   "title": "Certified Medical Assistant (CMA) - MountainView Digestive Health",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38618358,
+   "hospital_name": "Eastern New Mexico Medical Group",
+   "city": "Roswell",
+   "state": "NM",
+   "title": "Medical Assistant - Family Medicine Walk-in Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 30227109,
+   "hospital_name": "Pecos Valley Physician Group",
+   "city": "Carlsbad",
+   "state": "NM",
+   "title": "Licensed Practical Nurse (LPN) - Pecos Valley Family Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27470196,
+   "hospital_name": "AllianceHealth Durant",
+   "city": "Durant",
+   "state": "OK",
+   "title": "RN Cath Lab PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38618517,
+   "hospital_name": "AllianceHealth Durant",
+   "city": "Durant",
+   "state": "OK",
+   "title": "RN Emergency Department Mid Shift",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34645642,
+   "hospital_name": "AllianceHealth Durant",
+   "city": "Durant",
+   "state": "OK",
+   "title": "RN Care Manager PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 11899665,
+   "hospital_name": "AllianceHealth Madill",
+   "city": "Durant",
+   "state": "OK",
+   "title": "Medical Assistant - AllianceHealth Durant Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38430559,
+   "hospital_name": "AllianceHealth Madill",
+   "city": "Kingston",
+   "state": "OK",
+   "title": "Medical Assistant - Alliance Health - Kingston Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 12891728,
+   "hospital_name": "AllianceHealth Medical Group Durant & Madill",
+   "city": "Durant",
+   "state": "OK",
+   "title": "Clinic Manager I - Alliance Durant",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27469707,
+   "hospital_name": "AllianceHealth Madill",
+   "city": "Durant",
+   "state": "OK",
+   "title": "Phlebotomist - Alliance Health Durant Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38618461,
+   "hospital_name": "AllianceHealth Medical Group Durant & Madill",
+   "city": "Atoka",
+   "state": "OK",
+   "title": "Receptionist - Alliance Health - Atoka RHC",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27470163,
+   "hospital_name": "LaFollette Medical Center",
+   "city": "La Follette",
+   "state": "TN",
+   "title": "RN Behavioral Health PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34907017,
+   "hospital_name": "Turkey Creek Medical Center",
+   "city": "Knoxville",
+   "state": "TN",
+   "title": "Cath Lab RN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38605867,
+   "hospital_name": "North Knoxville Medical Center",
+   "city": "Powell",
+   "state": "TN",
+   "title": "Certified Cardiovascular Invasive Tech",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 34908584,
+   "hospital_name": "Jefferson Memorial Hospital",
+   "city": "Jefferson City",
+   "state": "TN",
+   "title": "RN Cath Lab",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21906463,
+   "hospital_name": "North Knoxville Medical Center",
+   "city": "Powell",
+   "state": "TN",
+   "title": "RN Cath Lab",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 36763518,
+   "hospital_name": "Turkey Creek Medical Center",
+   "city": "Knoxville",
+   "state": "TN",
+   "title": "Anesthesia Tech PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 17270266,
+   "hospital_name": "Turkey Creek Medical Center",
+   "city": "Knoxville",
+   "state": "TN",
+   "title": "Anesthesia Tech",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851444,
+   "hospital_name": "Jefferson Memorial Hospital",
+   "city": "Jefferson City",
+   "state": "TN",
+   "title": "ED RN PRN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38012309,
+   "hospital_name": "Jefferson Memorial Hospital",
+   "city": "Jefferson City",
+   "state": "TN",
+   "title": "Emergency Room Registered Nurse (ER RN) – Mid Shift",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38740097,
+   "hospital_name": "North Knoxville Medical Center",
+   "city": "Powell",
+   "state": "TN",
+   "title": "RN Emergency Department Mid-shift",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38472283,
+   "hospital_name": "Newport Medical Center",
+   "city": "Newport",
+   "state": "TN",
+   "title": "CNA SNF/State - FT Evenings Skilled Nursing",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 10088325,
+   "hospital_name": "Tennova Medical Group - Greater Knoxville",
+   "city": "Powell",
+   "state": "TN",
+   "title": "Medical Assistant - Urology - Powell",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21316168,
+   "hospital_name": "Tennova Medical Group - Greater Knoxville",
+   "city": "Powell",
+   "state": "TN",
+   "title": "Medical Assistant - Cardio - Powell",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 27469324,
+   "hospital_name": "Tennova Medical Group - Greater Knoxville",
+   "city": "Powell",
+   "state": "TN",
+   "title": "Medical Assistant - Primary Care - North Knoxville",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705256,
+   "hospital_name": "Tennova Medical Group (hub)",
+   "city": "Newport",
+   "state": "TN",
+   "title": "Medical Assistant - Tennova Multispecialty Newport",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705299,
+   "hospital_name": "LaFollette Medical Center",
+   "city": "La Follette",
+   "state": "TN",
+   "title": "Patient Care Technician-Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23771113,
+   "hospital_name": "LaFollette Medical Center",
+   "city": "La Follette",
+   "state": "TN",
+   "title": "RN ED Charge",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 24106689,
+   "hospital_name": "Newport Medical Center",
+   "city": "Newport",
+   "state": "TN",
+   "title": "RN ED Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 26263587,
+   "hospital_name": "Newport Medical Center",
+   "city": "Newport",
+   "state": "TN",
+   "title": "RN ED PRN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38222008,
+   "hospital_name": "Tennova Medical Group (hub)",
+   "city": "Talbott",
+   "state": "TN",
+   "title": "Registered Nurse - Pre/Post Op - Volunteer Surgery Center",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 13092772,
+   "hospital_name": "Tennova Medical Group (hub)",
+   "city": "Morristown",
+   "state": "TN",
+   "title": "Clinical Director - Ambulatory Surgery Center",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38528503,
+   "hospital_name": "Lakeside Physicians",
+   "city": "Granbury",
+   "state": "TX",
+   "title": "Financial Counselor I - Gastroenterology Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23434216,
+   "hospital_name": "DeTar Healthcare System",
+   "city": "Victoria",
+   "state": "TX",
+   "title": "RN Cardiac Step Down Part Time Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33072392,
+   "hospital_name": "DeTar Healthcare System",
+   "city": "Victoria",
+   "state": "TX",
+   "title": "RN Cardiac Step Down FT Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23432861,
+   "hospital_name": "Woodland Heights Medical Center",
+   "city": "Lufkin",
+   "state": "TX",
+   "title": "Director of Cath Lab",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38430548,
+   "hospital_name": "DeTar Healthcare System",
+   "city": "Victoria",
+   "state": "TX",
+   "title": "LPN Cardiac Step Down Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33072407,
+   "hospital_name": "Longview Regional Medical Center",
+   "city": "Longview",
+   "state": "TX",
+   "title": "RN Cath Lab PRN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38012375,
+   "hospital_name": "Longview Regional Medical Center",
+   "city": "Longview",
+   "state": "TX",
+   "title": "ER RN",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37084124,
+   "hospital_name": "Navarro Regional",
+   "city": "Corsicana",
+   "state": "TX",
+   "title": "RN Trauma Program Coordinator",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 21906484,
+   "hospital_name": "Longview Regional Medical Center",
+   "city": "Longview",
+   "state": "TX",
+   "title": "RN Charge Medical",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38851677,
+   "hospital_name": "Navarro Regional",
+   "city": "Corsicana",
+   "state": "TX",
+   "title": "RN ER PRN Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 11898950,
+   "hospital_name": "Laredo Medical Center",
+   "city": "Laredo",
+   "state": "TX",
+   "title": "Assistant Chief Nursing Officer (ACNO) - Laredo, TX",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 16874183,
+   "hospital_name": "Longview Clinic Operations LLC",
+   "city": "Longview",
+   "state": "TX",
+   "title": "Certified Medical Assistant (CMA) - Internal Medicine - Loop Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 24696039,
+   "hospital_name": "Laredo Medical Center",
+   "city": "Laredo",
+   "state": "TX",
+   "title": "CHARGE NURSE Step Down Unit, Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38296420,
+   "hospital_name": "Longview Clinic Operations LLC",
+   "city": "Longview",
+   "state": "TX",
+   "title": "Certified Medical Assistant (CMA) - Cardiology - Dr. Greifenkamp",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38705433,
+   "hospital_name": "Laredo Medical Center",
+   "city": "Laredo",
+   "state": "TX",
+   "title": "RN STEP DOWN Unit",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 24105544,
+   "hospital_name": "Lakeside Physicians",
+   "city": "Granbury",
+   "state": "TX",
+   "title": "Licensed Practical Nurse (LPN) - Gastroenterology Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 32554327,
+   "hospital_name": "Lakeside Physicians",
+   "city": "Granbury",
+   "state": "TX",
+   "title": "Medical Assistant - Orthopedics",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37735854,
+   "hospital_name": "Woodland Heights Medical Center",
+   "city": "Lufkin",
+   "state": "TX",
+   "title": "Monitor Tech Nights Full Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38012768,
+   "hospital_name": "Navarro Regional",
+   "city": "Corsicana",
+   "state": "TX",
+   "title": "Monitor Tech Nights Full Time",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38296945,
+   "hospital_name": "Longview Clinic Operations LLC",
+   "city": "Longview",
+   "state": "TX",
+   "title": "Licensed Practical Nurse (LPN) - Dr. Dahal - Cardiology",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38377574,
+   "hospital_name": "DeTar Medical Group",
+   "city": "Victoria",
+   "state": "TX",
+   "title": "Medical Assistant - Detar Medical Group",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38618357,
+   "hospital_name": "DeTar Medical Group",
+   "city": "Victoria",
+   "state": "TX",
+   "title": "Medical Assistant - Detar Medical Group",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33858015,
+   "hospital_name": "Laredo Physician Associates",
+   "city": "Laredo",
+   "state": "TX",
+   "title": "Registered Medical Assistant - Laredo Care Clinic",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33858016,
+   "hospital_name": "Laredo Physician Associates",
+   "city": "Laredo",
+   "state": "TX",
+   "title": "Registered Medical Assistant - Primary Care",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 37083456,
+   "hospital_name": "Lake Granbury Medical Center",
+   "city": "Granbury",
+   "state": "TX",
+   "title": "Patient Care Technician Full Time Days",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38472348,
+   "hospital_name": "Woodland Heights Medical Center",
+   "city": "Lufkin",
+   "state": "TX",
+   "title": "Patient Care Technician FT Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38483594,
+   "hospital_name": "Laredo Physician Associates",
+   "city": "Laredo",
+   "state": "TX",
+   "title": "Registered Medical Assistant - Orthopedics",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 33858394,
+   "hospital_name": "Lake Granbury Medical Center",
+   "city": "Granbury",
+   "state": "TX",
+   "title": "RN ER Charge Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 38377753,
+   "hospital_name": "Lake Granbury Medical Center",
+   "city": "Granbury",
+   "state": "TX",
+   "title": "RN ER Nights",
+   "hospital_system": "CHS"
+  },
+  {
+   "id": 23433148,
+   "hospital_name": "DeTar Medical Group",
+   "city": "Victoria",
+   "state": "TX",
+   "title": "Licensed Practical Nurse (LPN) - DeTar Cancer Center",
+   "hospital_system": "CHS"
+  }
+ ],
+ "stored_body_lines": [
+  {
+   "id": 38499843,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Registered Nurse- Med/Surg Psych",
+   "lines": [
+    "Hospital: Methodist"
+   ]
+  },
+  {
+   "id": 30748894,
+   "hospital_system": "Indiana University Health",
+   "city": "Bloomington",
+   "state": "IN",
+   "title": "Behavioral Health Counselor MS",
+   "lines": [
+    "Location: Bloomington Hospital, Bloomington, IN"
+   ]
+  },
+  {
+   "id": 38499872,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Behavioral Health Counselor MS Licensed",
+   "lines": [
+    "Location: Methodist Hospital – Indianapolis, IN"
+   ]
+  },
+  {
+   "id": 26075092,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Behavioral Health Therapist-Team Lead",
+   "lines": [
+    "Location: Riley Hospital"
+   ]
+  },
+  {
+   "id": 38404705,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Behavioral Health Counselor - MS Licensed",
+   "lines": [
+    "Location: Gateway Plaza",
+    "Department: Behav Health - Virtual"
+   ]
+  },
+  {
+   "id": 38499842,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Registered Nurse- Med Surg Psych/Behavioral Health",
+   "lines": [
+    "Hospital: Methodist"
+   ]
+  },
+  {
+   "id": 27449446,
+   "hospital_system": "Indiana University Health",
+   "city": "Monticello",
+   "state": "IN",
+   "title": "Behavioral Health Counselor - MS Licensed",
+   "lines": [
+    "Location: IUHMG W-Monticello"
+   ]
+  },
+  {
+   "id": 34093560,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Behavioral Health Counselor-MS Senior Licensed",
+   "lines": [
+    "Location: Methodist Hospital, Indianapolis, IN"
+   ]
+  },
+  {
+   "id": 34881407,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Behavioral Health Counselor-MS Licensed",
+   "lines": [
+    "Location : Gateway Plaza",
+    "Department: Behav Health - Virtual"
+   ]
+  },
+  {
+   "id": 37686679,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Team Lead-Food and Nutrition - Day Shift",
+   "lines": [
+    "Location: IU Health Methodist Hospital"
+   ]
+  },
+  {
+   "id": 29449505,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Registered Nurse - Ortho Trauma Unit - FT Nights",
+   "lines": [
+    "Hospital: Methodist"
+   ]
+  },
+  {
+   "id": 24089224,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Unit Secretary - Emergency Department",
+   "lines": [
+    "Location: IU Health Methodist Hospital",
+    "Department: Emergency Department"
+   ]
+  },
+  {
+   "id": 29449504,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Registered Nurse - Ortho Trauma Unit - FT Days",
+   "lines": [
+    "Hospital: Methodist"
+   ]
+  },
+  {
+   "id": 34354731,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Registered Nurse - Neuro Trauma Surgical PCU - FT Nights",
+   "lines": [
+    "Hospital: Methodist"
+   ]
+  },
+  {
+   "id": 22200109,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Clinical Nurse-Clinical PV Specialty Coordinator",
+   "lines": [
+    "Location: Methodist Hospital – On-site"
+   ]
+  },
+  {
+   "id": 38856485,
+   "hospital_system": "Indiana University Health",
+   "city": "Lafayette",
+   "state": "IN",
+   "title": "Medical Assistant II - Pulmonary - Greenbush",
+   "lines": [
+    "Location: Greenbush Arnett, Lafayette, IN",
+    "Department: Pulmonary"
+   ]
+  },
+  {
+   "id": 38333169,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Clinical Nurse-Research",
+   "lines": [
+    "Location: On-site at Methodist Hospital with Travel within the Metro area required (IUH West, IUH North & IUH Fishers)"
+   ]
+  },
+  {
+   "id": 38398636,
+   "hospital_system": "Indiana University Health",
+   "city": "Lafayette",
+   "state": "IN",
+   "title": "Medical Assistant II - OB/GYN",
+   "lines": [
+    "Location: Women's Health/OBGYN Clinic"
+   ]
+  },
+  {
+   "id": 38398646,
+   "hospital_system": "Indiana University Health",
+   "city": "Bloomington",
+   "state": "IN",
+   "title": "Medical Assistant II- Primary Care",
+   "lines": [
+    "Location: 5921 W. State Road 46, Bloomington, IN 47404"
+   ]
+  },
+  {
+   "id": 22199746,
+   "hospital_system": "Indiana University Health",
+   "city": "West Lafayette",
+   "state": "IN",
+   "title": "Registered Nurse - Resource - Arnett - FT Nights",
+   "lines": [
+    "Location : Various locations across IU Health facilities (Level 1 trauma centers, suburban settings, critical access centers)"
+   ]
+  },
+  {
+   "id": 26242782,
+   "hospital_system": "Indiana University Health",
+   "city": "Bloomington",
+   "state": "IN",
+   "title": "Medical Assistant II: Multispecialty Clinic",
+   "lines": [
+    "Location: 2651 East Discovery Parkway, Bloomington IN 47408"
+   ]
+  },
+  {
+   "id": 22200055,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Clinical Nurse-Clinical Specialty Coordinator - Spine",
+   "lines": [
+    "Location: Methodist Hospital OR"
+   ]
+  },
+  {
+   "id": 24089226,
+   "hospital_system": "Indiana University Health",
+   "city": "Lafayette",
+   "state": "IN",
+   "title": "Medical Assistant II - Neurology",
+   "lines": [
+    "Location: 2600 Ferry St, Lafayette, IN",
+    "Department: Neurology"
+   ]
+  },
+  {
+   "id": 34881348,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Medical Assistant II- Advanced Pain Therapies",
+   "lines": [
+    "Location: 550 University Blvd Suite 2007, parking in surface lot"
+   ]
+  },
+  {
+   "id": 28013029,
+   "hospital_system": "Indiana University Health",
+   "city": "Bloomington",
+   "state": "IN",
+   "title": "Medical Assistant II- Podiatry",
+   "lines": [
+    "Location: 550 S Landmark Ave Bloomington Indiana"
+   ]
+  },
+  {
+   "id": 33044423,
+   "hospital_system": "Indiana University Health",
+   "city": "Frankfort",
+   "state": "IN",
+   "title": "Medical Assistant II - Primary Care - Frankfort",
+   "lines": [
+    "Location: Frankfort Family Medicine"
+   ]
+  },
+  {
+   "id": 34881347,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Medical Assistant II- Advanced Pain Therapies",
+   "lines": [
+    "Location: 550 University Blvd Suite 2007, parking in surface lot"
+   ]
+  },
+  {
+   "id": 38587844,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Clinical Nurse - Ambulatory Navigator",
+   "lines": [
+    "Location: On-site at Methodist Hospital"
+   ]
+  },
+  {
+   "id": 38587853,
+   "hospital_system": "Indiana University Health",
+   "city": "Lafayette",
+   "state": "IN",
+   "title": "Medical Assistant II - Urology",
+   "lines": [
+    "Location: 5177 McCarty Lane, Lafayette, IN 47905",
+    "Department: Urology"
+   ]
+  },
+  {
+   "id": 38398660,
+   "hospital_system": "Indiana University Health",
+   "city": "Bloomington",
+   "state": "IN",
+   "title": "Medical Assistant II- Primary Care",
+   "lines": [
+    "Location: 5921 W. State Road 46, Bloomington, IN 47404"
+   ]
+  },
+  {
+   "id": 38404706,
+   "hospital_system": "Indiana University Health",
+   "city": "West Lafayette",
+   "state": "IN",
+   "title": "Medical Assistant II - Urgent Care, Full Time",
+   "lines": [
+    "Location: Lafayette Urgent Care (Southside & Westside)"
+   ]
+  },
+  {
+   "id": 38587871,
+   "hospital_system": "Indiana University Health",
+   "city": "Bloomington",
+   "state": "IN",
+   "title": "Registered Nurse - Resource - Bloomington - FT Nights",
+   "lines": [
+    "Location : Various locations across IU Health facilities (Level 1 trauma centers, suburban settings, critical access centers)"
+   ]
+  },
+  {
+   "id": 38587873,
+   "hospital_system": "Indiana University Health",
+   "city": "Muncie",
+   "state": "IN",
+   "title": "Registered Nurse - Resource - Inpatient Ball/Jay/Ft Wayne - FT Nights",
+   "lines": [
+    "Location : Various locations across IU Health facilities (Level 1 trauma centers, suburban settings, critical access centers)"
+   ]
+  },
+  {
+   "id": 38553402,
+   "hospital_system": "Indiana University Health",
+   "city": "Bloomington",
+   "state": "IN",
+   "title": "Medical Assistant I- Primary Care",
+   "lines": [
+    "Location: 550 S. Landmark Ave., Bloomington, IN 47403"
+   ]
+  },
+  {
+   "id": 38614859,
+   "hospital_system": "Indiana University Health",
+   "city": "Muncie",
+   "state": "IN",
+   "title": "Registered Nurse – Medical Stroke",
+   "lines": [
+    "Location: Ball Memorial Hospital - Muncie, Indiana"
+   ]
+  },
+  {
+   "id": 22199429,
+   "hospital_system": "Indiana University Health",
+   "city": "Lafayette",
+   "state": "IN",
+   "title": "Medical Assistant II - Rheumatology",
+   "lines": [
+    "Location: 2600 Ferry Street, Lafayette, IN 47905",
+    "Department: Rheumatology"
+   ]
+  },
+  {
+   "id": 29449502,
+   "hospital_system": "Indiana University Health",
+   "city": "Frankfort",
+   "state": "IN",
+   "title": "Medical Assistant II - Primary Care - Frankfort",
+   "lines": [
+    "Location: Frankfort Family Medicine"
+   ]
+  },
+  {
+   "id": 32130814,
+   "hospital_system": "Indiana University Health",
+   "city": "Bloomington",
+   "state": "IN",
+   "title": "Medical Assistant II- Community Benefit",
+   "lines": [
+    "Location: 333 E Miller Drive, Bloomington, IN. 47401"
+   ]
+  },
+  {
+   "id": 33044390,
+   "hospital_system": "Indiana University Health",
+   "city": "Bedford",
+   "state": "IN",
+   "title": "Nursing Professional Development - Practitioner",
+   "lines": [
+    "Location: On-site at Bedford Hospital"
+   ]
+  },
+  {
+   "id": 36404591,
+   "hospital_system": "Indiana University Health",
+   "city": "Indianapolis",
+   "state": "IN",
+   "title": "Registered Nurse - Organ Transplant Unit - FT Days",
+   "lines": [
+    "Hospital: University"
+   ]
+  },
+  {
+   "id": 30734429,
+   "hospital_system": "TriHealth",
+   "city": "Cincinnati",
+   "state": "AL",
+   "title": "Advanced Practice Nurse",
+   "lines": [
+    "Location: 5861 Cinema Dr, Milford, OH 45150"
+   ]
+  },
+  {
+   "id": 29194864,
+   "hospital_system": "TriHealth",
+   "city": "Cincinnati",
+   "state": "OH",
+   "title": "Behavioral Health Protective Services Officer-Optional",
+   "lines": [
+    "Location: Good Samaritan Hospital at 375 Dixmyth Avenue, Cincinnati, OH 45220"
+   ]
+  },
+  {
+   "id": 38711846,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Unit Coordinator & Monitor Tech– 4100 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38818962,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – PRN/Optional-4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194743,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194748,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech II–Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38253675,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech I– 4100 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194738,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194740,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse Charge Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194741,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194742,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194744,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194745,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194746,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse Charge Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194747,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse Charge Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194751,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech II–Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194797,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194846,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Charge Nurse-Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 32514551,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – 4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 32514556,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – 4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 34602973,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – 4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 34602982,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – 4100 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 36704836,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Unit Coordinator – Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38253662,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech I– 4100 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38253663,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – 4100 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38253665,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse Charge Nurse – 4100 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38253671,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – 4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38253673,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – 4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38253676,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech I– 4100 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38573556,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech I– 4100 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38573558,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech I– 4100 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194630,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech I– Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194853,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech I– Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194871,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech - Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 32514559,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech I– 4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38818950,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech II–Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38818952,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Charge Nurse – 4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38818953,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Acute Care Tech I– 4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 38818966,
+   "hospital_system": "TriHealth",
+   "city": "Montgomery",
+   "state": "OH",
+   "title": "Registered Nurse – 4200 Telemetry Unit",
+   "lines": [
+    "Location: Bethesda North Hospital – 10500 Montgomery Rd, Montgomery, OH 45242",
+    "Hospital: Bethesda North Hospital (Telemetry)"
+   ]
+  },
+  {
+   "id": 29194889,
+   "hospital_system": "TriHealth",
+   "city": "Oxford",
+   "state": "OH",
+   "title": "Clinical Dietitian- McCullough-Hyde Hospital",
+   "lines": [
+    "Location: TriHealth McCullough Hyde Hospital: 110 N. Poplar Street, Oxford, OH 45056 https://share.google/osy7Bmyvu6wJsemOK"
+   ]
+  }
+ ]
+}
