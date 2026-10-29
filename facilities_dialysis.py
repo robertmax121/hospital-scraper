@@ -504,3 +504,47 @@ def _apply_one(job, system) -> str:
             job.city, job.state = city, state
             job.location = f"{city}, {state}" if city else state
     return how
+
+# Review A (release 3), 2026-10-29, decision 2: the clinic in a DaVita or
+# Fresenius link is where the requisition is filed, not always where the job
+# is. A home-based or remote role (the Integrated Kidney Care case managers
+# and nurse practitioners: "RN Case Manager - Bronx, NY - Hybrid Remote",
+# "Nurse Practitioner - Salem, OR (Hybrid)"), a regional or divisional role
+# ("Registered Nurse Regional Float", "Divisional Float Registered Nurse",
+# "Regional Operations Director", "Regional Home Manager"), a traveler or an
+# internal travel pool, or a posting for several clinics keeps the system
+# name with its town. A clinic float ("Float Patient Care Technician", "float
+# to various clinics as needed") stays on its home clinic.
+_NOT_ONE_CLINIC_TITLE_RX = re.compile(
+    r"\b(?:remote|hybrid|virtual(?!\s+hiring)|telecommut\w*|work\s+from\s+home|home[- ]based|"
+    r"IKC|integrated\s+kidney\s+care|regional|divisional|division|travel(?:er|ing|ling)?|"
+    r"(?:multiple|various|several)\s+(?:locations|clinics|facilities|sites))\b", re.I)
+_NOT_ONE_CLINIC_BODY_RX = re.compile(
+    r"(?<!not a )(?<!not )\b(?:regional\s+float|internal\s+travel|travel(?:l)?ing\s+throughout|"
+    r"this\s+is\s+a\s+(?:fully\s+)?remote\s+(?:position|role)|100%\s+remote|fully\s+remote)\b", re.I)
+
+
+def not_one_clinic(title, description="") -> bool:
+    """A DaVita / Fresenius posting that is no one clinic's job (see above)."""
+    if _NOT_ONE_CLINIC_TITLE_RX.search(str(title or "")):
+        return True
+    return bool(_NOT_ONE_CLINIC_BODY_RX.search(" ".join(str(description or "")[:1500].split())))
+
+
+_apply_clinics = apply_jobs
+
+
+def apply_jobs(jobs) -> dict:
+    """_apply_clinics (the clinic on a label row), then the system label back
+    on a DaVita / Fresenius row named for a clinic whose posting is no one
+    clinic's job (not_one_clinic); its town stays."""
+    stats = _apply_clinics(jobs)
+    for job in jobs:
+        system = getattr(job, "hospital_system", "")
+        if system not in (DAVITA, FRESENIUS) or on_label(system, job.hospital_name):
+            continue
+        if not_one_clinic(getattr(job, "title", ""), getattr(job, "description", "")):
+            job.hospital_name = system
+            d = stats.setdefault(system, {})
+            d["label not one clinic"] = d.get("label not one clinic", 0) + 1
+    return stats

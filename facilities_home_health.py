@@ -687,21 +687,32 @@ def reread_slot(canon, job_id, run_day: int) -> bool:
 
 # ── Applying it to a Job (finalize_jobs, before normalize_job) ──────────────
 UNKNOWN: dict = {}       # system -> {raw value: rows} named by no table entry, this run
+# Review A (release 3), 2026-10-29, decision 2: a remote, virtual or
+# field-based title ("Pharmacy Claims Processor / Remote", "VIRTUAL BCBA",
+# "Admissions Coordinator TPN / Remote") keeps the system name with its town,
+# whatever company or branch the body names. "Hybrid" keeps its branch.
+REMOTE_TITLE_RX = re.compile(
+    r"\b(?:remote|telecommut\w*|telework\w*|work\s+(?:from|at)\s+home|wfh|virtual(?!\s+hiring)|"
+    r"home[- ]based|field[- ]based)\b", re.I)
 
 
 def apply_facility(job) -> str:
     """The branch on one Job of a KEEP_SYSTEMS chain. Returns "detail" (the
     requisition location read tonight), "text" (the body), "kept" (the
-    stored name, no body or detail tonight), "none", "other" (a name the
-    adapter set that this module does not write: left as it is), or "" for
-    any other system. hospital_system is never changed; the town never
-    changes."""
+    stored name, no body or detail tonight), "remote" (a remote title: the
+    system name), "none", "other" (a name the adapter set that this module
+    does not write: left as it is), or "" for any other system.
+    hospital_system is never changed; the town never changes."""
     system = job.hospital_system
     if system not in KEEP_SYSTEMS:
         return ""
     cur = _words(job.hospital_name)
     if cur and cur != system and not is_own_name(system, cur):
         return "other"
+    if REMOTE_TITLE_RX.search(str(job.title or "")):
+        if cur != system:
+            job.hospital_name = system
+        return "remote"
     stash = getattr(job, REQ_LOC_ATTR, None)
     if stash:
         name = centerwell_branch(stash, job.title, job.description, job.state)

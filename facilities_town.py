@@ -199,7 +199,13 @@ def is_care_site(system, title) -> bool:
 # keeps the system name (review A, 2026-10-29).
 MULTI_SITE_RX = re.compile(
     r"\b(?:all|multiple|various|several)\s+(?:locations|campuses|sites|facilities|hospitals)\b|"
-    r"\bmulti[- ]site\b|\bsystem[- ]?wide\b", re.I)
+    r"\bmulti[- ]site\b|\bsystem[- ]?wide\b|"
+    # review A (release 3), 2026-10-29: a pool that floats across the
+    # system's hospitals ("Eastern Market Regional Resource Pool (SCH, SOH,
+    # SWRMC)", "System Resource Pool", "Divisional Float Resource", "RN
+    # Division Resource ... Resource RN Regional") is no one hospital's
+    r"\b(?:regional|system|market|divisional|division)\s+(?:resource|float)\b|"
+    r"\bresource\s+(?:rn|nurse)\s+regional\b", re.I)
 
 
 def is_multi_site(title, description) -> bool:
@@ -225,6 +231,40 @@ def where_lines(description) -> list[str]:
         v = re.split(r"\s+[A-Z][A-Za-z ]{1,24}:\s", m.group(1))[0]
         out.append(clean_text(v)[:120])
     return out
+
+
+# A location line that names an office building, an operations or support
+# centre, an airport base, a nursing home or senior residence, or "rotating
+# locations": the posting is no hospital's, whatever its town or title says
+# ("Location: Rosedale Office Building", "Calmont Operations Building",
+# "Meacham Airport", "Avera Mother Joseph Manor Retirement Community",
+# "2106640 ENVIRONMENTAL SERVICES - VIR SNF", "ProMedica Bay Park - Medical
+# Office Building", "Rotating locations throughout Health System"). Review A
+# (release 3), 2026-10-29: decision 2, offices and sites that are no hospital
+# keep the system name with their town.
+OFFICE_SITE_RX = re.compile(
+    r"\b(?:office\s+(?:building|bldg|park|plaza|complex|tower)|operations\s+(?:building|bldg|center|centre)|"
+    r"corporate\s+(?:office|offices|center|centre|campus|headquarters)|headquarters|"
+    r"support\s+cent(?:er|re)|service\s+cent(?:er|re)|airport|education\s*(?:&|and)\s*staffing|"
+    r"rotating\s+locations|throughout\s+(?:the\s+)?(?:health\s+)?system)\b", re.I)
+
+
+def where_not_hospital(description) -> bool:
+    """A location-type line names an office or a site that is no hospital
+    (OFFICE_SITE_RX, CARE_SITE_RX)."""
+    return any(OFFICE_SITE_RX.search(v) or CARE_SITE_RX.search(v) for v in where_lines(description))
+
+
+# A title that is a regional or system-office executive's ("Chief Technology
+# Officer", "Chief Learning Officer", "Regional Chief Operating Officer -
+# Central Region", "Associate Chief Medical Information Officer - North
+# Region"): no one hospital's, even in the head office's own town (review A,
+# release 3, 2026-10-29). A hospital's own chief (CEO, CNO, CFO) is not
+# matched.
+SYSTEM_ROLE_RX = re.compile(
+    r"\bchief\s+(?:technology|information(?:\s+security)?|digital|data|learning|people|transformation|strategy|"
+    r"medical\s+information|nursing\s+informatics)\s+officer\b|"
+    r"\bregional\s+(?:chief|vice\s+president|vp|president)\b|\b(?:north|south|east|west|central)\s+region\b", re.I)
 
 
 def is_remote(title, description) -> bool:
@@ -407,7 +447,7 @@ _GENERIC_CORE = frozenset((
 
 class TownSpec:
     def __init__(self, system, hospitals, *, emit=(), labels=(), default=None, keep=None, sites=(),
-                 entity=None, town_line=None, aliases=None):
+                 entity=None, town_line=None, aliases=None, entity_chars=None, office_line=None):
         self.system = system                      # hospital_system as stored
         self.emit = tuple(emit)                   # scraper emit names (HOSPITAL_SYSTEM_ALIASES keys)
         self.labels = frozenset(name_key(x) for x in (system, *emit, *labels))
@@ -483,6 +523,13 @@ class TownSpec:
             for v in values.values():
                 if v and v not in {h[0] for h in self.hospitals} | {s[0] for s in self.sites}:
                     raise ValueError(f"{system}: entity value names unknown hospital {v!r}")
+        # how far into a body the employer line is looked for (a long summary
+        # can push it past HEAD_CHARS), and an optional line that marks a
+        # system office or an employer that is no hospital ("Cost Center
+        # CC004421 SYS - IS Workday"): the row keeps the label (review A,
+        # release 3, 2026-10-29)
+        self.entity_chars = int(entity_chars or HEAD_CHARS)
+        self.office_line = re.compile(office_line) if office_line else None
         self.town_line = re.compile(town_line, re.I) if town_line else None
         self.table_names = frozenset({h[0] for h in self.hospitals} | {x[0] for x in self.sites})
         # the system's own names, longest first, to take out of a text
@@ -673,6 +720,11 @@ def decide(system, hospital_name, city, state, title="", description="", url="")
         return None, None, None, "care-site"
     if is_multi_site(title, description):
         return None, None, None, "multi-site"
+    if where_not_hospital(description) or SYSTEM_ROLE_RX.search(clean_text(title)):
+        return None, None, None, "offsite"
+    if spec.office_line is not None and spec.office_line.search(
+            clean_text(str(description or "")[:spec.entity_chars])):
+        return None, None, None, "entity-office"
 
     # The system's own employer line names the hospital (or an office). The
     # employer line is the employing entity, not the work site (review A,
@@ -682,7 +734,7 @@ def decide(system, hospital_name, city, state, title="", description="", url="")
     # own town that is no clinic's or office's.
     if spec.entity:
         rx, values = spec.entity
-        m = rx.search(clean_text(str(description or "")[:HEAD_CHARS]))
+        m = rx.search(clean_text(str(description or "")[:spec.entity_chars]))
         v = values.get(name_key(m.group(1))) if m else None
         if v == "":
             return None, None, None, "entity-office"

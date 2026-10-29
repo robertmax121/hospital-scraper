@@ -115,14 +115,25 @@ _MUSC = _spec("MUSC Health", [
 ], default=("Charleston", "SC"), sites=[
     ("Shawn Jenkins Children's Hospital", "Charleston", "SC", ("Shawn Jenkins Children's Hospital",
                                                                "Shawn Jenkins Childrens Hospital")),
-], entity=(r"\bEntity\s+(.+?)\s+Worker\s+(?:Type|Sub-Type)\b", {
-    "Medical University of South Carolina (MUSC - Univ)": "",
-    "University Medical Associates (UMA) Only Employees and Financials": "",
-    "University Medical Associates (UMA)": "",
-    "MUSC Community Physicians (MCP)": "",
-    "Carolina Family Care, Inc. (CFC)": "",
-    "MUSC Physicians": "",
-}))
+],
+    # review A (release 3), 2026-10-29: the line is "Entity" (capital E) and
+    # its value is short. A summary that says "MCP is an entity within the
+    # Medical University ..." made the old lazy, case-blind match read the
+    # whole sentence, so 19 MCP practice rows and 27 university/UMA rows (the
+    # line past 1,500 characters) took the town's hospital. The line is read
+    # up to 8,000 characters in.
+    entity=(r"(?-i:\bEntity)\s+(.{3,120}?)\s+Worker\s+(?:Type|Sub-Type)\b", {
+        "Medical University of South Carolina (MUSC - Univ)": "",
+        "University Medical Associates (UMA) Only Employees and Financials": "",
+        "University Medical Associates (UMA)": "",
+        "MUSC Community Physicians (MCP)": "",
+        "Carolina Family Care, Inc. (CFC)": "",
+        "MUSC Physicians": "",
+    }), entity_chars=8000,
+    # a system-office, college or practice cost center ("Cost Center CC004421
+    # SYS - IS Workday", "CC000967 COM DOM Endocrinology CC", "CC004513 MCP -
+    # Revenue Cycle") is no hospital's, whatever the entity line says
+    office_line=r"(?-i:\bCost\s+Center)\s+CC\d+\s+(?:SYS|UNIV|COM|CON|CDM|CHP|CGS|HCC|UMA|MCP)\b")
 
 # ── Sentara Healthcare (sentara.wd1, scs): town sites; Norfolk is the default.
 _SENTARA = _spec("Sentara Healthcare", [

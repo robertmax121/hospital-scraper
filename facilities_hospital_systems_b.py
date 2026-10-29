@@ -708,6 +708,79 @@ JEFFERSON_TITLE_CUES = (
 # a site on a hospital's campus that is no hospital (the Willowcrest nursing
 # facility at 5501 Old York Road)
 _JEFF_CARE_RX = re.compile(r"\bWillowcrest\b", re.I)
+# Review A (release 3), 2026-10-29: the body's "Employee Entity" line. A
+# physician practice (Jefferson University Physicians, Jefferson Community
+# Physicians, Kennedy Medical Group, Aria Health Physician Services) puts its
+# office on a hospital campus ("10800 Knights Road" is Torresdale's street),
+# but the job is the practice's (decision 2: the system name with the town),
+# unless the title is an inpatient one (a hospitalist, a nocturnist). The
+# university and the health plan are no hospital at all.
+_JEFF_ENTITY_RX = re.compile(r"(?m)^[ \t]*(?:Employee[ \t]+)?Entity[ \t]*:?[ \t]*\n+[ \t]*([^\n]{3,160})")
+_JEFF_PRACTICE_RX = re.compile(r"\b(?:Physicians|Physician\s+Services|Medical\s+Group|Practice|Orthopaedics|"
+                               r"Associates\s+in\s+Healthcare)\b", re.I)
+_JEFF_NOT_HOSPITAL_RX = re.compile(r"\b(?:Philadelphia\s+University|Health\s+Partners\s+Plans)\b", re.I)
+# inpatient practice words INPATIENT_RX does not hold ("Advanced Practice
+# Clinician-Hospital Medicine", "Hospitalists")
+_JEFF_INPATIENT_RX = re.compile(r"\bhospital\s+medicine\b|\b(?:hospitalist|nocturnist|intensivist|radiologist|"
+                                r"pathologist|anesthesiologist)s\b", re.I)
+_JEFF_HOSPITAL_WORDS_RX = re.compile(
+    r"\bnew\s+to\s+practice\b|\b(?:lab(?:oratory)?|technician|technologist)\s*/\s*scientist\b|"
+    r"\b(?:pharmacy|clinical|nursing)\s+informatic\w*", re.I)
+
+
+def jefferson_entity(description) -> str:
+    """The body's "Employee Entity" value, or ""."""
+    m = _JEFF_ENTITY_RX.search(str(description or ""))
+    v = clean_text(m.group(1)) if m else ""
+    return "" if v.lower().startswith("primary location") else v
+
+
+def jefferson_not_a_hospital_job(title, description) -> bool:
+    """A practice's, the university's or the health plan's posting, a clinic
+    or office title, a remote posting or one for several sites: it never takes
+    a hospital from its street (review A, release 3)."""
+    ent = jefferson_entity(description)
+    if ent and _JEFF_NOT_HOSPITAL_RX.search(ent):
+        return True
+    t = clean_text(title)
+    if ent and _JEFF_PRACTICE_RX.search(ent) and not (facilities_town.INPATIENT_RX.search(t)
+                                                       or _JEFF_INPATIENT_RX.search(t)):
+        return True
+    stripped = facilities_town._strip_names(facilities_town.SPECS[JEFFERSON], t) \
+        if JEFFERSON in facilities_town.SPECS else t
+    # nursing's "New to Practice", a "Medical Lab Technician/Scientist" and a
+    # hospital pharmacy's or nursing's informatics post are hospital words,
+    # not a practice, a research post or a system IT office
+    stripped = _JEFF_HOSPITAL_WORDS_RX.sub(" ", stripped)
+    if facilities_town.OFFSITE_RX.search(stripped) or facilities_town.OFFICE_ROLE_RX.search(stripped) \
+            or facilities_town.SYSTEM_ROLE_RX.search(t):
+        return True
+    return bool(not_one_site(title, description))
+
+
+# Review A (release 3), 2026-10-29, decision 2 on every row this group names:
+# a remote posting ("Remote Overnight Neuroradiologist", "Enterprise
+# Teleradiologist ... 100% remote") or one for several sites ("Nursing Student
+# Summer Internship- Apply here for all locations!", "Divisional Float
+# Resource") keeps the system name, whatever its Location line or street says.
+# "Hybrid" alone is left to the site (a hybrid job still has its site), and
+# "Remote telemetry", "Hybrid OR" and "virtual sitter" are hospital words.
+_REMOTE_TITLE_RX = re.compile(
+    r"\b(?:remote(?!\s+(?:telemetry|cardiac|monitor\w*))|telecommut\w*|telework\w*|work\s+from\s+home|wfh|"
+    r"tele-?radiolog\w*|home[- ]based|virtual(?!\s+(?:sitter|nurs\w*|care\s+team|hiring))|fully\s+remote)\b", re.I)
+_REMOTE_BODY_RX = re.compile(
+    r"(?<!not a )(?<!not )\b(?:100%\s+remote|fully\s+remote|"
+    r"this\s+is\s+a\s+(?:fully\s+)?remote\s+(?:position|role|opportunity))\b", re.I)
+
+
+def not_one_site(title, description) -> str:
+    """"remote" or "multi-site" when the posting is no one site's job, else ""."""
+    if _REMOTE_TITLE_RX.search(clean_text(title)) or \
+            _REMOTE_BODY_RX.search(clean_text(str(description or "")[:facilities_town.HEAD_CHARS * 2])):
+        return "remote"
+    if facilities_town.is_multi_site(title, description):
+        return "multi-site"
+    return ""
 
 
 def jefferson_title_hit(title, town, st):
@@ -740,7 +813,7 @@ def jefferson_decide(hospital_name, city, state, description, job_id=None, store
     if addr:
         street, town, st = addr
         care = bool(_JEFF_CARE_RX.search(clean_text(title))) or facilities_town.is_care_site(JEFFERSON, title) \
-            or facilities_town.is_remote(title, "")
+            or facilities_town.is_remote(title, "") or jefferson_not_a_hospital_job(title, description)
         hit = jefferson_street_hit(street, town, st)
         if label and hit and not care:
             return hit[0], town, st, "address"
@@ -829,4 +902,38 @@ def apply_after_town(jobs) -> dict:
         how = _row_guard(_jefferson_one, job)
         d = stats.setdefault(JEFFERSON, {})
         d[how] = d.get(how, 0) + 1
+    return stats
+
+
+# Review A (release 3), 2026-10-29: decision 2 after every naming step. A row
+# of these systems that a step named (Location line, Workday street,
+# Department line, title, street address or town) goes back to the system
+# label when the posting is remote or for several sites (not_one_site); its
+# town stays. Wraps apply_after_town so finalize_jobs' one call does both.
+_after_town_names = apply_after_town
+
+
+def decision2_guard(jobs) -> dict:
+    """The system label back on a named row of SYSTEMS that is remote or for
+    several sites. Returns {system: {"remote" | "multi-site": rows}}."""
+    stats: dict = {}
+    for job in jobs:
+        system = job.hospital_system
+        if system not in SYSTEMS or clean_text(job.hospital_name) in ("", system):
+            continue
+        why = not_one_site(job.title, job.description)
+        if why:
+            job.hospital_name = system
+            d = stats.setdefault(system, {})
+            d[why] = d.get(why, 0) + 1
+    return stats
+
+
+def apply_after_town(jobs) -> dict:
+    """_after_town_names (Jefferson's street address), then decision2_guard."""
+    stats = _after_town_names(jobs)
+    for system, d in decision2_guard(jobs).items():
+        mine = stats.setdefault(system, {})
+        for k, v in d.items():
+            mine["label " + k] = mine.get("label " + k, 0) + v
     return stats

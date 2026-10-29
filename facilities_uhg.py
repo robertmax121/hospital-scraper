@@ -687,8 +687,10 @@ def title_brand(title) -> str:
 
 
 # Remote, telecommute and home-based postings show the system name (decision 2).
-REMOTE = re.compile(r"\b(?:remote|telecommut\w*|work\s+(?:from|at)\s+home|wfh|home[\s-]based|virtual|nationwide)\b",
-                    re.I)
+# Review A (release 3), 2026-10-29: a field-based role ("Customer Success
+# Representative - Field Based in New Jersey") has no site either.
+REMOTE = re.compile(r"\b(?:remote|telecommut\w*|work\s+(?:from|at)\s+home|wfh|home[\s-]based|field[\s-]based|virtual|"
+                    r"nationwide)\b", re.I)
 
 
 def uhg_site(title, description):
