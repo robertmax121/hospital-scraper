@@ -32,6 +32,7 @@ import advocate_facilities   # 2026-10-29: one clean name and the real town per 
 import facilities_workday    # 2026-10-29: the hospital and its real town on the other Workday systems
 import facilities_phenom   # 2026-10-29: the hospital on Phenom / TalentBrew rows filed under a system name
 import facilities_icims   # 2026-10-29: the hospital on iCIMS / Jibe rows filed under a system name
+import facilities_oracle_other   # 2026-10-29: Oracle work-location hospitals, Jackson / NYU / CHS feed codes (registers facility_names Specs)
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
@@ -16973,7 +16974,12 @@ def _oracle_items(v) -> list:
 # "HCM - Corning Hospital", Tenet "Delray Medical Center". On 2026-10-15:
 # Guthrie 561 of 756 rows at a hospital, Tenet 2,533 of 2,992; the rest are
 # clinics, physician networks and offices, and keep the system.
-ORACLE_LOCATION_FACILITY = frozenset({"Guthrie Health", "Tenet Healthcare"})
+# 2026-10-29 (facility scale): the 34 tenants of facilities_oracle_other
+# (Baptist Memorial "BMH - Desoto Hospital", Adventist "AHHF - Hospital",
+# WellSpan "1001 S George St-York Hospital-EMP" ...) read the same way, each
+# through its own table; a work location the table does not list keeps the
+# system, as on Guthrie and Tenet.
+ORACLE_LOCATION_FACILITY = frozenset({"Guthrie Health", "Tenet Healthcare"}) | facilities_oracle_other.ORACLE_SYSTEMS
 
 
 def _oracle_work_location_facility(system: str, j: dict, city: str = "", state: str = "") -> str:
@@ -16981,6 +16987,7 @@ def _oracle_work_location_facility(system: str, j: dict, city: str = "", state: 
     for w in _oracle_items(j.get("workLocation", j.get("WorkLocation"))):
         name = str(w.get("LocationName") or "").strip()
         if name:
+            name = facilities_oracle_other.oracle_location(system, name)   # 2026-10-29: a tenant's clean rule, else unchanged
             return facility_names.list_facility(system, name, city, state, j.get("Title", j.get("title", "")))
     return ""
 
@@ -17119,6 +17126,10 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                     _facility, _city, _state = _mount_sinai_loc(j.get("Title", j.get("title", "")), _city, _state)
                 elif system in ORACLE_LOCATION_FACILITY:
                     _facility = _oracle_work_location_facility(system, j, _city, _state) or system
+                    # 2026-10-29: the work location's own town when it is that hospital's (facilities_oracle_other)
+                    _site_town = facilities_oracle_other.oracle_site_town(system, j, _facility)
+                    if _site_town:
+                        _city, _state = _site_town
                 func = j.get("JobFunction", j.get("jobFunction", ""))
                 if isinstance(func, dict):
                     func = func.get("Name", func.get("name", ""))
@@ -33071,6 +33082,13 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         top = sorted(non_us.items(), key=lambda kv: -kv[1])
         logger.info(f"Non-US postings dropped: {sum(non_us.values()):,} rows {dict(top[:12])}")
     kept = _drop_req_family_copies(kept)
+    # 2026-10-29 (facility scale): a feed's internal code turned into the
+    # hospital's clean name or the system label first (Jackson "Jackson Main",
+    # "Corporate"; NYU "NYU Langone Hospital--Long Island"; CHS "CHS
+    # Corporate"), so apply_facilities below places it like any hospital.
+    ren = facilities_oracle_other.rename_jobs(kept)
+    if ren:
+        logger.info("Facility codes renamed: " + ", ".join(f"{s} {n:,}" for s, n in sorted(ren.items())))
     # 2026-10-15 (wages): the hospital on rows of the systems that file every
     # posting under the system's name (facility_names), before normalize_job
     # so a hospital's town fills a blank or head-office location.

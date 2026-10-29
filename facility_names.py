@@ -826,6 +826,33 @@ def spec_for(system) -> Spec | None:
     return SPECS.get((system or "").strip())
 
 
+# ── Specs from the per-family modules (2026-10-29) ──────────────────────────
+# The owner, 2026-10-29: every hospital inside a multi-hospital system named
+# and placed correctly. A per-family module (facilities_oracle_other) builds
+# its Specs from its own tables and registers them here, so list_facility,
+# apply_facility and the run log treat them as they treat the ten above.
+# FACILITY_SYSTEMS and FALLBACK_DB_LABELS keep the ten; registered() lists
+# the rest. A registered Spec is a list-value Spec (fallback False): no body
+# is read for it and nothing stored is kept.
+_REGISTERED: list = []
+
+
+def register(spec, emit_names=()) -> None:
+    """Add a Spec from a per-family module under its scraper emit name, its
+    stored label and any other emit name the system's adapters use
+    ("Northwell Health (CX_1)"). A name one of the ten already holds is not
+    taken over."""
+    for name in (spec.system, *emit_names):
+        if name and name not in SPECS:
+            SPECS[name] = spec
+    SPECS.setdefault(spec.db_label, spec)
+    _REGISTERED.append(spec)
+
+
+def registered() -> tuple:
+    return tuple(_REGISTERED)
+
+
 # ── Resolver ────────────────────────────────────────────────────────────────
 _STATE_RX = re.compile(r"[A-Z]{2}")
 

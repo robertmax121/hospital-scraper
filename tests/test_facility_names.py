@@ -321,8 +321,10 @@ def test_scrape_oracle_stores_the_hospital(monkeypatch, system):
 
 def test_other_oracle_tenants_keep_the_system():
     j = {"Id": "1", "Title": "RN", "workLocation": {"items": [{"LocationName": "Delray Medical Center"}]}}
-    assert "McLeod Health" not in scraper.ORACLE_LOCATION_FACILITY
-    assert scraper.ORACLE_LOCATION_FACILITY == {"Guthrie Health", "Tenet Healthcare"}
+    # 2026-10-29: the facilities_oracle_other tenants joined (each with its own table)
+    assert "Mayo Clinic" not in scraper.ORACLE_LOCATION_FACILITY
+    import facilities_oracle_other
+    assert scraper.ORACLE_LOCATION_FACILITY == {"Guthrie Health", "Tenet Healthcare"} | facilities_oracle_other.ORACLE_SYSTEMS
     assert scraper._oracle_work_location_facility("Tenet Healthcare", j) == "Delray Medical Center"
 
 
