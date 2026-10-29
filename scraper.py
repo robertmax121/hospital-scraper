@@ -31,6 +31,7 @@ import uhs_facilities   # 2026-10-28: one clean name per UHS facility on jobs.uh
 import advocate_facilities   # 2026-10-29: one clean name and the real town per Advocate Health facility
 import facilities_workday    # 2026-10-29: the hospital and its real town on the other Workday systems
 import facilities_phenom   # 2026-10-29: the hospital on Phenom / TalentBrew rows filed under a system name
+import facilities_icims   # 2026-10-29: the hospital on iCIMS / Jibe rows filed under a system name
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
@@ -10276,11 +10277,23 @@ async def _icims_tenant(session, system: str, domain: str, fetch_one) -> list[Jo
                                skip=lambda j: not _ICIMS_JOB_URL_RX.match(j.url or ""))
         except Exception as e:
             logger.info(f"iCIMS {system}: detail pass failed ({e})")
+    # 2026-10-29: the site a classic portal's title or body names, and its
+    # own town (facilities_icims.CLASSIC_SYSTEMS: Kettering, Emory, ...)
+    if system in facilities_icims.CLASSIC_SYSTEMS and jobs:
+        try:
+            got = facilities_icims.apply_classic_all(jobs)
+            logger.info(f"  iCIMS {system}: facility " + ", ".join(f"{k} {v:,}" for k, v in sorted(got.items())))
+        except Exception as e:
+            logger.info(f"iCIMS {system}: facility pass failed ({e})")
     return jobs
 
 
 async def run_icims(session) -> list[Job]:
     logger.info(f"iCIMS: scraping {len(ICIMS_ORGS)} systems...")
+    try:   # 2026-10-29: the sites and towns stored on body-derived rows (facilities_icims.STORED_SYSTEMS)
+        await asyncio.to_thread(facilities_icims.load_stored, logger)
+    except Exception as e:
+        logger.warning(f"iCIMS stored facilities: not loaded ({e})")
     fetch_one = _host_gated(lambda j: _icims_detail(session, j), ICIMS_DETAIL_IN_FLIGHT)
     if DETAIL_FETCH:
         ICIMS_DESC_BUDGET.expect(ICIMS_ORGS)
@@ -10647,6 +10660,9 @@ def _jibe_facility(system: str, j: dict) -> str:
     A UHS row: uhs_jibe_facility (2026-10-28)."""
     if system == uhs_facilities.SYSTEM:
         return uhs_jibe_facility(j)[0]
+    got = facilities_icims.jibe_facility(system, j)   # 2026-10-29: Fairview, MedStar, Piedmont ... (JIBE_SYSTEMS)
+    if got is not None:
+        return got[0]
     resolver = JIBE_FACILITY_RESOLVER.get(system)
     if resolver:
         return resolver(j.get("location_name") or "") or system
@@ -10745,6 +10761,7 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
     bad_rows = 0
     page_states: set[str] = set()  # 2026-10-27: the state names the first page shows (sliced reads)
     uhs_how: dict = {}             # 2026-10-28: UHS rows by where their facility came from (uhs_jibe_facility)
+    fac_how: dict = {}             # 2026-10-29: facilities_icims.JIBE_SYSTEMS rows by where their facility came from
 
     async def _read(extra: dict, deep_check: bool = False):
         """Page one /api/jobs listing (`extra`: a filter such as {"state":
@@ -10821,6 +10838,13 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                         uhs_how[how] = uhs_how.get(how, 0) + 1
                     else:
                         facility = _jibe_facility(system, j)
+                    if system in facilities_icims.JIBE_SYSTEMS:
+                        # 2026-10-29: the hospital's town only on a row the feed gave none
+                        # (a blank feed city: parse_city_state takes the state name for the town)
+                        city, st = facilities_icims.jibe_town(
+                            system, facility, city if str(j.get("city") or "").strip() else "", st)
+                        _fh = "named" if facility != system else "system"
+                        fac_how[_fh] = fac_how.get(_fh, 0) + 1
                     jobs.append(Job(
                         title=title,
                         hospital_system=system,
@@ -10904,6 +10928,8 @@ async def scrape_jibe(session: aiohttp.ClientSession, system: str, base_url: str
                     + f"): {len(served):,} served")
     if uhs_how:
         logger.info(f"  Jibe {system}: facility by " + ", ".join(f"{k} {v:,}" for k, v in sorted(uhs_how.items())))
+    if fac_how:
+        logger.info(f"  Jibe {system}: facility " + ", ".join(f"{k} {v:,}" for k, v in sorted(fac_how.items())))
     # Dedupe on job_id — Jibe repeats a req across category pages occasionally.
     seen, uniq = set(), []
     for jb in jobs:
