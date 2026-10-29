@@ -776,6 +776,7 @@ _ASC_ALIASES = {
     "Seton Medical Center-Hays": "Ascension Seton Hays",
     "Seton Medical Ctr Hays": "Ascension Seton Hays",
     "Seton Williamson Hospital": "Ascension Seton Williamson",
+    "Seton Medical Center Williamson": "Ascension Seton Williamson",   # 2026-10-29: Round Rock rows
     "Seton Southwest Hospital": "Ascension Seton Southwest",
     "Seton Northwest Hospital": "Ascension Seton Northwest",
     "Seton Medical Center": {"austin": "Ascension Seton Medical Center Austin", "kyle": "Ascension Seton Hays"},
