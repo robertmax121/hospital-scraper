@@ -1006,6 +1006,18 @@ _UPMC_TITLE_UNIT_RX = re.compile(
     r"imaging|lab\b|laboratory|specialty care)", re.I)
 _UPMC_JOIN_RX = re.compile(r"^(?:\s*(?:,|&|/|\band\b|\bor\b)\s*)+", re.I)
 _UPMC_STATE_AFTER_RX = re.compile(r"^\s*,?\s*(?:PA|MD|NY|OH|Pennsylvania|Maryland|New York|Ohio)\b")
+# Review 2026-10-29: spellings only titles use (not business units, so
+# upmc_facility is unchanged). "UPMC York Memorial" is the review A example
+# of a title naming the hospital ("Director, Quality Management-UPMC York
+# Memorial", York); "Magee Women's Hospital" with the apostrophe and
+# "Children's Hospital of Pittsburgh" without "UPMC" are the other two
+# active rows the first cut left on "UPMC".
+_UPMC_TITLE_ALIASES = {
+    "UPMC York Memorial": "UPMC Memorial",
+    "Magee Women's Hospital": "Magee-Womens Hospital of UPMC",
+    "UPMC Magee-Women's Hospital": "Magee-Womens Hospital of UPMC",
+    "Children's Hospital of Pittsburgh": "UPMC Children's Hospital of Pittsburgh",
+}
 
 
 def _upmc_title_tables():
@@ -1013,7 +1025,7 @@ def _upmc_title_tables():
     spellings = {}
     for name in spec.hospitals:
         spellings[name] = name
-    for alias, name in _UPMC_ALIASES.items():
+    for alias, name in list(_UPMC_ALIASES.items()) + list(_UPMC_TITLE_ALIASES.items()):
         spellings[alias] = name
     def rx_of(s):
         # words apart by spaces or hyphens ("Magee-Womens" / "Magee Womens"),

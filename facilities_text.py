@@ -531,8 +531,12 @@ _SPECS = (
              S("St. Anthony's Primary Care Baywalk", "St Petersburg", "FL", "board",
                "St Anthonys Primary Care Baywalk"),
          ),
+         # review 2026-10-29: home care and home-based lines ("Mastectomy -
+         # HomeCare", "Home base county: Hillsborough County ...") too
+         # (decision 2: home-based jobs show the system name with the town)
          clinic_rx=(r"\b(?:outpt|outpatient|primary care|medical group|recovery? cent(?:er|re)|urgent care|"
-                    r"free[- ]?standing|wellness center|child care|life management)\b|\bbaycare e[rd]\b")),
+                    r"free[- ]?standing|wellness center|child care|life management|home ?care|home base)\b"
+                    r"|\bbaycare e[rd]\b")),
     # Allegheny Health Network (Workday): "Location: Allegheny General Hospital".
     Spec("Allegheny Health Network", ("Pittsburgh", "PA"), (Read("label", _LOC, "site"),), (
         S("Allegheny General Hospital", "Pittsburgh", "PA", "address 320 E North Ave, Pittsburgh"),
@@ -833,6 +837,11 @@ def _inner_clinic(spec, value):
     return None
 
 
+# a hospital department's code at the end of a system-office line ("-MPH",
+# "-MPM SRVCS", "- SJHN", "-BCHS")
+_DEPT_CODE_RX = re.compile(r"[-–]\s*[A-Z]{2,5}(?:\s+[A-Z]{2,6})?\s*$")
+
+
 def _site_line(spec, body):
     """(site or None, value) for a clinic-rules system: the first label line
     (Facility, then Location) that decides. A value naming a table site is
@@ -850,7 +859,17 @@ def _site_line(spec, body):
         if not v or not v.strip():
             continue
         heads = _candidates(v)[0]
-        if any(key(h) in spec.offices for h in heads):
+        office = next((h for h in heads if key(h) in spec.offices), None)
+        if office is not None:
+            # review 2026-10-29: a system-office line names a hospital
+            # department ("BayCare Health System, Outpatient Testing-MPH", the
+            # hospital's code last) or, with no code, the site itself
+            # ("BayCare Health System, Cheek Powell Wellness Center",
+            # "BayCare Health System, Mastectomy - HomeCare"): the latter is
+            # a clinic when clinic_rx reads it, else the next line is read
+            rest = v[len(office):] if v.startswith(office) else ""
+            if rest.strip(" ,-–") and spec.clinic_rx.search(rest) and not _DEPT_CODE_RX.search(rest):
+                return None, v
             continue
         site = match_value(spec, v) or _lead_site(spec, v) or _inner_clinic(spec, v)
         if site is not None:

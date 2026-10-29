@@ -148,9 +148,24 @@ def test_upmc_fixture_has_every_kind():
     ("Behavioral Health Navigator I - UPMC Western Maryland", "Cumberland", "MD", "UPMC Western Maryland"),
     ("Behavioral Health Navigator I - UPMC Western Maryland", "Cumberland", "PA", ""),   # the hospital is in MD
     ("Medical Assistant - UPMC Blair Medical Associates", "Altoona", "PA", ""),          # no hospital named
+    # review 2026-10-29: title-only spellings
+    ("Director, Quality Management-UPMC York Memorial", "York", "PA", "UPMC Memorial"),
+    ("Director, Quality Management-UPMC York Memorial", "Harrisburg", "PA", ""),         # another town
+    ("RN - UPMC York Memorial and Hanover", "York", "PA", ""),                           # two hospitals
+    ("Ophthalmic Technician (Children's Hospital of Pittsburgh)", "Pittsburgh", "PA",
+     "UPMC Children's Hospital of Pittsburgh"),
+    ("Professional Staff Nurse, OP - OB/GYN - Magee Women’s Hospital", "Pittsburgh", "PA",
+     "Magee-Womens Hospital of UPMC"),
+    ("LPN Lead - UPMC Magee Women Bladder & Pelvic Health", "Lancaster", "PA", ""),      # a practice
 ])
 def test_upmc_title_rule(title, city, state, want):
     assert F.upmc_title_facility(title, city, state) == want
+
+
+def test_upmc_title_aliases_leave_business_units_alone():
+    # the title-only spellings are not business-unit spellings
+    assert F.upmc_facility("", "UPMC York Memorial", "York", "PA") == ""
+    assert "UPMC York Memorial" not in F._UPMC_ALIASES
 
 
 def test_upmc_unit_and_brand_still_come_first():
@@ -193,12 +208,29 @@ def test_baycare_stored_rows(r):
     (32706183, "Morton Plant Hospital"),                   # "Morton Plant Hospital Behavioral Health"
     (32705133, "Mease Dunedin Hospital"),                  # "BayCare Health System, CT Scan-MDH"
     (32705137, "Mease Countryside Hospital"),
+    # review 2026-10-29: a system-office line with no department code names the site
+    (36313627, "BayCare"),                                 # "BayCare Health System, Cheek Powell Wellness Center"
+    (32705834, "BayCare"),                                 # "BayCare Health System, Wellness Center- Cheek Powell"
+    (38569333, "BayCare"),                                 # "BayCare Health System, Mastectomy - HomeCare"
+    (32706115, "BayCare"),                                 # "Home base county: Hillsborough County ..."
 ])
 def test_baycare_named_cases(rid, want):
     r = next(x for x in DOC["baycare"] if x["id"] == rid)
     j = _bc_job(r)
     T.apply_facility(j)
     assert j.hospital_name == want and (j.city, j.state) == (r["city"], r["state"])
+
+
+def test_baycare_office_line_with_a_department_code_decides_nothing():
+    pad = "At BayCare, we are proud to be one of the largest employers in the Tampa Bay area. " * 8
+    for line, want in (("BayCare Health System, Outpatient Testing-MPH", "Morton Plant Hospital"),
+                       ("BayCare Health System, Home Care Coordination - MPH", "Morton Plant Hospital"),
+                       ("BayCare Health System, Trinity Nuc Med-MPM SRVCS", "Morton Plant Hospital"),
+                       ("BayCare Health System, Cheek Powell Wellness Center", "BayCare")):
+        body = f"{pad}\n\nFacility:\n{line}\n\nLocation: Morton Plant\n\nStatus: Full Time\n"
+        j = _job("BayCare", "Morton Plant", city="Clearwater", state="FL", description=body)
+        T.apply_facility(j)
+        assert (j.hospital_name, j.city) == (want, "Clearwater"), line
 
 
 def test_baycare_nights_without_a_body_keep_the_stored_decision():
