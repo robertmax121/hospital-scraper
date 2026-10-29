@@ -1,0 +1,2842 @@
+[
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "COPPE",
+    "valueLabel": "COPPE-Coppell dba TPNT"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "a2dccaf7-3eed-40ee-995f-96808510f633",
+    "valueLabel": "PRN - As Needed"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PTAIDETX",
+    "valueLabel": "P.T. Aide - TX"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "38e1c017-3071-4c91-a4e8-4f698038c3f6",
+    "valueLabel": "Therapy Partners of North Texas"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276335",
+    "valueLabel": "Physical Therapy Tech/Aide"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "f3cb774a-6e94-4397-b5f7-e8efba24633c",
+    "valueLabel": "00070 - 01858 - TPNT - Fort Worth Pelvic Health"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01858",
+    "valueLabel": "01858-TPNT - Ft Worth Plvc Hlth"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276335",
+   "label": "Physical Therapy Tech/Aide"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016340518",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "63b15095-bb16-417e-b46c-869cb7288a84",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "3425 West 7th Street",
+   "city": "Fort Worth",
+   "country": "us",
+   "fullLocation": "Fort Worth, TX, United States",
+   "hybrid": false,
+   "latitude": "32.7508303",
+   "longitude": "-97.3673501",
+   "postalCode": "76107",
+   "region": "TX",
+   "remote": false
+  },
+  "name": "Pelvic Health PT Tech/Aide",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016340518",
+  "refNumber": "REF7663L",
+  "releasedDate": "2026-10-22T15:28:27.532Z",
+  "typeOfEmployment": {
+   "id": "part-time",
+   "label": "Part-time"
+  },
+  "uuid": "ff07d122-7f84-4aad-915b-4675ce0a69af",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "AGILT",
+    "valueLabel": "AGILT-Agility"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "DIRPT",
+    "valueLabel": "Director - PT"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "fffb4e6e-67ec-4ac0-8e0b-da8e7a2c26b2",
+    "valueLabel": "Max Motion Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "e12ed28f-636f-4e53-8a4c-3b957961101c",
+    "valueLabel": "01187 - 01643 - Agility - Max Motion"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01643",
+    "valueLabel": "01643-Agility - Max Motion"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "mid_senior_level",
+   "label": "Mid-Senior Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016335706",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "ebcd91c5-5059-49b9-9b3e-0c8d4e27a0d3",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "3455 Canyon De Flores",
+   "city": "Sierra Vista",
+   "country": "us",
+   "fullLocation": "Sierra Vista, AZ, United States",
+   "hybrid": false,
+   "latitude": "31.5064114",
+   "longitude": "-110.2557826",
+   "postalCode": "85650",
+   "region": "AZ",
+   "remote": false
+  },
+  "name": "Clinic Director, Physical Therapist",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016335706",
+  "refNumber": "REF7752R",
+  "releasedDate": "2026-10-22T13:36:00.795Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "ae5a6994-8aab-408d-8535-3944ba174b4a",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "creator": {
+   "name": "Jaime Colvin"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "PTS",
+    "valueLabel": "PTS-Physical Therapy Solution"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PT",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "0bbc391d-2337-42e8-b94f-2f1b461592aa",
+    "valueLabel": "Physical Therapy Solutions"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "1eb08ad8-01dd-4253-8513-82801599ec9e",
+    "valueLabel": "01015 - 01015 - PTS - Mechanicsville"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "1015",
+    "valueLabel": "1015-PTS-Mechanicsville"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016322254",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "b39fed54-c98b-424a-b293-c52943a229fd",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "8201 Atlee Road",
+   "city": "Mechanicsville",
+   "country": "us",
+   "fullLocation": "Mechanicsville, VA, United States",
+   "hybrid": false,
+   "latitude": "37.6257526",
+   "longitude": "-77.3898765",
+   "postalCode": "23116",
+   "region": "VA",
+   "remote": false
+  },
+  "name": "Physical Therapist - Mechanicsville, VA!",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016322254",
+  "refNumber": "REF4841N",
+  "releasedDate": "2026-10-21T23:11:18.998Z",
+  "typeOfEmployment": {
+   "id": "part-time",
+   "label": "Part-time"
+  },
+  "uuid": "2ee5cf57-5074-4b7a-afb6-e7656de92b8d",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "BRIOT",
+    "valueLabel": "BRIOT-Briotix"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "6b246f29-1645-4fdf-8262-ce052db91e36",
+    "valueLabel": "Full-Time Hourly"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "ISMSN",
+    "valueLabel": "Ind Sports Med Pro - NE"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "5c262040-ca59-458b-ac4c-462f8cf11c2a",
+    "valueLabel": "Briotix Health"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276199",
+    "valueLabel": "Athletic Trainer"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "1b379b51-e1dc-4b91-bec4-15ae65da3fdf",
+    "valueLabel": "01170 - 01170 - Briotix - Prevention"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01170",
+    "valueLabel": "01170-Briotix - Prevention"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276199",
+   "label": "Athletic Trainer"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016312926",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "96bfc94a-42d4-4e72-945e-1f3f25be3935",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "CONFIDENTIAL",
+   "city": "Goshen",
+   "country": "us",
+   "fullLocation": "Goshen, Indiana, United States",
+   "hybrid": false,
+   "region": "Indiana",
+   "remote": false
+  },
+  "name": "Exercise Science / Exercise Physiologist / Kinesiologist / Athletic Trainer -Industrial Injury Prevention (ATC, OT, PT, PTA, COTA, CEAS)",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016312926",
+  "refNumber": "REF7054R",
+  "releasedDate": "2026-10-21T18:49:20.601Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "b2a3d477-fdc2-470d-8371-e43f1cd4c008",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "cecb7148-f86e-43ae-9977-c30f2ae9dddb",
+    "valueLabel": "Per Diem"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "HHPTA",
+    "valueLabel": "Home Health Provider- PTA"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "71fac631-3ef3-49d6-bd9a-227037299edc",
+    "valueLabel": "Ignite Rehab"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000395862",
+    "valueLabel": "Home Health"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01773",
+    "valueLabel": "01773-Metro - Ignite"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000395862",
+   "label": "Home Health"
+  },
+  "experienceLevel": {
+   "id": "not_applicable",
+   "label": "Not Applicable"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016312366",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "258f7e9d-5835-4717-a43b-5d5c5776854c",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "Home Care",
+   "city": "Tom River",
+   "country": "us",
+   "fullLocation": "Tom River, NJ, United States",
+   "hybrid": false,
+   "region": "NJ",
+   "remote": false
+  },
+  "name": "Home Care Physical Therapist Assistant- Per Diem (Ocean County)",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016312366",
+  "refNumber": "REF7767V",
+  "releasedDate": "2026-10-21T18:41:03.230Z",
+  "typeOfEmployment": {
+   "id": "part-time",
+   "label": "Part-time"
+  },
+  "uuid": "95dc8fa7-d0ab-4cba-a9c1-74bd157ea5a5",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "START",
+    "valueLabel": "START-STAR Physical Therapy, LP"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "a2dccaf7-3eed-40ee-995f-96808510f633",
+    "valueLabel": "PRN - As Needed"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "ATC",
+    "valueLabel": "Athletic Trainer - Non-Ex"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "a6ab9829-ce50-456d-846e-c113d257ab04",
+    "valueLabel": "STAR Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276199",
+    "valueLabel": "Athletic Trainer"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "b1824519-78c7-4261-abb9-d86ba9ed5ee3",
+    "valueLabel": "00444 - 00446 - STAR - Athletic Training (003)"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "446",
+    "valueLabel": "446-STAR TN - Athletic Traing"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276199",
+   "label": "Athletic Trainer"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016305139",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "c3f8514a-c396-4ce0-a0b8-4e94e94acad2",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "1200 W Creek Coyote Trail",
+   "city": "Clarksville",
+   "country": "us",
+   "fullLocation": "Clarksville, TN, United States",
+   "hybrid": false,
+   "postalCode": "37042",
+   "region": "TN",
+   "remote": false
+  },
+  "name": "Certified Athletic Trainer - PRN",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016305139",
+  "refNumber": "REF6781U",
+  "releasedDate": "2026-10-21T15:56:48.636Z",
+  "typeOfEmployment": {
+   "id": "part-time",
+   "label": "Part-time"
+  },
+  "uuid": "fff15182-ed72-4f14-a482-365dd24ee9fc",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "creator": {
+   "name": "Drew Thompson"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "CAROL",
+    "valueLabel": "CAROL-Carolina PT"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "DIRPT",
+    "valueLabel": "Director - PT"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "709a5247-4fdc-4324-92c0-0bcd4eb5d9e2",
+    "valueLabel": "Carolina Physical Therapy & Sports Medicine"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "d3768c18-39b8-4af5-897f-a42b56ea9776",
+    "valueLabel": "01192 - 01199 - Carolina PT - Northeast Columbia"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01199",
+    "valueLabel": "01199-Carolina PT - NE Columbia"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "not_applicable",
+   "label": "Not Applicable"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016300881",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "8d3ed8ab-2255-45a8-a479-767ba877688a",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "141 Atrium Way",
+   "city": "Columbia",
+   "country": "us",
+   "fullLocation": "Columbia, SC, United States",
+   "hybrid": false,
+   "latitude": "34.0878468",
+   "longitude": "-80.9392998",
+   "postalCode": "29223",
+   "region": "SC",
+   "remote": false
+  },
+  "name": "Clinic Director Physical Therapist",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016300881",
+  "refNumber": "REF7761M",
+  "releasedDate": "2026-10-21T14:05:40.647Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "c6f2b79e-22a9-40ee-bff8-2f3a2daaf3b4",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "METRO",
+    "valueLabel": "METRO-Metro"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "cecb7148-f86e-43ae-9977-c30f2ae9dddb",
+    "valueLabel": "Per Diem"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "HHPT",
+    "valueLabel": "Home Health Provider - PT"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "faed25d4-ec1d-4159-bae6-8039493539b2",
+    "valueLabel": "Metro Physical & Aquatic Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000395862",
+    "valueLabel": "Home Health"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "ee99b4ea-2bd5-443e-9881-9f7cbb90cde5",
+    "valueLabel": "01648 - 01746 - Metro - Homecare"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01746",
+    "valueLabel": "01746-Metro - Homecare"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000395862",
+   "label": "Home Health"
+  },
+  "experienceLevel": {
+   "id": "not_applicable",
+   "label": "Not Applicable"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016276286",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "3a03141d-c4fc-4b0d-85a9-59ba4a51b027",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "Home Care",
+   "city": "Patchogue",
+   "country": "us",
+   "fullLocation": "Patchogue, NY, United States",
+   "hybrid": false,
+   "postalCode": "11772",
+   "region": "NY",
+   "remote": false
+  },
+  "name": "Home Care Physical Therapist - Per Diem (Eastern Suffolk County)",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016276286",
+  "refNumber": "REF7747I",
+  "releasedDate": "2026-10-20T18:50:44.821Z",
+  "typeOfEmployment": {
+   "id": "part-time",
+   "label": "Part-time"
+  },
+  "uuid": "8c79a513-db97-48eb-a7e6-bebee7c371df",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "START",
+    "valueLabel": "START-STAR Physical Therapy, LP"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "b4546a78-e518-4f67-8ad2-870734ff43bc",
+    "valueLabel": "Part Time w/Benefits (30 - 39 hrs/wk)"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PT",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "a6ab9829-ce50-456d-846e-c113d257ab04",
+    "valueLabel": "STAR Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "371f0ab7-cece-4b0b-9117-d34fc48b3617",
+    "valueLabel": "00444 - 00628 - STAR TN - Clarksville North"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "628",
+    "valueLabel": "628-STAR TN - CLARKSVILLE N"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016246846",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "d81bdebb-c07e-4ce2-a436-c4b44a512141",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "1430 Corporate Parkway Boulevard",
+   "city": "Clarksville",
+   "country": "us",
+   "fullLocation": "Clarksville, TN, United States",
+   "hybrid": false,
+   "latitude": "36.5952101",
+   "longitude": "-87.2753206",
+   "postalCode": "37040",
+   "region": "TN",
+   "remote": false
+  },
+  "name": "Physical Therapist - Floater",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016246846",
+  "refNumber": "REF7720O",
+  "releasedDate": "2026-10-19T23:20:29.353Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "fe62c165-087e-493a-afa7-6bf62551fc16",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "START",
+    "valueLabel": "START-STAR Physical Therapy, LP"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "b4546a78-e518-4f67-8ad2-870734ff43bc",
+    "valueLabel": "Part Time w/Benefits (30 - 39 hrs/wk)"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PTASST",
+    "valueLabel": "P.T. Assistant"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "a6ab9829-ce50-456d-846e-c113d257ab04",
+    "valueLabel": "STAR Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276318",
+    "valueLabel": "Physical Therapist Assistant"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "e50c7a4b-ab33-43ab-825a-36d43b642d3b",
+    "valueLabel": "00444 - 01204 - STAR - Greenbrier"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01204",
+    "valueLabel": "01204-STAR TN - Greenbrier"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276318",
+   "label": "Physical Therapist Assistant"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016246746",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "ee566972-4bb1-4fd0-86a6-6786c5fa078a",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "2239 U.S. 41",
+   "city": "Greenbrier",
+   "country": "us",
+   "fullLocation": "Greenbrier, TN, United States",
+   "hybrid": false,
+   "latitude": "36.4149399",
+   "longitude": "-86.7923326",
+   "postalCode": "37073",
+   "region": "TN",
+   "remote": true
+  },
+  "name": "Physical Therapist Assistant",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016246746",
+  "refNumber": "REF3424X",
+  "releasedDate": "2026-10-19T23:18:08.798Z",
+  "typeOfEmployment": {
+   "id": "part-time",
+   "label": "Part-time"
+  },
+  "uuid": "565378b0-ab03-4179-82d3-a9679ce2a45b",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "MGMT",
+    "valueLabel": "MGMT-U.S. PT Management Ltd."
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "6b246f29-1645-4fdf-8262-ce052db91e36",
+    "valueLabel": "Full-Time Hourly"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PARTX",
+    "valueLabel": "Patient Account Rep - TX"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "default",
+    "valueLabel": "US Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276216",
+    "valueLabel": "Corporate"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "6900e0ac-602c-42e5-9d88-e921fb0c135d",
+    "valueLabel": "00999 - 00999 - Corporate"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "BUSOFF",
+    "valueLabel": "BUSOFF-Business Office"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "999",
+    "valueLabel": "999-U.S. PT Management, Ltd"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276216",
+   "label": "Corporate"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "other",
+   "label": "Other"
+  },
+  "id": "3743990016236486",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "49a95cdd-5763-45e5-b39f-bc0fc3182488",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "1300 West Sam Houston Parkway South",
+   "city": "Houston",
+   "country": "us",
+   "fullLocation": "Houston, TX, United States",
+   "hybrid": false,
+   "latitude": "29.7481345",
+   "longitude": "-95.5586999",
+   "postalCode": "77042",
+   "region": "TX",
+   "remote": false
+  },
+  "name": "Patient Account Representative",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016236486",
+  "refNumber": "REF7047R",
+  "releasedDate": "2026-10-19T18:50:05.001Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "f4827739-8115-41a9-bf91-ab74cddd4212",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "creator": {
+   "name": "Jaime Colvin"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "RACVA",
+    "valueLabel": "RACVA-Rehabilitation Associates"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "a2dccaf7-3eed-40ee-995f-96808510f633",
+    "valueLabel": "PRN - As Needed"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PTNE",
+    "valueLabel": "Physical Therapist P/T NE"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "c1d9892f-275d-4185-8d95-09be2c878d7e",
+    "valueLabel": "Rehab Associates of Central Virginia"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "d32ee129-848a-49ed-9511-695c5ce68e17",
+    "valueLabel": "01103 - 01103 - RACVA - CBO"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01103",
+    "valueLabel": "01103-RACVA - CBO"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016161611",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "f1f416cb-6bf4-4472-b116-7fc549f4c0a1",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "Timberlake Road",
+   "city": "Lynchburg",
+   "country": "us",
+   "fullLocation": "Lynchburg, VA, United States",
+   "hybrid": false,
+   "latitude": "37.3585495",
+   "longitude": "-79.2169309",
+   "region": "VA",
+   "remote": false
+  },
+  "name": "Physical Therapist (PRN)",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016161611",
+  "refNumber": "REF3830T",
+  "releasedDate": "2026-10-15T20:10:14.792Z",
+  "typeOfEmployment": {
+   "id": "part-time",
+   "label": "Part-time"
+  },
+  "uuid": "aeffbdca-b02e-48df-9e02-bcbbed875da6",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "creator": {
+   "name": "Drew Thompson"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "P4PT",
+    "valueLabel": "P4PT-P4 Physical Therapy"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "a2dccaf7-3eed-40ee-995f-96808510f633",
+    "valueLabel": "PRN - As Needed"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PTAIDE",
+    "valueLabel": "P.T. Aide"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "23746d1f-6618-4b81-8a4c-f0c24d7ae3f7",
+    "valueLabel": "P4 Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276335",
+    "valueLabel": "Physical Therapy Tech/Aide"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "f7f7b7fc-f400-4967-8cf8-45fa70dada3d",
+    "valueLabel": "01481 - 01534 - Southern Rehab - Columbus"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01534",
+    "valueLabel": "01534-P4 - Southern Rehab Colum"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276335",
+   "label": "Physical Therapy Tech/Aide"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "administrative",
+   "label": "Administrative"
+  },
+  "id": "3743990016093506",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "07857884-9546-4737-a4ac-dc1be7a9dcd9",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "1519 13th Avenue",
+   "city": "Columbus",
+   "country": "us",
+   "fullLocation": "Columbus, GA, United States",
+   "hybrid": false,
+   "latitude": "32.4751468",
+   "longitude": "-84.9746206",
+   "postalCode": "31901",
+   "region": "GA",
+   "remote": false
+  },
+  "name": "Rehab Aide",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016093506",
+  "refNumber": "REF7608G",
+  "releasedDate": "2026-10-13T18:38:39.885Z",
+  "typeOfEmployment": {
+   "id": "part-time",
+   "label": "Part-time"
+  },
+  "uuid": "6f8b9050-dec5-45fe-8b0f-2ca0b44ca8c9",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "START",
+    "valueLabel": "START-STAR Physical Therapy, LP"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "OT",
+    "valueLabel": "Occupational Therapist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "a6ab9829-ce50-456d-846e-c113d257ab04",
+    "valueLabel": "STAR Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276267",
+    "valueLabel": "Occupational Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "e50c7a4b-ab33-43ab-825a-36d43b642d3b",
+    "valueLabel": "00444 - 01204 - STAR - Greenbrier"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01204",
+    "valueLabel": "01204-STAR TN - Greenbrier"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276267",
+   "label": "Occupational Therapist"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016066556",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "5569f9d3-67ff-42d9-8779-936cd846f06d",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "2239 U.S. 41",
+   "city": "Greenbrier",
+   "country": "us",
+   "fullLocation": "Greenbrier, TN, United States",
+   "hybrid": false,
+   "latitude": "36.4149213",
+   "longitude": "-86.7923271",
+   "postalCode": "37073",
+   "region": "TN",
+   "remote": false
+  },
+  "name": "Pelvic Health Occupational Therapist",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016066556",
+  "refNumber": "REF7654N",
+  "releasedDate": "2026-10-12T19:33:05.261Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "aeaf8e15-0956-4026-8c6c-94b9e9130d51",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "creator": {
+   "name": "Eric Segovia"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "WPT",
+    "valueLabel": "WPT-Wright PT"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "6b246f29-1645-4fdf-8262-ce052db91e36",
+    "valueLabel": "Full-Time Hourly"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "RECPT",
+    "valueLabel": "Receptionist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "4f7e9694-ac46-4a02-91b4-2b7833fad415",
+    "valueLabel": "Wright Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276182",
+    "valueLabel": "Administrative"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "0c5b8e57-b489-4b0e-a229-e2c6aad4607a",
+    "valueLabel": "01305 - 01306 - WPT - Twin Falls Main"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01306",
+    "valueLabel": "01306-Wright PT - Twin Falls Ma"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276182",
+   "label": "Administrative"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "administrative",
+   "label": "Administrative"
+  },
+  "id": "3743990015959791",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "9d11ffb1-35a5-4414-a932-8e5d1539a143",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "1444 Falls Avenue East",
+   "city": "Twin Falls",
+   "country": "us",
+   "fullLocation": "Twin Falls, ID, United States",
+   "hybrid": false,
+   "latitude": "42.5772443",
+   "longitude": "-114.4558375",
+   "postalCode": "83301",
+   "region": "ID",
+   "remote": false
+  },
+  "name": "Office Manager",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990015959791",
+  "refNumber": "REF7553W",
+  "releasedDate": "2026-10-07T15:55:25.162Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "7b36484d-36ff-432a-90b4-aecc05015f35",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "ARCPT",
+    "valueLabel": "ARCPT-ARC Physical Therapy Plus"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PT",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "ccaf5820-4879-4571-9ef1-ad9d25d863f2",
+    "valueLabel": "ARC Physical Therapy+"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "c1537f0e-64fe-40ce-b5d7-5739665cabcb",
+    "valueLabel": "00830 - 00833 - ARC - KCK"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "833",
+    "valueLabel": "833-ARC - KCK"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "director",
+   "label": "Director"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990015940506",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "ea3a7193-f2a5-46b8-8583-ef9da6b03341",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "10940 Parallel Parkway",
+   "city": "Kansas City",
+   "country": "us",
+   "fullLocation": "Kansas City, KS, United States",
+   "hybrid": false,
+   "latitude": "39.1298496",
+   "longitude": "-94.8341605",
+   "postalCode": "66109",
+   "region": "KS",
+   "remote": false
+  },
+  "name": "Physical Therapist",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990015940506",
+  "refNumber": "REF6315L",
+  "releasedDate": "2026-10-06T22:05:54.207Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "8fb0d6d5-50b3-4b0f-bcb1-ac0f7fd0f069",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "AGILT",
+    "valueLabel": "AGILT-Agility"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PT",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "0def0725-8f01-419d-9f7f-a341c1f442e9",
+    "valueLabel": "Sol Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "1292e5c0-0f9d-4e8f-accf-1cb81ba8d3f2",
+    "valueLabel": "01187 - 01646 - Agility - Sol Oracle"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01646",
+    "valueLabel": "01646-Agility - Sol Oracle"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990015939716",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "14afb65f-a6ba-49d6-9052-0845a2b96202",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "10445 North Oracle Road",
+   "city": "Oro Valley",
+   "country": "us",
+   "fullLocation": "Oro Valley, AZ, United States",
+   "hybrid": false,
+   "latitude": "32.3963669",
+   "longitude": "-110.9607396",
+   "postalCode": "85737",
+   "region": "AZ",
+   "remote": false
+  },
+  "name": "Physical Therapist ",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990015939716",
+  "refNumber": "REF7532P",
+  "releasedDate": "2026-10-06T21:45:28.863Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "b36814d9-a309-4a66-bf7a-eb1ec01f3d55",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "NLPT",
+    "valueLabel": "NLPT-North Lake Physical Thera"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "OT",
+    "valueLabel": "Occupational Therapist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "fd42a0b7-fc44-47d5-8d54-38c61c93b329",
+    "valueLabel": "North Lake Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276267",
+    "valueLabel": "Occupational Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "5a391d78-36af-4e2c-be72-64df6c4c276c",
+    "valueLabel": "00779 - 00785 - North Lake - Sports Medicine Oregon (SMO)"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "785",
+    "valueLabel": "785-North Lake - Sports Medic"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276267",
+   "label": "Occupational Therapist"
+  },
+  "experienceLevel": {
+   "id": "mid_senior_level",
+   "label": "Mid-Senior Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990015938971",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "b0a13fd8-c53e-4db4-915b-2c541e40403b",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "7300 Southwest Childs Road",
+   "city": "Tigard",
+   "country": "us",
+   "fullLocation": "Tigard, OR, United States",
+   "hybrid": false,
+   "latitude": "45.3885744",
+   "longitude": "-122.7517612",
+   "postalCode": "97224",
+   "region": "OR",
+   "remote": false
+  },
+  "name": "Occupational Therapist/CHT",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990015938971",
+  "refNumber": "REF6576C",
+  "releasedDate": "2026-10-06T21:33:57.437Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "f9877096-e608-480a-99c3-1734488ff768",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "creator": {
+   "name": "Eric Segovia"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "WPT",
+    "valueLabel": "WPT-Wright PT"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PT",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "4f7e9694-ac46-4a02-91b4-2b7833fad415",
+    "valueLabel": "Wright Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "672e0f0b-0ff1-4d20-a999-05f0f46c5a87",
+    "valueLabel": "01305 - 01344 - WPT - Steelhead"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01344",
+    "valueLabel": "01344-Wright PT - Central Boise"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016508306",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "cfcec1d6-3773-43bc-9264-68cc4bb450c5",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "554 North Steelhead Way",
+   "city": "Boise",
+   "country": "us",
+   "fullLocation": "Boise, ID, United States",
+   "hybrid": false,
+   "latitude": "43.6098486",
+   "longitude": "-116.2896299",
+   "postalCode": "83704",
+   "region": "ID",
+   "remote": false
+  },
+  "name": "Physical Therapist",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016508306",
+  "refNumber": "REF5075L",
+  "releasedDate": "2026-10-29T19:44:44.882Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "1dd06ff7-6196-41ec-b76e-ebbd506f7ea9",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "XCEL",
+    "valueLabel": "XCEL-Xcelerate PhysicalTherapy"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "ATH",
+    "valueLabel": "Athletic Trainer"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "d0b358e4-3021-4681-8911-4ed54a59779b",
+    "valueLabel": "Xcelerate Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276199",
+    "valueLabel": "Athletic Trainer"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "9b83e946-114f-4be1-85c2-30e716a4f56a",
+    "valueLabel": "00827 - 00827 - Xcelerate PT"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "827",
+    "valueLabel": "827-Xcelerate PT"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276199",
+   "label": "Athletic Trainer"
+  },
+  "experienceLevel": {
+   "id": "not_applicable",
+   "label": "Not Applicable"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016505819",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "5f55c6d3-8de8-4598-a6ab-d5997af805e2",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "South Newtown Street Road",
+   "city": "Newtown Square",
+   "country": "us",
+   "fullLocation": "Newtown Square, PA, United States",
+   "hybrid": false,
+   "latitude": "39.9848601",
+   "longitude": "-75.3992984",
+   "postalCode": "19073",
+   "region": "PA",
+   "remote": false
+  },
+  "name": "Athletic Trainer",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016505819",
+  "refNumber": "REF7495U",
+  "releasedDate": "2026-10-29T18:37:58.113Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "bf0a601b-6316-42aa-9a5b-00d9e139c4aa",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "ELITE",
+    "valueLabel": "ELITE-Elite"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "6b246f29-1645-4fdf-8262-ce052db91e36",
+    "valueLabel": "Full-Time Hourly"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "RECPT",
+    "valueLabel": "Receptionist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "cb8ef462-fe00-437e-90e3-dbd51b72e893",
+    "valueLabel": "Elite Spine and Sports Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276182",
+    "valueLabel": "Administrative"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "d0104188-92ed-4db4-9a65-422336d094a7",
+    "valueLabel": "01523 - 01523 - Elite Spine and Sports PT"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01523",
+    "valueLabel": "01523-Elite S&S - Elite S&S"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276182",
+   "label": "Administrative"
+  },
+  "experienceLevel": {
+   "id": "not_applicable",
+   "label": "Not Applicable"
+  },
+  "function": {
+   "id": "administrative",
+   "label": "Administrative"
+  },
+  "id": "3743990016448456",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "b5d3dea8-9f83-405f-ae91-47cfb7ceb904",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "182 Butler Street",
+   "city": "Wilkes-Barre",
+   "country": "us",
+   "fullLocation": "Wilkes-Barre, PA, United States",
+   "hybrid": false,
+   "latitude": "41.2493314",
+   "longitude": "-75.8649425",
+   "postalCode": "18702",
+   "region": "PA",
+   "remote": false
+  },
+  "name": "Front Desk Receptionist",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016448456",
+  "refNumber": "REF7564T",
+  "releasedDate": "2026-10-27T21:28:14.497Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "f652cdec-d521-4bc6-b67a-a0d4fb90fda4",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "START",
+    "valueLabel": "START-STAR Physical Therapy, LP"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "a2dccaf7-3eed-40ee-995f-96808510f633",
+    "valueLabel": "PRN - As Needed"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PT",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "a6ab9829-ce50-456d-846e-c113d257ab04",
+    "valueLabel": "STAR Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "d8b2594a-c342-498b-a6cb-75801c6820ed",
+    "valueLabel": "00444 - 00454 - STAR - Clarksville TN (024)"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "454",
+    "valueLabel": "454-STAR TN - Clarksville TN"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016422046",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "202730f9-5187-410d-9872-0857d3f942b9",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "348 Warfield Boulevard",
+   "city": "Clarksville",
+   "country": "us",
+   "fullLocation": "Clarksville, TN, United States",
+   "hybrid": false,
+   "latitude": "36.5699479",
+   "longitude": "-87.2886805",
+   "postalCode": "37043",
+   "region": "TN",
+   "remote": false
+  },
+  "name": "Physical Therapist",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016422046",
+  "refNumber": "REF7790J",
+  "releasedDate": "2026-10-26T23:51:38.818Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "48e99e3a-5c80-4217-a7bc-eeac44465b59",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "START",
+    "valueLabel": "START-STAR Physical Therapy, LP"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PT",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "a6ab9829-ce50-456d-846e-c113d257ab04",
+    "valueLabel": "STAR Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "6037ab51-4f21-4e20-93d7-b51f869900ad",
+    "valueLabel": "00444 - 00507 - STAR - White Bridge Road (009)"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "507",
+    "valueLabel": "507-STAR TN - White Bridge Rd"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016404968",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "7dc2fbda-3f09-4177-8c9a-ab4e9d7c0a8f",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "28 White Bridge Road",
+   "city": "Nashville",
+   "country": "us",
+   "fullLocation": "Nashville, TN, United States",
+   "hybrid": false,
+   "latitude": "36.1309819",
+   "longitude": "-86.8555197",
+   "postalCode": "37205",
+   "region": "TN",
+   "remote": false
+  },
+  "name": "Physical Therapist (White Bridge Road)",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016404968",
+  "refNumber": "REF7789D",
+  "releasedDate": "2026-10-26T15:15:21.051Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "3b22c734-065b-4f88-9cf1-439edc79e203",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "creator": {
+   "name": "Eric Segovia"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "ATLAS",
+    "valueLabel": "ATLAS-Atlas PT"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "b4546a78-e518-4f67-8ad2-870734ff43bc",
+    "valueLabel": "Part Time w/Benefits (30 - 39 hrs/wk)"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PTNE",
+    "valueLabel": "Physical Therapist P/T NE"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "3dddd3a2-9d30-4b9c-98a4-ac3f066ea4a8",
+    "valueLabel": "Atlas Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "N",
+    "valueLabel": "Non-Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "c9072ab6-5039-413f-8ea0-1df3d125d266",
+    "valueLabel": "01572 - 01576 - Atlas PT - Highlands"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "01576",
+    "valueLabel": "01576-Atlas-Highlands/W Denver"
+   }
+  ],
+  "defaultJobAd": false,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "not_applicable",
+   "label": "Not Applicable"
+  },
+  "function": {
+   "id": "health_care_provider",
+   "label": "Health Care Provider"
+  },
+  "id": "3743990016357466",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "928c562d-41b3-4f91-ad26-9deaafa9a9dc",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "N/A",
+   "city": "Denver",
+   "country": "us",
+   "fullLocation": "Denver, CO, United States",
+   "hybrid": false,
+   "postalCode": "80211",
+   "region": "CO",
+   "remote": false
+  },
+  "name": "Physical Therapist Assistant",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016357466",
+  "refNumber": "REF6644D",
+  "releasedDate": "2026-10-22T21:07:27.366Z",
+  "typeOfEmployment": {
+   "id": "part-time",
+   "label": "Part-time"
+  },
+  "uuid": "244990ee-7af1-4f5b-a46e-18cf9e63acd1",
+  "visibility": "PUBLIC"
+ },
+ {
+  "company": {
+   "identifier": "USPhysicalTherapy2",
+   "name": "US Physical Therapy"
+  },
+  "customField": [
+   {
+    "fieldId": "678fd0b97100b803cbae8dde",
+    "fieldLabel": "Legal Name",
+    "valueId": "KINGW",
+    "valueLabel": "KINGW-Kingwood PT"
+   },
+   {
+    "fieldId": "6793b6a4f3e496320321d4cd",
+    "fieldLabel": "Job Type",
+    "valueId": "d5c18ede-709e-43fc-b871-25e99b6ffb43",
+    "valueLabel": "Full-Time"
+   },
+   {
+    "fieldId": "678fd0b8fe6a372d54238254",
+    "fieldLabel": "Job",
+    "valueId": "PTMX",
+    "valueLabel": "Physical Therapist - TX"
+   },
+   {
+    "fieldId": "COUNTRY",
+    "fieldLabel": "Country/Region",
+    "valueId": "us",
+    "valueLabel": "United States"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17a",
+    "fieldLabel": "Brands",
+    "valueId": "d306d690-6450-4e49-8cdc-8f65043cf1c4",
+    "valueLabel": "West Woodlands Physical Therapy"
+   },
+   {
+    "fieldId": "677e7a8ab155725f9819c17b",
+    "fieldLabel": "Department",
+    "valueId": "3000000000276301",
+    "valueLabel": "Physical Therapist"
+   },
+   {
+    "fieldId": "678fd0b77100b803cbae8ddd",
+    "fieldLabel": "FLSA Status",
+    "valueId": "E",
+    "valueLabel": "Exempt"
+   },
+   {
+    "fieldId": "678ff14a7100b803cbae8dea",
+    "fieldLabel": "Sterling Bill Code",
+    "valueId": "7458a9df-0699-4ec4-821a-d9a8713f8cc4",
+    "valueLabel": "00007 - 00573 - West Woodlands PT"
+   },
+   {
+    "fieldId": "678fd0b6fe6a372d54238253",
+    "fieldLabel": "Corporate Department",
+    "valueId": "OTHER",
+    "valueLabel": "OTHER-Other"
+   },
+   {
+    "fieldId": "678fd0b57100b803cbae8ddc",
+    "fieldLabel": "Clinic",
+    "valueId": "573",
+    "valueLabel": "573-Kingwood - West Woodlands"
+   }
+  ],
+  "defaultJobAd": true,
+  "department": {
+   "id": "3000000000276301",
+   "label": "Physical Therapist"
+  },
+  "experienceLevel": {
+   "id": "entry_level",
+   "label": "Entry Level"
+  },
+  "function": {
+   "id": "other",
+   "label": "Other"
+  },
+  "id": "3743990016355566",
+  "industry": {
+   "id": "health_wellness_fitness",
+   "label": "Health, Wellness And Fitness"
+  },
+  "jobAdId": "548fe544-f8c0-4cfb-8a50-0dede11d0ebc",
+  "language": {
+   "code": "en",
+   "label": "English",
+   "labelNative": "English (US)"
+  },
+  "location": {
+   "address": "6318 Farm to Market Road 1488",
+   "city": "Magnolia",
+   "country": "us",
+   "fullLocation": "Magnolia, TX, United States",
+   "hybrid": false,
+   "latitude": "30.2231354",
+   "longitude": "-95.56391219999999",
+   "postalCode": "77354",
+   "region": "TX",
+   "remote": false
+  },
+  "name": "Physical Therapist",
+  "ref": "https://api.smartrecruiters.com/v1/companies/usphysicaltherapy2/postings/3743990016355566",
+  "refNumber": "REF7431E",
+  "releasedDate": "2026-10-22T20:09:26.151Z",
+  "typeOfEmployment": {
+   "id": "permanent",
+   "label": "Full-time"
+  },
+  "uuid": "41411fdc-405f-4832-a916-b34075065bb5",
+  "visibility": "PUBLIC"
+ }
+]
