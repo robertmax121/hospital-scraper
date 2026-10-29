@@ -32,6 +32,9 @@ lists the others).
                              one clean name and the town of its own street
                              address; one of the system's own offices
                              (OFFICES) gives the system label with its town;
+                             a "Town, ST - street" site that is a hospital's
+                             own campus (ADDRESS_SITES, keyed on the whole
+                             descriptor) gives that hospital in that town;
                              anything else (a "Town, ST - street" clinic,
                              "Remote", a county, a site this table does not
                              know yet) gives None and the row is placed as
@@ -166,6 +169,71 @@ _add("Atrium Health Floyd Polk Medical Center", "Atrium Health Floyd Polk Medica
 _add("Atrium Health Floyd Cherokee Medical Center", "Atrium Health Floyd Cherokee Medical Center", "Centre", "AL",
      "board; cms 010022")
 
+# "Town, ST - street" board sites that are a hospital's own campus
+# (2026-10-29, the owner: "Advocate health is not complete. simply check the
+# known hospitals and their open roles vs the total open jobs for the
+# system"). The board names 597 sites by town and street alone (2,130 job
+# slots that day); these are the ones whose street address is the hospital
+# building itself or a building on its campus, each on sourced evidence:
+# the hospital's own page or campus map listing the address or building, the
+# system's own location page or job posting placing it on the campus, or the
+# postings' own text ("located on the campus of ..."). Never a nearby or
+# similar address: an off-campus clinic or medical group, an office, a
+# freestanding ED, a hospice, a lab, Remote or an area keeps the system label
+# with its town. Keyed on the whole descriptor (town and street; an
+# externalPath segment gives the same key), so "Charlotte, NC - 1237 Harding
+# Pl" (a clinic building off the CMC campus) is never caught by its town.
+# The town is the descriptor's own, which is each hospital's town. The full
+# decision list with sources: claud_outputinput/facility_scale_2026-10-29/
+# advocate/address_sites/address_sites.tsv.
+ADDRESS_SITES: dict[str, tuple[str, str, str, str]] = {}
+
+
+def _addr(descriptor: str, name: str, city: str, state: str, source: str) -> None:
+    ADDRESS_SITES[re.sub(r"[^a-z0-9]", "", descriptor.lower())] = (name, city, state, source)
+
+
+_CMC = "Atrium Health Carolinas Medical Center"
+_WFB = "Atrium Health Wake Forest Baptist Medical Center"
+_addr("Charlotte, NC - 1001 Blythe Blvd", _CMC, "Charlotte", "NC",
+      "campus map: CMC campus and facility map (atriumhealth.org) lists 1001 Blythe Blvd, Medical Center Plaza")
+_addr("Charlotte, NC - 1021 Morehead Medical Dr", _CMC, "Charlotte", "NC",
+      "campus map: Levine Cancer Institute I-III on the CMC campus map; LCI page: 1021 Morehead Medical Drive")
+_addr("Charlotte, NC - 1025 Morehead Medical Dr", _CMC, "Charlotte", "NC",
+      "campus map: Morehead Medical Plaza on the CMC campus map; posting: on the campus of Carolinas Medical Center")
+# the inpatient rehabilitation hospital on the CMC campus (building 9 on the map, 1100 Blythe Blvd)
+_addr("Charlotte, NC - 1100 Blythe Blvd", "Atrium Health Carolinas Rehabilitation", "Charlotte", "NC",
+      "campus map: CMC campus map lists 1100 Blythe Blvd, Carolinas Rehabilitation; CMC page: on the same campus")
+_addr("Milwaukee, WI - 2801 W Kinnickinnic River Pkwy  2801 W Kinnickinnic River Pkwy",
+      "Aurora St. Luke's Medical Center", "Milwaukee", "WI",
+      "posting: St. Luke's Medical Offices, 2801 W Kinnickinnic River Pkwy, on the campus of Aurora St. Luke's")
+# the hospital's published address is "Medical Center Boulevard" with no number (CMS 340047)
+_addr("Winston Salem, NC - 1 Medical Center Blvd", _WFB, "Winston Salem", "NC",
+      "address: the hospital's own street, Medical Center Blvd (CMS 340047); postings are its inpatient units")
+_addr("Winston Salem, NC - 131 Miller St", _WFB, "Winston Salem", "NC",
+      "campus map: Medical Plaza Miller on the Wake Forest Baptist Medical Center campus map (wakehealth.edu)")
+_addr("Charlotte, NC - 10660 Park Rd", "Atrium Health Pineville", "Charlotte", "NC",
+      "hospital page: Levine Cancer Institute care right here on our campus; LCI Pineville page: 10660 Park Rd")
+_addr("Lincolnton, NC - 447 McAlister Rd", "Atrium Health Lincoln", "Lincolnton", "NC",
+      "posting: our Lincolnton location is on the Lincolnton Hospital campus")
+_addr("Libertyville, IL - 825 S Milwaukee Ave", "Advocate Condell Medical Center", "Libertyville", "IL",
+      "posting: on the Advocate Condell Medical Center campus ... at 825 S Milwaukee Ave")
+_addr("West Allis, WI - 2424 S 90th St", "Aurora West Allis Medical Center", "West Allis", "WI",
+      "posting: West Allis Tower, part of the Aurora West Allis Medical Center campus")
+_addr("Two Rivers, WI - 5300 Memorial Dr", "Aurora Medical Center Manitowoc County", "Two Rivers", "WI",
+      "hospital page: Aurora Health Center on the same campus; Aurora listings: Aurora Health Center, 5300 Memorial Dr")
+_addr("Burlington, WI - 248 McHenry St", "Aurora Medical Center Burlington", "Burlington", "WI",
+      "Aurora listing: part of Aurora Medical Center Burlington MOB, 248 McHenry St")
+_addr("Elgin, IL - 1435 N Randall Rd", "Advocate Sherman Hospital", "Elgin", "IL",
+      "Advocate page: Advocate Sherman Hospital, Medical Office Building, 1435 N. Randall Rd.")
+_addr("Cornelius, NC - 1020 Tree of Life Ln", "Atrium Health Lake Norman", "Cornelius", "NC",
+      "Advocate job posting: facility Atrium Health Lake Norman, 1020 Tree of Life Ln")
+_addr("Concord, NC - 200 Medical Park Dr", "Atrium Health Cabarrus", "Concord", "NC",
+      "hospital page: utilize the entrance at 200 Medical Park Drive to enter the hospital")
+# the inpatient rehabilitation hospital itself (Atrium: Outpatient Rehabilitation, Inpatient Rehabilitation)
+_addr("Belmont, NC - 275 Beatty Dr", "Carolinas Rehabilitation Mount Holly", "Belmont", "NC",
+      "hospital page: Carolinas Rehabilitation Mount Holly, inpatient rehabilitation, 275 Beatty Drive, Belmont")
+
 # The system's own offices (AAO: the Advocate Aurora operations offices):
 # the row keeps the system label and takes the office's town.
 OFFICES: dict[str, tuple[str, str]] = {
@@ -220,6 +288,16 @@ def _site(loc: str, external_path: str) -> tuple[str, str]:
     return segment_key(seg), (" ".join(chunks[:-1]).replace("-", " ") if len(chunks) > 1 else "")
 
 
+def address_key(loc: str, external_path: str = "") -> str:
+    """The whole-descriptor key of a posting's primary site (town and street,
+    letters and digits only): the descriptor when locationsText is one, else
+    the externalPath segment, which is that descriptor slugged."""
+    loc = (loc or "").strip()
+    if loc and not _N_LOCATIONS_RX.match(loc):
+        return _key(loc)
+    return _key(path_segment(external_path))
+
+
 def facility(loc: str, external_path: str = "") -> tuple[str, str, str] | None:
     """(hospital_name, city, state) for one posting, or None to place the row
     as before (see the module note)."""
@@ -232,6 +310,9 @@ def facility(loc: str, external_path: str = "") -> tuple[str, str, str] | None:
     office = OFFICES.get(key)
     if office:
         return SYSTEM, office[0], office[1]
+    hit = ADDRESS_SITES.get(address_key(loc, external_path))
+    if hit:
+        return hit[0], hit[1], hit[2]
     return None
 
 
@@ -247,5 +328,5 @@ def unknown_site(loc: str, external_path: str = "") -> str:
 
 
 def names() -> list[str]:
-    """Every facility name the table gives, once."""
-    return sorted({v[0] for v in FACILITIES.values()})
+    """Every facility name the tables give, once."""
+    return sorted({v[0] for v in FACILITIES.values()} | {v[0] for v in ADDRESS_SITES.values()})
