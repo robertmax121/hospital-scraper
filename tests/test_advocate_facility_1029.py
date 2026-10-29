@@ -163,7 +163,8 @@ def test_the_path_segment_is_the_primary_location():
     assert info["location"] == "Libertyville, IL - 825 S Milwaukee Ave"
     assert info["additionalLocations"] == ["Advocate Condell Medical Center - 801 S Milwaukee Ave"]
     assert A.address_key(info["location"]) in A.ADDRESS_SITES
-    assert A.facility("2 Locations", info["externalUrl"].split("/External", 1)[1]) ==         ("Advocate Condell Medical Center", "Libertyville", "IL")
+    assert A.facility("2 Locations", info["externalUrl"].split("/External", 1)[1]) == \
+        ("Advocate Condell Medical Center", "Libertyville", "IL")
     # R276221's primary, a Crystal Lake clinic, is no campus
     info = DETAILS["2loc_R276221"]["jobPostingInfo"]
     assert A.facility("2 Locations", info["externalUrl"].split("/External", 1)[1]) is None

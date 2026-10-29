@@ -213,7 +213,8 @@ _addr("Winston Salem, NC - 1 Medical Center Blvd", _WFB, "Winston Salem", "NC",
 _addr("Winston Salem, NC - 131 Miller St", _WFB, "Winston Salem", "NC",
       "campus map: Medical Plaza Miller on the Wake Forest Baptist Medical Center campus map (wakehealth.edu)")
 _addr("Charlotte, NC - 10660 Park Rd", "Atrium Health Pineville", "Charlotte", "NC",
-      "hospital page: Levine Cancer Institute care right here on our campus; LCI Pineville page: 10660 Park Rd")
+      "hospital page: Levine Cancer Institute surgical oncology right here on our campus; LCI Pineville (Medical "
+      "& Surgical Oncology) page: 10660 Park Rd Suite 2100 (Medical Plaza II)")
 _addr("Lincolnton, NC - 447 McAlister Rd", "Atrium Health Lincoln", "Lincolnton", "NC",
       "posting: our Lincolnton location is on the Lincolnton Hospital campus")
 _addr("Libertyville, IL - 825 S Milwaukee Ave", "Advocate Condell Medical Center", "Libertyville", "IL",
@@ -227,7 +228,8 @@ _addr("Burlington, WI - 248 McHenry St", "Aurora Medical Center Burlington", "Bu
 _addr("Elgin, IL - 1435 N Randall Rd", "Advocate Sherman Hospital", "Elgin", "IL",
       "Advocate page: Advocate Sherman Hospital, Medical Office Building, 1435 N. Randall Rd.")
 _addr("Cornelius, NC - 1020 Tree of Life Ln", "Atrium Health Lake Norman", "Cornelius", "NC",
-      "Advocate job posting: facility Atrium Health Lake Norman, 1020 Tree of Life Ln")
+      "hospital page (hospital 1130 Tree of Life Ln): medical plaza building, on the same campus, for heart, "
+      "orthopedics and OB/GYN; Advocate job posting: location Atrium Health Lake Norman, 1020 Tree of Life Ln")
 _addr("Concord, NC - 200 Medical Park Dr", "Atrium Health Cabarrus", "Concord", "NC",
       "hospital page: utilize the entrance at 200 Medical Park Drive to enter the hospital")
 # the inpatient rehabilitation hospital itself (Atrium: Outpatient Rehabilitation, Inpatient Rehabilitation)
