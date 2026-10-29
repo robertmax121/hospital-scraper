@@ -1,0 +1,2726 @@
+{
+"read_utc": "2026-10-29T12:08Z",
+"facet": "locations",
+"values": [
+{
+"descriptor": "AAO Milwaukee - 750 W Virginia St",
+"count": 15
+},
+{
+"descriptor": "AAO Oak Brook - 2025 Windsor Dr",
+"count": 20
+},
+{
+"descriptor": "Adairsville, GA - 6000 Joe Frank Harris Pkwy NW",
+"count": 1
+},
+{
+"descriptor": "Advance, NC - 147 Peachtree Ln",
+"count": 2
+},
+{
+"descriptor": "Advocate Children's Hospital - 4440 W 95th St",
+"count": 28
+},
+{
+"descriptor": "Advocate Children's Hospital - Park Ridge - 1675 Dempster St",
+"count": 26
+},
+{
+"descriptor": "Advocate Christ Hospital & Medical Center - 4440 W 95th St",
+"count": 118
+},
+{
+"descriptor": "Advocate Condell Medical Center - 801 S Milwaukee Ave",
+"count": 126
+},
+{
+"descriptor": "Advocate Good Samaritan Hospital - 3815 Highland Ave",
+"count": 76
+},
+{
+"descriptor": "Advocate Good Shepherd Hospital - 450 W Highway 22",
+"count": 86
+},
+{
+"descriptor": "Advocate Illinois Masonic Medical Center - 836 W Wellington Ave",
+"count": 105
+},
+{
+"descriptor": "Advocate Lutheran General Hospital - 1775 Dempster St",
+"count": 155
+},
+{
+"descriptor": "Advocate Sherman Hospital - 1425 N Randall Rd",
+"count": 76
+},
+{
+"descriptor": "Advocate South Suburban Hospital - 17800 Kedzie Ave",
+"count": 47
+},
+{
+"descriptor": "Advocate Trinity Hospital - 2320 E 93rd St",
+"count": 63
+},
+{
+"descriptor": "Advocate Trinity Hospital - 8000 S Lake Shore Dr",
+"count": 7
+},
+{
+"descriptor": "Albemarle, NC - 105 Yadkin St",
+"count": 2
+},
+{
+"descriptor": "Albemarle, NC - 313 Yadkin St",
+"count": 1
+},
+{
+"descriptor": "Albemarle, NC - 703 Leonard Ave",
+"count": 3
+},
+{
+"descriptor": "Albemarle, NC - 901 N 2nd St",
+"count": 1
+},
+{
+"descriptor": "Albemarle, NC - 945 N 5th St",
+"count": 1
+},
+{
+"descriptor": "Algonquin, IL - 600 S Randall Rd",
+"count": 3
+},
+{
+"descriptor": "Alleghany Health Memorial Hospital - 233 Doctors St,  Sparta, NC",
+"count": 5
+},
+{
+"descriptor": "Armuchee, GA - 5470 Martha Berry Hwy NE",
+"count": 1
+},
+{
+"descriptor": "Asheboro, NC - 138 Dublin Square Rd",
+"count": 1
+},
+{
+"descriptor": "Asheboro, NC - 223 W Ward St",
+"count": 2
+},
+{
+"descriptor": "Asheboro, NC - 311 E Presnell St",
+"count": 1
+},
+{
+"descriptor": "Asheboro, NC - 327 Rock Crusher Rd",
+"count": 2
+},
+{
+"descriptor": "Atlanta, GA - 668 Metroplitan Pkwy",
+"count": 1
+},
+{
+"descriptor": "Atrium Behavioral Health Davidson - 16740 Davidson Concord Rd, Davidson, NC",
+"count": 4
+},
+{
+"descriptor": "Atrium Health Anson - 2301 US Highway 74 W, Wadesboro, NC",
+"count": 24
+},
+{
+"descriptor": "Atrium Health Behavioral Health Charlotte - 501 Billingsley Rd, Charlotte, NC",
+"count": 20
+},
+{
+"descriptor": "Atrium Health Cabarrus - 920 Church St N, Concord, NC",
+"count": 138
+},
+{
+"descriptor": "Atrium Health Cleveland - 201 E Grover St, Shelby, NC",
+"count": 65
+},
+{
+"descriptor": "Atrium Health Floyd Cherokee Medical Center - 400 Northwood Dr, Centre, AL",
+"count": 3
+},
+{
+"descriptor": "Atrium Health Floyd Medical Center - 304 Turner McCall Blvd SW, Rome, GA",
+"count": 121
+},
+{
+"descriptor": "Atrium Health Floyd Polk Medical Center - 2360 Rockmart Hwy, Cedartown, GA",
+"count": 6
+},
+{
+"descriptor": "Atrium Health Huntersville - 16455 Statesville Rd, Huntersville, NC",
+"count": 16
+},
+{
+"descriptor": "Atrium Health Kings Mountain - 706 W King St, Kings Mountain, NC",
+"count": 22
+},
+{
+"descriptor": "Atrium Health Lake Norman - 1130 Tree of Life, Cornelius, NC",
+"count": 41
+},
+{
+"descriptor": "Atrium Health Lincoln - 433 McAlister Rd, Lincolnton, NC",
+"count": 42
+},
+{
+"descriptor": "Atrium Health Mercy - 2001 Vail Ave, Charlotte, NC",
+"count": 67
+},
+{
+"descriptor": "Atrium Health Navicent Baldwin - 821 N Cobb St, Milledgeville, GA",
+"count": 16
+},
+{
+"descriptor": "Atrium Health Navicent Peach - 1960 Highway 247 Connector, Byron, GA",
+"count": 4
+},
+{
+"descriptor": "Atrium Health Navicent The Medical Center - 777 Hemlock St, Macon, GA",
+"count": 168
+},
+{
+"descriptor": "Atrium Health Pineville - 10628 Park Rd, Charlotte, NC",
+"count": 101
+},
+{
+"descriptor": "Atrium Health Pineville Rehabilitation Hospital - 10648 Park Rd, Charlotte, NC",
+"count": 6
+},
+{
+"descriptor": "Atrium Health Stanly - 301 Yadkin St, Albemarle, NC",
+"count": 47
+},
+{
+"descriptor": "Atrium Health Union - 600 Hospital Dr, Monroe, NC",
+"count": 104
+},
+{
+"descriptor": "Atrium Health Union West - 1000 Healing Way, Matthews, NC",
+"count": 36
+},
+{
+"descriptor": "Atrium Health University City - 8800 N Tryon St, Charlotte, NC",
+"count": 79
+},
+{
+"descriptor": "Atrium Health Wake Forest Baptist - Medical Center Blvd, Winston Salem, NC",
+"count": 314
+},
+{
+"descriptor": "Aurora, IL - 1221 N Highland Ave",
+"count": 11
+},
+{
+"descriptor": "Aurora, IL - 2285 Sequoia Dr",
+"count": 4
+},
+{
+"descriptor": "Aurora, IL - 4100 Healthway Dr",
+"count": 3
+},
+{
+"descriptor": "Aurora BayCare Medical Center - 2845 Greenbrier Rd",
+"count": 87
+},
+{
+"descriptor": "Aurora Medical Center Bay Area - 3003 University Dr",
+"count": 45
+},
+{
+"descriptor": "Aurora Medical Center Burlington - 252 McHenry St",
+"count": 42
+},
+{
+"descriptor": "Aurora Medical Center Grafton - 975 Port Washington Rd",
+"count": 99
+},
+{
+"descriptor": "Aurora Medical Center Kenosha - 10400 75th St",
+"count": 56
+},
+{
+"descriptor": "Aurora Medical Center Lakeland - W3985 County Road NN",
+"count": 41
+},
+{
+"descriptor": "Aurora Medical Center Manitowoc County - 5000 Memorial Dr",
+"count": 52
+},
+{
+"descriptor": "Aurora Medical Center Mount Pleasant - 13250 Washington Ave",
+"count": 43
+},
+{
+"descriptor": "Aurora Medical Center Oshkosh: Fond du Lac Campus - 210 Wisconsin American Dr",
+"count": 34
+},
+{
+"descriptor": "Aurora Medical Center Oshkosh - 855 N Westhaven Dr",
+"count": 78
+},
+{
+"descriptor": "Aurora Medical Center Sheboygan - 2629 N 7th St",
+"count": 13
+},
+{
+"descriptor": "Aurora Medical Center Sheboygan County - 3400 Union Ave",
+"count": 84
+},
+{
+"descriptor": "Aurora Medical Center Summit - 36500 Aurora Dr",
+"count": 72
+},
+{
+"descriptor": "Aurora Medical Center Washington County - 1032 E Sumner St",
+"count": 35
+},
+{
+"descriptor": "Aurora Medical Center West Allis - 8901 W Lincoln Ave",
+"count": 84
+},
+{
+"descriptor": "Aurora Psychiatric Hospital - 1220 Dewey Ave",
+"count": 35
+},
+{
+"descriptor": "Aurora Sinai Medical Center - 945 N 12th St",
+"count": 83
+},
+{
+"descriptor": "Aurora St Lukes Medical Center - 2900 W Oklahoma Ave",
+"count": 261
+},
+{
+"descriptor": "Aurora St Lukes South Shore - 5900 S Lake Dr",
+"count": 58
+},
+{
+"descriptor": "Barnesville, GA - 419 College Dr",
+"count": 1
+},
+{
+"descriptor": "Barrington, IL - 1301 S Barrington Rd",
+"count": 1
+},
+{
+"descriptor": "Barrington, IL - 27750 W Highway 22",
+"count": 4
+},
+{
+"descriptor": "Barrington, IL - 27790 W Hwy 22",
+"count": 1
+},
+{
+"descriptor": "Barrington, IL - 6000 Garlands Ln",
+"count": 1
+},
+{
+"descriptor": "Batavia, IL - 2500 W Fabyan Pkwy",
+"count": 1
+},
+{
+"descriptor": "Belmont, NC - 275 Beatty Dr",
+"count": 6
+},
+{
+"descriptor": "Belmont, NC - 550 Mount Holly Medical Pkwy",
+"count": 1
+},
+{
+"descriptor": "Bolingbrook, IL - 181 Fernwood Dr",
+"count": 1
+},
+{
+"descriptor": "Boone, NC - 336 Deerfield Rd",
+"count": 1
+},
+{
+"descriptor": "Brookfield, WI - 16985 W Bluemound Rd",
+"count": 8
+},
+{
+"descriptor": "Brown Deer, WI - 8100 N Teutonia Ave",
+"count": 2
+},
+{
+"descriptor": "Buffalo Grove, IL - 650 W Lake Cook Rd",
+"count": 4
+},
+{
+"descriptor": "Burbank, IL - 6345 W 79th",
+"count": 1
+},
+{
+"descriptor": "Burlington, WI - 103 N Dodge St",
+"count": 1
+},
+{
+"descriptor": "Burlington, WI - 116 N Dodge St",
+"count": 2
+},
+{
+"descriptor": "Burlington, WI - 248 McHenry St",
+"count": 6
+},
+{
+"descriptor": "Burlington, WI - 665 McHenry St",
+"count": 1
+},
+{
+"descriptor": "Burlington, WI - 709 Spring Valley Rd",
+"count": 12
+},
+{
+"descriptor": "Burlington, WI - 761 Brookview Ave",
+"count": 1
+},
+{
+"descriptor": "Burlington/Walworth Counties, WI",
+"count": 2
+},
+{
+"descriptor": "Calhoun, GA - 855 Curtis Pkwy SE",
+"count": 3
+},
+{
+"descriptor": "Carolinas Medical Center - 1000 Blythe Blvd, Charlotte, NC",
+"count": 289
+},
+{
+"descriptor": "Carolinas Rehabilitation NorthEast - 487 Lake Concord Rd NE, Concord, NC",
+"count": 6
+},
+{
+"descriptor": "Cartersville, GA - 1328 Joe Frank Harris Pkwy SE",
+"count": 1
+},
+{
+"descriptor": "Cartersville, GA - 150 Gentilly Blvd",
+"count": 13
+},
+{
+"descriptor": "Cartersville, GA - 200 Gentilly Blvd",
+"count": 4
+},
+{
+"descriptor": "Cedartown, GA - 1025 N Main St",
+"count": 2
+},
+{
+"descriptor": "Cedartown, GA - 14 Cherokee Rd",
+"count": 1
+},
+{
+"descriptor": "Cedartown, GA - 2370 Rockmart Hwy",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 10000 Park Cedar Dr",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 1001 Blythe Blvd",
+"count": 44
+},
+{
+"descriptor": "Charlotte, NC - 1010 Edgehill Rd N",
+"count": 4
+},
+{
+"descriptor": "Charlotte, NC - 101 E WT Harris Blvd",
+"count": 15
+},
+{
+"descriptor": "Charlotte, NC - 10210 Couloak Dr",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 1021 Morehead Medical Dr",
+"count": 35
+},
+{
+"descriptor": "Charlotte, NC - 10226 Couloak Dr",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 1023 Edgehill Rd S",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 1025 Morehead Medical Dr",
+"count": 31
+},
+{
+"descriptor": "Charlotte, NC - 1043 E Morehead St",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 10620 Park Rd",
+"count": 6
+},
+{
+"descriptor": "Charlotte, NC - 10650 Park Rd",
+"count": 16
+},
+{
+"descriptor": "Charlotte, NC - 10660 Park Rd",
+"count": 10
+},
+{
+"descriptor": "Charlotte, NC - 1100 Blythe Blvd",
+"count": 19
+},
+{
+"descriptor": "Charlotte, NC - 1110 Center Park Dr",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 11115 Golf Links Dr",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 11415 Golf Links Dr",
+"count": 4
+},
+{
+"descriptor": "Charlotte, NC - 11516 Providence Rd",
+"count": 11
+},
+{
+"descriptor": "Charlotte, NC - 11530 Providence Rd",
+"count": 5
+},
+{
+"descriptor": "Charlotte, NC - 12016 Lemmond Farm Dr",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 1225 Harding Pl",
+"count": 10
+},
+{
+"descriptor": "Charlotte, NC - 12311 Copper Way",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 1237 Harding Pl",
+"count": 44
+},
+{
+"descriptor": "Charlotte, NC - 1310 E Morehead St",
+"count": 5
+},
+{
+"descriptor": "Charlotte, NC - 1350 S Kings Dr",
+"count": 11
+},
+{
+"descriptor": "Charlotte, NC - 13640 Steelecroft Pkwy",
+"count": 9
+},
+{
+"descriptor": "Charlotte, NC - 1400 E Morehead St",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 14135 Ballantyne Corporate Pl",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 1426 E Morehead St",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 1443 South Blvd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 15110 John J Delaney Dr",
+"count": 5
+},
+{
+"descriptor": "Charlotte, NC - 15830 Ballantyne Medical Pl",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 1601 Abbey Pl",
+"count": 4
+},
+{
+"descriptor": "Charlotte, NC - 16035 Johnston Rd",
+"count": 5
+},
+{
+"descriptor": "Charlotte, NC - 1628 E Morehead St",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 1801 Rozzelles Ferry Rd",
+"count": 4
+},
+{
+"descriptor": "Charlotte, NC - 1824 E Arbors Dr",
+"count": 4
+},
+{
+"descriptor": "Charlotte, NC - 1900 Scott Ave",
+"count": 5
+},
+{
+"descriptor": "Charlotte, NC - 1940 West Blvd",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 2041 South Blvd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 2110 Water Ridge Pkwy",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 225 Baldwin Ave",
+"count": 7
+},
+{
+"descriptor": "Charlotte, NC - 251 Eastway Dr",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 2608 E 7th St",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 2630 E 7th St",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 2709 Water Ridge Pkwy",
+"count": 10
+},
+{
+"descriptor": "Charlotte, NC - 2810 South Blvd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 2828 N Poplar St",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 3025 Springbank Ln",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 3030 Randolph Rd",
+"count": 11
+},
+{
+"descriptor": "Charlotte, NC - 309 S Sharon Amity Rd",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 3310 Dutch Creek Dr",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 3311 Beam Rd",
+"count": 7
+},
+{
+"descriptor": "Charlotte, NC - 3536 Mt Holly Huntersville Rd",
+"count": 8
+},
+{
+"descriptor": "Charlotte, NC - 3600 Arco Corporate Dr",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 3621 Randolph Rd",
+"count": 8
+},
+{
+"descriptor": "Charlotte, NC - 4400 Golf Acres Dr",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 4425 Golf Acres Dr",
+"count": 4
+},
+{
+"descriptor": "Charlotte, NC - 447 Billingsley Rd",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 4501 Cameron Valley Pkwy",
+"count": 5
+},
+{
+"descriptor": "Charlotte, NC - 4525 Cameron Valley Pkwy",
+"count": 22
+},
+{
+"descriptor": "Charlotte, NC - 4815 Johnston Oehler Rd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 4828 Airport Center Pkwy",
+"count": 33
+},
+{
+"descriptor": "Charlotte, NC - 5025 Airport Center Pkwy",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 5039 Airport Center Pkwy",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 5040 Airport Center Pkwy",
+"count": 10
+},
+{
+"descriptor": "Charlotte, NC - 5151 Sardis Rd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 5315 Morris Field Dr",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 5717 Albemarle Rd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 5727 Prosperity Church Rd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 5727 Prosperity Crossing Dr",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 5735 Prosperity Crossing Dr",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 5801 Executive Center Dr",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 5900 Quail Hollow Rd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 5929 South Blvd",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 6235 Blakeney Park Dr",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 6965 Fairview Rd",
+"count": 6
+},
+{
+"descriptor": "Charlotte, NC - 700 E Morehead St",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 7030 Pineville Matthews Rd",
+"count": 4
+},
+{
+"descriptor": "Charlotte, NC - 7108 Pineville Matthews Rd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 7800 Providence Rd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 7810 Providence Rd",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 817 E Morehead St",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 900 Center Park Dr",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 905 Kenilworth Ave",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 905 Pearl Park Way",
+"count": 3
+},
+{
+"descriptor": "Charlotte, NC - 915 Baxter St",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 915 Pearl Park Way",
+"count": 6
+},
+{
+"descriptor": "Charlotte, NC - 9325 JW Clay Blvd",
+"count": 2
+},
+{
+"descriptor": "Charlotte, NC - 9332 S Tryon St",
+"count": 1
+},
+{
+"descriptor": "Charlotte, NC - 9592 Rocky River Rd",
+"count": 9
+},
+{
+"descriptor": "Charlotte, NC - 9908 Couloak Dr",
+"count": 3
+},
+{
+"descriptor": "Chicago, IL - 1111 E 87th St",
+"count": 2
+},
+{
+"descriptor": "Chicago, IL - 1357 W 103rd St",
+"count": 3
+},
+{
+"descriptor": "Chicago, IL - 1435 W Webster Ave",
+"count": 5
+},
+{
+"descriptor": "Chicago, IL - 2301 E 93rd St",
+"count": 6
+},
+{
+"descriptor": "Chicago, IL - 2315 E 93rd St",
+"count": 1
+},
+{
+"descriptor": "Chicago, IL - 2535 S King Dr",
+"count": 1
+},
+{
+"descriptor": "Chicago, IL - 3000 N Halsted St",
+"count": 5
+},
+{
+"descriptor": "Chicago, IL - 3021 N Sheffield Ave",
+"count": 2
+},
+{
+"descriptor": "Chicago, IL - 3134 N Clark St",
+"count": 1
+},
+{
+"descriptor": "Chicago, IL - 3936 N Milwaukee Ave",
+"count": 1
+},
+{
+"descriptor": "Chicago, IL - 4025 N Western Ave",
+"count": 3
+},
+{
+"descriptor": "Chicago, IL - 811 W Wellington Ave",
+"count": 1
+},
+{
+"descriptor": "Chicago, IL - 900 W Nelson St",
+"count": 1
+},
+{
+"descriptor": "Chicago, IL - 901 E 95th St",
+"count": 7
+},
+{
+"descriptor": "Chicago, IL - 913 W Wellington",
+"count": 1
+},
+{
+"descriptor": "Chicago, IL - 9831 S Western Ave",
+"count": 9
+},
+{
+"descriptor": "Chicago North, IL",
+"count": 1
+},
+{
+"descriptor": "Chicago South, IL",
+"count": 1
+},
+{
+"descriptor": "Chicago Southeast, IL,",
+"count": 1
+},
+{
+"descriptor": "Chicago Southwest, IL",
+"count": 1
+},
+{
+"descriptor": "Clemmons, NC - 2265 Lewisville Clemmons Rd",
+"count": 1
+},
+{
+"descriptor": "Clemmons, NC - 2311 Lewisville Clemmons Rd",
+"count": 7
+},
+{
+"descriptor": "Clemmons, NC - 2341 Lewisville Clemmons Rd",
+"count": 8
+},
+{
+"descriptor": "Clemmons, NC - 3540 Clemmons Rd",
+"count": 1
+},
+{
+"descriptor": "Concord, NC - 10030 Edison Square Dr NW",
+"count": 2
+},
+{
+"descriptor": "Concord, NC - 100 Medical Park Dr",
+"count": 16
+},
+{
+"descriptor": "Concord, NC - 1065 NE Gateway Ct NE",
+"count": 4
+},
+{
+"descriptor": "Concord, NC - 1085 NE Gateway Ct NE",
+"count": 5
+},
+{
+"descriptor": "Concord, NC - 1090 NE Gateway Ct NE",
+"count": 9
+},
+{
+"descriptor": "Concord, NC - 1090 Vinehaven Dr NE",
+"count": 1
+},
+{
+"descriptor": "Concord, NC - 200 Medical Park Dr",
+"count": 4
+},
+{
+"descriptor": "Concord, NC - 270 Copperfield Blvd NE",
+"count": 1
+},
+{
+"descriptor": "Concord, NC - 301 Medical Park Dr NE",
+"count": 2
+},
+{
+"descriptor": "Concord, NC - 315 Medical Park Dr NE",
+"count": 2
+},
+{
+"descriptor": "Concord, NC - 349 Penny Ln",
+"count": 3
+},
+{
+"descriptor": "Concord, NC - 380 Copperfield Blvd NE",
+"count": 2
+},
+{
+"descriptor": "Concord, NC - 401 Medical Park Dr",
+"count": 5
+},
+{
+"descriptor": "Concord, NC - 431 Copperfield Blvd NE",
+"count": 1
+},
+{
+"descriptor": "Concord, NC - 5350 John Q Hammons Dr NW",
+"count": 3
+},
+{
+"descriptor": "Concord, NC - 5651 Poplar Tent Rd",
+"count": 2
+},
+{
+"descriptor": "Concord, NC - 9200 Aviation Blvd NW",
+"count": 1
+},
+{
+"descriptor": "Cornelius, NC - 1020 Tree of Life Ln",
+"count": 6
+},
+{
+"descriptor": "Cornelius, NC - 20036 Zion Ave",
+"count": 6
+},
+{
+"descriptor": "Crivitz, WI - 112 S US 141 N",
+"count": 1
+},
+{
+"descriptor": "Crystal Lake, IL - 525 E Congress Pkwy",
+"count": 8
+},
+{
+"descriptor": "Crystal Lake, IL - 820 E Terra Cotta",
+"count": 1
+},
+{
+"descriptor": "Davie Medical Center - 329 NC Highway 801 N, Bermuda Run, NC",
+"count": 23
+},
+{
+"descriptor": "Delavan, WI - 1550 Hobbs Dr",
+"count": 2
+},
+{
+"descriptor": "Denmark, WI - 629 Solvang Way",
+"count": 1
+},
+{
+"descriptor": "Denver, NC - 1585 Forney Creek Pkwy",
+"count": 1
+},
+{
+"descriptor": "Denver, NC - 275 N NC 16 Business Hwy",
+"count": 2
+},
+{
+"descriptor": "Denver, NC - 409 Olin Way",
+"count": 4
+},
+{
+"descriptor": "Denver, NC - 7482 Waterside Crossing Blvd",
+"count": 2
+},
+{
+"descriptor": "De Pere, WI - 1881 Chicago St",
+"count": 2
+},
+{
+"descriptor": "Des Plaines, IL - 1011 E Touhy Ave",
+"count": 1
+},
+{
+"descriptor": "Des Plaines, IL - 666 Garland Pl",
+"count": 1
+},
+{
+"descriptor": "Des Plaines, IL - 77 Rand Rd",
+"count": 4
+},
+{
+"descriptor": "Dobson, NC - 911 E Atkins St",
+"count": 2
+},
+{
+"descriptor": "Dodge County, WI",
+"count": 1
+},
+{
+"descriptor": "Downers Grove, IL - 1441 Branding Ave",
+"count": 1
+},
+{
+"descriptor": "Downers Grove, IL - 3551 Highland Ave",
+"count": 1
+},
+{
+"descriptor": "Downers Grove, IL - 3743 Highland Ave",
+"count": 3
+},
+{
+"descriptor": "Downers Grove, IL - 3745 Highland Ave",
+"count": 4
+},
+{
+"descriptor": "Downers Grove, IL - 3825 Highland Ave",
+"count": 2
+},
+{
+"descriptor": "Downers Grove, IL - 6840 S Main St",
+"count": 2
+},
+{
+"descriptor": "Elgin, IL - 1435 N Randall Rd",
+"count": 3
+},
+{
+"descriptor": "Elgin, IL - 1710 N Randall Rd",
+"count": 5
+},
+{
+"descriptor": "Elgin, IL - 745 Fletcher Dr",
+"count": 2
+},
+{
+"descriptor": "Elgin, IL - 87 N Airlite St",
+"count": 1
+},
+{
+"descriptor": "Elkhorn, WI - 201 E Morrissey Dr",
+"count": 6
+},
+{
+"descriptor": "Elkin, NC - 100 Johnson Ridge Medical Park",
+"count": 4
+},
+{
+"descriptor": "Elkin, NC - 150 Chatham Medical Park",
+"count": 1
+},
+{
+"descriptor": "Elkin, NC - 200 Johnson Ridge Medical Park",
+"count": 1
+},
+{
+"descriptor": "Elkin, NC - 201 W Main St",
+"count": 1
+},
+{
+"descriptor": "Elkin, NC - 400 Johnson Ridge Medical Park",
+"count": 2
+},
+{
+"descriptor": "Elkin, NC - 631 CC Camp Rd",
+"count": 2
+},
+{
+"descriptor": "Elkin, NC - 700 Chatham Medical Park",
+"count": 1
+},
+{
+"descriptor": "Elkin, NC - 800 Chatham Medical Park",
+"count": 1
+},
+{
+"descriptor": "Elmhurst, IL - 395 W Lake St",
+"count": 4
+},
+{
+"descriptor": "Evergreen Park, IL - 9730 S Western Ave",
+"count": 1
+},
+{
+"descriptor": "Forest City, NC - 136 Sparks Dr",
+"count": 2
+},
+{
+"descriptor": "Fort Mill, SC - 1852 Highway 160 W",
+"count": 2
+},
+{
+"descriptor": "Fort Mill, SC - 216 S White St",
+"count": 1
+},
+{
+"descriptor": "Fort Mill, SC - 704 Gold Hill Rd",
+"count": 5
+},
+{
+"descriptor": "Fort Valley, GA - 1005 State University Dr",
+"count": 2
+},
+{
+"descriptor": "Fort Valley, GA - 201 Avera Dr",
+"count": 3
+},
+{
+"descriptor": "Frankfort, IL - 21160 S La Grange Rd",
+"count": 2
+},
+{
+"descriptor": "Franklin, WI - 3111 W Rawson Ave",
+"count": 2
+},
+{
+"descriptor": "Franklin, WI - 4202 W Oakwood Park Ct",
+"count": 1
+},
+{
+"descriptor": "Franklin, WI - 9200 W Loomis Rd",
+"count": 5
+},
+{
+"descriptor": "Gastonia, NC - 2211 E Franklin Blvd",
+"count": 1
+},
+{
+"descriptor": "Gastonia, NC - 2680 Aberdeen Blvd",
+"count": 2
+},
+{
+"descriptor": "Gastonia, NC - 3320 Robinwood Rd",
+"count": 1
+},
+{
+"descriptor": "Germantown, WI - N112W17975 Mequon Rd",
+"count": 1
+},
+{
+"descriptor": "Germantown, WI - W180N11070 River Ln",
+"count": 11
+},
+{
+"descriptor": "Glenview, IL - 1412 Waukegan Rd",
+"count": 4
+},
+{
+"descriptor": "Grafton, WI - 215 W Washington St",
+"count": 6
+},
+{
+"descriptor": "Green Bay, WI",
+"count": 1
+},
+{
+"descriptor": "Green Bay, WI - 1160 Kepler Dr",
+"count": 6
+},
+{
+"descriptor": "Green Bay, WI - 1565 Allouez Ave",
+"count": 1
+},
+{
+"descriptor": "Green Bay, WI - 2253 W Mason St",
+"count": 4
+},
+{
+"descriptor": "Green Bay, WI - 931 Discovery Rd",
+"count": 3
+},
+{
+"descriptor": "Greendale, WI - 6801 Southway",
+"count": 1
+},
+{
+"descriptor": "Greenfield, Greendale, Hales Corner, WI",
+"count": 1
+},
+{
+"descriptor": "Greenfield, WI - 4131 W Loomis Rd",
+"count": 3
+},
+{
+"descriptor": "Greenfield, WI - 4448 W Loomis Rd",
+"count": 4
+},
+{
+"descriptor": "Greenfield, WI - 4600 W Loomis Rd",
+"count": 1
+},
+{
+"descriptor": "Greenfield, WI - 6901 W Edgerton Ave",
+"count": 13
+},
+{
+"descriptor": "Greenfield, WI - 9000 W Sura Ln",
+"count": 6
+},
+{
+"descriptor": "Greensboro, GA - 1000 Cowles Clinic Way",
+"count": 1
+},
+{
+"descriptor": "Greensboro, NC - 1121 N Church St",
+"count": 3
+},
+{
+"descriptor": "Greensboro, NC - 1130 N Church St",
+"count": 2
+},
+{
+"descriptor": "Greensboro, NC - 1311 N Elm St",
+"count": 2
+},
+{
+"descriptor": "Greensboro, NC - 1319 New Garden Rd",
+"count": 2
+},
+{
+"descriptor": "Greensboro, NC - 2005 Pisgah Church Rd",
+"count": 2
+},
+{
+"descriptor": "Greensboro, NC - 2718 Henry St",
+"count": 2
+},
+{
+"descriptor": "Greensboro, NC - 2909 Horse Pen Creek Rd",
+"count": 6
+},
+{
+"descriptor": "Greensboro, NC - 3120 Northline Ave",
+"count": 5
+},
+{
+"descriptor": "Greensboro, NC - 3903 N Elm St",
+"count": 1
+},
+{
+"descriptor": "Greensboro, NC - 412 Gallimore Dairy Rd",
+"count": 1
+},
+{
+"descriptor": "Greensboro, NC - 4529 Jessup Grove Rd",
+"count": 1
+},
+{
+"descriptor": "Greensboro, NC - 802 Green Valley Rd",
+"count": 1
+},
+{
+"descriptor": "Greenville, SC - 126 Milestone Way",
+"count": 1
+},
+{
+"descriptor": "Gurnee, IL - 1405 Hunt Club Rd",
+"count": 3
+},
+{
+"descriptor": "Gurnee, IL - 1435 N Hunt Club Rd",
+"count": 6
+},
+{
+"descriptor": "Gurnee, IL - 1445 N Hunt Club Rd",
+"count": 1
+},
+{
+"descriptor": "Gurnee, IL - 15 Tower Ct",
+"count": 1
+},
+{
+"descriptor": "Gurnee, IL - 45 Tower Ct",
+"count": 1
+},
+{
+"descriptor": "Gurnee, IL - 7501 Grand Ave",
+"count": 1
+},
+{
+"descriptor": "Harrisburg, NC - 12170 University City Blvd",
+"count": 4
+},
+{
+"descriptor": "Harrisburg, NC - 4315 Physicians Blvd",
+"count": 2
+},
+{
+"descriptor": "Harrisburg, NC - 5055 Z-Max Blvd",
+"count": 1
+},
+{
+"descriptor": "Harrisburg, NC - 5427 NC Highway 49 S",
+"count": 1
+},
+{
+"descriptor": "Hartford, WI - 1640 E Sumner St",
+"count": 7
+},
+{
+"descriptor": "Hartland, WI - 600 Walnut Ridge Dr",
+"count": 3
+},
+{
+"descriptor": "Hazel Crest, IL - 17850 Kedzie Ave",
+"count": 6
+},
+{
+"descriptor": "Hickory, NC - 2359 Springs Rd NE",
+"count": 1
+},
+{
+"descriptor": "High Point, NC - 1208 Eastchester Dr",
+"count": 4
+},
+{
+"descriptor": "High Point, NC - 1565 N University Pkwy",
+"count": 1
+},
+{
+"descriptor": "High Point, NC - 1814 Westchester Dr",
+"count": 12
+},
+{
+"descriptor": "High Point, NC - 218 Gatewood Ave",
+"count": 4
+},
+{
+"descriptor": "High Point, NC - 302 Westwood Ave",
+"count": 2
+},
+{
+"descriptor": "High Point, NC - 306 Westwood Ave",
+"count": 7
+},
+{
+"descriptor": "High Point, NC - 320 Boulevard St",
+"count": 2
+},
+{
+"descriptor": "High Point, NC - 404 Westwood Ave",
+"count": 3
+},
+{
+"descriptor": "High Point, NC - 4510 Premier Dr",
+"count": 2
+},
+{
+"descriptor": "High Point, NC - 4515 Premier Dr",
+"count": 8
+},
+{
+"descriptor": "High Point, NC - 600 N Elm St",
+"count": 5
+},
+{
+"descriptor": "High Point, NC - 600 N Lindsay St",
+"count": 2
+},
+{
+"descriptor": "High Point, NC - 611 N Lindsay St",
+"count": 1
+},
+{
+"descriptor": "High Point, NC - 624 Quaker Ln",
+"count": 8
+},
+{
+"descriptor": "High Point, NC - 905 Phillips Ave",
+"count": 2
+},
+{
+"descriptor": "High Point Medical Center - 601 N Elm St, High Point, NC",
+"count": 68
+},
+{
+"descriptor": "Hoffman Estates, IL - 4847 Hoffman Blvd",
+"count": 4
+},
+{
+"descriptor": "Hubertus, WI - 3055 Hubertus Rd",
+"count": 1
+},
+{
+"descriptor": "Hugh Chatham Memorial Hospital - 180 Parkwood Dr",
+"count": 20
+},
+{
+"descriptor": "Huntersville, NC - 10314 Hamptons Park Dr",
+"count": 1
+},
+{
+"descriptor": "Huntersville, NC - 12905 Rosedale Hill Ave",
+"count": 1
+},
+{
+"descriptor": "Huntersville, NC - 13620 Reese Blvd E",
+"count": 4
+},
+{
+"descriptor": "Huntersville, NC - 16645 Birkdale Commons Pkwy",
+"count": 5
+},
+{
+"descriptor": "Huntersville, NC - 9611 Sherrill Estates Rd",
+"count": 2
+},
+{
+"descriptor": "Huntersville, NC - 9625 Northcross Center Ct",
+"count": 1
+},
+{
+"descriptor": "Indian Land, SC - 9623 Redstone Dr",
+"count": 1
+},
+{
+"descriptor": "Indian Trail, NC - 4503 Old Monroe Rd",
+"count": 4
+},
+{
+"descriptor": "Indian Trail, NC - 6030 W Highway 74",
+"count": 9
+},
+{
+"descriptor": "Indian Trail, NC - 6048 W Highway 74",
+"count": 1
+},
+{
+"descriptor": "Indian Trail, NC - 6050 W Highway 74",
+"count": 3
+},
+{
+"descriptor": "Indian Trail, NC - 6066 W Highway 74",
+"count": 2
+},
+{
+"descriptor": "Jonesville, NC - 546 Winston Rd",
+"count": 1
+},
+{
+"descriptor": "Kannapolis, NC - 201 Dale Earnhardt Blvd",
+"count": 4
+},
+{
+"descriptor": "Kannapolis, NC - 2711 Lane St",
+"count": 6
+},
+{
+"descriptor": "Kannapolis, NC - 4949 Professional Park Dr",
+"count": 1
+},
+{
+"descriptor": "Kannapolis, NC - 5003 Hospice Ln",
+"count": 6
+},
+{
+"descriptor": "Kenosha, WI - 6811 118th Ave",
+"count": 6
+},
+{
+"descriptor": "Kenosha, WI - 6815 118th Ave",
+"count": 3
+},
+{
+"descriptor": "Kenosha, WI - 7540 22nd Ave",
+"count": 2
+},
+{
+"descriptor": "Kenosha, WI - 7610 Pershing Blvd",
+"count": 1
+},
+{
+"descriptor": "Kenosha County, WI",
+"count": 3
+},
+{
+"descriptor": "Kernersville, NC - 109 Gateway Center Dr",
+"count": 1
+},
+{
+"descriptor": "Kernersville, NC - 111 Gateway Center Dr",
+"count": 6
+},
+{
+"descriptor": "Kernersville, NC - 861 Old Winston Rd",
+"count": 7
+},
+{
+"descriptor": "Kernersville, NC - 900 Old Winston Rd",
+"count": 1
+},
+{
+"descriptor": "King, NC - 132 S Main St",
+"count": 1
+},
+{
+"descriptor": "Kings Mountain, NC - 2202 Carolinas Pl",
+"count": 2
+},
+{
+"descriptor": "Kings Mountain, NC - 821 E King St",
+"count": 1
+},
+{
+"descriptor": "Lake Barrington, IL - 5057 Shoreline Rd",
+"count": 1
+},
+{
+"descriptor": "Lake Geneva, WI - 146 E Geneva Sq",
+"count": 9
+},
+{
+"descriptor": "Lake Geneva, WI - 700 Geneva Pkwy N",
+"count": 1
+},
+{
+"descriptor": "Lakemoor, IL - 27655 W IL Route 120",
+"count": 1
+},
+{
+"descriptor": "Lake Villa, IL - 695 Park Ave",
+"count": 3
+},
+{
+"descriptor": "Lake Zurich, IL - 350 Surryse Rd",
+"count": 6
+},
+{
+"descriptor": "Lake Zurich, IL - 365 Surryse Rd",
+"count": 1
+},
+{
+"descriptor": "Leland, NC - 509 Olde Waterford Way",
+"count": 1
+},
+{
+"descriptor": "Lexington, NC - 100 Hospital Dr",
+"count": 1
+},
+{
+"descriptor": "Lexington, NC - 106 W Medical Park Dr",
+"count": 1
+},
+{
+"descriptor": "Lexington, NC - 107 W Medical Park Dr",
+"count": 1
+},
+{
+"descriptor": "Lexington, NC - 10 Medical Park Dr",
+"count": 1
+},
+{
+"descriptor": "Lexington, NC - 11 Medical Park Dr",
+"count": 1
+},
+{
+"descriptor": "Lexington Medical Center - 250 Hospital Dr, Lexington, NC",
+"count": 36
+},
+{
+"descriptor": "Libertyville, IL - 131 E Park Ave",
+"count": 1
+},
+{
+"descriptor": "Libertyville, IL - 1800 Hollister Dr",
+"count": 6
+},
+{
+"descriptor": "Libertyville, IL - 700 Garfield Ave",
+"count": 3
+},
+{
+"descriptor": "Libertyville, IL - 716 S Milwaukee Ave",
+"count": 2
+},
+{
+"descriptor": "Libertyville, IL - 825 S Milwaukee Ave",
+"count": 8
+},
+{
+"descriptor": "Libertyville, IL - 890 Garfield Ave",
+"count": 1
+},
+{
+"descriptor": "Libertyville, IL - 900 Technology Way",
+"count": 2
+},
+{
+"descriptor": "Lincolnshire, IL - 100 Village Green Dr",
+"count": 4
+},
+{
+"descriptor": "Lincolnton, NC - 1460 E Gaston St",
+"count": 2
+},
+{
+"descriptor": "Lincolnton, NC - 1802 E Main St",
+"count": 1
+},
+{
+"descriptor": "Lincolnton, NC - 3970 W Highway 27",
+"count": 1
+},
+{
+"descriptor": "Lincolnton, NC - 441 McAlister Rd",
+"count": 2
+},
+{
+"descriptor": "Lincolnton, NC - 447 McAlister Rd",
+"count": 11
+},
+{
+"descriptor": "Lincolnton, NC - 853 S Laurel St",
+"count": 5
+},
+{
+"descriptor": "Lincolnwood, IL - 6540 N Lincoln Ave",
+"count": 5
+},
+{
+"descriptor": "Locust, NC - 103 Stanly Pkwy",
+"count": 2
+},
+{
+"descriptor": "Locust, NC - 123 Professional Park Dr",
+"count": 3
+},
+{
+"descriptor": "Lombard, IL - 454 E Roosevelt Rd",
+"count": 1
+},
+{
+"descriptor": "Macon, GA - 1014 Forsyth St",
+"count": 4
+},
+{
+"descriptor": "Macon, GA - 1062 Forsyth St",
+"count": 5
+},
+{
+"descriptor": "Macon, GA - 1650 Hardeman Ave",
+"count": 1
+},
+{
+"descriptor": "Macon, GA - 240 Sheraton Blvd",
+"count": 2
+},
+{
+"descriptor": "Macon, GA - 2490 Riverside Dr",
+"count": 1
+},
+{
+"descriptor": "Macon, GA - 3300 Macon Tech Dr",
+"count": 2
+},
+{
+"descriptor": "Macon, GA - 3780 Eisenhower Pkwy",
+"count": 2
+},
+{
+"descriptor": "Macon, GA - 3797 Northside Dr",
+"count": 1
+},
+{
+"descriptor": "Macon, GA - 4035 Elnora Dr",
+"count": 1
+},
+{
+"descriptor": "Macon, GA - 5300 Zebulon Rd",
+"count": 2
+},
+{
+"descriptor": "Macon, GA - 575 1st St",
+"count": 3
+},
+{
+"descriptor": "Macon, GA - 6261 Peake Rd",
+"count": 2
+},
+{
+"descriptor": "Macon, GA - 770 Hemlock St",
+"count": 4
+},
+{
+"descriptor": "Macon, GA - 770 Pine St",
+"count": 2
+},
+{
+"descriptor": "Macon, GA - 781 Spring St",
+"count": 1
+},
+{
+"descriptor": "Macon, GA - 800 1st St",
+"count": 4
+},
+{
+"descriptor": "Macon, GA - 840 Pine St",
+"count": 2
+},
+{
+"descriptor": "Manitowoc, WI - 1111 Bayshore Dr",
+"count": 4
+},
+{
+"descriptor": "Manitowoc, WI - 3509 Dewey St",
+"count": 2
+},
+{
+"descriptor": "Manitowoc, WI - 3821 Dewey St",
+"count": 4
+},
+{
+"descriptor": "Manitowoc, WI - 4100 Dewey St",
+"count": 1
+},
+{
+"descriptor": "Marinette, WI - 1510 University Dr",
+"count": 1
+},
+{
+"descriptor": "Marinette, WI - 3117 Shore Dr",
+"count": 3
+},
+{
+"descriptor": "Marinette, WI - 4061 Old Peshtigo Rd",
+"count": 2
+},
+{
+"descriptor": "Matthews, NC - 1100 Healing Way",
+"count": 1
+},
+{
+"descriptor": "Matthews, NC - 332 N Trade St",
+"count": 4
+},
+{
+"descriptor": "McHenry, IL - 3925 W Elm St",
+"count": 1
+},
+{
+"descriptor": "McHenry, IL - 633 Ridgeview Dr",
+"count": 2
+},
+{
+"descriptor": "Menomonee Falls, WI - N84W16889 Menomonee Ave",
+"count": 15
+},
+{
+"descriptor": "Menomonee Falls, WI - N93W14575 Whittaker Way",
+"count": 4
+},
+{
+"descriptor": "Mequon, WI - 10600 N Port Washington Rd",
+"count": 2
+},
+{
+"descriptor": "Mequon, WI - 10725 N Executive Ct",
+"count": 1
+},
+{
+"descriptor": "Mequon, WI - 12203 N Corporate Pkwy",
+"count": 12
+},
+{
+"descriptor": "Mequon, WI - 1249 W Liebau Rd",
+"count": 3
+},
+{
+"descriptor": "Merrionette Park, IL - 11600 S Kedzie Ave",
+"count": 2
+},
+{
+"descriptor": "Milledgeville, GA - 1095 Orchard Hill Rd",
+"count": 2
+},
+{
+"descriptor": "Milledgeville, GA - 1201 N Columbia Dr",
+"count": 2
+},
+{
+"descriptor": "Milledgeville, GA - 1217 N Columbia Dr",
+"count": 1
+},
+{
+"descriptor": "Milledgeville, GA - 2803 N Columbia St",
+"count": 1
+},
+{
+"descriptor": "Milwaukee, WI - 1020 N 12th St",
+"count": 2
+},
+{
+"descriptor": "Milwaukee, WI - 11333 W National Ave",
+"count": 9
+},
+{
+"descriptor": "Milwaukee, WI - 1155 N Honey Creek Pkwy",
+"count": 6
+},
+{
+"descriptor": "Milwaukee, WI - 1525 N 12th St",
+"count": 3
+},
+{
+"descriptor": "Milwaukee, WI - 1575 N Rivercenter Dr",
+"count": 2
+},
+{
+"descriptor": "Milwaukee, WI - 163 N Milwaukee St",
+"count": 1
+},
+{
+"descriptor": "Milwaukee, WI - 2801 W Kinnickinnic River Pkwy  2801 W Kinnickinnic River Pkwy",
+"count": 24
+},
+{
+"descriptor": "Milwaukee, WI - 3000 W Montana St",
+"count": 1
+},
+{
+"descriptor": "Milwaukee, WI - 3003 W Good Hope Rd",
+"count": 15
+},
+{
+"descriptor": "Milwaukee, WI - 3031 W Montana St",
+"count": 3
+},
+{
+"descriptor": "Milwaukee, WI - 3301 W Forest Home Ave",
+"count": 1
+},
+{
+"descriptor": "Milwaukee, WI - 3305 W Forest Home Ave",
+"count": 2
+},
+{
+"descriptor": "Milwaukee, WI - 3734 W Wisconsin Ave",
+"count": 2
+},
+{
+"descriptor": "Milwaukee, WI - 5818 W Capitol Dr",
+"count": 1
+},
+{
+"descriptor": "Milwaukee, WI - 7800 N 113th St",
+"count": 7
+},
+{
+"descriptor": "Mint Hill, NC - 11304 Hawthorne Dr",
+"count": 9
+},
+{
+"descriptor": "Mocksville, NC - 113 Market Place Dr",
+"count": 1
+},
+{
+"descriptor": "Mocksville, NC - 1188 Yadkinville Rd",
+"count": 3
+},
+{
+"descriptor": "Monroe, NC - 1106 Reynolds St",
+"count": 2
+},
+{
+"descriptor": "Monroe, NC - 1403 Dove St",
+"count": 2
+},
+{
+"descriptor": "Monroe, NC - 1411 Dove St",
+"count": 1
+},
+{
+"descriptor": "Monroe, NC - 1423 E Franklin St",
+"count": 6
+},
+{
+"descriptor": "Monroe, NC - 1550 Faulk St",
+"count": 2
+},
+{
+"descriptor": "Monroe, NC - 613 E Roosevelt Blvd",
+"count": 1
+},
+{
+"descriptor": "Monroe, NC - 700 W Roosevelt Blvd",
+"count": 6
+},
+{
+"descriptor": "Mooresville, NC - 119 Market Place Ave",
+"count": 1
+},
+{
+"descriptor": "Mooresville, NC - 134 Medical Park Rd",
+"count": 1
+},
+{
+"descriptor": "Mooresville, NC - 138 Center Square Dr",
+"count": 1
+},
+{
+"descriptor": "Mooresville, NC - 170 Medical Park Rd",
+"count": 1
+},
+{
+"descriptor": "Morrow, GA - 5809 N Lake Dr",
+"count": 1
+},
+{
+"descriptor": "Morton Grove, IL - 6131 W Dempster St",
+"count": 3
+},
+{
+"descriptor": "Morton Grove, IL - 9000 Waukegan Rd",
+"count": 1
+},
+{
+"descriptor": "Mount Airy, NC - 910 Worth St",
+"count": 1
+},
+{
+"descriptor": "Mount Pleasant, NC - 8560 Cook St",
+"count": 2
+},
+{
+"descriptor": "Mount Pleasant, WI - 13317 Hospitality Ct",
+"count": 1
+},
+{
+"descriptor": "Mount Pleasant, WI - 6611 Spring St",
+"count": 4
+},
+{
+"descriptor": "Mount Pleasant, WI - 8400 Washington Ave",
+"count": 15
+},
+{
+"descriptor": "Mount Prospect, IL - 1754 W Golf Rd",
+"count": 2
+},
+{
+"descriptor": "Mukwonago, WI - 120 Chapman Farms Blvd",
+"count": 2
+},
+{
+"descriptor": "Naperville, IL - 1315 Macom Dr",
+"count": 1
+},
+{
+"descriptor": "Naperville, IL - 1508 Aurora Ave",
+"count": 2
+},
+{
+"descriptor": "Naperville, IL - 1836 Freedom Dr",
+"count": 3
+},
+{
+"descriptor": "Navicent Rehabilitation Hospital - 3351 Northside Dr, Macon, GA",
+"count": 7
+},
+{
+"descriptor": "Neenah, WI - 1136 Westowne Dr",
+"count": 2
+},
+{
+"descriptor": "New Berlin, WI - 12901 W National Ave",
+"count": 2
+},
+{
+"descriptor": "New Berlin, WI - 14555 W National Ave",
+"count": 3
+},
+{
+"descriptor": "New Franken, WI - 4070 Equestrian Ct",
+"count": 4
+},
+{
+"descriptor": "Niles, IL - 7900 N Milwaukee Ave",
+"count": 1
+},
+{
+"descriptor": "Niles, IL - 8816 W Dempster St",
+"count": 1
+},
+{
+"descriptor": "North Fond du Lac, WI - 700 Park Ridge Ln",
+"count": 1
+},
+{
+"descriptor": "North Wilkesboro, NC - 1915 W Park Dr",
+"count": 1
+},
+{
+"descriptor": "North Wilkesboro, NC - 1916 W Park Dr",
+"count": 1
+},
+{
+"descriptor": "North Wilkesboro, NC - 1917 W Park Dr",
+"count": 2
+},
+{
+"descriptor": "North Wilkesboro, NC - 1918 W Park Dr",
+"count": 3
+},
+{
+"descriptor": "North Wilkesboro, NC - 408 8th St",
+"count": 1
+},
+{
+"descriptor": "Oak Brook, IL - 2311 W 22nd St",
+"count": 25
+},
+{
+"descriptor": "Oakbrook Terrace, IL - 1901 S Meyers Rd",
+"count": 4
+},
+{
+"descriptor": "Oak Creek, WI - 200 E Ryan Rd",
+"count": 4
+},
+{
+"descriptor": "Oak Lawn, IL - 10201 S Cicero Ave",
+"count": 5
+},
+{
+"descriptor": "Oak Lawn, IL - 10500 S Cicero Ave",
+"count": 2
+},
+{
+"descriptor": "Oak Lawn, IL - 10837 S Cicero Ave",
+"count": 1
+},
+{
+"descriptor": "Oak Lawn, IL - 4220 W 95th St",
+"count": 3
+},
+{
+"descriptor": "Oak Lawn, IL - 4400 W 95th St",
+"count": 4
+},
+{
+"descriptor": "Oak Lawn, IL - 4545 W 103rd St",
+"count": 2
+},
+{
+"descriptor": "Oak Lawn, IL - 4700 W 95th St",
+"count": 1
+},
+{
+"descriptor": "Oak Lawn, IL - 9555 S 52nd Ave",
+"count": 4
+},
+{
+"descriptor": "Oak Ridge, NC - 8001 Marketplace Dr",
+"count": 7
+},
+{
+"descriptor": "Oconomowoc, WI - 1061 Summit Ave",
+"count": 1
+},
+{
+"descriptor": "Oconomowoc, WI - 1284 N Summit Ave",
+"count": 2
+},
+{
+"descriptor": "Oconto, WI - 530 Smith Ave",
+"count": 1
+},
+{
+"descriptor": "Olympia Fields, IL - 4001 Vollmer Rd",
+"count": 4
+},
+{
+"descriptor": "Orland Park, IL - 9550 W 167th St",
+"count": 7
+},
+{
+"descriptor": "Oshkosh, WI - 700 N Westhaven Dr",
+"count": 1
+},
+{
+"descriptor": "Oshkosh/Fond du Lac, WI",
+"count": 1
+},
+{
+"descriptor": "Oswego, IL - 80 Templeton Dr",
+"count": 2
+},
+{
+"descriptor": "Ozaukee County, WI",
+"count": 1
+},
+{
+"descriptor": "Palos Heights, IL - 11800 Southwest Hwy",
+"count": 4
+},
+{
+"descriptor": "Palos Heights, IL - 11824 Southwest Hwy",
+"count": 1
+},
+{
+"descriptor": "Palos Heights, IL - 12340 S Harlem Ave",
+"count": 2
+},
+{
+"descriptor": "Palos Heights, IL - 12350 S Harlem Ave",
+"count": 1
+},
+{
+"descriptor": "Park Ridge, IL - 10 N Cumberland Ave",
+"count": 5
+},
+{
+"descriptor": "Park Ridge, IL - 1424",
+"count": 1
+},
+{
+"descriptor": "Park Ridge, IL - 1610 Luther Ln",
+"count": 1
+},
+{
+"descriptor": "Park Ridge, IL - 1700 Luther Ln",
+"count": 6
+},
+{
+"descriptor": "Park Ridge, IL - 1775 Ballard Rd",
+"count": 10
+},
+{
+"descriptor": "Park Ridge, IL - 1875 Dempster St",
+"count": 15
+},
+{
+"descriptor": "Pleasant Prairie, WI - 12500 Aurora Dr",
+"count": 9
+},
+{
+"descriptor": "Plymouth, WI - 2600 Kiley Way",
+"count": 3
+},
+{
+"descriptor": "Plymouth, WI - 2635 Eastern Ave",
+"count": 1
+},
+{
+"descriptor": "Port Washington, WI - 1475 W Grand Ave",
+"count": 3
+},
+{
+"descriptor": "Racine, WI - 1151 Warwick Way",
+"count": 1
+},
+{
+"descriptor": "Racine, WI - 2621 S Green Bay Rd",
+"count": 2
+},
+{
+"descriptor": "Racine, WI - 5333 Douglas Ave",
+"count": 1
+},
+{
+"descriptor": "Racine County, WI",
+"count": 3
+},
+{
+"descriptor": "Remote",
+"count": 42
+},
+{
+"descriptor": "Richfield, NC - 243 N Highway 49",
+"count": 2
+},
+{
+"descriptor": "Rock Hill, SC - 134 Professional Park Dr",
+"count": 3
+},
+{
+"descriptor": "Rock Hill, SC - 1656 Riverchase Blvd",
+"count": 12
+},
+{
+"descriptor": "Rock Hill, SC - 226 Northpark Dr",
+"count": 5
+},
+{
+"descriptor": "Rock Hill, SC - 228 Herlong Ave S",
+"count": 1
+},
+{
+"descriptor": "Rock Hill, SC - 757 Anderson Rd S",
+"count": 1
+},
+{
+"descriptor": "Rockmart, GA - 1650 Chattahoochee Dr",
+"count": 4
+},
+{
+"descriptor": "Rome, GA - 123 Three Rivers Dr NE",
+"count": 1
+},
+{
+"descriptor": "Rome, GA - 15 Riverbend Dr SW",
+"count": 1
+},
+{
+"descriptor": "Rome, GA - 1825 Martha Berry Blvd NE",
+"count": 14
+},
+{
+"descriptor": "Rome, GA - 208 Redmond Rd NW",
+"count": 2
+},
+{
+"descriptor": "Rome, GA - 221 Technology Pkwy NW",
+"count": 2
+},
+{
+"descriptor": "Rome, GA - 255 W 5th St",
+"count": 8
+},
+{
+"descriptor": "Rome, GA - 28 John Davenport Dr NW",
+"count": 2
+},
+{
+"descriptor": "Rome, GA - 304 Shorter Ave NW",
+"count": 7
+},
+{
+"descriptor": "Rome, GA - 305 Turner McCall Blvd NE",
+"count": 1
+},
+{
+"descriptor": "Rome, GA - 306 Shorter Ave NW",
+"count": 4
+},
+{
+"descriptor": "Rome, GA - 330 Turner McCall Blvd SW",
+"count": 1
+},
+{
+"descriptor": "Rome, GA - 420 E 2nd Ave",
+"count": 8
+},
+{
+"descriptor": "Rome, GA - 500 Riverside Pkwy NE",
+"count": 1
+},
+{
+"descriptor": "Rome, GA - 504 Redmond Rd NW",
+"count": 5
+},
+{
+"descriptor": "Rome, GA - 550 Redmond Rd NW",
+"count": 4
+},
+{
+"descriptor": "Rome, GA - 796 N Division St NW",
+"count": 2
+},
+{
+"descriptor": "Rosemont, IL - 5400 Pearl St",
+"count": 10
+},
+{
+"descriptor": "Round Lake, IL - 2 E Rollins Rd",
+"count": 2
+},
+{
+"descriptor": "Round Lake Beach, IL - 305 W Rollins Rd",
+"count": 1
+},
+{
+"descriptor": "Rural Hall, NC - 1038 Bethania Rural Hall Rd",
+"count": 5
+},
+{
+"descriptor": "Rutherfordton, NC - 446 NC 108 Hwy",
+"count": 2
+},
+{
+"descriptor": "Saint Francis, WI - 2000 E Layton Ave",
+"count": 5
+},
+{
+"descriptor": "Salem, WI - 25320 75th St",
+"count": 2
+},
+{
+"descriptor": "Salisbury, NC - 605 Grove St",
+"count": 1
+},
+{
+"descriptor": "Schaumburg, IL - 800 E Woodfield Rd",
+"count": 1
+},
+{
+"descriptor": "Scotland Memorial Hospital (Advocate Health Use Only) - 500 Lauchwood Dr, Laurinburg, NC",
+"count": 2
+},
+{
+"descriptor": "Sheboygan, WI - 1221 N 26th St",
+"count": 3
+},
+{
+"descriptor": "Sheboygan, WI - 1222 N 23rd St",
+"count": 1
+},
+{
+"descriptor": "Sheboygan, WI - 1414 N Taylor Dr",
+"count": 2
+},
+{
+"descriptor": "Sheboygan, WI - 1813 Ashland Ave",
+"count": 7
+},
+{
+"descriptor": "Sheboygan, WI - 2414 Kohler Memorial Dr",
+"count": 19
+},
+{
+"descriptor": "Sheboygan Falls, WI - N6928 Johnsonville Way",
+"count": 1
+},
+{
+"descriptor": "Shelby, NC - 1010 E Dixon Blvd",
+"count": 2
+},
+{
+"descriptor": "Shelby, NC - 105 T R Harris Dr",
+"count": 3
+},
+{
+"descriptor": "Shelby, NC - 110 W Grover St",
+"count": 4
+},
+{
+"descriptor": "Shelby, NC - 111 W Grover St",
+"count": 1
+},
+{
+"descriptor": "Shelby, NC - 1404 N Lafayette St",
+"count": 1
+},
+{
+"descriptor": "Shelby, NC - 202 E Grover St",
+"count": 2
+},
+{
+"descriptor": "Shelby, NC - 411 Cherryville Rd",
+"count": 3
+},
+{
+"descriptor": "Shelby, NC - 709 N Dekalb St",
+"count": 3
+},
+{
+"descriptor": "Shelby, NC - 808 N Washington St",
+"count": 2
+},
+{
+"descriptor": "Skokie, IL - 5540 Touhy Ave",
+"count": 2
+},
+{
+"descriptor": "Slinger, WI - 1061 E Commerce Blvd",
+"count": 5
+},
+{
+"descriptor": "South Elgin, IL - 486 Randall Rd",
+"count": 3
+},
+{
+"descriptor": "South Holland, IL - 100 W 162nd St",
+"count": 2
+},
+{
+"descriptor": "South Milwaukee, WI - 3611 S Chicago Ave",
+"count": 3
+},
+{
+"descriptor": "South Suburban , IL",
+"count": 1
+},
+{
+"descriptor": "Statesville, NC - 557 Brookdale Dr",
+"count": 3
+},
+{
+"descriptor": "St Charles, IL - 3310 W Main St",
+"count": 1
+},
+{
+"descriptor": "Stephenson, MI - S926 US Hwy 41",
+"count": 1
+},
+{
+"descriptor": "Sturgeon Bay, WI - 1910 Alabama St",
+"count": 4
+},
+{
+"descriptor": "Summerfield, NC - 4431 US Highway 220 N",
+"count": 1
+},
+{
+"descriptor": "Summerville, GA - 11766 Highway 27",
+"count": 1
+},
+{
+"descriptor": "Summerville, GA - 205 Stockade Rd",
+"count": 2
+},
+{
+"descriptor": "Taylorsville, GA - 48 Hills Creek Rd",
+"count": 1
+},
+{
+"descriptor": "Thomasville, NC - 711 National Hwy",
+"count": 3
+},
+{
+"descriptor": "Tinley Park, IL - 18210 La Grange Rd",
+"count": 3
+},
+{
+"descriptor": "Trion, GA - 13583 Highway 27",
+"count": 4
+},
+{
+"descriptor": "Two Rivers, WI - 2219 Garfield St",
+"count": 3
+},
+{
+"descriptor": "Two Rivers, WI - 5300 Memorial Dr",
+"count": 8
+},
+{
+"descriptor": "Union Grove, WI - 4310 67th Dr",
+"count": 2
+},
+{
+"descriptor": "Union Grove, WI - 4320 67th Dr",
+"count": 2
+},
+{
+"descriptor": "Vernon Hills, IL - 6 E Phillip Rd",
+"count": 2
+},
+{
+"descriptor": "Walworth, WI - 525 Kenosha St",
+"count": 1
+},
+{
+"descriptor": "Warner Robins, GA - 80 Cohen Walker Dr",
+"count": 2
+},
+{
+"descriptor": "Washington County, WI",
+"count": 1
+},
+{
+"descriptor": "Waterford, WI - 818 Forrest Ln",
+"count": 1
+},
+{
+"descriptor": "Waukesha, WI - 1005 Spring City Dr",
+"count": 2
+},
+{
+"descriptor": "Waukesha, WI - 725 American Ave",
+"count": 1
+},
+{
+"descriptor": "Waukesha, WI - W231N1440 Corporate Ct",
+"count": 14
+},
+{
+"descriptor": "Waukesha/Jefferson Counties, WI",
+"count": 3
+},
+{
+"descriptor": "Wautoma, WI - 900 E Division St",
+"count": 1
+},
+{
+"descriptor": "Wauwatosa, WI - 1055 N Mayfair Rd",
+"count": 10
+},
+{
+"descriptor": "Wauwatosa, WI - 2999 N Mayfair Rd",
+"count": 5
+},
+{
+"descriptor": "Wauwatosa, WI - 3289 N Mayfair Rd",
+"count": 5
+},
+{
+"descriptor": "Wauwatosa, WI - 8320 W Bluemound Rd",
+"count": 1
+},
+{
+"descriptor": "Waxhaw, NC - 2700 S Providence Rd",
+"count": 4
+},
+{
+"descriptor": "West Allis, WI - 2424 S 90th St",
+"count": 5
+},
+{
+"descriptor": "West Allis, WI - 6609 W Greenfield Ave",
+"count": 5
+},
+{
+"descriptor": "West Allis, WI - 8905 W Lincoln Ave",
+"count": 2
+},
+{
+"descriptor": "West Bend, WI - 1100 Gateway Ct",
+"count": 7
+},
+{
+"descriptor": "West Bend, WI - 205 Valley Ave",
+"count": 8
+},
+{
+"descriptor": "Westmont, IL - 1 E Ogden Ave",
+"count": 1
+},
+{
+"descriptor": "Westmont, IL - 639 Blackhawk Dr",
+"count": 8
+},
+{
+"descriptor": "Wheeling, IL - 959 W Dundee Rd",
+"count": 1
+},
+{
+"descriptor": "Whitefish Bay, WI - 325 E Silver Spring Dr",
+"count": 2
+},
+{
+"descriptor": "Wilkes Medical Center - 1370 W D St, North Wilkesboro, NC",
+"count": 20
+},
+{
+"descriptor": "Wilmette, IL - 3232 Lake Ave",
+"count": 3
+},
+{
+"descriptor": "Winston Salem, NC - 100 Lockland Ave",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 1200 N Martin Luther King Jr Dr",
+"count": 3
+},
+{
+"descriptor": "Winston Salem, NC - 131 Miller St",
+"count": 12
+},
+{
+"descriptor": "Winston Salem, NC - 140 Charlois Blvd",
+"count": 3
+},
+{
+"descriptor": "Winston Salem, NC - 1665 Westbrook Plaza Dr",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 1677 Westbrook Plaza Dr",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 1834 Wake Forest Rd",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 1901 Mooney St",
+"count": 3
+},
+{
+"descriptor": "Winston Salem, NC - 1909 Beach St",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 1913 Beach St",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 1920 Queen St",
+"count": 3
+},
+{
+"descriptor": "Winston Salem, NC - 1920 W 1st St",
+"count": 5
+},
+{
+"descriptor": "Winston Salem, NC - 1 Medical Center Blvd",
+"count": 18
+},
+{
+"descriptor": "Winston Salem, NC - 2000 Cloverdale Ave",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 2000 W 1st St",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 2105 Welfare Rd",
+"count": 2
+},
+{
+"descriptor": "Winston Salem, NC - 2200 Cloverdale Ave",
+"count": 3
+},
+{
+"descriptor": "Winston Salem, NC - 2295 E 14th St",
+"count": 2
+},
+{
+"descriptor": "Winston Salem, NC - 239 N Hawthorne Rd",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 2933 Maplewood Ave",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 300 Medical Center Blvd",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 3333 Brookview Hills Blvd",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 342 Medical Center Blvd",
+"count": 2
+},
+{
+"descriptor": "Winston Salem, NC - 403 S Hawthorne Rd",
+"count": 2
+},
+{
+"descriptor": "Winston Salem, NC - 4610 Country Club Rd",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 4614 Country Club Rd",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 4618 Country Club Rd",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 475 Vine St",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 486 N Patterson Ave",
+"count": 6
+},
+{
+"descriptor": "Winston Salem, NC - 525 Vine St",
+"count": 2
+},
+{
+"descriptor": "Winston Salem, NC - 605 Cotton St",
+"count": 3
+},
+{
+"descriptor": "Winston Salem, NC - 635 Vine St",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 6441 Kinnamon Ct",
+"count": 3
+},
+{
+"descriptor": "Winston Salem, NC - 650 Highland Ave",
+"count": 3
+},
+{
+"descriptor": "Winston Salem, NC - 750 Highland Oaks Dr",
+"count": 2
+},
+{
+"descriptor": "Winston Salem, NC - 770 Highland Oaks Dr",
+"count": 1
+},
+{
+"descriptor": "Winston Salem, NC - 791 Jonestown Rd",
+"count": 3
+},
+{
+"descriptor": "Zion, IL - 3115 Lewis Ave",
+"count": 1
+}
+]
+}

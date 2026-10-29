@@ -28,6 +28,7 @@ from typing import Optional
 import facility_names   # 2026-10-15 (wages): the hospital on rows filed under a system name
 import va_facilities    # 2026-10-27: one clean name per VA facility on USAJOBS rows
 import uhs_facilities   # 2026-10-28: one clean name per UHS facility on jobs.uhsinc.com rows
+import advocate_facilities   # 2026-10-29: one clean name and the real town per Advocate Health facility
 from city_utils import (clean_city, is_plausible_city, not_a_place, known_town, embedded_town,
                         set_runtime_towns, runtime_towns, site_leftover, town_window)
 from specialty_canon import canonical_specialty
@@ -7132,6 +7133,25 @@ WD_BULLET_FACILITY = frozenset({"MultiCare Health"})
 # by _apply_wd_posting_info on every Workday detail pass, Phenom rows that
 # link to Workday included).
 WD_LOCATION_FACILITY = frozenset({"Vanderbilt (VUMC)", "Corewell Health"})
+# 2026-10-29 (the owner: "Need to sort the advocate health hospitals ... retro
+# assigning the applies to individual hospitals within a system"): tenants
+# whose location descriptor names the site, "<site> - <street>[, <town>,
+# <ST>]", read against a sourced table of that system's facilities. Every
+# Advocate Health row carried the system label (5,524 of 5,524 active rows on
+# 2026-10-29) and 2,922 sat in Charlotte, NC: a site named by its street alone
+# ("Advocate Sherman Hospital - 1425 N Randall Rd", Elgin, IL) took the
+# tenant default. The resolver gets the list's locationsText and the
+# externalPath (whose first segment is the primary site's descriptor, the
+# only place a "2 Locations" posting names it) and returns (hospital_name,
+# city, state) for a site its table knows, None otherwise (a "Town, ST -
+# street" clinic, "Remote", a county, a site the table does not know yet:
+# placed as before). The table's town is the site's own street address and
+# wins over the parse. Scoped per tenant, not generic: other tenants'
+# locationsText is a building, a campus or a town with no site table behind
+# it. A site the table does not know is counted in the run log
+# (WD_SITE_UNKNOWN) so it can be added.
+WD_SITE_FACILITY = {advocate_facilities.SYSTEM: advocate_facilities.facility}
+WD_SITE_UNKNOWN = {advocate_facilities.SYSTEM: advocate_facilities.unknown_site}
 WD_TITLE_FACILITY: dict[str, tuple[tuple[re.Pattern, str, str, str], ...]] = {
     "Georgia DBHDD": (
         (re.compile(r"East Central Regional Hospital|\bECRH\b|Gracewood", re.I),
@@ -7443,6 +7463,9 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
     # (Job, externalPath) pairs, so the optional detail pass can rebuild each
     # job's CXS detail URL. externalPath is not carried on the Job dataclass.
     detail_targets = []
+    # 2026-10-29: WD_SITE_FACILITY tenants' rows by where the facility came from
+    site_how: dict = {"table": 0, "office": 0, "town or remote": 0, "unknown site": 0}
+    site_unknown: dict = {}
 
     # Use the confirmed URL directly — no probe loop
     working_url = f"https://{tenant}.wd{wd_num}.myworkdayjobs.com/wday/cxs/{tenant}/{primary_site}/jobs"
@@ -7532,6 +7555,16 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                         _fac, _city, _state = _wd_facility(system, loc, _city, _state)
                         if _fac:
                             _facility = _fac
+                    elif system in WD_SITE_FACILITY:
+                        # 2026-10-29: the site's facility and its own town (WD_SITE_FACILITY)
+                        _site = WD_SITE_FACILITY[system](loc, j.get("externalPath", ""))
+                        _unk = ""
+                        if _site:
+                            _facility, _city, _state = _site
+                            _site_how = "table" if _facility != system else "office"
+                        else:
+                            _unk = WD_SITE_UNKNOWN[system](loc, j.get("externalPath", ""))
+                            _site_how = "unknown site" if _unk else "town or remote"
                     if not _state:
                         # 2026-10-04 coverage round 3: Banner's locationsText is
                         # the site plus its street ("Banner Del Webb Med Ctr
@@ -7579,6 +7612,10 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
                     if _jid in seen_ids:
                         continue
                     seen_ids.add(_jid)
+                    if system in WD_SITE_FACILITY:
+                        site_how[_site_how] += 1
+                        if _unk:
+                            site_unknown[_unk] = site_unknown.get(_unk, 0) + 1
                     jobs.append(Job(
                         title=j.get("title", ""),
                         hospital_system=system,
@@ -7752,6 +7789,11 @@ async def scrape_workday(session: aiohttp.ClientSession, system: str, tenant_dat
         EMITTED_SYSTEMS.add(system)
     whole = bool(claim_whole and jobs and report_complete(system, plain["listed"], plain["total"],
                                                           feed="WORKDAY_TENANTS"))
+    if system in WD_SITE_FACILITY:
+        top = sorted(site_unknown.items(), key=lambda kv: -kv[1])[:8]
+        logger.info(f"  Workday {system}: facility by " + ", ".join(f"{k} {v:,}" for k, v in site_how.items())
+                    + (f"; sites the table does not know: " + "; ".join(f"{k} ({v})" for k, v in top)
+                       if top else ""))
     logger.info(f"Workday {system}: listed {plain['listed']} of {plain['total']} advertised "
                 f"(stopped: {'window' if hit_window else plain['end']}); "
                 + ("complete crawl" if whole else "not reported complete"))

@@ -1,0 +1,125 @@
+{
+ "read_utc": "2026-10-29T12:10Z",
+ "note": "jobDescription: tags stripped, cut to 500 characters",
+ "details": {
+  "2loc_R276221": {
+   "jobPostingInfo": {
+    "title": "Medical Assistant (MA) - Infusion",
+    "location": "Crystal Lake, IL - 525 E Congress Pkwy",
+    "additionalLocations": [
+     "Barrington, IL - 27750 W Highway 22"
+    ],
+    "jobRequisitionLocation": {
+     "descriptor": "Crystal Lake, IL - 525 E Congress Pkwy",
+     "country": {
+      "descriptor": "United States of America",
+      "id": "bc33aa3152ec42d4995f4791a106ed09",
+      "alpha2Code": "US"
+     }
+    },
+    "externalUrl": "https://aah.wd5.myworkdayjobs.com/External/job/Crystal-Lake-IL---525-E-Congress-Pkwy/Medical-Assistant_R276221",
+    "jobReqId": "R276221",
+    "timeType": "Full time",
+    "jobDescription": "Department:\n37397 Advocate Lutheran General Hospital - Infusion: Crystal Lake\nStatus: \nFull time\nBenefits Eligible:\nYes\nHours Per Week:\n40\nSchedule Details/Additional Information:\nBarrington and Crystal Lake Office are open from 8am-5pm Monday through Friday, no weekends, no holidays. Crystal Lake is the primary location however, if an MA is needed for coverage at the Barrington Office, there may be opportunities to float to that location. \nPay Range:\n$22.90 - $34.35\nJob Description Summary: \nSu"
+   },
+   "hiringOrganization": {
+    "name": "125 Advocate Health and Hospitals Corporation",
+    "url": ""
+   }
+  },
+  "2loc_R282077": {
+   "jobPostingInfo": {
+    "title": "Occupational Therapist (OT) -Outpatient",
+    "location": "Libertyville, IL - 825 S Milwaukee Ave",
+    "additionalLocations": [
+     "Advocate Condell Medical Center - 801 S Milwaukee Ave"
+    ],
+    "jobRequisitionLocation": {
+     "descriptor": "Libertyville, IL - 825 S Milwaukee Ave",
+     "country": {
+      "descriptor": "United States of America",
+      "id": "bc33aa3152ec42d4995f4791a106ed09",
+      "alpha2Code": "US"
+     }
+    },
+    "externalUrl": "https://aah.wd5.myworkdayjobs.com/External/job/Libertyville-IL---825-S-Milwaukee-Ave/Occupational-Therapists-PRN_R282077",
+    "jobReqId": "R282077",
+    "timeType": "Part time",
+    "jobDescription": "Department:\n37610 Rehabilitation Services: IL - Outpatient Rehabilitation: AMG Libertyville Hand Clinic\nStatus: \nPart time\nBenefits Eligible:\nNo\nHours Per Week:\n0\nSchedule Details/Additional Information:\nWeekly Monday 830-5 and 1 Saturday per month minimum requirement\nCHT preferred \nPay Range:\n$38.20 - $57.30\nSchedule needed:Weekly Monday 830-5 and 1 Saturday per month minimum requirementCHT preferred \nMajor Responsibilities:\nInterprets physician referrals and evaluates the patient's physical, p"
+   },
+   "hiringOrganization": {
+    "name": "125 Advocate Health and Hospitals Corporation",
+    "url": ""
+   }
+  },
+  "atrium_R277666": {
+   "jobPostingInfo": {
+    "title": "Registered Nurse (RN): Radiology Days",
+    "location": "Atrium Health Cleveland - 201 E Grover St, Shelby, NC",
+    "additionalLocations": null,
+    "jobRequisitionLocation": {
+     "descriptor": "Atrium Health Cleveland - 201 E Grover St, Shelby, NC",
+     "country": {
+      "descriptor": "United States of America",
+      "id": "bc33aa3152ec42d4995f4791a106ed09",
+      "alpha2Code": "US"
+     }
+    },
+    "externalUrl": "https://aah.wd5.myworkdayjobs.com/External/job/Atrium-Health-Cleveland---201-E-Grover-St-Shelby-NC/Registered-Nurse--RN---Radiology-Days_R277666",
+    "jobReqId": "R277666",
+    "timeType": "Full time",
+    "jobDescription": "Department:\n36310 Atrium Health Cleveland - Radiology Nursing\nStatus: \nFull time\nBenefits Eligible:\nYes\nHours Per Week:\n40\nSchedule Details/Additional Information:\nMonday through Friday 07:30 am -4:00 pm\nPay Range:\n$38.20 - $57.30\nMajor Responsibilities:\nEngages in unit councils, professional governance, and quality initiatives to improve care processes and apply evidence-based practices.\nUtilizes the nursing process to assess, plan, diagnose, implement, and evaluate nursing care, engaging patie"
+   },
+   "hiringOrganization": {
+    "name": "126 Atrium Health Hospitals, Inc.",
+    "url": ""
+   }
+  },
+  "aurora_R284599": {
+   "jobPostingInfo": {
+    "title": "Registered Nurse - Emergency Department",
+    "location": "Aurora St Lukes Medical Center - 2900 W Oklahoma Ave",
+    "additionalLocations": null,
+    "jobRequisitionLocation": {
+     "descriptor": "Aurora St Lukes Medical Center - 2900 W Oklahoma Ave",
+     "country": {
+      "descriptor": "United States of America",
+      "id": "bc33aa3152ec42d4995f4791a106ed09",
+      "alpha2Code": "US"
+     }
+    },
+    "externalUrl": "https://aah.wd5.myworkdayjobs.com/External/job/Aurora-St-Lukes-Medical-Center---2900-W-Oklahoma-Ave/Registered-Nurse---Emergency-Department_R284599",
+    "jobReqId": "R284599",
+    "timeType": "Full time",
+    "jobDescription": "Department:\nStatus: \nFull time\nBenefits Eligible:\nYes\nHours Per Week:\n36\nSchedule Details/Additional Information:\n0300-1500 Day Weekend Program \n0300 - 1500 DAY  (.9 FTE and .6 FTE)\n0700 -1900 DAYS NO OPENINGS\n1100-2300 PM NO OPENINGS\n1500-0300 PM SHIFT (.9FTE and .6 FTE)\nNOC 1900-0700\nPay Range:\n$38.20 - $57.30\nJob Description\nRegistered Nurse (RN) – Emergency Department SLMC \nMilwaukee, WI, United States \nBe the Nurse Who Redefines Care. \nAt Advocate Health, being a nurse means more than deliv"
+   },
+   "hiringOrganization": {
+    "name": "600 Advocate Health, Inc.",
+    "url": ""
+   }
+  },
+  "sherman_R272624": {
+   "jobPostingInfo": {
+    "title": "Nursing Assistant (CNA)  Emergency Department  Full Time Night Shift",
+    "location": "Advocate Sherman Hospital - 1425 N Randall Rd",
+    "additionalLocations": null,
+    "jobRequisitionLocation": {
+     "descriptor": "Advocate Sherman Hospital - 1425 N Randall Rd",
+     "country": {
+      "descriptor": "United States of America",
+      "id": "bc33aa3152ec42d4995f4791a106ed09",
+      "alpha2Code": "US"
+     }
+    },
+    "externalUrl": "https://aah.wd5.myworkdayjobs.com/External/job/Advocate-Sherman-Hospital---1425-N-Randall-Rd/Nursing-Assistant--CNA---Emergency-Department--Full-Time-Night-Shift_R272624",
+    "jobReqId": "R272624",
+    "timeType": "Full time",
+    "jobDescription": "Department:\n36102 Advocate Sherman Hospital - Emergency Department\nStatus: \nFull time\nBenefits Eligible:\nYes\nHours Per Week:\n36\nSchedule Details/Additional Information:\n7p-7a. every other or every 3rd weekend, teammate choice\nPay Range:\n$21.85 - $32.80\nSherman HospitalElgin, ILNursing Assistant (CNA)Emergency Services Tech – Emergency Department\nScheduled Hours - 7pm to 7am\nFull time\nEvery other weekend or every third weekend, Teammate Choice\n46-Bed ER Unit\nLevel 2 Trauma\nNurse Aide in good stan"
+   },
+   "hiringOrganization": {
+    "name": "160 Advocate Sherman Hospital",
+    "url": ""
+   }
+  }
+ }
+}
