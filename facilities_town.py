@@ -153,6 +153,45 @@ OFFSITE_RX = re.compile(
     r"lecturer|instructor|"
     r"call\s+cent(?:er|re)|contact\s+cent(?:er|re)|access\s+cent(?:er|re)|scheduling\s+cent(?:er|re)|"
     r"health\s+plan|insurance|population\s+health)\b", re.I)
+# A named site that is no hospital, by the posting's title, even when the
+# title also names the town's hospital ("Wait Staff Mon Valley Residence at
+# Hilltop", "CNA - Quinton Memorial Health and Rehabilitation", "Res Care
+# Nurse (Heights)"): a nursing home, a senior residence, a child-care or
+# fitness centre, a warehouse, an urgent care. The row keeps the system name
+# and its town (decision 2: the hospital is never guessed). Review A,
+# 2026-10-29. A hospital's own skilled nursing unit ("Skilled Nursing Unit")
+# is not matched.
+CARE_SITE_RX = re.compile(
+    r"\b(?:manor|residences?|health\s*(?:and|&)\s*rehab\w*|nursing\s*(?:and|&)\s*rehab\w*|"
+    r"nursing\s+(?:center|centre|facility|home)|skilled\s+nursing\s+facility|SNF|res(?:idential)?\s+care|"
+    r"senior\s+(?:services|care|community|center|centre)|retirement|adult\s+day|"
+    r"child\s*care|day\s*care|child\s+development|preschool|early\s+(?:learning|childhood)|"
+    r"athletic\s+trainer|fitness|personal\s+trainer|warehouse|distribution\s+cent(?:er|re))\b", re.I)
+# The same, for one system's own named sites (its nursing homes and senior
+# residences by their names, or the unit codes its senior campus posts).
+CARE_SITE_BY_SYSTEM = {
+    "Sanford Health": re.compile(
+        r"\b(?:SF\s+Center|Luther\s+Manor|Augusta(?:\s+Place)?|Neilson\s+Place|St\.?\s+Vincent'?s|Windsong|"
+        r"Trillium|Bath\s+Aide|Restorative\s+Nursing\s+Assistant|Senior\s+Certified\s+Nursing|Sr\.?\s+CNA)\b", re.I),
+    "Vitruvian Health": re.compile(r"\b(?:Ridgewood|Quinton|Regency\s+Park)\b", re.I),
+    "Penn Highlands Healthcare": re.compile(r"\b(?:McKinley|Jeff(?:erson)?\s+Manor|Pinecrest|Hilltop)\b", re.I),
+    "Great River Health": re.compile(r"\b(?:Klein\s+Center|Park\s+Place)\b", re.I),
+    "Blanchard Valley Health System": re.compile(
+        r"\b(?:STNA|Res\s+Care|Medication\s+Aide|Birchaven|Nurse\s+Aide)\b", re.I),
+    "Valley Health (VA)": re.compile(r"\bUCC\b"),
+}
+
+
+def is_care_site(system, title) -> bool:
+    """The title names a site of the system that is no hospital (CARE_SITE_RX,
+    CARE_SITE_BY_SYSTEM)."""
+    t = clean_text(title)
+    if CARE_SITE_RX.search(t):
+        return True
+    rx = CARE_SITE_BY_SYSTEM.get(system)
+    return bool(rx and rx.search(t))
+
+
 # Lines of a posting that say where it is: "Location: ...", "Department: ...".
 _WHERE_KEYS = (r"(?:work\s+)?location|department|dept|facility(?:\s+name)?|site|entity|company|"
                r"practice|organization|business\s+unit|work\s+site|address|city")
@@ -319,11 +358,19 @@ def setting_text(description, spec=None) -> str:
     return _HOSP_AND_CLINICS_RX.sub(" ", _strip_names(spec, " ".join(keep)))
 
 
-def is_offsite(title, description, spec=None) -> bool:
+def _offsite_by_title(title, description, spec=None) -> bool:
+    """is_offsite's title and location-line tests alone (a clinic's, an
+    office's or a medical group's posting by what it says it is), without
+    the body's setting words: an emergency department's body speaks of
+    "emergent and urgent care"."""
     t = _strip_names(spec, clean_text(title))
     if OFFSITE_RX.search(t) or OFFICE_ROLE_RX.search(t) or is_group_provider(t):
         return True
-    if any(OFFSITE_RX.search(_strip_names(spec, v)) for v in where_lines(description)):
+    return any(OFFSITE_RX.search(_strip_names(spec, v)) for v in where_lines(description))
+
+
+def is_offsite(title, description, spec=None) -> bool:
+    if _offsite_by_title(title, description, spec):
         return True
     head = setting_text(description, spec)
     intro = _INTRO_LEAD_RX.sub("", head)[:INTRO_CHARS]
@@ -370,7 +417,10 @@ class TownSpec:
             self.raw_hospitals.append((name, city, state, source, also))
             for t in (city, *also):
                 by_town.setdefault((town_key(t), state), []).append((name, city, state, source))
+        self.hosp_towns: dict = {}                # name -> {(town key, ST)} of its street address
         for k, hs in by_town.items():
+            for h in hs:
+                self.hosp_towns.setdefault(h[0], set()).add(k)
             names = sorted({h[0] for h in hs})
             if len(names) == 1:
                 if k not in self.keep:
@@ -579,9 +629,13 @@ def decide(system, hospital_name, city, state, title="", description="", url="")
     Renamed: "town" (the town's one hospital), "named" (the town's hospital,
     which the posting's title or location line also names), "site" (a named
     site inside it), "entity" (the system's employer line).
-    Kept: "not-table", "named-already", "remote", "entity-office",
-    "other-hospital", "offsite", "shared", "keep", "default" (the stamped
-    default town and the posting names none), "no-town"."""
+    Kept: "not-table", "named-already", "remote", "care-site" (the title
+    names a nursing home, a senior residence or another site that is no
+    hospital), "entity-office", "entity-offsite" / "entity-elsewhere" (the
+    employer line names a hospital, but the posting is a clinic's or an
+    office's, or sits in another town than that hospital's), "other-hospital",
+    "offsite", "shared", "keep", "default" (the stamped default town and the
+    posting names none), "no-town"."""
     spec = SPECS.get(system) or EMIT.get(system)
     if spec is None:
         return None, None, None, "not-table"
@@ -591,8 +645,15 @@ def decide(system, hospital_name, city, state, title="", description="", url="")
     stamped = not clean_text(city) or spec.at_default(city, st)
     if is_remote(title, description):
         return None, None, None, "remote"
+    if is_care_site(spec.system, title):
+        return None, None, None, "care-site"
 
-    # The system's own employer line names the hospital (or an office).
+    # The system's own employer line names the hospital (or an office). The
+    # employer line is the employing entity, not the work site (review A,
+    # 2026-10-29): "Penn State Health - Hershey Medical Center" also employs
+    # the medical group's practices and Life Lion EMS from State College to
+    # Reading. It names the hospital only for a posting in that hospital's
+    # own town that is no clinic's or office's.
     if spec.entity:
         rx, values = spec.entity
         m = rx.search(clean_text(str(description or "")[:HEAD_CHARS]))
@@ -602,12 +663,19 @@ def decide(system, hospital_name, city, state, title="", description="", url="")
         if v:
             h = spec.names.get(name_key(v)) or next(
                 (s[:3] for s in spec.sites if s[0] == v), None)
+            if _offsite_by_title(title, description, spec):
+                return None, None, None, "entity-offsite"
+            towns = spec.hosp_towns.get(v) or {(town_key(h[1]), h[2])}
             if not stamped:
+                if (town_key(city), st) not in towns:
+                    return None, None, None, "entity-elsewhere"
                 return v, _town_spelling(spec, city, st), st, "entity"
             if spec.town_line:
                 tm = spec.town_line.search(clean_text(str(description or "")[:HEAD_CHARS]))
                 if tm and clean_text(tm.group(1)):
                     town = clean_text(tm.group(1))
+                    if (town_key(town), h[2]) not in towns:
+                        return None, None, None, "entity-elsewhere"
                     return v, _town_spelling(spec, town, h[2]), h[2], "entity"
             return v, h[1], h[2], "entity"
 
