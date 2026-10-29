@@ -1,0 +1,167 @@
+{
+ "source": "www.concentra.com//sxa/search/results/ (career search signature), read 2026-10-29; results verbatim, _case added",
+ "results": [
+  {
+   "Geospatial": {
+    "PoiTypeId": null,
+    "PoiIcon": null,
+    "PoiVariantId": null,
+    "Latitude": 34.8849847,
+    "Longitude": -82.1508056,
+    "Distance": null,
+    "Unit": null
+   },
+   "Id": "a063c1e3-ccd2-4a38-a77a-c2ed23b74387",
+   "Language": "en",
+   "Path": "/sitecore/content/Concentra/DotCom/usa/home/careers/job-search/SC/Greer/Leadership/353104",
+   "Url": "/careers/job-search/sc/greer/leadership/353104/",
+   "Name": null,
+   "Html": "<div class=\"field-title\">\r\n    <a title=\"Center Operations Director\" href=\"/careers/job-search/sc/greer/leadership/353104/\" onclick=\"localStorage.setItem('url',location.href)\">Center Operations Director</a>\r\n</div><div class=\"detail-section\">\r\n    <div class=\"field-location\">Greer, SC</div>\r\n    \r\n         <div class=\"number-rounder\"> </div>\r\n        \r\n    <div class=\"field-category field-subcategory\">Leadership</div>\r\n</div>",
+   "_case": "no centre within 100 km"
+  },
+  {
+   "Geospatial": {
+    "PoiTypeId": null,
+    "PoiIcon": null,
+    "PoiVariantId": null,
+    "Latitude": 47.627424,
+    "Longitude": -122.1542023,
+    "Distance": null,
+    "Unit": null
+   },
+   "Id": "df7cb604-1957-46d7-956c-bf39f2034489",
+   "Language": "en",
+   "Path": "/sitecore/content/Concentra/DotCom/usa/home/careers/job-search/WA/Bellevue/Medical-Assistant/351512",
+   "Url": "/careers/job-search/wa/bellevue/medical-assistant/351512/",
+   "Name": null,
+   "Html": "<div class=\"field-title\">\r\n    <a title=\"Medical Assistant\" href=\"/careers/job-search/wa/bellevue/medical-assistant/351512/\" onclick=\"localStorage.setItem('url',location.href)\">Medical Assistant</a>\r\n</div><div class=\"detail-section\">\r\n    <div class=\"field-location\">Bellevue, WA</div>\r\n    \r\n         <div class=\"number-rounder\"> </div>\r\n        \r\n    <div class=\"field-category field-subcategory\">Medical-Assistant</div>\r\n</div>",
+   "_case": "centre, same town"
+  },
+  {
+   "Geospatial": {
+    "PoiTypeId": null,
+    "PoiIcon": null,
+    "PoiVariantId": null,
+    "Latitude": 35.1443676,
+    "Longitude": -106.6028913,
+    "Distance": null,
+    "Unit": null
+   },
+   "Id": "ca865d1a-6201-4007-bdb3-369f63428e32",
+   "Language": "en",
+   "Path": "/sitecore/content/Concentra/DotCom/usa/home/careers/job-search/NM/Albuquerque/Medical-Review-UR/327754",
+   "Url": "/careers/job-search/nm/albuquerque/medical-review-ur/327754/",
+   "Name": null,
+   "Html": "<div class=\"field-title\">\r\n    <a title=\"Physical Medicine &amp; Rehabilitation Telecommute Medical Review Stream Physician\" href=\"/careers/job-search/nm/albuquerque/medical-review-ur/327754/\" onclick=\"localStorage.setItem('url',location.href)\">Physical Medicine &amp; Rehabilitation Telecommute Medical Review Stream Physician</a>\r\n</div><div class=\"detail-section\">\r\n    <div class=\"field-location\">Albuquerque, NM</div>\r\n    \r\n         <div class=\"number-rounder\"> </div>\r\n        \r\n    <div class=\"field-category field-subcategory\">Medical-Review-UR</div>\r\n</div>",
+   "_case": "telecommute"
+  },
+  {
+   "Geospatial": {
+    "PoiTypeId": null,
+    "PoiIcon": null,
+    "PoiVariantId": null,
+    "Latitude": 33.2233919,
+    "Longitude": -97.142392,
+    "Distance": null,
+    "Unit": null
+   },
+   "Id": "51ecd34d-c887-4d05-9d44-ebcc92edde53",
+   "Language": "en",
+   "Path": "/sitecore/content/Concentra/DotCom/usa/home/careers/job-search/TX/Denton/Physical-Therapist/352577",
+   "Url": "/careers/job-search/tx/denton/physical-therapist/352577/",
+   "Name": null,
+   "Html": "<div class=\"field-title\">\r\n    <a title=\"Physical Therapist - Onsite\" href=\"/careers/job-search/tx/denton/physical-therapist/352577/\" onclick=\"localStorage.setItem('url',location.href)\">Physical Therapist - Onsite</a>\r\n</div><div class=\"detail-section\">\r\n    <div class=\"field-location\">Denton, TX</div>\r\n    \r\n         <div class=\"number-rounder\"> </div>\r\n        \r\n    <div class=\"field-category field-subcategory\">Physical-Therapist</div>\r\n</div>",
+   "_case": "onsite title"
+  },
+  {
+   "Geospatial": {
+    "PoiTypeId": null,
+    "PoiIcon": null,
+    "PoiVariantId": null,
+    "Latitude": 32.9546769,
+    "Longitude": -96.82378489999999,
+    "Distance": null,
+    "Unit": null
+   },
+   "Id": "ff68ba9d-348e-43e7-9350-e3837e576996",
+   "Language": "en",
+   "Path": "/sitecore/content/Concentra/DotCom/usa/home/careers/job-search/TX/Addison/Information-Systems/350362",
+   "Url": "/careers/job-search/tx/addison/information-systems/350362/",
+   "Name": null,
+   "Html": "<div class=\"field-title\">\r\n    <a title=\"Outcomes Analyst III\" href=\"/careers/job-search/tx/addison/information-systems/350362/\" onclick=\"localStorage.setItem('url',location.href)\">Outcomes Analyst III</a>\r\n</div><div class=\"detail-section\">\r\n    <div class=\"field-location\">Addison, TX</div>\r\n    \r\n         <div class=\"number-rounder\"> </div>\r\n        \r\n    <div class=\"field-category field-subcategory\">Information-Systems</div>\r\n</div>",
+   "_case": "corporate department (Information Systems)"
+  },
+  {
+   "Geospatial": {
+    "PoiTypeId": null,
+    "PoiIcon": null,
+    "PoiVariantId": null,
+    "Latitude": 26.2078209,
+    "Longitude": -80.1476121,
+    "Distance": null,
+    "Unit": null
+   },
+   "Id": "54350a5d-78cc-4b6e-a96f-7263c9854070",
+   "Language": "en",
+   "Path": "/sitecore/content/Concentra/DotCom/usa/home/careers/job-search/FL/Fort Lauderdale/Occupational-Therapist/352382",
+   "Url": "/careers/job-search/fl/fort-lauderdale/occupational-therapist/352382/",
+   "Name": null,
+   "Html": "<div class=\"field-title\">\r\n    <a title=\"Occupational Therapist PRN\" href=\"/careers/job-search/fl/fort-lauderdale/occupational-therapist/352382/\" onclick=\"localStorage.setItem('url',location.href)\">Occupational Therapist PRN</a>\r\n</div><div class=\"detail-section\">\r\n    <div class=\"field-location\">Fort Lauderdale, FL</div>\r\n    \r\n         <div class=\"number-rounder\"> </div>\r\n        \r\n    <div class=\"field-category field-subcategory\">Occupational-Therapist</div>\r\n</div>",
+   "_case": "centre town spelled Ft. Lauderdale"
+  },
+  {
+   "Geospatial": {
+    "PoiTypeId": null,
+    "PoiIcon": null,
+    "PoiVariantId": null,
+    "Latitude": 45.53583949999999,
+    "Longitude": -122.8668053,
+    "Distance": null,
+    "Unit": null
+   },
+   "Id": "e9b6d478-328f-4eb1-a34f-26fce61f8148",
+   "Language": "en",
+   "Path": "/sitecore/content/Concentra/DotCom/usa/home/careers/job-search/OR/Hillsboro/Advanced-Practice/353067",
+   "Url": "/careers/job-search/or/hillsboro/advanced-practice/353067/",
+   "Name": null,
+   "Html": "<div class=\"field-title\">\r\n    <a title=\"Nurse Practitioner or Physician Assistant Clinical Manager\" href=\"/careers/job-search/or/hillsboro/advanced-practice/353067/\" onclick=\"localStorage.setItem('url',location.href)\">Nurse Practitioner or Physician Assistant Clinical Manager</a>\r\n</div><div class=\"detail-section\">\r\n    <div class=\"field-location\">Hillsboro, OR</div>\r\n    \r\n         <div class=\"number-rounder\"> </div>\r\n        \r\n    <div class=\"field-category field-subcategory\">Advanced-Practice</div>\r\n</div>",
+   "_case": "centre in the neighbouring town (Tanasbourne, Beaverton)"
+  },
+  {
+   "Geospatial": {
+    "PoiTypeId": null,
+    "PoiIcon": null,
+    "PoiVariantId": null,
+    "Latitude": 32.9658959,
+    "Longitude": -96.8389105,
+    "Distance": null,
+    "Unit": null
+   },
+   "Id": "8bd151cc-ad54-4ae8-a113-1d43034d810c",
+   "Language": "en",
+   "Path": "/sitecore/content/Concentra/DotCom/usa/home/careers/job-search/TX/Addison/Central-Billing-Office/350220",
+   "Url": "/careers/job-search/tx/addison/central-billing-office/350220/",
+   "Name": null,
+   "Html": "<div class=\"field-title\">\r\n    <a title=\"Medical Billing Specialist\" href=\"/careers/job-search/tx/addison/central-billing-office/350220/\" onclick=\"localStorage.setItem('url',location.href)\">Medical Billing Specialist</a>\r\n</div><div class=\"detail-section\">\r\n    <div class=\"field-location\">Addison, TX</div>\r\n    \r\n         <div class=\"number-rounder\"> </div>\r\n        \r\n    <div class=\"field-category field-subcategory\">Central-Billing-Office</div>\r\n</div>",
+   "_case": "central billing office at a centre point"
+  },
+  {
+   "Geospatial": {
+    "PoiTypeId": null,
+    "PoiIcon": null,
+    "PoiVariantId": null,
+    "Latitude": 35.0401513,
+    "Longitude": -89.8861091,
+    "Distance": null,
+    "Unit": null
+   },
+   "Id": "91e2e1dd-6abd-41f8-bdfe-057ed01a2880",
+   "Language": "en",
+   "Path": "/sitecore/content/Concentra/DotCom/usa/home/careers/job-search/TN/Memphis/Radiology/353516",
+   "Url": "/careers/job-search/tn/memphis/radiology/353516/",
+   "Name": null,
+   "Html": "<div class=\"field-title\">\r\n    <a title=\"Radiologic Technologist up to $7500 Bonus\" href=\"/careers/job-search/tn/memphis/radiology/353516/\" onclick=\"localStorage.setItem('url',location.href)\">Radiologic Technologist up to $7500 Bonus</a>\r\n</div><div class=\"detail-section\">\r\n    <div class=\"field-location\">Memphis, TN</div>\r\n    \r\n         <div class=\"number-rounder\"> </div>\r\n        \r\n    <div class=\"field-category field-subcategory\">Radiology</div>\r\n</div>",
+   "_case": "two centres at one point"
+  }
+ ]
+}

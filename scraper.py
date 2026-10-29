@@ -41,6 +41,7 @@ from specialty_canon import ATS_ALIASES as _SPEC_ALIASES, _norm_ats as _spec_nor
 import site_revalidate   # 2026-10-15: purge the site's pages of rows the sweep retires
 import sb_keys   # 2026-10-23: one reader for the DATA project key (Railway breach rotation)
 import facilities_town   # 2026-10-29: the hospital on a system-label row from its town (TOWN family)
+import facilities_ambulatory   # 2026-10-29 (phase 3): USPI surgery centres, Concentra centres, CVS's Oak Street / MinuteClinic / Omnicare
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -2008,26 +2009,34 @@ def _force_slot(canon: str, job_id: str) -> bool:
 ICIMS_COMPANY_FACILITY = frozenset({"Select Medical"})
 ICIMS_FACILITY_REREAD_CYCLE = int(os.getenv("ICIMS_FACILITY_REREAD_CYCLE", "5"))
 ICIMS_FACILITY_REREAD_UNTIL = os.getenv("ICIMS_FACILITY_REREAD_UNTIL", "2026-12-31")
-_STORED_COMPANY: dict = {}     # (system, job_id) -> stored hospital_name, ICIMS_COMPANY_FACILITY rows
+# 2026-10-29 (phase 3, ambulatory): USPI's TalentBrew job pages name the
+# site in a "Facility" field the list cards lack (facilities_ambulatory.
+# tb_page_facility, read in _jsonld_detail). Its rows share this machinery:
+# the stored map carries a row's site on nights its page is not read
+# (_keep_stored_company, called in run_talentbrew), and stored rows still
+# on the label are read once a cycle for it (_company_reread_slot, on the
+# TalentBrew budget), on the same cycle and end date.
+PAGE_FIELD_FACILITY = ICIMS_COMPANY_FACILITY | facilities_ambulatory.TB_FACILITY_SYSTEMS
+_STORED_COMPANY: dict = {}     # (system, job_id) -> stored hospital_name, PAGE_FIELD_FACILITY rows
 STORED_COMPANY_PAGE = 1000
 
 
 def set_stored_companies(rows) -> int:
     """Install {(hospital_system, job_id): hospital_name} from rows of
-    {hospital_system, job_id, hospital_name} (ICIMS_COMPANY_FACILITY systems
+    {hospital_system, job_id, hospital_name} (PAGE_FIELD_FACILITY systems
     only). Returns the map's size."""
     global _STORED_COMPANY
     out = {}
     for r in rows or []:
         s, jid = r.get("hospital_system"), r.get("job_id")
-        if s in ICIMS_COMPANY_FACILITY and jid not in (None, ""):
+        if s in PAGE_FIELD_FACILITY and jid not in (None, ""):
             out[(s, str(jid))] = re.sub(r"\s+", " ", str(r.get("hospital_name") or "")).strip()
     _STORED_COMPANY = out
     return len(out)
 
 
 def load_stored_companies() -> int:
-    """One read-only PostgREST pass per ICIMS_COMPANY_FACILITY system over its
+    """One read-only PostgREST pass per PAGE_FIELD_FACILITY system over its
     active rows (job_id, hospital_name), keyset-paged on id (Select Medical:
     5 pages). Without credentials, or with the detail passes off, the map
     stays empty: no facility is carried and none is re-read."""
@@ -2039,7 +2048,7 @@ def load_stored_companies() -> int:
     import urllib.parse as _urlparse
     import urllib.request as _urlreq
     rows = []
-    for system in sorted(ICIMS_COMPANY_FACILITY):
+    for system in sorted(PAGE_FIELD_FACILITY):
         flt = _urlparse.quote(f"eq.{system}", safe=".")
         last = 0
         try:
@@ -2068,16 +2077,16 @@ def load_stored_companies() -> int:
                            f"neither carried nor re-read tonight")
     n = set_stored_companies(rows)
     left = sum(1 for (s, _j), name in _STORED_COMPANY.items() if name in ("", s))
-    logger.info(f"Stored companies: {n:,} active rows of {', '.join(sorted(ICIMS_COMPANY_FACILITY))}; "
+    logger.info(f"Stored companies: {n:,} active rows of {', '.join(sorted(PAGE_FIELD_FACILITY))}; "
                 f"{left:,} still on the system label")
     return n
 
 
 def _keep_stored_company(job) -> None:
-    """A list row of an ICIMS_COMPANY_FACILITY system that names no facility
+    """A list row of a PAGE_FIELD_FACILITY system that names no facility
     takes the one stored on its row (the list's label would overwrite it)."""
     s = job.hospital_system
-    if s not in ICIMS_COMPANY_FACILITY or (job.hospital_name or "").strip() not in ("", s):
+    if s not in PAGE_FIELD_FACILITY or (job.hospital_name or "").strip() not in ("", s):
         return
     stored = _STORED_COMPANY.get((s, str(job.job_id)), "")
     if stored and stored != s:
@@ -2085,11 +2094,11 @@ def _keep_stored_company(job) -> None:
 
 
 def _company_reread_slot(key) -> bool:
-    """True when this stored row (key = (canonical system, job_id)) of an
-    ICIMS_COMPANY_FACILITY system is still on the system label and tonight
+    """True when this stored row (key = (canonical system, job_id)) of a
+    PAGE_FIELD_FACILITY system is still on the system label and tonight
     is its night to be read for its Company field."""
     canon, jid = key
-    if canon not in ICIMS_COMPANY_FACILITY or _STORED_COMPANY.get(key) not in ("", canon):
+    if canon not in PAGE_FIELD_FACILITY or _STORED_COMPANY.get(key) not in ("", canon):
         return False
     if key not in _STORED_COMPANY:
         return False
@@ -4380,6 +4389,12 @@ async def _jsonld_detail(session, job) -> bool:
     (CommonSpirit, ScionHealth, MemorialCare come through here) it also reads
     the employer's requisition number (tb_req_id_from_page)."""
     html = await _fetch_html(session, job.url)
+    # 2026-10-29 (phase 3): USPI's page names the site in its Facility field;
+    # an office, float pool or remote value keeps the system name.
+    if job.hospital_system in facilities_ambulatory.TB_FACILITY_SYSTEMS:
+        site, named = facilities_ambulatory.tb_page_facility(job.hospital_system, html)
+        if named:
+            job.hospital_name = site or job.hospital_system
     posting = _jobposting_from_html(html)
     if job.ats_platform == "TalentBrew" and not job.req_id:
         job.req_id = tb_req_id_from_page(html, posting)
@@ -9023,6 +9038,8 @@ async def run_talentbrew(session: aiohttp.ClientSession) -> list[Job]:
         TB_DESC_BUDGET.expect(TALENTBREW_ORGS)
     async def _one(sys, url, rpp):
         jobs = await scrape_talentbrew(session, sys, url, rpp)
+        for j in jobs:
+            _keep_stored_company(j)   # 2026-10-29: USPI's stored site (no-op outside PAGE_FIELD_FACILITY)
         # 2026-09-21: the detail pass lives here because scrape_talentbrew
         # returns from inside its paging loop. Job pages carry a JSON-LD
         # JobPosting with the body, employment type, date and often pay.
@@ -11997,10 +12014,16 @@ async def scrape_concentra(session: aiohttp.ClientSession) -> list[Job]:
             url = f"{CONCENTRA_BASE}{path}" if path.startswith("/") else path
             mj = _CONCENTRA_JOBID_RE.search(path.rstrip("/") + "/")
             job_id = (mj.group(1) if mj else "") or str(it.get("Id", ""))
+            # 2026-10-29 (phase 3): the result's map point names the centre
+            # ("Concentra Kansas Avenue"); onsite, corporate and remote postings
+            # are at no centre point and keep "Concentra" (facilities_ambulatory).
+            geo = it.get("Geospatial") or {}
+            center = facilities_ambulatory.concentra_center(
+                geo.get("Latitude"), geo.get("Longitude"), city, state, title, specialty) if isinstance(geo, dict) else ""
             jobs.append(Job(
                 title=title,
                 hospital_system="Concentra",
-                hospital_name="Concentra",
+                hospital_name=center or "Concentra",
                 city=city, state=state, location=loc_txt,
                 specialty=specialty, job_type="",
                 url=url, job_id=str(job_id),
@@ -33127,6 +33150,14 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         if facilities_text.UNKNOWN:
             logger.info("Text facilities, values no table names: " + facilities_text.unknown_summary())
             facilities_text.UNKNOWN.clear()
+    # 2026-10-29 (phase 3, ambulatory): CVS Health's rows take the business
+    # their own text names (Oak Street Health, MinuteClinic, Omnicare) and the
+    # town of their address line when the feed gave none; the stored site and
+    # town on nights the body is not read (facilities_ambulatory).
+    amb = _facility_pass("Ambulatory facilities", facilities_ambulatory.apply_facilities, kept)
+    if amb:
+        logger.info("Ambulatory facilities: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(amb.items())))
     # 2026-10-29 (facility scale, TOWN family): rows still on the system's
     # name after the adapters' facility hooks and facility_names take the one
     # hospital of their system in their town (facilities_town: a clinic, an
@@ -33330,6 +33361,9 @@ async def run_all() -> list[dict]:
     # kept on nights a row's body is not read again
     n_ftx = await asyncio.to_thread(facilities_text.load_known_facilities)
     logger.info(f"Text facilities: {n_ftx:,} stored rows of {len(facilities_text.SYSTEMS)} systems name a site")
+    # 2026-10-29 (phase 3): the sites and towns stored on CVS Health's rows
+    n_amb = await asyncio.to_thread(facilities_ambulatory.load_known_facilities)
+    logger.info(f"Ambulatory facilities: {n_amb:,} stored CVS Health rows carry a site or a town")
     # Two sessions: one with ssl=False for proxy-routed scrapers,
     # one with normal SSL for scrapers that connect directly (Taleo, SF, etc.)
     # 2026-09-25: detail passes hold at most DETAIL_POOL_SHARE of each pool
