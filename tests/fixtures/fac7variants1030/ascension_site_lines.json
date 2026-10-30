@@ -1,0 +1,3179 @@
+{
+"note": "Ascension label rows (hospital_name 'Ascension Health', active 2026-10-30): the value of each stored body's first Facility Name / Facility / Hospital line, with the row's town and the number of rows. Facility names only; no person, e-mail or phone.",
+"rows": [
+{
+"value": "Ascension Medical Group",
+"city": "Wichita",
+"state": "KS",
+"rows": 29
+},
+{
+"value": "Ascension Saint Thomas",
+"city": "Nashville",
+"state": "TN",
+"rows": 15
+},
+{
+"value": "Sacred Heart Village",
+"city": "Avilla",
+"state": "IN",
+"rows": 14
+},
+{
+"value": "Ascension Via Christi West ER",
+"city": "Wichita",
+"state": "KS",
+"rows": 13
+},
+{
+"value": "Franciscan Place",
+"city": "Brookfield",
+"state": "WI",
+"rows": 13
+},
+{
+"value": "Ascension Menasha Midway Office Building",
+"city": "Menasha",
+"state": "WI",
+"rows": 11
+},
+{
+"value": "Ascension Medical Group Via Christi",
+"city": "Wichita",
+"state": "KS",
+"rows": 10
+},
+{
+"value": "Ascension Sacred Heart Hospital Pensacola",
+"city": "Pensacola",
+"state": "FL",
+"rows": 10
+},
+{
+"value": "Multiple Ascension sites",
+"city": "Glendale",
+"state": "WI",
+"rows": 10
+},
+{
+"value": "Wauwatosa Ambulatory Center",
+"city": "Wauwatosa",
+"state": "WI",
+"rows": 10
+},
+{
+"value": "Ascension Medical Group",
+"city": "Tulsa",
+"state": "OK",
+"rows": 9
+},
+{
+"value": "Ascension Medical Group Clinic",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 9
+},
+{
+"value": "Via Christi Village Manhattan",
+"city": "Manhattan",
+"state": "KS",
+"rows": 9
+},
+{
+"value": "Alexian PACE",
+"city": "Chattanooga",
+"state": "TN",
+"rows": 8
+},
+{
+"value": "Alexian Village of Tennessee",
+"city": "Signal Mountain",
+"state": "TN",
+"rows": 8
+},
+{
+"value": "Ascension Saint Thomas Midtown, West, Rutherford, River Park and Westlawn",
+"city": "Nashville",
+"state": "TN",
+"rows": 8
+},
+{
+"value": "Ascension St. Vincent Lucas Family Brain and Spine",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 8
+},
+{
+"value": "Ascension Via Christi St. Peter",
+"city": "DERBY",
+"state": "KS",
+"rows": 8
+},
+{
+"value": "Lakeshore at Siena",
+"city": "Racine",
+"state": "WI",
+"rows": 8
+},
+{
+"value": "Prospect Medical Commons",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 8
+},
+{
+"value": "Sacred Heart Rehab",
+"city": "Mequon",
+"state": "WI",
+"rows": 8
+},
+{
+"value": "St. Vincent Medical Group",
+"city": "Carmel",
+"state": "IN",
+"rows": 8
+},
+{
+"value": "Ascension Living HOPE",
+"city": "Wichita",
+"state": "KS",
+"rows": 7
+},
+{
+"value": "Center for Advanced Medicine",
+"city": "Evansville",
+"state": "IN",
+"rows": 7
+},
+{
+"value": "Providence Village",
+"city": "Waco",
+"state": "TX",
+"rows": 7
+},
+{
+"value": "Resurrection Village Life Center",
+"city": "Chicago",
+"state": "IL",
+"rows": 7
+},
+{
+"value": "Ascension Medical Group",
+"city": "Bartlesville",
+"state": "OK",
+"rows": 6
+},
+{
+"value": "Ascension Medical Group Clinic",
+"city": "Evansville",
+"state": "IN",
+"rows": 6
+},
+{
+"value": "Carroll Manor",
+"city": "Washington",
+"state": "DC",
+"rows": 6
+},
+{
+"value": "Good Health Solutions",
+"city": "Austin",
+"state": "TX",
+"rows": 6
+},
+{
+"value": "St. Vincent PACE",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 6
+},
+{
+"value": "AW Glendale Corporate Office",
+"city": "Glendale",
+"state": "WI",
+"rows": 5
+},
+{
+"value": "Ascension Medical Group, clinic",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 5
+},
+{
+"value": "Ascension Sacred Heart Inpatient Rehab",
+"city": "Pensacola",
+"state": "FL",
+"rows": 5
+},
+{
+"value": "Ascension St Elizabeth",
+"city": "Appleton",
+"state": "WI",
+"rows": 5
+},
+{
+"value": "Nazarethville Place",
+"city": "Des Plaines",
+"state": "IL",
+"rows": 5
+},
+{
+"value": "AMG Providence Women's Health Clinic",
+"city": "Waco",
+"state": "TX",
+"rows": 4
+},
+{
+"value": "Ascension DePaul Services",
+"city": "New Orleans",
+"state": "LA",
+"rows": 4
+},
+{
+"value": "Ascension Living St. Francis Place",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 4
+},
+{
+"value": "Ascension Sacred Heart Medical Group Destin",
+"city": "Miramar Beach",
+"state": "FL",
+"rows": 4
+},
+{
+"value": "Ascension Sacred Heart Medical Oncology Group",
+"city": "Pensacola",
+"state": "FL",
+"rows": 4
+},
+{
+"value": "Ascension Saint Thomas Midtown, West and Rutherford",
+"city": "Nashville",
+"state": "TN",
+"rows": 4
+},
+{
+"value": "Ascension St. Vincent Indianapolis (86th Street) - Women & Infants Hospital",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 4
+},
+{
+"value": "Glendale Corporate Office",
+"city": "Glendale",
+"state": "WI",
+"rows": 4
+},
+{
+"value": "Saint Thomas Medical Partners",
+"city": "Nashville",
+"state": "TN",
+"rows": 4
+},
+{
+"value": "Seton Medical Ctr Austin",
+"city": "Austin",
+"state": "TX",
+"rows": 4
+},
+{
+"value": "Seton Smithville Regional Hospital",
+"city": "Smithville",
+"state": "TX",
+"rows": 4
+},
+{
+"value": "St. Francis Place",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 4
+},
+{
+"value": "Various Clinics",
+"city": "Nashville",
+"state": "TN",
+"rows": 4
+},
+{
+"value": "Via Christi Village McLean",
+"city": "Wichita",
+"state": "KS",
+"rows": 4
+},
+{
+"value": "Via Christi Village Ridge",
+"city": "Wichita",
+"state": "KS",
+"rows": 4
+},
+{
+"value": "Water Tower Medical Commons",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 4
+},
+{
+"value": "AMG Reiman Cancer Center",
+"city": "Franklin",
+"state": "WI",
+"rows": 3
+},
+{
+"value": "AMG Waukesha Primary Care",
+"city": "Waukesha",
+"state": "WI",
+"rows": 3
+},
+{
+"value": "Ascension Behavioral Health Outpatient",
+"city": "Hoffman Estates",
+"state": "IL",
+"rows": 3
+},
+{
+"value": "Ascension Medical Clinic",
+"city": "Destin",
+"state": "FL",
+"rows": 3
+},
+{
+"value": "Ascension Medical Group",
+"city": "Evansville",
+"state": "IN",
+"rows": 3
+},
+{
+"value": "Ascension Medical Group Clinic",
+"city": "Zionsville",
+"state": "IN",
+"rows": 3
+},
+{
+"value": "Ascension Medical Group, clinic",
+"city": "Anderson",
+"state": "IN",
+"rows": 3
+},
+{
+"value": "Ascension Sacred Heart Medical Clinic",
+"city": "Pensacola",
+"state": "FL",
+"rows": 3
+},
+{
+"value": "Ascension Saint Agnes Cancer Institute",
+"city": "Baltimore",
+"state": "MD",
+"rows": 3
+},
+{
+"value": "Ascension Seton Cedar Park",
+"city": "Cedar Park",
+"state": "TX",
+"rows": 3
+},
+{
+"value": "Ascension Seton Cedar Park Medical Center",
+"city": "Cedar Park",
+"state": "TX",
+"rows": 3
+},
+{
+"value": "Ascension St. Vincent Evansville Cancer Center",
+"city": "Newburgh",
+"state": "IN",
+"rows": 3
+},
+{
+"value": "Ascension St. Vincent's Aberdeen Primary Care",
+"city": "Fruit Cove",
+"state": "FL",
+"rows": 3
+},
+{
+"value": "Ascension Via Christi Hospital",
+"city": "Wichita",
+"state": "KS",
+"rows": 3
+},
+{
+"value": "Bethlehem Woods",
+"city": "La Grange Park",
+"state": "IL",
+"rows": 3
+},
+{
+"value": "Franklin Medical Office Building",
+"city": "Franklin",
+"state": "WI",
+"rows": 3
+},
+{
+"value": "Lamar Building",
+"city": "Austin",
+"state": "TX",
+"rows": 3
+},
+{
+"value": "Medical Park Tower",
+"city": "Austin",
+"state": "TX",
+"rows": 3
+},
+{
+"value": "Northwest Hills Surgical Hospital",
+"city": "Austin",
+"state": "TX",
+"rows": 3
+},
+{
+"value": "Remote",
+"city": "Saint Louis",
+"state": "MO",
+"rows": 3
+},
+{
+"value": "Resurrection Village",
+"city": "Chicago",
+"state": "IL",
+"rows": 3
+},
+{
+"value": "St Elizabeth Ann Seton Dental Clinic",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 3
+},
+{
+"value": "St. Vincent Medical Group",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 3
+},
+{
+"value": "St. Vincent's",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 3
+},
+{
+"value": "117th Street Clinic",
+"city": "Wauwatosa",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "AW Glendale Corporate Office",
+"city": "Appleton",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Affinity Medical Group Menasha Clinic",
+"city": "Menasha",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "All Saints Spring Campus",
+"city": "Mount Pleasant",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Ascension Alexian Brothers Rehabilitation",
+"city": "Elk Grove Village",
+"state": "IL",
+"rows": 2
+},
+{
+"value": "Ascension Calumet Clinic",
+"city": "Chilton",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Ascension Center for Mental Health",
+"city": "Arlington Heights",
+"state": "IL",
+"rows": 2
+},
+{
+"value": "Ascension Jane Phillips",
+"city": "Bartlesville",
+"state": "OK",
+"rows": 2
+},
+{
+"value": "Ascension Little Chute Clinic",
+"city": "Little Chute",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Ascension Medical Group",
+"city": "Broken Arrow",
+"state": "OK",
+"rows": 2
+},
+{
+"value": "Ascension Medical Group",
+"city": "Derby",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Ascension Medical Group",
+"city": "Wellington",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Ascension Medical Group Calumet Clinic",
+"city": "Chilton",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Ascension Medical Group, clinic",
+"city": "Kokomo",
+"state": "IN",
+"rows": 2
+},
+{
+"value": "Ascension Medical Group, clinic",
+"city": "North Vernon",
+"state": "IN",
+"rows": 2
+},
+{
+"value": "Ascension Procare",
+"city": "Melrose Park",
+"state": "IL",
+"rows": 2
+},
+{
+"value": "Ascension Sacred Heart Medical Group Cardiology",
+"city": "Pensacola",
+"state": "FL",
+"rows": 2
+},
+{
+"value": "Ascension Sacred Heart Outpatient Imaging",
+"city": "Pensacola",
+"state": "FL",
+"rows": 2
+},
+{
+"value": "Ascension Sacred Heart Primary Care - South Walton",
+"city": "Destin",
+"state": "FL",
+"rows": 2
+},
+{
+"value": "Ascension Sacred Heart Rehab Grande Drive",
+"city": "Pensacola",
+"state": "FL",
+"rows": 2
+},
+{
+"value": "Ascension Saint Agnes Heart Care",
+"city": "Baltimore",
+"state": "MD",
+"rows": 2
+},
+{
+"value": "Ascension Saint Thomas Hospitals",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Ascension Seton Bastrop",
+"city": "Bastrop",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Ascension Seton Health Center - Lamar",
+"city": "Austin",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Ascension St. John Jane Phillips Medical Center",
+"city": "Bartlesville",
+"state": "OK",
+"rows": 2
+},
+{
+"value": "Ascension St. John Jenks",
+"city": "Jenks",
+"state": "OK",
+"rows": 2
+},
+{
+"value": "Ascension St. John Medical Center and community hospitals",
+"city": "Tulsa",
+"state": "OK",
+"rows": 2
+},
+{
+"value": "Ascension St. Vincent",
+"city": "",
+"state": "",
+"rows": 2
+},
+{
+"value": "Ascension St. Vincent",
+"city": "Evansville",
+"state": "IN",
+"rows": 2
+},
+{
+"value": "Ascension St. Vincent Kokomo (Forest Park)",
+"city": "Kokomo",
+"state": "IN",
+"rows": 2
+},
+{
+"value": "Ascension St. Vincent's Primary Care - Nocatee",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 2
+},
+{
+"value": "Ascension St. Vincent's Primary Care - Plantation Plaza",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 2
+},
+{
+"value": "Ascension St. Vincent's Primary Care Fleming Island",
+"city": "Fleming Island",
+"state": "FL",
+"rows": 2
+},
+{
+"value": "Ascension St. Vincent's St. John's Cardiology",
+"city": "Saint Johns",
+"state": "FL",
+"rows": 2
+},
+{
+"value": "Ascension Via Christi Home Medical",
+"city": "Manhattan",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Ascension Via Christi Hospitals",
+"city": "Wichita",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Ascension Via Christi Occupational Health Center",
+"city": "Manhattan",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Ascension Williamson",
+"city": "Round Rock",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Dell Children's Center- North",
+"city": "Austin",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Dell Children's Medical Center North",
+"city": "Austin",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Elmbrook & St. Joseph Hospitals",
+"city": "Brookfield",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Employer Health Clinics",
+"city": "Carmel",
+"state": "IN",
+"rows": 2
+},
+{
+"value": "Foglia Family Foundation",
+"city": "Elk Grove Village",
+"state": "IL",
+"rows": 2
+},
+{
+"value": "Greenfield Clinic",
+"city": "Greenfield",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Harcourt Rd Primary Care",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 2
+},
+{
+"value": "Holy Family Health Center",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Howell Allen Clinic",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Lamar Building at Thirty Second Street",
+"city": "Austin",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Lonestar Soccer Club",
+"city": "Austin",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Mobile Mammography Unit",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Multiple Ascension facilities",
+"city": "Glendale",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Nashville Medical Group",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "North Ave Clinic",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Optimal Imaging Ascension St. Vincent's",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 2
+},
+{
+"value": "Outpatient Pediatric Rehabilitation Clinics",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 2
+},
+{
+"value": "PACE Michigan",
+"city": "Flint",
+"state": "MI",
+"rows": 2
+},
+{
+"value": "Park Valley Ortho",
+"city": "Round Rock",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Primary Care Rutherford",
+"city": "Murfreesboro",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Providence Ortho & Sports",
+"city": "Waco",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Public Safety Medical",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 2
+},
+{
+"value": "River Woods Outpatient Center",
+"city": "Glendale",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Saint Francis Place",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 2
+},
+{
+"value": "Saint Thomas Medical Partners Nashville",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Saint Thomas Medical Partners Rutherford",
+"city": "Murfreesboro",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Saint Thomas Midtown and West",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Saint Thomas Neurology Specialists",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Saint Thomas Radiation Clinic",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Saint Thomas Women's Health",
+"city": "Nashville",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "Seton Administrative Offices",
+"city": "Austin",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Seton Family of Hospitals",
+"city": "Austin",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Seton Highland Lakes Hospital",
+"city": "Burnet",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Seton Lockhart Health Center",
+"city": "Lockhart",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Seton Medical Group",
+"city": "Baltimore",
+"state": "MD",
+"rows": 2
+},
+{
+"value": "St. Louise Family Medical Center",
+"city": "Murfreesboro",
+"state": "TN",
+"rows": 2
+},
+{
+"value": "St. Vincent Medical Group",
+"city": "Kokomo",
+"state": "IN",
+"rows": 2
+},
+{
+"value": "Urgent Care Georgetown Clinic",
+"city": "Austin",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Urgent Care West Lake Clinic",
+"city": "Austin",
+"state": "TX",
+"rows": 2
+},
+{
+"value": "Via Christi Cancer Center",
+"city": "Wichita",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Via Christi Clinics",
+"city": "Wichita",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Via Christi Home Medical",
+"city": "Wichita",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Via Christi, St Peter",
+"city": "DERBY",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Via Christi, St Peters",
+"city": "Derby",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "Wamego Health Center",
+"city": "Wamego",
+"state": "KS",
+"rows": 2
+},
+{
+"value": "2408 4 Mile Road",
+"city": "Caledonia",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "4 Mile Road Clinic",
+"city": "Caledonia",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "AMG",
+"city": "Mount Pleasant",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "AMG Capital and Lily",
+"city": "Brookfield",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "AMG Capital and Lily Clinic",
+"city": "Brookfield",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "AMG Epworth Crossing",
+"city": "Newburgh",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "AMG Gateway Health Center",
+"city": "West Allis",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "AMG MDVIP Carmel Primary Care",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "AMG Pewaukee Clinic",
+"city": "Pewaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "AMG Providence CHF Clinic",
+"city": "Waco",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "AMG Providence Lung Clinic",
+"city": "Waco",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "AMG Providence Pain Management Clinic",
+"city": "Waco",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "AMG Providence Urology",
+"city": "Waco",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "AMG Washington Avenue",
+"city": "Mount Pleasant",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "ASTMP RHC - DeKalb",
+"city": "Cookeville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Addiction Behavioral Health Services",
+"city": "Broadview",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Alexian Village Valley Residence",
+"city": "Chattanooga",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "All Saints Cancer Center",
+"city": "Mount Pleasant",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "All Saints Family Care Center",
+"city": "Glendale",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "All Saints Racine Spring St. Campus",
+"city": "Mount Pleasant",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ambulatory Center",
+"city": "Wauwatosa",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension",
+"city": "Elk Grove Village",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Addiction Services",
+"city": "Broadview",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Alexian Behavioral Health",
+"city": "Hoffman Estates",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Alexian Bonaventure House",
+"city": "Chicago",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Alexian Brothers Hospice",
+"city": "Elk Grove Village",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Alexian Brothers Medical Plaza",
+"city": "Hoffman Estates",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Alexian Outpatient Center",
+"city": "Schaumburg",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension All Saints Spring Campus",
+"city": "Mount Pleasant",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Bonaventure House",
+"city": "Chicago",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Child Development Center",
+"city": "Broadview",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Columbia St. Mary's Hospital / Prospect Medical Commons",
+"city": "MILWAUKEE",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Columbia St. Mary's Hospital / Prospect Medical Commons",
+"city": "Mount Pleasant",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Columbia St. Mary's Hospital or Elmbrook Memorial",
+"city": "MILWAUKEE",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension DePaul Community Health Center",
+"city": "New Orleans",
+"state": "LA",
+"rows": 1
+},
+{
+"value": "Ascension Foglia Family Foundation Residential Treatment Center",
+"city": "Hoffman Estates",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Franklin and St. Francis Hospitals",
+"city": "Franklin",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Greenville Family Practice",
+"city": "Greenville",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Health Ministry Service Center",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Home Health",
+"city": "Elk Grove Village",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Indianapolis and Ascension Heart Center",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Koeller Street Clinic",
+"city": "Oshkosh",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Little Chute Clinic",
+"city": "Chilton",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Living - PACE",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Ascension Living PACE Michigan",
+"city": "Flint",
+"state": "MI",
+"rows": 1
+},
+{
+"value": "Ascension Madison Street Clinic",
+"city": "Appleton",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Medical Center",
+"city": "Tulsa",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Ascension Medical Clinic",
+"city": "MIRAMAR BEACH",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Medical Clinic",
+"city": "Santa Rosa Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group",
+"city": "Bixby",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group",
+"city": "Claremore",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group",
+"city": "Elk Grove Village",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group",
+"city": "Freeport",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group",
+"city": "Jenks",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group",
+"city": "Owasso",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group",
+"city": "Sand Springs",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Cancer Center",
+"city": "Newburgh",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Clinic",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Clinic",
+"city": "Kokomo",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Clinic",
+"city": "Noblesville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Clinic",
+"city": "North Vernon",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Clinic",
+"city": "Wabash",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Clinic",
+"city": "Westfield",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Fernandina Beach Cardiology",
+"city": "Fernandina Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Greenville Clinic",
+"city": "Greenville",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Koeller Street Clinic",
+"city": "Oshkosh",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Ninth Avenue Clinic",
+"city": "Oshkosh",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Providence Family Medicine at Woodway",
+"city": "Waco",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Salisbury Building",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Trinity Building",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Unite Here Health",
+"city": "Chicago",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Via Christi - 1515 S. Clifton Ave.",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group Via Christi on Founders' Circle - Gastroenterology",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group, Clinic",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group, Heart Care",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group, clinic,",
+"city": "Anderson",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension Medical Group, clinic, Cardiac Heart Center",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension NE Wisconsin - Midway Place",
+"city": "Menasha",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Neenah Main Street Clinic",
+"city": "Neenah",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Ninth Avenue Clinic",
+"city": "Oshkosh",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension ProCare Center",
+"city": "Broadview",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Procare Center",
+"city": "Melrose Park",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Richmond Clinic",
+"city": "Appleton",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Richmond Clinic",
+"city": "Glendale",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Richmond Street",
+"city": "Appleton",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Riverside",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart",
+"city": "Inlet Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart - Florida",
+"city": "Saint Louis",
+"state": "MO",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Bay FSED",
+"city": "Panama City Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Cancer Center",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Emerald Coast - Specialty clinic",
+"city": "Miramar Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Gulf - Women's Center",
+"city": "Port Saint Joe",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Cardiology Group",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Clinic",
+"city": "Pace",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Clinic",
+"city": "Panama City",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Clinic",
+"city": "Wewahitchka",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Group",
+"city": "Panama City Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Group",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Group",
+"city": "Santa Rosa Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Group - Airport Medical Park",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Group - Outpatient Therapy Services",
+"city": "Panama City Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Group Milestone",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Medical Oncology Group",
+"city": "Lynn Haven",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Outpatient Imaging",
+"city": "Gulf Breeze",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Panama City",
+"city": "Panama City",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Primary Care - Panama City Beach",
+"city": "Panama City Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Primary Care - The Market Shops",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Primary Care - The Market Shops",
+"city": "Santa Rosa Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Rehab Gulf Breeze",
+"city": "Gulf Breeze",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Rehab Panama City Beach",
+"city": "Panama City Beach",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Rehab Pensacola",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Rehab Perdido",
+"city": "Cantonment",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Sacred Heart Rehabilitation - Tiger Point",
+"city": "Gulf Breeze",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Saint Agnes Colorectal Surgery",
+"city": "Columbia",
+"state": "MD",
+"rows": 1
+},
+{
+"value": "Ascension Saint Agnes Hospital Diabetes Care",
+"city": "Baltimore",
+"state": "MD",
+"rows": 1
+},
+{
+"value": "Ascension Saint Agnes Orthopedic Surgery",
+"city": "Baltimore",
+"state": "MD",
+"rows": 1
+},
+{
+"value": "Ascension Saint Agnes Pulmonary Care",
+"city": "Baltimore",
+"state": "MD",
+"rows": 1
+},
+{
+"value": "Ascension Saint Joseph",
+"city": "Hoffman Estates",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Health",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Heart",
+"city": "Columbia",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Heart",
+"city": "Lebanon",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Heart",
+"city": "Manchester",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Heart - Clarksville",
+"city": "Clarksville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Hospital West",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Medical Group Clinics",
+"city": "Cookeville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Medical Partners",
+"city": "Sparta",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Medical Partners 20th Avenue",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Medical Partners Clinics",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Medical Partners, 20th Avenue",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Midtown and West Hospitals",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Midtown of work site",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Rutherford Westlawn",
+"city": "Murfreesboro",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas Three Rivers Primary Care",
+"city": "Waverly",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Saint Thomas | Multiple Facilities",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Ascension Seton",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Ascension Seton Cedar Park",
+"city": "Round Rock",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Ascension Seton Cedar Park Medical Plaza",
+"city": "Cedar Park",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Ascension Seton Cedar Park Medical Plaza",
+"city": "Saint Louis",
+"state": "MO",
+"rows": 1
+},
+{
+"value": "Ascension Seton Cove/Hybrid",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Ascension Seton Imaging Center",
+"city": "Baltimore",
+"state": "MD",
+"rows": 1
+},
+{
+"value": "Ascension Seton- Cedar Park Hospital",
+"city": "Cedar Park",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Ascension St Elizabeth Hospital Cancer Center",
+"city": "Appleton",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension St Vincent Evansville Children Center",
+"city": "EVANSVILLE",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St Vincent Riverside Hospital",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. John Jane Phillips and Imaging Center",
+"city": "Bartlesville",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Ascension St. John Medical Center and community hospitals",
+"city": "Sapulpa",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Ascension St. John Medical Center, Ascension St. John Owasso, Ascension St. John Broken Arrow, Jane Phillips Medical Center and Ascension St. John Sapulpa",
+"city": "",
+"state": "",
+"rows": 1
+},
+{
+"value": "Ascension St. Johns",
+"city": "Saint Johns",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Mary's",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension St. Mary's Milwaukee",
+"city": "MILWAUKEE",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent",
+"city": "Noblesville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Cancer Center",
+"city": "Newburgh",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Evansville Colorectal Surgery",
+"city": "Evansville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Evansville Internal Medicine Residency Clinic",
+"city": "Evansville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Evansville Primary Care",
+"city": "Boonville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Evansville Primary Care",
+"city": "Newburgh",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Evansville Women's Health",
+"city": "Evansville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Hospital - Primary Care Center",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Hospital for Women and Children",
+"city": "Evansville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Indianapolis (86th Street)",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Primary Care",
+"city": "Newburgh",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Riverside",
+"city": "JACKSONVILLE",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent Winchester",
+"city": "Winchester",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Cardiology Brunswick",
+"city": "Brunswick",
+"state": "GA",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Coastal Cardiology",
+"city": "Brunswick",
+"state": "GA",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Evansville or Indianapolis Hospital",
+"city": "Evansville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Freestanding ED",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Health Center Arlington",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Health System",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Joe Adams Building",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Park Ave Building",
+"city": "Orange Park",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Primary Care - Arlington",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Primary Care - Cobblestone",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Primary Care - Lake Asbury",
+"city": "Green Cove Springs",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Primary Care - Northpoint",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Primary Care - Park Avenue",
+"city": "Orange Park",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Primary Care - Southside",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Primary Care - Westside",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Primary Care Southside",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Riverside Dillion Building",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Riverside Internal Medicine",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Roger Main Building",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Southside Hosptial",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Southside Roger Building",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's Southside Roger Main Building",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension St. Vincent's St. Johns Medical Office Building",
+"city": "Saint Johns",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Urgent Care Clinics",
+"city": "JACKSONVILLE",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Urgent Care Clinics",
+"city": "Jacksonville",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Ascension Via Christi",
+"city": "WICHITA",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Ascension Via Christi - Wichita",
+"city": "WICHITA",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Ascension Via Christi St. Francis, St. Joseph, and St. Teresa",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Ascension Via Christi St. Peter.",
+"city": "DERBY",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Ascension Via Christi Wamego",
+"city": "Manhattan",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Ascension Wisconsin Corporate Office",
+"city": "Glendale",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Wisconsin Hospitals",
+"city": "Glendale",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Ascension Womens Health",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Ascension, St. Vincent Carmel Hospital",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Bayview Family Health Center",
+"city": "WAUWATOSA",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Carmel Urgent Care",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Cedarburg Clinic",
+"city": "Cedarburg",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Center for Healthy Aging",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Close to Ascension St. Vincent's Southside",
+"city": "JACKSONVILLE",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Columbia Saint Mary's",
+"city": "Franklin",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Columbia St. Mary's",
+"city": "Glendale",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Columbia St. Mary's Family Health Center",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Columbia St. Mary's Hospital Milwaukee Campus",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Columbia St. Mary's Hospital and Elmbrook Hospital",
+"city": "Brookfield",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Columbia St. Mary's Hospital, Franklin Hospital and Elmbrook Hospital",
+"city": "Brookfield",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Columbia St. Mary's, St. Joseph Hospital, St. Francis Hospital",
+"city": "MILWAUKEE",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Dell Children's Center North",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Dell Children's Center- North",
+"city": "Bastrop",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Dell Children's Medical Center & Specialty Pavilion",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Dell Children's Medical Center - North",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Elmbrook Medical Arts Center",
+"city": "Brookfield",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Family Health Center West",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Franklin Medical office Building",
+"city": "Franklin",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Gateway Clinic",
+"city": "West Allis",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Georgetown Urgent Care",
+"city": "Georgetown",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Glendale Office",
+"city": "Glendale",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Grafton Clinic",
+"city": "Grafton",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Greensburg Honda Occupational and Employee Health",
+"city": "Greensburg",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Health Transformation Building",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Health Transformation Building and Far West Clinic",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Heather Glen",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Henry Ford Providence Novi Hospital",
+"city": "Novi",
+"state": "MI",
+"rows": 1
+},
+{
+"value": "Highland Clinic",
+"city": "Mequon",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Howell Allen Neurosurgery",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Indianapolis Primary Care",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Inpatient Rehabilitation - 5192 Bayou Blvd",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Joshua Max Simon Primary Care Center - Internal Medicine Clinic",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "K+Stat Urgent Care",
+"city": "Manhattan",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Kohls Wellness Center",
+"city": "Menomonee Falls",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Lamar Office Building",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Laundry Building",
+"city": "Wauwatosa",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Live at Home - Chattanooga",
+"city": "Chattanooga",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Londonderry Speciality Clinics",
+"city": "Waco",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Lucas Family Brain and Spine",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Lucas Family Brain and Spine Center",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "McMinnville OBGYN",
+"city": "McMinnville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Meadowview Clinic",
+"city": "Mequon",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Menasha Midway",
+"city": "Menasha",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Michigan Road Walk-In Clinic and Hazel Dell Immediate Care",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Midway Clinic",
+"city": "Menasha",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care facilities based on need",
+"city": "AUSTIN",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care facilities based on need",
+"city": "JACKSONVILLE",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care facilities based on need",
+"city": "MEQUON",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care facilities based on need",
+"city": "MILWAUKEE",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care facilities based on need",
+"city": "TULSA",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care facilities based on need",
+"city": "WACO",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care facilities based on need",
+"city": "WICHITA",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care hospitals",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care hospitals",
+"city": "Elk Grove Village",
+"state": "IL",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care hospitals",
+"city": "WICHITA",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care hospitals",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Multiple Ascension acute care hospitals based on need",
+"city": "INDIANAPOLIS",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Multiple Ascension facilities based on need",
+"city": "TULSA",
+"state": "OK",
+"rows": 1
+},
+{
+"value": "Multiple Ascension facilities based on needs",
+"city": "PENSACOLA",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Multiple Hospitals",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Multiple facilities available based on needs",
+"city": "MILWAUKEE",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Nashville GI",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "North / Central Ascension Imaging Clinics",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "OBGYN North Tower",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "OBGYN Urogynecology",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Oak Creek Franklin School Clinic",
+"city": "Oak Creek",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Optimal Imaging Ascension St. Vincent's",
+"city": "Saint Johns",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "PACE Michigan",
+"city": "Saint Louis",
+"state": "MO",
+"rows": 1
+},
+{
+"value": "Partial Remote | Ascension St Vincent- Indianapolis",
+"city": "INDIANAPOLIS",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Partially remote",
+"city": "Saint Louis",
+"state": "MO",
+"rows": 1
+},
+{
+"value": "Pediatric Rehabilitation Clinic",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Pediatric Rehabilitation Clinic",
+"city": "Fishers",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Peds Acute Care",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Primary Care",
+"city": "West Lake Hills",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Providence Farmington Hills",
+"city": "Farmington Hills",
+"state": "MI",
+"rows": 1
+},
+{
+"value": "Providence Hospital",
+"city": "Washington",
+"state": "DC",
+"rows": 1
+},
+{
+"value": "Providence Place Primary Care",
+"city": "Mount Juliet",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Racine Coalition EBC",
+"city": "Racine",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Rawson outpatient Clinic",
+"city": "Franklin",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Rehab Hospital",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Remote",
+"city": "Glendale",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Remote",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Remote with ability to travel to sites within the Wisconsin market",
+"city": "MILWAUKEE",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Rural Health Clinic",
+"city": "Centerville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Rural Health Clinic",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Sacred Heart Bay Medical (Panama City) and St. Vincent's Riverside (Jacksonville)",
+"city": "PANAMA CITY",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Saint Elizabeth Women's Health",
+"city": "Murfreesboro",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Brentwood Primary Care",
+"city": "Brentwood",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Cardiovascular Surgery",
+"city": "Murfreesboro",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Health",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Heart",
+"city": "Columbia",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Heart",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Heart Columbia",
+"city": "Columbia",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Heart West & Midtown",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Medical Partners",
+"city": "Brentwood",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Medical Partners",
+"city": "Hendersonville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Medical Partners",
+"city": "Murfreesboro",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Medical Partners Antioch",
+"city": "Antioch",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Medical Partners Bellevue",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Medical Partners Franklin Aspen Grove",
+"city": "Franklin",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Medical Partners Midtown and Saint Thomas Heart",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Midtown and Rutherford",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Midtown, River Park, Rutherford, West",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Saint Thomas Sleep Specialists Midtown",
+"city": "Nashville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Seaton Administrative Offices",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Seton Administrative Offices",
+"city": "Round Rock",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Seton Bertram Health Center",
+"city": "Bertram",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Seton Cedar Park Medical Center",
+"city": "Cedar Park",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Seton Dental Clinic",
+"city": "MILWAUKEE",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Seton McCarthy Community Health Center",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Seton Medical Group",
+"city": "Ellicott City",
+"state": "MD",
+"rows": 1
+},
+{
+"value": "Seton Williamson Med Plaza I",
+"city": "Round Rock",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Shorewood Clinic",
+"city": "Shorewood",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Six Ascension Acute Care Hospitals",
+"city": "Austin",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Spring Street",
+"city": "Mount Pleasant",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "St Mary's Medical Center of Evansville",
+"city": "Evansville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St Vincent Health Corporate Office",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St Vincent Sports Performance",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Elizabeth & Mercy Hospitals",
+"city": "Appleton",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "St. Elizabeth Ann Seton Dental Clinic",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "St. Elizabeth and Mercy Hospitals",
+"city": "Appleton",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "St. Elizabeth's Hospital and Midway outpatient clinic",
+"city": "Appleton",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "St. Francis Hospital and Franklin Hospital",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "St. Joseph Physician Office Bld",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "St. Vincent Hospital",
+"city": "Avon",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Vincent Hospital & St. Vincent Heart Center",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Vincent Hospital and Health Care Center",
+"city": "Zionsville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Vincent Medical Group",
+"city": "Fishers",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Vincent Medical Group Harcourt",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Vincent Pediatric Therapy Centers",
+"city": "Fishers",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Vincent Pediatric Therapy Centers",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Vincent Rehabilitation Therapy Center and Breast Center",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Vincent Tri-State Clinics",
+"city": "Evansville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "St. Vincent Warrick Hospital; supporting 6 surrounding counties",
+"city": "Boonville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Sussex Clinic",
+"city": "Sussex",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "The Studer Family Children's Hospital at",
+"city": "Pensacola",
+"state": "FL",
+"rows": 1
+},
+{
+"value": "Tri State Anchor Bld",
+"city": "Evansville",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "UConn Health",
+"city": "Saint Louis",
+"state": "MO",
+"rows": 1
+},
+{
+"value": "Union Grove Clinic",
+"city": "Union Grove",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "VC Hospital St Francis",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Various Clinics",
+"city": "Centerville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Various Clinics",
+"city": "McMinnville",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Via Christi Home Infusion",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi Hospital - St Joseph",
+"city": "WICHITA",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi Hospital, St. Teresa",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi Hospitals",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi Murdock Clinic",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi St Peter Hospital",
+"city": "DERBY",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi St. Francis and flexibility to float to other radiology locations",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi St. Joseph, may float to Murdock Clinic, St. Teresa Clinic, or Founders Circle Clinic",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi St. Peter",
+"city": "DERBY",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi Village Manhattan",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi Wamego",
+"city": "Wamego",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Via Christi, St Peter",
+"city": "Derby",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Wamego Health Center - Emergency Department",
+"city": "Wamego",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Washington Township School System Crooked Creek Elementary",
+"city": "Indianapolis",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Water Tower Medical",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Water Tower Medical Commons (Columbia Saint Mary's Milwaukee)",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Waterbruy Hospital",
+"city": "Waterbury",
+"state": "CT",
+"rows": 1
+},
+{
+"value": "Wauwatosa Ambulatory Center",
+"city": "Brookfield",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Wauwatosa Ambulatory Ctr",
+"city": "Wauwatosa",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Wellness Preventative Care",
+"city": "Carmel",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "West Lake Urgent Care",
+"city": "West Lake Hills",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Westlake Clinic",
+"city": "West Lake Hills",
+"state": "TX",
+"rows": 1
+},
+{
+"value": "Wichita PACE",
+"city": "Wichita",
+"state": "KS",
+"rows": 1
+},
+{
+"value": "Williamson Medical Physicians Building",
+"city": "Franklin",
+"state": "TN",
+"rows": 1
+},
+{
+"value": "Williamsport Primary Care",
+"city": "Williamsport",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Winchester Primary Care",
+"city": "Winchester",
+"state": "IN",
+"rows": 1
+},
+{
+"value": "Womens Hospital Columbia Saint Mary's Hospital",
+"city": "Milwaukee",
+"state": "WI",
+"rows": 1
+},
+{
+"value": "Zionsville Primary and Specialty Care",
+"city": "Zionsville",
+"state": "IN",
+"rows": 1
+}
+]
+}

@@ -59,6 +59,7 @@ import facilities_fac5c   # 2026-10-29 phase 5 C: ARH / DCH / Shriners / St. Cha
 import facilities_fac6a   # 2026-10-30 phase 6 A: INTEGRIS lead sentences, Prisma body work sites, Broward's CDTC (the nightly shortfall)
 import facilities_fac5_review   # 2026-10-30 release 5 review A: Union Hospital Regional, Rivers Health (town table), Children's National RSC, Billings Clinic affiliates; system-office and cross-site roles keep the label
 import facilities_fac6_short_b   # 2026-10-30 phase 6 B: TMC departments, Luminis units, UC Health / Loma Linda Oracle locations, LifeBridge / Legacy / TCH body cues, TCH + Mosaic town tables, Health First codes
+import facilities_fac7_variants   # 2026-10-30 phase 7 (variants): names that stand for the system but are not its label: placeholders (CHRISTUS "N/A"), Ascension site lines, HSHS + UVA Health town tables (registers in facilities_town)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -33348,6 +33349,14 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     ren = _facility_pass("Facility codes", facilities_oracle_other.rename_jobs, kept)
     if ren:
         logger.info("Facility codes renamed: " + ", ".join(f"{s} {n:,}" for s, n in sorted(ren.items())))
+    # 2026-10-30 (facility scale phase 7, variants): a feed value that names
+    # nothing ("N/A", "Unknown", "-": CHRISTUS's business unit on 232 rows) is
+    # no site; the row takes its system's own label, so every pass below reads
+    # it as a label row (facilities_fac7_variants.normalize_jobs).
+    ph = _facility_pass("Placeholder names", facilities_fac7_variants.normalize_jobs, kept)
+    if ph:
+        logger.info("Placeholder names set to the system label: " + ", ".join(
+            f"{s} {n:,}" for s, n in sorted(ph.items())))
     # 2026-10-15 (wages): the hospital on rows of the systems that file every
     # posting under the system's name (facility_names), before normalize_job
     # so a hospital's town fills a blank or head-office location.
@@ -33521,6 +33530,20 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if f6b:
         logger.info("Phase 6 B: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(f6b.items())))
+    # 2026-10-30 (facility scale phase 7, variants): Ascension rows facility_names
+    # left on "Ascension Health" take the site their "Facility Name:", "Facility:"
+    # or "Hospital:" line names (a hospital facility_names lists under another
+    # spelling, or a named clinic, centre or community of the reviewed table), in
+    # the row's own town; the stored site on nights with no body
+    # (facilities_fac7_variants). HSHS and UVA Health go to the town tables below.
+    f7v = _facility_pass("Phase 7 variants", facilities_fac7_variants.apply_facilities, kept,
+                         canon=lambda s: HOSPITAL_SYSTEM_ALIASES.get(s, s))
+    if f7v:
+        logger.info("Phase 7 variants: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(f7v.items())))
+        if facilities_fac7_variants.UNKNOWN:
+            logger.info("Phase 7 variants, site lines no table names: " + facilities_fac7_variants.unknown_summary())
+            facilities_fac7_variants.UNKNOWN.clear()
     # 2026-10-29 (facility scale, phase 3 B): the Ochsner campus a title names
     # ("... - Jeff Hwy", "- OLGMC"), before the town tables guess from a town.
     hsb = _facility_pass("Hospital systems B (titles)", facilities_hospital_systems_b.apply_before_town, kept)
@@ -33787,6 +33810,9 @@ async def run_all() -> list[dict]:
     # 2026-10-30 (phase 6 A): and INTEGRIS's and Broward's text-named sites
     n_f6a = await asyncio.to_thread(facilities_fac6a.load_known_facilities)
     logger.info(f"Phase 6 A: {n_f6a:,} stored INTEGRIS / Broward rows name a site")
+    # 2026-10-30 (phase 7, variants): and the Ascension sites named from a site line
+    n_f7v = await asyncio.to_thread(facilities_fac7_variants.load_known_facilities)
+    logger.info(f"Phase 7 variants: {n_f7v:,} stored Ascension rows name a site of its table")
     # 2026-10-29 (phase 4, systems A): the sites stored on Northern Light / KU rows
     # and the towns stored on University of Rochester label rows
     n_fsa = await asyncio.to_thread(facilities_systems_a.load_known_facilities)
