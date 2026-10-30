@@ -1,0 +1,117 @@
+{
+ "read": "2026-10-30, prismahealth.wd5 PrismaHealthCorporate CXS job detail",
+ "postings": [
+  {
+   "jobReqId": "R1129774",
+   "title": "Registered Nurse (RN) -Ambulatory, Family Medicine- Colonial, FT, Day",
+   "location": "Columbia, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "3209 Colonial Dr Richland"
+   }
+  },
+  {
+   "jobReqId": "R1129982",
+   "title": "HVAC Mechanic",
+   "location": "Columbia, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Baptist"
+   }
+  },
+  {
+   "jobReqId": "R1140827",
+   "title": "Coordinator & Counselor, Cancer Support Community, Full Time, Days",
+   "location": "Greenville, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Cancer Centers - Faris Road"
+   }
+  },
+  {
+   "jobReqId": "R1142151",
+   "title": "Registered Nurse (RN)-Acute Care, Neonatal Intensive Care Unit, NICU, FT, Nights",
+   "location": "Columbia, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Baptist"
+   }
+  },
+  {
+   "jobReqId": "R1142291",
+   "title": "Certified Medical Assistant . Orthopedics Sports, FT Day",
+   "location": "Columbia, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "300 Palmetto Health Pky Parkri"
+   }
+  },
+  {
+   "jobReqId": "R1142803",
+   "title": "Registered Nurse (RN) Acute Care, Emergency Department, PT, Variable",
+   "location": "Laurens, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Laurens County Medical Campus"
+   }
+  },
+  {
+   "jobReqId": "R1144759",
+   "title": "Recreation Therapist, Senior Care PACE, FT, Days",
+   "location": "Columbia, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Richland Chapin"
+   }
+  },
+  {
+   "jobReqId": "R1144947",
+   "title": "Registered Nurse (RN) - Acute Care, Neuroscience and Stroke, FT, Nights",
+   "location": "Columbia, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Richland"
+   }
+  },
+  {
+   "jobReqId": "R1145000",
+   "title": "Rad Tech, Full-Time, Days",
+   "location": "Greenville, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Patewood Outpt Ctr/Med Offices"
+   }
+  },
+  {
+   "jobReqId": "R1145372",
+   "title": "Certified Medical Assistant (CMA)-Internal Medicine-Saluda Ridge, FT, Day",
+   "location": "Columbia, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "103 Saluda Ridge Ct W Columbia"
+   }
+  },
+  {
+   "jobReqId": "R1145493",
+   "title": "Acute Care Occupational Therapist PRN, Day",
+   "location": "Columbia, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Richland"
+   }
+  },
+  {
+   "jobReqId": "R1146054",
+   "title": "Registered Nurse (RN) - Acute Care, Rehabilitation, FT, Days",
+   "location": "Greenville, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Roger C Peace Rehab Hosp"
+   }
+  },
+  {
+   "jobReqId": "R1146068",
+   "title": "Registered Nurse (RN) - Nurse Resident, Winter 2027, Cardiac Telemetry",
+   "location": "Columbia, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Baptist"
+   }
+  },
+  {
+   "jobReqId": "R1147314",
+   "title": "Registered Nurse (RN) Acute Care, Behavioral Health, PRN, Variable",
+   "location": "Greenville, SC",
+   "jobRequisitionLocation": {
+    "descriptor": "Marshall Pickens Hospital"
+   }
+  }
+ ]
+}

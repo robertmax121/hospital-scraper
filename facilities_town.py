@@ -1421,6 +1421,10 @@ _spec("Loma Linda University Health", [
     _h("Loma Linda University Children's Hospital", "Loma Linda", "CA", "cms 050778"),
     _h("Loma Linda University Medical Center - Murrieta", "Murrieta", "CA", "cms 050770"),
     _h("Loma Linda University Behavioral Medicine Center", "Redlands", "CA", "site"),
+    # 2026-10-30 (phase 6 B): Redlands holds two. The Surgical Hospital (26780 Barton Rd,
+    # Redlands: LLUH's own location pages) is named by its work location
+    # (facilities_fac6_short_b); a Redlands row the posting does not name keeps the label.
+    _h("Loma Linda University Surgical Hospital", "Redlands", "CA", "site (26780 Barton Rd, Redlands; lluh.org)"),
 ], default=("Loma Linda", "CA"))
 
 _spec("Carilion Clinic", [

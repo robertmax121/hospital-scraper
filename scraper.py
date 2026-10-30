@@ -56,7 +56,9 @@ import facilities_trinity_stays   # 2026-10-29 phase 4: Trinity's town, text and
 import facilities_fac5_a   # 2026-10-29 phase 5 A: UTSW / NYU / MaineHealth / UIHC / WVU / St. Luke's / UMass / Novant / Corewell / BILH sites and towns; UMass town table; UCSF work locations
 import facilities_p5_b   # 2026-10-29 phase 5 B: Riverside / Banner / Cleveland Clinic sites; UHS, Logan, Health First towns; Telecare programs, Cincinnati and Akron campuses, MGB, UTHealth (registers in facilities_workday / facilities_town)
 import facilities_fac5c   # 2026-10-29 phase 5 C: ARH / DCH / Shriners / St. Charles / Premier / Hendrick / Sharp ... town tables; title, address and link sites (registers in facilities_town)
+import facilities_fac6a   # 2026-10-30 phase 6 A: INTEGRIS lead sentences, Prisma body work sites, Broward's CDTC (the nightly shortfall)
 import facilities_fac5_review   # 2026-10-30 release 5 review A: Union Hospital Regional, Rivers Health (town table), Children's National RSC, Billings Clinic affiliates; system-office and cross-site roles keep the label
+import facilities_fac6_short_b   # 2026-10-30 phase 6 B: TMC departments, Luminis units, UC Health / Loma Linda Oracle locations, LifeBridge / Legacy / TCH body cues, TCH + Mosaic town tables, Health First codes
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -5800,6 +5802,12 @@ WD_FACILITY_MAP: dict[str, dict[str, tuple[str | None, str, str]]] = {
         "saint annes hospital":               ("Saint Anne's Hospital", "Fall River", "MA"),
         "hawthorn medical associates":        (None, "North Dartmouth", "MA"),
         "593 eddy street":                    (None, "Providence", "RI"),
+        # 2026-10-30 (phase 6 B): two of the campus's sites name their hospital:
+        # Hasbro Children's Hospital, and the Jane Brown building (Rhode Island
+        # Hospital's adult psychiatry units). Other 593 Eddy Street sites (APC,
+        # Davol) keep the label.
+        "593 eddy street - hasbro":           ("Hasbro Children's Hospital", "Providence", "RI"),
+        "593 eddy street - jane brown":       ("Rhode Island Hospital", "Providence", "RI"),
         "pawtucket":                          (None, "Pawtucket", "RI"),
     },
     "Keck Medicine of USC": {
@@ -11791,13 +11799,21 @@ async def scrape_greenhouse(session: aiohttp.ClientSession, system: str, org: st
         for j in data.get("jobs", []):
             loc = j.get("location", {}).get("name", "")
             _city, _state = _greenhouse_city_state(j)
+            # 2026-10-29 (phase 3): BAYADA's department is the service
+            # office ("Millville (MIL) - 52"); facilities_home_health.
+            _gh_name = _fac_hook("BAYADA departments", facilities_home_health.greenhouse_branch, system, j,
+                                 default="") or system
+            if _gh_name == system:
+                # 2026-10-30 (phase 6 B): Luminis' department names its business
+                # unit ("LH Anne Arundel Med Ctr - ICU"): the hospital, in its own town.
+                _gh6 = _fac_hook("Greenhouse departments", facilities_fac6_short_b.greenhouse_facility, system, j,
+                                 _city, _state, default=None)
+                if _gh6:
+                    _gh_name, _city, _state = _gh6
             jobs.append(Job(
                 title=j.get("title", ""),
                 hospital_system=system,
-                # 2026-10-29 (phase 3): BAYADA's department is the service
-                # office ("Millville (MIL) - 52"); facilities_home_health.
-                hospital_name=_fac_hook("BAYADA departments", facilities_home_health.greenhouse_branch, system, j,
-                                        default="") or system,
+                hospital_name=_gh_name,
                 city=_city,
                 state=_state,
                 location=loc,
@@ -17309,6 +17325,21 @@ async def scrape_oracle(session: aiohttp.ClientSession, system: str, org_data: t
                     _site_town = facilities_oracle_other.oracle_site_town(system, j, _facility)
                     if _site_town:
                         _city, _state = _site_town
+                    if _facility == system:
+                        # 2026-10-30 (phase 6 A): INTEGRIS's requisitions carry an
+                        # empty work location; the list's own lead sentence names
+                        # the site ("... at INTEGRIS Health Edmond, in Edmond, OK.")
+                        _lead = _fac_hook("Oracle lead sentences", facilities_fac6a.oracle_lead_facility,
+                                          system, j, _city, _state, default=None)
+                        if _lead:
+                            _facility, _city, _state = _lead
+                    if _facility == system:
+                        # 2026-10-30 (phase 6 B): UC Health's short description "Location:"
+                        # line, Loma Linda's whole work location (facilities_fac6_short_b)
+                        _f6 = _fac_hook("Oracle locations (phase 6 B)", facilities_fac6_short_b.oracle_facility,
+                                        system, j, _city, _state, default=None)
+                        if _f6:
+                            _facility, _city, _state = _f6
                 func = j.get("JobFunction", j.get("jobFunction", ""))
                 if isinstance(func, dict):
                     func = func.get("Name", func.get("name", ""))
@@ -22584,6 +22615,13 @@ def _parse_taleo_be_rss(xml_text: str, system: str, base: str, org: str, cws: st
         desc = t("html-description", ns=True) or t("description")
         dept = t("department", ns=True)
         hospital = next((name for rx, name in TALEO_BE_FACILITY.get(system, ()) if rx.search(dept)), system)
+        if hospital == system:
+            # 2026-10-30 (phase 6 B): TMC's cost-centre department names the hospital
+            # (Tucson Medical Center or TMC Rincon); clinics and offices keep the label.
+            _tb = _fac_hook("TaleoBE departments", facilities_fac6_short_b.taleo_be_facility, system, dept, title,
+                            city, st or default_state, default=None)
+            if _tb:
+                hospital, city, st = _tb
         jobs.append(Job(
             title=title, hospital_system=system, hospital_name=hospital,
             city=city, state=(st or default_state).upper(),
@@ -33391,6 +33429,21 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
             logger.info("Hospital systems A, values no table names: "
                         + facilities_hospital_systems_a.unknown_summary())
             facilities_hospital_systems_a.UNKNOWN.clear()
+    # 2026-10-30 (facility scale phase 6 A, the nightly shortfall): INTEGRIS rows
+    # take the hospital their lead sentence names ("Join our team ... at
+    # INTEGRIS Health Edmond"), Prisma rows the hospital their body's work-site
+    # line names (facilities_leftovers' table, so the stored rows and the detail
+    # re-read agree), Broward's Children's Diagnostic & Treatment Center its own
+    # name; the stored site on nights with no body (facilities_fac6a). Before
+    # the town tables.
+    f6a = _facility_pass("Phase 6 A", facilities_fac6a.apply_facilities, kept,
+                         canon=lambda s: HOSPITAL_SYSTEM_ALIASES.get(s, s))
+    if f6a:
+        logger.info("Phase 6 A: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(f6a.items())))
+        if facilities_fac6a.UNKNOWN:
+            logger.info("Phase 6 A, values no table names: " + facilities_fac6a.unknown_summary())
+            facilities_fac6a.UNKNOWN.clear()
     # 2026-10-29 (facility scale phase 4, systems A): Northern Light's "Position
     # is located:" site (else its entity line, in that hospital's own town), the
     # University of Kansas Health System's work location ("Bell Hospital"), and
@@ -33460,6 +33513,14 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if frv:
         logger.info("Phase 5 review: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(frv.items())))
+    # 2026-10-30 (facility scale, phase 6 B): the site a LifeBridge "About <hospital>"
+    # heading, a Legacy or Texas Children's location phrase names, in that site's
+    # own town, and Health First's feed codes ("HRMC", "CCH", "VH") as the hospitals'
+    # names (facilities_fac6_short_b); before the town tables guess from a town.
+    f6b = _facility_pass("Phase 6 B", facilities_fac6_short_b.apply_facilities, kept)
+    if f6b:
+        logger.info("Phase 6 B: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(f6b.items())))
     # 2026-10-29 (facility scale, phase 3 B): the Ochsner campus a title names
     # ("... - Jeff Hwy", "- OLGMC"), before the town tables guess from a town.
     hsb = _facility_pass("Hospital systems B (titles)", facilities_hospital_systems_b.apply_before_town, kept)
@@ -33723,6 +33784,9 @@ async def run_all() -> list[dict]:
     # 2026-10-29 (facility scale phase 3): the same for Lifepoint's body-named sites
     n_fha = await asyncio.to_thread(facilities_hospital_systems_a.load_known_facilities)
     logger.info(f"Hospital systems A: {n_fha:,} stored Lifepoint rows name a site")
+    # 2026-10-30 (phase 6 A): and INTEGRIS's and Broward's text-named sites
+    n_f6a = await asyncio.to_thread(facilities_fac6a.load_known_facilities)
+    logger.info(f"Phase 6 A: {n_f6a:,} stored INTEGRIS / Broward rows name a site")
     # 2026-10-29 (phase 4, systems A): the sites stored on Northern Light / KU rows
     # and the towns stored on University of Rochester label rows
     n_fsa = await asyncio.to_thread(facilities_systems_a.load_known_facilities)

@@ -1,0 +1,5205 @@
+{
+"read": "2026-10-30, ibnjjb CX_1 recruitingCEJobRequisitions, offsets 0 and 1800, limit 200",
+"items": [
+{
+"Id": "360531",
+"Title": "Laboratory Assistant",
+"PrimaryLocation": "McMinnville, OR, United States",
+"workLocation": [
+{
+"LocationName": "Willamette Valley Medical Center",
+"TownOrCity": "McMinnville",
+"Region2": "OR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361275",
+"Title": "Certified Medical Assistant (CMA) - Specialty Center",
+"PrimaryLocation": "United States",
+"workLocation": [
+{
+"LocationName": "FryeCare Specialty Center",
+"TownOrCity": "Hickory",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361364",
+"Title": "Registered Nurse, Behavioral Health",
+"PrimaryLocation": "Conroe, TX, United States",
+"workLocation": [
+{
+"LocationName": "Woodland Springs",
+"TownOrCity": "Conroe",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361604",
+"Title": "Environmental Services Aide",
+"PrimaryLocation": "Rogers, AR, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehab Hospital NWA",
+"TownOrCity": "Rogers",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361475",
+"Title": "Medical Assistant (MA) - Walk-In Clinic",
+"PrimaryLocation": "Somerset, KY, United States",
+"workLocation": [
+{
+"LocationName": "Lake Cumberland Medical Associates Admin",
+"TownOrCity": "Somerset",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "309521",
+"Title": "Partial Hospitalization Program (PHP) Therapist, Behavioral Health",
+"PrimaryLocation": "Lafayette, IN, United States",
+"workLocation": [
+{
+"LocationName": "Sycamore Springs",
+"TownOrCity": "Lafayette",
+"Region2": "IN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "334327",
+"Title": "Behavioral Health Technician",
+"PrimaryLocation": "Holyoke, MA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Springs BH MSA JV",
+"TownOrCity": "Holyoke",
+"Region2": "MA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "338679",
+"Title": "Inpatient Therapist, PRN",
+"PrimaryLocation": "Dublin, OH, United States",
+"workLocation": [
+{
+"LocationName": "Dublin Springs - MSA",
+"TownOrCity": "Dublin",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "340926",
+"Title": "MRI Technologist",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center - Sunview Imaging",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "342544",
+"Title": "Director of  Plant Operations",
+"PrimaryLocation": "Roaring Spring, PA, United States",
+"workLocation": [
+{
+"LocationName": "Nason Medical Center",
+"TownOrCity": "Roaring Spring",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "344131",
+"Title": "Respiratory Therapist (RRT)",
+"PrimaryLocation": "Wytheville, VA, United States",
+"workLocation": [
+{
+"LocationName": "Wythe County Community Hospital",
+"TownOrCity": "Wytheville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "345236",
+"Title": "Physical Therapy Assistant (PTA), PRN",
+"PrimaryLocation": "Springfield, OH, United States",
+"workLocation": [
+{
+"LocationName": "Community of Springfield - ARU - R293J",
+"TownOrCity": "Springfield",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "347704",
+"Title": "Behavioral Health Technician",
+"PrimaryLocation": "Holyoke, MA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Springs BH MSA JV",
+"TownOrCity": "Holyoke",
+"Region2": "MA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "347774",
+"Title": "Certified Nurse Aide CNA",
+"PrimaryLocation": "Roxboro, NC, United States",
+"workLocation": [
+{
+"LocationName": "Person Memorial Hospital",
+"TownOrCity": "Roxboro",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "348224",
+"Title": "Therapist, Intensive Outpatient IOP",
+"PrimaryLocation": "Lafayette, IN, United States",
+"workLocation": [
+{
+"LocationName": "Sycamore Springs",
+"TownOrCity": "Lafayette",
+"Region2": "IN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "349758",
+"Title": "Assessment Lead, Behavioral Health",
+"PrimaryLocation": "Dublin, OH, United States",
+"workLocation": [
+{
+"LocationName": "Dublin Springs - MSA",
+"TownOrCity": "Dublin",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351050",
+"Title": "Assessment Specialist, Behavioral Health",
+"PrimaryLocation": "McKinney, TX, United States",
+"workLocation": [
+{
+"LocationName": "Collin Springs",
+"TownOrCity": "McKinney",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351100",
+"Title": "Nurse Technician, PRN - Med Surg",
+"PrimaryLocation": "Paris, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Paris Hospital",
+"TownOrCity": "Paris",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351308",
+"Title": "Housekeeper",
+"PrimaryLocation": "Conroe, TX, United States",
+"workLocation": [
+{
+"LocationName": "Woodland Springs",
+"TownOrCity": "Conroe",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352031",
+"Title": "Administrative Assistant",
+"PrimaryLocation": "Sacramento, CA, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - UC Davis Rehab Hospital",
+"TownOrCity": "Sacramento",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352464",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Dallas, TX, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Methodist Rehabilitation Hospital",
+"TownOrCity": "Dallas",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352766",
+"Title": "Registered Nurse (RN) Float Pool",
+"PrimaryLocation": "Maysville, KY, United States",
+"workLocation": [
+{
+"LocationName": "Meadowview Regional Medical Center",
+"TownOrCity": "Maysville",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352742",
+"Title": "Analyst, Quality Registered Nurse NonExempt",
+"PrimaryLocation": "Henderson, NC, United States",
+"workLocation": [
+{
+"LocationName": "Maria Parham Medical Center",
+"TownOrCity": "Henderson",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353358",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Fort Worth, TX, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Texas Rehabilitation Hospital of Fort Worth",
+"TownOrCity": "Fort Worth",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353280",
+"Title": "Housekeeper",
+"PrimaryLocation": "Lynchburg, VA, United States",
+"workLocation": [
+{
+"LocationName": "Centra BH MSA JV",
+"TownOrCity": "Lynchburg",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353310",
+"Title": "Behavioral Health Technician - Forensic  Unit",
+"PrimaryLocation": "Holyoke, MA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Springs BH MSA JV",
+"TownOrCity": "Holyoke",
+"Region2": "MA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353331",
+"Title": "Behavioral Health Technician - Forensic  Unit",
+"PrimaryLocation": "Holyoke, MA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Springs BH MSA JV",
+"TownOrCity": "Holyoke",
+"Region2": "MA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353340",
+"Title": "Behavioral Health Technician - Forensic",
+"PrimaryLocation": "Holyoke, MA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Springs BH MSA JV",
+"TownOrCity": "Holyoke",
+"Region2": "MA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354508",
+"Title": "Behavioral Health Technician",
+"PrimaryLocation": "Holyoke, MA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Springs BH MSA JV",
+"TownOrCity": "Holyoke",
+"Region2": "MA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354588",
+"Title": "Medical Assistant - Blue Mountain Urology",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Western Carolina - Blue Mountain Urology",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354609",
+"Title": "Restorative Aide",
+"PrimaryLocation": "Philadelphia, PA, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - Philadelphia - R5617",
+"TownOrCity": "Philadelphia",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354617",
+"Title": "Inpatient Therapist, PRN",
+"PrimaryLocation": "Columbus, OH, United States",
+"workLocation": [
+{
+"LocationName": "Columbus Springs - MSA",
+"TownOrCity": "Columbus",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354834",
+"Title": "Receptionist",
+"PrimaryLocation": "Raleigh, NC, United States",
+"workLocation": [
+{
+"LocationName": "Triangle Springs",
+"TownOrCity": "Raleigh",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355210",
+"Title": "Medical Billing Specialist",
+"PrimaryLocation": "Missoula, MT, United States",
+"workLocation": [
+{
+"LocationName": "Community Physician Group Admin",
+"TownOrCity": "Missoula",
+"Region2": "MT",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355336",
+"Title": "Receptionist - Neurosurgical Associates",
+"PrimaryLocation": "Somerset, KY, United States",
+"workLocation": [
+{
+"LocationName": "Lake Cumberland - Neurosurgical Associates",
+"TownOrCity": "Somerset",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355349",
+"Title": "Phlebotomist",
+"PrimaryLocation": "Beckley, WV, United States",
+"workLocation": [
+{
+"LocationName": "Raleigh General Hospital",
+"TownOrCity": "Beckley",
+"Region2": "WV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355511",
+"Title": "Behavioral Health Technician",
+"PrimaryLocation": "Avondale, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Copper Springs",
+"TownOrCity": "Avondale",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355517",
+"Title": "Behavioral Health Technician",
+"PrimaryLocation": "Avondale, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Copper Springs",
+"TownOrCity": "Avondale",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355771",
+"Title": "Laboratory Assistant",
+"PrimaryLocation": "Marquette, MI, United States",
+"workLocation": [
+{
+"LocationName": "UP Health System - Marquette General Hospital",
+"TownOrCity": "Marquette",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356357",
+"Title": "Certified Nurse Aide CNA",
+"PrimaryLocation": "Henderson, NC, United States",
+"workLocation": [
+{
+"LocationName": "Maria Parham Medical Center",
+"TownOrCity": "Henderson",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356859",
+"Title": "Certified Nurse Aide (CNA), PRN",
+"PrimaryLocation": "Martinsville, VA, United States",
+"workLocation": [
+{
+"LocationName": "Sovah Health - Martinsville",
+"TownOrCity": "Martinsville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357026",
+"Title": "Partial Hospitalization Program Therapist (PHP) Behavioral Health",
+"PrimaryLocation": "McKinney, TX, United States",
+"workLocation": [
+{
+"LocationName": "Collin Springs",
+"TownOrCity": "McKinney",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357193",
+"Title": "Patient Access Representative",
+"PrimaryLocation": "Kennewick, WA, United States",
+"workLocation": [
+{
+"LocationName": "Trios Hospital",
+"TownOrCity": "Kennewick",
+"Region2": "WA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357228",
+"Title": "Assessment Specialist, Behavioral Health",
+"PrimaryLocation": "United States",
+"workLocation": [
+{
+"LocationName": "Dublin Springs - MSA",
+"TownOrCity": "Dublin",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357504",
+"Title": "Laboratory Assistant",
+"PrimaryLocation": "Gallatin, TN, United States",
+"workLocation": [
+{
+"LocationName": "Highpoint - Sumner Regional Medical Center",
+"TownOrCity": "Gallatin",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357749",
+"Title": "Behavioral Health Technician (BHT), PRN - BH Adult",
+"PrimaryLocation": "Paris, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Paris Hospital",
+"TownOrCity": "Paris",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358059",
+"Title": "Behavioral Health Technician",
+"PrimaryLocation": "Holyoke, MA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Springs BH MSA JV",
+"TownOrCity": "Holyoke",
+"Region2": "MA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358229",
+"Title": "Behavioral Health Technician (BHT)",
+"PrimaryLocation": "Raleigh, NC, United States",
+"workLocation": [
+{
+"LocationName": "Triangle Springs",
+"TownOrCity": "Raleigh",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358386",
+"Title": "Assessment Specialist, Behavioral Health",
+"PrimaryLocation": "Carrollton, TX, United States",
+"workLocation": [
+{
+"LocationName": "Carrollton Springs",
+"TownOrCity": "Carrollton",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358375",
+"Title": "Patient Access Representative",
+"PrimaryLocation": "McMinnville, OR, United States",
+"workLocation": [
+{
+"LocationName": "Willamette Valley Medical Center",
+"TownOrCity": "McMinnville",
+"Region2": "OR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358570",
+"Title": "Housekeeper",
+"PrimaryLocation": "Meyersdale, PA, United States",
+"workLocation": [
+{
+"LocationName": "Conemaugh Meyersdale Medical Center",
+"TownOrCity": "Meyersdale",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358652",
+"Title": "Certified Medical Assistant (CMA) Women's Health",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center - Womens Medical Associates",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358758",
+"Title": "Registered Nurse (RN) ICU",
+"PrimaryLocation": "Richlands, VA, United States",
+"workLocation": [
+{
+"LocationName": "Clinch Valley Medical Center",
+"TownOrCity": "Richlands",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358929",
+"Title": "IT Support Technician",
+"PrimaryLocation": "Elko, NV, United States",
+"workLocation": [
+{
+"LocationName": "Northeastern Nevada Regional Hospital",
+"TownOrCity": "Elko",
+"Region2": "NV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359417",
+"Title": "Chef",
+"PrimaryLocation": "Kennewick, WA, United States",
+"workLocation": [
+{
+"LocationName": "Trios Hospital",
+"TownOrCity": "Kennewick",
+"Region2": "WA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359445",
+"Title": "Host/Hostess",
+"PrimaryLocation": "Kennewick, WA, United States",
+"workLocation": [
+{
+"LocationName": "Trios Hospital",
+"TownOrCity": "Kennewick",
+"Region2": "WA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359544",
+"Title": "Scheduler - Heart & Vascular",
+"PrimaryLocation": "United States",
+"workLocation": [
+{
+"LocationName": "Sovah Health - Danville Heart and Vascular Clinic",
+"TownOrCity": "Danville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359540",
+"Title": "Outpatient Therapist, Behavioral Health",
+"PrimaryLocation": "West Chester, OH, United States",
+"workLocation": [
+{
+"LocationName": "Beckett Springs",
+"TownOrCity": "West Chester",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359687",
+"Title": "Food and Nutritional Services Worker",
+"PrimaryLocation": "Richmond, TX, United States",
+"workLocation": [
+{
+"LocationName": "Westpark Springs",
+"TownOrCity": "Richmond",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359861",
+"Title": "Clinical Liaison (CL) PRN",
+"PrimaryLocation": "Beachwood, OH, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - University Hospitals Rehabilitation Hospital",
+"TownOrCity": "Beachwood",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359950",
+"Title": "RN New Graduate - Women's Services (L&D)",
+"PrimaryLocation": "Missoula, MT, United States",
+"workLocation": [
+{
+"LocationName": "Community Medical Center",
+"TownOrCity": "Missoula",
+"Region2": "MT",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359909",
+"Title": "Supply Chain Coordinator",
+"PrimaryLocation": "Hancock, MI, United States",
+"workLocation": [
+{
+"LocationName": "UP Health System - Portage Hospital",
+"TownOrCity": "Hancock",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360192",
+"Title": "Receptionist",
+"PrimaryLocation": "Lawrenceburg, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN - Lawrenceburg - Orthopedics",
+"TownOrCity": "Lawrenceburg",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360230",
+"Title": "Registered Nurse (RN) PACU",
+"PrimaryLocation": "Somerset, KY, United States",
+"workLocation": [
+{
+"LocationName": "Lake Cumberland Regional Hospital",
+"TownOrCity": "Somerset",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360185",
+"Title": "Scheduler",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360240",
+"Title": "Registered Nurse (RN) - APSI Fluro Suite Charge Nurse",
+"PrimaryLocation": "Missoula, MT, United States",
+"workLocation": [
+{
+"LocationName": "Community Medical Center",
+"TownOrCity": "Missoula",
+"Region2": "MT",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360381",
+"Title": "Registered Nurse (RN) Wound Care-Long Term Care",
+"PrimaryLocation": "Etowah, TN, United States",
+"workLocation": [
+{
+"LocationName": "Starr Regional - Health and Rehab",
+"TownOrCity": "Etowah",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360399",
+"Title": "Registered Nurse, (RN) Emergency Services",
+"PrimaryLocation": "Lebanon, KY, United States",
+"workLocation": [
+{
+"LocationName": "Spring View Hospital",
+"TownOrCity": "Lebanon",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360454",
+"Title": "Patient Care Assistant (PCA) - Med Surg",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360445",
+"Title": "Registered Nurse (RN) - Pre Admin Testing",
+"PrimaryLocation": "Paris, TX, United States",
+"workLocation": [
+{
+"LocationName": "Paris Regional Medical Center",
+"TownOrCity": "Paris",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360521",
+"Title": "Health Unit Coordinator HUC",
+"PrimaryLocation": "Missoula, MT, United States",
+"workLocation": [
+{
+"LocationName": "Community Medical Center",
+"TownOrCity": "Missoula",
+"Region2": "MT",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360660",
+"Title": "Licensed Practical Nurse (LPN), Long Term Care (PRN)",
+"PrimaryLocation": "Etowah, TN, United States",
+"workLocation": [
+{
+"LocationName": "Starr Regional - Health and Rehab",
+"TownOrCity": "Etowah",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360611",
+"Title": "Blood Bank Technician",
+"PrimaryLocation": "Escanaba, MI, United States",
+"workLocation": [
+{
+"LocationName": "UP Health System - Marquette General Hospital",
+"TownOrCity": "Marquette",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360659",
+"Title": "Phlebotomist",
+"PrimaryLocation": "Hancock, MI, United States",
+"workLocation": [
+{
+"LocationName": "UP Health System - Portage Hospital",
+"TownOrCity": "Hancock",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360608",
+"Title": "Certified Medical Assistant (CMA) - Women's Health",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center - Womens Medical Associates",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360630",
+"Title": "Certified Medical Assistant (CMA) Family HealthCare Solano",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center - Family HealthCare Solano",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360657",
+"Title": "Certified Nurse Aide (CNA) - Med Surg",
+"PrimaryLocation": "Maysville, KY, United States",
+"workLocation": [
+{
+"LocationName": "Meadowview Regional Medical Center",
+"TownOrCity": "Maysville",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360742",
+"Title": "Environmental Services Aide",
+"PrimaryLocation": "White Hall, AR, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Jefferson Regional Specialty Hosp White Hall",
+"TownOrCity": "White Hall",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360697",
+"Title": "Receptionist",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center - Ear Nose Throat Institute",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360836",
+"Title": "Specialist, Clinical Pharmacy NonExempt",
+"PrimaryLocation": "Wilson, NC, United States",
+"workLocation": [
+{
+"LocationName": "Wilson Medical Center",
+"TownOrCity": "Wilson",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360781",
+"Title": "Assessment Specialist, Behavioral Health",
+"PrimaryLocation": "United States",
+"workLocation": [
+{
+"LocationName": "Dublin Springs - MSA",
+"TownOrCity": "Dublin",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360815",
+"Title": "Licensed Practical Nurse (LPN) Clinic",
+"PrimaryLocation": "Etowah, TN, United States",
+"workLocation": [
+{
+"LocationName": "Starr Regional - Timothy J Collins MD",
+"TownOrCity": "Athens",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360872",
+"Title": "Outpatient Therapist, Behavioral Health",
+"PrimaryLocation": "West Chester, OH, United States",
+"workLocation": [
+{
+"LocationName": "Beckett Springs",
+"TownOrCity": "West Chester",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360867",
+"Title": "Surgical Technician - OR",
+"PrimaryLocation": "Mayfield, KY, United States",
+"workLocation": [
+{
+"LocationName": "Jackson Purchase Medical Center",
+"TownOrCity": "Mayfield",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360999",
+"Title": "Certified Nurse Aide CNA",
+"PrimaryLocation": "Rutherfordton, NC, United States",
+"workLocation": [
+{
+"LocationName": "Rutherford Regional Health System",
+"TownOrCity": "Rutherfordton",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361048",
+"Title": "Registered Nurse (RN) - Rehabilitation",
+"PrimaryLocation": "Tacoma, WA, United States",
+"workLocation": [
+{
+"LocationName": "VMFH Rehabilitation Hospital - IRF",
+"TownOrCity": "Tacoma",
+"Region2": "WA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361042",
+"Title": "Registered Nurse (RN) House Supervisor Part-Time",
+"PrimaryLocation": "Marquette, MI, United States",
+"workLocation": [
+{
+"LocationName": "UP Health System - Marquette General Hospital",
+"TownOrCity": "Marquette",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361049",
+"Title": "Registered Nurse (RN) - Rehabilitation",
+"PrimaryLocation": "Tacoma, WA, United States",
+"workLocation": [
+{
+"LocationName": "VMFH Rehabilitation Hospital - IRF",
+"TownOrCity": "Tacoma",
+"Region2": "WA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361083",
+"Title": "Speech Pathologist (SLP)",
+"PrimaryLocation": "Green Cove Springs, FL, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - North Florida - ARU - R601K",
+"TownOrCity": "Green Cove Springs",
+"Region2": "FL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361085",
+"Title": "Certified Medical Assistant Family Medicine",
+"PrimaryLocation": "Lawrenceburg, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN - Lawrenceburg - Admin",
+"TownOrCity": "Lawrenceburg",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361061",
+"Title": "Licensed Practical Nurse (LPN)",
+"PrimaryLocation": "Maysville, KY, United States",
+"workLocation": [
+{
+"LocationName": "Meadowview Regional Medical Center",
+"TownOrCity": "Maysville",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361115",
+"Title": "Clinic Coordinator",
+"PrimaryLocation": "Georgetown, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint - Georgetown Ear Nose & Throat",
+"TownOrCity": "Georgetown",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361200",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Bridgeton, NJ, United States",
+"workLocation": [
+{
+"LocationName": "Inspira Health Center - Bridgeton - OP - R328J",
+"TownOrCity": "Bridgeton",
+"Region2": "NJ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361191",
+"Title": "Part-time Registered Nurse (RN) Behavioral Health",
+"PrimaryLocation": "Plano, TX, United States",
+"workLocation": [
+{
+"LocationName": "Carrollton Springs Changes - Plano",
+"TownOrCity": "Plano",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361208",
+"Title": "Speech Language Pathologist (SLP), PRN",
+"PrimaryLocation": "Pascagoula, MS, United States",
+"workLocation": [
+{
+"LocationName": "Singing River Hospital - R301J",
+"TownOrCity": "Pascagoula",
+"Region2": "MS",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361283",
+"Title": "Hyperbaric Technician",
+"PrimaryLocation": "Rutherfordton, NC, United States",
+"workLocation": [
+{
+"LocationName": "Rutherford Regional Health System",
+"TownOrCity": "Rutherfordton",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361266",
+"Title": "Switchboard Operator",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361259",
+"Title": "Registrar",
+"PrimaryLocation": "United States",
+"workLocation": [
+{
+"LocationName": "Wythe County Community Hospital",
+"TownOrCity": "Wytheville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361325",
+"Title": "Registered Nurse (RN) Skilled Nursing",
+"PrimaryLocation": "Roxboro, NC, United States",
+"workLocation": [
+{
+"LocationName": "Person Memorial Hospital",
+"TownOrCity": "Roxboro",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361326",
+"Title": "Registered Nurse (RN) Skilled Nursing",
+"PrimaryLocation": "Roxboro, NC, United States",
+"workLocation": [
+{
+"LocationName": "Person Memorial Hospital",
+"TownOrCity": "Roxboro",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361288",
+"Title": "Registered Nurse (RN) Mother/Baby",
+"PrimaryLocation": "Sylva, NC, United States",
+"workLocation": [
+{
+"LocationName": "Harris Regional Hospital",
+"TownOrCity": "Sylva",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361290",
+"Title": "Registered Nurse (RN) Labor & Delivery",
+"PrimaryLocation": "Sylva, NC, United States",
+"workLocation": [
+{
+"LocationName": "Harris Regional Hospital",
+"TownOrCity": "Sylva",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361323",
+"Title": "Analyst, Clinical Adoption Ambulatory",
+"PrimaryLocation": "Raleigh, NC, United States",
+"workLocation": [
+{
+"LocationName": "Lifepoint Health - Corporate",
+"TownOrCity": "Brentwood",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361447",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Keller, TX, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Texas Rehabilitation Hospital of Keller",
+"TownOrCity": "Keller",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361508",
+"Title": "Physical Therapy Assistant (PTA) PRN",
+"PrimaryLocation": "San Antonio, TX, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - San Antonio - R547G",
+"TownOrCity": "San Antonio",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361568",
+"Title": "Registered Nurse, Rehabilitation",
+"PrimaryLocation": "Louisville, KY, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - UofL Health Frazier Rehab Hosp - Brownsboro",
+"TownOrCity": "Louisville",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361390",
+"Title": "Food and Nutritional Services Worker",
+"PrimaryLocation": "AL, United States",
+"workLocation": [
+{
+"LocationName": "Mesa Springs",
+"TownOrCity": "Fort Worth",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361313",
+"Title": "Patient Care Assistant (PCA), PRN - Rehab",
+"PrimaryLocation": "Muscle Shoals, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Shoals Hospital",
+"TownOrCity": "Muscle Shoals",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361338",
+"Title": "Case Manager (RN) Registered Nurse",
+"PrimaryLocation": "Elko, NV, United States",
+"workLocation": [
+{
+"LocationName": "Northeastern Nevada Regional Hospital",
+"TownOrCity": "Elko",
+"Region2": "NV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361330",
+"Title": "Registered Nurse (RN) Skilled Nursing",
+"PrimaryLocation": "Roxboro, NC, United States",
+"workLocation": [
+{
+"LocationName": "Person Memorial Hospital",
+"TownOrCity": "Roxboro",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361333",
+"Title": "Registered Nurse (RN) Skilled Nursing",
+"PrimaryLocation": "Roxboro, NC, United States",
+"workLocation": [
+{
+"LocationName": "Person Memorial Hospital",
+"TownOrCity": "Roxboro",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361366",
+"Title": "Phlebotomist, Senior",
+"PrimaryLocation": "Beckley, WV, United States",
+"workLocation": [
+{
+"LocationName": "Raleigh General Hospital",
+"TownOrCity": "Beckley",
+"Region2": "WV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361403",
+"Title": "Physical Therapist (PT) - PRN, ARU",
+"PrimaryLocation": "Saint Petersburg, FL, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - Bay Area St. Petersburg - ARU - R602K",
+"TownOrCity": "Saint Petersburg",
+"Region2": "FL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361412",
+"Title": "Manager, Project",
+"PrimaryLocation": "Danville, VA, United States",
+"workLocation": [
+{
+"LocationName": "Gateway Health Alliance",
+"TownOrCity": "Danville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361512",
+"Title": "Charge Nurse (RN) Part Time - Rehabilitation",
+"PrimaryLocation": "Austin, TX, United States",
+"workLocation": [
+{
+"LocationName": "Central Texas Rehabilitation Hospital - IRF",
+"TownOrCity": "Austin",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361441",
+"Title": "Licensed Practical Nurse (LPN) Clinic",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Heart and Vascular Clinic",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361444",
+"Title": "Receptionist",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama OBGYN Helton",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361446",
+"Title": "Medical Assistant (MA) - Heart Health",
+"PrimaryLocation": "Muscle Shoals, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Defoor",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361474",
+"Title": "Cat Scan (CT) Technologist, PRN",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361477",
+"Title": "Radiology Technician, Acute Care",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361551",
+"Title": "Nurse Technician",
+"PrimaryLocation": "Oklahoma City, OK, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehab Hospital OK City South",
+"TownOrCity": "Oklahoma City",
+"Region2": "OK",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361553",
+"Title": "Nurse Technician",
+"PrimaryLocation": "Oklahoma City, OK, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehab Hospital OK City South",
+"TownOrCity": "Oklahoma City",
+"Region2": "OK",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361500",
+"Title": "Patient Care Assistant (PCA) - Med Surg",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361504",
+"Title": "Registered Nurse (RN) PACU",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361544",
+"Title": "X-Ray Technician",
+"PrimaryLocation": "United States",
+"workLocation": [
+{
+"LocationName": "Wilson Immediate Care",
+"TownOrCity": "Wilson",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361594",
+"Title": "Patient Services Representative",
+"PrimaryLocation": "Hancock, MI, United States",
+"workLocation": [
+{
+"LocationName": "Portage Hospital - Physician Practice Admin",
+"TownOrCity": "Hancock",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "361661",
+"Title": "Chief Financial Officer, Physician Services",
+"PrimaryLocation": "Brentwood, TN, United States",
+"workLocation": [
+{
+"LocationName": "Lifepoint Health - Corporate",
+"TownOrCity": "Brentwood",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "318057",
+"Title": "Physical Therapy Assistant (PTA)",
+"PrimaryLocation": "Joliet, IL, United States",
+"workLocation": [
+{
+"LocationName": "Saint Joseph Medical Center MS - R491G",
+"TownOrCity": "Joliet",
+"Region2": "IL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "335724",
+"Title": "Lead Therapist, Behavioral Health",
+"PrimaryLocation": "Fort Worth, TX, United States",
+"workLocation": [
+{
+"LocationName": "Wellbridge - FT Worth",
+"TownOrCity": "Fort Worth",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "339039",
+"Title": "Certified Nurse Aide (CNA) - Mobility Aide",
+"PrimaryLocation": "Somerset, KY, United States",
+"workLocation": [
+{
+"LocationName": "Lake Cumberland Regional Hospital",
+"TownOrCity": "Somerset",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "342273",
+"Title": "Case Manager (CM), Rehabilitation",
+"PrimaryLocation": "Sacramento, CA, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - UC Davis Rehab Hospital",
+"TownOrCity": "Sacramento",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "349450",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Johnstown, PA, United States",
+"workLocation": [
+{
+"LocationName": "Conemaugh Memorial Medical Center - MS - R414J",
+"TownOrCity": "Johnstown",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "350715",
+"Title": "Speech Language Pathologist (SLP) PRN",
+"PrimaryLocation": "El Paso, TX, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Providence Rehab Hospital East",
+"TownOrCity": "El Paso",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351323",
+"Title": "Certified Nurse Aide CNA",
+"PrimaryLocation": "Winchester, TN, United States",
+"workLocation": [
+{
+"LocationName": "Highpoint Health - Winchester with Ascension Saint Thomas",
+"TownOrCity": "Winchester",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351700",
+"Title": "Unit Secretary - Med Surg",
+"PrimaryLocation": "Benton, AR, United States",
+"workLocation": [
+{
+"LocationName": "Saline Memorial Hospital",
+"TownOrCity": "Benton",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352678",
+"Title": "Registered Nurse (RN) Intermediate Medical Care (IMC)",
+"PrimaryLocation": "Hickory, NC, United States",
+"workLocation": [
+{
+"LocationName": "Frye Regional Medical Center",
+"TownOrCity": "Hickory",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353059",
+"Title": "Help for Heroes/PHP Therapist, Behavioral Health",
+"PrimaryLocation": "Fort Worth, TX, United States",
+"workLocation": [
+{
+"LocationName": "Mesa Springs",
+"TownOrCity": "Fort Worth",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353161",
+"Title": "Registered Nurse (RN) Behavioral Health",
+"PrimaryLocation": "West Chester, OH, United States",
+"workLocation": [
+{
+"LocationName": "Beckett Springs",
+"TownOrCity": "West Chester",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353227",
+"Title": "Behavioral Health Technician III (BHT)",
+"PrimaryLocation": "Tampa, FL, United States",
+"workLocation": [
+{
+"LocationName": "Tampa Behavioral BH MSA JV",
+"TownOrCity": "Tampa",
+"Region2": "FL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353407",
+"Title": "Certified Surgical Technician CST",
+"PrimaryLocation": "McMinnville, OR, United States",
+"workLocation": [
+{
+"LocationName": "Willamette Valley Medical Center",
+"TownOrCity": "McMinnville",
+"Region2": "OR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353547",
+"Title": "Registered Nurse (RN) Behavioral Health",
+"PrimaryLocation": "Gilbert, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Copper Springs - East",
+"TownOrCity": "Gilbert",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355228",
+"Title": "Certified Nurse Aide, (CNA) - IMCU",
+"PrimaryLocation": "Hickory, NC, United States",
+"workLocation": [
+{
+"LocationName": "Frye Regional Medical Center",
+"TownOrCity": "Hickory",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355381",
+"Title": "Registrar",
+"PrimaryLocation": "Paris, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Paris Hospital",
+"TownOrCity": "Paris",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355680",
+"Title": "Food Services Worker",
+"PrimaryLocation": "Green Bay, WI, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - HSHS Green Bay",
+"TownOrCity": "Howard",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355800",
+"Title": "Anesthesia Technician - OR",
+"PrimaryLocation": "Hickory, NC, United States",
+"workLocation": [
+{
+"LocationName": "Frye Regional Medical Center",
+"TownOrCity": "Hickory",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355991",
+"Title": "Medical Assistant, Registered - Women's Clinic",
+"PrimaryLocation": "Benton, AR, United States",
+"workLocation": [
+{
+"LocationName": "Saline Womens Clinic",
+"TownOrCity": "Benton",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356174",
+"Title": "Registered Nurse (RN) Critical Care Unit",
+"PrimaryLocation": "Gallatin, TN, United States",
+"workLocation": [
+{
+"LocationName": "Highpoint - Sumner Regional Medical Center",
+"TownOrCity": "Gallatin",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356861",
+"Title": "Monitor Technician",
+"PrimaryLocation": "Martinsville, VA, United States",
+"workLocation": [
+{
+"LocationName": "Sovah Health - Martinsville",
+"TownOrCity": "Martinsville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356960",
+"Title": "Food and Nutritional Services Worker",
+"PrimaryLocation": "Gilbert, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Copper Springs - East",
+"TownOrCity": "Gilbert",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357836",
+"Title": "Nurse Intern PRN",
+"PrimaryLocation": "Pulaski, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN Regional Health System - Pulaski",
+"TownOrCity": "Pulaski",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357979",
+"Title": "Health Information Management Coordinator",
+"PrimaryLocation": "Madison, WI, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - UW Health Rehabilitation Hospital - Madison",
+"TownOrCity": "Madison",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357951",
+"Title": "Medical Assistant, Certified - Millard-Henry Clinic",
+"PrimaryLocation": "Russellville, AR, United States",
+"workLocation": [
+{
+"LocationName": "St Marys Physician Practice Dover",
+"TownOrCity": "Russellville",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358082",
+"Title": "Onboarding Specialist",
+"PrimaryLocation": "TN, United States",
+"workLocation": [
+{
+"LocationName": "Lifepoint Health - Corporate",
+"TownOrCity": "Brentwood",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358075",
+"Title": "Emergency Services Technician",
+"PrimaryLocation": "Martinsville, VA, United States",
+"workLocation": [
+{
+"LocationName": "Sovah Health - Martinsville",
+"TownOrCity": "Martinsville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358165",
+"Title": "Behavioral Health Technician (BHT) II",
+"PrimaryLocation": "Tampa, FL, United States",
+"workLocation": [
+{
+"LocationName": "Tampa Behavioral BH MSA JV",
+"TownOrCity": "Tampa",
+"Region2": "FL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358147",
+"Title": "Registered Nurse (RN), PACU",
+"PrimaryLocation": "Wilson, NC, United States",
+"workLocation": [
+{
+"LocationName": "Wilson Medical Center",
+"TownOrCity": "Wilson",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358410",
+"Title": "Behavioral Health Technician (BHT)",
+"PrimaryLocation": "Tampa, FL, United States",
+"workLocation": [
+{
+"LocationName": "Tampa Behavioral BH MSA JV",
+"TownOrCity": "Tampa",
+"Region2": "FL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "358594",
+"Title": "Diagnostic Imaging Clerk",
+"PrimaryLocation": "Pasco, WA, United States",
+"workLocation": [
+{
+"LocationName": "Lourdes Medical Center",
+"TownOrCity": "Pasco",
+"Region2": "WA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359036",
+"Title": "Therapist",
+"PrimaryLocation": "Oklahoma City, OK, United States",
+"workLocation": [
+{
+"LocationName": "Oakwood Springs",
+"TownOrCity": "Oklahoma City",
+"Region2": "OK",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359362",
+"Title": "Scheduler  - Neurosurgery Office",
+"PrimaryLocation": "United States",
+"workLocation": [
+{
+"LocationName": "CPG - Conemaugh Neurosurgery Associates",
+"TownOrCity": "Johnstown",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359347",
+"Title": "Behavioral Health Technician",
+"PrimaryLocation": "Oklahoma City, OK, United States",
+"workLocation": [
+{
+"LocationName": "Oakwood Springs",
+"TownOrCity": "Oklahoma City",
+"Region2": "OK",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359364",
+"Title": "Clinical Documentation Specialist",
+"PrimaryLocation": "Lake Havasu City, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Havasu Regional Medical Center",
+"TownOrCity": "Lake Havasu City",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359556",
+"Title": "Patient Services Representative - Heart & Vascular",
+"PrimaryLocation": "United States",
+"workLocation": [
+{
+"LocationName": "Sovah Health - Danville Heart Vascular",
+"TownOrCity": "Danville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359569",
+"Title": "Switchboard Operator",
+"PrimaryLocation": "United States",
+"workLocation": [
+{
+"LocationName": "Highpoint - Sumner Regional Medical Center",
+"TownOrCity": "Gallatin",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359937",
+"Title": "Patient Care Technician - Nurse FLOAT",
+"PrimaryLocation": "Winchester, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Winchester Hospital",
+"TownOrCity": "Winchester",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359776",
+"Title": "Behavioral Health Technician",
+"PrimaryLocation": "Russellville, AR, United States",
+"workLocation": [
+{
+"LocationName": "St. Mary's Regional Medical Center",
+"TownOrCity": "Russellville",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359795",
+"Title": "PRN House Supervisor (RN) Behavioral Health",
+"PrimaryLocation": "Conroe, TX, United States",
+"workLocation": [
+{
+"LocationName": "Woodland Springs",
+"TownOrCity": "Conroe",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359972",
+"Title": "Inpatient Therapist, Behavioral Health",
+"PrimaryLocation": "Carrollton, TX, United States",
+"workLocation": [
+{
+"LocationName": "Carrollton Springs",
+"TownOrCity": "Carrollton",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359890",
+"Title": "Certified Nurse Aide CNA",
+"PrimaryLocation": "Wilson, NC, United States",
+"workLocation": [
+{
+"LocationName": "Wilson Medical Center",
+"TownOrCity": "Wilson",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "359963",
+"Title": "Occupational Therapist (OT)",
+"PrimaryLocation": "Johnstown, PA, United States",
+"workLocation": [
+{
+"LocationName": "Conemaugh Memorial Medical Center - MS - R414J",
+"TownOrCity": "Johnstown",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360028",
+"Title": "Medical Assistant - Surgery and Weight Loss Clinic",
+"PrimaryLocation": "Benton, AR, United States",
+"workLocation": [
+{
+"LocationName": "Saline Surgery and Weight Loss Clinic",
+"TownOrCity": "Benton",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360106",
+"Title": "Respiratory Therapist (RT) PRN",
+"PrimaryLocation": "Lawrenceburg, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN Regional Health System - Lawrenceburg",
+"TownOrCity": "Lawrenceburg",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360276",
+"Title": "Pharmacist PRN",
+"PrimaryLocation": "Lawrenceburg, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN Regional Health System - Lawrenceburg",
+"TownOrCity": "Lawrenceburg",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360091",
+"Title": "Registered Nurse (RN) - CCSD",
+"PrimaryLocation": "Beckley, WV, United States",
+"workLocation": [
+{
+"LocationName": "Raleigh General Hospital",
+"TownOrCity": "Beckley",
+"Region2": "WV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360110",
+"Title": "Program Director, Behavioral Health",
+"PrimaryLocation": "McMinnville, OR, United States",
+"workLocation": [
+{
+"LocationName": "Willamette Valley Medical Center - BH MSA",
+"TownOrCity": "McMinnville",
+"Region2": "OR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360262",
+"Title": "Occupational Therapist (OT) PRN",
+"PrimaryLocation": "Athens, TN, United States",
+"workLocation": [
+{
+"LocationName": "Starr Regional Medical Center",
+"TownOrCity": "Athens",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360283",
+"Title": "Certified Medical Assistant (CMA) - ENT",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center - Ear Nose Throat Institute",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360312",
+"Title": "Insurance Specialist",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360272",
+"Title": "Licensed Practical Nurse (LPN) Rehabilitation (Rehab)",
+"PrimaryLocation": "Winchester, TN, United States",
+"workLocation": [
+{
+"LocationName": "Highpoint Health - Winchester with Ascension Saint Thomas",
+"TownOrCity": "Winchester",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360324",
+"Title": "Unit Clerk",
+"PrimaryLocation": "Pulaski, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN Regional Health System - Pulaski",
+"TownOrCity": "Pulaski",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360414",
+"Title": "Licensed Practical Nurse (LPN) Rehabilitation",
+"PrimaryLocation": "Waukesha, WI, United States",
+"workLocation": [
+{
+"LocationName": "Rehabilitation Hospital of Wisconsin - IRF",
+"TownOrCity": "Waukesha",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360387",
+"Title": "Registered Nurse (RN) Endoscopy",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360429",
+"Title": "Registered Nurse (RN) Endoscopy",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360415",
+"Title": "Environmental Services Worker",
+"PrimaryLocation": "Mayfield, KY, United States",
+"workLocation": [
+{
+"LocationName": "Jackson Purchase Medical Center",
+"TownOrCity": "Mayfield",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360560",
+"Title": "Phlebotomist",
+"PrimaryLocation": "Danville, VA, United States",
+"workLocation": [
+{
+"LocationName": "Sovah Health - Danville Pediatrics",
+"TownOrCity": "Danville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360448",
+"Title": "Laboratory Assistant, Acute",
+"PrimaryLocation": "Winchester, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Winchester Hospital",
+"TownOrCity": "Winchester",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360466",
+"Title": "Nurse Extern",
+"PrimaryLocation": "Mayfield, KY, United States",
+"workLocation": [
+{
+"LocationName": "Jackson Purchase Medical Center",
+"TownOrCity": "Mayfield",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360580",
+"Title": "Certified Nurse Aide (CNA) - PCU",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360737",
+"Title": "Senior Analyst, Financial Reimbursement",
+"PrimaryLocation": "Brentwood, TN, United States",
+"workLocation": [
+{
+"LocationName": "Lifepoint Health - Corporate",
+"TownOrCity": "Brentwood",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360637",
+"Title": "Nurse Extern",
+"PrimaryLocation": "Mayfield, KY, United States",
+"workLocation": [
+{
+"LocationName": "Jackson Purchase Medical Center",
+"TownOrCity": "Mayfield",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360639",
+"Title": "Nurse Extern",
+"PrimaryLocation": "Mayfield, KY, United States",
+"workLocation": [
+{
+"LocationName": "Jackson Purchase Medical Center",
+"TownOrCity": "Mayfield",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360641",
+"Title": "Nurse Extern",
+"PrimaryLocation": "Mayfield, KY, United States",
+"workLocation": [
+{
+"LocationName": "Jackson Purchase Medical Center",
+"TownOrCity": "Mayfield",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360642",
+"Title": "Nurse Extern",
+"PrimaryLocation": "Mayfield, KY, United States",
+"workLocation": [
+{
+"LocationName": "Jackson Purchase Medical Center",
+"TownOrCity": "Mayfield",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360788",
+"Title": "Assessment Coordinator PRN",
+"PrimaryLocation": "Georgetown, TX, United States",
+"workLocation": [
+{
+"LocationName": "Rock Springs",
+"TownOrCity": "Georgetown",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360681",
+"Title": "Radiology Technician",
+"PrimaryLocation": "Roaring Spring, PA, United States",
+"workLocation": [
+{
+"LocationName": "Nason Medical Center",
+"TownOrCity": "Roaring Spring",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360734",
+"Title": "Telemetry Technician - PRN",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360860",
+"Title": "Registered Nurse, ICU",
+"PrimaryLocation": "Russellville, AR, United States",
+"workLocation": [
+{
+"LocationName": "St. Mary's Regional Medical Center",
+"TownOrCity": "Russellville",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360774",
+"Title": "Chief Nursing Officer (CNO)",
+"PrimaryLocation": "Vancouver, WA, United States",
+"workLocation": [
+{
+"LocationName": "Rainier Springs",
+"TownOrCity": "Vancouver",
+"Region2": "WA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360759",
+"Title": "Cath Lab Technician",
+"PrimaryLocation": "Rutherfordton, NC, United States",
+"workLocation": [
+{
+"LocationName": "Rutherford Regional Health System",
+"TownOrCity": "Rutherfordton",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "360809",
+"Title": "Patient Access Representative",
+"PrimaryLocation": "Somerset, KY, United States",
+"workLocation": [
+{
+"LocationName": "Lake Cumberland Regional Hospital - Surgical Associates",
+"TownOrCity": "Somerset",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354796",
+"Title": "Registered Nurse (RN) Emergency Services",
+"PrimaryLocation": "Hot Springs, AR, United States",
+"workLocation": [
+{
+"LocationName": "National Park Medical Center",
+"TownOrCity": "Hot Springs National Park",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355307",
+"Title": "Registered Nurse (RN) Behavioral Health - PRN",
+"PrimaryLocation": "Galax, VA, United States",
+"workLocation": [
+{
+"LocationName": "Twin County Regional Hospital",
+"TownOrCity": "Galax",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355637",
+"Title": "Licensed Practical Nurse (LPN) Rehabilitation",
+"PrimaryLocation": "Edwardsville, IL, United States",
+"workLocation": [
+{
+"LocationName": "Anderson Rehabilitation Institute - IRF",
+"TownOrCity": "Edwardsville",
+"Region2": "IL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355787",
+"Title": "Paramedic",
+"PrimaryLocation": "Escanaba, MI, United States",
+"workLocation": [
+{
+"LocationName": "Marquette General Hospital - EMS",
+"TownOrCity": "Marquette",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355833",
+"Title": "Registered Nurse (RN) - Surgery",
+"PrimaryLocation": "Beckley, WV, United States",
+"workLocation": [
+{
+"LocationName": "Raleigh General Hospital",
+"TownOrCity": "Beckley",
+"Region2": "WV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356062",
+"Title": "Health Information Management (HIM) Director",
+"PrimaryLocation": "Richlands, VA, United States",
+"workLocation": [
+{
+"LocationName": "Clinch Valley Medical Center",
+"TownOrCity": "Richlands",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356109",
+"Title": "Cook",
+"PrimaryLocation": "Hancock, MI, United States",
+"workLocation": [
+{
+"LocationName": "Portage Hospital - Portage Pointe",
+"TownOrCity": "Hancock",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356241",
+"Title": "Certified Nurse Aide (CNA)",
+"PrimaryLocation": "Madison, WI, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - UW Health Rehabilitation Hospital - Madison",
+"TownOrCity": "Madison",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356366",
+"Title": "Registered Nurse - RN - Emergency Charge Nurse",
+"PrimaryLocation": "Sierra Vista, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Canyon Vista Medical Center",
+"TownOrCity": "Sierra Vista",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356395",
+"Title": "Specialist, Utilization Review",
+"PrimaryLocation": "Lafayette, IN, United States",
+"workLocation": [
+{
+"LocationName": "Sycamore Springs",
+"TownOrCity": "Lafayette",
+"Region2": "IN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356412",
+"Title": "Registered Nurse (RN) ICU",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356413",
+"Title": "Registered Nurse (RN) ICU",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356414",
+"Title": "Registered Nurse (RN) ICU",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356484",
+"Title": "Maintenance Worker",
+"PrimaryLocation": "Hancock, MI, United States",
+"workLocation": [
+{
+"LocationName": "UP Health System - Portage Hospital",
+"TownOrCity": "Hancock",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356432",
+"Title": "Certified Medical Assistant (CMA) - Clinic Float",
+"PrimaryLocation": "Ottumwa, IA, United States",
+"workLocation": [
+{
+"LocationName": "Ottumwa Regional Physicians Admin",
+"TownOrCity": "Ottumwa",
+"Region2": "IA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356896",
+"Title": "Cat Scan Technician",
+"PrimaryLocation": "Roaring Spring, PA, United States",
+"workLocation": [
+{
+"LocationName": "Nason Medical Center",
+"TownOrCity": "Roaring Spring",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356790",
+"Title": "Assessment Coordinator",
+"PrimaryLocation": "Tucson, AZ, United States",
+"workLocation": [
+{
+"LocationName": "El Dorado Springs",
+"TownOrCity": "Tucson",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356869",
+"Title": "Program Director (PD) Rehabilitation",
+"PrimaryLocation": "Sierra Vista, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Canyon Vista Medical Center - OP - R484J",
+"TownOrCity": "Sierra Vista",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356917",
+"Title": "Registered Nurse (RN) - PACU",
+"PrimaryLocation": "Beckley, WV, United States",
+"workLocation": [
+{
+"LocationName": "Raleigh General Hospital",
+"TownOrCity": "Beckley",
+"Region2": "WV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357147",
+"Title": "Social Worker (LCSW)",
+"PrimaryLocation": "Ashland, KY, United States",
+"workLocation": [
+{
+"LocationName": "UK King's Daughters Medical Center - ARU - R491J",
+"TownOrCity": "Ashland",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357037",
+"Title": "Transcriptionist",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357123",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Farmington, NM, United States",
+"workLocation": [
+{
+"LocationName": "San Juan Regional Rehabilitation Hospital - R584G",
+"TownOrCity": "Farmington",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357124",
+"Title": "Speech-Language Pathologist (SLP)",
+"PrimaryLocation": "Farmington, NM, United States",
+"workLocation": [
+{
+"LocationName": "San Juan Regional Rehabilitation Hospital - R584G",
+"TownOrCity": "Farmington",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357117",
+"Title": "X-Ray Technician",
+"PrimaryLocation": "Lawrenceburg, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN - Lawrenceburg - First Choice Health",
+"TownOrCity": "Lawrenceburg",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357381",
+"Title": "Occupational Therapist (OT), PRN",
+"PrimaryLocation": "Westminster, CA, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - Westminster - R5667",
+"TownOrCity": "Westminster",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357379",
+"Title": "Speech Pathologist (SLP) PRN",
+"PrimaryLocation": "South Miami, FL, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Baptist Health Rehab Hospital - Miami",
+"TownOrCity": "South Miami",
+"Region2": "FL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "344968",
+"Title": "Certified Nurse Aide CNA",
+"PrimaryLocation": "Austin, TX, United States",
+"workLocation": [
+{
+"LocationName": "Central Texas Rehabilitation Hospital - IRF MSA",
+"TownOrCity": "Austin",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "331807",
+"Title": "License Practical Nurse (LPN) - Skilled Nursing & Rehab",
+"PrimaryLocation": "Wilson, NC, United States",
+"workLocation": [
+{
+"LocationName": "Wilson Medical Center - Nursing Care",
+"TownOrCity": "Wilson",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "332409",
+"Title": "Registered Nurse (RN) New Grad Nephrology Oncology",
+"PrimaryLocation": "Hickory, NC, United States",
+"workLocation": [
+{
+"LocationName": "Frye Regional Medical Center",
+"TownOrCity": "Hickory",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "304937",
+"Title": "Physical Therapist (PT) PRN",
+"PrimaryLocation": "Passaic, NJ, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - East New Jersey - R5685",
+"TownOrCity": "Passaic",
+"Region2": "NJ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "328723",
+"Title": "Registered Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Madison, WI, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - UW Health Rehabilitation Hospital - Madison",
+"TownOrCity": "Madison",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "332547",
+"Title": "Charge Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Chesterfield, MO, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehabilitation Hospital St. Louis",
+"TownOrCity": "Chesterfield",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "340894",
+"Title": "Occupational Therapist (OT), PRN",
+"PrimaryLocation": "Glendale, CA, United States",
+"workLocation": [
+{
+"LocationName": "Glendale Memorial Hospital & Health Center - R406G",
+"TownOrCity": "Glendale",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "343347",
+"Title": "Physical Therapy Assistant (PTA) PRN",
+"PrimaryLocation": "Passaic, NJ, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - East New Jersey - R5685",
+"TownOrCity": "Passaic",
+"Region2": "NJ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "343632",
+"Title": "Nurse Technician (NT) - Rehab",
+"PrimaryLocation": "Madison, NJ, United States",
+"workLocation": [
+{
+"LocationName": "Atlantic Rehabilitation Institute - IRF",
+"TownOrCity": "Madison",
+"Region2": "NJ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "343884",
+"Title": "Registered Nurse (RN) Medical-Surgical",
+"PrimaryLocation": "Wytheville, VA, United States",
+"workLocation": [
+{
+"LocationName": "Wythe County Community Hospital",
+"TownOrCity": "Wytheville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "344536",
+"Title": "Paramedic PRN",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "344476",
+"Title": "Registered Nurse, Medical-Surgical/Telemetry",
+"PrimaryLocation": "Sanford, NC, United States",
+"workLocation": [
+{
+"LocationName": "Central Carolina Hospital",
+"TownOrCity": "Sanford",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352955",
+"Title": "Registered Nurse (RN) Behavioral Health",
+"PrimaryLocation": "Holyoke, MA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Springs BH MSA JV",
+"TownOrCity": "Holyoke",
+"Region2": "MA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353419",
+"Title": "Patient Access Representative",
+"PrimaryLocation": "Gallatin, TN, United States",
+"workLocation": [
+{
+"LocationName": "Highpoint - Sumner Regional Medical Center",
+"TownOrCity": "Gallatin",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354801",
+"Title": "Food Service Worker",
+"PrimaryLocation": "Green Bay, WI, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - HSHS Green Bay",
+"TownOrCity": "Howard",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354970",
+"Title": "Cook",
+"PrimaryLocation": "Green Bay, WI, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - HSHS Green Bay",
+"TownOrCity": "Howard",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355061",
+"Title": "Registered Nurse (RN) Emergency Department",
+"PrimaryLocation": "Hickory, NC, United States",
+"workLocation": [
+{
+"LocationName": "Frye Regional Medical Center",
+"TownOrCity": "Hickory",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355063",
+"Title": "Registered Nurse (RN) Emergency Department",
+"PrimaryLocation": "Hickory, NC, United States",
+"workLocation": [
+{
+"LocationName": "Frye Regional Medical Center",
+"TownOrCity": "Hickory",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356175",
+"Title": "Medical Assistant, Certified",
+"PrimaryLocation": "Henderson, NC, United States",
+"workLocation": [
+{
+"LocationName": "Maria Parham Orthopedics",
+"TownOrCity": "Henderson",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356148",
+"Title": "Cat Scan (CT) Technician",
+"PrimaryLocation": "Los Alamos, NM, United States",
+"workLocation": [
+{
+"LocationName": "Los Alamos Medical Center",
+"TownOrCity": "Los Alamos",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356221",
+"Title": "Registered Nurse (RN) House Supervisor",
+"PrimaryLocation": "Lynchburg, VA, United States",
+"workLocation": [
+{
+"LocationName": "Centra BH MSA JV",
+"TownOrCity": "Lynchburg",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356247",
+"Title": "Registered Nurse (RN) PCU/Telemetry",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356376",
+"Title": "Program Director, Speech Language Pathology (SLP)",
+"PrimaryLocation": "AZ, United States",
+"workLocation": [
+{
+"LocationName": "Canyon Vista Medical Center - OP - R484J",
+"TownOrCity": "Sierra Vista",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356456",
+"Title": "Certified Surgical Technician (CST) PRN",
+"PrimaryLocation": "McMinnville, OR, United States",
+"workLocation": [
+{
+"LocationName": "Willamette Valley Medical Center",
+"TownOrCity": "McMinnville",
+"Region2": "OR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356403",
+"Title": "Patient Access Representative",
+"PrimaryLocation": "Hot Springs, AR, United States",
+"workLocation": [
+{
+"LocationName": "National Park Medical Center",
+"TownOrCity": "Hot Springs National Park",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356824",
+"Title": "Licensed Practical Nurse (LPN) Family Practice on the Ridge",
+"PrimaryLocation": "Wytheville, VA, United States",
+"workLocation": [
+{
+"LocationName": "Wythe Physician Practices Family Care Fort Chiswell",
+"TownOrCity": "Wytheville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356909",
+"Title": "Physical Therapy Assistant (PTA), PRN",
+"PrimaryLocation": "St. Joseph, MO, United States",
+"workLocation": [
+{
+"LocationName": "Mosaic Life Care at St. Joseph - Medical Center - ARU-R407J",
+"TownOrCity": "Saint Joseph",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357219",
+"Title": "Registered Nurse (RN) - Charge Nurse",
+"PrimaryLocation": "Apex, NC, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Peak Rehab Hospital",
+"TownOrCity": "Apex",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357062",
+"Title": "Registered Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Springfield, MO, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehabilitation Hospital Springfield",
+"TownOrCity": "Springfield",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357229",
+"Title": "Certified Occupational Therapist Assistant (COTA), PRN",
+"PrimaryLocation": "Gilbert, AZ, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Dignity Health - Gilbert",
+"TownOrCity": "Gilbert",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "357201",
+"Title": "Registered Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Germantown, TN, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Baptist Memorial Rehab Hospital- Germantown",
+"TownOrCity": "Germantown",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "316647",
+"Title": "Radiology Technician, PRN",
+"PrimaryLocation": "Missoula, MT, United States",
+"workLocation": [
+{
+"LocationName": "Community Medical Center",
+"TownOrCity": "Missoula",
+"Region2": "MT",
+"Country": "US"
+}
+]
+},
+{
+"Id": "344745",
+"Title": "Residency Program Coordinator",
+"PrimaryLocation": "Johnstown, PA, United States",
+"workLocation": [
+{
+"LocationName": "Conemaugh Memorial Medical Center",
+"TownOrCity": "Johnstown",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "348855",
+"Title": "Licensed Practical Nurse (LPN) Medical-Surgical (Med Surg)",
+"PrimaryLocation": "Lawrenceburg, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN Regional Health System - Lawrenceburg",
+"TownOrCity": "Lawrenceburg",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "349422",
+"Title": "Supply Chain Technician",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "349745",
+"Title": "Registered Nurse (RN) Behavioral Health",
+"PrimaryLocation": "Columbus, OH, United States",
+"workLocation": [
+{
+"LocationName": "Columbus Springs - MSA",
+"TownOrCity": "Columbus",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351114",
+"Title": "Registered Nurse, ICU",
+"PrimaryLocation": "Sanford, NC, United States",
+"workLocation": [
+{
+"LocationName": "Central Carolina Hospital",
+"TownOrCity": "Sanford",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351993",
+"Title": "Registered Nurse (RN) Behavioral Health",
+"PrimaryLocation": "Dublin, OH, United States",
+"workLocation": [
+{
+"LocationName": "Dublin Springs - MSA",
+"TownOrCity": "Dublin",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353529",
+"Title": "Pharmacist",
+"PrimaryLocation": "Lynchburg, VA, United States",
+"workLocation": [
+{
+"LocationName": "Centra BH MSA JV",
+"TownOrCity": "Lynchburg",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354966",
+"Title": "Registered Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Knoxville, TN, United States",
+"workLocation": [
+{
+"LocationName": "Knoxville Rehabilitation Hospital - IRF",
+"TownOrCity": "Knoxville",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354978",
+"Title": "Accountant",
+"PrimaryLocation": "Athens, TN, United States",
+"workLocation": [
+{
+"LocationName": "Starr Regional Medical Center",
+"TownOrCity": "Athens",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354984",
+"Title": "Certified Medical Assistant (CMA) Cardiology",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center - Cardiac Care",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355676",
+"Title": "Radiology Technician",
+"PrimaryLocation": "Meyersdale, PA, United States",
+"workLocation": [
+{
+"LocationName": "Conemaugh Meyersdale Medical Center",
+"TownOrCity": "Meyersdale",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355713",
+"Title": "Licensed Practical Nurse (LPN)",
+"PrimaryLocation": "South Miami, FL, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Baptist Health Rehab Hospital - Miami",
+"TownOrCity": "South Miami",
+"Region2": "FL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356016",
+"Title": "Certified Nurse Aide (CNA) - Med/Surg PRN",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356188",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Arroyo Grande, CA, United States",
+"workLocation": [
+{
+"LocationName": "Marian Regional Medical Center - R667G",
+"TownOrCity": "Arroyo Grande",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356268",
+"Title": "Director, Plant Operations",
+"PrimaryLocation": "Columbus, OH, United States",
+"workLocation": [
+{
+"LocationName": "Columbus Springs - MSA",
+"TownOrCity": "Columbus",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356345",
+"Title": "Registered Nurse (RN) ICU",
+"PrimaryLocation": "Benton, AR, United States",
+"workLocation": [
+{
+"LocationName": "Saline Memorial Hospital",
+"TownOrCity": "Benton",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356343",
+"Title": "Registered Nurse (RN) - (Step Down/Neuro/Med-Surg)",
+"PrimaryLocation": "Johnstown, PA, United States",
+"workLocation": [
+{
+"LocationName": "Conemaugh Memorial Medical Center",
+"TownOrCity": "Johnstown",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356770",
+"Title": "Counselor, Mental Health, Licensed",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356794",
+"Title": "Social Worker (LCSW) PRN",
+"PrimaryLocation": "Ashland, KY, United States",
+"workLocation": [
+{
+"LocationName": "UK King's Daughters Medical Center - ARU - R491J",
+"TownOrCity": "Ashland",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356789",
+"Title": "Registrar",
+"PrimaryLocation": "Richlands, VA, United States",
+"workLocation": [
+{
+"LocationName": "Clinch Valley Medical Center",
+"TownOrCity": "Richlands",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356965",
+"Title": "Respiratory Therapist (RRT), Inpatient Rehabilitation",
+"PrimaryLocation": "Oak Creek, WI, United States",
+"workLocation": [
+{
+"LocationName": "Oak Creek Rehabilitation Hospital - IRF",
+"TownOrCity": "Oak Creek",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356921",
+"Title": "Registered Nurse (RN) – SICU",
+"PrimaryLocation": "Beckley, WV, United States",
+"workLocation": [
+{
+"LocationName": "Raleigh General Hospital",
+"TownOrCity": "Beckley",
+"Region2": "WV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356986",
+"Title": "Program Director (PD) Acute Rehab Unit",
+"PrimaryLocation": "Round Rock, TX, United States",
+"workLocation": [
+{
+"LocationName": "Scion Health - Round Rock - ARU - R457J",
+"TownOrCity": "Round Rock",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356962",
+"Title": "Maintenance Worker",
+"PrimaryLocation": "Gilbert, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Copper Springs - East",
+"TownOrCity": "Gilbert",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356966",
+"Title": "Respiratory Therapist (RRT) PRN, Inpatient Rehabilitation",
+"PrimaryLocation": "Oak Creek, WI, United States",
+"workLocation": [
+{
+"LocationName": "Oak Creek Rehabilitation Hospital - IRF",
+"TownOrCity": "Oak Creek",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "304563",
+"Title": "Ultrasound Technologist, Acute",
+"PrimaryLocation": "Hot Springs, AR, United States",
+"workLocation": [
+{
+"LocationName": "National Park Medical Center",
+"TownOrCity": "Hot Springs National Park",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "304904",
+"Title": "Physical Therapist (PT), Inpatient Rehabilitation",
+"PrimaryLocation": "Hot Springs, AR, United States",
+"workLocation": [
+{
+"LocationName": "National Park Medical Center - R311J",
+"TownOrCity": "Hot Springs National Park",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "305510",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Havertown, PA, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - Havertown - R5694",
+"TownOrCity": "Havertown",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "308123",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Vineland, NJ, United States",
+"workLocation": [
+{
+"LocationName": "Inspira Health Center - Vineland - OP - R331J",
+"TownOrCity": "Vineland",
+"Region2": "NJ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "318890",
+"Title": "Cath Lab Technologist Acute, PRN",
+"PrimaryLocation": "Benton, AR, United States",
+"workLocation": [
+{
+"LocationName": "Saline Memorial Hospital",
+"TownOrCity": "Benton",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "324633",
+"Title": "Cath Lab Technologist Acute, PRN",
+"PrimaryLocation": "Hot Springs, AR, United States",
+"workLocation": [
+{
+"LocationName": "National Park Medical Center",
+"TownOrCity": "Hot Springs National Park",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "324655",
+"Title": "Physical Therapy Assistant (PTA), Rehabilitation, PRN",
+"PrimaryLocation": "Little Rock, AR, United States",
+"workLocation": [
+{
+"LocationName": "Scion Health - Little Rock - R459J",
+"TownOrCity": "Little Rock",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "327788",
+"Title": "Physical Therapist (PT) Outpatient Rehabilitation, PRN",
+"PrimaryLocation": "Russellville, AR, United States",
+"workLocation": [
+{
+"LocationName": "St. Mary's Regional Medical Center - OP - R598G",
+"TownOrCity": "Russellville",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "328324",
+"Title": "Physical Therapist (PT), MedSurg/Rehab, PRN",
+"PrimaryLocation": "Pine Bluff, AR, United States",
+"workLocation": [
+{
+"LocationName": "Jefferson Regional Medical Center - MS - R278J",
+"TownOrCity": "Pine Bluff",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "333592",
+"Title": "Clinical Liaison (CL) PRN, Acute Rehabilitation",
+"PrimaryLocation": "Hot Springs, AR, United States",
+"workLocation": [
+{
+"LocationName": "National Park Medical Center - R311J",
+"TownOrCity": "Hot Springs National Park",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "335270",
+"Title": "Mammography Technologist, Acute, PRN",
+"PrimaryLocation": "Russellville, AR, United States",
+"workLocation": [
+{
+"LocationName": "St. Mary's Regional Medical Center",
+"TownOrCity": "Russellville",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "340096",
+"Title": "Cat Scan (CT) Technologist, PRN",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center - Sunview Imaging",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "341824",
+"Title": "Physical Therapist (PT), PRN, Inpatient Rehabilitation",
+"PrimaryLocation": "Brownsburg, IN, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Community Rehab Hospital West",
+"TownOrCity": "Brownsburg",
+"Region2": "IN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "343150",
+"Title": "Ultrasound Technologist, Acute, PRN",
+"PrimaryLocation": "Hot Springs, AR, United States",
+"workLocation": [
+{
+"LocationName": "National Park Medical Center",
+"TownOrCity": "Hot Springs National Park",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "344009",
+"Title": "Physical Therapist (PT), Acute Rehabilitation, PRN",
+"PrimaryLocation": "Benton, AR, United States",
+"workLocation": [
+{
+"LocationName": "Saline Memorial Hospital - R347G",
+"TownOrCity": "Benton",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "344421",
+"Title": "Physical Therapist (PT), Inpatient Rehab/Medsurg",
+"PrimaryLocation": "Russellville, AR, United States",
+"workLocation": [
+{
+"LocationName": "St. Mary's Regional Medical Center - MS - R599G",
+"TownOrCity": "Russellville",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "345201",
+"Title": "Registered Nurse (RN) Cardiovascular Operating Room (CVOR) PRN",
+"PrimaryLocation": "Lake Havasu City, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Havasu Regional Medical Center",
+"TownOrCity": "Lake Havasu City",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "345250",
+"Title": "Physical Therapist (PT), Med/Surg, PRN",
+"PrimaryLocation": "Benton, AR, United States",
+"workLocation": [
+{
+"LocationName": "Saline Memorial Hospital - MS - R606K",
+"TownOrCity": "Benton",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "346060",
+"Title": "Radiology Technician, Acute",
+"PrimaryLocation": "Hot Springs, AR, United States",
+"workLocation": [
+{
+"LocationName": "National Park Medical Center",
+"TownOrCity": "Hot Springs National Park",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "346067",
+"Title": "Admissions Recruiter",
+"PrimaryLocation": "Johnstown, PA, United States",
+"workLocation": [
+{
+"LocationName": "Conemaugh Memorial Medical Center",
+"TownOrCity": "Johnstown",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "346036",
+"Title": "Registrar",
+"PrimaryLocation": "Maysville, KY, United States",
+"workLocation": [
+{
+"LocationName": "Meadowview Regional Medical Center",
+"TownOrCity": "Maysville",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "346383",
+"Title": "Surgical Technician - OR",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "347090",
+"Title": "Radiology Technician, Acute",
+"PrimaryLocation": "Benton, AR, United States",
+"workLocation": [
+{
+"LocationName": "Saline Memorial Hospital",
+"TownOrCity": "Benton",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "348328",
+"Title": "Physical Therapist Assistant (PTA), Inpatient Rehabilitation",
+"PrimaryLocation": "Pine Bluff, AR, United States",
+"workLocation": [
+{
+"LocationName": "Jefferson Regional Medical Center - White Hall - R333J",
+"TownOrCity": "Pine Bluff",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "348474",
+"Title": "Registered Nurse (RN) Behavioral Health",
+"PrimaryLocation": "Highland Hills, OH, United States",
+"workLocation": [
+{
+"LocationName": "Highland Springs",
+"TownOrCity": "Highland Hills",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "348794",
+"Title": "Physical Therapy Assistant (PTA)",
+"PrimaryLocation": "Havertown, PA, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - Havertown - R5694",
+"TownOrCity": "Havertown",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "349071",
+"Title": "Medical Lab Technician (MLT)",
+"PrimaryLocation": "Lawrenceburg, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN Regional Health System - Lawrenceburg",
+"TownOrCity": "Lawrenceburg",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "349445",
+"Title": "Ultrasound Technician, Acute",
+"PrimaryLocation": "Russellville, AR, United States",
+"workLocation": [
+{
+"LocationName": "St. Mary's Regional Medical Center",
+"TownOrCity": "Russellville",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "350203",
+"Title": "Ultrasound Technician, Acute, PRN",
+"PrimaryLocation": "Russellville, AR, United States",
+"workLocation": [
+{
+"LocationName": "St. Mary's Regional Medical Center",
+"TownOrCity": "Russellville",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "350279",
+"Title": "Licensed Practical Nurse (LPN) Rehabilitation",
+"PrimaryLocation": "Gainesville, GA, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Northeast Georgia Rehabilitation Hospital",
+"TownOrCity": "Gainesville",
+"Region2": "GA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "350239",
+"Title": "Physical Therapist (PT) Outpatient Rehabilitation",
+"PrimaryLocation": "Russellville, AR, United States",
+"workLocation": [
+{
+"LocationName": "St. Mary's Regional Medical Center - OP - R598G",
+"TownOrCity": "Russellville",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351035",
+"Title": "Registered Nurse (RN) Progressive Care",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351119",
+"Title": "Registered Nurse (RN) PACU",
+"PrimaryLocation": "Florence, AL, United States",
+"workLocation": [
+{
+"LocationName": "North Alabama Medical Center",
+"TownOrCity": "Florence",
+"Region2": "AL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351346",
+"Title": "Physical Therapist Assistant (PTA), Rehab",
+"PrimaryLocation": "Pine Bluff, AR, United States",
+"workLocation": [
+{
+"LocationName": "Jefferson Regional Medical Center - OP - R332J",
+"TownOrCity": "Pine Bluff",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351462",
+"Title": "Registered Nurse (RN) - Medical-Surgical",
+"PrimaryLocation": "Winchester, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Winchester Hospital",
+"TownOrCity": "Winchester",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352429",
+"Title": "Patient Access Representative",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352816",
+"Title": "Physical Therapist (PT), Outpatient Rehabilitation, PRN",
+"PrimaryLocation": "Pine Bluff, AR, United States",
+"workLocation": [
+{
+"LocationName": "Jefferson Regional Medical Center - OP - R332J",
+"TownOrCity": "Pine Bluff",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352970",
+"Title": "Licensed Practical Nurse (LPN) - Rehabilitation",
+"PrimaryLocation": "Greenwood, IN, United States",
+"workLocation": [
+{
+"LocationName": "Community Rehabilitation Hospital South - IRF",
+"TownOrCity": "Greenwood",
+"Region2": "IN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353157",
+"Title": "Speech Pathologist (SLP)-PRN",
+"PrimaryLocation": "Madison, NJ, United States",
+"workLocation": [
+{
+"LocationName": "Atlantic Rehabilitation Institute - IRF",
+"TownOrCity": "Madison",
+"Region2": "NJ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "353786",
+"Title": "First Assistant, Certified",
+"PrimaryLocation": "Sierra Vista, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Canyon Vista Medical Center",
+"TownOrCity": "Sierra Vista",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354193",
+"Title": "Certified Nurse Aide CNA",
+"PrimaryLocation": "Roxboro, NC, United States",
+"workLocation": [
+{
+"LocationName": "Person Memorial Hospital",
+"TownOrCity": "Roxboro",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354478",
+"Title": "Radiologic Technologist",
+"PrimaryLocation": "Hickory, NC, United States",
+"workLocation": [
+{
+"LocationName": "Frye Regional Medical Center",
+"TownOrCity": "Hickory",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355124",
+"Title": "Assessment Specialist PRN",
+"PrimaryLocation": "Georgetown, TX, United States",
+"workLocation": [
+{
+"LocationName": "Rock Springs",
+"TownOrCity": "Georgetown",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355152",
+"Title": "Registered Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Beachwood, OH, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - University Hospitals Rehabilitation Hospital",
+"TownOrCity": "Beachwood",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355203",
+"Title": "Surgical Technician, Certified",
+"PrimaryLocation": "Missoula, MT, United States",
+"workLocation": [
+{
+"LocationName": "Community Medical Center",
+"TownOrCity": "Missoula",
+"Region2": "MT",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355429",
+"Title": "OB Technician",
+"PrimaryLocation": "Hancock, MI, United States",
+"workLocation": [
+{
+"LocationName": "UP Health System - Portage Hospital",
+"TownOrCity": "Hancock",
+"Region2": "MI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355557",
+"Title": "Registered Nurse (RN) - Medical-Surgical",
+"PrimaryLocation": "Versailles, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Versailles Hospital",
+"TownOrCity": "Versailles",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355797",
+"Title": "Medical Lab Technician",
+"PrimaryLocation": "Rutherfordton, NC, United States",
+"workLocation": [
+{
+"LocationName": "Rutherford Regional Health System",
+"TownOrCity": "Rutherfordton",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355806",
+"Title": "Registered Nurse (RN) Emergency Services",
+"PrimaryLocation": "Martinsville, VA, United States",
+"workLocation": [
+{
+"LocationName": "Sovah Health - Martinsville",
+"TownOrCity": "Martinsville",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355894",
+"Title": "Registered Nurse (RN)Surgery",
+"PrimaryLocation": "Vernal, UT, United States",
+"workLocation": [
+{
+"LocationName": "Ashley Regional Medical Center",
+"TownOrCity": "Vernal",
+"Region2": "UT",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356011",
+"Title": "Registered Nurse (RN) - ICU - PRN",
+"PrimaryLocation": "Ottumwa, IA, United States",
+"workLocation": [
+{
+"LocationName": "Ottumwa Regional Health Center",
+"TownOrCity": "Ottumwa",
+"Region2": "IA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356207",
+"Title": "Physical Therapy Assistant (PTA) PRN",
+"PrimaryLocation": "Conroe, TX, United States",
+"workLocation": [
+{
+"LocationName": "Scion Health - Conroe - R470J",
+"TownOrCity": "Conroe",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356206",
+"Title": "LPN – Cardiac and Vascular Center",
+"PrimaryLocation": "Beckley, WV, United States",
+"workLocation": [
+{
+"LocationName": "Raleigh General Cardiac and Vascular Center",
+"TownOrCity": "Beckley",
+"Region2": "WV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356290",
+"Title": "Certified Medical Assistant (CMA) GI & Liver",
+"PrimaryLocation": "Gallatin, TN, United States",
+"workLocation": [
+{
+"LocationName": "Highpoint - Gastroenterology and Liver Disease",
+"TownOrCity": "Hendersonville",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356378",
+"Title": "Case Manager (CM)",
+"PrimaryLocation": "Irvine, CA, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - UC Irvine Rehabilitation Hospital",
+"TownOrCity": "Irvine",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356735",
+"Title": "Occupational Therapist (OT) PRN",
+"PrimaryLocation": "Gallatin, TN, United States",
+"workLocation": [
+{
+"LocationName": "Highpoint - Sumner Regional Medical Center - ARU - R375J",
+"TownOrCity": "Gallatin",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356798",
+"Title": "Registered Nurse (RN) Behavioral Health",
+"PrimaryLocation": "Tucson, AZ, United States",
+"workLocation": [
+{
+"LocationName": "El Dorado Springs",
+"TownOrCity": "Tucson",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356802",
+"Title": "Dosimetrist",
+"PrimaryLocation": "Gallatin, TN, United States",
+"workLocation": [
+{
+"LocationName": "Highpoint - Sumner Regional Medical Center",
+"TownOrCity": "Gallatin",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356820",
+"Title": "Activities Therapy Coordinator",
+"PrimaryLocation": "Salinas, CA, United States",
+"workLocation": [
+{
+"LocationName": "Natividad Medical Center - R669G",
+"TownOrCity": "Salinas",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356838",
+"Title": "Registered Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Chesterfield, MO, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehabilitation Hospital St. Louis",
+"TownOrCity": "Chesterfield",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356839",
+"Title": "Licensed Practical Nurse (LPN) Rehabilitation",
+"PrimaryLocation": "Chesterfield, MO, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehabilitation Hospital St. Louis",
+"TownOrCity": "Chesterfield",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356912",
+"Title": "Occupational Therapist (OT), PRN",
+"PrimaryLocation": "Beachwood, OH, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - University Hospitals Rehabilitation Hospital",
+"TownOrCity": "Beachwood",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356891",
+"Title": "Physical Therapist (PT) PRN",
+"PrimaryLocation": "Green Bay, WI, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - HSHS Green Bay",
+"TownOrCity": "Howard",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356939",
+"Title": "Occupational Therapist Assistant (COTA) PRN, Inpatient Rehabilitation",
+"PrimaryLocation": "Coralville, IA, United States",
+"workLocation": [
+{
+"LocationName": "Eastern Iowa Rehab Hospital - IRF",
+"TownOrCity": "Coralville",
+"Region2": "IA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "321574",
+"Title": "Physical Therapist (PT) - PRN, Acute",
+"PrimaryLocation": "Riviera Beach, FL, United States",
+"workLocation": [
+{
+"LocationName": "Scion Health - The Palm Beaches - ARU - R442J",
+"TownOrCity": "Riviera Beach",
+"Region2": "FL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "335555",
+"Title": "Physical Therapist (PT)",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "335741",
+"Title": "Respiratory Therapist (CRT)",
+"PrimaryLocation": "Pasco, WA, United States",
+"workLocation": [
+{
+"LocationName": "Lourdes Medical Center",
+"TownOrCity": "Pasco",
+"Region2": "WA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "340673",
+"Title": "Pharmacist",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "342170",
+"Title": "Lead Mammography Technologist",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "349557",
+"Title": "Security Officer",
+"PrimaryLocation": "Johnstown, PA, United States",
+"workLocation": [
+{
+"LocationName": "Conemaugh Memorial Medical Center",
+"TownOrCity": "Johnstown",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351595",
+"Title": "Registered Nurse (RN) - Emergency Department (ED)",
+"PrimaryLocation": "Pasco, WA, United States",
+"workLocation": [
+{
+"LocationName": "Lourdes Medical Center",
+"TownOrCity": "Pasco",
+"Region2": "WA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "352600",
+"Title": "Senior Central Sterile Technician",
+"PrimaryLocation": "Las Cruces, NM, United States",
+"workLocation": [
+{
+"LocationName": "Memorial Medical Center",
+"TownOrCity": "Las Cruces",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354573",
+"Title": "Speech- Language Pathologist (SLP), Acute",
+"PrimaryLocation": "Georgetown, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Georgetown Hospital",
+"TownOrCity": "Georgetown",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354574",
+"Title": "Surgical Technician, Certified",
+"PrimaryLocation": "Missoula, MT, United States",
+"workLocation": [
+{
+"LocationName": "Community Medical Center",
+"TownOrCity": "Missoula",
+"Region2": "MT",
+"Country": "US"
+}
+]
+},
+{
+"Id": "354579",
+"Title": "Registered Nurse (RN), Medical-Surgical",
+"PrimaryLocation": "Los Alamos, NM, United States",
+"workLocation": [
+{
+"LocationName": "Los Alamos Medical Center",
+"TownOrCity": "Los Alamos",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355024",
+"Title": "Registered Nurse (RN) - PreOp/PACU",
+"PrimaryLocation": "Winchester, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Winchester Hospital",
+"TownOrCity": "Winchester",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355413",
+"Title": "Medical Assistant",
+"PrimaryLocation": "Beckley, WV, United States",
+"workLocation": [
+{
+"LocationName": "Raleigh Advanced Urology",
+"TownOrCity": "Beckley",
+"Region2": "WV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355388",
+"Title": "Environmental Services Aide",
+"PrimaryLocation": "Langhorne, PA, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - St. Mary Rehabilitation Hospital",
+"TownOrCity": "Langhorne",
+"Region2": "PA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355471",
+"Title": "Registered Nurse (RN), ICU",
+"PrimaryLocation": "Los Alamos, NM, United States",
+"workLocation": [
+{
+"LocationName": "Los Alamos Medical Center",
+"TownOrCity": "Los Alamos",
+"Region2": "NM",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355541",
+"Title": "Medical Lab Technician (MLT)PRN, Acute",
+"PrimaryLocation": "Georgetown, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Georgetown Hospital",
+"TownOrCity": "Georgetown",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355683",
+"Title": "Pharmacy Technician, Behavioral Health",
+"PrimaryLocation": "West Chester, OH, United States",
+"workLocation": [
+{
+"LocationName": "Beckett Springs",
+"TownOrCity": "West Chester",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355872",
+"Title": "Registered Nurse (RN) Outpatient Services - PRN",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355933",
+"Title": "Charge Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Waukesha, WI, United States",
+"workLocation": [
+{
+"LocationName": "Rehabilitation Hospital of Wisconsin - IRF",
+"TownOrCity": "Waukesha",
+"Region2": "WI",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356067",
+"Title": "Registered Nurse (RN) - Medical-Surgical",
+"PrimaryLocation": "Beckley, WV, United States",
+"workLocation": [
+{
+"LocationName": "Raleigh General Hospital",
+"TownOrCity": "Beckley",
+"Region2": "WV",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356002",
+"Title": "Patient Access Representative - Float",
+"PrimaryLocation": "Galax, VA, United States",
+"workLocation": [
+{
+"LocationName": "Twin County Regional Hospital",
+"TownOrCity": "Galax",
+"Region2": "VA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356051",
+"Title": "Speech-Language Pathologist (SLP)",
+"PrimaryLocation": "Perris, CA, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - Riverside - R5735",
+"TownOrCity": "Perris",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355959",
+"Title": "Pharmacist",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "355982",
+"Title": "Registered Nurse (RN) Emergency Department",
+"PrimaryLocation": "Hickory, NC, United States",
+"workLocation": [
+{
+"LocationName": "Frye Regional Medical Center",
+"TownOrCity": "Hickory",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356045",
+"Title": "Speech-Language Pathologist (SLP), PRN",
+"PrimaryLocation": "Gardena, CA, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - South Bay Gardena CA - R5734",
+"TownOrCity": "Gardena",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356121",
+"Title": "Occupational Therapist (OT)",
+"PrimaryLocation": "Gardena, CA, United States",
+"workLocation": [
+{
+"LocationName": "Kindred Hospital - South Bay Gardena CA - R5734",
+"TownOrCity": "Gardena",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356147",
+"Title": "Registered Nurse (RN) – Market Emergency",
+"PrimaryLocation": "Paris, KY, United States",
+"workLocation": [
+{
+"LocationName": "Centerpoint Health - Paris Hospital",
+"TownOrCity": "Paris",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356103",
+"Title": "Therapist, Partial Hospitalization Program (PHP)",
+"PrimaryLocation": "Raleigh, NC, United States",
+"workLocation": [
+{
+"LocationName": "Triangle Springs",
+"TownOrCity": "Raleigh",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356242",
+"Title": "Clinical Liaison (CL) PRN, Acute Rehabilitation",
+"PrimaryLocation": "Davenport, IA, United States",
+"workLocation": [
+{
+"LocationName": "Genesis Medical Center - Davenport - R593G",
+"TownOrCity": "Davenport",
+"Region2": "IA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356223",
+"Title": "Physical Therapist Assistant (PTA), PRN",
+"PrimaryLocation": "Marrero, LA, United States",
+"workLocation": [
+{
+"LocationName": "West Jefferson Medical Center - R302J",
+"TownOrCity": "Marrero",
+"Region2": "LA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356184",
+"Title": "Physical Therapy Assistant (PTA), PRN",
+"PrimaryLocation": "Arroyo Grande, CA, United States",
+"workLocation": [
+{
+"LocationName": "Marian Regional Medical Center - R667G",
+"TownOrCity": "Arroyo Grande",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356230",
+"Title": "Registered Nurse (RN) Emergency Department",
+"PrimaryLocation": "Sylva, NC, United States",
+"workLocation": [
+{
+"LocationName": "Harris Regional Hospital",
+"TownOrCity": "Sylva",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356229",
+"Title": "Registered Nurse (RN) Behavioral Health",
+"PrimaryLocation": "Dublin, OH, United States",
+"workLocation": [
+{
+"LocationName": "Dublin Springs - MSA",
+"TownOrCity": "Dublin",
+"Region2": "OH",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356262",
+"Title": "Occupational Therapist (OT), PRN",
+"PrimaryLocation": "Van Nuys, CA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Presbyterian Hospital - R674G",
+"TownOrCity": "Van Nuys",
+"Region2": "CA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356388",
+"Title": "Physical Therapist (PT) PRN",
+"PrimaryLocation": "Oklahoma City, OK, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehab Hospital OK City South",
+"TownOrCity": "Oklahoma City",
+"Region2": "OK",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356249",
+"Title": "Registered Nurse (RN) ICU",
+"PrimaryLocation": "Clyde, NC, United States",
+"workLocation": [
+{
+"LocationName": "Haywood Regional Medical Center",
+"TownOrCity": "Clyde",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356273",
+"Title": "Licensed Practical Nurse (LPN) Rehabilitation",
+"PrimaryLocation": "Springfield, MO, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehabilitation Hospital Springfield",
+"TownOrCity": "Springfield",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356276",
+"Title": "Registered Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Springfield, MO, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehabilitation Hospital Springfield",
+"TownOrCity": "Springfield",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356305",
+"Title": "Physical Therapist (PT) PRN, Acute Rehabilitation",
+"PrimaryLocation": "Crown Point, IN, United States",
+"workLocation": [
+{
+"LocationName": "Powers Health Rehabilitation Center - R575G",
+"TownOrCity": "Crown Point",
+"Region2": "IN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356317",
+"Title": "Psychologist, Court Evaluation",
+"PrimaryLocation": "Holyoke, MA, United States",
+"workLocation": [
+{
+"LocationName": "Valley Springs BH MSA JV",
+"TownOrCity": "Holyoke",
+"Region2": "MA",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356344",
+"Title": "Certified Medical Assistant (CMA) - Family Medicine",
+"PrimaryLocation": "Somerset, KY, United States",
+"workLocation": [
+{
+"LocationName": "Lake Cumberland Medical Associates Admin",
+"TownOrCity": "Somerset",
+"Region2": "KY",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356401",
+"Title": "Licensed Practical Nurse (LPN) Rehabilitation",
+"PrimaryLocation": "Springfield, MO, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehabilitation Hospital Springfield",
+"TownOrCity": "Springfield",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356438",
+"Title": "Registered Nurse (RN) Rehabilitation",
+"PrimaryLocation": "Chesterfield, MO, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehabilitation Hospital St. Louis",
+"TownOrCity": "Chesterfield",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356440",
+"Title": "Licensed Practical Nurse (LPN) Rehabilitation",
+"PrimaryLocation": "Chesterfield, MO, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Mercy Rehabilitation Hospital St. Louis",
+"TownOrCity": "Chesterfield",
+"Region2": "MO",
+"Country": "US"
+}
+]
+},
+{
+"Id": "356799",
+"Title": "Clinical Dietitian",
+"PrimaryLocation": "South Miami, FL, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Baptist Health Rehab Hospital - Miami",
+"TownOrCity": "South Miami",
+"Region2": "FL",
+"Country": "US"
+}
+]
+},
+{
+"Id": "340976",
+"Title": "Licensed Practical Nurse (LPN) Medical Surgical",
+"PrimaryLocation": "Hot Springs, AR, United States",
+"workLocation": [
+{
+"LocationName": "National Park Medical Center",
+"TownOrCity": "Hot Springs National Park",
+"Region2": "AR",
+"Country": "US"
+}
+]
+},
+{
+"Id": "343316",
+"Title": "Occupational Therapist (OT)PRN, Inpatient Rehabilitation",
+"PrimaryLocation": "Germantown, TN, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Baptist Memorial Rehab Hospital- Germantown",
+"TownOrCity": "Germantown",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "343645",
+"Title": "Physical Therapy Assistant (PTA) PRN",
+"PrimaryLocation": "El Paso, TX, United States",
+"workLocation": [
+{
+"LocationName": "CHC PR & MSA - Providence Rehab Hospital East",
+"TownOrCity": "El Paso",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "344296",
+"Title": "Registered Nurse (RN) - Emergency Services",
+"PrimaryLocation": "Lake Havasu City, AZ, United States",
+"workLocation": [
+{
+"LocationName": "Havasu Regional Medical Center",
+"TownOrCity": "Lake Havasu City",
+"Region2": "AZ",
+"Country": "US"
+}
+]
+},
+{
+"Id": "349335",
+"Title": "Registered Nurse (RN) Emergency Department - PRN",
+"PrimaryLocation": "Sylva, NC, United States",
+"workLocation": [
+{
+"LocationName": "Harris Regional Hospital",
+"TownOrCity": "Sylva",
+"Region2": "NC",
+"Country": "US"
+}
+]
+},
+{
+"Id": "349538",
+"Title": "Pharmacy Supervisor",
+"PrimaryLocation": "Pulaski, TN, United States",
+"workLocation": [
+{
+"LocationName": "Southern TN Regional Health System - Pulaski",
+"TownOrCity": "Pulaski",
+"Region2": "TN",
+"Country": "US"
+}
+]
+},
+{
+"Id": "350992",
+"Title": "Medical Lab Technician",
+"PrimaryLocation": "Paris, TX, United States",
+"workLocation": [
+{
+"LocationName": "Paris Regional Medical Center",
+"TownOrCity": "Paris",
+"Region2": "TX",
+"Country": "US"
+}
+]
+},
+{
+"Id": "351416",
+"Title": "Registered Nurse (RN) Oncology",
+"PrimaryLocation": "Henderson, NC, United States",
+"workLocation": [
+{
+"LocationName": "Maria Parham Medical Center",
+"TownOrCity": "Henderson",
+"Region2": "NC",
+"Country": "US"
+}
+]
+}
+]
+}

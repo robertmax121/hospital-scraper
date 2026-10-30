@@ -1,0 +1,290 @@
+{
+ "read": "2026-10-30, ertr CX_3001 recruitingCEJobRequisitions, limit 200",
+ "workLocationsFacet": [
+  {
+   "Name": "Baptist Medical Center of OK-HCM",
+   "TotalCount": 45
+  },
+  {
+   "Name": "5400 Building-HCM",
+   "TotalCount": 21
+  },
+  {
+   "Name": "INTEGRIS CORPORATE OFFICES",
+   "TotalCount": 20
+  },
+  {
+   "Name": "5300 Building-HCM",
+   "TotalCount": 15
+  },
+  {
+   "Name": "Southwest Medical Center-HCM",
+   "TotalCount": 15
+  },
+  {
+   "Name": "Physician Services-HCM",
+   "TotalCount": 14
+  },
+  {
+   "Name": "Medical Office Building C-HCM",
+   "TotalCount": 13
+  },
+  {
+   "Name": "BMC 1st Floor-HCM",
+   "TotalCount": 12
+  },
+  {
+   "Name": "Jim Thorpe Rehab Hospital-HCM",
+   "TotalCount": 10
+  },
+  {
+   "Name": "5300 BUILDING",
+   "TotalCount": 10
+  }
+ ],
+ "items": [
+  {
+   "Id": "115912",
+   "Title": "LPN - Metro Float Pool Outpatient Clinic - Full-time - Days",
+   "PrimaryLocation": "Oklahoma City, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a full-time, days, LPN at INTEGRIS Health Medical Group Float Pool in Oklahoma City, OK.",
+   "workLocation": [
+    {
+     "LocationId": null,
+     "LocationName": null,
+     "AddressLine1": null,
+     "AddressLine2": null,
+     "AddressLine3": null,
+     "AddressLine4": null,
+     "Building": null,
+     "TownOrCity": null,
+     "PostalCode": null,
+     "Country": null,
+     "Region1": null,
+     "Region2": null,
+     "Region3": null,
+     "Latitude": null,
+     "Longitude": null
+    }
+   ],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "117442",
+   "Title": "RN Post-Acute Coordinator - South",
+   "PrimaryLocation": "Oklahoma City, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a day shift, full time, RN Post Acute Coordinator, at INTEGRIS Health South Medical Center, in Oklahoma City.",
+   "workLocation": [],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "117463",
+   "Title": "Certified Surgical Tech / CST - Edmond",
+   "PrimaryLocation": "Edmond, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a day shift (630-1700), fulltime, Certified Surgical Tech, in the Main OR at INTEGRIS Health Hospital, in Edmond, OK.",
+   "workLocation": [
+    {
+     "LocationId": null,
+     "LocationName": null,
+     "AddressLine1": null,
+     "AddressLine2": null,
+     "AddressLine3": null,
+     "AddressLine4": null,
+     "Building": null,
+     "TownOrCity": null,
+     "PostalCode": null,
+     "Country": null,
+     "Region1": null,
+     "Region2": null,
+     "Region3": null,
+     "Latitude": null,
+     "Longitude": null
+    }
+   ],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "117516",
+   "Title": "Patient Care Tech - Edmond",
+   "PrimaryLocation": "Edmond, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a night shift (1900-0700), fulltime, Patient Care Tech, in the Intermediate Care Unit at INTEGRIS Health Hospital, in Edmond, OK.",
+   "workLocation": [
+    {
+     "LocationId": null,
+     "LocationName": null,
+     "AddressLine1": null,
+     "AddressLine2": null,
+     "AddressLine3": null,
+     "AddressLine4": null,
+     "Building": null,
+     "TownOrCity": null,
+     "PostalCode": null,
+     "Country": null,
+     "Region1": null,
+     "Region2": null,
+     "Region3": null,
+     "Latitude": null,
+     "Longitude": null
+    }
+   ],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "117824",
+   "Title": "RN Case Manager - Baptist Case Management",
+   "PrimaryLocation": "OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a day shift and every other weekend, full time, RN Case Manager, at INTEGRIS Baptist Medical Center, Oklahoma City, OK.",
+   "workLocation": [
+    {
+     "LocationId": null,
+     "LocationName": null,
+     "AddressLine1": null,
+     "AddressLine2": null,
+     "AddressLine3": null,
+     "AddressLine4": null,
+     "Building": null,
+     "TownOrCity": null,
+     "PostalCode": null,
+     "Country": null,
+     "Region1": null,
+     "Region2": null,
+     "Region3": null,
+     "Latitude": null,
+     "Longitude": null
+    }
+   ],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "117958",
+   "Title": "Environmental Services Associate",
+   "PrimaryLocation": "Oklahoma City, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a full-time, Environmental Services Associate, at INTEGRIS Health Southwest Medical Center Oklahoma City, OK. ",
+   "workLocation": [],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "118021",
+   "Title": "Dir Workforce Planning",
+   "PrimaryLocation": "Oklahoma City, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a full-time, Director of Workforce Planning at INTEGRIS Health.",
+   "workLocation": [
+    {
+     "LocationId": null,
+     "LocationName": null,
+     "AddressLine1": null,
+     "AddressLine2": null,
+     "AddressLine3": null,
+     "AddressLine4": null,
+     "Building": null,
+     "TownOrCity": null,
+     "PostalCode": null,
+     "Country": null,
+     "Region1": null,
+     "Region2": null,
+     "Region3": null,
+     "Latitude": null,
+     "Longitude": null
+    }
+   ],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "116024",
+   "Title": "RN - IMC Step Down",
+   "PrimaryLocation": "Edmond, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a night shift, full-time, Registered Nurse at INTEGRIS Health Edmond in Edmond, OK. ",
+   "workLocation": [
+    {
+     "LocationId": null,
+     "LocationName": null,
+     "AddressLine1": null,
+     "AddressLine2": null,
+     "AddressLine3": null,
+     "AddressLine4": null,
+     "Building": null,
+     "TownOrCity": null,
+     "PostalCode": null,
+     "Country": null,
+     "Region1": null,
+     "Region2": null,
+     "Region3": null,
+     "Latitude": null,
+     "Longitude": null
+    }
+   ],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "116290",
+   "Title": "LPN - Clinic Float Pool - Enid",
+   "PrimaryLocation": "Enid, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a day, full time, LPN Clinic Float Pool at INTEGRIS Health Medical Group in Enid, OK.",
+   "workLocation": [
+    {
+     "LocationId": null,
+     "LocationName": null,
+     "AddressLine1": null,
+     "AddressLine2": null,
+     "AddressLine3": null,
+     "AddressLine4": null,
+     "Building": null,
+     "TownOrCity": null,
+     "PostalCode": null,
+     "Country": null,
+     "Region1": null,
+     "Region2": null,
+     "Region3": null,
+     "Latitude": null,
+     "Longitude": null
+    }
+   ],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "117139",
+   "Title": "Registered Nurse/Cardiac Critical Care",
+   "PrimaryLocation": "Oklahoma City, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a night shift, full-time, Cardiac Critical Care Registered Nurse, at INTEGRIS Heart Hospital at INTEGRIS Health Baptist Medical Center, in Oklahoma City, OK.    \n ",
+   "workLocation": [
+    {
+     "LocationId": null,
+     "LocationName": null,
+     "AddressLine1": null,
+     "AddressLine2": null,
+     "AddressLine3": null,
+     "AddressLine4": null,
+     "Building": null,
+     "TownOrCity": null,
+     "PostalCode": null,
+     "Country": null,
+     "Region1": null,
+     "Region2": null,
+     "Region3": null,
+     "Latitude": null,
+     "Longitude": null
+    }
+   ],
+   "secondaryLocations": []
+  },
+  {
+   "Id": "117967",
+   "Title": "Registered Nurse / ICU",
+   "PrimaryLocation": "Yukon, OK, United States",
+   "PrimaryLocationCountry": "US",
+   "ShortDescriptionStr": "Join our team as a night shift, Weekend Only, full-time, Registered Nurse, at INTEGRIS Health Canadian Valley, in Yukon, OK. ",
+   "workLocation": [],
+   "secondaryLocations": []
+  }
+ ]
+}

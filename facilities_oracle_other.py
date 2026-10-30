@@ -377,7 +377,18 @@ _sys("Lifepoint Health", oracle=True, hospitals={
     "UP Health System-Marquette":         ("Marquette", "MI", "cms 230054"),
 }, sites={
     "UP Health System - Marquette General Hospital": "UP Health System-Marquette",
-})
+},
+    # 2026-10-30 (phase 6, short-a): a Lifepoint Rehabilitation or managed
+    # unit prints its programme around the hospital's name: "CHC PR & MSA -
+    # Mercy Rehabilitation Hospital St. Louis", "National Park Medical Center -
+    # R311J", "Conemaugh Memorial Medical Center - MS - R414J", "Community
+    # Rehabilitation Hospital South - IRF", "Willamette Valley Medical Center -
+    # BH MSA". The programme words are cut before the lookup, so the site is
+    # read as any other work location (a partner's hospital, "Kindred Hospital
+    # - Havertown - R5694", names nothing; an outpatient "- OP -" unit is not
+    # cut and names nothing)
+    clean=(r"^CHC\s+PR\s*&\s*MSA\s+-\s+|\s+-\s+(?:(?:ARU|MS|BH\s+MSA)\s*-\s*)?R\d{3,4}[A-Z]?\s*$"
+           r"|\s+-\s+(?:IRF|BH\s+MSA)\s*$", ""))
 
 _sys("Atlantic Health System", oracle=True, hospitals={
     "Morristown Medical Center":  ("Morristown", "NJ", "cms 310015"),

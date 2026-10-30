@@ -173,7 +173,15 @@ _PRISMA = _spec("Prisma Health", [
     _h("Prisma Health Richland Hospital", "Columbia", "SC", "cms 420018"),
     _h("Prisma Health Tuomey Hospital", "Sumter", "SC", "cms 420070"),
     _h("Blount Memorial Hospital", "Maryville", "TN", "cms 440011"),
-], emit=("Prisma Health (Providers)",), default=("Greenville", "SC"))
+], emit=("Prisma Health (Providers)",), default=("Greenville", "SC"), sites=[
+    # 2026-10-30 (phase 6, short-a): the two named hospitals on the Greenville
+    # Memorial campus (701 Grove Rd); the posting's work site names them
+    # ("Roger C Peace Rehab Hosp", "Marshall Pickens Hospital"), decision 2
+    ("Roger C. Peace Rehabilitation Hospital", "Greenville", "SC",
+     ("Roger C. Peace Rehabilitation Hospital", "Roger C Peace Rehabilitation Hospital")),
+    ("Marshall I. Pickens Hospital", "Greenville", "SC",
+     ("Marshall I. Pickens Hospital", "Marshall I Pickens Hospital", "Marshall Pickens Hospital")),
+])
 _also_named(_PRISMA, "Prisma Health Greenville Memorial Hospital", "Greenville Memorial Hospital", "GMH")
 _also_named(_PRISMA, "Prisma Health Patewood Memorial Hospital", "Patewood Memorial Hospital", "Patewood Hospital")
 _also_named(_PRISMA, "Prisma Health Baptist Hospital", "Baptist Hospital")
@@ -462,6 +470,20 @@ Baptist Parkridge Hospital | Prisma Health Baptist Parkridge Hospital
 Richland Hospital | Prisma Health Richland Hospital
 Tuomey Hospital | Prisma Health Tuomey Hospital
 Blount Memorial Hospital | Blount Memorial Hospital
+# 2026-10-30 (phase 6, short-a): the Midlands work sites as Prisma spells
+# them (detail reads and stored bodies, 2026-10-30: "Richland" 198 rows,
+# "Baptist" 71, "Parkridge" 22, "Tuomey" 85); "5 Medical Park Rd Richland"
+# is Richland Hospital's own street (CMS 420018: 5 Medical Park, Columbia;
+# the other Medical Park numbers are office buildings and stay offices);
+# the Laurens County campus; the Greenville Memorial campus's named hospitals
+Richland | Prisma Health Richland Hospital
+5 Medical Park Rd Richland | Prisma Health Richland Hospital
+Baptist | Prisma Health Baptist Hospital
+Parkridge | Prisma Health Baptist Parkridge Hospital
+Tuomey | Prisma Health Tuomey Hospital
+Laurens County Medical Campus | Prisma Health Laurens County Hospital
+Roger C Peace Rehab Hosp | Roger C. Peace Rehabilitation Hospital
+Marshall Pickens Hospital | Marshall I. Pickens Hospital
 """)
 _d("Methodist Health System TX", """
 Methodist Dallas Medical Center | Methodist Dallas Medical Center
@@ -657,6 +679,82 @@ def detail_site(system, descriptor):
     return "unknown", None
 
 
+# ── Prisma: the jobs its work-site line does not place (release 6 review A) ──
+# 2026-10-30 (facility release 6, review A). Prisma's work-site line
+# (jobRequisitionLocation, and the body's "Location" line) names the campus a
+# posting reports to, not where a remote, home-health, clinic or office job is
+# done: the 10-30 staging put "Ambulatory Coder III - Remote" on Oconee
+# Memorial, "RN - Home Health" (Facility "Home Health - Tuomey") on Tuomey,
+# a Blount practice's medical assistant (Facility "BMPG Joule Street Alcoa")
+# on Blount Memorial, and Corporate IT and analyst postings on Greenville
+# Memorial. Decision 2: those keep the system name. The posting's title (the
+# TOWN family's own remote, clinic, care-site, multi-site, system-office and
+# group-provider tests) and its cost centre (the body's "Facility" line: an
+# office, a practice, a medical park building, EMS, infusion, a region, a
+# street address) say so. A cost centre that names another facility than the
+# work site (Location "Laurens County Medical Campus", Facility "Hillcrest
+# Hospital"; an LTACH) names neither.
+PRISMA = "Prisma Health"
+_PRISMA_FAC_LINE_RX = re.compile(
+    r"(?m)^[ \t]*Facility[ \t]*:?[ \t]*\n+(?:[ \t]*\n)*[ \t]*([^\n]+?)[ \t]*\n+(?:[ \t]*\n)*[ \t]*Department[ \t]*:?[ \t]*$")
+_PRISMA_FAC_OFFICE_RX = re.compile(
+    r"\b(?:Med(?:ical)?\s+Park|M?MOB|POB|PACE|BMPG|EMS|Ambulance|Infusion|Regions?|Associates|Academics|"
+    r"Value-Based|Network\s+Services|\d+F|\d+\s+[A-Z][\w.]*(?:\s+[A-Z][\w.]*)?\s+(?:St|Rd|Ave|Blvd|Dr|Ct|Pkwy|Hwy))\b",
+    re.I)
+_PRISMA_FAC_OTHER_RX = re.compile(r"\b(?:LTACH?|Long[- ]Term\s+Acute|Springs\s+Hospital)\b", re.I)
+# A title for two campuses ("Facility Resource Pool, Laurens/Hillcrest",
+# "Critical Care PRN Columbia/Sumter") is no one site's; a title for one of
+# Prisma's regions ("Physician - Emergency Medicine Midlands", "Hospitalist,
+# Upstate") is a regional group's, unless its cost centre is the work site's
+# own ("Greenville Memorial Hospitalists")
+_PRISMA_CAMPUS = (r"(?:Greenville|Columbia|Sumter|Laurens|Hillcrest|Simpsonville|Oconee|Seneca|Easley|Baptist|"
+                  r"Richland|Parkridge|Tuomey|Patewood|Pickens|Travelers\s+Rest|Maryville)")
+_PRISMA_TWO_RX = re.compile(r"\b" + _PRISMA_CAMPUS + r"\s*(?:/|&|\band\b)\s*" + _PRISMA_CAMPUS + r"\b", re.I)
+_PRISMA_REGION_RX = re.compile(r"\b(?:Midlands|Upstate)\b", re.I)
+
+
+def _prisma_fac_names(fac, entry) -> bool:
+    """The cost centre starts with a spelling of the work site's own hospital
+    ("Greenville Memorial Hospitalists", "1510 Richland Hospital")."""
+    fk = name_key(fac)
+    return bool(entry) and any(v and v[0] == entry[0] and len(k) >= 8 and fk.startswith(k)
+                               for k, v in DETAIL.get(PRISMA, {}).items())
+
+
+def prisma_facility_line(description) -> str:
+    """The cost centre the body's Location / Facility / Department block
+    names ("1571 Home Health - Tuomey"), or ""."""
+    m = None
+    for m in _PRISMA_FAC_LINE_RX.finditer(str(description or "")):
+        pass                     # the template's block is the last one
+    return clean_text(m.group(1)).strip() if m else ""
+
+
+def prisma_gate(title, description, entry=None) -> str:
+    """"" when a Prisma posting whose work site is the hospital `entry` may
+    take it; "office" for a remote, home, clinic, practice, office, regional
+    or group-provider job (the system name, and the town tables leave it);
+    "unknown" when the cost centre names another facility than the work
+    site."""
+    t = clean_text(title)
+    if (T.REMOTE_RX.search(t) or T.OFFSITE_RX.search(t) or T.CARE_SITE_RX.search(t) or T.is_multi_site(t, "")
+            or T.SYSTEM_ROLE_RX.search(t) or T.is_group_provider(t) or _PRISMA_TWO_RX.search(t)):
+        return "office"
+    fac = re.sub(r"^\s*\d{3,5}\s+", "", prisma_facility_line(description))
+    if _PRISMA_REGION_RX.search(t) and not _prisma_fac_names(fac, entry):
+        return "office"
+    if not fac:
+        return ""
+    if _PRISMA_FAC_OTHER_RX.search(fac):
+        return "unknown"
+    if _OFFICE_RX.search(fac) or _PRISMA_FAC_OFFICE_RX.search(fac):
+        return "office"
+    verdict, other = detail_site(PRISMA, fac)
+    if verdict == "site" and entry and other[0] != entry[0]:
+        return "unknown"
+    return ""
+
+
 def place(system, entry, city, state):
     """(name, city, state) for a row of `system` at (city, state) whose work
     site is `entry`, or None. The row keeps its own town when it is the
@@ -688,6 +786,12 @@ def apply_detail(job, info) -> str:
         if not spec.is_label(getattr(job, "hospital_name", "")):
             return "named-already"
         verdict, entry = detail_site(s, requisition_location(info))
+        if verdict == "site" and s == PRISMA:
+            # 2026-10-30 (release 6 review A): a remote, home, clinic or office
+            # posting, or a cost centre at another facility (prisma_gate)
+            gate = prisma_gate(getattr(job, "title", ""), getattr(job, "description", ""), entry)
+            if gate:
+                verdict = gate
         if verdict == "site":
             placed = place(s, entry, job.city, job.state)
             if placed is None:
