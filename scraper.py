@@ -62,6 +62,7 @@ import facilities_fac6_short_b   # 2026-10-30 phase 6 B: TMC departments, Lumini
 import facilities_imh   # 2026-10-30 phase 7: Intermountain's clinics, centers and offices by Workday site (registers in facilities_workday); multi-site postings and float pools keep the label
 import facilities_christus   # 2026-10-30 round 2: CHRISTUS regional-entity rows take the hospital at their feed street address (reviewed table); clinics, offices, multi-site and regional roles keep the label
 import facilities_fac7_variants   # 2026-10-30 phase 7 (variants): names that stand for the system but are not its label: placeholders (CHRISTUS "N/A"), Ascension site lines, HSHS + UVA Health town tables (registers in facilities_town)
+import facilities_mhs   # 2026-10-30 round 2 (mhs): the military treatment facility a Military Health System USAJOBS posting names; agency labels and many-station postings keep the system
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -13348,6 +13349,15 @@ def _usajobs_jobs(item: dict, system_name: str, stats: dict | None = None) -> li
                 # Shiprock, NM"); the town alone never names one
                 hospital = _fac_hook("IHS summary facility", facilities_systems_a.ihs_summary_facility, m,
                                      city, state, default=None) or hospital
+            elif system_name == facilities_mhs.MHS:
+                # 2026-10-30 (round 2, mhs): the military treatment facility the
+                # row's location line, the hiring-organization line or (a posting
+                # of a few towns) the summary names in this row's place, never a
+                # directorate inside it ("Womack Army Medical Center; Directorate of
+                # Medicine" is Womack Army Medical Center); an agency label or a
+                # many-station posting keeps the system (facilities_mhs)
+                hospital = _fac_hook("MHS treatment facility", facilities_mhs.mhs_facility, m, city, state,
+                                     p["facility"], max(towns, len(places)), hospital, default=None) or hospital
         rows.append(Job(
             title=title,
             hospital_system=system_name,
