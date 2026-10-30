@@ -56,6 +56,15 @@ address's town. Everything else keeps its name:
   - a title that says a regional or system-level role, a remote or
     multi-site posting, or a system office's function (keeps_label): the
     system with the town, whatever street the posting sits on.
+    Review (2026-10-30): also a community programme (AmeriCorps community
+    connectors, community health workers, community outreach: their
+    postings serve "each of the communities we serve", the members are not
+    the hospital's staff), a regional executive ("Vice President, Mission
+    Integration": "a member of the regional senior leadership team"), a
+    service run for several hospitals ("Director Telemetry Operations": the
+    central monitoring unit "across multiple hospitals"; a laboratory
+    "Technical Consultant" for the clinic and regional labs) and the system
+    office's public relations and talent development roles.
   - a posting the feed lists at two or more streets (one job ID, one feed
     entry per location: "CRNA Louisiana and Texas", a CST posted at the
     Tyler hospital and at Highland in Shreveport; the url of the second copy
@@ -258,15 +267,26 @@ def site_at(location_list):
 REGIONAL_RX = re.compile(
     r"\bregional\b|\bregions?\b|\bministry\b|\bcorporate\b|\benterprise\b|\bhealth\s+plans?\b|"
     r"\bmanaged\s+care\b|\bsystem\s+(?:director|manager|vice\s+president|vp|executive|administrator|"
-    r"lead|coordinator|specialist|chief)\b", re.I)
+    r"lead|coordinator|specialist|chief)\b|"
+    # review 2026-10-30: the regional entity's vice presidents, the central
+    # telemetry monitoring unit, the laboratory technical consultant
+    r"\bvice\s+president\b|\btelemetry\s+operations\b|\bcentral(?:ized)?\s+(?:telemetry|monitoring)\b|"
+    r"\btechnical\s+consultant\b", re.I)
 # A system office's function (IT, coding, billing, revenue cycle, finance, HR,
-# legal, compliance, marketing, the foundation, a transfer or call centre).
+# legal, compliance, marketing, public relations, the foundation, a transfer
+# or call centre).
 OFFICE_RX = re.compile(
     r"\b(?:application\s+system\s+analyst|business\s+system\s+analyst|systems?\s+analyst|coders?|coding|"
     r"billing|revenue\s+cycle|information\s+(?:services|technology|systems)|payroll|"
     r"accounts\s+(?:payable|receivable)|accounting|accountant|finance|financial\s+analyst|"
-    r"human\s+resources|recruiter|talent\s+acquisition|legal|counsel|compliance|privacy|marketing|"
+    r"human\s+resources|recruiter|talent\s+acquisition|talent\s+development|legal|counsel|compliance|privacy|"
+    r"marketing|public\s+relations|"
     r"foundation|philanthrop\w*|transfer\s+center|call\s+cent(?:er|re)|contact\s+cent(?:er|re))\b", re.I)
+# A community programme (review 2026-10-30): AmeriCorps community connectors
+# ("Members ... will not be considered employees of CHRISTUS Health"),
+# community health workers, community outreach and community benefit.
+COMMUNITY_RX = re.compile(
+    r"\bamericorps\b|\bcommunity\s+(?:health\s+(?:workers?|development)|outreach|connectors?|benefit)\b", re.I)
 
 
 def keeps_label(title) -> str:
@@ -280,6 +300,8 @@ def keeps_label(title) -> str:
         return "regional or system role"
     if OFFICE_RX.search(t):
         return "system office function"
+    if COMMUNITY_RX.search(t):
+        return "community program"
     return ""
 
 

@@ -140,6 +140,16 @@ def test_the_clinic_group_only_where_its_own_page_named_the_hospital():
     ("Application System Analyst II - Cadence", "system office function"),
     ("Specialty Coder Senior - Multi Specialty", "system office function"),
     ("CHRISTUS Health Regional Compliance & Privacy Director", "regional or system role"),
+    # review 2026-10-30: titles of the 2026-10-30 feed at hospital streets
+    ("AmeriCorps Community Connector I - General", "community program"),
+    ("AmeriCorps Community Connector II - Perinatal", "community program"),
+    ("Community Health Worker Senior - Community Health Development", "community program"),
+    ("Social Worker MSW Senior - Community Outreach", "community program"),
+    ("Vice President, Mission Integration", "regional or system role"),
+    ("Director Telemetry Operations - Telemetry", "regional or system role"),
+    ("Laboratory Technical Consultant Senior - Outpatient Lab", "regional or system role"),
+    ("Public Relations Specialist II - Communications", "system office function"),
+    ("Talent Development and Culture Consultant II - Talent Development and Culture", "system office function"),
 ])
 def test_titles_that_keep_the_unit(title, why):
     assert C.keeps_label(title) == why
@@ -153,6 +163,14 @@ def test_titles_that_keep_the_unit(title, why):
     "Clinical Nurse - Nursing Float Pool",
     "Registered Nurse - Emergency Department",
     "Advanced Practice Provider - Hospitalist",
+    # review 2026-10-30: the hospital's own units and leaders stay named
+    "Registered Nurse - Telemetry",
+    "Monitor Technician - Telemetry",
+    "Clinical Director - Telemetry / Nursing Leadership",
+    "Clinical Laboratory Scientist II - Lab AdminGeneral - PRN",
+    "Manager Pastoral Care - Spiritual Care",
+    "Care Manager II - Case Management",
+    "Registered Nurse Clinical Educator II - Clinical Education",
 ])
 def test_hospital_titles_take_the_hospital(title):
     assert C.keeps_label(title) == ""
