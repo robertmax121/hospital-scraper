@@ -168,6 +168,70 @@ def test_hshs_names_agree_with_the_workday_table():
     assert wd <= {h[0] for h in TOWN.SPECS["HSHS"].hospitals}
 
 
+# release 7 review (2026-10-30): the posting's own Facility / Location line
+# says it is no one hospital's; the header lines as the stored HSHS bodies
+# write them ("Department: ... Core Function: ... Facility: ... Location: ...")
+def _hshs_head(facility, location, department="Operations"):
+    return (f"Department: {department}\nCore Function: Support\nFacility: {facility}\nLocation: {location}\n"
+            f"Compensation: Compensation that aligns with your experience" + PAD)
+
+
+@pytest.mark.parametrize("facility,location,town,state,title", [
+    ("System Services Center", "Springfield, IL", "Springfield", "IL", "System Manager-Telehealth"),
+    ("IL Division Building", "Springfield, IL", "Springfield", "IL", "System Director Perioperative Services"),
+    ("Laundry Services", "Springfield, IL", "Springfield", "IL", "Laundry Associate I"),
+    ("Shared Laundry Warehouse", "Springfield, IL", "Springfield", "IL", "Manager-Laundry"),
+    ("Decatur South", "Decatur, IL", "Decatur", "IL", "Physical Therapist"),
+    ("O'Fallon Cancer Center", "O’Fallon, IL", "O'Fallon", "IL", "Radiation Therapist - PRN"),
+    ("Prevea", "Oconto Falls, WI", "Oconto Falls", "WI", "Physical Therapist"),
+    ("St. Vincent's and St. Mary's Hospitals", "Green Bay, WI", "Green Bay", "WI", "Cardiovascular Technologist"),
+    ("St. Nicholas Hospital/St. Vincent Hospital", "Sheboygan, WI and Green Bay WI", "Green Bay", "WI",
+     "Patient Care Assistant"),
+    ("Primarily St. Nicholas Hospital (Monday, Wednesday, Friday) and St. Vincent Hospital (Tuesday, Thursday).",
+     "Green Bay, WI and Sheboygan, WI", "Green Bay", "WI", "Registered Nurse (RN) - Cath Lab Flex Team"),
+    ("HSHS St Johns Hospital, Prairie Cardiovascular Consultants", "Springfield, IL", "Springfield", "IL",
+     "Project Manager"),
+    ("Sheboygan area for outpatient and St. Nicholas Hospital", "Sheboygan, WI", "Sheboygan", "WI",
+     "Speech Language Pathologist"),
+])
+def test_hshs_facility_line_that_names_no_one_hospital_keeps_the_label(facility, location, town, state, title):
+    body = _hshs_head(facility, location)
+    assert V.hshs_keeps_label(TOWN.clean_text(body))
+    got = TOWN.decide("HSHS", "HSHS Hospitals", town, state, title, body,
+                      HSHS_URL.format(town.replace(" ", "-").replace("'", "") + "-" + state))
+    # "entity-office": this line test; "offsite": the shared office / warehouse words got there first
+    assert got[:3] == (None, None, None) and got[3] in ("entity-office", "offsite")
+
+
+def test_hshs_location_line_of_two_towns_or_an_area_keeps_the_label():
+    body = "Department: Outpatient\nClinic Location: Great Springfield area, IL\n" + PAD
+    assert TOWN.decide("HSHS", "HSHS Hospitals", "Springfield", "IL", "Physical Therapist Assistant (PTA)", body,
+                       HSHS_URL.format("Springfield-IL"))[3] == "entity-office"
+
+
+@pytest.mark.parametrize("facility,location,town,state,want", [
+    ("St. John’s Hospital", "Springfield, IL", "Springfield", "IL", "HSHS St. John's Hospital"),
+    ("Springfield - St. John's Hospital", "Springfield, IL", "Springfield", "IL", "HSHS St. John's Hospital"),
+    ("Good Shephard Hospital", "Shelbyville, IL", "Shelbyville", "IL", "HSHS Good Shepherd Hospital"),
+    ("St. Anthony's - Effingham", "Effingham, IL", "Effingham", "IL", "HSHS St. Anthony's Memorial Hospital"),
+    ("St.Vincent Hospital", "Green Bay, WI", "Green Bay", "WI", "HSHS St. Vincent Hospital"),
+    # a float with a home hospital is the home hospital's
+    ("St. Francis Hospital (Home), Float St. Mary's Decatur and Good Shephard Shelbyville, IL", "Litchfield, IL",
+     "Litchfield", "IL", "HSHS St. Francis Hospital"),
+])
+def test_hshs_facility_line_of_one_hospital_still_names_it(facility, location, town, state, want):
+    body = _hshs_head(facility, location, department="Laboratory")
+    assert not V.hshs_keeps_label(TOWN.clean_text(body))
+    got = TOWN.decide("HSHS", "HSHS Hospitals", town, state, "Medical Laboratory Technician", body,
+                      HSHS_URL.format(town.replace(" ", "-") + "-" + state))
+    assert got[0] == want
+
+
+def test_hshs_line_test_never_raises():
+    assert V._LineTest(lambda t: 1 / 0).search("Facility: anything") is None
+    assert TOWN.SPECS["HSHS"].office_line.search("") is None
+
+
 # ── UVA Health (town table) ─────────────────────────────────────────────────
 
 def test_uva_community_health_rows_take_the_town_hospital():
@@ -193,6 +257,29 @@ def test_uva_clinic_towns_and_charlottesville_keep_the_label():
     # a row already on a site is left alone
     assert TOWN.decide("UVA Health", "UVA Medical Center", "Culpeper", "VA", "Registered Nurse",
                        "Summary" + PAD)[3] == "named-already"
+
+
+# release 7 review (2026-10-30): UVA Community Health's own entity-wide roles
+@pytest.mark.parametrize("title,body", [
+    ("Benefits Specialist II UVACH", "Benefits Specialist II UVACH Job Code: HR0000 ABOUT US" + PAD),
+    ("Mgr, Radiology Quality and Safety", "UVACH Radiology Quality & Safety Manager Job Code: MG0000" + PAD),
+    ("Risk Manager", "Summary" + PAD + " Monitoring of risks across UVA Community Health."),
+    ("Cultural Ambassador II", "Summary" + PAD + " Translations for UVA Community Health facilities, as needed."),
+    ("Van Driver - Mammography Van", "Van Driver Job Code: TR0000" + PAD),
+    ("Physical Therapist-PT Meadowbrook", "Physical Therapist Job Code: PT0000" + PAD),
+])
+def test_uva_entity_roles_and_offsite_services_keep_the_label(title, body):
+    got = TOWN.decide("UVA Health", "UVA Community Health", "Manassas", "VA", title, body)
+    assert got[0] is None and got[3] in ("entity-office", "care-site")
+
+
+def test_uva_hospital_roles_still_take_the_town_hospital():
+    body = ("Registered Nurse Job Code: RN0000 ABOUT US At UVA Community Health, part of the UVA Health academic "
+            "health system, we care for patients in UVA Health's community hospitals, outpatient locations and "
+            "provider offices. As a member of the UVA Community Health team you support patient care." + PAD)
+    got = TOWN.decide("UVA Health", "UVA Community Health", "Culpeper", "VA", "Registered Nurse Emergency Services",
+                      body)
+    assert got == ("UVA Health Culpeper Medical Center", "Culpeper", "VA", "town")
 
 
 # ── Ascension (site lines) ──────────────────────────────────────────────────

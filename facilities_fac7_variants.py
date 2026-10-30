@@ -159,6 +159,120 @@ for _spec_ in (HSHS_TOWNS, UVA_TOWNS):
     for _e in _spec_.emit:
         FT.EMIT[_e] = _spec_
 
+
+# ── Release 7 review (2026-10-30): what keeps HSHS and UVA rows on the label ──
+# The town rule gives a town's one hospital to every label row of the town
+# that no clinic, office or remote word marks. The stored postings say more:
+# HSHS writes the work site on a "Facility:" line ("Facility: System Services
+# Center", "IL Division Building", "Laundry Services", "Shared Laundry
+# Warehouse", "Prevea", "Decatur South", "O'Fallon Cancer Center": no
+# hospital), sometimes two hospitals ("St. Vincent's and St. Mary's
+# Hospitals", "St. Nicholas Hospital/St. Vincent Hospital", "Primarily St.
+# Nicholas Hospital ... and St. Vincent Hospital") or two towns ("Location:
+# Green Bay, WI and Sheboygan, WI", "Great Springfield area, IL"); UVA's
+# entity-wide roles say so in the header ("Benefits Specialist II UVACH",
+# "UVACH Radiology Quality & Safety Manager") or the body ("risks across UVA
+# Community Health", "translations for UVA Community Health facilities").
+# Each of those keeps the label (decision 2: offices, multi-site postings and
+# entity roles show the system with the town; a site is never guessed). A
+# "(Home)" hospital on the line is the posting's own ("St. Francis Hospital
+# (Home), Float St. Mary's Decatur ..."): the town rule decides as before.
+# facilities_town.decide reads a table's office_line as
+# office_line.search(<the body's first entity_chars characters, cleaned>);
+# _LineTest gives it a test that reads the line's value.
+HEAD_LINE_CHARS = 4000      # HSHS's Facility line sits up to ~1,700 characters in
+
+_FAC_LINE_RX = re.compile(r"\bFacility\s*:\s*(.{1,200})", re.I)
+_LOC_LINE_RX = re.compile(r"\b(?:Clinic\s+|Work\s+)?Location\s*:\s*(.{1,120})", re.I)
+# where a value ends in a cleaned (one-line) body: the next "Key:" or bullet
+_VALUE_END_RX = re.compile(
+    r"\s(?:[•*·o-]\s+)?(?:(?:Clinic|Work)\s+)?(?:Location|Department|Dept|Core\s+Function|Compensation|"
+    r"Sign[- ]?On(?:\s+Bonus)?|Schedule|Shift|Hours|Status|Pay(?:\s+Range)?|Job\s+(?:Code|Type)|Position|Benefits|"
+    r"Summary|Overview|Requirements|Qualifications|Facility)\b\s*:?|\s[•*·]\s", re.I)
+# an HSHS hospital by the words its postings use ("St John's", "St.Vincent",
+# "Good Shephard", "Holy Family"); the capture is the hospital
+_HSHS_HOSPITAL_RX = re.compile(
+    r"\b(?:st\.?|saint)\s*(john|mary|francis|joseph|anthony|elizabeth|vincent|nicholas|clare)|"
+    r"\b(good)\s+shep(?:h)?(?:e|a)rd\b|\b(holy)\s+family\b", re.I)
+_PARTS_RX = re.compile(r"\s*(?:,|/|;|\band\b|&)\s*", re.I)
+_TWO_TOWNS_RX = re.compile(
+    r"^[A-Z][\w.' -]*?(?:,\s*[A-Z]{2})?\s+(?:and|&)\s+[A-Z][\w.' -]*?,?\s*[A-Z]{2}\b|^[^,]{0,40}\barea\b")
+_UVA_ENTITY_RX = re.compile(
+    r"\bUVACH\b|\b(?:across|throughout)\s+(?:all\s+(?:of\s+)?)?UVA\s+Community\s+Health\b|"
+    r"\bUVA\s+Community\s+Health\s+(?:facilities|hospitals|sites|locations|entities)\b|\bsystem[- ]level\b|"
+    r"\bfrom\s+event\s+to\s+event\b", re.I)
+
+
+UNBOUNDED_VALUE_CHARS = 120   # a value no next "Key:" or bullet ends: only its first characters
+
+
+def _line_value(m):
+    """(value, bounded): the line's value up to the next "Key:" or bullet;
+    with none (prose follows the line in the cleaned body), its first
+    UNBOUNDED_VALUE_CHARS characters and bounded False."""
+    v = m.group(1)
+    end = _VALUE_END_RX.search(" " + v)
+    if end:
+        return v[:max(end.start() - 1, 0)].strip(" .-"), True
+    return v[:UNBOUNDED_VALUE_CHARS].strip(" .-"), False
+
+
+def hshs_keeps_label(text) -> str:
+    """Why an HSHS posting is no one hospital's by its own Facility or
+    Location line (see above), or "". A hospital and another site on one
+    line ("HSHS St Johns Hospital, Prairie Cardiovascular Consultants") is
+    read only on a line whose end is known."""
+    text = FT.clean_text(text)
+    m = _FAC_LINE_RX.search(text)
+    if m:
+        v, bounded = _line_value(m)
+        if v and not re.search(r"\(\s*home\s*\)", v, re.I):
+            named = {(x.group(1) or x.group(2) or x.group(3)).lower() for x in _HSHS_HOSPITAL_RX.finditer(v)}
+            if not named:
+                return "Facility line names no hospital: " + v[:80]
+            if len(named) > 1:
+                return "Facility line names two hospitals: " + v[:80]
+            parts = [p for p in _PARTS_RX.split(re.sub(r"\([^)]*\)", " ", v)) if p.strip()]
+            if bounded and any(not _HSHS_HOSPITAL_RX.search(p) for p in parts):
+                return "Facility line names a hospital and another site: " + v[:80]
+    m = _LOC_LINE_RX.search(text)
+    if m:
+        v, _ = _line_value(m)
+        if _TWO_TOWNS_RX.search(v):
+            return "Location line names several towns: " + v[:80]
+    return ""
+
+
+def uva_keeps_label(text) -> str:
+    """Why a UVA Community Health posting is the entity's own (UVACH, across
+    or throughout UVA Community Health, its facilities, a mobile service), or ""."""
+    m = _UVA_ENTITY_RX.search(FT.clean_text(text))
+    return ("entity-wide role: " + m.group(0)) if m else ""
+
+
+class _LineTest:
+    """A town table's office_line with a test in place of one pattern:
+    facilities_town.decide only calls .search(text) and reads its truth.
+    Never raises (a row it cannot read keeps the town rule)."""
+
+    def __init__(self, fn):
+        self.fn = fn
+
+    def search(self, text):
+        try:
+            return self.fn(text or "") or None
+        except Exception:
+            return None
+
+
+HSHS_TOWNS.office_line = _LineTest(hshs_keeps_label)
+HSHS_TOWNS.entity_chars = HEAD_LINE_CHARS
+UVA_TOWNS.office_line = _LineTest(uva_keeps_label)
+UVA_TOWNS.entity_chars = HEAD_LINE_CHARS
+# a UVA site by the title that is no hospital: the Meadowbrook outpatient
+# therapy site, the mammography van (facilities_town.is_care_site)
+FT.CARE_SITE_BY_SYSTEM[UVA] = re.compile(r"\bMeadowbrook\b|\bmammography\s+(?:van|coach|bus)\b", re.I)
+
 # ── Ascension: the Facility / Facility Name / Hospital line ─────────────────
 ASCENSION = "Ascension"
 ASCENSION_LABELS = frozenset({"Ascension", "Ascension Health"})

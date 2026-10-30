@@ -368,8 +368,12 @@ SITE_NAMES = _names(_SITES) | {"Intermountain Health Budge Clinic", "Intermounta
 _N_LOCATIONS_RX = re.compile(r"^\s*(\d+)\s+locations?\s*$", re.I)
 # A clinic float pool, a market-wide role ("Float Covering South Market",
 # "Registered Nurse Central Market Clinic Float Pool", "Resort Triage North
-# Market Clinics"): no one clinic is its site.
-POOL_RX = re.compile(r"\bfloat(?:ing|er|s)?\b|\bpool\b|\bmarket\b|\bcovering\b|\btravel(?:er|ing)?\b|\biflex\b", re.I)
+# Market Clinics"): no one clinic is its site. Release 7 review (2026-10-30):
+# Home InstaCare is the mobile urgent care that treats patients in their
+# homes ("Your home base will be Clinic Wynn - this role is primarily a mobile
+# practice"): home-based, so the label (decision 2).
+POOL_RX = re.compile(r"\bfloat(?:ing|er|s)?\b|\bpool\b|\bmarket\b|\bcovering\b|\btravel(?:er|ing)?\b|\biflex\b|"
+                     r"\bhome\s+instacare\b", re.I)
 
 
 def _is_system(system: str) -> bool:

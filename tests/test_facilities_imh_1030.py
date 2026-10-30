@@ -139,6 +139,9 @@ def test_names_are_clean_and_branded():
     ("Medical Assistant- Salt Lake Clinic- Multiple Specialties", "Intermountain Health Salt Lake Clinic", False),
     ("Medical Assistant Float Pool", "McKay-Dee Hospital", False),           # a hospital's own float pool
     ("Patient Service Representative", "Intermountain Health Billings Downtown Clinic", False),
+    # release 7 review: Home InstaCare treats patients in their homes (home-based)
+    ("Advanced Practice Provider Home InstaCare", "Intermountain Health Wynn Clinic", True),
+    ("Advanced Practice Provider InstaCare", "Intermountain Health Utah Valley InstaCare", False),
 ])
 def test_keep_label(title, name, keeps):
     assert I.keep_label(name, title) is keeps
