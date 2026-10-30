@@ -265,6 +265,14 @@ def unknown_site(system: str, loc: str, external_path: str = "") -> str:
     return text if _HOSPITALISH_RX.search(text) else ""
 
 
+# 2026-10-29 (phase 5 B): places another module gives a TOWN_BOARDS system's
+# rows after the list-time table (facilities_p5_b: Logan Health's town table
+# names the hospital of the posting's own town, "Logan Health Shelby" in
+# Shelby): system -> {(name, town key, ST)}. The head-office override leaves
+# them as it leaves the board's own towns.
+PLACED_EXTRA: dict[str, set] = {}
+
+
 def placed(system: str, name: str, city: str, state: str) -> bool:
     """True when (name, city, state) is a place this module gives for
     `system` (a table entry, or a town a TOWN_BOARDS / TOWN_SITE board
@@ -272,6 +280,8 @@ def placed(system: str, name: str, city: str, state: str) -> bool:
     s = _system(system or "")
     if not s or not city or not state:
         return False
+    if (name, key(city), state) in PLACED_EXTRA.get(s, ()):
+        return True
     entries = list(TABLES.get(s, {}).values()) + [e for _k, e in PREFIXES.get(s, ())]
     for nm, c, st, _src in entries:
         if c and (c, st) == (city, state) and (nm or system) == name:

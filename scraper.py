@@ -53,6 +53,10 @@ import facilities_systems_a   # 2026-10-29 phase 4: NL / KU body sites, Rocheste
 import facilities_systems_b   # 2026-10-29 (phase 4 B): Vandalia / UK / Mount Sinai / OHSU / IRC sites; SolutionHealth, Dartmouth, Duke towns; Rochester, Genesis sites
 import facilities_chains   # 2026-10-29 phase 4: RadNet, US Physical Therapy, AFC, NHS, GoHealth, Cantex, Nexion sites
 import facilities_trinity_stays   # 2026-10-29 phase 4: Trinity's town, text and site rows; Sanford's Good Samaritan communities; Gentiva / Elara branches
+import facilities_fac5_a   # 2026-10-29 phase 5 A: UTSW / NYU / MaineHealth / UIHC / WVU / St. Luke's / UMass / Novant / Corewell / BILH sites and towns; UMass town table; UCSF work locations
+import facilities_p5_b   # 2026-10-29 phase 5 B: Riverside / Banner / Cleveland Clinic sites; UHS, Logan, Health First towns; Telecare programs, Cincinnati and Akron campuses, MGB, UTHealth (registers in facilities_workday / facilities_town)
+import facilities_fac5c   # 2026-10-29 phase 5 C: ARH / DCH / Shriners / St. Charles / Premier / Hendrick / Sharp ... town tables; title, address and link sites (registers in facilities_town)
+import facilities_fac5_review   # 2026-10-30 release 5 review A: Union Hospital Regional, Rivers Health (town table), Children's National RSC, Billings Clinic affiliates; system-office and cross-site roles keep the label
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -33411,6 +33415,51 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         if facilities_systems_b.UNKNOWN:
             logger.info("Systems B, values no table names: " + facilities_systems_b.unknown_summary())
             facilities_systems_b.UNKNOWN.clear()
+    # 2026-10-29 (facility scale, phase 5 A): the site a UT Southwestern or NYU
+    # Langone title or site line, a MaineHealth entity line, a UIHC Location line,
+    # a WVU or St. Luke's Workday site, a UMass / Novant Facility line, a Corewell
+    # SITE line or a BILH residence names, and the town a WVU Address block, a UIHC
+    # or BILH Location line gives a label row (facilities_fac5_a); the stored site or
+    # town on nights with no body. Before the town tables guess from a town.
+    # 2026-10-30 (release 5 review A): the names the phase 5 rows carry before
+    # the phase 5 passes, so the review pass below knows which names they gave.
+    try:
+        _f5_before = facilities_fac5_review.snapshot(kept)
+    except Exception as e:
+        logger.warning(f"Phase 5 review: snapshot failed, the review pass looks at tonight's names only ({e})")
+        _f5_before = None
+    f5a = _facility_pass("Phase 5 A", facilities_fac5_a.apply_facilities, kept)
+    if f5a:
+        logger.info("Phase 5 A: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(f5a.items())))
+    # 2026-10-29 (facility scale, phase 5 B): a Telecare title's program number, a
+    # Cincinnati Children's Workday campus, Akron Children's Mahoning Valley campus, an
+    # MGB Site: entity, a Logan Health site the posting's opening names, Cleveland
+    # Clinic's Lou Ruvo Center, UTHealth's psychiatric center (facilities_p5_b), before
+    # the town tables guess from a town.
+    fp5 = _facility_pass("Phase 5 B", facilities_p5_b.apply_facilities, kept)
+    if fp5:
+        logger.info("Phase 5 B: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fp5.items())))
+    # 2026-10-29 (facility scale, phase 5 C): the campus a Hendrick, Premier,
+    # Temple, Sharp or UW Medicine title names ("RN -CCU / ICU - South",
+    # "MVH North", "Episcopal Campus", "Sharp Grossmont Hospital"), Bellin's
+    # "Location:" street, Stanford's Tri-Valley link, Cape Cod's named sites
+    # and bracketed title towns, Norton Sound's village towns
+    # (facilities_fac5c), before the town tables guess from a town.
+    f5c = _facility_pass("Phase 5 C", facilities_fac5c.apply_facilities, kept)
+    if f5c:
+        logger.info("Phase 5 C: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(f5c.items())))
+    # 2026-10-30 (release 5 review A): Union Hospital Regional's "UHR" titles,
+    # Children's National's Rehabilitation and Specialized Care Center, Billings
+    # Clinic's affiliates by name; a system office's or a cross-site role keeps
+    # the label (a phase 5 name goes back, the town tables are told to leave
+    # it) (facilities_fac5_review), before the town tables.
+    frv = _facility_pass("Phase 5 review", facilities_fac5_review.apply_facilities, kept, _f5_before)
+    if frv:
+        logger.info("Phase 5 review: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(frv.items())))
     # 2026-10-29 (facility scale, phase 3 B): the Ochsner campus a title names
     # ("... - Jeff Hwy", "- OLGMC"), before the town tables guess from a town.
     hsb = _facility_pass("Hospital systems B (titles)", facilities_hospital_systems_b.apply_before_town, kept)
@@ -33682,6 +33731,12 @@ async def run_all() -> list[dict]:
     # on the body-named rows of facilities_systems_b
     n_fsb = await asyncio.to_thread(facilities_systems_b.load_known_facilities)
     logger.info(f"Systems B: {n_fsb:,} stored rows of {len(facilities_systems_b.SYSTEMS)} systems name a site or a town")
+    # 2026-10-29 (phase 5 A): the sites and towns stored on the rows of facilities_fac5_a's systems
+    n_f5a = await asyncio.to_thread(facilities_fac5_a.load_known_facilities)
+    logger.info(f"Phase 5 A: {n_f5a:,} stored rows of {len(facilities_fac5_a.SYSTEMS)} systems carry a site or a town")
+    # 2026-10-29 (phase 5 B): the sites stored on facilities_p5_b's named rows
+    n_fp5 = await asyncio.to_thread(facilities_p5_b.load_known_facilities)
+    logger.info(f"Phase 5 B: {n_fp5:,} stored rows of {len(facilities_p5_b.SYSTEMS)} systems name a site")
     # 2026-10-29 (phase 3): the town tables' stored rows load before the
     # detail passes, so facilities_leftovers.reread_slot knows which stored
     # rows of its Workday systems to read again (apply_jobs loads it

@@ -787,6 +787,15 @@ try:
 except Exception as _e:      # pragma: no cover - the tests hold the tables whole
     import logging as _logging
     _logging.getLogger("scraper.facility").warning(f"Oracle tables: phase 4 B additions not installed ({_e})")
+# 2026-10-29 (facility scale phase 5 A): UCSF Health's hospital buildings
+# (Moffitt / Long, Mission Bay, Mount Zion, Hyde, Stanyan) whose work location
+# these tables did not list (facilities_fac5_a.ORACLE_EXTRA). Same rules.
+try:
+    import facilities_fac5_a as _f5a   # noqa: E402
+    _f5a.extend_oracle(SYSTEMS)
+except Exception as _e:      # pragma: no cover - the tests hold the tables whole
+    import logging as _logging
+    _logging.getLogger("scraper.facility").warning(f"Oracle tables: phase 5 A additions not installed ({_e})")
 _build()
 
 
