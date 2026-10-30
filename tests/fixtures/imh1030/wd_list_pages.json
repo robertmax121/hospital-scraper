@@ -1,0 +1,455 @@
+{
+ "_note": "Intermountain Health (imh.wd108, IntermountainCareers) CXS list pages read 2026-10-30, searchText 'Billings' and 'Float Pool', first page each, a few seconds apart, no login; trimmed to the fields scrape_workday reads; 'total' set to the page length so the crawl stops after it.",
+ "pages": {
+  "billings": {
+   "total": 20,
+   "jobPostings": [
+    {
+     "title": "Registered Nurse Pediatrics and PICU",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Registered-Nurse-Pediatrics-and-PICU_R187979",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R187979",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Pulmonary and Critical Care Physician",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Physician-Critical-Care-ICU-Pulmonology_R114430",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital; Billings Downtown Clinic",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R114430",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Patient Access Acute Representative",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Patient-Access-Acute-Representative_R184716",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R184716",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Patient Access Assoc I Registration PRN",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Patient-Access-Assoc-I-Registration-PRN_R184736",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R184736",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Patient Access Acute Representative PRN",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Patient-Access-Acue-Representative_R183820",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R183820",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Patient Service Representative West End",
+     "externalPath": "/job/MGBL-West-End-MOB---Billings/Patient-Service-Representative-West-End_R179420",
+     "locationsText": "MGBL West End MOB - Billings",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R179420",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Registered Nurse Ortho Med Trauma",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Registered-Nurse-Ortho-Med-Trauma_R172473",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted Yesterday",
+     "bulletFields": [
+      "R172473",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "CV Invasive Specialist in Training PRN",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/CV-Invasive-Specialist-in-Training-PRN_R173619",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R173619",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Registered Nurse Community Crisis Center PRN",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Registered-Nurse-Community-Crisis-Center-PRN_R188122",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R188122",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Advanced Practice Provider Family Medicine - Red Lodge",
+     "externalPath": "/job/Red-Lodge-Clinic---Family-Medicine/Advanced-Practice-Provider-Family-Medicine---Red-Lodge_R187340",
+     "locationsText": "Red Lodge Clinic - Family Medicine",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R187340",
+      "Montana",
+      "Red Lodge"
+     ]
+    },
+    {
+     "title": "Nutrition Care Supply Associate",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Nutrition-Care-Associate_R186735",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R186735",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Cardiac Electrophysiologist",
+     "externalPath": "/job/Billings-Downtown-Clinic/Cardiology-Electrophysiologist_R78744",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital; Billings Downtown Clinic",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R78744",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Practice Manager",
+     "externalPath": "/job/Heights-Clinic/Practice-Manager_R183224",
+     "locationsText": "Heights Clinic",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R183224",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Registered Nurse Observation Unit",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Registered-Nurse-Observation-Unit_R187898",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R187898",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Phlebotomist",
+     "externalPath": "/job/Broadwater-Clinic/Phlebotomist_R185512-1",
+     "locationsText": "Broadwater Clinic",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R185512",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Registered Nurse Oncology Infusion PRN",
+     "externalPath": "/job/St-Vincent-Regional-Hospital---Cancer-Centers-of-Montana/Registered-Nurse-Oncology-Infusion-PRN_R177922",
+     "locationsText": "St. Vincent Regional Hospital - Cancer Centers of Montana",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R177922",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Patient Safety Attendant PRN",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Patient-Safety-Attendant-PRN_R187880-1",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R187880",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Patient Service Representative",
+     "externalPath": "/job/Billings-Medical-Group/Patient-Service-Representative_R180971",
+     "locationsText": "Billings Medical Group",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R180971",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Patient Care Tech CNA Orthopedics",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Patient-Care-Tech-CNA-Orthopedics_R185438",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R185438",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Patient Care Technician CNA Orthopedics",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Patient-Care-Technician-CNA-Orthopedics_R185122",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R185122",
+      "Montana",
+      "Billings"
+     ]
+    }
+   ]
+  },
+  "float_pool": {
+   "total": 20,
+   "jobPostings": [
+    {
+     "title": "New Grad RN Pediatric Float Pool",
+     "externalPath": "/job/Intermountain-Health-Primary-Childrens-Hospital/New-Grad-RN-Pediatric-Float-Pool_R188239-1",
+     "locationsText": "Intermountain Health Primary Childrens Hospital",
+     "postedOn": "Posted Today",
+     "bulletFields": [
+      "R188239",
+      "Utah",
+      "Salt Lake City"
+     ]
+    },
+    {
+     "title": "Registered Nurse Resource Pool",
+     "externalPath": "/job/Intermountain-Health-St-George-Regional-Hospital/Registered-Nurse-Resource-Pool_R122337",
+     "locationsText": "Intermountain Health Cedar City Hospital; Intermountain Health Garfield Memorial Hospital; Intermountain Health St George Regional Hospital; Intermountain Health Sevier Valley Hospital; Intermountain Health Fillmore Community Hospital",
+     "postedOn": "Posted 2 Days Ago",
+     "bulletFields": [
+      "R122337",
+      "Utah",
+      "St George"
+     ]
+    },
+    {
+     "title": "Medical Assistant Float Pool PRN",
+     "externalPath": "/job/McKay-Dee-Medical-Building/Medical-Assistant-Float-Pool-PRN_R186247",
+     "locationsText": "McKay-Dee Medical Building",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R186247",
+      "Utah",
+      "Ogden"
+     ]
+    },
+    {
+     "title": "Medical Assistant Float Pool",
+     "externalPath": "/job/Intermountain-Health-McKay-Dee-Hospital/Medical-Assistant-Float-Pool_R185827",
+     "locationsText": "Intermountain Health McKay-Dee Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R185827",
+      "Utah",
+      "Ogden"
+     ]
+    },
+    {
+     "title": "Patient Care Technician CNA Float Pool",
+     "externalPath": "/job/St-Marys-Regional-Hospital/Patient-Care-Technician--CNA--Full-time_R172993",
+     "locationsText": "St. Marys Regional Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R172993",
+      "Colorado",
+      "Grand Junction"
+     ]
+    },
+    {
+     "title": "Patient Care Tech CNA Float Pool",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Patient-Care-Tech-CNA-Float-Pool_R176593",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R176593",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Patient Care Tech CNA Float Pool",
+     "externalPath": "/job/Intermountain-Health-St-Vincent-Regional-Hospital/Patient-Care-Tech-CNA-Float-Pool_R176592",
+     "locationsText": "Intermountain Health St Vincent Regional Hospital",
+     "postedOn": "Posted 3 Days Ago",
+     "bulletFields": [
+      "R176592",
+      "Montana",
+      "Billings"
+     ]
+    },
+    {
+     "title": "Radiology Technologist-Registered - Clinic Float Pool - PRN",
+     "externalPath": "/job/Utah-Valley-Clinic/Radiology-Technologist-Registered---Clinic-Float-Pool---PRN_R183906",
+     "locationsText": "Utah Valley Clinic",
+     "postedOn": "Posted 7 Days Ago",
+     "bulletFields": [
+      "R183906",
+      "Utah",
+      "Provo"
+     ]
+    },
+    {
+     "title": "Medical Assistant Float Pool",
+     "externalPath": "/job/Utah-Valley-Clinic/Medical-Assistant-Float-Pool_R185904",
+     "locationsText": "Utah Valley Clinic",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "R185904",
+      "Utah",
+      "Provo"
+     ]
+    },
+    {
+     "title": "Medical Assistant Float Pool",
+     "externalPath": "/job/Utah-Valley-Clinic/Medical-Assistant-Float-Pool_R186898",
+     "locationsText": "Utah Valley Clinic",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "R186898",
+      "Utah",
+      "Provo"
+     ]
+    },
+    {
+     "title": "Registered Nurse Central Market Clinic Float Pool",
+     "externalPath": "/job/Salt-Lake-Clinic/Registered-Nurse-Central-Market-Clinic-Float-Pool_R186665",
+     "locationsText": "Salt Lake Clinic",
+     "postedOn": "Posted 8 Days Ago",
+     "bulletFields": [
+      "R186665",
+      "Utah",
+      "Salt Lake City"
+     ]
+    },
+    {
+     "title": "Ultrasound Technologist Float Pool",
+     "externalPath": "/job/Lutheran-Medical-Center/Ultrasound-Technologist-Float-Pool_R187274",
+     "locationsText": "Saint Joseph Hospital; Platte Valley Hospital; Good Samaritan Hospital; Lutheran Medical Center",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "R187274",
+      "Colorado",
+      "Wheat Ridge"
+     ]
+    },
+    {
+     "title": "CT Technologist Float Pool",
+     "externalPath": "/job/Lutheran-Medical-Center/CT-Technologist-Float-Pool_R187266",
+     "locationsText": "Saint Joseph Hospital; Platte Valley Hospital; Good Samaritan Hospital; Lutheran Medical Center",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "R187266",
+      "Colorado",
+      "Wheat Ridge"
+     ]
+    },
+    {
+     "title": "Radiology Technologist Float Pool",
+     "externalPath": "/job/Lutheran-Medical-Center/Radiology-Technologist-Float-Pool_R187224",
+     "locationsText": "Saint Joseph Hospital; Platte Valley Hospital; Good Samaritan Hospital; Lutheran Medical Center",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "R187224",
+      "Colorado",
+      "Wheat Ridge"
+     ]
+    },
+    {
+     "title": "Medical Assistant or Medical Assistant Resident Float Pool PRN",
+     "externalPath": "/job/Intermountain-Health-Cassia-Regional-Hospital/Medical-Assistant-or-Medical-Assistant-Resident-Float-Pool-PRN_R187237",
+     "locationsText": "Intermountain Health Cassia Regional Hospital",
+     "postedOn": "Posted 10 Days Ago",
+     "bulletFields": [
+      "R187237",
+      "Idaho",
+      "Burley"
+     ]
+    },
+    {
+     "title": "Patient Care Technician CNA Float Pool",
+     "externalPath": "/job/St-Marys-Regional-Hospital/Patient-Care-Technician-CNA-Float-Pool_R185761",
+     "locationsText": "St. Marys Regional Hospital",
+     "postedOn": "Posted 21 Days Ago",
+     "bulletFields": [
+      "R185761",
+      "Colorado",
+      "Grand Junction"
+     ]
+    },
+    {
+     "title": "Clinical Resource Nurse Float Pool",
+     "externalPath": "/job/Platte-Valley-Hospital/Clinical-Resource-Nurse-Float-Pool_R180337",
+     "locationsText": "Platte Valley Hospital",
+     "postedOn": "Posted 22 Days Ago",
+     "bulletFields": [
+      "R180337",
+      "Colorado",
+      "Brighton"
+     ]
+    },
+    {
+     "title": "Medical Assistant- Salt Lake Clinic- Multiple Specialties",
+     "externalPath": "/job/Salt-Lake-Clinic/Medical-Assistant_R181061",
+     "locationsText": "Salt Lake Clinic",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R181061",
+      "Utah",
+      "Salt Lake City"
+     ]
+    },
+    {
+     "title": "Nuclear Med Technologist Float Pool",
+     "externalPath": "/job/Peaks-Regional-Office/Nuclear-Med-Technologist-Float-Pool_R177971",
+     "locationsText": "Intermountain Health Lutheran Hospital; Saint Joseph Hospital; Platte Valley Hospital; Good Samaritan Hospital; Peaks Regional Office",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R177971",
+      "Colorado",
+      "Broomfield"
+     ]
+    },
+    {
+     "title": "Registered Nurse Resource Pool",
+     "externalPath": "/job/Intermountain-Health-Utah-Valley-Hospital/Registered-Nurse-Resource-Pool_R106130",
+     "locationsText": "Intermountain Health Orem Community Hospital; Intermountain Health American Fork Hospital; Intermountain Health Heber Valley Hospital; Intermountain Health Spanish Fork Hospital; Intermountain Health Utah Valley Hospital",
+     "postedOn": "Posted 30+ Days Ago",
+     "bulletFields": [
+      "R106130",
+      "Utah",
+      "Provo"
+     ]
+    }
+   ]
+  }
+ }
+}

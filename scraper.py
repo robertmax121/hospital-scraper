@@ -59,6 +59,7 @@ import facilities_fac5c   # 2026-10-29 phase 5 C: ARH / DCH / Shriners / St. Cha
 import facilities_fac6a   # 2026-10-30 phase 6 A: INTEGRIS lead sentences, Prisma body work sites, Broward's CDTC (the nightly shortfall)
 import facilities_fac5_review   # 2026-10-30 release 5 review A: Union Hospital Regional, Rivers Health (town table), Children's National RSC, Billings Clinic affiliates; system-office and cross-site roles keep the label
 import facilities_fac6_short_b   # 2026-10-30 phase 6 B: TMC departments, Luminis units, UC Health / Loma Linda Oracle locations, LifeBridge / Legacy / TCH body cues, TCH + Mosaic town tables, Health First codes
+import facilities_imh   # 2026-10-30 phase 7: Intermountain's clinics, centers and offices by Workday site (registers in facilities_workday); multi-site postings and float pools keep the label
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -7259,6 +7260,14 @@ WD_SITE_UNKNOWN[facilities_senior_rehab.SUNRISE] = facilities_senior_rehab.sunri
 # that town; a "N Locations" posting and "Remote" are placed as before.
 WD_SITE_FACILITY[facilities_chains.GOHEALTH] = facilities_chains.gohealth_site
 WD_SITE_UNKNOWN[facilities_chains.GOHEALTH] = facilities_chains.gohealth_unknown
+# 2026-10-30 (phase 7, the owner: "innermountain needs billings clinic added"):
+# Intermountain's site table (facilities_imh registers it in facilities_workday)
+# through its own resolver: the board lists a posting at several sites as
+# "A; B; C"; three or more keep the system label in the primary site's town
+# (decision 2: a multi-site pool), two take the primary site (the path segment)
+# when it is listed, one is the table's.
+WD_SITE_FACILITY[facilities_imh.SYSTEM] = facilities_imh.site
+WD_SITE_UNKNOWN[facilities_imh.SYSTEM] = facilities_imh.unknown
 WD_TITLE_FACILITY: dict[str, tuple[tuple[re.Pattern, str, str, str], ...]] = {
     "Georgia DBHDD": (
         (re.compile(r"East Central Regional Hospital|\bECRH\b|Gracewood", re.I),
@@ -33521,6 +33530,14 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
     if f6b:
         logger.info("Phase 6 B: " + "; ".join(
             f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(f6b.items())))
+    # 2026-10-30 (facility scale, phase 7): an Intermountain clinic or center the
+    # site table named goes back to the label when the title says a float pool, a
+    # market-wide, remote or hybrid role (facilities_imh; a hospital keeps its own
+    # float pool).
+    fim = _facility_pass("Phase 7 Intermountain", facilities_imh.apply_facilities, kept)
+    if fim:
+        logger.info("Phase 7 Intermountain: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fim.items())))
     # 2026-10-29 (facility scale, phase 3 B): the Ochsner campus a title names
     # ("... - Jeff Hwy", "- OLGMC"), before the town tables guess from a town.
     hsb = _facility_pass("Hospital systems B (titles)", facilities_hospital_systems_b.apply_before_town, kept)

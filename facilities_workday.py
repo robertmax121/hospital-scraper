@@ -711,7 +711,9 @@ Intermountain-Health-Park-City-Hospital | Park City Hospital | Park City | UT | 
 Budge-Clinic | Intermountain Health Budge Clinic | Logan | UT | rows
 Badura-Clinic | Intermountain Health Badura Clinic | Las Vegas | NV | rows
 Mile-High-Clinic | Intermountain Health Mile High Clinic | Denver | CO | rows
-Superior-Clinic | - | Superior | CO | site
+# 2026-10-30 (phase 7): Superior Clinic is a named clinic (decision 2); the
+# rest of the board's sites are in facilities_imh.
+Superior-Clinic | Intermountain Health Superior Clinic | Superior | CO | site
 """, also="Intermountain Healthcare")
 
 # ── Cape Fear Valley Health (capefearvalley): the site is the entity code;
