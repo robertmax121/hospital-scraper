@@ -60,6 +60,7 @@ import facilities_fac6a   # 2026-10-30 phase 6 A: INTEGRIS lead sentences, Prism
 import facilities_fac5_review   # 2026-10-30 release 5 review A: Union Hospital Regional, Rivers Health (town table), Children's National RSC, Billings Clinic affiliates; system-office and cross-site roles keep the label
 import facilities_fac6_short_b   # 2026-10-30 phase 6 B: TMC departments, Luminis units, UC Health / Loma Linda Oracle locations, LifeBridge / Legacy / TCH body cues, TCH + Mosaic town tables, Health First codes
 import facilities_imh   # 2026-10-30 phase 7: Intermountain's clinics, centers and offices by Workday site (registers in facilities_workday); multi-site postings and float pools keep the label
+import facilities_christus   # 2026-10-30 round 2: CHRISTUS regional-entity rows take the hospital at their feed street address (reviewed table); clinics, offices, multi-site and regional roles keep the label
 import facilities_fac7_variants   # 2026-10-30 phase 7 (variants): names that stand for the system but are not its label: placeholders (CHRISTUS "N/A"), Ascension site lines, HSHS + UVA Health town tables (registers in facilities_town)
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
@@ -19788,6 +19789,12 @@ async def run_playwright_scrapers() -> list[Job]:
                     await page.evaluate("window.scrollBy(0, 600)")
                     await asyncio.sleep(0.8)
 
+                # 2026-10-30 (facility scale round 2): the job IDs CHRISTUS's
+                # feed lists at two or more streets (facilities_christus).
+                _cx_multi = frozenset()
+                if system_name == facilities_christus.SYSTEM:
+                    _cx_multi = _fac_hook("CHRISTUS multi-location postings",
+                                          facilities_christus.multi_location_ids, captured, default=frozenset())
                 for j in captured:
                     if not isinstance(j, dict):
                         continue
@@ -19811,6 +19818,18 @@ async def run_playwright_scrapers() -> list[Job]:
                         job_id = f"{system_name}_{title}_{loc}"[:80]
                     # hospital_name: prefer bu (CHRISTUS business unit) > facility > department > system
                     _hosp_name = (j.get("bu") or j.get("facility") or j.get("department") or system_name)
+                    # 2026-10-30 (facility scale round 2): a CHRISTUS row filed
+                    # under a regional entity ("CHRISTUS Spohn Health System")
+                    # takes the hospital at the street its feed row gives
+                    # ("locationList"), in that street's town; clinics, offices,
+                    # multi-site postings and regional roles keep the unit
+                    # (facilities_christus).
+                    if system_name == facilities_christus.SYSTEM:
+                        _cx = _fac_hook("CHRISTUS street addresses", facilities_christus.feed_site,
+                                        _hosp_name, j.get("locationList"), str(title or ""),
+                                        str(j.get("jobId", j.get("id", ""))) in (_cx_multi or ()), default=None)
+                        if _cx:
+                            _hosp_name, _city, _state = _cx
                     if title:
                         jobs.append(Job(
                             title=str(title), hospital_system=system_name,
@@ -19863,6 +19882,9 @@ async def run_playwright_scrapers() -> list[Job]:
                 await ctx.close()
                 count = len([j for j in jobs if j.hospital_system == system_name])
                 logger.info(f"  {system_name}: {count} jobs")
+                if system_name == facilities_christus.SYSTEM and facilities_christus.STATS:
+                    logger.info(f"  CHRISTUS street addresses: {facilities_christus.stats_summary()}")
+                    facilities_christus.STATS.clear()
                 await asyncio.sleep(random.uniform(3, 5))
 
             except Exception as e:
