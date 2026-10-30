@@ -330,7 +330,9 @@ def test_other_federal_systems_are_as_before(monkeypatch):
     rows = scraper._usajobs_jobs(_item("HSJT-26-1-DHA", "Military Treatment Facilities under DHA", "Colorado Springs",
                                        "Colorado", org="Military Treatment Facilities under DHA"),
                                  "Military Health System")
-    assert [j.hospital_name for j in rows] == ["Military Treatment Facilities under DHA"]
+    # 2026-10-30 (round 2, mhs): the agency label of a posting that names no
+    # military treatment facility gives the system (facilities_mhs)
+    assert [j.hospital_name for j in rows] == ["Military Health System"]
     rows = scraper._usajobs_jobs(_item("IHS-1", "Indian Health Service", "Gallup", "New Mexico",
                                        "Join the team at Gallup Indian Medical Center today.",
                                        org="Indian Health Service"), "Indian Health Service")

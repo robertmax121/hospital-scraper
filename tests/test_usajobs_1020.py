@@ -240,8 +240,10 @@ def test_a_facility_named_ahead_of_the_town_names_that_rows_hospital():
     rows = scraper._usajobs_jobs(item, "Military Health System")
     assert [(j.city, j.state, j.hospital_name) for j in rows] == [
         ("Jacksonville", "FL", "Naval Hospital Jacksonville"),
-        ("Kings Bay", "GA", "Military Treatment Facilities under DHA"),       # usajobs_facility, as before
-        ("San Diego", "CA", "Military Treatment Facilities under DHA"),       # a complex is not a hospital
+        # 2026-10-30 (round 2, mhs): a row whose posting names no military treatment
+        # facility of its place shows the system, not the agency label (facilities_mhs)
+        ("Kings Bay", "GA", "Military Health System"),
+        ("San Diego", "CA", "Military Health System"),       # a complex is not a hospital
     ]
     assert rows[1].job_id == "HSJT-26-13073023-DHA-kings-bay-ga"
 
