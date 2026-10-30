@@ -1,0 +1,7026 @@
+{
+"read": "2026-10-30, pm.healthcaresource.com/JobseekerSearchAPI/anmed/api/Search (6 pages of 50, sorted by datePosted)",
+"kept": "title, hiringOrganization (entity, department), jobLocation.address, userArea.jobPostingID; nothing else",
+"hits": [
+{
+"_source": {
+"title": "Nursing Assistant/Patient Care Technician - 5 Center",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 Center - Progressive Cardiac Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31910
+}
+}
+},
+{
+"_source": {
+"title": "Clinical Effectiveness Manager",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cannon",
+"subOrganization": {
+"name": "Quality"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "123 W.G. Acker Drive",
+"addressLocality": "Pickens",
+"addressRegion": "SC",
+"postalCode": "29671",
+"addressLocalityRegion": "Pickens, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31904
+}
+}
+},
+{
+"_source": {
+"title": "Pharmacy Manager - North Campus",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Infusion Pharmacy"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 31906
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (8S) Adult Surgical/ Orthopedics **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "8 South - Adult Surgical/ Pediatrics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31905
+}
+}
+},
+{
+"_source": {
+"title": "Epic OpTime Analyst – OR/Surgical Services",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "EPIC"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "522 N. McDuffie Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31893
+}
+}
+},
+{
+"_source": {
+"title": "Epic Ambulatory Application Analyst",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "EPIC"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "522 N. McDuffie Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31892
+}
+}
+},
+{
+"_source": {
+"title": "Cyber Security Analyst II",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Information Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31894
+}
+}
+},
+{
+"_source": {
+"title": "Cyber Security Analyst II",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Information Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31895
+}
+}
+},
+{
+"_source": {
+"title": "Cyber Security Analyst III",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Information Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31898
+}
+}
+},
+{
+"_source": {
+"title": "Cyber Security Analyst III",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Information Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31897
+}
+}
+},
+{
+"_source": {
+"title": "Cyber Security Analyst III",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Information Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31896
+}
+}
+},
+{
+"_source": {
+"title": "Cardiac Sonographer",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Non-Invasive Cardiovascular Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31901
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "6 South- Adult Surgical"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31902
+}
+}
+},
+{
+"_source": {
+"title": "Pharmacy Technician I/II",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Infusion Pharmacy"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 31903
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - PACU **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "PACU"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31899
+}
+}
+},
+{
+"_source": {
+"title": "Case Manager",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Care Coordination"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31890
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Patient Placement",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Patient Placement"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31891
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 North - Cardiac Telemetry"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31878
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 North - Cardiac Telemetry"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31879
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 South - Orthopedics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31883
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 South - Orthopedics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31882
+}
+}
+},
+{
+"_source": {
+"title": "Security Officer",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Security"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31884
+}
+}
+},
+{
+"_source": {
+"title": "MLT/ MT",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Lab (Clinical)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31885
+}
+}
+},
+{
+"_source": {
+"title": "Registrar II - AnMed Piedmont",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont",
+"subOrganization": {
+"name": "Emergency Business Office (EBO) - Piedmont"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2110 Hwy 86",
+"addressLocality": "Piedmont",
+"addressRegion": "SC",
+"postalCode": "29673",
+"addressLocalityRegion": "Piedmont, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31886
+}
+}
+},
+{
+"_source": {
+"title": "4S Nurse Manager - Orthopedic",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 South - Orthopedics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31888
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - CVICU **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CV - ICU"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31880
+}
+}
+},
+{
+"_source": {
+"title": "Physician Assistant/Nurse Practitioner",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed ENT - Anderson"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "1655 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31877
+}
+}
+},
+{
+"_source": {
+"title": "Nurse Practitioner",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Behavioral Health Providers"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31876
+}
+}
+},
+{
+"_source": {
+"title": "LPN/RN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Arrhythmia "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31874
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Environmental Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31872
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Environmental Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31871
+}
+}
+},
+{
+"_source": {
+"title": "Marketing Assistant - Production and Operations",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Marketing"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31870
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant/Patient Care Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Behavioral Health Services "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31860
+}
+}
+},
+{
+"_source": {
+"title": "Supervisor - Clinical Office - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Tiger Blvd. (5200)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31861
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN/RN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Pediatrics - Clemson"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "885 Tiger Boulevard",
+"addressLocality": "Clemson",
+"addressRegion": "SC",
+"postalCode": "29631",
+"addressLocalityRegion": "Clemson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31863
+}
+}
+},
+{
+"_source": {
+"title": "Food Service Worker",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Food & Nutrition"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31866
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Medical Group Resource Team"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "109 Essex Dr.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31865
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN/RN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Medical Group Resource Team"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "109 Essex Dr.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31864
+}
+}
+},
+{
+"_source": {
+"title": "Cytotechnologist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Lab Cytology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31869
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant- TCTC Scholar Program ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Resource Team"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31859
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Primary Care & Pediatrics - Seneca (5740)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31858
+}
+}
+},
+{
+"_source": {
+"title": "Behavioral Emergency Response Team Technician- BERT Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Crisis Assessment & Treatment (CAT) Team"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31850
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Orthopedics & Sports Medicine"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31853
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cannon",
+"subOrganization": {
+"name": "AnMed Primary Care - Liberty"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "123 W.G. Acker Drive",
+"addressLocality": "Pickens",
+"addressRegion": "SC",
+"postalCode": "29671",
+"addressLocalityRegion": "Pickens, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31854
+}
+}
+},
+{
+"_source": {
+"title": "Phlebotomist/ Certified Phlebotomist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Lab (Reg/Phleb)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31852
+}
+}
+},
+{
+"_source": {
+"title": "Sterile Processing Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CSPD"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31857
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Emergency Department **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Emergency Department"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31849
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - CV Surgery",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CV Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31848
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Environmental Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31847
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Environmental Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31846
+}
+}
+},
+{
+"_source": {
+"title": "Vascular Sonographer",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Non-Invasive Cardiovascular Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31844
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31840
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Fant Street (5140)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31839
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 Center - Med/Surg"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31841
+}
+}
+},
+{
+"_source": {
+"title": "Occupational Therapy Assistant (OTA) - Acute Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Therapy - Acute Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31843
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist - Operating Room",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31838
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cardiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31835
+}
+}
+},
+{
+"_source": {
+"title": "LPN/RN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed ENT - Anderson"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "1655 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31836
+}
+}
+},
+{
+"_source": {
+"title": "Food Service Worker",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Food & Nutrition"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31834
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed ENT - Anderson"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "1655 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31826
+}
+}
+},
+{
+"_source": {
+"title": "Billing Specialist ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Customer Service"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "522 North McDuffie Street",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 31828
+}
+}
+},
+{
+"_source": {
+"title": "Billing Specialist - Audit/ Claims Review",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Business Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "522 N. McDuffie St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31829
+}
+}
+},
+{
+"_source": {
+"title": "Registrar - Emergency Business Office",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Emergency Business Office (EBO)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 31830
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed OBGYN - Anderson "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31827
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 Center - Med/Surg"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31823
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (4C) Oncology ** Bonus Eligible**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 Center - Med/Surg"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31824
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (4C) Oncology ** Bonus Eligible**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 Center - Med/Surg"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31825
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist II",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Orthopedics & Sports Medicine"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31813
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist II",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Orthopedics & Sports Medicine"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31815
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist II",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Orthopedics & Sports Medicine"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31814
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist II",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Orthopedics & Sports Medicine"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31812
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - PACU ** Bonus Eligible**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "PACU"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31817
+}
+}
+},
+{
+"_source": {
+"title": "Team Leader - CSPD",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CSPD"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31807
+}
+}
+},
+{
+"_source": {
+"title": "Coder II - Hospital",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Health Information Management "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31808
+}
+}
+},
+{
+"_source": {
+"title": "Sterile Processing Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - CSPD - OR"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31806
+}
+}
+},
+{
+"_source": {
+"title": "EVS Tech III - AnMed Piedmont",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont",
+"subOrganization": {
+"name": "Environmental Services (EVS) - Piedmont "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2110 Hwy 86",
+"addressLocality": "Piedmont",
+"addressRegion": "SC",
+"postalCode": "29673",
+"addressLocalityRegion": "Piedmont, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31802
+}
+}
+},
+{
+"_source": {
+"title": "Social Worker / Counselor- Behavioral Health",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Behavioral Health Services "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31798
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 South - Pulmonary Step Down"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31799
+}
+}
+},
+{
+"_source": {
+"title": "Peer Support Specialist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cannon",
+"subOrganization": {
+"name": "SBIRT Program"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "123 W.G. Acker Drive",
+"addressLocality": "Pickens",
+"addressRegion": "SC",
+"postalCode": "29671",
+"addressLocalityRegion": "Pickens, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31777
+}
+}
+},
+{
+"_source": {
+"title": "Radiation Therapist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CC Radiation Oncology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31767
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant- TCTC Scholar Program ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Resource Team"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31776
+}
+}
+},
+{
+"_source": {
+"title": "Registrar II - AnMed Piedmont",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont",
+"subOrganization": {
+"name": "Emergency Business Office (EBO) - Piedmont"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2110 Hwy 86",
+"addressLocality": "Piedmont",
+"addressRegion": "SC",
+"postalCode": "29673",
+"addressLocalityRegion": "Piedmont, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31769
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Environmental Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31761
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Psychiatry"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "400 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31763
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Primary Care - Pendleton"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "1005 Meehan Way",
+"addressLocality": "Pendleton",
+"addressRegion": "SC",
+"postalCode": "29670",
+"addressLocalityRegion": "Pendleton, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31764
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN/RN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Pediatrics - Anderson "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31765
+}
+}
+},
+{
+"_source": {
+"title": "Cook",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cannon",
+"subOrganization": {
+"name": "Dietary Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "123 W.G. Acker Drive",
+"addressLocality": "Pickens",
+"addressRegion": "SC",
+"postalCode": "29671",
+"addressLocalityRegion": "Pickens, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31766
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist - Operating Room *Signing Bonus Eligible, No Call Required*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31757
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN/RN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Pediatrics - Anderson "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31753
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Environmental Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31754
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - PACU **BONUS Eligible**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - PACU"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 31743
+}
+}
+},
+{
+"_source": {
+"title": "Certified Medical Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Primary Care & Pediatrics - Seneca (5740)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31735
+}
+}
+},
+{
+"_source": {
+"title": "Pharmacist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Pharmacy"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31729
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Gastroenterology "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31726
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant/Patient Care Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "6 North - General Med/Surg"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31730
+}
+}
+},
+{
+"_source": {
+"title": "Registrar I - Outpatient Registration",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Outpatient Registration"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31716
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Primary Care - Internal Medicine"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "105 Buford Ave.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31721
+}
+}
+},
+{
+"_source": {
+"title": "Registrar - Emergency Business Office",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Emergency Business Office (EBO)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 31718
+}
+}
+},
+{
+"_source": {
+"title": "Emergency Department Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Emergency Department"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31702
+}
+}
+},
+{
+"_source": {
+"title": "Network Firewall Engineer III",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Information Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31707
+}
+}
+},
+{
+"_source": {
+"title": "Network Firewall Engineer III",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Information Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31708
+}
+}
+},
+{
+"_source": {
+"title": "Physician Assistant/Nurse Practitioner - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Tiger Blvd. (5200)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "885 Tiger Blvd",
+"addressLocality": "Clemson",
+"addressRegion": "SC",
+"postalCode": "29631",
+"addressLocalityRegion": "Clemson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31709
+}
+}
+},
+{
+"_source": {
+"title": "Phlebotomist/ Certified Phlebotomist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Health Lab-Fant Street"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "600 N. Fant Street ",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31705
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31700
+}
+}
+},
+{
+"_source": {
+"title": "Clinical Assistant/Certified Medical Assistant (CMA)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Oncology & Hematology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31701
+}
+}
+},
+{
+"_source": {
+"title": "Clinical Assistant/Certified Medical Assistant (CMA) - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Fant Street (5140)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31697
+}
+}
+},
+{
+"_source": {
+"title": "Physician Assistant/Nurse Practitioner - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Fant Street (5140)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31696
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Fant Street (5140)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31695
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31694
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (4S) Orthopedics ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 South - Orthopedics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31690
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (6N) Adult Medical ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "6 North - General Med/Surg"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31692
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (4S) Orthopedics ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 South - Orthopedics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31689
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Weekend",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 South - Orthopedics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31686
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Weekend",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 South - Orthopedics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31687
+}
+}
+},
+{
+"_source": {
+"title": "Engineering Senior Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Engineering"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville St. ",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31677
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "4 Center - Med/Surg"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31679
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Environmental Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31683
+}
+}
+},
+{
+"_source": {
+"title": "Epic Ambulatory/MyChart Analyst",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "EPIC"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "522 N. McDuffie Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31685
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Resource Team (Tier 3) BSN",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont",
+"subOrganization": {
+"name": "Resource Team - Emergency Department (6037)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31678
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Staff Development Educator-Telemetry/Step-Down Unit",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Nursing Staff Development"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31664
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Environmental Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31660
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Environmental Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant St",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31659
+}
+}
+},
+{
+"_source": {
+"title": "Registrar I - Outpatient Registration",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Outpatient Registration"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31658
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (6S) Adult Surgical ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "6 South- Adult Surgical"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31655
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician I",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Environmental Services (EVS)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31648
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant/Patient Care Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - OP Surgery Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31652
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist - Operating Room *Signing Bonus Eligible, No Call Required*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31651
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - ICU **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Intensive Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 31653
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed ENT - Anderson"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "1655 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31647
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cardiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31646
+}
+}
+},
+{
+"_source": {
+"title": "ED Communication Specialist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Emergency Department"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31643
+}
+}
+},
+{
+"_source": {
+"title": "Patient Transporter - Emergency Department",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Emergency Department"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31641
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Neuro ICU **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "7 North - Neuro ICU "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street ",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31639
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (5C) Progressive Cardiac Care **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 Center - Progressive Cardiac Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31638
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Emergency Department **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Emergency Department"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31637
+}
+}
+},
+{
+"_source": {
+"title": "Certified Medical Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31610
+}
+}
+},
+{
+"_source": {
+"title": "Clinical Assistant/Certified Medical Assistant (CMA) - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31611
+}
+}
+},
+{
+"_source": {
+"title": "Clinical Assistant/Certified Medical Assistant (CMA) - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31612
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31615
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31616
+}
+}
+},
+{
+"_source": {
+"title": "Physician Assistant/Nurse Practitioner - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31613
+}
+}
+},
+{
+"_source": {
+"title": "Physician Assistant/Nurse Practitioner - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31614
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31608
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Seneca (5720)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31609
+}
+}
+},
+{
+"_source": {
+"title": "Pharmacist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Pharmacy"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31606
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "7 North - Neuro Telemetry "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31593
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 South - Pulmonary Step Down"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31587
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 South - Pulmonary Step Down"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31588
+}
+}
+},
+{
+"_source": {
+"title": "Registrar - Emergency Business Office",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Emergency Business Office (EBO)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 31594
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Neurology "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31578
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Neurology "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31578
+}
+}
+},
+{
+"_source": {
+"title": "Certified Medical Assistant",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Fant Street (5140)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31580
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Neurology "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31577
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (5S) Pulmonary Step Down ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 South - Pulmonary Step Down"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31585
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Neuro ICU **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "7 North - Neuro ICU "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street ",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31586
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician II ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Environmental Services (EVS)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31574
+}
+}
+},
+{
+"_source": {
+"title": "EVS Technician III ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Waste Management"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31573
+}
+}
+},
+{
+"_source": {
+"title": "Physician Assistant/Nurse Practitioner",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Oncology & Hematology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31563
+}
+}
+},
+{
+"_source": {
+"title": "Student Surgical Technologist/Student Scholar Surgical Technologist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31545
+}
+}
+},
+{
+"_source": {
+"title": "Spanish Interpreter",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Language Services & Collaborative Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31537
+}
+}
+},
+{
+"_source": {
+"title": "Physician Assistant/Nurse Practitioner",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Young Adult Primary Care  (5510)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31539
+}
+}
+},
+{
+"_source": {
+"title": "CRNA (Certified Registered Nurse Anesthetist)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Anesthesiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31524
+}
+}
+},
+{
+"_source": {
+"title": " Staff Nurse - AnMed Piedmont Emergency Department",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont",
+"subOrganization": {
+"name": "Emergency Department - Piedmont "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2110 Hwy 86",
+"addressLocality": "Piedmont",
+"addressRegion": "SC",
+"postalCode": "29673",
+"addressLocalityRegion": "Piedmont, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31510
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant/Patient Care Technician - 5 Center",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 Center - Progressive Cardiac Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31507
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed OBGYN - Carolina "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "160 Perpetual Square Drive",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31500
+}
+}
+},
+{
+"_source": {
+"title": " Staff Nurse - AnMed Piedmont Emergency Department **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont",
+"subOrganization": {
+"name": "Emergency Department - Piedmont "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2110 Hwy 86",
+"addressLocality": "Piedmont",
+"addressRegion": "SC",
+"postalCode": "29673",
+"addressLocalityRegion": "Piedmont, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31502
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Laurens Road (5710)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31494
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Tiger Blvd. (5200)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31492
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Laurens Road (5710)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31495
+}
+}
+},
+{
+"_source": {
+"title": "Clinical Assistant/Certified Medical Assistant (CMA) - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Tiger Blvd. (5200)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31491
+}
+}
+},
+{
+"_source": {
+"title": "Physician Assistant/Nurse Practitioner - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Fant Street (5140)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31496
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Tiger Blvd. (5200)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31493
+}
+}
+},
+{
+"_source": {
+"title": "Physician Assistant/Nurse Practitioner - Urgent Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urgent Care - Fant Street (5140)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31497
+}
+}
+},
+{
+"_source": {
+"title": "MLT/ MT",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Rapid Response Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31482
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31484
+}
+}
+},
+{
+"_source": {
+"title": "Certified Medical Assistant - Piedmont Health Partners",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Piedmont Health Partners"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "109 Essex Drive",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31483
+}
+}
+},
+{
+"_source": {
+"title": "Physical Therapist Assistant (PTA) - Acute Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Therapy - Acute Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31476
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Endoscopy",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Endoscopy"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31464
+}
+}
+},
+{
+"_source": {
+"title": "MLT/ MT",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont",
+"subOrganization": {
+"name": "Lab - Piedmont "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2110 Hwy 86",
+"addressLocality": "Piedmont",
+"addressRegion": "SC",
+"postalCode": "29673",
+"addressLocalityRegion": "Piedmont, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31458
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Medical Group"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "109 Essex Dr.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31460
+}
+}
+},
+{
+"_source": {
+"title": "MLT/ MT",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Rapid Response Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31449
+}
+}
+},
+{
+"_source": {
+"title": "Cardiac Sonographer",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Non-Invasive Cardiovascular Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31441
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (8S) Adult Surgical/ Orthopedics ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "8 South - Adult Surgical/ Pediatrics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31427
+}
+}
+},
+{
+"_source": {
+"title": "Cath Lab Technologist (I/II/III)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Cardiovascular Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31400
+}
+}
+},
+{
+"_source": {
+"title": "EVS Tech III - AnMed Piedmont",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont",
+"subOrganization": {
+"name": "Environmental Services (EVS) - Piedmont "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2110 Hwy 86",
+"addressLocality": "Piedmont",
+"addressRegion": "SC",
+"postalCode": "29673",
+"addressLocalityRegion": "Piedmont, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31399
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - Resource Team (Tier 1) *BONUS ELIGIBLE*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Resource Team"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31394
+}
+}
+},
+{
+"_source": {
+"title": "Cold Food Preparer",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Food & Nutrition"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31383
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN/RN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Oncology & Hematology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31371
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Primary Care - Anderson"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31345
+}
+}
+},
+{
+"_source": {
+"title": "CRNA (Certified Registered Nurse Anesthetist)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Anesthesiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31339
+}
+}
+},
+{
+"_source": {
+"title": "Sterile Processing Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CSPD"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31340
+}
+}
+},
+{
+"_source": {
+"title": "CRNA (Certified Registered Nurse Anesthetist)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Anesthesiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31332
+}
+}
+},
+{
+"_source": {
+"title": "MRI Technologist III",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "MRI"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31324
+}
+}
+},
+{
+"_source": {
+"title": "Tech Assistant- Radiology",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "MRI"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31322
+}
+}
+},
+{
+"_source": {
+"title": "Medical Laboratory Technician ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cannon",
+"subOrganization": {
+"name": "Laboratory"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "123 W.G. Acker Drive",
+"addressLocality": "Pickens",
+"addressRegion": "SC",
+"postalCode": "29671",
+"addressLocalityRegion": "Pickens, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31316
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant/Patient Transporter - Surgical Services",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31311
+}
+}
+},
+{
+"_source": {
+"title": "Patient Transporter - Medical Imaging Transport",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Medical Imaging Transport"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31273
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Primary Care - Family Medicine Residency"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31246
+}
+}
+},
+{
+"_source": {
+"title": "Engineering Technician ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Engineering"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville St. ",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31240
+}
+}
+},
+{
+"_source": {
+"title": "Health Coach",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Access Health"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "109 Essex Drive",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31204
+}
+}
+},
+{
+"_source": {
+"title": "Registrar I - Outpatient Registration",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Outpatient Registration"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31206
+}
+}
+},
+{
+"_source": {
+"title": "Physician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Young Adult Primary Care  (5510)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31164
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist II",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Diagnostic Radiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31152
+}
+}
+},
+{
+"_source": {
+"title": "Counselor - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Psychiatry"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "400 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31153
+}
+}
+},
+{
+"_source": {
+"title": "Physical Therapist - Acute Care ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Therapy - Acute Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31113
+}
+}
+},
+{
+"_source": {
+"title": "Cardiac Sonographer",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Non-Invasive Cardiovascular Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31102
+}
+}
+},
+{
+"_source": {
+"title": "Food Service Worker",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Food & Nutrition"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31029
+}
+}
+},
+{
+"_source": {
+"title": "CMA/LPN - Physician Practice",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Orthopedics & Sports Medicine"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 31002
+}
+}
+},
+{
+"_source": {
+"title": "Occupational Therapist - Home Health",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Home Health"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "1926 McConnell Springs Rd",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 31004
+}
+}
+},
+{
+"_source": {
+"title": "Speech Language Pathologist - Acute Care",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Therapy - Acute Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30976
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Primary Care - Cornerstone"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "801 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30915
+}
+}
+},
+{
+"_source": {
+"title": "Medical Equipment Specialist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Impressions Appearance Shoppe"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St. ",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30884
+}
+}
+},
+{
+"_source": {
+"title": "Speech Language Pathologist - AnMed Pediatric Therapy",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Therapy - Pediatrics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "701 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30889
+}
+}
+},
+{
+"_source": {
+"title": "Radiologic Technologist II",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Diagnostic Radiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30848
+}
+}
+},
+{
+"_source": {
+"title": "Respiratory Therapist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Respiratory Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30779
+}
+}
+},
+{
+"_source": {
+"title": "Respiratory Therapist **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Respiratory Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30777
+}
+}
+},
+{
+"_source": {
+"title": "Physician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont",
+"subOrganization": {
+"name": "AnMed Primary Care - Piedmont "
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2110 Hwy 86",
+"addressLocality": "Piedmont",
+"addressRegion": "SC",
+"postalCode": "29673",
+"addressLocalityRegion": "Piedmont, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30763
+}
+}
+},
+{
+"_source": {
+"title": "MRI Technologist III",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "MRI"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30760
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - CAT Team **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Crisis Assessment & Treatment (CAT) Team"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30729
+}
+}
+},
+{
+"_source": {
+"title": "CMA or Certified Surgical Technologist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30714
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (8S) Adult Surgical/ Orthopedics **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "8 South - Adult Surgical/ Pediatrics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30707
+}
+}
+},
+{
+"_source": {
+"title": "Nursing Assistant/Patient Care Technician",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Intensive Care"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson ",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson , SC"
+}
+},
+"userArea": {
+"jobPostingID": 30703
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist - Operating Room *Signing Bonus Eligible, No Call Required*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30618
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (5S) Pulmonary Step Down  **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 South - Pulmonary Step Down"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30566
+}
+}
+},
+{
+"_source": {
+"title": "Cath Lab Technologist (I/II/III)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Cardiovascular Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30552
+}
+}
+},
+{
+"_source": {
+"title": "CRNA (Certified Registered Nurse Anesthetist)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Anesthesiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30531
+}
+}
+},
+{
+"_source": {
+"title": "CRNA (Certified Registered Nurse Anesthetist)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Anesthesiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30532
+}
+}
+},
+{
+"_source": {
+"title": "Maintenance Painter",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Engineering"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30516
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (6S) Adult Surgical ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "6 South- Adult Surgical"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30442
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist - Operating Room *Signing Bonus Eligible, No Call Required*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30348
+}
+}
+},
+{
+"_source": {
+"title": "Cath Lab Technologist (I/II/III)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Cardiovascular Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30324
+}
+}
+},
+{
+"_source": {
+"title": "Cath Lab Technologist (I/II/III)",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Cardiovascular Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30323
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - North Campus Operating Room",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30296
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist - Operating Room *Signing Bonus Eligible, No Call Required*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30294
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - CVICU **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CV - ICU"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30242
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist (CST) - Labor & Delivery",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "2 North - Labor & Delivery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30191
+}
+}
+},
+{
+"_source": {
+"title": "Clinical Assistant/ Certified Medical Assistant (CMA)/ LPN",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Young Adult Primary Care  (5510)"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30204
+}
+}
+},
+{
+"_source": {
+"title": "Radiation Therapist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CC Radiation Oncology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30099
+}
+}
+},
+{
+"_source": {
+"title": "Ultrasound Technologist III",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Medical Sonics - Clemson"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "885 Tiger Boulevard",
+"addressLocality": "Clemson",
+"addressRegion": "SC",
+"postalCode": "29631",
+"addressLocalityRegion": "Clemson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30045
+}
+}
+},
+{
+"_source": {
+"title": "Medical Office Specialist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Primary Care - Lakeside"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "4120 Highway 24",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29626",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30041
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist - Operating Room *Signing Bonus Eligible, No Call Required*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 30020
+}
+}
+},
+{
+"_source": {
+"title": "Clinical Assistant/ Certified Medical Assistant (CMA)/ LPN",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Primary Care - Anderson"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29987
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist - Operating Room ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29983
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (5S) Pulmonary Step Down  **BONUS ELIGIBLE**",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "5 South - Pulmonary Step Down"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29950
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Piedmont Surgical - Anderson"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29939
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - AnMed Cannon",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cannon",
+"subOrganization": {
+"name": "Med/Surg"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "123 W.G. Acker Drive",
+"addressLocality": "Pickens",
+"addressRegion": "SC",
+"postalCode": "29671",
+"addressLocalityRegion": "Pickens, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29875
+}
+}
+},
+{
+"_source": {
+"title": "Mammography Technologist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Breast Imaging"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29841
+}
+}
+},
+{
+"_source": {
+"title": "CMA or LPN",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Anderson ENT"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "1206 Cornelia Rd.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29573
+}
+}
+},
+{
+"_source": {
+"title": "Respiratory Therapist- PRN",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Respiratory Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29522
+}
+}
+},
+{
+"_source": {
+"title": "Respiratory Therapist-PRN",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Respiratory Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29471
+}
+}
+},
+{
+"_source": {
+"title": "Respiratory Therapist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Respiratory Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29258
+}
+}
+},
+{
+"_source": {
+"title": "Respiratory Therapist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Respiratory Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29264
+}
+}
+},
+{
+"_source": {
+"title": "Respiratory Therapist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Respiratory Services"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 29261
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Orthopedics & Sports Medicine"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 28890
+}
+}
+},
+{
+"_source": {
+"title": "CRNA (Certified Registered Nurse Anesthetist) - bonus eligible",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Anesthesiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 28667
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cardiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 28548
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cardiology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 28549
+}
+}
+},
+{
+"_source": {
+"title": "Certified Surgical Technologist - Operating Room  *Signing Bonus Eligible, No Call Required*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "NC - Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 East Greenville Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 28474
+}
+}
+},
+{
+"_source": {
+"title": "Nuclear Medicine Technologist - CV Diagnostics",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Heart & Vascular Diagnostics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "100 Healthy Way",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 28428
+}
+}
+},
+{
+"_source": {
+"title": "Certified Medical Assistant (CMA)/LPN",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Urology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 28293
+}
+}
+},
+{
+"_source": {
+"title": "EP Lab Technologist- ** BONUS ELIGIBLE** ",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "EP Lab"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 28242
+}
+}
+},
+{
+"_source": {
+"title": "AnMed Cannon - Ultrasound Technologist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Cannon",
+"subOrganization": {
+"name": "Radiology-Diagnostics"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "123 W.G. Acker Drive",
+"addressLocality": "Pickens",
+"addressRegion": "SC",
+"postalCode": "29671",
+"addressLocalityRegion": "Pickens, SC"
+}
+},
+"userArea": {
+"jobPostingID": 28027
+}
+}
+},
+{
+"_source": {
+"title": "Perfusionist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CV Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 27987
+}
+}
+},
+{
+"_source": {
+"title": "Perfusionist",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "CV Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 27854
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Oncology & Hematology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 27401
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Medical Group",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Spine & Neurosurgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "109 Montgomery Dr.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 27386
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (6S) Adult Surgical *BONUS ELIGIBLE*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "6 South- Adult Surgical"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 26925
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - First Assist/ Surgery, No Call Required, *BONUS ELIGIBLE*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "Surgery"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 North Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 26362
+}
+}
+},
+{
+"_source": {
+"title": "Staff Nurse - (6S) Adult Surgical *BONUS ELIGIBLE*",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "6 South- Adult Surgical"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "800 N. Fant Street",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 26214
+}
+}
+},
+{
+"_source": {
+"title": "Physician - Physician Network Services",
+"hiringOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed",
+"subOrganization": {
+"name": "AnMed Rheumatology"
+}
+}
+},
+"jobLocation": {
+"address": {
+"streetAddress": "2000 E. Greenville St.",
+"addressLocality": "Anderson",
+"addressRegion": "SC",
+"postalCode": "29621",
+"addressLocalityRegion": "Anderson, SC"
+}
+},
+"userArea": {
+"jobPostingID": 24064
+}
+}
+}
+]
+}

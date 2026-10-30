@@ -61,6 +61,7 @@ import facilities_fac5_review   # 2026-10-30 release 5 review A: Union Hospital 
 import facilities_fac6_short_b   # 2026-10-30 phase 6 B: TMC departments, Luminis units, UC Health / Loma Linda Oracle locations, LifeBridge / Legacy / TCH body cues, TCH + Mosaic town tables, Health First codes
 import facilities_imh   # 2026-10-30 phase 7: Intermountain's clinics, centers and offices by Workday site (registers in facilities_workday); multi-site postings and float pools keep the label
 import facilities_fac7_variants   # 2026-10-30 phase 7 (variants): names that stand for the system but are not its label: placeholders (CHRISTUS "N/A"), Ascension site lines, HSHS + UVA Health town tables (registers in facilities_town)
+import facilities_r2_others   # 2026-10-30 facility round 2 (others): AnMed street addresses, Spartanburg / CentraCare Phenom sites, CommonSpirit / MultiCare title sites, Erlanger title towns
 
 # curl_cffi provides browser-grade TLS fingerprints (Chrome/Firefox
 # impersonation). Required by the HCA / Houston Methodist / Oceans adapters:
@@ -14259,7 +14260,19 @@ async def scrape_phenom(session: aiohttp.ClientSession, system: str, base_url: s
                     # 2026-10-29 (phase 3): PruittHealth's workLocation names the center or branch
                     _sr = _fac_hook("PruittHealth work locations", facilities_senior_rehab.phenom_facility, system, doc,
                                     default=None)
-                    if _sr is not None:
+                    # 2026-10-30 (facility round 2, others): Spartanburg's
+                    # "Restorative Care" and "Surgery Center at Pelham", and the
+                    # town of a row the feed placed in "South Carolina"; a
+                    # CentraCare Willmar / Redwood Falls hospital department
+                    # (facilities_r2_others.phenom_site; "" is the system label).
+                    _r2 = _fac_hook("Round 2 Phenom sites", facilities_r2_others.phenom_site, system, doc, city, state,
+                                    title, default=None)
+                    if _r2 is not None:
+                        _hn = _r2[0] or system
+                        if (_r2[1], _r2[2]) != (city, state):
+                            city, state = _r2[1], _r2[2]
+                            loc = f"{city}, {state}"
+                    elif _sr is not None:
                         _hn = _sr
                     elif _fp:
                         _hn = _fp[0] or system
@@ -17678,6 +17691,15 @@ def _hcs_job(hit: dict, system: str, tenant: str) -> Job | None:
     sched = _schedule_line(_shift_words(str(ua.get("shift") or "")), str(src_.get("workHours") or "").strip())
     if body and sched and "Schedule:" not in body:
         body = f"{body}\n\n{sched}"
+    # 2026-10-30 (facility round 2, others): AnMed files every Anderson posting
+    # under the entity "AnMed"; the hit's street address is the work site and
+    # its next subOrganization the department (800 N Fant St: AnMed Medical
+    # Center; 2000 E Greenville St: AnMed North Campus). A practice, urgent
+    # care, office or pool keeps the label (facilities_r2_others.hcs_site).
+    _r2 = _fac_hook("AnMed street addresses", facilities_r2_others.hcs_site, system, src_, facility or system, body,
+                    default=None)
+    if _r2:
+        facility = _r2
     job = Job(
         title=title,
         hospital_system=system,
@@ -33561,6 +33583,17 @@ def finalize_jobs(all_jobs: list) -> list[dict]:
         if facilities_fac7_variants.UNKNOWN:
             logger.info("Phase 7 variants, site lines no table names: " + facilities_fac7_variants.unknown_summary())
             facilities_fac7_variants.UNKNOWN.clear()
+    # 2026-10-30 (facility round 2, others): a CommonSpirit or MultiCare label
+    # row whose title names one of the system's hospitals in the row's own town
+    # takes it ("Supervisor Patient Access-VMFH St Anne Burien", "... -
+    # Auburn Medical Center"); an Erlanger row the board stamped Chattanooga
+    # takes the town its title names with its state ("(Pikeville, TN)")
+    # (facilities_r2_others). Titles are read every night, no stored names.
+    fr2 = _facility_pass("Round 2 titles", facilities_r2_others.apply_facilities, kept,
+                         canon=lambda s: HOSPITAL_SYSTEM_ALIASES.get(s, s))
+    if fr2:
+        logger.info("Round 2 titles: " + "; ".join(
+            f"{s} " + ", ".join(f"{k} {v:,}" for k, v in sorted(d.items())) for s, d in sorted(fr2.items())))
     # 2026-10-29 (facility scale, phase 3 B): the Ochsner campus a title names
     # ("... - Jeff Hwy", "- OLGMC"), before the town tables guess from a town.
     hsb = _facility_pass("Hospital systems B (titles)", facilities_hospital_systems_b.apply_before_town, kept)

@@ -1,0 +1,4815 @@
+{
+"read": "2026-10-30, jobs.centracare.com/widgets refineSearch (303 docs)",
+"kept": "jobId, reqId, title, city, state, location, cityState, workLocation, department",
+"docs": [
+{
+"jobId": "231410",
+"reqId": "231410",
+"title": "Radiologic Technologist II",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Imaging Diagnostic",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "230936",
+"reqId": "230936",
+"title": "Cardiology – Nurse Practitioner or Physician Assistant – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN",
+"cityState": "Saint Cloud, MN",
+"department": "Cardiac",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN"
+}
+]
+},
+{
+"jobId": "231019",
+"reqId": "231019",
+"title": "ETC Technician | Emergency Trauma Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Emergency Trauma Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231327",
+"reqId": "231327",
+"title": "Paramedic",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Emergency Medical Services",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231415",
+"reqId": "231415",
+"title": "Respiratory Therapist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Respiratory Therapy",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231287",
+"reqId": "231287",
+"title": "Registered Nurse | Intensive Care Unit",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Intensive Care Unit",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231017",
+"reqId": "231017",
+"title": "ETC Technician | Emergency Trauma Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Emergency Trauma Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231192",
+"reqId": "231192",
+"title": "Nephrology – Nurse Practitioner or Physician Assistant – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN",
+"cityState": "Saint Cloud, MN",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN"
+}
+]
+},
+{
+"jobId": "231628",
+"reqId": "231628",
+"title": "Urgent Care – Nurse Practitioner or Physician Assistant – Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN",
+"cityState": "Willmar, MN",
+"department": "Willmar Urgent Care",
+"multi_location_array": [
+{
+"location": "Willmar, MN"
+}
+]
+},
+{
+"jobId": "231677",
+"reqId": "231677",
+"title": "Weight Management – Nurse Practitioner or Physician Assistant – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN",
+"cityState": "Saint Cloud, MN",
+"department": "Weight Management",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN"
+}
+]
+},
+{
+"jobId": "231303",
+"reqId": "231303",
+"title": "Physician – Pediatric Hospitalist – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Pediatric Hospitalists",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231413",
+"reqId": "231413",
+"title": "Respiratory Therapist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Respiratory Therapy",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230582",
+"reqId": "230582",
+"title": "Casual APP – Same Day/Walk-In Clinic – Redwood Falls, MN",
+"city": "Redwood Falls",
+"state": "MN",
+"location": "Redwood Falls, MN, 56283",
+"cityState": "Redwood Falls, MN",
+"multi_location_array": [
+{
+"location": "Redwood Falls, MN, 56283"
+}
+]
+},
+{
+"jobId": "231813",
+"reqId": "231813",
+"title": "Certified Nursing Assistant",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "231782",
+"reqId": "231782",
+"title": "Registered Nurse | Care Management",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Care Management",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231806",
+"reqId": "231806",
+"title": "Registered Nurse | Orthopedics",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "SCH Orthopedics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231793",
+"reqId": "231793",
+"title": "Bio-Medical Equipment Technician II",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Clinical Engineering",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231564",
+"reqId": "231564",
+"title": "Patient Care Extender | Emergency Trauma Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Emergency Trauma Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231577",
+"reqId": "231577",
+"title": "Core Faculty General Surgery – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "South Point",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "225946",
+"reqId": "225946",
+"title": "Registered Nurse | Surgical Care Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Surgical Care Unit 2",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231949",
+"reqId": "231949",
+"title": "Certified Nursing Assistant",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "231945",
+"reqId": "231945",
+"title": "Dermatologist – Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Amb Spec Dermatology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231464",
+"reqId": "231464",
+"title": "OB/GYN Physician – Traditional Practice – St. Cloud",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Obstetrics and Womens Health",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231262",
+"reqId": "231262",
+"title": "Gastroenterology – Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Med Spec Gastrointestinal",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231263",
+"reqId": "231263",
+"title": "Gastroenterology Physician – Outpatient Only – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Med Spec Gastrointestinal",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231264",
+"reqId": "231264",
+"title": "Gastroenterology Physician – Outpatient/Inpatient – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Med Spec Gastrointestinal",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231954",
+"reqId": "231954",
+"title": "Hospitalist - Physician - Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Hospital Med Hospitalists",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231956",
+"reqId": "231956",
+"title": "Credit Balance Assistant",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "South Point",
+"department": "STC PB Patient Financial Svcs",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "230670",
+"reqId": "230670",
+"title": "Radiation Therapist | Oncology",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Radiation Oncology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230745",
+"reqId": "230745",
+"title": "Oracle Systems Architect",
+"state": "MN",
+"location": "MN, 56301",
+"cityState": "MN",
+"workLocation": "South Point",
+"multi_location_array": [
+{
+"location": "MN, 56301"
+}
+]
+},
+{
+"jobId": "230756",
+"reqId": "230756",
+"title": "Urgent Care Physician – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "River Campus Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "229309",
+"reqId": "229309",
+"title": "Registered Nurse | Surgical Care Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Surgical Care Unit 1",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231048",
+"reqId": "231048",
+"title": "RN | Med-Surg, OB & ER",
+"city": "Redwood Falls",
+"state": "MN",
+"location": "Redwood Falls, MN",
+"cityState": "Redwood Falls, MN",
+"multi_location_array": [
+{
+"location": "Redwood Falls, MN"
+}
+]
+},
+{
+"jobId": "231395",
+"reqId": "231395",
+"title": "Bio-Medical Equipment Technician",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Clinical Engineering",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231270",
+"reqId": "231270",
+"title": "Registered Nurse | Hospital",
+"city": "Benson",
+"state": "MN",
+"location": "Benson, MN, 56215",
+"cityState": "Benson, MN",
+"workLocation": "CentraCare - Benson",
+"multi_location_array": [
+{
+"location": "Benson, MN, 56215"
+}
+]
+},
+{
+"jobId": "231268",
+"reqId": "231268",
+"title": "Clinical Dietitian",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Clinical Nutrition Services",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231271",
+"reqId": "231271",
+"title": "Licensed Practical Nurse | Hospital",
+"city": "Benson",
+"state": "MN",
+"location": "Benson, MN, 56215",
+"cityState": "Benson, MN",
+"workLocation": "CentraCare - Benson",
+"multi_location_array": [
+{
+"location": "Benson, MN, 56215"
+}
+]
+},
+{
+"jobId": "231364",
+"reqId": "231364",
+"title": "Family Medicine Physician- Clearwater Clinic",
+"city": "Clearwater",
+"state": "MN",
+"location": "Clearwater, MN, 55320",
+"cityState": "Clearwater, MN",
+"workLocation": "Clearwater Clinic",
+"department": "Fam Med Clearwater",
+"multi_location_array": [
+{
+"location": "Clearwater, MN, 55320"
+}
+]
+},
+{
+"jobId": "231718",
+"reqId": "231718",
+"title": "Inboxologist Advanced Practice Provider",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Lakeland Family Practice",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231967",
+"reqId": "231967",
+"title": "Family Medicine Physician – Full Spectrum – Sauk Centre, MN",
+"city": "Sauk Centre",
+"state": "MN",
+"location": "Sauk Centre, MN, 56378",
+"cityState": "Sauk Centre, MN",
+"workLocation": "CentraCare - Sauk Centre",
+"department": "Fam Med Sauk Centre",
+"multi_location_array": [
+{
+"location": "Sauk Centre, MN, 56378"
+}
+]
+},
+{
+"jobId": "228404",
+"reqId": "228404",
+"title": "Dental Hygienist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Dental Clinic",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231288",
+"reqId": "231288",
+"title": "Registered Nurse | Intensive Care Unit",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Intensive Care Unit",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232108",
+"reqId": "232108",
+"title": "Pain Medicine Physician – Outpatient – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "River Campus Clinic",
+"department": "Integrated Pain Medicine",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231924",
+"reqId": "231924",
+"title": "Registered Nurse | Orthopedics",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "SCH Orthopedics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231257",
+"reqId": "231257",
+"title": "Advanced Practice Provider Students, Notification of Program Enrollment",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "000000_St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230895",
+"reqId": "230895",
+"title": "Family Medicine Physician – Outpatient – Southway Clinic",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Southway Clinic",
+"department": "Fam Med Southway Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "231863",
+"reqId": "231863",
+"title": "Senior Marketing Strategist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "South Point",
+"department": "Marketing Health System",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "232167",
+"reqId": "232167",
+"title": "Family Medicine – Nurse Practitioner or Physician Assistant – Cold Spring, MN",
+"city": "Cold Spring",
+"state": "MN",
+"location": "Cold Spring, MN, 56320",
+"cityState": "Cold Spring, MN",
+"workLocation": "Cold Spring Clinic",
+"department": "Fam Med Cold Spring",
+"multi_location_array": [
+{
+"location": "Cold Spring, MN, 56320"
+}
+]
+},
+{
+"jobId": "232163",
+"reqId": "232163",
+"title": "Registered Nurse | Intensive Care Unit",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Intensive Care Unit",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231584",
+"reqId": "231584",
+"title": "Psychologist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "BHC General Adult Psychology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231726",
+"reqId": "231726",
+"title": "Certified Nursing Assistant",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Geriatric Behavioral Health",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "232188",
+"reqId": "232188",
+"title": "Integrated Behavioral Health – Psychologist – Sauk Centre",
+"city": "Sauk Centre",
+"state": "MN",
+"location": "Sauk Centre, MN, 56378",
+"cityState": "Sauk Centre, MN",
+"workLocation": "CentraCare - Sauk Centre",
+"department": "BHC IBH Psychology",
+"multi_location_array": [
+{
+"location": "Sauk Centre, MN, 56378"
+}
+]
+},
+{
+"jobId": "232184",
+"reqId": "232184",
+"title": "Adult Psychiatrist Physician – Outpatient Practice – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "BHC General Adult Psychiatry",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232211",
+"reqId": "232211",
+"title": "Family Medicine Physician – Outpatient Only – Cold Spring, MN",
+"city": "Cold Spring",
+"state": "MN",
+"location": "Cold Spring, MN, 56320",
+"cityState": "Cold Spring, MN",
+"workLocation": "Cold Spring Clinic",
+"department": "Fam Med Cold Spring",
+"multi_location_array": [
+{
+"location": "Cold Spring, MN, 56320"
+}
+]
+},
+{
+"jobId": "231904",
+"reqId": "231904",
+"title": "Dietitian | Cancer Center",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230806",
+"reqId": "230806",
+"title": "Registered Nurse | Adult Health Care",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN",
+"cityState": "Willmar, MN",
+"department": "Adult Health Care",
+"multi_location_array": [
+{
+"location": "Willmar, MN"
+}
+]
+},
+{
+"jobId": "232216",
+"reqId": "232216",
+"title": "Registered Nurse | Emergency Trauma Center",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Emergency Trauma Center",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232232",
+"reqId": "232232",
+"title": "Food Service Worker II",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Nutrition",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231919",
+"reqId": "231919",
+"title": "CT/Xray Technologist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Imaging C T Scanning",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231959",
+"reqId": "231959",
+"title": "Physical Therapist",
+"city": "Melrose",
+"state": "MN",
+"location": "Melrose, MN, 56352",
+"cityState": "Melrose, MN",
+"workLocation": "CentraCare - Melrose",
+"department": "Physical Therapy",
+"multi_location_array": [
+{
+"location": "Melrose, MN, 56352"
+}
+]
+},
+{
+"jobId": "231331",
+"reqId": "231331",
+"title": "Principal Transformation Consultant",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Transformation Mgmt Office",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232223",
+"reqId": "232223",
+"title": "Nurse Practitioner or Physician Assistant – Pediatrics – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Pediatrics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232221",
+"reqId": "232221",
+"title": "Physician – Pediatrician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Pediatrics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232237",
+"reqId": "232237",
+"title": "Respiratory Therapist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Respiratory Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232240",
+"reqId": "232240",
+"title": "Respiratory Therapist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Respiratory Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231085",
+"reqId": "231085",
+"title": "Medical Director of Research – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN",
+"cityState": "Saint Cloud, MN",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN"
+}
+]
+},
+{
+"jobId": "231194",
+"reqId": "231194",
+"title": "Hospitalist Assistant | St Cloud Hospital",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Hospitalists",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232242",
+"reqId": "232242",
+"title": "Information Systems Environment and Quality Release Manager",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "South Point",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "232283",
+"reqId": "232283",
+"title": "Respiratory Therapist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Respiratory Therapy",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "228034",
+"reqId": "228034",
+"title": "Surgical Technician",
+"city": "Redwood Falls",
+"state": "MN",
+"location": "Redwood Falls, MN, 56283",
+"cityState": "Redwood Falls, MN",
+"department": "Surgery",
+"multi_location_array": [
+{
+"location": "Redwood Falls, MN, 56283"
+}
+]
+},
+{
+"jobId": "229958",
+"reqId": "229958",
+"title": "Athletic Trainer",
+"city": "Redwood Falls",
+"state": "MN",
+"location": "Redwood Falls, MN",
+"cityState": "Redwood Falls, MN",
+"department": "Physical Therapy",
+"multi_location_array": [
+{
+"location": "Redwood Falls, MN"
+}
+]
+},
+{
+"jobId": "231483",
+"reqId": "231483",
+"title": "Speech Language Pathologist | Plaza Peds Speech Outpatient",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231209",
+"reqId": "231209",
+"title": "Physical Therapist Assistant | Inpatient Therapies",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Physical Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231441",
+"reqId": "231441",
+"title": "Occupational Therapist | Inpatient Therapies | St. Cloud Hospital",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Occupational Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231963",
+"reqId": "231963",
+"title": "Occupational Therapist | Pediatric Outpatient | Plaza",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232252",
+"reqId": "232252",
+"title": "Physical Therapist Assistant | Adult Rehabilitation",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230832",
+"reqId": "230832",
+"title": "Physical Therapist with Athletic Trainer Certification",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232170",
+"reqId": "232170",
+"title": "Occupational Therapist | Adult Rehabilitation",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232156",
+"reqId": "232156",
+"title": "Graduate Nurse Residency Program",
+"state": "MN",
+"location": "MN, 56303",
+"cityState": "MN",
+"workLocation": "St Cloud Hospital",
+"department": "Nursing Excellence",
+"multi_location_array": [
+{
+"location": "MN, 56303"
+},
+{
+"location": "Saint Cloud, MN, United States"
+},
+{
+"location": "Paynesville, MN, United States"
+},
+{
+"location": "Long Prairie, MN, United States"
+},
+{
+"location": "Melrose, MN, United States"
+},
+{
+"location": "Sauk Centre, MN, United States"
+},
+{
+"location": "Willmar, MN, United States"
+}
+]
+},
+{
+"jobId": "231962",
+"reqId": "231962",
+"title": "Occupational Therapist | Pediatric Outpatient | Plaza",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231791",
+"reqId": "231791",
+"title": "Certified Occupational Therapy Assistant | Inpatient Therapies",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Occupational Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232053",
+"reqId": "232053",
+"title": "Physical Therapist | Home Health",
+"city": "Redwood Falls",
+"state": "MN",
+"location": "Redwood Falls, MN",
+"cityState": "Redwood Falls, MN",
+"multi_location_array": [
+{
+"location": "Redwood Falls, MN"
+},
+{
+"location": "Willmar, MN, United States"
+}
+]
+},
+{
+"jobId": "231471",
+"reqId": "231471",
+"title": "Occupational Therapist | Adult Rehabilitation",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "226937",
+"reqId": "226937",
+"title": "Physical Therapist",
+"city": "Paynesville",
+"state": "MN",
+"location": "Paynesville, MN, 56362",
+"cityState": "Paynesville, MN",
+"workLocation": "CentraCare - Paynesville",
+"department": "Physical Therapy",
+"multi_location_array": [
+{
+"location": "Paynesville, MN, 56362"
+}
+]
+},
+{
+"jobId": "230909",
+"reqId": "230909",
+"title": "Speech Language Pathologist | Plaza Peds Speech Outpatient",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230750",
+"reqId": "230750",
+"title": "Certified Athletic Trainer",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"workLocation": "Willmar Skylark Clinic",
+"department": "Physical Therapy",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230833",
+"reqId": "230833",
+"title": "Certified Athletic Trainer",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230725",
+"reqId": "230725",
+"title": "Cytotechnologist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Lab Pathology",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232142",
+"reqId": "232142",
+"title": "Medical Lab Technician",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Willmar Lab Clinic",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231893",
+"reqId": "231893",
+"title": "Lab Assistant/Phlebotomist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Lab Support Services",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232023",
+"reqId": "232023",
+"title": "Registered Nurse | Med/Surg, ER & OB",
+"city": "Long Prairie",
+"state": "MN",
+"location": "Long Prairie, MN, 56347",
+"cityState": "Long Prairie, MN",
+"workLocation": "CentraCare - Long Prairie",
+"multi_location_array": [
+{
+"location": "Long Prairie, MN, 56347"
+}
+]
+},
+{
+"jobId": "232069",
+"reqId": "232069",
+"title": "Registered Nurse | Med/Surg, ER & OB",
+"city": "Paynesville",
+"state": "MN",
+"location": "Paynesville, MN, 56362",
+"cityState": "Paynesville, MN",
+"workLocation": "CentraCare - Paynesville",
+"multi_location_array": [
+{
+"location": "Paynesville, MN, 56362"
+}
+]
+},
+{
+"jobId": "232097",
+"reqId": "232097",
+"title": "Licensed Practical Nurse | Neuroscience",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Neuroscience Spine Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231909",
+"reqId": "231909",
+"title": "Cardiology Diagnostic Technician",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231089",
+"reqId": "231089",
+"title": "Registered Nurse | Neuroscience",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Neuroscience Spine Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231982",
+"reqId": "231982",
+"title": "Registered Nurse | Float Pool",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231657",
+"reqId": "231657",
+"title": "CT Scanning Technologist | Cardiovascular CT",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Cardiovascular CT Program",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232147",
+"reqId": "232147",
+"title": "Registered Nurse | Cardiovascular Thoracic Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Cardiovascular Thoracic Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232098",
+"reqId": "232098",
+"title": "Licensed Practical Nurse | Neuroscience",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Neuroscience Spine Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232233",
+"reqId": "232233",
+"title": "Exercise Physiologist | Cardiac Rehab",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Cardiac Rehab",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231316",
+"reqId": "231316",
+"title": "Registered Nurse | Behavioral Health",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "IP Behavioral Health",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231998",
+"reqId": "231998",
+"title": "Vascular Access Nurse",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Vascular Access Team",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "229793",
+"reqId": "229793",
+"title": "Radiologic Technologist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Imaging Diagnostic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232091",
+"reqId": "232091",
+"title": "Registered Nurse | Intensive Care Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Intensive Care Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231487",
+"reqId": "231487",
+"title": "Radiologic Technologist",
+"city": "Long Prairie",
+"state": "MN",
+"location": "Long Prairie, MN, 56347",
+"cityState": "Long Prairie, MN",
+"workLocation": "CentraCare - Long Prairie",
+"department": "Imaging Diagnostic",
+"multi_location_array": [
+{
+"location": "Long Prairie, MN, 56347"
+}
+]
+},
+{
+"jobId": "232135",
+"reqId": "232135",
+"title": "Registered Nurse | Cardiac Intensive Care Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232215",
+"reqId": "232215",
+"title": "LPN/CMA | Headache Clinic",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Neurology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231603",
+"reqId": "231603",
+"title": "Licensed Practical Nurse | Dermatology",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Amb Spec Dermatology",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231306",
+"reqId": "231306",
+"title": "LPN or Medical Assistant | Dermatology",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Amb Spec Dermatology",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+},
+{
+"location": "Benson, MN, United States"
+}
+]
+},
+{
+"jobId": "231208",
+"reqId": "231208",
+"title": "Per Diem Occupational Therapist | Inpatient Therapies",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Occupational Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231661",
+"reqId": "231661",
+"title": "OB Hospitalist | Casual Physician",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Fam Birthing Laborist",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+},
+{
+"location": "Willmar, MN, United States"
+}
+]
+},
+{
+"jobId": "231591",
+"reqId": "231591",
+"title": "Security & Safety Officer | Willmar",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Security And Safety",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232086",
+"reqId": "232086",
+"title": "Eye Clinic Assistant",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Eye Clinic",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232340",
+"reqId": "232340",
+"title": "Paramedic",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Emergency Medical Services",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232113",
+"reqId": "232113",
+"title": "Food Service Worker - High School",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Nutrition",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231417",
+"reqId": "231417",
+"title": "LPN/CMA | Northway Family Med",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Northway Clinic",
+"department": "Fam Med Northway",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231958",
+"reqId": "231958",
+"title": "LPN/CMA/MA | Sauk Crossing Family Med",
+"city": "Sartell",
+"state": "MN",
+"location": "Sartell, MN, 56377",
+"cityState": "Sartell, MN",
+"workLocation": "CentraCare Sauk Crossing",
+"multi_location_array": [
+{
+"location": "Sartell, MN, 56377"
+},
+{
+"location": "Saint Cloud, MN, United States"
+}
+]
+},
+{
+"jobId": "227161",
+"reqId": "227161",
+"title": "Dentist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Dental Clinic",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230635",
+"reqId": "230635",
+"title": "Licensed Dental Assistant",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN",
+"cityState": "Willmar, MN",
+"department": "Dental Clinic",
+"multi_location_array": [
+{
+"location": "Willmar, MN"
+}
+]
+},
+{
+"jobId": "232310",
+"reqId": "232310",
+"title": "Manager Revenue Services Education Program",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "South Point",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "232331",
+"reqId": "232331",
+"title": "Supervisor Clinical Informatics",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "South Point",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "232342",
+"reqId": "232342",
+"title": "Cardiology – Nurse Practitioner or Physician Assistant – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Cardiac",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232305",
+"reqId": "232305",
+"title": "Patient Navigator | Pediatrics Clinic",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Pediatrics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232268",
+"reqId": "232268",
+"title": "LPN/CMA | Urgent Care River Campus",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "River Campus Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232335",
+"reqId": "232335",
+"title": "Radiologic Technologist",
+"city": "Sauk Centre",
+"state": "MN",
+"location": "Sauk Centre, MN, 56378",
+"cityState": "Sauk Centre, MN",
+"workLocation": "CentraCare - Sauk Centre",
+"department": "Imaging Diagnostic",
+"multi_location_array": [
+{
+"location": "Sauk Centre, MN, 56378"
+},
+{
+"location": "Melrose, MN, United States"
+},
+{
+"location": "Long Prairie, MN, United States"
+},
+{
+"location": "Paynesville, MN, United States"
+}
+]
+},
+{
+"jobId": "232338",
+"reqId": "232338",
+"title": "Surgical Technologist | Plaza Surgery Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "CCHS Ambulatory Surgery Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232336",
+"reqId": "232336",
+"title": "Surgical Technologist | Plaza Surgery Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "CCHS Ambulatory Surgery Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232318",
+"reqId": "232318",
+"title": "Cardiac Sonographer (Echo Tech)",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Cardiology Echo",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232314",
+"reqId": "232314",
+"title": "Registered Nurse | Home Health | Float",
+"city": "Waite Park",
+"state": "MN",
+"location": "Waite Park, MN, 56387",
+"cityState": "Waite Park, MN",
+"workLocation": "Waite Park Marketplace",
+"department": "Home Health",
+"multi_location_array": [
+{
+"location": "Waite Park, MN, 56387"
+}
+]
+},
+{
+"jobId": "232317",
+"reqId": "232317",
+"title": "Physical Therapist | Adult Rehabilitation",
+"city": "Sartell",
+"state": "MN",
+"location": "Sartell, MN, 56303",
+"cityState": "Sartell, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Sartell, MN, 56303"
+}
+]
+},
+{
+"jobId": "232303",
+"reqId": "232303",
+"title": "Licensed Practical Nurse | Neuroscience",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Neuroscience Spine Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232312",
+"reqId": "232312",
+"title": "Part-Time Outpatient Precepting Faculty – Family Medicine Residency - St. Cloud",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Northway Clinic",
+"department": "Family Practice Residency Prog",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231941",
+"reqId": "231941",
+"title": "Manager Facilities | St. Cloud Hospital",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Maintenance",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232239",
+"reqId": "232239",
+"title": "Respiratory Therapist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Respiratory Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232226",
+"reqId": "232226",
+"title": "Ophthalmic Technician",
+"city": "Sartell",
+"state": "MN",
+"location": "Sartell, MN, 56377",
+"cityState": "Sartell, MN",
+"workLocation": "CentraCare Sauk Crossing",
+"department": "Eye Clinic",
+"multi_location_array": [
+{
+"location": "Sartell, MN, 56377"
+}
+]
+},
+{
+"jobId": "232191",
+"reqId": "232191",
+"title": "Cardiovascular Technician | Surgery",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Cardiovascular Services",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231142",
+"reqId": "231142",
+"title": "Registered Nurse | Orthopedics",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "SCH Orthopedics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232177",
+"reqId": "232177",
+"title": "Registered Nurse | Medical Unit 1",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230804",
+"reqId": "230804",
+"title": "Charge Support Fill In | RN | Medical Unit 2",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231137",
+"reqId": "231137",
+"title": "Registered Nurse | Orthopedics",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "SCH Orthopedics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231070",
+"reqId": "231070",
+"title": "Registered Nurse | Pediatric Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Pediatric Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231332",
+"reqId": "231332",
+"title": "Registered Nurse | Birth Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Birth Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232178",
+"reqId": "232178",
+"title": "Registered Nurse | Medical Unit 1",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231492",
+"reqId": "231492",
+"title": "EMT",
+"city": "Redwood Falls",
+"state": "MN",
+"location": "Redwood Falls, MN, 56283",
+"cityState": "Redwood Falls, MN",
+"department": "Emergency Medical Services",
+"multi_location_array": [
+{
+"location": "Redwood Falls, MN, 56283"
+}
+]
+},
+{
+"jobId": "231069",
+"reqId": "231069",
+"title": "EMT",
+"city": "Redwood Falls",
+"state": "MN",
+"location": "Redwood Falls, MN, 56283",
+"cityState": "Redwood Falls, MN",
+"workLocation": "Redwood Ambulance",
+"department": "Emergency Medical Services",
+"multi_location_array": [
+{
+"location": "Redwood Falls, MN, 56283"
+}
+]
+},
+{
+"jobId": "231397",
+"reqId": "231397",
+"title": "Registered Nurse | Neonatal Intensive Care Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "NICU",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "228630",
+"reqId": "228630",
+"title": "Paramedic - Benson | Long Prairie | Paynesville",
+"city": "Benson",
+"state": "MN",
+"location": "Benson, MN, 56215",
+"cityState": "Benson, MN",
+"workLocation": "CentraCare - Benson",
+"department": "Emergency Medical Services",
+"multi_location_array": [
+{
+"location": "Benson, MN, 56215"
+},
+{
+"location": "Long Prairie, MN, United States"
+},
+{
+"location": "Paynesville, MN, United States"
+}
+]
+},
+{
+"jobId": "231890",
+"reqId": "231890",
+"title": "Registered Nurse | Pediatric Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Pediatric Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232056",
+"reqId": "232056",
+"title": "Registered Nurse | Orthopedics",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "SCH Orthopedics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232337",
+"reqId": "232337",
+"title": "Surgical Technologist | Plaza Surgery Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "CCHS Ambulatory Surgery Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232290",
+"reqId": "232290",
+"title": "Apprentice Endoscopy Technician",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"department": "Endoscopy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232019",
+"reqId": "232019",
+"title": "Nursing Assistant | Sauk Centre Hospital",
+"city": "Sauk Centre",
+"state": "MN",
+"location": "Sauk Centre, MN, 56378",
+"cityState": "Sauk Centre, MN",
+"workLocation": "CentraCare - Sauk Centre",
+"multi_location_array": [
+{
+"location": "Sauk Centre, MN, 56378"
+}
+]
+},
+{
+"jobId": "231889",
+"reqId": "231889",
+"title": "Home Health Aide",
+"city": "Waite Park",
+"state": "MN",
+"location": "Waite Park, MN, 56387",
+"cityState": "Waite Park, MN",
+"workLocation": "Waite Park Marketplace",
+"department": "Home Health",
+"multi_location_array": [
+{
+"location": "Waite Park, MN, 56387"
+}
+]
+},
+{
+"jobId": "231866",
+"reqId": "231866",
+"title": "LPN or CMA | Urgent Care",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232112",
+"reqId": "232112",
+"title": "Food Service Worker II",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Nutrition",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232230",
+"reqId": "232230",
+"title": "Social Worker | Sauk Centre Hospital",
+"city": "Sauk Centre",
+"state": "MN",
+"location": "Sauk Centre, MN, 56378",
+"cityState": "Sauk Centre, MN",
+"workLocation": "CentraCare - Sauk Centre",
+"department": "Social Work",
+"multi_location_array": [
+{
+"location": "Sauk Centre, MN, 56378"
+}
+]
+},
+{
+"jobId": "231923",
+"reqId": "231923",
+"title": "Registered Nurse | Orthopedics",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "SCH Orthopedics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231857",
+"reqId": "231857",
+"title": "Certified Nursing Assistant",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Geriatric Behavioral Health",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "231525",
+"reqId": "231525",
+"title": "Financial Patient Accounts Assistant",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "South Point",
+"department": "STC PB Patient Financial Svcs",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "232266",
+"reqId": "232266",
+"title": "RN Convenience Care | Urgent Care River Campus",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "River Campus Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232368",
+"reqId": "232368",
+"title": "LPN or Certified/Registered MA | Redwood Clinic",
+"city": "Redwood Falls",
+"state": "MN",
+"location": "Redwood Falls, MN, 56283",
+"cityState": "Redwood Falls, MN",
+"multi_location_array": [
+{
+"location": "Redwood Falls, MN, 56283"
+}
+]
+},
+{
+"jobId": "232359",
+"reqId": "232359",
+"title": "Health Unit Coordinator | Birth Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Birth Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232260",
+"reqId": "232260",
+"title": "Patient Care Extender | Urgent Care River Campus",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "River Campus Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232361",
+"reqId": "232361",
+"title": "Registered Nurse | Orthopedic Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "SCH Orthopedics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232356",
+"reqId": "232356",
+"title": "General Surgery – Nurse Practitioner or Physician Assistant – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Surgery General",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232357",
+"reqId": "232357",
+"title": "EMT | Paynesville/Benson/Long Prairie",
+"city": "Paynesville",
+"state": "MN",
+"location": "Paynesville, MN, 56362",
+"cityState": "Paynesville, MN",
+"workLocation": "CentraCare - Paynesville",
+"department": "Emergency Medical Services",
+"multi_location_array": [
+{
+"location": "Paynesville, MN, 56362"
+},
+{
+"location": "Long Prairie, MN, United States"
+},
+{
+"location": "Benson, MN, United States"
+}
+]
+},
+{
+"jobId": "232251",
+"reqId": "232251",
+"title": "Resource Support Specialist | Staffing Office",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Staffing Management",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232339",
+"reqId": "232339",
+"title": "Device RN | Cardiology Pacer",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232370",
+"reqId": "232370",
+"title": "Registered Nurse | Post Anesthesia Care Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Post Anesthesia Care Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232393",
+"reqId": "232393",
+"title": "Environmental Services Associate | Sauk Centre Clinic",
+"city": "Sauk Centre",
+"state": "MN",
+"location": "Sauk Centre, MN, 56378",
+"cityState": "Sauk Centre, MN",
+"workLocation": "CentraCare - Sauk Centre",
+"multi_location_array": [
+{
+"location": "Sauk Centre, MN, 56378"
+}
+]
+},
+{
+"jobId": "231498",
+"reqId": "231498",
+"title": "Diagnostic Medical Sonographer",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Imaging Ultrasound",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232395",
+"reqId": "232395",
+"title": "Patient Care Extender | Emergency Trauma Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Emergency Trauma Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232396",
+"reqId": "232396",
+"title": "Retail Nutrition Services Associate | Fresh Harvest Cafe",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Fresh Harvest Cafe",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232048",
+"reqId": "232048",
+"title": "LPN/CMA | Coordinated Care",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"department": "Coordinated Care Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232399",
+"reqId": "232399",
+"title": "Certified Athletic Trainer | St. Cloud St. University",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231981",
+"reqId": "231981",
+"title": "Registered Nurse | Telemetry",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Telemetry",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232125",
+"reqId": "232125",
+"title": "Registered Nurse | Telemetry",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Telemetry",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232400",
+"reqId": "232400",
+"title": "Certified Athletic Trainer | Sports Medicine",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232367",
+"reqId": "232367",
+"title": "Physical Therapist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"workLocation": "Rehabilitation Center",
+"department": "Physical Therapy",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232403",
+"reqId": "232403",
+"title": "LPN | Employee Health Services",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Employee Health Services",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232401",
+"reqId": "232401",
+"title": "Occupational Therapist | Clara's House",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Clara's House",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231877",
+"reqId": "231877",
+"title": "Surgical Technologist | Monticello Hospital",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Surgery",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "231803",
+"reqId": "231803",
+"title": "Registered Nurse | Orthopedics",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "SCH Orthopedics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232282",
+"reqId": "232282",
+"title": "PCA/Nursing Assistant | Adult Health Care",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Adult Health Care",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232354",
+"reqId": "232354",
+"title": "PCA/Nursing Assistant | Adult Health Care",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Adult Health Care",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232353",
+"reqId": "232353",
+"title": "PCA/Nursing Assistant | Adult Health Care",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Adult Health Care",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232229",
+"reqId": "232229",
+"title": "Withdrawal & Care Coordination RN | Addiction Services",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Addiction Services",
+"department": "Addiction Medicine Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232092",
+"reqId": "232092",
+"title": "Behavioral Health Technician | Mental Health Units",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "IP Behavioral Health",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232217",
+"reqId": "232217",
+"title": "Psychotherapist | Child & Adolescent Behavioral Health",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232291",
+"reqId": "232291",
+"title": "Psychotherapist | Integrated Behavioral Health | Sauk Centre",
+"city": "Sauk Centre",
+"state": "MN",
+"location": "Sauk Centre, MN, 56378",
+"cityState": "Sauk Centre, MN",
+"workLocation": "CentraCare - Sauk Centre",
+"department": "BHC IBH Psychology",
+"multi_location_array": [
+{
+"location": "Sauk Centre, MN, 56378"
+}
+]
+},
+{
+"jobId": "232017",
+"reqId": "232017",
+"title": "Psychotherapist | Rice Memorial Hospital - Outpatient Clinic",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Rice Institute Outpatient",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231325",
+"reqId": "231325",
+"title": "Psychotherapist | Addiction Services",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Addiction Services",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232181",
+"reqId": "232181",
+"title": "Nursing Assistant",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232218",
+"reqId": "232218",
+"title": "Psychotherapist | Adult Outpatient Behavioral Health",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"department": "BHC General Adult Psychology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230697",
+"reqId": "230697",
+"title": "Psychotherapist | Integrated Behavioral Health | OB & Women's Health Clinic",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "BHC IBH Psychology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230759",
+"reqId": "230759",
+"title": "Urgent Care – Nurse Practitioner or Physician Assistant – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "River Campus Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232397",
+"reqId": "232397",
+"title": "Withdrawal & Care Coordination RN | Addiction Services",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Addiction Services",
+"department": "Addiction Medicine Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232411",
+"reqId": "232411",
+"title": "Speech Language Pathologist | Inpatient Therapies",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Speech Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232410",
+"reqId": "232410",
+"title": "Clinical Team Assistant | Home Health Office",
+"city": "Waite Park",
+"state": "MN",
+"location": "Waite Park, MN, 56387",
+"cityState": "Waite Park, MN",
+"workLocation": "Waite Park Marketplace",
+"department": "Home Health Office",
+"multi_location_array": [
+{
+"location": "Waite Park, MN, 56387"
+}
+]
+},
+{
+"jobId": "232406",
+"reqId": "232406",
+"title": "Nutrition Services",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Nutrition",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "232404",
+"reqId": "232404",
+"title": "Lab Assistant | Cold Spring and Clearwater Clinics",
+"city": "Cold Spring",
+"state": "MN",
+"location": "Cold Spring, MN, 55320",
+"cityState": "Cold Spring, MN",
+"workLocation": "Clearwater Clinic",
+"multi_location_array": [
+{
+"location": "Cold Spring, MN, 55320"
+},
+{
+"location": "Clearwater, MN, United States"
+}
+]
+},
+{
+"jobId": "232225",
+"reqId": "232225",
+"title": "Ophthalmic Assistant",
+"city": "Sartell",
+"state": "MN",
+"location": "Sartell, MN, 56377",
+"cityState": "Sartell, MN",
+"workLocation": "CentraCare Sauk Crossing",
+"department": "Eye Clinic",
+"multi_location_array": [
+{
+"location": "Sartell, MN, 56377"
+},
+{
+"location": "Long Prairie, MN, United States"
+}
+]
+},
+{
+"jobId": "232405",
+"reqId": "232405",
+"title": "Associate Psychotherapist | Psychotherapist | Adult Partial Hospitalization and Intensive Outpatient Program",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Mental Health Partial Adult",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232381",
+"reqId": "232381",
+"title": "Registered Nurse | Emergency Trauma Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Emergency Trauma Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232409",
+"reqId": "232409",
+"title": "ETC Technician | Emergency Trauma Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Emergency Trauma Center",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232375",
+"reqId": "232375",
+"title": "2027 Summer Nurse Intern",
+"state": "MN",
+"location": "MN, 56303",
+"cityState": "MN",
+"workLocation": "St Cloud Hospital",
+"department": "Nursing Excellence",
+"multi_location_array": [
+{
+"location": "MN, 56303"
+},
+{
+"location": "Saint Cloud, MN, United States"
+},
+{
+"location": "Paynesville, MN, United States"
+},
+{
+"location": "Melrose, MN, United States"
+},
+{
+"location": "Sauk Centre, MN, United States"
+},
+{
+"location": "Long Prairie, MN, United States"
+},
+{
+"location": "Redwood Falls, MN, United States"
+},
+{
+"location": "Willmar, MN, United States"
+},
+{
+"location": "Benson, MN, United States"
+}
+]
+},
+{
+"jobId": "231234",
+"reqId": "231234",
+"title": "Registered Nurse | Float Pool",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231236",
+"reqId": "231236",
+"title": "Registered Nurse | Float Pool",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232129",
+"reqId": "232129",
+"title": "Social Worker | Regional Float",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Care Management",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232425",
+"reqId": "232425",
+"title": "Diagnostic Medical Sonographer",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Imaging Diagnostic",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "232423",
+"reqId": "232423",
+"title": "Laboratory Assistant/Phlebotomist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Lakeland Lab Clinic",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232238",
+"reqId": "232238",
+"title": "Respiratory Therapist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Respiratory Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232073",
+"reqId": "232073",
+"title": "Radiation Therapist | Alexandria Radiology Oncology",
+"city": "Alexandria",
+"state": "MN",
+"location": "Alexandria, MN, 56308",
+"cityState": "Alexandria, MN",
+"department": "Alexandria Radiology Oncology",
+"multi_location_array": [
+{
+"location": "Alexandria, MN, 56308"
+}
+]
+},
+{
+"jobId": "232341",
+"reqId": "232341",
+"title": "Nursing Professional Development Specialist - Regional Site",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231393",
+"reqId": "231393",
+"title": "Resource Support Specialist | Staffing Office",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Staffing Management",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230942",
+"reqId": "230942",
+"title": "Home Health Aide",
+"city": "Waite Park",
+"state": "MN",
+"location": "Waite Park, MN, 56387",
+"cityState": "Waite Park, MN",
+"workLocation": "Waite Park Marketplace",
+"department": "Home Health",
+"multi_location_array": [
+{
+"location": "Waite Park, MN, 56387"
+}
+]
+},
+{
+"jobId": "232421",
+"reqId": "232421",
+"title": "LPN/CMA | Neurology Clinic",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Neurology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232422",
+"reqId": "232422",
+"title": "LPN or CMA | Sauk Centre Clinic",
+"city": "Sauk Centre",
+"state": "MN",
+"location": "Sauk Centre, MN, 56378",
+"cityState": "Sauk Centre, MN",
+"workLocation": "CentraCare - Sauk Centre",
+"multi_location_array": [
+{
+"location": "Sauk Centre, MN, 56378"
+}
+]
+},
+{
+"jobId": "232426",
+"reqId": "232426",
+"title": "Health Unit Coordinator | Float Pool",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232418",
+"reqId": "232418",
+"title": "Environmental Services Associate",
+"city": "Paynesville",
+"state": "MN",
+"location": "Paynesville, MN, 56362",
+"cityState": "Paynesville, MN",
+"workLocation": "CentraCare - Paynesville",
+"department": "Environmental Services",
+"multi_location_array": [
+{
+"location": "Paynesville, MN, 56362"
+}
+]
+},
+{
+"jobId": "231872",
+"reqId": "231872",
+"title": "Surgical Technologist | Monticello Hosptal",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Surgery",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "232364",
+"reqId": "232364",
+"title": "Registered Nurse | Imaging",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Imaging Office",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232330",
+"reqId": "232330",
+"title": "Director Infection Prevention & Control | CentraCare",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232435",
+"reqId": "232435",
+"title": "Licensed Practical Nurse | Neuroscience",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Neuroscience Spine Unit",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232392",
+"reqId": "232392",
+"title": "Medical Lab Technician or Medical Lab Scientist",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Laboratory",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "232313",
+"reqId": "232313",
+"title": "ERA/EFT Enrollment Specialist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "South Point",
+"department": "STC HB Patient Financial Svcs",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "230411",
+"reqId": "230411",
+"title": "Neurologist Physician – Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Neurology",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232175",
+"reqId": "232175",
+"title": "Respiratory Therapist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Respiratory Therapy",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232278",
+"reqId": "232278",
+"title": "Registered Nurse | Med/Surg",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "232439",
+"reqId": "232439",
+"title": "Registered Nurse | Chemo Infusion",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232132",
+"reqId": "232132",
+"title": "Paramedic",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Emergency Medical Services",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+},
+{
+"location": "Big Lake, MN, United States"
+}
+]
+},
+{
+"jobId": "232416",
+"reqId": "232416",
+"title": "Lab Assistant | Becker and Big Lake Clinics",
+"city": "Becker",
+"state": "MN",
+"location": "Becker, MN, 55308",
+"cityState": "Becker, MN",
+"workLocation": "Becker Clinic",
+"multi_location_array": [
+{
+"location": "Becker, MN, 55308"
+},
+{
+"location": "Big Lake, MN, United States"
+}
+]
+},
+{
+"jobId": "232294",
+"reqId": "232294",
+"title": "Security & Safety Officer",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Security And Safety",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232386",
+"reqId": "232386",
+"title": "Security & Safety Officer | Plaza",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Security And Safety",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232320",
+"reqId": "232320",
+"title": "Clinical Specialist RN | Hospice",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"workLocation": "Washington Building",
+"department": "Home Health Office",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231326",
+"reqId": "231326",
+"title": "Dental Hygienist/Instructor",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Dental Clinic",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "231589",
+"reqId": "231589",
+"title": "Security & Safety Officer | Days",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Security And Safety",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232245",
+"reqId": "232245",
+"title": "Casual Emergency Medicine – Nurse Practitioner or Physician Assistant – Western Region",
+"city": "Long Prairie",
+"state": "MN",
+"location": "Long Prairie, MN, 56347",
+"cityState": "Long Prairie, MN",
+"workLocation": "CentraCare - Long Prairie",
+"department": "Regional ED Provider",
+"multi_location_array": [
+{
+"location": "Long Prairie, MN, 56347"
+},
+{
+"location": "Sauk Centre, MN, United States"
+},
+{
+"location": "Melrose, MN, United States"
+}
+]
+},
+{
+"jobId": "232099",
+"reqId": "232099",
+"title": "Emergency Medicine Float - Casual Physician - Western Region",
+"city": "Long Prairie",
+"state": "MN",
+"location": "Long Prairie, MN, 56347",
+"cityState": "Long Prairie, MN",
+"workLocation": "CentraCare - Long Prairie",
+"department": "Regional ED Provider",
+"multi_location_array": [
+{
+"location": "Long Prairie, MN, 56347"
+},
+{
+"location": "Sauk Centre, MN, United States"
+},
+{
+"location": "Melrose, MN, United States"
+}
+]
+},
+{
+"jobId": "230802",
+"reqId": "230802",
+"title": "Clinical Ambulatory Pharmacist | Neuroscience Pain Center",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230384",
+"reqId": "230384",
+"title": "Associate Program Director, Univ of Minnesota/St. Cloud Family Medicine Residency Program",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Northway Clinic",
+"department": "Mid MN Residency Program",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231706",
+"reqId": "231706",
+"title": "Pharmacist | St. Cloud Hospital",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Pharmacy Department",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232428",
+"reqId": "232428",
+"title": "Registered Nurse | Birth Center",
+"city": "Monticello",
+"state": "MN",
+"location": "Monticello, MN, 55362",
+"cityState": "Monticello, MN",
+"workLocation": "CentraCare - Monticello",
+"department": "Obstetrics",
+"multi_location_array": [
+{
+"location": "Monticello, MN, 55362"
+}
+]
+},
+{
+"jobId": "232199",
+"reqId": "232199",
+"title": "LPN | Sauk Crossing Family Med",
+"city": "Sartell",
+"state": "MN",
+"location": "Sartell, MN, 56377",
+"cityState": "Sartell, MN",
+"workLocation": "CentraCare Sauk Crossing",
+"multi_location_array": [
+{
+"location": "Sartell, MN, 56377"
+},
+{
+"location": "Saint Cloud, MN, United States"
+}
+]
+},
+{
+"jobId": "232437",
+"reqId": "232437",
+"title": "Urology Tech",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Urology Techs",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232417",
+"reqId": "232417",
+"title": "Lab Assistant | Sauk Crossing Clinic",
+"city": "Sartell",
+"state": "MN",
+"location": "Sartell, MN, 56377",
+"cityState": "Sartell, MN",
+"workLocation": "CentraCare Sauk Crossing",
+"multi_location_array": [
+{
+"location": "Sartell, MN, 56377"
+}
+]
+},
+{
+"jobId": "231751",
+"reqId": "231751",
+"title": "Transitions of Care & Anticoagulation Stewardship Pharmacist",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Pharmacy Department",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232456",
+"reqId": "232456",
+"title": "Radiologic Technologist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Imaging Diagnostic",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232443",
+"reqId": "232443",
+"title": "Registered Nurse | Risk Management",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232441",
+"reqId": "232441",
+"title": "CMA/RMA X-ray Operator",
+"city": "Becker",
+"state": "MN",
+"location": "Becker, MN, 55308",
+"cityState": "Becker, MN",
+"workLocation": "Becker Clinic",
+"multi_location_array": [
+{
+"location": "Becker, MN, 55308"
+},
+{
+"location": "Big Lake, MN, United States"
+}
+]
+},
+{
+"jobId": "232442",
+"reqId": "232442",
+"title": "Pharmacist | Inpatient Pharmacy",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Pharmacy Department",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232449",
+"reqId": "232449",
+"title": "Lab Assistant | Sauk Crossing Clinic",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56377",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Sauk Crossing",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56377"
+}
+]
+},
+{
+"jobId": "232444",
+"reqId": "232444",
+"title": "Registered Nurse | Emergency Trauma Center",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Emergency Trauma Center",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232447",
+"reqId": "232447",
+"title": "Registered Nurse | Women & Newborn Health",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Women And Newborn Health",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232448",
+"reqId": "232448",
+"title": "Registered Nurse | Women & Newborn Health",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Women And Newborn Health",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230362",
+"reqId": "230362",
+"title": "Family Medicine – Nurse Practitioner or Physician Assistant – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Northway Clinic",
+"department": "Fam Med Northway",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230398",
+"reqId": "230398",
+"title": "Gastroenterology Physician – Inpatient/GI Hospitalist – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Med Spec Gastrointestinal",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230399",
+"reqId": "230399",
+"title": "Endocrinology Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Amb Spec Endocrinology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230268",
+"reqId": "230268",
+"title": "Family Medicine Physician – Redwood Falls, MN",
+"city": "Redwood Falls",
+"state": "MN",
+"location": "Redwood Falls, MN",
+"cityState": "Redwood Falls, MN",
+"multi_location_array": [
+{
+"location": "Redwood Falls, MN"
+}
+]
+},
+{
+"jobId": "230309",
+"reqId": "230309",
+"title": "Urology Physician – St. Cloud or Willmar, Minnesota",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Urology",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230281",
+"reqId": "230281",
+"title": "Family Medicine Physician – New London, MN",
+"city": "New London",
+"state": "MN",
+"location": "New London, MN, 56273",
+"cityState": "New London, MN",
+"workLocation": "New London Clinic",
+"department": "New London Family Practice",
+"multi_location_array": [
+{
+"location": "New London, MN, 56273"
+}
+]
+},
+{
+"jobId": "230292",
+"reqId": "230292",
+"title": "Family Medicine Physician – Benson, MN",
+"city": "Benson",
+"state": "MN",
+"location": "Benson, MN, 56215",
+"cityState": "Benson, MN",
+"workLocation": "CentraCare - Benson",
+"multi_location_array": [
+{
+"location": "Benson, MN, 56215"
+}
+]
+},
+{
+"jobId": "230346",
+"reqId": "230346",
+"title": "Adult Psychologist – Behavioral Health",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "BHC General Adult Psychology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230375",
+"reqId": "230375",
+"title": "Child & Adolescent Psychiatrist – Inpatient Practice – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230312",
+"reqId": "230312",
+"title": "Senior Transitions (Long Term Care/Post Acute Care) Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56387",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Waite Park Marketplace",
+"department": "Senior Transitions",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56387"
+}
+]
+},
+{
+"jobId": "230363",
+"reqId": "230363",
+"title": "Family Medicine Physician - Northway Clinic",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Northway Clinic",
+"department": "Fam Med Northway",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230339",
+"reqId": "230339",
+"title": "Child & Adolescent Psychologist – Behavioral Health",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Behavioral Health Services Adm",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230335",
+"reqId": "230335",
+"title": "Palliative Care Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Trans Care Palliative",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230354",
+"reqId": "230354",
+"title": "Integrated Behavioral Health – Psychologist – OB/GYN Clinic",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "BHC IBH Psychology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230299",
+"reqId": "230299",
+"title": "OB/GYN Physician – Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Obstetrics and Womens Health",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "232374",
+"reqId": "232374",
+"title": "Clinical Documentation Nurse",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56301",
+"cityState": "Saint Cloud, MN",
+"workLocation": "South Point",
+"department": "Clinical Doc Integrity",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56301"
+}
+]
+},
+{
+"jobId": "230295",
+"reqId": "230295",
+"title": "Family Medicine Physician - Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Willmar Family Practice",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230404",
+"reqId": "230404",
+"title": "Digestive Center Medical Director – Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Med Spec Gastrointestinal",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230288",
+"reqId": "230288",
+"title": "General Surgery Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Surgery General",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230317",
+"reqId": "230317",
+"title": "Neonatal Nurse Practitioner or Physician Assistant – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN",
+"cityState": "Saint Cloud, MN",
+"department": "Fam Birthing NICU",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN"
+}
+]
+},
+{
+"jobId": "230350",
+"reqId": "230350",
+"title": "Child & Adolescent Psychiatrist – Outpatient Practice – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "231118",
+"reqId": "231118",
+"title": "Psychologist | Behavioral Health Observation Unit",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Behavioral Health Observation",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230320",
+"reqId": "230320",
+"title": "Physiatrist – Physical Medicine & Rehabilitation – Physician – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230322",
+"reqId": "230322",
+"title": "Advanced Imaging Non-Invasive Cardiologist – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Cardiac",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230348",
+"reqId": "230348",
+"title": "Psychiatrist – Inpatient & Outpatient Practice – Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Rice Institute Outpatient",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230319",
+"reqId": "230319",
+"title": "General Neurologist – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "River Campus Clinic",
+"department": "Neurology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230310",
+"reqId": "230310",
+"title": "Urology Physician – St. Cloud or Willmar, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56377",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Urology Clinic",
+"department": "Urology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56377"
+}
+]
+},
+{
+"jobId": "230392",
+"reqId": "230392",
+"title": "Certified Registered Nurse Anesthetist (CRNA) – $75,000 Sign-on bonus – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "CCC Anesthesiology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230274",
+"reqId": "230274",
+"title": "Ophthalmologist Physician – Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Eye Clinic",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230283",
+"reqId": "230283",
+"title": "Ophthalmologist Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56377",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Sauk Crossing",
+"department": "Eye Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56377"
+}
+]
+},
+{
+"jobId": "230410",
+"reqId": "230410",
+"title": "Orthopedic Surgeon - Physician",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Orthopedics",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230391",
+"reqId": "230391",
+"title": "Internal Medicine Physician – Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230365",
+"reqId": "230365",
+"title": "Family Medicine Physician – Float Pool – St. Cloud Area",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "Sartell Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230405",
+"reqId": "230405",
+"title": "Internal Medicine Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "River Campus Clinic",
+"department": "Amb Spec Internal Med RC",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230296",
+"reqId": "230296",
+"title": "Hematologist Oncologist Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Oncology Hematology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230341",
+"reqId": "230341",
+"title": "Family Medicine Physician – Full-Spectrum – Paynesville",
+"city": "Paynesville",
+"state": "MN",
+"location": "Paynesville, MN, 56362",
+"cityState": "Paynesville, MN",
+"workLocation": "CentraCare - Paynesville",
+"department": "Fam Med Paynesville",
+"multi_location_array": [
+{
+"location": "Paynesville, MN, 56362"
+}
+]
+},
+{
+"jobId": "230324",
+"reqId": "230324",
+"title": "Neurosurgeon Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Neuro Neurosurgery",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230284",
+"reqId": "230284",
+"title": "Optometrist – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56377",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Sauk Crossing",
+"department": "Eye Clinic",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56377"
+}
+]
+},
+{
+"jobId": "230393",
+"reqId": "230393",
+"title": "CRNA – Casual – Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Anesthesiology",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230730",
+"reqId": "230730",
+"title": "Gastroenterology – Nurse Practitioner or Physician Assistant – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN",
+"cityState": "Saint Cloud, MN",
+"department": "Med Spec Gastrointestinal",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN"
+}
+]
+},
+{
+"jobId": "230403",
+"reqId": "230403",
+"title": "Certified Registered Nurse Anesthetist (CRNA) – $75,000 Sign-on bonus – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "St Cloud Hospital",
+"department": "CCC Anesthesiology",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230347",
+"reqId": "230347",
+"title": "Adult Psychologist – Behavioral Health",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56303",
+"cityState": "Willmar, MN",
+"workLocation": "St Cloud Hospital",
+"department": "Psychology",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56303"
+}
+]
+},
+{
+"jobId": "230332",
+"reqId": "230332",
+"title": "Plastic Surgery Physician – St. Cloud, Minnesota",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"department": "Midsota Plastic Surgeons",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "230369",
+"reqId": "230369",
+"title": "Family Medicine Physician – Full-Spectrum – Melrose, MN",
+"city": "Melrose",
+"state": "MN",
+"location": "Melrose, MN, 56352",
+"cityState": "Melrose, MN",
+"workLocation": "CentraCare - Melrose",
+"department": "Fam Med Melrose",
+"multi_location_array": [
+{
+"location": "Melrose, MN, 56352"
+}
+]
+},
+{
+"jobId": "230390",
+"reqId": "230390",
+"title": "Pediatrician Physician – Willmar, MN",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"department": "Pediatrics",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+},
+{
+"jobId": "230355",
+"reqId": "230355",
+"title": "Family Medicine Physician – Full-Spectrum – Long Prairie",
+"city": "Long Prairie",
+"state": "MN",
+"location": "Long Prairie, MN, 56347",
+"cityState": "Long Prairie, MN",
+"workLocation": "CentraCare - Long Prairie",
+"department": "Fam Med Long Prairie",
+"multi_location_array": [
+{
+"location": "Long Prairie, MN, 56347"
+}
+]
+},
+{
+"jobId": "230262",
+"reqId": "230262",
+"title": "Geneticist Physician – St. Cloud, MN",
+"city": "Saint Cloud",
+"state": "MN",
+"location": "Saint Cloud, MN, 56303",
+"cityState": "Saint Cloud, MN",
+"workLocation": "CentraCare Plaza",
+"department": "Genetics",
+"multi_location_array": [
+{
+"location": "Saint Cloud, MN, 56303"
+}
+]
+},
+{
+"jobId": "232461",
+"reqId": "232461",
+"title": "Occupational Therapist",
+"city": "Willmar",
+"state": "MN",
+"location": "Willmar, MN, 56201",
+"cityState": "Willmar, MN",
+"workLocation": "Rehabilitation Center",
+"department": "Occupational Therapy",
+"multi_location_array": [
+{
+"location": "Willmar, MN, 56201"
+}
+]
+}
+]
+}
